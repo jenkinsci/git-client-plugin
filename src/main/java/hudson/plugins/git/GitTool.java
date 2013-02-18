@@ -77,6 +77,7 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
         public DescriptorImpl() {
             super();
+            setInstallations(new GitTool[0]);
             load();
             GitTool[] installations = getInstallations();
             if (installations == null || installations.length == 0) {
