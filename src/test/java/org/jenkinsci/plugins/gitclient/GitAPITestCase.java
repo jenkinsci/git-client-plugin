@@ -4,6 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
+import org.jenkinsci.plugins.gitclient.Branch;
+import org.jenkinsci.plugins.gitclient.IGitAPI;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.eclipse.jgit.lib.ObjectId;

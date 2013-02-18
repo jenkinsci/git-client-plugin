@@ -3,15 +3,13 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
-
 import hudson.Util;
+import org.eclipse.jgit.lib.ObjectId;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.kohsuke.stapler.export.Exported;
-import org.kohsuke.stapler.export.ExportedBean;
-import org.eclipse.jgit.lib.ObjectId;
 
 /**
  * A Revision is a SHA1 in the object tree, and the collection of branches that

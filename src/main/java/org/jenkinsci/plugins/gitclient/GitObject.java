@@ -1,9 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
-import java.io.Serializable;
 
+import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-import org.eclipse.jgit.lib.ObjectId;
+
+import java.io.Serializable;
 
 @ExportedBean(defaultVisibility = 999)
 public class GitObject implements Serializable {

@@ -1,16 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
-
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
 
 /**
  * Encapsulates Git operations on a particular directory through git(1).
