@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Functions;
+import hudson.XmlFile;
 import hudson.init.Initializer;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
@@ -23,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.PLUGINS_STARTED;
 
@@ -43,12 +46,6 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
     public String getGitExe() {
         return getHome();
     }
-
-    @Initializer(before=PLUGINS_STARTED)
-    public static void addAliases() {
-        Jenkins.XSTREAM2.addCompatibilityAlias("hudons.plugins.git.GitTool", GitTool.class);
-    }
-
 
     @Initializer(after=PLUGINS_STARTED)
     public static void onLoaded() {
@@ -96,7 +93,18 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
         public DescriptorImpl() {
             super();
-            load();
+            File legacy = new File(Jenkins.getInstance().getRootDir(), "hudson.plugins.git.GitTool.xml");
+            if (legacy.exists()) {
+                try {
+                    new XmlFile(legacy).unmarshal(this);
+                    save();
+                    legacy.delete();
+                } catch (IOException e) {
+                    LOGGER.log(Level.WARNING, "Failed to load " + legacy, e);
+                }
+            } else {
+                load();
+            }
         }
 
         @Override
@@ -131,5 +139,6 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
         }
     }
 
+    private static final Logger LOGGER = Logger.getLogger(GitTool.class.getName());
 }
 
