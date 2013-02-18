@@ -1,6 +1,7 @@
 package hudson.plugins.git;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.TaskListener;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 
@@ -14,7 +15,21 @@ import java.io.File;
  */
 public class GitAPI extends CliGitAPIImpl {
 
-    public GitAPI(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
-        super(gitExe, workspace, listener, environment);
+    private final File repository;
+
+    @Deprecated
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) {
+        this(gitExe, new File(repository.getRemote()), listener, environment);
     }
+
+    @Deprecated
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment, String reference) {
+        this(gitExe, repository, listener, environment);
+    }
+
+    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) {
+        super(gitExe, repository, listener, environment);
+        this.repository = repository;
+    }
+
 }
