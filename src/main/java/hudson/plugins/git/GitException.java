@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 public class GitException extends RuntimeException {
     private static final long serialVersionUID = 1L;

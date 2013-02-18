@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 /**
  * An Entry in the Index / Tree

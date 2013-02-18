@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import hudson.plugins.git.*;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -206,7 +207,7 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.fetch(remote, refspec);
 
         /**
-         * not working, as demonstrated by hudson.plugins.git.GitSCMTest#testMultipleBranchBuild
+         * not working, as demonstrated by org.jenkinsci.plugins.gitclient.GitSCMTest#testMultipleBranchBuild
          * JGit FecthProcess don't let us set RefUpdate.force=true
          * @see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
          *

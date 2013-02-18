@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;

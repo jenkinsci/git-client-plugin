@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;

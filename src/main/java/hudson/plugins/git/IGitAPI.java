@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 import hudson.model.TaskListener;
 import org.eclipse.jgit.lib.ObjectId;
