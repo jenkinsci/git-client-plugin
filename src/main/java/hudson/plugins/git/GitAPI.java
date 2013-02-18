@@ -17,8 +17,4 @@ public class GitAPI extends CliGitAPIImpl {
     public GitAPI(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
         super(gitExe, workspace, listener, environment);
     }
-
-    public GitAPI(String gitExe, File workspace, TaskListener listener, EnvVars environment, String reference) {
-        super(gitExe, workspace, listener, environment, reference);
-    }
 }

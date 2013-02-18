@@ -33,27 +33,20 @@ public class CliGitAPIImpl implements IGitAPI {
     TaskListener listener;
     String gitExe;
     EnvVars environment;
-    String reference;
 
     public CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
-        this(gitExe, workspace, listener, environment, null);
-    }
-
-    public CliGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment, String reference) {
 
         this.workspace = workspace;
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-        this.reference = reference;
 
         launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
     }
 
     public IGitAPI subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment, reference);
+        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
     private int[] getGitVersion() {
@@ -185,18 +178,7 @@ public class CliGitAPIImpl implements IGitAPI {
         launchCommand(args);
     }
 
-    /**
-     * Start from scratch and clone the whole repository. Cloning into an
-     * existing directory is not allowed, so the workspace is first deleted
-     * entirely, then <tt>git clone</tt> is performed.
-     *
-     *
-     *
-     * @param url
-     * @param origin
-     * @throws GitException if deleting or cloning the workspace fails
-     */
-    public void clone(String url, String origin, final boolean useShallowClone) throws GitException {
+    public void clone(String url, String origin, final boolean useShallowClone, String reference) throws GitException {
         listener.getLogger().println("Cloning repository " + url);
         final int[] gitVer = getGitVersion();
 
@@ -707,7 +689,6 @@ public class CliGitAPIImpl implements IGitAPI {
         // repositories.
         fixSubmoduleUrls( remote, listener );
     }
-
     public void tag(String tagName, String comment) throws GitException {
         tagName = tagName.replace(' ', '_');
         try {
@@ -869,6 +850,7 @@ public class CliGitAPIImpl implements IGitAPI {
 
     }
 
+
     public void deleteTag(String tagName) throws GitException {
         tagName = tagName.replace(' ', '_');
         try {
@@ -1010,4 +992,5 @@ public class CliGitAPIImpl implements IGitAPI {
         String result = launchCommand(args);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
+
 }

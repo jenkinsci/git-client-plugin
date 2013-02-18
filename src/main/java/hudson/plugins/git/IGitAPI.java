@@ -6,6 +6,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -65,8 +66,9 @@ public interface IGitAPI {
      * @param url URL for remote repository to clone
      * @param origin upstream track name, defaults to <tt>origin</tt> by convention
      * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
+     * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
      */
-    void clone(String url, String origin, boolean useShallowClone) throws GitException;
+    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
 
     void fetch(String remote, RefSpec refspec) throws GitException;
 
@@ -158,5 +160,6 @@ public interface IGitAPI {
      * @return The git show output, in <tt>raw</tt> format.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException;
+
 
 }

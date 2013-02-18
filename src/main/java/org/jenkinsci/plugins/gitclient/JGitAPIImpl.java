@@ -34,13 +34,8 @@ public class JGitAPIImpl implements IGitAPI {
     private final TaskListener listener;
 
     public JGitAPIImpl(String gitExe, File workspace,
-                       TaskListener listener, EnvVars environment) {
-        this(gitExe, workspace, listener, environment, null);
-    }
-
-    public JGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment, String reference) {
-        this(new CliGitAPIImpl(gitExe, workspace, listener, environment, reference),
+                         TaskListener listener, EnvVars environment) {
+        this(new CliGitAPIImpl(gitExe, workspace, listener, environment),
              workspace, listener);
     }
 
@@ -294,8 +289,8 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.clean();
     }
 
-    public void clone(String url, String origin, boolean useShallowClone) throws GitException {
-        delegate.clone(url, origin, useShallowClone);
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
+        delegate.clone(url, origin, useShallowClone, reference);
     }
 
     public void deleteTag(String tagName) throws GitException {

@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient;
+package hudson.plugins.git;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -6,6 +6,7 @@ import hudson.Functions;
 import hudson.XmlFile;
 import hudson.init.Initializer;
 import hudson.model.EnvironmentSpecific;
+import hudson.model.Items;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.NodeSpecific;
@@ -47,23 +48,6 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
         return getHome();
     }
 
-    @Initializer(after=PLUGINS_STARTED)
-    public static void onLoaded() {
-        //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
-
-        DescriptorImpl descriptor = (DescriptorImpl) Jenkins.getInstance().getDescriptor(GitTool.class);
-        GitTool[] installations = getInstallations(descriptor);
-
-        if (installations.length > 0) {
-            //No need to initialize if there's already something
-            return;
-        }
-        String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
-        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
-        descriptor.setInstallations(new GitTool[] { tool });
-        descriptor.save();
-    }
-
     private static GitTool[] getInstallations(DescriptorImpl descriptor) {
         GitTool[] installations = null;
         try {
@@ -93,17 +77,13 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
         public DescriptorImpl() {
             super();
-            File legacy = new File(Jenkins.getInstance().getRootDir(), "hudson.plugins.git.GitTool.xml");
-            if (legacy.exists()) {
-                try {
-                    new XmlFile(legacy).unmarshal(this);
-                    save();
-                    legacy.delete();
-                } catch (IOException e) {
-                    LOGGER.log(Level.WARNING, "Failed to load " + legacy, e);
-                }
-            } else {
-                load();
+            load();
+            GitTool[] installations = getInstallations();
+            if (installations == null || installations.length == 0) {
+                String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
+                GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
+                setInstallations(new GitTool[] { tool });
+                save();
             }
         }
 
