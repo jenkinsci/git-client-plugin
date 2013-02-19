@@ -60,6 +60,8 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
     public static GitTool getDefaultInstallation() {
         DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
+        GitTool[] installations = gitTools.getInstallations();
+        if (installations.length == 1) return installations[0];
         return gitTools.getInstallation(GitTool.DEFAULT);
     }
 
