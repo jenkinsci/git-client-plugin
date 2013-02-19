@@ -42,19 +42,32 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     
     @Deprecated
-    public void checkoutBranch(String ref, String branch) throws GitException {
-        if (branch == null)
+    public void checkoutBranch(String branch, String ref) throws GitException {
+        try {
+            // First, checkout to detached HEAD, so we can delete the branch.
             checkout(ref);
-        else
-            checkout(branch, ref);
+
+            if (branch!=null) {
+                // Second, check to see if the branch actually exists, and then delete it if it does.
+                for (Branch b : getBranches()) {
+                    if (b.name.equals(branch)) {
+                        deleteBranch(branch);
+                    }
+                }
+                // Lastly, checkout the branch, creating it in the process, using commitish as the start point.
+                checkout(ref, branch);
+            }
+        } catch (GitException e) {
+            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        }
     }
 
     @Deprecated
     public void merge(String revSpec) throws GitException {
         try {
-            merge(getRepository().resolve(revSpec));
-        } catch (IOException e) {
-            throw new GitException("Failed to access repository", e);
+            launchCommand("merge", revSpec);
+        } catch (GitException e) {
+            throw new GitException("Could not merge " + revSpec, e);
         }
     }
 
