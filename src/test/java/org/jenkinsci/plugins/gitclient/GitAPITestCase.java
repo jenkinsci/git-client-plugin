@@ -88,10 +88,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_fecth() throws Exception {
         launchCommand("git init");
-        launchCommand("git remote add origin " + System.getProperty("user.dir")); // local git-plugin clone
+        launchCommand("git remote add origin " + System.getProperty("user.dir")); // local git-client-plugin clone
         git.fetch("origin", null);
-        assertTrue(launchCommand("git rev-list --max-count=1 45a5d1a0c6857670ea2bec30d632604e02af4195")
-                .contains("45a5d1a0c6857670ea2bec30d632604e02af4195"));
+        assertTrue(launchCommand("git rev-list --max-count=1 28f42e8d299154cd209cb1c75457fa9966a74f33")
+                .contains("28f42e8d299154cd209cb1c75457fa9966a74f33"));
     }
 
     public void test_create_branch() throws Exception {
