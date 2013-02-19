@@ -85,7 +85,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
     }
 
-    public void test_fecth() throws Exception {
+    public void test_fetch() throws Exception {
         launchCommand("git init");
         launchCommand("git remote add origin " + System.getProperty("user.dir")); // local git-plugin clone
         git.fetch("origin", null);
