@@ -59,7 +59,7 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
     }
 
     public static GitTool getDefaultInstallation() {
-        GitTool.DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
+        DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
         return gitTools.getInstallation(GitTool.DEFAULT);
     }
 
@@ -76,20 +76,30 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
         return (DescriptorImpl) Jenkins.getInstance().getDescriptor(GitTool.class);
     }
 
+    @Initializer(after=PLUGINS_STARTED)
+    public static void onLoaded() {
+        //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
+
+        DescriptorImpl descriptor = (DescriptorImpl) Jenkins.getInstance().getDescriptor(GitTool.class);
+        GitTool[] installations = getInstallations(descriptor);
+
+        if (installations != null && installations.length > 0) {
+            //No need to initialize if there's already something
+            return;
+        }
+
+        String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
+        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
+        descriptor.setInstallations(new GitTool[] { tool });
+        descriptor.save();
+    }
+
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<GitTool> {
 
         public DescriptorImpl() {
             super();
-            setInstallations(new GitTool[0]);
             load();
-            GitTool[] installations = getInstallations();
-            if (installations == null || installations.length == 0) {
-                String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
-                GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
-                setInstallations(new GitTool[] { tool });
-                save();
-            }
         }
 
         @Override
