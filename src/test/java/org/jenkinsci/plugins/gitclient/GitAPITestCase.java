@@ -60,6 +60,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
 
+
     public void test_getRemoteURL() throws Exception {
         launchCommand("git init");
         launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
@@ -86,7 +87,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
     }
 
-    public void test_fecth() throws Exception {
+    public void test_fetch() throws Exception {
         launchCommand("git init");
         launchCommand("git remote add origin " + System.getProperty("user.dir")); // local git-client-plugin clone
         git.fetch("origin", null);
@@ -241,7 +242,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_hasGitRepo_with_invalid_git_repo() throws Exception
     {
-        /* Create an empty directory named .git - "corrupt" git repo */
+        // Create an empty directory named .git - "corrupt" git repo
         new File(repo, ".git").mkdir();
         assertFalse("Invalid Git repo reported as valid", git.hasGitRepo());
     }

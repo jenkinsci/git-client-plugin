@@ -31,6 +31,10 @@ public class Git {
         return this;
     }
 
+    /**
+     * Set the (node/environment specific) git executable to be used
+     * If not set, JGit implementation will be used, assuming you don't rely on unimplemented CLI methods
+     */
     public Git using(String exe) {
         this.exe = exe;
         return this;
@@ -40,14 +44,14 @@ public class Git {
         if (listener == null) listener = TaskListener.NULL;
         if (env == null) env = new EnvVars();
 
-        // For user/developer to be able to switch to JGit for testing purpose
-        if (USE_JGIT) {
-            return new JGitAPIImpl(exe, repository, listener, env);
+        if (exe == null || USE_JGIT) {
+            return new JGitAPIImpl(repository, listener);
         }
         // Ensure we return a backward compatible GitAPI
         return new GitAPI(exe, repository, listener, env);
     }
 
+    // For user/developer to be able to switch to JGit for testing purpose
     static boolean USE_JGIT = Boolean.getBoolean(Git.class.getName() + ".useJGit");
 
 }

@@ -19,7 +19,7 @@ public interface GitClient {
 
     boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
-    Repository getRepository() throws IOException;
+    Repository getRepository() throws GitException;
 
     public void init() throws GitException;
 

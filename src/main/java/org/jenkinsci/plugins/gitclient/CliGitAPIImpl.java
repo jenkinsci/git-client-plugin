@@ -38,7 +38,7 @@ public class CliGitAPIImpl implements GitClient {
     String gitExe;
     EnvVars environment;
 
-    public CliGitAPIImpl(String gitExe, File workspace,
+    protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
 
         this.workspace = workspace;
@@ -822,23 +822,19 @@ public class CliGitAPIImpl implements GitClient {
     }
 
     public Set<Branch> getRemoteBranches() throws GitException {
-        try {
-            Repository db = getRepository();
-            Map<String, Ref> refs = db.getAllRefs();
-            Set<Branch> branches = new HashSet<Branch>();
+        Repository db = getRepository();
+        Map<String, Ref> refs = db.getAllRefs();
+        Set<Branch> branches = new HashSet<Branch>();
 
-            for(Ref candidate : refs.values()) {
-                if(candidate.getName().startsWith(Constants.R_REMOTES)) {
-                    Branch buildBranch = new Branch(candidate);
-                    listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
-                    branches.add(buildBranch);
-                }
+        for(Ref candidate : refs.values()) {
+            if(candidate.getName().startsWith(Constants.R_REMOTES)) {
+                Branch buildBranch = new Branch(candidate);
+                listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
+                branches.add(buildBranch);
             }
-
-            return branches;
-        } catch (IOException e) {
-            throw new GitException(e);
         }
+
+        return branches;
     }
 
     public void checkout(String commit) throws GitException {
@@ -974,8 +970,12 @@ public class CliGitAPIImpl implements GitClient {
         }
     }
 
-    public Repository getRepository() throws IOException {
-        return new FileRepository(new File(workspace, Constants.DOT_GIT));
+    public Repository getRepository() throws GitException {
+        try {
+            return new FileRepository(new File(workspace, Constants.DOT_GIT));
+        } catch (IOException e) {
+            throw new GitException("Failed to open Git repository " + workspace, e);
+        }
     }
 
     public Set<String> getTagNames(String tagPattern) throws GitException {

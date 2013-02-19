@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.api.Git;
@@ -25,32 +24,25 @@ import java.util.Set;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 /**
- * Implementation class using JGit as much as possible, then command line CLI.
+ * GitClient pure Java implementation using JGit.
+ * Goal is to eventually get a full java implementation for GitClient
  * <b>
- * For internal use only, dont use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
+ * For internal use only, don't use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
  * </b>
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 class JGitAPIImpl implements GitClient {
 
-    private final GitClient delegate;
     private final File workspace;
     private final TaskListener listener;
 
-    public JGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
-        this(new CliGitAPIImpl(gitExe, workspace, listener, environment),
-             workspace, listener);
-    }
-
-    private JGitAPIImpl(GitClient delegate, File workspace, TaskListener listener) {
-        this.delegate = delegate;
+    JGitAPIImpl(File workspace, TaskListener listener) {
         this.workspace = workspace;
         this.listener = listener;
     }
 
     public GitClient subGit(String subdir) {
-        return new JGitAPIImpl(delegate, new File(workspace, subdir), listener);
+        return new JGitAPIImpl(new File(workspace, subdir), listener);
     }
 
     public void init() throws GitException {
@@ -202,8 +194,7 @@ class JGitAPIImpl implements GitClient {
 
 
     public void fetch(String remote, RefSpec refspec) throws GitException {
-
-        delegate.fetch(remote, refspec);
+        throw new UnsupportedOperationException("not implemented yet");
 
         /**
          * not working, as demonstrated by org.jenkinsci.plugins.gitclient.GitSCMTest#testMultipleBranchBuild
@@ -229,7 +220,7 @@ class JGitAPIImpl implements GitClient {
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
-        return delegate.getHeadRev(remoteRepoUrl, branch);
+        throw new UnsupportedOperationException("not implemented yet");
 
         // Require a local repository, so can't be used in git-plugin context
         /*
@@ -265,68 +256,13 @@ class JGitAPIImpl implements GitClient {
         }
     }
 
-    public Repository getRepository() throws IOException {
+    public Repository getRepository() throws GitException {
         try {
             Git git = Git.open(workspace);
             return git.getRepository();
         } catch (IOException e) {
             throw new GitException(e);
         }
-    }
-
-
-    // --- delegates
-
-    public void addNote(String note, String namespace) throws GitException {
-        delegate.addNote(note, namespace);
-    }
-
-    public void appendNote(String note, String namespace) throws GitException {
-        delegate.appendNote(note, namespace);
-    }
-
-    public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
-        delegate.changelog(revFrom, revTo, fos);
-    }
-
-    public void clean() throws GitException {
-        delegate.clean();
-    }
-
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
-        delegate.clone(url, origin, useShallowClone, reference);
-    }
-
-    public void deleteTag(String tagName) throws GitException {
-        delegate.deleteTag(tagName);
-    }
-
-    public String getTagMessage(String tagName) throws GitException {
-        return delegate.getTagMessage(tagName);
-    }
-
-    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
-        return delegate.getSubmodules(treeIsh);
-    }
-
-    public void addSubmodule(String remoteURL, String subdir) throws GitException {
-        delegate.addSubmodule(remoteURL, subdir);
-    }
-
-    public Set<String> getTagNames(String tagPattern) throws GitException {
-        return delegate.getTagNames(tagPattern);
-    }
-
-    public boolean hasGitModules() throws GitException {
-        return delegate.hasGitModules();
-    }
-
-    public boolean hasGitRepo() throws GitException {
-        return delegate.hasGitRepo();
-    }
-
-    public boolean isCommitInRepo(ObjectId commit) throws GitException {
-        return delegate.isCommitInRepo(commit);
     }
 
     public void merge(ObjectId rev) throws GitException {
@@ -341,28 +277,8 @@ class JGitAPIImpl implements GitClient {
         }
     }
 
-    public void prune(RemoteConfig repository) throws GitException {
-        delegate.prune(repository);
-    }
-
-    public void push(String remoteName, String revspec) throws GitException {
-        delegate.push(remoteName, revspec);
-    }
-
-    public List<ObjectId> revListAll() throws GitException {
-        return delegate.revListAll();
-    }
-
-    public List<ObjectId> revList(String ref) throws GitException {
-        return delegate.revList(ref);
-    }
-
-    public ObjectId revParse(String revName) throws GitException {
-        return delegate.revParse(revName);
-    }
-
     public void setRemoteUrl(String name, String url) throws GitException {
-        delegate.setRemoteUrl(name, url);
+        throw new UnsupportedOperationException("not implemented yet");
         /* FIXME doesn't work, need to investigate
         try {
             Git git = Git.open(workspace);
@@ -375,24 +291,99 @@ class JGitAPIImpl implements GitClient {
         */
     }
 
+
+    // --- to be implemented
+
+    public void addNote(String note, String namespace) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void appendNote(String note, String namespace) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void clean() throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void deleteTag(String tagName) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public String getTagMessage(String tagName) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public Set<String> getTagNames(String tagPattern) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public boolean hasGitModules() throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public boolean hasGitRepo() throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public boolean isCommitInRepo(ObjectId commit) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void prune(RemoteConfig repository) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void push(String remoteName, String revspec) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public List<ObjectId> revListAll() throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public List<ObjectId> revList(String ref) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public ObjectId revParse(String revName) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
-        delegate.setupSubmoduleUrls(rev, listener);
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     public List<String> showRevision(ObjectId r) throws GitException {
-        return delegate.showRevision(r);
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
-        return delegate.showRevision(from, to);
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     public void submoduleClean(boolean recursive) throws GitException {
-        delegate.submoduleClean(recursive);
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     public void submoduleUpdate(boolean recursive) throws GitException {
-        delegate.submoduleUpdate(recursive);
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
 
