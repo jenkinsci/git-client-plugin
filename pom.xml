@@ -33,6 +33,27 @@
     </repository>
   </repositories>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>jalopy-maven-plugin</artifactId>
+        <version>1.0-alpha-1</version>
+        <configuration>
+          <convention>src/main/jalopy/sun.xml</convention>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>format</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
 	<developers>
 		<developer>
 			<id>ndeloof</id>

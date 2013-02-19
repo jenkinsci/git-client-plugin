@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Attempt to model the Sun Java formatting conventions in Jalopy definition -->
+<jalopy>
+  <internal>
+    <version>6</version>
+  </internal>
+  <printer>
+    <alignment>
+      <methodCallChain>true</methodCallChain>
+      <parameterMethodDeclaration>false</parameterMethodDeclaration>
+      <ternaryOperator>true</ternaryOperator>
+      <variableAssignment>false</variableAssignment>
+      <variableIdentifier>false</variableIdentifier>
+    </alignment>
+    <blanklines>
+      <after>
+        <lastImport>1</lastImport>
+      </after>
+    </blanklines>
+    <imports>
+      <grouping>
+        <defaultDepth>2</defaultDepth>
+        <packages>java:2|javax:2|org:2|*:2</packages>
+      </grouping>
+      <policy>disabled</policy>
+      <sort>true</sort>
+    </imports>
+    <wrapping>
+      <general>
+        <beforeOperator>false</beforeOperator>
+        <enable>true</enable>
+        <lineLength>120</lineLength>
+      </general>
+    </wrapping>
+    <sorting>
+      <declaration>
+        <enum>false</enum>
+        <order>enum|static|field|initializer|constructor|method|interface|class|annotation</order>
+      </declaration>
+    </sorting>
+  </printer>
+</jalopy>
