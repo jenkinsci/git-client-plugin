@@ -1,42 +1,42 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.EnvVars;
-import hudson.model.TaskListener;
-import hudson.plugins.git.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheCheckout;
 import org.eclipse.jgit.lib.*;
+import static org.eclipse.jgit.lib.Constants.HEAD;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import hudson.EnvVars;
 
-import static org.eclipse.jgit.lib.Constants.HEAD;
+import hudson.model.TaskListener;
+
+import hudson.plugins.git.*;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class JGitAPIImpl implements IGitAPI {
-
     private final IGitAPI delegate;
     private final File workspace;
     private final TaskListener listener;
 
-    public JGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
-        this(new CliGitAPIImpl(gitExe, workspace, listener, environment),
-             workspace, listener);
+    public JGitAPIImpl(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
+        this(new CliGitAPIImpl(gitExe, workspace, listener, environment), workspace, listener);
     }
 
     private JGitAPIImpl(IGitAPI delegate, File workspace, TaskListener listener) {
@@ -64,13 +64,14 @@ public class JGitAPIImpl implements IGitAPI {
             Ref head = repo.getRef(HEAD);
             RevWalk revWalk = new RevWalk(repo);
             AnyObjectId headId = head.getObjectId();
-            RevCommit headCommit = headId == null ? null : revWalk.parseCommit(headId);
-            RevTree headTree = headCommit == null ? null : headCommit.getTree();
+            RevCommit headCommit = (headId == null) ? null : revWalk.parseCommit(headId);
+            RevTree headTree = (headCommit == null) ? null : headCommit.getTree();
 
             ObjectId target = ObjectId.fromString(commit);
             RevCommit newCommit = revWalk.parseCommit(target);
 
             DirCache dc = repo.lockDirCache();
+
             try {
                 DirCacheCheckout dco = new DirCacheCheckout(repo, headTree, dc, newCommit.getTree());
                 dco.setFailOnConflict(true);
@@ -78,6 +79,7 @@ public class JGitAPIImpl implements IGitAPI {
             } finally {
                 dc.unlock();
             }
+
             RefUpdate refUpdate = repo.updateRef(HEAD, true);
             refUpdate.setForceUpdate(true);
             refUpdate.setRefLogMessage("checkout: moving to " + commit, false);
@@ -148,9 +150,11 @@ public class JGitAPIImpl implements IGitAPI {
             Git git = Git.open(workspace);
             List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
             Set<Branch> branches = new HashSet<Branch>(refs.size());
+
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
+
             return branches;
         } catch (IOException e) {
             throw new GitException(e);
@@ -164,9 +168,11 @@ public class JGitAPIImpl implements IGitAPI {
             Git git = Git.open(workspace);
             List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
             Set<Branch> branches = new HashSet<Branch>(refs.size());
+
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
+
             return branches;
         } catch (IOException e) {
             throw new GitException(e);
@@ -189,16 +195,15 @@ public class JGitAPIImpl implements IGitAPI {
     public boolean tagExists(String tagName) throws GitException {
         try {
             Git git = Git.open(workspace);
-            Ref tag =  git.getRepository().getRefDatabase().getRef(Constants.R_TAGS + tagName);
+            Ref tag = git.getRepository().getRefDatabase().getRef(Constants.R_TAGS + tagName);
+
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
         }
     }
 
-
     public void fetch(String remote, RefSpec refspec) throws GitException {
-
         delegate.fetch(remote, refspec);
 
         /**
@@ -224,7 +229,8 @@ public class JGitAPIImpl implements IGitAPI {
          */
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branch)
+        throws GitException {
         return delegate.getHeadRev(remoteRepoUrl, branch);
 
         // Require a local repository, so can't be used in git-plugin context
@@ -255,7 +261,8 @@ public class JGitAPIImpl implements IGitAPI {
     public String getRemoteUrl(String name) throws GitException {
         try {
             Git git = Git.open(workspace);
-            return git.getRepository().getConfig().getString("remote",name,"url");
+
+            return git.getRepository().getConfig().getString("remote", name, "url");
         } catch (IOException e) {
             throw new GitException(e);
         }
@@ -264,24 +271,26 @@ public class JGitAPIImpl implements IGitAPI {
     public Repository getRepository() throws IOException {
         try {
             Git git = Git.open(workspace);
+
             return git.getRepository();
         } catch (IOException e) {
             throw new GitException(e);
         }
     }
 
-
     // --- delegates
-
-    public void addNote(String note, String namespace) throws GitException {
+    public void addNote(String note, String namespace)
+        throws GitException {
         delegate.addNote(note, namespace);
     }
 
-    public void appendNote(String note, String namespace) throws GitException {
+    public void appendNote(String note, String namespace)
+        throws GitException {
         delegate.appendNote(note, namespace);
     }
 
-    public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
+    public void changelog(String revFrom, String revTo, OutputStream fos)
+        throws GitException {
         delegate.changelog(revFrom, revTo, fos);
     }
 
@@ -289,7 +298,8 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.clean();
     }
 
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
+    public void clone(String url, String origin, boolean useShallowClone, String reference)
+        throws GitException {
         delegate.clone(url, origin, useShallowClone, reference);
     }
 
@@ -297,7 +307,8 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.deleteTag(tagName);
     }
 
-    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
+    public List<IndexEntry> getSubmodules(String treeIsh)
+        throws GitException {
         return delegate.getSubmodules(treeIsh);
     }
 
@@ -333,7 +344,8 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.prune(repository);
     }
 
-    public void push(String remoteName, String revspec) throws GitException {
+    public void push(String remoteName, String revspec)
+        throws GitException {
         delegate.push(remoteName, revspec);
     }
 
@@ -347,6 +359,7 @@ public class JGitAPIImpl implements IGitAPI {
 
     public void setRemoteUrl(String name, String url) throws GitException {
         delegate.setRemoteUrl(name, url);
+
         /* FIXME doesn't work, need to investigate
         try {
             Git git = Git.open(workspace);
@@ -359,11 +372,13 @@ public class JGitAPIImpl implements IGitAPI {
         */
     }
 
-    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener)
+        throws GitException {
         delegate.setupSubmoduleUrls(rev, listener);
     }
 
-    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
+    public List<String> showRevision(ObjectId from, ObjectId to)
+        throws GitException {
         return delegate.showRevision(from, to);
     }
 
@@ -374,6 +389,4 @@ public class JGitAPIImpl implements IGitAPI {
     public void submoduleUpdate(boolean recursive) throws GitException {
         delegate.submoduleUpdate(recursive);
     }
-
-
 }

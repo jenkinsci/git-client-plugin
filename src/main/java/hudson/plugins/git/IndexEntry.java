@@ -1,12 +1,23 @@
 package hudson.plugins.git;
 
+
 /**
  * An Entry in the Index / Tree
- * 
+ *
  * @author nigelmagnay
  */
 public class IndexEntry {
-    String mode, type, object, file;
+    String mode;
+    String type;
+    String object;
+    String file;
+
+    public IndexEntry(String mode, String type, String object, String file) {
+        this.mode = mode;
+        this.type = type;
+        this.file = file;
+        this.object = object;
+    }
 
     public String getMode() {
         return mode;
@@ -43,12 +54,4 @@ public class IndexEntry {
     public String toString() {
         return file;
     }
-  
-    public IndexEntry(String mode, String type, String object, String file) {
-        this.mode = mode;
-        this.type = type;
-        this.file = file;
-        this.object = object;
-    }
-
 }

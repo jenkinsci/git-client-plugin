@@ -7,16 +7,16 @@ public class Tag extends GitObject {
     public String commitSHA1;
     public String commitMessage;
 
+    public Tag(String name, ObjectId sha1) {
+        super(name, sha1);
+    }
+
     public String getCommitMessage() {
         return commitMessage;
     }
 
     public void setCommitMessage(String commitMessage) {
         this.commitMessage = commitMessage;
-    }
-
-    public Tag(String name, ObjectId sha1) {
-        super(name, sha1);
     }
 
     /**

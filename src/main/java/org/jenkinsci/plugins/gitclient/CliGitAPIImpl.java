@@ -1,14 +1,16 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.EnvVars;
-import hudson.Functions;
-import hudson.Launcher;
-import hudson.Launcher.LocalLauncher;
-import hudson.Util;
-import hudson.model.TaskListener;
-import hudson.plugins.git.*;
-import hudson.util.ArgumentListBuilder;
+import java.io.*;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang.StringUtils;
+
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -17,32 +19,34 @@ import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import hudson.EnvVars;
+import hudson.Functions;
+import hudson.Launcher;
+
+import hudson.Launcher.LocalLauncher;
+
+import hudson.Util;
+
+import hudson.model.TaskListener;
+
+import hudson.plugins.git.*;
+
+import hudson.util.ArgumentListBuilder;
 
 public class CliGitAPIImpl implements IGitAPI {
-
-
-
     Launcher launcher;
     File workspace;
     TaskListener listener;
     String gitExe;
     EnvVars environment;
 
-    public CliGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
-
+    public CliGitAPIImpl(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
         this.workspace = workspace;
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
 
-        launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+        launcher = new LocalLauncher(IGitAPI.verbose ? listener : TaskListener.NULL);
     }
 
     public IGitAPI subGit(String subdir) {
@@ -56,28 +60,32 @@ public class CliGitAPIImpl implements IGitAPI {
         try {
             String v = firstLine(launchCommand("--version")).trim();
             listener.getLogger().println("git --version\n" + v);
+
             Pattern p = Pattern.compile("git version ([0-9]+)\\.([0-9+])\\..*");
             Matcher m = p.matcher(v);
-            if (m.matches() && m.groupCount() >= 2) {
+
+            if (m.matches() && (m.groupCount() >= 2)) {
                 try {
                     majorVer = Integer.parseInt(m.group(1));
                     minorVer = Integer.parseInt(m.group(2));
-                } catch (NumberFormatException e) { }
+                } catch (NumberFormatException e) {
+                }
             }
-        } catch(GitException ex) {
+        } catch (GitException ex) {
             listener.getLogger().println("Error trying to determine the git version: " + ex.getMessage());
             listener.getLogger().println("Assuming 1.6");
         }
 
-        return new int[]{majorVer,minorVer};
+        return new int[] { majorVer, minorVer };
     }
 
     public void init() throws GitException {
         if (hasGitRepo()) {
             throw new GitException(".git directory already exists! Has it already been initialised?");
         }
+
         try {
-			final Repository repo = getRepository();
+            final Repository repo = getRepository();
             repo.create();
         } catch (IOException ioe) {
             throw new GitException("Error initiating git repo.", ioe);
@@ -92,20 +100,24 @@ public class CliGitAPIImpl implements IGitAPI {
                 launchCommand("rev-parse", "--is-inside-work-tree");
             } catch (Exception ex) {
                 ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
+
                 return false;
             }
+
             return true;
         }
+
         return false;
     }
 
-    public boolean hasGitRepo( String GIT_DIR ) throws GitException {
+    public boolean hasGitRepo(String GIT_DIR) throws GitException {
         try {
             File dotGit = new File(workspace, GIT_DIR);
+
             return dotGit.exists();
         } catch (SecurityException ex) {
             throw new GitException("Security error when trying to check for .git. Are you sure you have correct permissions?",
-                                   ex);
+                ex);
         } catch (Exception e) {
             throw new GitException("Couldn't check for .git", e);
         }
@@ -113,21 +125,19 @@ public class CliGitAPIImpl implements IGitAPI {
 
     public boolean hasGitModules() throws GitException {
         try {
-
             File dotGit = new File(workspace, ".gitmodules");
 
             return dotGit.exists();
-
         } catch (SecurityException ex) {
-            throw new GitException(
-                                   "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
-                                   ex);
+            throw new GitException("Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
+                ex);
         } catch (Exception e) {
             throw new GitException("Couldn't check for .gitmodules", e);
         }
     }
 
-    public List<IndexEntry> getSubmodules( String treeIsh ) throws GitException {
+    public List<IndexEntry> getSubmodules(String treeIsh)
+        throws GitException {
         List<IndexEntry> submodules = lsTree(treeIsh);
 
         // Remove anything that isn't a submodule
@@ -136,21 +146,22 @@ public class CliGitAPIImpl implements IGitAPI {
                 it.remove();
             }
         }
+
         return submodules;
     }
 
     public void fetch(String remote, RefSpec refspec) throws GitException {
-        listener.getLogger().println(
-                                     "Fetching upstream changes"
-                                     + (remote != null ? " from " + remote : ""));
+        listener.getLogger().println("Fetching upstream changes" + ((remote != null) ? (" from " + remote) : ""));
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
         if (remote != null) {
             args.add(remote);
-            if (refspec != null)
+
+            if (refspec != null) {
                 args.add(refspec.toString());
+            }
         }
 
         launchCommand(args);
@@ -161,16 +172,19 @@ public class CliGitAPIImpl implements IGitAPI {
     }
 
     public void reset(boolean hard) throws GitException {
-    	try {
-    		validateRevision("HEAD");
-    	} catch (GitException e) {
-    		listener.getLogger().println("No valid HEAD. Skipping the resetting");
-    		return;
-    	}
+        try {
+            validateRevision("HEAD");
+        } catch (GitException e) {
+            listener.getLogger().println("No valid HEAD. Skipping the resetting");
+
+            return;
+        }
+
         listener.getLogger().println("Resetting working tree");
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("reset");
+
         if (hard) {
             args.add("--hard");
         }
@@ -178,8 +192,10 @@ public class CliGitAPIImpl implements IGitAPI {
         launchCommand(args);
     }
 
-    public void clone(String url, String origin, final boolean useShallowClone, String reference) throws GitException {
+    public void clone(String url, String origin, final boolean useShallowClone, String reference)
+        throws GitException {
         listener.getLogger().println("Cloning repository " + url);
+
         final int[] gitVer = getGitVersion();
 
         // TODO: Not here!
@@ -193,20 +209,31 @@ public class CliGitAPIImpl implements IGitAPI {
         try {
             final ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("clone");
+
             if ((gitVer[0] >= 1) && (gitVer[1] >= 7)) {
                 args.add("--progress");
             }
-            if (reference != null && !reference.equals("")) {
-                File referencePath = new File(reference);
-                if (!referencePath.exists())
-                    throw new GitException("Reference path does not exist: " + reference);
-                if (!referencePath.isDirectory())
-                    throw new GitException("Reference path is not a directory: " + reference);
-                args.add("--reference", reference);
 
+            if ((reference != null) && !reference.equals("")) {
+                File referencePath = new File(reference);
+
+                if (!referencePath.exists()) {
+                    throw new GitException("Reference path does not exist: " + reference);
+                }
+
+                if (!referencePath.isDirectory()) {
+                    throw new GitException("Reference path is not a directory: " + reference);
+                }
+
+                args.add("--reference", reference);
             }
+
             args.add("-o", origin);
-            if(useShallowClone) args.add("--depth", "1");
+
+            if (useShallowClone) {
+                args.add("--depth", "1");
+            }
+
             args.add(url);
             args.add(workspace.getAbsolutePath());
             launchCommandIn(args, null);
@@ -214,7 +241,7 @@ public class CliGitAPIImpl implements IGitAPI {
             throw new GitException("Could not clone " + url, e);
         }
     }
-    
+
     public void clean() throws GitException {
         reset(true);
         launchCommand("clean", "-fdx");
@@ -253,25 +280,30 @@ public class CliGitAPIImpl implements IGitAPI {
             See https://github.com/msysgit/msysgit/issues/36 where I filed this as a bug to msysgit.
          */
         String arg = revName + "^{commit}";
-        if (Functions.isWindows())
-            arg = '"'+arg+'"';
+
+        if (Functions.isWindows()) {
+            arg = '"' + arg + '"';
+        }
+
         String result = launchCommand("rev-parse", arg);
+
         return ObjectId.fromString(firstLine(result).trim());
     }
 
     public ObjectId validateRevision(String revName) throws GitException {
         String result = launchCommand("rev-parse", "--verify", revName);
+
         return ObjectId.fromString(firstLine(result).trim());
     }
 
     public String describe(String commitIsh) throws GitException {
         String result = launchCommand("describe", "--tags", commitIsh);
+
         return firstLine(result).trim();
     }
 
     public void prune(RemoteConfig repository) throws GitException {
-        if (getRemoteUrl(repository.getName()) != null &&
-            !getRemoteUrl(repository.getName()).equals("")) {
+        if ((getRemoteUrl(repository.getName()) != null) && !getRemoteUrl(repository.getName()).equals("")) {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("remote", "prune", repository.getName());
 
@@ -282,12 +314,17 @@ public class CliGitAPIImpl implements IGitAPI {
     private String firstLine(String result) {
         BufferedReader reader = new BufferedReader(new StringReader(result));
         String line;
+
         try {
             line = reader.readLine();
-            if (line == null)
+
+            if (line == null) {
                 return null;
-            if (reader.readLine() != null)
+            }
+
+            if (reader.readLine() != null) {
                 throw new GitException("Result has multiple lines");
+            }
         } catch (IOException e) {
             throw new GitException("Error parsing result", e);
         }
@@ -295,7 +332,8 @@ public class CliGitAPIImpl implements IGitAPI {
         return line;
     }
 
-    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException {
+    public void changelog(String revFrom, String revTo, OutputStream outputStream)
+        throws GitException {
         String revSpec = revFrom + ".." + revTo;
 
         ArgumentListBuilder args = new ArgumentListBuilder();
@@ -304,8 +342,7 @@ public class CliGitAPIImpl implements IGitAPI {
         args.add(revSpec);
 
         try {
-            if (launcher.launch().cmds(args).envs(environment).stdout(
-                    outputStream).pwd(workspace).join() != 0) {
+            if (launcher.launch().cmds(args).envs(environment).stdout(outputStream).pwd(workspace).join() != 0) {
                 throw new GitException("Error launching git whatchanged");
             }
         } catch (Exception e) {
@@ -313,22 +350,25 @@ public class CliGitAPIImpl implements IGitAPI {
         }
     }
 
-    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
-    	StringWriter writer = new StringWriter();
+    public List<String> showRevision(ObjectId from, ObjectId to)
+        throws GitException {
+        StringWriter writer = new StringWriter();
 
-    	if (from != null){
-    		writer.write(launchCommand("show", "--no-abbrev", "--format=raw", "-M", "--raw",
+        if (from != null) {
+            writer.write(launchCommand("show", "--no-abbrev", "--format=raw", "-M", "--raw",
                     from.name() + ".." + to.name()));
-    		writer.write("\\n");
-    	}
-    	
-    	writer.write(launchCommand("whatchanged", "--no-abbrev", "-M", "-m", "--pretty=raw", "-1", to.name()));
+            writer.write("\\n");
+        }
+
+        writer.write(launchCommand("whatchanged", "--no-abbrev", "-M", "-m", "--pretty=raw", "-1", to.name()));
 
         String result = writer.toString();
         List<String> revShow = new ArrayList<String>();
+
         if (result != null) {
             revShow = new ArrayList<String>(Arrays.asList(result.split("\\n")));
         }
+
         return revShow;
     }
 
@@ -359,7 +399,6 @@ public class CliGitAPIImpl implements IGitAPI {
         launchCommand("submodule", "sync");
     }
 
-
     /**
      * Update submodules.
      *
@@ -368,9 +407,10 @@ public class CliGitAPIImpl implements IGitAPI {
      * @throws GitException if executing the Git command fails
      */
     public void submoduleUpdate(boolean recursive) throws GitException {
-    	ArgumentListBuilder args = new ArgumentListBuilder();
-    	args.add("submodule", "update");
-    	if (recursive) {
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add("submodule", "update");
+
+        if (recursive) {
             args.add("--init", "--recursive");
         }
 
@@ -384,13 +424,17 @@ public class CliGitAPIImpl implements IGitAPI {
      *
      * @throws GitException if executing the git command fails
      */
-    public void submoduleReset(boolean recursive, boolean hard) throws GitException {
+    public void submoduleReset(boolean recursive, boolean hard)
+        throws GitException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("submodule", "foreach");
+
         if (recursive) {
             args.add("--recursive");
         }
+
         args.add("git reset");
+
         if (hard) {
             args.add("--hard");
         }
@@ -407,14 +451,17 @@ public class CliGitAPIImpl implements IGitAPI {
      */
     public void submoduleClean(boolean recursive) throws GitException {
         submoduleReset(true, true);
+
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("submodule", "foreach");
-    	if (recursive) {
-            args.add("--recursive");
-    	}
-    	args.add("git clean -fdx");
 
-    	launchCommand(args);
+        if (recursive) {
+            args.add("--recursive");
+        }
+
+        args.add("git clean -fdx");
+
+        launchCommand(args);
     }
 
     /**
@@ -425,7 +472,8 @@ public class CliGitAPIImpl implements IGitAPI {
      * @throws GitException if executing the git command fails
      */
     public String getSubmoduleUrl(String name) throws GitException {
-        String result = launchCommand( "config", "--get", "submodule."+name+".url" );
+        String result = launchCommand("config", "--get", "submodule." + name + ".url");
+
         return firstLine(result).trim();
     }
 
@@ -438,42 +486,40 @@ public class CliGitAPIImpl implements IGitAPI {
      *
      * @throws GitException if executing the git command fails
      */
-    public void setSubmoduleUrl(String name, String url) throws GitException {
-        launchCommand( "config", "submodule."+name+".url", url );
+    public void setSubmoduleUrl(String name, String url)
+        throws GitException {
+        launchCommand("config", "submodule." + name + ".url", url);
     }
 
     public String getRemoteUrl(String name) throws GitException {
-        String result = launchCommand( "config", "--get", "remote."+name+".url" );
+        String result = launchCommand("config", "--get", "remote." + name + ".url");
+
         return firstLine(result).trim();
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
-        launchCommand( "config", "remote."+name+".url", url );
+        launchCommand("config", "remote." + name + ".url", url);
     }
 
+    public String getRemoteUrl(String name, String GIT_DIR)
+        throws GitException {
+        String result = launchCommand("--git-dir=" + GIT_DIR, "config", "--get", "remote." + name + ".url");
 
-    public String getRemoteUrl(String name, String GIT_DIR) throws GitException {
-        String result
-            = launchCommand( "--git-dir=" + GIT_DIR,
-                             "config", "--get", "remote."+name+".url" );
         return firstLine(result).trim();
     }
 
-    public void setRemoteUrl(String name, String url, String GIT_DIR ) throws GitException {
-        launchCommand( "--git-dir=" + GIT_DIR,
-                       "config", "remote."+name+".url", url );
+    public void setRemoteUrl(String name, String url, String GIT_DIR)
+        throws GitException {
+        launchCommand("--git-dir=" + GIT_DIR, "config", "remote." + name + ".url", url);
     }
 
-
-    public String getDefaultRemote( String _default_ ) throws GitException {
-        BufferedReader rdr =
-            new BufferedReader(
-                new StringReader( launchCommand( "remote" ) )
-            );
+    public String getDefaultRemote(String _default_) throws GitException {
+        BufferedReader rdr = new BufferedReader(new StringReader(launchCommand("remote")));
 
         List<String> remotes = new ArrayList<String>();
 
         String line;
+
         try {
             while ((line = rdr.readLine()) != null) {
                 remotes.add(line);
@@ -482,9 +528,9 @@ public class CliGitAPIImpl implements IGitAPI {
             throw new GitException("Error parsing remotes", e);
         }
 
-        if        ( remotes.contains(_default_) ) {
+        if (remotes.contains(_default_)) {
             return _default_;
-        } else if ( remotes.size() >= 1 ) {
+        } else if (remotes.size() >= 1) {
             return remotes.get(0);
         } else {
             throw new GitException("No remotes found!");
@@ -520,20 +566,22 @@ public class CliGitAPIImpl implements IGitAPI {
      */
     public boolean isBareRepository(String GIT_DIR) throws GitException {
         String ret = null;
-        if ( "".equals(GIT_DIR) )
-            ret = launchCommand(        "rev-parse", "--is-bare-repository");
-        else {
+
+        if ("".equals(GIT_DIR)) {
+            ret = launchCommand("rev-parse", "--is-bare-repository");
+        } else {
             String gitDir = "--git-dir=" + GIT_DIR;
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
 
-        if ( "false".equals( firstLine(ret).trim() ) )
+        if ("false".equals(firstLine(ret).trim())) {
             return false;
-        else
+        } else {
             return true;
+        }
     }
 
-    private String pathJoin( String a, String b ) {
+    private String pathJoin(String a, String b) {
         return new File(a, b).toString();
     }
 
@@ -553,23 +601,25 @@ public class CliGitAPIImpl implements IGitAPI {
      *
      * @throws GitException if executing the git command fails
      */
-    public void fixSubmoduleUrls( String remote,
-                                  TaskListener listener ) throws GitException {
+    public void fixSubmoduleUrls(String remote, TaskListener listener)
+        throws GitException {
         boolean is_bare = true;
 
         URI origin;
+
         try {
             String url = getRemoteUrl(remote);
 
             // ensure that any /.git ending is removed
             String gitEnd = pathJoin("", ".git");
-            if ( url.endsWith( gitEnd ) ) {
-                url = url.substring(0, url.length() - gitEnd.length() );
+
+            if (url.endsWith(gitEnd)) {
+                url = url.substring(0, url.length() - gitEnd.length());
                 // change the default detection value to NON-bare
                 is_bare = false;
             }
 
-            origin = new URI( url );
+            origin = new URI(url);
         } catch (URISyntaxException e) {
             // Sometimes the URI is of a form that we can't parse; like
             //   user@git.somehost.com:repository
@@ -579,43 +629,43 @@ public class CliGitAPIImpl implements IGitAPI {
             throw new GitException("Could determine remote.origin.url", e);
         }
 
-        if ( origin.getScheme() == null ||
-             ( "file".equalsIgnoreCase( origin.getScheme() ) &&
-               ( origin.getHost() == null || "".equals( origin.getHost() ) )
-             )
-           ) {
+        if ((origin.getScheme() == null) ||
+                ("file".equalsIgnoreCase(origin.getScheme()) &&
+                ((origin.getHost() == null) || "".equals(origin.getHost())))) {
             // The uri is a local path, so we will test to see if it is a bare
             // repository...
             List<String> paths = new ArrayList<String>();
-            paths.add( origin.getPath() );
-            paths.add( pathJoin( origin.getPath(), ".git" ) );
+            paths.add(origin.getPath());
+            paths.add(pathJoin(origin.getPath(), ".git"));
 
-            for ( String path : paths ) {
+            for (String path : paths) {
                 try {
                     is_bare = isBareRepository(path);
-                    break;// we can break already if we don't have an exception
-                } catch (GitException e) { }
+
+                    break; // we can break already if we don't have an exception
+                } catch (GitException e) {
+                }
             }
         }
 
-        if ( ! is_bare ) {
+        if (!is_bare) {
             try {
                 List<IndexEntry> submodules = getSubmodules("HEAD");
 
                 for (IndexEntry submodule : submodules) {
                     // First fix the URL to the submodule inside the super-project
-                    String sUrl = pathJoin( origin.getPath(), submodule.getFile() );
-                    setSubmoduleUrl( submodule.getFile(), sUrl );
+                    String sUrl = pathJoin(origin.getPath(), submodule.getFile());
+                    setSubmoduleUrl(submodule.getFile(), sUrl);
 
                     // Second, if the submodule already has been cloned, fix its own
                     // url...
-                    String subGitDir = pathJoin( submodule.getFile(), ".git" );
+                    String subGitDir = pathJoin(submodule.getFile(), ".git");
 
                     /* it is possible that the submodule does not exist yet
                      * since we wait until after checkout to do 'submodule
                      * udpate' */
-                    if ( hasGitRepo( subGitDir ) ) {
-                        if (! "".equals( getRemoteUrl("origin", subGitDir) )) {
+                    if (hasGitRepo(subGitDir)) {
+                        if (!"".equals(getRemoteUrl("origin", subGitDir))) {
                             setRemoteUrl("origin", sUrl, subGitDir);
                         }
                     }
@@ -624,10 +674,10 @@ public class CliGitAPIImpl implements IGitAPI {
                 // this can fail for example HEAD doesn't exist yet
             }
         } else {
-           // we've made a reasonable attempt to detect whether the origin is
-           // non-bare, so we'll just assume it is bare from here on out and
-           // thus the URLs are correct as given by (which is default behavior)
-           //    git config --get submodule.NAME.url
+            // we've made a reasonable attempt to detect whether the origin is
+            // non-bare, so we'll just assume it is bare from here on out and
+            // thus the URLs are correct as given by (which is default behavior)
+            //    git config --get submodule.NAME.url
         }
     }
 
@@ -635,7 +685,8 @@ public class CliGitAPIImpl implements IGitAPI {
      * Set up submodule URLs so that they correspond to the remote pertaining to
      * the revision that has been checked out.
      */
-    public void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException {
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener)
+        throws GitException {
         String remote = null;
 
         // try to locate the remote repository from where this commit came from
@@ -663,34 +714,43 @@ public class CliGitAPIImpl implements IGitAPI {
         // of where our trying to be too clever here is breaking stuff for people.
         for (Branch br : rev.getBranches()) {
             String b = br.getName();
+
             if (b != null) {
                 int slash = b.indexOf('/');
 
-                if ( slash != -1 )
-                    remote = getDefaultRemote( b.substring(0,slash) );
+                if (slash != -1) {
+                    remote = getDefaultRemote(b.substring(0, slash));
+                }
             }
 
-            if (remote!=null)   break;
+            if (remote != null) {
+                break;
+            }
         }
 
-        if (remote==null)
+        if (remote == null) {
             remote = getDefaultRemote();
+        }
 
-        if (remote!=null)
-            setupSubmoduleUrls( remote, listener );
+        if (remote != null) {
+            setupSubmoduleUrls(remote, listener);
+        }
     }
 
-    private void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException {
+    private void setupSubmoduleUrls(String remote, TaskListener listener)
+        throws GitException {
         // This is to make sure that we don't miss any new submodules or
         // changes in submodule origin paths...
         submoduleInit();
         submoduleSync();
         // This allows us to seamlessly use bare and non-bare superproject
         // repositories.
-        fixSubmoduleUrls( remote, listener );
+        fixSubmoduleUrls(remote, listener);
     }
+
     public void tag(String tagName, String comment) throws GitException {
         tagName = tagName.replace(' ', '_');
+
         try {
             launchCommand("tag", "-a", "-f", "-m", comment, tagName);
         } catch (GitException e) {
@@ -698,31 +758,32 @@ public class CliGitAPIImpl implements IGitAPI {
         }
     }
 
-    public void appendNote(String note, String namespace ) throws GitException {
+    public void appendNote(String note, String namespace)
+        throws GitException {
         try {
-        	launchCommand("notes", "--ref="+namespace, "append", "-m", "\'"+note+"\'" );
+            launchCommand("notes", "--ref=" + namespace, "append", "-m", "\'" + note + "\'");
         } catch (GitException e) {
             throw new GitException("Could not apply note " + note, e);
         }
-
     }
 
-    public void addNote(String note, String namespace ) throws GitException {
+    public void addNote(String note, String namespace)
+        throws GitException {
         try {
-            launchCommand("notes", "--ref="+namespace,"add", "-m", "\'"+note+"\'" );
+            launchCommand("notes", "--ref=" + namespace, "add", "-m", "\'" + note + "\'");
         } catch (GitException e) {
             throw new GitException("Could not apply note " + note, e);
         }
-
     }
-    
+
     /**
      * Launch command using the workspace as working directory
      * @param args
      * @return command output
      * @throws GitException
      */
-    public String launchCommand(ArgumentListBuilder args) throws GitException {
+    public String launchCommand(ArgumentListBuilder args)
+        throws GitException {
         return launchCommandIn(args, workspace);
     }
 
@@ -742,59 +803,71 @@ public class CliGitAPIImpl implements IGitAPI {
      * @return command output
      * @throws GitException
      */
-    private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException {
+    private String launchCommandIn(ArgumentListBuilder args, File workDir)
+        throws GitException {
         ByteArrayOutputStream fos = new ByteArrayOutputStream();
+
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
         try {
             environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
             args.prepend(gitExe);
-            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                    envs(environment).stdout(fos).stderr(err);
-            if (workDir != null) p.pwd(workDir);
+
+            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).envs(environment).stdout(fos)
+                                             .stderr(err);
+
+            if (workDir != null) {
+                p.pwd(workDir);
+            }
+
             int status = p.join();
 
             String result = fos.toString();
+
             if (status != 0) {
-                throw new GitException("Command \""+StringUtils.join(args.toCommandArray(), " ")+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ err.toString());
+                throw new GitException("Command \"" + StringUtils.join(args.toCommandArray(), " ") +
+                    "\" returned status code " + status + ":\nstdout: " + result + "\nstderr: " + err.toString());
             }
 
             return result;
         } catch (GitException e) {
             throw e;
         } catch (Exception e) {
-            throw new GitException("Error performing command: " + StringUtils.join(args.toCommandArray()," "), e);
+            throw new GitException("Error performing command: " + StringUtils.join(args.toCommandArray(), " "), e);
         }
     }
 
-    public void push(String remoteName, String refspec) throws GitException {
+    public void push(String remoteName, String refspec)
+        throws GitException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("push", remoteName);
 
-        if (refspec != null)
+        if (refspec != null) {
             args.add(refspec);
+        }
 
         launchCommand(args);
+
         // Ignore output for now as there's many different formats
         // That are possible.
     }
 
     private Set<Branch> parseBranches(String fos) throws GitException {
         // TODO: git branch -a -v --abbrev=0 would do this in one shot..
-
         Set<Branch> branches = new HashSet<Branch>();
 
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
         String line;
+
         try {
             while ((line = rdr.readLine()) != null) {
                 // Ignore the 1st
                 line = line.substring(2);
+
                 // Ignore '(no branch)' or anything with " -> ", since I think
                 // that's just noise
-                if ((!line.startsWith("("))
-                    && (line.indexOf(" -> ") == -1)) {
+                if ((!line.startsWith("(")) && (line.indexOf(" -> ") == -1)) {
                     branches.add(new Branch(line, revParse(line)));
                 }
             }
@@ -815,8 +888,8 @@ public class CliGitAPIImpl implements IGitAPI {
             Map<String, Ref> refs = db.getAllRefs();
             Set<Branch> branches = new HashSet<Branch>();
 
-            for(Ref candidate : refs.values()) {
-                if(candidate.getName().startsWith(Constants.R_REMOTES)) {
+            for (Ref candidate : refs.values()) {
+                if (candidate.getName().startsWith(Constants.R_REMOTES)) {
                     Branch buildBranch = new Branch(candidate);
                     listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
                     branches.add(buildBranch);
@@ -847,12 +920,11 @@ public class CliGitAPIImpl implements IGitAPI {
         } catch (GitException e) {
             throw new GitException("Could not delete branch " + name, e);
         }
-
     }
-
 
     public void deleteTag(String tagName) throws GitException {
         tagName = tagName.replace(' ', '_');
+
         try {
             launchCommand("tag", "-d", tagName);
         } catch (GitException e) {
@@ -866,11 +938,11 @@ public class CliGitAPIImpl implements IGitAPI {
 
         BufferedReader rdr = new BufferedReader(new StringReader(result));
         String line;
+
         try {
             while ((line = rdr.readLine()) != null) {
                 String[] entry = line.split("\\s+");
-                entries.add(new IndexEntry(entry[0], entry[1], entry[2],
-                                           entry[3]));
+                entries.add(new IndexEntry(entry[0], entry[1], entry[2], entry[3]));
             }
         } catch (IOException e) {
             throw new GitException("Error parsing ls tree", e);
@@ -883,10 +955,12 @@ public class CliGitAPIImpl implements IGitAPI {
         return revList("--all");
     }
 
-    public List<ObjectId> revList(String... extraArgs) throws GitException {
+    public List<ObjectId> revList(String... extraArgs)
+        throws GitException {
         List<ObjectId> entries = new ArrayList<ObjectId>();
         ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
         args.add(extraArgs);
+
         String result = launchCommand(args);
         BufferedReader rdr = new BufferedReader(new StringReader(result));
         String line;
@@ -935,18 +1009,22 @@ public class CliGitAPIImpl implements IGitAPI {
 
     public void commit(String message) throws GitException {
         File f = null;
+
         try {
             f = File.createTempFile("gitcommit", ".txt");
+
             FileOutputStream fos = null;
+
             try {
                 fos = new FileOutputStream(f);
                 fos.write(message.getBytes());
             } finally {
-                if (fos != null)
+                if (fos != null) {
                     fos.close();
+                }
             }
-            launchCommand("commit", "-F", f.getAbsolutePath());
 
+            launchCommand("commit", "-F", f.getAbsolutePath());
         } catch (GitException e) {
             throw new GitException("Cannot commit " + message, e);
         } catch (FileNotFoundException e) {
@@ -954,7 +1032,9 @@ public class CliGitAPIImpl implements IGitAPI {
         } catch (IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
-            if (f != null) f.delete();
+            if (f != null) {
+                f.delete();
+            }
         }
     }
 
@@ -972,25 +1052,30 @@ public class CliGitAPIImpl implements IGitAPI {
             Set<String> tags = new HashSet<String>();
             BufferedReader rdr = new BufferedReader(new StringReader(result));
             String tag;
+
             while ((tag = rdr.readLine()) != null) {
                 // Add the SHA1
                 tags.add(tag);
             }
+
             return tags;
         } catch (Exception e) {
             throw new GitException("Error retrieving tag names", e);
         }
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branch)
+        throws GitException {
         String[] branchExploded = branch.split("/");
-        branch = branchExploded[branchExploded.length-1];
+        branch = branchExploded[branchExploded.length - 1];
+
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
         args.add(remoteRepoUrl);
         args.add(branch);
-        String result = launchCommand(args);
-        return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
-    }
 
+        String result = launchCommand(args);
+
+        return (result.length() >= 40) ? ObjectId.fromString(result.substring(0, 40)) : null;
+    }
 }
