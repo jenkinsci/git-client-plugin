@@ -114,6 +114,7 @@ public interface GitClient {
 
     List<ObjectId> revListAll() throws GitException;
 
+    List<ObjectId> revList(String ref) throws GitException;
 
 
     // --- submodules
@@ -157,13 +158,13 @@ public interface GitClient {
 
     void addNote(String note, String namespace ) throws GitException;
 
+    public List<String> showRevision(ObjectId r) throws GitException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
      * can be parsed by GitChangeLogParser.
      * <p>
-     * Changes are computed on the [from..to] range. If from is <tt>null</tt>, changes for <tt>to</tt> commit are
-     * considered.
+     * Changes are computed on the [from..to] range.
      * @return The git show output, in <tt>raw</tt> format.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException;

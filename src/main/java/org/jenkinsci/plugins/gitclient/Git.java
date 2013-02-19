@@ -13,8 +13,8 @@ import java.io.File;
 public class Git {
 
     private File repository;
-    private final TaskListener listener;
-    private final EnvVars env;
+    private TaskListener listener;
+    private EnvVars env;
     private String exe = Functions.isWindows() ? "git.exe" : "git";
 
     public Git(TaskListener listener, EnvVars env) {
@@ -37,6 +37,8 @@ public class Git {
     }
 
     public GitClient getClient() {
+        if (listener == null) listener = TaskListener.NULL;
+        if (env == null) env = new EnvVars();
 
         // For user/developer to be able to switch to JGit for testing purpose
         if (USE_JGIT) {

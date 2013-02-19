@@ -353,6 +353,10 @@ class JGitAPIImpl implements GitClient {
         return delegate.revListAll();
     }
 
+    public List<ObjectId> revList(String ref) throws GitException {
+        return delegate.revList(ref);
+    }
+
     public ObjectId revParse(String revName) throws GitException {
         return delegate.revParse(revName);
     }
@@ -373,6 +377,10 @@ class JGitAPIImpl implements GitClient {
 
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
         delegate.setupSubmoduleUrls(rev, listener);
+    }
+
+    public List<String> showRevision(ObjectId r) throws GitException {
+        return delegate.showRevision(r);
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {

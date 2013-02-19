@@ -10,13 +10,11 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
-import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Backward compatible class to match the one some plugins used to get from git-plugin
@@ -85,6 +83,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         fixSubmoduleUrls( remote, listener );
     }
 
+    @Deprecated
     public void fetch(String repository, String refspec) throws GitException {
         fetch(repository, new RefSpec(refspec));
     }
@@ -94,6 +93,12 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         // Assume there is only 1 URL / refspec for simplicity
         fetch(remoteRepository.getURIs().get(0).toPrivateString(), remoteRepository.getFetchRefSpecs().get(0).toString());
     }
+
+    @Deprecated
+    public void fetch() throws GitException {
+        fetch(null, (RefSpec) null);
+    }
+
 
     public void reset() throws GitException {
         reset(false);
@@ -160,6 +165,12 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
+    public List<String> showRevision(Revision r) throws GitException {
+        return showRevision(null, r.getSha1());
+    }
+
+
+        @Deprecated
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
         final Repository db = getRepository();
         final ObjectId commit = db.resolve(revName);

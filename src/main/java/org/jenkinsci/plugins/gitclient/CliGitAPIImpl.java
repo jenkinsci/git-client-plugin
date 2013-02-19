@@ -317,6 +317,10 @@ public class CliGitAPIImpl implements GitClient {
         }
     }
 
+    public List<String> showRevision(ObjectId r) throws GitException {
+        return showRevision(null, r);
+    }
+
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
     	StringWriter writer = new StringWriter();
 
@@ -888,10 +892,14 @@ public class CliGitAPIImpl implements GitClient {
     }
 
     public List<ObjectId> revListAll() throws GitException {
-        return revList("--all");
+        return doRevList("--all");
     }
 
-    public List<ObjectId> revList(String... extraArgs) throws GitException {
+    public List<ObjectId> revList(String ref) throws GitException {
+        return doRevList(ref);
+    }
+
+    private List<ObjectId> doRevList(String... extraArgs) throws GitException {
         List<ObjectId> entries = new ArrayList<ObjectId>();
         ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
         args.add(extraArgs);
