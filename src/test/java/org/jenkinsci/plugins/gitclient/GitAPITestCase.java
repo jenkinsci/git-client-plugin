@@ -5,6 +5,7 @@ import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
@@ -27,7 +28,7 @@ public abstract class GitAPITestCase extends TestCase {
     protected hudson.EnvVars env = new hudson.EnvVars();
     protected TaskListener listener = StreamTaskListener.fromStderr();
     protected File repo;
-    private IGitAPI git;
+    private GitClient git;
 
     @Override
     protected void setUp() throws Exception {
@@ -35,7 +36,7 @@ public abstract class GitAPITestCase extends TestCase {
         git = setupGitAPI();
     }
 
-    protected abstract IGitAPI setupGitAPI();
+    protected abstract GitClient setupGitAPI();
 
     @Override
     protected void tearDown() throws Exception {
@@ -62,7 +63,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteURL() throws Exception {
         launchCommand("git init");
         launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
-        launchCommand("git ndeloof add origin git@github.com:ndeloof/git-client-plugin.git");
+        launchCommand("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = git.getRemoteUrl("origin");
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
@@ -207,6 +208,13 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(git.tagExists("unknown"));
     }
 
+    public void test_get_tag_message() throws Exception {
+        launchCommand("git init");
+        launchCommand("git commit --allow-empty -m init");
+        launchCommand("git tag test -m this-is-a-test");
+        assertEquals("this-is-a-test", git.getTagMessage("test"));
+    }
+
     public void test_get_HEAD_revision() throws Exception {
         // TODO replace with an embedded JGit server so that test run offline ?
         String sha1 = launchCommand("git ls-remote --heads https://github.com/jenkinsci/git-client-plugin.git refs/heads/master").substring(0,40);
@@ -253,9 +261,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     private String doLaunchCommand(File workdir, String ... args) throws IOException, InterruptedException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        new Launcher.LocalLauncher(listener).launch().pwd(workdir).cmds(args).
+        int st = new Launcher.LocalLauncher(listener).launch().pwd(workdir).cmds(args).
                 envs(env).stdout(out).join();
         String s = out.toString();
+        assertEquals(0, st);
         System.out.println(s);
         return s;
     }

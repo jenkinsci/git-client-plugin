@@ -24,9 +24,13 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class CliGitAPIImpl implements IGitAPI {
-
-
+/**
+ * Implementation class using command line CLI ran as external command.
+ * <b>
+ * For internal use only, dont use directly. See {@link Git}
+ * </b>
+ */
+public class CliGitAPIImpl implements GitClient {
 
     Launcher launcher;
     File workspace;
@@ -45,7 +49,7 @@ public class CliGitAPIImpl implements IGitAPI {
         launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
     }
 
-    public IGitAPI subGit(String subdir) {
+    public GitClient subGit(String subdir) {
         return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
@@ -335,19 +339,23 @@ public class CliGitAPIImpl implements IGitAPI {
     /**
      * Merge any changes into the head.
      *
-     * @param revSpec the revision
+     * @param rev the revision
      * @throws GitException if the emrge fails
      */
-    public void merge(ObjectId revSpec) throws GitException {
+    public void merge(ObjectId rev) throws GitException {
         try {
-            launchCommand("merge", revSpec.name());
+            launchCommand("merge", rev.name());
         } catch (GitException e) {
-            throw new GitException("Could not merge " + revSpec, e);
+            throw new GitException("Could not merge " + rev, e);
         }
     }
 
     public void submoduleInit() throws GitException {
         launchCommand("submodule", "init");
+    }
+
+    public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        launchCommand("submodule", "add", remoteURL, subdir);
     }
 
     /**
@@ -980,6 +988,11 @@ public class CliGitAPIImpl implements IGitAPI {
         } catch (Exception e) {
             throw new GitException("Error retrieving tag names", e);
         }
+    }
+
+    public String getTagMessage(String tagName) throws GitException {
+        String out = launchCommand("tag", "-l", tagName, "-n");
+        return out.substring(tagName.length()).trim();
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {

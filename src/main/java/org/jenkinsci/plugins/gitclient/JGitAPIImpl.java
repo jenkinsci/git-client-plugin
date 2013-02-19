@@ -25,11 +25,15 @@ import java.util.Set;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 /**
+ * Implementation class using JGit as much as possible, then command line CLI.
+ * <b>
+ * For internal use only, dont use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
+ * </b>
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class JGitAPIImpl implements IGitAPI {
+class JGitAPIImpl implements GitClient {
 
-    private final IGitAPI delegate;
+    private final GitClient delegate;
     private final File workspace;
     private final TaskListener listener;
 
@@ -39,13 +43,13 @@ public class JGitAPIImpl implements IGitAPI {
              workspace, listener);
     }
 
-    private JGitAPIImpl(IGitAPI delegate, File workspace, TaskListener listener) {
+    private JGitAPIImpl(GitClient delegate, File workspace, TaskListener listener) {
         this.delegate = delegate;
         this.workspace = workspace;
         this.listener = listener;
     }
 
-    public IGitAPI subGit(String subdir) {
+    public GitClient subGit(String subdir) {
         return new JGitAPIImpl(delegate, new File(workspace, subdir), listener);
     }
 
@@ -297,8 +301,16 @@ public class JGitAPIImpl implements IGitAPI {
         delegate.deleteTag(tagName);
     }
 
+    public String getTagMessage(String tagName) throws GitException {
+        return delegate.getTagMessage(tagName);
+    }
+
     public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
         return delegate.getSubmodules(treeIsh);
+    }
+
+    public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        delegate.addSubmodule(remoteURL, subdir);
     }
 
     public Set<String> getTagNames(String tagPattern) throws GitException {
@@ -317,15 +329,15 @@ public class JGitAPIImpl implements IGitAPI {
         return delegate.isCommitInRepo(commit);
     }
 
-    public void merge(ObjectId revSpec) throws GitException {
+    public void merge(ObjectId rev) throws GitException {
         try {
             Git git = Git.open(workspace);
             Repository db = git.getRepository();
-            git.merge().include(revSpec).call();
+            git.merge().include(rev).call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {
-            throw new GitException("Failed to merge " + revSpec, e);
+            throw new GitException("Failed to merge " + rev, e);
         }
     }
 

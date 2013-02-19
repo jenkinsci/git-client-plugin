@@ -7,7 +7,7 @@ import hudson.plugins.git.IGitAPI;
  */
 public class JGitAPIImplTest extends GitAPITestCase {
     @Override
-    protected IGitAPI setupGitAPI() {
+    protected GitClient setupGitAPI() {
         return new JGitAPIImpl("git", repo, listener, env);
     }
 }
