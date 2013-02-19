@@ -1,10 +1,12 @@
 package hudson.plugins.git;
 
-import hudson.EnvVars;
-import hudson.model.TaskListener;
+import java.io.File;
+
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 
-import java.io.File;
+import hudson.EnvVars;
+
+import hudson.model.TaskListener;
 
 /**
  * Backward compatible class to match the one some plugins used to get from git-plugin
@@ -13,7 +15,6 @@ import java.io.File;
  * @deprecated use either CliGitAPIImpl or JGitAPIImpl
  */
 public class GitAPI extends CliGitAPIImpl {
-
     public GitAPI(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
         super(gitExe, workspace, listener, environment);
     }

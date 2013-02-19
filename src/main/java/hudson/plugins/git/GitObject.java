@@ -1,16 +1,15 @@
 package hudson.plugins.git;
 
+import java.io.Serializable;
+
 import org.eclipse.jgit.lib.ObjectId;
+
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
-import java.io.Serializable;
-
 @ExportedBean(defaultVisibility = 999)
 public class GitObject implements Serializable {
-
     private static final long serialVersionUID = 1L;
-
     ObjectId sha1;
     String name;
 
@@ -28,7 +27,7 @@ public class GitObject implements Serializable {
         return name;
     }
 
-    @Exported(name="SHA1")
+    @Exported(name = "SHA1")
     public String getSHA1String() {
         return sha1.name();
     }

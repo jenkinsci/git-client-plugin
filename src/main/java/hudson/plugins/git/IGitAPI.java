@@ -1,22 +1,23 @@
 package hudson.plugins.git;
 
-import hudson.model.TaskListener;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+
+import java.util.List;
+import java.util.Set;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
-import java.util.Set;
+import hudson.model.TaskListener;
 
 /**
  * Encapsulates Git operations on a particular directory through git(1).
  */
 public interface IGitAPI {
-
     boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
     Repository getRepository() throws IOException;
@@ -68,7 +69,8 @@ public interface IGitAPI {
      * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
      * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
      */
-    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
+    void clone(String url, String origin, boolean useShallowClone, String reference)
+        throws GitException;
 
     void fetch(String remote, RefSpec refspec) throws GitException;
 
@@ -80,10 +82,7 @@ public interface IGitAPI {
 
     void clean() throws GitException;
 
-
-
     // --- manage branches
-
     void branch(String name) throws GitException;
 
     void deleteBranch(String name) throws GitException;
@@ -92,9 +91,7 @@ public interface IGitAPI {
 
     Set<Branch> getRemoteBranches() throws GitException;
 
-
     // --- manage tags
-
     void tag(String tagName, String comment) throws GitException;
 
     boolean tagExists(String tagName) throws GitException;
@@ -103,16 +100,13 @@ public interface IGitAPI {
 
     Set<String> getTagNames(String tagPattern) throws GitException;
 
-
     // --- lookup revision
-
-    ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException;
+    ObjectId getHeadRev(String remoteRepoUrl, String branch)
+        throws GitException;
 
     ObjectId revParse(String revName) throws GitException;
 
     List<ObjectId> revListAll() throws GitException;
-
-
 
     // --- submodules
 
@@ -126,30 +120,30 @@ public interface IGitAPI {
      */
     boolean hasGitModules() throws GitException;
 
-    List<IndexEntry> getSubmodules( String treeIsh ) throws GitException;
+    List<IndexEntry> getSubmodules(String treeIsh) throws GitException;
 
-    void submoduleUpdate(boolean recursive)  throws GitException;
+    void submoduleUpdate(boolean recursive) throws GitException;
 
-    void submoduleClean(boolean recursive)  throws GitException;
+    void submoduleClean(boolean recursive) throws GitException;
 
     /**
      * Set up submodule URLs so that they correspond to the remote pertaining to
      * the revision that has been checked out.
      */
-    void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException;
-
+    void setupSubmoduleUrls(Revision rev, TaskListener listener)
+        throws GitException;
 
     // --- commit log and notes
 
     /**
      * Adds the changelog entries for commits in the range revFrom..revTo.
      */
-    void changelog(String revFrom, String revTo, OutputStream fos) throws GitException;
+    void changelog(String revFrom, String revTo, OutputStream fos)
+        throws GitException;
 
-    void appendNote(String note, String namespace ) throws GitException;
+    void appendNote(String note, String namespace) throws GitException;
 
-    void addNote(String note, String namespace ) throws GitException;
-
+    void addNote(String note, String namespace) throws GitException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
@@ -159,7 +153,6 @@ public interface IGitAPI {
      * considered.
      * @return The git show output, in <tt>raw</tt> format.
      */
-    List<String> showRevision(ObjectId from, ObjectId to) throws GitException;
-
-
+    List<String> showRevision(ObjectId from, ObjectId to)
+        throws GitException;
 }
