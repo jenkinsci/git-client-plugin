@@ -13,13 +13,14 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.Transport;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.net.URISyntaxException;
+import java.util.*;
 
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
@@ -351,7 +352,22 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void push(String remoteName, String revspec) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            Repository db = getRepository();
+            Transport t = Transport.open(db, remoteName);
+            if (revspec == null) {
+                revspec = db.getFullBranch();
+            } else {
+                revspec = db.getRef(revspec).getName();
+            }
+            RemoteRefUpdate u = new RemoteRefUpdate(db, revspec, revspec, false, null, null);
+            t.push(new ProgressMonitor(listener), Collections.singleton(u));
+            db.close();
+        } catch (URISyntaxException e) {
+            throw new GitException("Invalid remote", e);
+        } catch (IOException e) {
+            throw new GitException("Failed to push to " + remoteName, e);
+        }
     }
 
     public List<ObjectId> revListAll() throws GitException {
@@ -385,6 +401,4 @@ class JGitAPIImpl implements GitClient {
     public void submoduleUpdate(boolean recursive) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }
-
-
 }

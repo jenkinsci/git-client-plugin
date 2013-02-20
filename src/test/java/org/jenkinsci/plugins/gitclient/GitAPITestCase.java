@@ -252,6 +252,24 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Valid Git repo reported as invalid", git.hasGitRepo());
     }
 
+    public void test_push() throws Exception {
+        launchCommand("git init");
+        launchCommand("git commit --allow-empty -m init");
+        (new File(repo, "file1")).createNewFile();
+        launchCommand("git add file1");
+        launchCommand("git commit -m 'commit1'");
+        String sha1 = launchCommand("git rev-parse HEAD").substring(0,40);
+
+        File remote = temporaryDirectoryAllocator.allocate();
+        launchCommand(remote, "git init");
+        launchCommand(remote, "git checkout -b tmp"); // can't push on active branch
+        launchCommand("git remote add origin " + remote.getAbsolutePath());
+
+        git.push("origin", "master");
+        String remoteSha1 = launchCommand(remote, "git rev-parse master").substring(0, 40);
+        assertEquals(sha1, remoteSha1);
+    }
+
     private String launchCommand(String args) throws IOException, InterruptedException {
         return launchCommand(repo, args);
     }
