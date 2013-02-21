@@ -203,10 +203,11 @@ public class CliGitAPIImpl implements GitClient {
             if (reference != null && !reference.equals("")) {
                 File referencePath = new File(reference);
                 if (!referencePath.exists())
-                    throw new GitException("Reference path does not exist: " + reference);
-                if (!referencePath.isDirectory())
-                    throw new GitException("Reference path is not a directory: " + reference);
-                args.add("--reference", reference);
+                    listener.error("Reference path does not exist: " + reference);
+                else if (!referencePath.isDirectory())
+                    listener.error("Reference path is not a directory: " + reference);
+                else
+                    args.add("--reference", reference);
 
             }
             args.add("-o", origin);
