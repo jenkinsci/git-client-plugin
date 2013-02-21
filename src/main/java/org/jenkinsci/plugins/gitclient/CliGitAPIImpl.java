@@ -1,10 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.EnvVars;
-import hudson.Functions;
-import hudson.Launcher;
+import hudson.*;
 import hudson.Launcher.LocalLauncher;
-import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.util.ArgumentListBuilder;
@@ -188,7 +185,7 @@ public class CliGitAPIImpl implements GitClient {
 
         // TODO: Not here!
         try {
-            Util.deleteRecursive(workspace);
+            Util.deleteContentsRecursive(workspace);
         } catch (Exception e) {
             e.printStackTrace(listener.error("Failed to clean the workspace"));
             throw new GitException("Failed to delete workspace", e);
