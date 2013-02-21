@@ -70,7 +70,7 @@ public interface GitClient {
      */
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
 
-    void fetch(String remote, RefSpec refspec) throws GitException;
+    void fetch(String url, RefSpec refspec) throws GitException;
 
     void push(String remoteName, String revspec) throws GitException;
 

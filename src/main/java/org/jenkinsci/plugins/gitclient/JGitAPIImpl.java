@@ -194,7 +194,7 @@ class JGitAPIImpl implements GitClient {
     }
 
 
-    public void fetch(String remote, RefSpec refspec) throws GitException {
+    public void fetch(String url, RefSpec refspec) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
 
         /**
