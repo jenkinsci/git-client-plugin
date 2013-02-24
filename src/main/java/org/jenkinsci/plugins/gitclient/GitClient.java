@@ -70,7 +70,11 @@ public interface GitClient {
      */
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
 
-    void fetch(String url, RefSpec refspec) throws GitException;
+
+    /**
+     * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
+     */
+    void fetch(String remoteName, RefSpec refspec) throws GitException;
 
     void push(String remoteName, String revspec) throws GitException;
 

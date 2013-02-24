@@ -194,7 +194,7 @@ class JGitAPIImpl implements GitClient {
     }
 
 
-    public void fetch(String url, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
 
         /**
@@ -204,12 +204,12 @@ class JGitAPIImpl implements GitClient {
          *
         listener.getLogger().println(
                 "Fetching upstream changes"
-                        + (remote != null ? " from " + remote : ""));
+                        + (remoteName != null ? " from " + remoteName : ""));
 
         try {
             Git git = Git.open(workspace);
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
-            if (remote != null) fetch.setRemote(remote);
+            if (remote != null) fetch.setRemote(remoteName);
             if (refspec != null) fetch.setRefSpecs(refspec));
             fetch.call();
         } catch (IOException e) {

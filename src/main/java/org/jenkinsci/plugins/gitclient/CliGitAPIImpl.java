@@ -140,16 +140,16 @@ public class CliGitAPIImpl implements GitClient {
         return submodules;
     }
 
-    public void fetch(String url, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException {
         listener.getLogger().println(
                                      "Fetching upstream changes"
-                                     + (url != null ? " from " + url : ""));
+                                     + (remoteName != null ? " from " + remoteName : ""));
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
-        if (url != null) {
-            args.add(url);
+        if (remoteName != null) {
+            args.add(remoteName);
             if (refspec != null)
                 args.add(refspec.toString());
         }
