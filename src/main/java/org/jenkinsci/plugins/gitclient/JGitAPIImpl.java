@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
+import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -11,10 +12,7 @@ import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -195,29 +193,23 @@ class JGitAPIImpl implements GitClient {
 
 
     public void fetch(String remoteName, RefSpec refspec) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-
-        /**
-         * not working, as demonstrated by org.jenkinsci.plugins.gitclient.GitSCMTest#testMultipleBranchBuild
-         * JGit FecthProcess don't let us set RefUpdate.force=true
-         * @see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
-         *
-        listener.getLogger().println(
-                "Fetching upstream changes"
-                        + (remoteName != null ? " from " + remoteName : ""));
-
         try {
             Git git = Git.open(workspace);
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
-            if (remote != null) fetch.setRemote(remoteName);
-            if (refspec != null) fetch.setRefSpecs(refspec));
+            if (remoteName != null) fetch.setRemote(remoteName);
+
+            // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
+            List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+            refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+            if (refspec != null) refSpecs.add(refspec);
+            fetch.setRefSpecs(refSpecs);
+
             fetch.call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
-         */
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
