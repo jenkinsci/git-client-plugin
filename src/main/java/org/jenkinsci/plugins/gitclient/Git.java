@@ -44,7 +44,7 @@ public class Git {
         if (listener == null) listener = TaskListener.NULL;
         if (env == null) env = new EnvVars();
 
-        if (exe == null || USE_JGIT) {
+        if (exe == null || "jgit".equalsIgnoreCase(exe) || USE_JGIT) {
             listener.getLogger().println("Using JGit client implementation");
             return new JGitAPIImpl(repository, listener);
         }
