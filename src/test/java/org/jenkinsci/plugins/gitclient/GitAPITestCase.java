@@ -74,7 +74,7 @@ public abstract class GitAPITestCase extends TestCase {
         launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
         git.setRemoteUrl("origin", "git@github.com:ndeloof/git-client-plugin.git");
         String remotes = launchCommand("git remote -v");
-        assertTrue("remote URL has not been updated", remotes.contains("origin\tgit@github.com:ndeloof/git-client-plugin.git"));
+        assertTrue("remote URL has not been updated", remotes.contains("git@github.com:ndeloof/git-client-plugin.git"));
     }
 
     public void test_clean() throws Exception {

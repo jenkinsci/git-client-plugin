@@ -271,8 +271,6 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-        /* FIXME doesn't work, need to investigate
         try {
             Git git = Git.open(workspace);
             StoredConfig config = git.getRepository().getConfig();
@@ -281,7 +279,6 @@ class JGitAPIImpl implements GitClient {
         } catch (IOException e) {
             throw new GitException(e);
         }
-        */
     }
 
 
