@@ -19,6 +19,10 @@ public interface GitClient {
 
     boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
+    /**
+     * Expose the JGit repository this GitClient is using.
+     * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
+     */
     Repository getRepository() throws GitException;
 
     public void init() throws GitException;

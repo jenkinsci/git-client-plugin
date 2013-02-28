@@ -53,11 +53,10 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void checkout(String commit) throws GitException {
+        Repository db = getRepository();
         try {
-            Git git = Git.open(workspace);
-            Repository repo = git.getRepository();
-            Ref head = repo.getRef(HEAD);
-            RevWalk revWalk = new RevWalk(repo);
+            Ref head = db.getRef(HEAD);
+            RevWalk revWalk = new RevWalk(db);
             AnyObjectId headId = head.getObjectId();
             RevCommit headCommit = headId == null ? null : revWalk.parseCommit(headId);
             RevTree headTree = headCommit == null ? null : headCommit.getTree();
@@ -65,21 +64,23 @@ class JGitAPIImpl implements GitClient {
             ObjectId target = ObjectId.fromString(commit);
             RevCommit newCommit = revWalk.parseCommit(target);
 
-            DirCache dc = repo.lockDirCache();
+            DirCache dc = db.lockDirCache();
             try {
-                DirCacheCheckout dco = new DirCacheCheckout(repo, headTree, dc, newCommit.getTree());
+                DirCacheCheckout dco = new DirCacheCheckout(db, headTree, dc, newCommit.getTree());
                 dco.setFailOnConflict(true);
                 dco.checkout();
             } finally {
                 dc.unlock();
             }
-            RefUpdate refUpdate = repo.updateRef(HEAD, true);
+            RefUpdate refUpdate = db.updateRef(HEAD, true);
             refUpdate.setForceUpdate(true);
             refUpdate.setRefLogMessage("checkout: moving to " + commit, false);
             refUpdate.setNewObjectId(newCommit);
             refUpdate.forceUpdate();
         } catch (IOException e) {
             throw new GitException("Could not checkout " + commit, e);
+        } finally {
+            db.close();
         }
     }
 
@@ -182,12 +183,14 @@ class JGitAPIImpl implements GitClient {
     }
 
     public boolean tagExists(String tagName) throws GitException {
+        Repository db = getRepository();
         try {
-            Git git = Git.open(workspace);
-            Ref tag =  git.getRepository().getRefDatabase().getRef(Constants.R_TAGS + tagName);
+            Ref tag =  db.getRefDatabase().getRef(Constants.R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
+        } finally {
+            db.close();
         }
     }
 
@@ -241,11 +244,11 @@ class JGitAPIImpl implements GitClient {
     }
 
     public String getRemoteUrl(String name) throws GitException {
+        Repository db = getRepository();
         try {
-            Git git = Git.open(workspace);
-            return git.getRepository().getConfig().getString("remote",name,"url");
-        } catch (IOException e) {
-            throw new GitException(e);
+            return db.getConfig().getString("remote",name,"url");
+        } finally {
+            db.close();
         }
     }
 
@@ -261,7 +264,6 @@ class JGitAPIImpl implements GitClient {
     public void merge(ObjectId rev) throws GitException {
         try {
             Git git = Git.open(workspace);
-            Repository db = git.getRepository();
             git.merge().include(rev).call();
         } catch (IOException e) {
             throw new GitException(e);
@@ -271,13 +273,15 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
+        Repository db = getRepository();
         try {
-            Git git = Git.open(workspace);
-            StoredConfig config = git.getRepository().getConfig();
+            StoredConfig config = db.getConfig();
             config.setString("remote", name, "url", url);
             config.save();
         } catch (IOException e) {
             throw new GitException(e);
+        } finally {
+            db.close();
         }
     }
 
@@ -341,8 +345,8 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void push(String remoteName, String revspec) throws GitException {
+        Repository db = getRepository();
         try {
-            Repository db = getRepository();
             Transport t = Transport.open(db, remoteName);
             if (revspec == null) {
                 revspec = db.getFullBranch();
@@ -351,11 +355,12 @@ class JGitAPIImpl implements GitClient {
             }
             RemoteRefUpdate u = new RemoteRefUpdate(db, revspec, revspec, false, null, null);
             t.push(new ProgressMonitor(listener), Collections.singleton(u));
-            db.close();
         } catch (URISyntaxException e) {
             throw new GitException("Invalid remote", e);
         } catch (IOException e) {
             throw new GitException("Failed to push to " + remoteName, e);
+        } finally {
+            db.close();
         }
     }
 

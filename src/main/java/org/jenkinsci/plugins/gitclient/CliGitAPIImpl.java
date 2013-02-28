@@ -77,11 +77,13 @@ public class CliGitAPIImpl implements GitClient {
         if (hasGitRepo()) {
             throw new GitException(".git directory already exists! Has it already been initialised?");
         }
+        Repository repo = getRepository();
         try {
-			final Repository repo = getRepository();
             repo.create();
         } catch (IOException ioe) {
             throw new GitException("Error initiating git repo.", ioe);
+        } finally {
+            repo.close();
         }
     }
 
@@ -821,18 +823,21 @@ public class CliGitAPIImpl implements GitClient {
 
     public Set<Branch> getRemoteBranches() throws GitException {
         Repository db = getRepository();
-        Map<String, Ref> refs = db.getAllRefs();
-        Set<Branch> branches = new HashSet<Branch>();
+        try {
+            Map<String, Ref> refs = db.getAllRefs();
+            Set<Branch> branches = new HashSet<Branch>();
 
-        for(Ref candidate : refs.values()) {
-            if(candidate.getName().startsWith(Constants.R_REMOTES)) {
-                Branch buildBranch = new Branch(candidate);
-                listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
-                branches.add(buildBranch);
+            for(Ref candidate : refs.values()) {
+                if(candidate.getName().startsWith(Constants.R_REMOTES)) {
+                    Branch buildBranch = new Branch(candidate);
+                    listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
+                    branches.add(buildBranch);
+                }
             }
+            return branches;
+        } finally {
+            db.close();
         }
-
-        return branches;
     }
 
     public void checkout(String commit) throws GitException {
