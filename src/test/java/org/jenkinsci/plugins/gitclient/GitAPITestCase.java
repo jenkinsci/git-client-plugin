@@ -74,7 +74,7 @@ public abstract class GitAPITestCase extends TestCase {
         launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
         git.setRemoteUrl("origin", "git@github.com:ndeloof/git-client-plugin.git");
         String remotes = launchCommand("git remote -v");
-        assertTrue("remote URL has not been updated", remotes.contains("origin\tgit@github.com:ndeloof/git-client-plugin.git"));
+        assertTrue("remote URL has not been updated", remotes.contains("git@github.com:ndeloof/git-client-plugin.git"));
     }
 
     public void test_clean() throws Exception {
@@ -88,12 +88,40 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_fetch() throws Exception {
+        File remote = temporaryDirectoryAllocator.allocate();
+        launchCommand(remote, "git init");
+        launchCommand(remote, "git commit --allow-empty -m init");
+        String sha1 = launchCommand(remote, "git rev-list --max-count=1 HEAD");
+
         launchCommand("git init");
-        launchCommand("git remote add origin " + System.getProperty("user.dir")); // local git-client-plugin clone
+        launchCommand("git remote add origin " + remote.getAbsolutePath());
         git.fetch("origin", null);
-        assertTrue(launchCommand("git rev-list --max-count=1 28f42e8d299154cd209cb1c75457fa9966a74f33")
-                .contains("28f42e8d299154cd209cb1c75457fa9966a74f33"));
+        assertTrue(sha1.equals(launchCommand(remote, "git rev-list --max-count=1 HEAD")));
     }
+
+    public void test_fetch_with_updated_tag() throws Exception {
+        File remote = temporaryDirectoryAllocator.allocate();
+        launchCommand(remote, "git init");
+        launchCommand(remote, "git commit --allow-empty -m init");
+        launchCommand(remote, "git tag t");
+        String sha1 = launchCommand(remote, "git rev-list --max-count=1 t");
+
+        launchCommand("git init");
+        launchCommand("git remote add origin " + remote.getAbsolutePath());
+        git.fetch("origin", null);
+        assertTrue(sha1.equals(launchCommand(remote, "git rev-list --max-count=1 t")));
+
+        new File(remote, "file.txt").createNewFile();
+        launchCommand(remote, "git add file.txt");
+        launchCommand(remote, "git commit -m update");
+        launchCommand(remote, "git tag -d t");
+        launchCommand(remote, "git tag t");
+        sha1 = launchCommand(remote, "git rev-list --max-count=1 t");
+        git.fetch("origin", null);
+        assertTrue(sha1.equals(launchCommand(remote, "git rev-list --max-count=1 t")));
+
+    }
+
 
     public void test_create_branch() throws Exception {
         launchCommand("git init");

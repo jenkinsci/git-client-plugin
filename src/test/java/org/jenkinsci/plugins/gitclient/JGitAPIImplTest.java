@@ -19,9 +19,10 @@ public class JGitAPIImplTest extends GitAPITestCase {
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_initialize_repository"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_detect_commit_in_repo"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_getRemoteURL"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_setRemoteURL"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_setRemoteURL"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_clean"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_fetch"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_fetch"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_fetch_with_updated_tag"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_create_branch"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_branches"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_remote_branches"));

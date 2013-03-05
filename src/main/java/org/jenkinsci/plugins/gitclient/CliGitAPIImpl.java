@@ -77,11 +77,13 @@ public class CliGitAPIImpl implements GitClient {
         if (hasGitRepo()) {
             throw new GitException(".git directory already exists! Has it already been initialised?");
         }
+        Repository repo = getRepository();
         try {
-			final Repository repo = getRepository();
             repo.create();
         } catch (IOException ioe) {
             throw new GitException("Error initiating git repo.", ioe);
+        } finally {
+            repo.close();
         }
     }
 
@@ -140,16 +142,16 @@ public class CliGitAPIImpl implements GitClient {
         return submodules;
     }
 
-    public void fetch(String url, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException {
         listener.getLogger().println(
                                      "Fetching upstream changes"
-                                     + (url != null ? " from " + url : ""));
+                                     + (remoteName != null ? " from " + remoteName : ""));
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
-        if (url != null) {
-            args.add(url);
+        if (remoteName != null) {
+            args.add(remoteName);
             if (refspec != null)
                 args.add(refspec.toString());
         }
@@ -821,18 +823,21 @@ public class CliGitAPIImpl implements GitClient {
 
     public Set<Branch> getRemoteBranches() throws GitException {
         Repository db = getRepository();
-        Map<String, Ref> refs = db.getAllRefs();
-        Set<Branch> branches = new HashSet<Branch>();
+        try {
+            Map<String, Ref> refs = db.getAllRefs();
+            Set<Branch> branches = new HashSet<Branch>();
 
-        for(Ref candidate : refs.values()) {
-            if(candidate.getName().startsWith(Constants.R_REMOTES)) {
-                Branch buildBranch = new Branch(candidate);
-                listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
-                branches.add(buildBranch);
+            for(Ref candidate : refs.values()) {
+                if(candidate.getName().startsWith(Constants.R_REMOTES)) {
+                    Branch buildBranch = new Branch(candidate);
+                    listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
+                    branches.add(buildBranch);
+                }
             }
+            return branches;
+        } finally {
+            db.close();
         }
-
-        return branches;
     }
 
     public void checkout(String commit) throws GitException {

@@ -19,6 +19,10 @@ public interface GitClient {
 
     boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
+    /**
+     * Expose the JGit repository this GitClient is using.
+     * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
+     */
     Repository getRepository() throws GitException;
 
     public void init() throws GitException;
@@ -70,7 +74,11 @@ public interface GitClient {
      */
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
 
-    void fetch(String url, RefSpec refspec) throws GitException;
+
+    /**
+     * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
+     */
+    void fetch(String remoteName, RefSpec refspec) throws GitException;
 
     void push(String remoteName, String revspec) throws GitException;
 

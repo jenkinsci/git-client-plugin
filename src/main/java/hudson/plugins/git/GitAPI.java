@@ -186,15 +186,19 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         @Deprecated
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
         final Repository db = getRepository();
-        final ObjectId commit = db.resolve(revName);
-        final List<Tag> ret = new ArrayList<Tag>();
+        try {
+            final ObjectId commit = db.resolve(revName);
+            final List<Tag> ret = new ArrayList<Tag>();
 
-        for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-            final ObjectId tagId = tag.getValue().getObjectId();
-            if (commit.equals(tagId))
-                ret.add(new Tag(tag.getKey(), tagId));
+            for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
+                final ObjectId tagId = tag.getValue().getObjectId();
+                if (commit.equals(tagId))
+                    ret.add(new Tag(tag.getKey(), tagId));
+            }
+            return ret;
+        } finally {
+            db.close();
         }
-        return ret;
     }
 
     @Deprecated
