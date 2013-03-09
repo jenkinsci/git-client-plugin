@@ -309,7 +309,14 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void deleteTag(String tagName) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            Git git = Git.open(workspace);
+            git.tagDelete().setTags(tagName).call();
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     public String getTagMessage(String tagName) throws GitException {
