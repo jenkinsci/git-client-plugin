@@ -320,7 +320,15 @@ class JGitAPIImpl implements GitClient {
     }
 
     public String getTagMessage(String tagName) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        Repository db = getRepository();
+        try {
+            RevWalk walk = new RevWalk(db);
+            return walk.parseTag(db.resolve(tagName)).getFullMessage().trim();
+        } catch (IOException e) {
+            throw new GitException(e);
+        } finally {
+            db.close();
+        }
     }
 
     public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {

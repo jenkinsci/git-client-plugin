@@ -32,7 +32,7 @@ public class JGitAPIImplTest extends GitAPITestCase {
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_delete_tag"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_tags_with_filter"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_tag_exists"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_tag_message"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_tag_message"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_HEAD_revision"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_revparse_sha1_HEAD_or_tag"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_without_git_directory"));
