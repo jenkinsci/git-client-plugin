@@ -378,7 +378,14 @@ class JGitAPIImpl implements GitClient {
     }
 
     public ObjectId revParse(String revName) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        Repository db = getRepository();
+        try {
+            return db.resolve(revName + "^{commit}");
+        } catch (IOException e) {
+            throw new GitException("Unknown git object "+ revName, e);
+        } finally {
+            db.close();
+        }
     }
 
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
