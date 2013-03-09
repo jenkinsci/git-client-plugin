@@ -86,6 +86,13 @@ public interface GitClient {
 
     void prune(RemoteConfig repository) throws GitException;
 
+    /**
+     * Fully revert working copy to a clean state, i.e. run both
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-reset.html">git-reset(1) --hard</a> then
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-clean.html">git-clean(1)</a> for working copy to
+     * match a fresh clone.
+     * @throws GitException
+     */
     void clean() throws GitException;
 
 

@@ -7,14 +7,13 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
+import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collection;
 import java.util.Set;
 
@@ -80,9 +79,30 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clean() throws Exception {
         launchCommand("git init");
         launchCommand("git commit --allow-empty -m init");
+
+        File file = new File(repo, "file");
+        Writer w = new FileWriter(file);
+        w.write("content");
+        w.close();
+        launchCommand("git add file");
+        launchCommand("git commit -m file");
+
+        w = new FileWriter(new File(repo, ".gitignore"));
+        w.write(".test");
+        w.close();
+        launchCommand("git add .gitignore");
+        launchCommand("git commit -m ignore");
+
         (new File(repo, "file1")).createNewFile();
+        (new File(repo, ".test")).createNewFile();
+        w = new FileWriter(file);
+        w.write("new content");
+        w.close();
+
         git.clean();
         assertFalse(new File(repo, "file1").exists());
+        assertFalse(new File(repo, ".test").exists());
+        assertEquals("content", IOUtils.toString(new FileReader(file)));
         String status = launchCommand("git status");
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
     }

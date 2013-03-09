@@ -5,6 +5,7 @@ import hudson.plugins.git.*;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheCheckout;
@@ -20,6 +21,7 @@ import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 
 /**
@@ -301,7 +303,16 @@ class JGitAPIImpl implements GitClient {
     }
 
     public void clean() throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            Git git = Git.open(workspace);
+            git.reset().setMode(HARD).call();
+            git.clean().setCleanDirectories(true).setIgnore(false).call();
+
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
@@ -323,7 +334,9 @@ class JGitAPIImpl implements GitClient {
         Repository db = getRepository();
         try {
             RevWalk walk = new RevWalk(db);
-            return walk.parseTag(db.resolve(tagName)).getFullMessage().trim();
+            String s = walk.parseTag(db.resolve(tagName)).getFullMessage();
+            walk.dispose();
+            return s.trim();
         } catch (IOException e) {
             throw new GitException(e);
         } finally {
