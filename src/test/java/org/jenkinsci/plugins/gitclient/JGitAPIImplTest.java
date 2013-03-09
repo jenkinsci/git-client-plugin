@@ -17,7 +17,7 @@ public class JGitAPIImplTest extends GitAPITestCase {
         TestSuite suite =
                 new TestSuite("JGitAPIImplTest, only covers implemented methods");
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_initialize_repository"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_detect_commit_in_repo"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_detect_commit_in_repo"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_getRemoteURL"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_setRemoteURL"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_clean"));

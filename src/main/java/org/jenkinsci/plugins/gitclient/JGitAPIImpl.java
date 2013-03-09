@@ -337,7 +337,12 @@ class JGitAPIImpl implements GitClient {
     }
 
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        Repository db = getRepository();
+        try {
+            return db.hasObject(commit);
+        } finally {
+            db.close();
+        }
     }
 
     public void prune(RemoteConfig repository) throws GitException {
