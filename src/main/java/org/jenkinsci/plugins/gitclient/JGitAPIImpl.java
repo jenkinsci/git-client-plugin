@@ -333,7 +333,15 @@ class JGitAPIImpl implements GitClient {
     }
 
     public boolean hasGitRepo() throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        Repository db = null;
+        try {
+            db = getRepository();
+            return true;
+        } catch (GitException e) {
+            return false;
+        } finally {
+            if (db != null) db.close();
+        }
     }
 
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
