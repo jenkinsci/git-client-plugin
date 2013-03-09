@@ -15,7 +15,7 @@ public class Git {
     private File repository;
     private TaskListener listener;
     private EnvVars env;
-    private String exe = Functions.isWindows() ? "git.exe" : "git";
+    private String exe;
 
     public Git(TaskListener listener, EnvVars env) {
         this.listener = listener;
