@@ -129,8 +129,8 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
                     return i;
                 }
             }
-            LOGGER.warning("invalid gitTool selection " + name + ", using default Git installation");
-            return GitTool.getDefaultInstallation();
+            LOGGER.warning("invalid gitTool selection " + name);
+            return null;
         }
     }
 
