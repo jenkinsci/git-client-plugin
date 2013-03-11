@@ -10,14 +10,19 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
+import org.jenkinsci.plugins.gitclient.Git;
+import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * Backward compatible class to match the one some plugins used to get from git-plugin
+ * Backward compatible class to match the one some plugins used to get from git-plugin.
+ * Extends CliGitAPIImpl to implement deprecated IGitAPI methods, but delegates supported methods to JGit implementation
+ * until {@link Git#USE_CLI} is set.
  *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  * @deprecated
@@ -25,6 +30,7 @@ import java.util.Map;
 public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     private final File repository;
+    private final GitClient delegate;
 
     @Deprecated
     public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) {
@@ -36,10 +42,220 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         this(gitExe, repository, listener, environment);
     }
 
+    @Deprecated
     public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) {
         super(gitExe, repository, listener, environment);
         this.repository = repository;
+
+        // If USE_CLI is forced, don't delegate to JGit client
+        this.delegate = Git.USE_CLI ? this : Git.with(listener, environment).in(repository).using("jgit").getClient();
     }
+
+    // --- delegate implemented methods to JGit client
+
+    public void add(String filePattern) throws GitException {
+        delegate.add(filePattern);
+    }
+
+    /*
+    public List<ObjectId> revList(String ref) throws GitException {
+        return delegate.revList(ref);
+    }
+    */
+
+    public String getRemoteUrl(String name) throws GitException {
+        return delegate.getRemoteUrl(name);
+    }
+
+    public void push(String remoteName, String refspec) throws GitException {
+        delegate.push(remoteName, refspec);
+    }
+
+    public String getTagMessage(String tagName) throws GitException {
+        return delegate.getTagMessage(tagName);
+    }
+
+    /*
+    public List<ObjectId> revListAll() throws GitException {
+        return delegate.revListAll();
+    }
+    */
+
+    /*
+    public void addNote(String note, String namespace) throws GitException {
+        delegate.addNote(note, namespace);
+    }
+    */
+
+    /*
+    public void appendNote(String note, String namespace) throws GitException {
+        delegate.appendNote(note, namespace);
+    }
+    */
+
+    /*
+    public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
+        delegate.changelog(revFrom, revTo, fos);
+    }
+    */
+
+    /*
+    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
+        return delegate.getSubmodules(treeIsh);
+    }
+    */
+
+    /*
+    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+        return delegate.getHeadRev(remoteRepoUrl, branch);
+    }
+    */
+
+    /*
+    public Set<String> getTagNames(String tagPattern) throws GitException {
+        return delegate.getTagNames(tagPattern);
+    }
+    */
+
+    public GitClient subGit(String subdir) {
+        return delegate.subGit(subdir);
+    }
+
+    public void setRemoteUrl(String name, String url) throws GitException {
+        delegate.setRemoteUrl(name, url);
+    }
+
+    /*
+    public void prune(RemoteConfig repository) throws GitException {
+        delegate.prune(repository);
+    }
+    */
+
+    /*
+    public void submoduleUpdate(boolean recursive) throws GitException {
+        delegate.submoduleUpdate(recursive);
+    }
+    */
+
+    /*
+    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
+        return delegate.showRevision(from, to);
+    }
+    */
+
+    /*
+    public boolean hasGitModules() throws GitException {
+        return delegate.hasGitModules();
+    }
+    */
+
+    public Set<Branch> getBranches() throws GitException {
+        return delegate.getBranches();
+    }
+
+    /*
+    public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        delegate.addSubmodule(remoteURL, subdir);
+    }
+    */
+
+    /*
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
+        delegate.clone(url, origin, useShallowClone, reference);
+    }
+    */
+
+    public Set<Branch> getRemoteBranches() throws GitException {
+        return delegate.getRemoteBranches();
+    }
+
+    public void init() throws GitException {
+        delegate.init();
+    }
+
+    public void deleteBranch(String name) throws GitException {
+        delegate.deleteBranch(name);
+    }
+
+    public void checkout(String ref, String branch) throws GitException {
+        delegate.checkout(ref, branch);
+    }
+
+    public boolean hasGitRepo() throws GitException {
+        return delegate.hasGitRepo();
+    }
+
+    public boolean isCommitInRepo(ObjectId commit) throws GitException {
+        return delegate.isCommitInRepo(commit);
+    }
+
+    /*
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
+        delegate.setupSubmoduleUrls(rev, listener);
+    }
+    */
+
+    public void commit(String message) throws GitException {
+        delegate.commit(message);
+    }
+
+    public void checkout(String ref) throws GitException {
+        delegate.checkout(ref);
+    }
+
+    public void deleteTag(String tagName) throws GitException {
+        delegate.deleteTag(tagName);
+    }
+
+    public Repository getRepository() throws GitException {
+        return delegate.getRepository();
+    }
+
+    public void tag(String tagName, String comment) throws GitException {
+        delegate.tag(tagName, comment);
+    }
+
+    /*
+    public List<String> showRevision(ObjectId r) throws GitException {
+        return delegate.showRevision(r);
+    }
+    */
+
+    public void fetch(String remoteName, RefSpec refspec) throws GitException {
+        delegate.fetch(remoteName, refspec);
+    }
+
+    public void merge(ObjectId rev) throws GitException {
+        delegate.merge(rev);
+    }
+
+    public boolean tagExists(String tagName) throws GitException {
+        return delegate.tagExists(tagName);
+    }
+
+    /*
+    public void submoduleClean(boolean recursive) throws GitException {
+        delegate.submoduleClean(recursive);
+    }
+    */
+
+    public void clean() throws GitException {
+        delegate.clean();
+    }
+
+    public ObjectId revParse(String revName) throws GitException {
+        return delegate.revParse(revName);
+    }
+
+    public void branch(String name) throws GitException {
+        delegate.branch(name);
+    }
+
+
+
+
+
+    // --- legacy methods, kept for backward compatibility
     
     @Deprecated
     public void checkoutBranch(String branch, String ref) throws GitException {
@@ -63,11 +279,11 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public void merge(String revSpec) throws GitException {
+    public void merge(String refSpec) throws GitException {
         try {
-            launchCommand("merge", revSpec);
+            launchCommand("merge", refSpec);
         } catch (GitException e) {
-            throw new GitException("Could not merge " + revSpec, e);
+            throw new GitException("Could not merge " + refSpec, e);
         }
     }
 

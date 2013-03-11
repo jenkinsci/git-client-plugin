@@ -44,15 +44,15 @@ public class Git {
         if (listener == null) listener = TaskListener.NULL;
         if (env == null) env = new EnvVars();
 
-        if (exe == null || "jgit".equalsIgnoreCase(exe) || USE_JGIT) {
+        if (exe == null || "jgit".equalsIgnoreCase(exe)) {
             listener.getLogger().println("Using JGit client implementation");
             return new JGitAPIImpl(repository, listener);
         }
-        // Ensure we return a backward compatible GitAPI
+        // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
         return new GitAPI(exe, repository, listener, env);
     }
 
-    // For user/developer to be able to switch to JGit for testing purpose
-    static boolean USE_JGIT = Boolean.getBoolean(Git.class.getName() + ".useJGit");
+    // Can be use to force use of the 100% backward-compatible CLI GitClient
+    public static boolean USE_CLI = Boolean.getBoolean(Git.class.getName() + ".useCLI");
 
 }
