@@ -3,10 +3,8 @@ package hudson.plugins.git;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Functions;
-import hudson.XmlFile;
 import hudson.init.Initializer;
 import hudson.model.EnvironmentSpecific;
-import hudson.model.Items;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.NodeSpecific;
@@ -25,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.PLUGINS_STARTED;
@@ -60,9 +57,8 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
     public static GitTool getDefaultInstallation() {
         DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
-        GitTool[] installations = gitTools.getInstallations();
-        if (installations.length == 1) return installations[0];
-        return gitTools.getInstallation(GitTool.DEFAULT);
+        GitTool tool = gitTools.getInstallation(GitTool.DEFAULT);
+        return (tool != null) ? tool : gitTools.getInstallations()[0];
     }
 
     public GitTool forNode(Node node, TaskListener log) throws IOException, InterruptedException {
@@ -95,6 +91,7 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
     }
+
 
     @Extension
     public static class DescriptorImpl extends ToolDescriptor<GitTool> {
