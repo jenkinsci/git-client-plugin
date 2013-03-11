@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -29,8 +30,9 @@ public interface GitClient {
 
     void add(String filePattern) throws GitException;
 
-    // TODO way to set commit author/committer
     void commit(String message) throws GitException;
+
+    void commit(String message, PersonIdent author, PersonIdent committer) throws GitException;
 
     boolean hasGitRepo() throws GitException;
 
@@ -80,7 +82,7 @@ public interface GitClient {
      */
     void fetch(String remoteName, RefSpec refspec) throws GitException;
 
-    void push(String remoteName, String revspec) throws GitException;
+    void push(String remoteName, String refspec) throws GitException;
 
     void merge(ObjectId rev) throws GitException;
 

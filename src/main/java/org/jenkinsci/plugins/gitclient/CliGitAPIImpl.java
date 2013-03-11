@@ -8,6 +8,7 @@ import hudson.util.ArgumentListBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -971,6 +972,18 @@ public class CliGitAPIImpl implements GitClient {
         } finally {
             if (f != null) f.delete();
         }
+    }
+
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
+        if (author != null) {
+            environment.put("GIT_AUTHOR_NAME", author.getName());
+            environment.put("GIT_AUTHOR_EMAIL", author.getEmailAddress());
+        }
+        if (committer != null) {
+            environment.put("GIT_COMMITTER_NAME", committer.getName());
+            environment.put("GIT_COMMITTER_EMAIL", committer.getEmailAddress());
+        }
+        commit(message);
     }
 
     public Repository getRepository() throws GitException {

@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
@@ -197,6 +198,10 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     public void commit(String message) throws GitException {
         if (Git.USE_CLI) super.commit(message); else  jgit.commit(message);
+    }
+
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
+        if (Git.USE_CLI) super.commit(message, author, committer); else  jgit.commit(message, author, committer);
     }
 
     public void checkout(String ref) throws GitException {

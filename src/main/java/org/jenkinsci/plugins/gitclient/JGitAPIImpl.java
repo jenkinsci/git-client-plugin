@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
+import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
@@ -32,7 +33,7 @@ import static org.eclipse.jgit.lib.Constants.HEAD;
  * </b>
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-class JGitAPIImpl implements GitClient {
+public class JGitAPIImpl implements GitClient {
 
     private final File workspace;
     private final TaskListener listener;
@@ -118,6 +119,18 @@ class JGitAPIImpl implements GitClient {
             throw new GitException(e);
         }
     }
+
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
+        try {
+            Git git = Git.open(workspace);
+            git.commit().setAuthor(author).setCommitter(committer).setMessage(message).call();
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
+    }
+
 
     public void branch(String name) throws GitException {
         try {
