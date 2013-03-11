@@ -30,7 +30,7 @@ import java.util.Set;
 public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     private final File repository;
-    private final GitClient delegate;
+    private final GitClient jgit;
 
     @Deprecated
     public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) {
@@ -48,207 +48,207 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         this.repository = repository;
 
         // If USE_CLI is forced, don't delegate to JGit client
-        this.delegate = Git.USE_CLI ? this : Git.with(listener, environment).in(repository).using("jgit").getClient();
+        this.jgit = Git.USE_CLI ? null : Git.with(listener, environment).in(repository).using("jgit").getClient();
     }
 
     // --- delegate implemented methods to JGit client
 
     public void add(String filePattern) throws GitException {
-        delegate.add(filePattern);
+        if (Git.USE_CLI) super.add(filePattern); else  jgit.add(filePattern);
     }
 
     /*
     public List<ObjectId> revList(String ref) throws GitException {
-        return delegate.revList(ref);
+        return Git.USE_CLI ? super.revList(ref) :  jgit.revList(ref);
     }
     */
 
     public String getRemoteUrl(String name) throws GitException {
-        return delegate.getRemoteUrl(name);
+        return Git.USE_CLI ? super.getRemoteUrl(name) :  jgit.getRemoteUrl(name);
     }
 
     public void push(String remoteName, String refspec) throws GitException {
-        delegate.push(remoteName, refspec);
+        if (Git.USE_CLI) super.push(remoteName, refspec); else  jgit.push(remoteName, refspec);
     }
 
     public String getTagMessage(String tagName) throws GitException {
-        return delegate.getTagMessage(tagName);
+        return Git.USE_CLI ? super.getTagMessage(tagName) :  jgit.getTagMessage(tagName);
     }
 
     /*
     public List<ObjectId> revListAll() throws GitException {
-        return delegate.revListAll();
+        return Git.USE_CLI ? super.revListAll() :  jgit.revListAll();
     }
     */
 
     /*
     public void addNote(String note, String namespace) throws GitException {
-        delegate.addNote(note, namespace);
+        if (Git.USE_CLI) super.addNote(note, namespace); else  jgit.addNote(note, namespace);
     }
     */
 
     /*
     public void appendNote(String note, String namespace) throws GitException {
-        delegate.appendNote(note, namespace);
+        if (Git.USE_CLI) super.appendNote(note, namespace); else  jgit.appendNote(note, namespace);
     }
     */
 
     /*
     public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
-        delegate.changelog(revFrom, revTo, fos);
+        if (Git.USE_CLI) super.changelog(revFrom, revTo, fos); else  jgit.changelog(revFrom, revTo, fos);
     }
     */
 
     /*
     public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
-        return delegate.getSubmodules(treeIsh);
+        return Git.USE_CLI ? super.getSubmodules(treeIsh) :  jgit.getSubmodules(treeIsh);
     }
     */
 
     /*
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
-        return delegate.getHeadRev(remoteRepoUrl, branch);
+        return Git.USE_CLI ? super.getHeadRev(remoteRepoUrl, branch) :  jgit.getHeadRev(remoteRepoUrl, branch);
     }
     */
 
     /*
     public Set<String> getTagNames(String tagPattern) throws GitException {
-        return delegate.getTagNames(tagPattern);
+        return Git.USE_CLI ? super.getTagNames(tagPattern) :  jgit.getTagNames(tagPattern);
     }
     */
 
     public GitClient subGit(String subdir) {
-        return delegate.subGit(subdir);
+        return Git.USE_CLI ? super.subGit(subdir) :  jgit.subGit(subdir);
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
-        delegate.setRemoteUrl(name, url);
+        if (Git.USE_CLI) super.setRemoteUrl(name, url); else  jgit.setRemoteUrl(name, url);
     }
 
     /*
     public void prune(RemoteConfig repository) throws GitException {
-        delegate.prune(repository);
+        if (Git.USE_CLI) super.prune(repository); else  jgit.prune(repository);
     }
     */
 
     /*
     public void submoduleUpdate(boolean recursive) throws GitException {
-        delegate.submoduleUpdate(recursive);
+        if (Git.USE_CLI) super.submoduleUpdate(recursive); else  jgit.submoduleUpdate(recursive);
     }
     */
 
     /*
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
-        return delegate.showRevision(from, to);
+        return Git.USE_CLI ? super.showRevision(from, to) :  jgit.showRevision(from, to);
     }
     */
 
     /*
     public boolean hasGitModules() throws GitException {
-        return delegate.hasGitModules();
+        return Git.USE_CLI ? super.hasGitModules() :  jgit.hasGitModules();
     }
     */
 
     public Set<Branch> getBranches() throws GitException {
-        return delegate.getBranches();
+        return Git.USE_CLI ? super.getBranches() :  jgit.getBranches();
     }
 
     /*
     public void addSubmodule(String remoteURL, String subdir) throws GitException {
-        delegate.addSubmodule(remoteURL, subdir);
+        if (Git.USE_CLI) super.addSubmodule(remoteURL, subdir); else  jgit.addSubmodule(remoteURL, subdir);
     }
     */
 
     /*
     public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
-        delegate.clone(url, origin, useShallowClone, reference);
+        if (Git.USE_CLI) super.clone(url, origin, useShallowClone, reference); else  jgit.clone(url, origin, useShallowClone, reference);
     }
     */
 
     public Set<Branch> getRemoteBranches() throws GitException {
-        return delegate.getRemoteBranches();
+        return Git.USE_CLI ? super.getRemoteBranches() :  jgit.getRemoteBranches();
     }
 
     public void init() throws GitException {
-        delegate.init();
+        if (Git.USE_CLI) super.init(); else  jgit.init();
     }
 
     public void deleteBranch(String name) throws GitException {
-        delegate.deleteBranch(name);
+        if (Git.USE_CLI) super.deleteBranch(name); else  jgit.deleteBranch(name);
     }
 
     public void checkout(String ref, String branch) throws GitException {
-        delegate.checkout(ref, branch);
+        if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
     }
 
     public boolean hasGitRepo() throws GitException {
-        return delegate.hasGitRepo();
+        return Git.USE_CLI ? super.hasGitRepo() :  jgit.hasGitRepo();
     }
 
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
-        return delegate.isCommitInRepo(commit);
+        return Git.USE_CLI ? super.isCommitInRepo(commit) :  jgit.isCommitInRepo(commit);
     }
 
     /*
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
-        delegate.setupSubmoduleUrls(rev, listener);
+        if (Git.USE_CLI) super.setupSubmoduleUrls(rev, listener); else  jgit.setupSubmoduleUrls(rev, listener);
     }
     */
 
     public void commit(String message) throws GitException {
-        delegate.commit(message);
+        if (Git.USE_CLI) super.commit(message); else  jgit.commit(message);
     }
 
     public void checkout(String ref) throws GitException {
-        delegate.checkout(ref);
+        if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
     }
 
     public void deleteTag(String tagName) throws GitException {
-        delegate.deleteTag(tagName);
+        if (Git.USE_CLI) super.deleteTag(tagName); else  jgit.deleteTag(tagName);
     }
 
     public Repository getRepository() throws GitException {
-        return delegate.getRepository();
+        return Git.USE_CLI ? super.getRepository() :  jgit.getRepository();
     }
 
     public void tag(String tagName, String comment) throws GitException {
-        delegate.tag(tagName, comment);
+        if (Git.USE_CLI) super.tag(tagName, comment); else  jgit.tag(tagName, comment);
     }
 
     /*
     public List<String> showRevision(ObjectId r) throws GitException {
-        return delegate.showRevision(r);
+        return Git.USE_CLI ? super.showRevision(r) :  jgit.showRevision(r);
     }
     */
 
     public void fetch(String remoteName, RefSpec refspec) throws GitException {
-        delegate.fetch(remoteName, refspec);
+        if (Git.USE_CLI) super.fetch(remoteName, refspec); else  jgit.fetch(remoteName, refspec);
     }
 
     public void merge(ObjectId rev) throws GitException {
-        delegate.merge(rev);
+        if (Git.USE_CLI) super.merge(rev); else  jgit.merge(rev);
     }
 
     public boolean tagExists(String tagName) throws GitException {
-        return delegate.tagExists(tagName);
+        return Git.USE_CLI ? super.tagExists(tagName) :  jgit.tagExists(tagName);
     }
 
     /*
     public void submoduleClean(boolean recursive) throws GitException {
-        delegate.submoduleClean(recursive);
+        if (Git.USE_CLI) super.submoduleClean(recursive); else  jgit.submoduleClean(recursive);
     }
     */
 
     public void clean() throws GitException {
-        delegate.clean();
+        if (Git.USE_CLI) super.clean(); else  jgit.clean();
     }
 
     public ObjectId revParse(String revName) throws GitException {
-        return delegate.revParse(revName);
+        return Git.USE_CLI ? super.revParse(revName) :  jgit.revParse(revName);
     }
 
     public void branch(String name) throws GitException {
-        delegate.branch(name);
+        if (Git.USE_CLI) super.branch(name); else  jgit.branch(name);
     }
 
 

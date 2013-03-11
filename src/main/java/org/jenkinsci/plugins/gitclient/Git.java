@@ -45,7 +45,6 @@ public class Git {
         if (env == null) env = new EnvVars();
 
         if (exe == null || "jgit".equalsIgnoreCase(exe)) {
-            listener.getLogger().println("Using JGit client implementation");
             return new JGitAPIImpl(repository, listener);
         }
         // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient

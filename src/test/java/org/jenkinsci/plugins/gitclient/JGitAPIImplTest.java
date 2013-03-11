@@ -10,7 +10,7 @@ import junit.framework.TestSuite;
 public class JGitAPIImplTest extends GitAPITestCase {
     @Override
     protected GitClient setupGitAPI() {
-        return new JGitAPIImpl(repo, listener);
+        return Git.with(listener, env).in(repo).using("jgit").getClient();
     }
 
     public static Test suite() {

@@ -8,6 +8,6 @@ import hudson.plugins.git.IGitAPI;
 public class CliGitAPIImplTest extends GitAPITestCase {
     @Override
     protected GitClient setupGitAPI() {
-        return new CliGitAPIImpl("git", repo, listener, env);
+        return Git.with(listener, env).in(repo).using("git").getClient();
     }
 }
