@@ -58,35 +58,14 @@ public class JGitAPIImpl implements GitClient {
         }
     }
 
-    public void checkout(String commit) throws GitException {
-        Repository db = getRepository();
+    public void checkout(String ref) throws GitException {
         try {
-            Ref head = db.getRef(HEAD);
-            RevWalk revWalk = new RevWalk(db);
-            AnyObjectId headId = head.getObjectId();
-            RevCommit headCommit = headId == null ? null : revWalk.parseCommit(headId);
-            RevTree headTree = headCommit == null ? null : headCommit.getTree();
-
-            ObjectId target = db.resolve(commit);
-            RevCommit newCommit = revWalk.parseCommit(target);
-
-            DirCache dc = db.lockDirCache();
-            try {
-                DirCacheCheckout dco = new DirCacheCheckout(db, headTree, dc, newCommit.getTree());
-                dco.setFailOnConflict(true);
-                dco.checkout();
-            } finally {
-                dc.unlock();
-            }
-            RefUpdate refUpdate = db.updateRef(HEAD, true);
-            refUpdate.setForceUpdate(true);
-            refUpdate.setRefLogMessage("checkout: moving to " + commit, false);
-            refUpdate.setNewObjectId(newCommit);
-            refUpdate.forceUpdate();
+            Git git = Git.open(workspace);
+            git.checkout().setName(ref).setForce(true).call();
         } catch (IOException e) {
-            throw new GitException("Could not checkout " + commit, e);
-        } finally {
-            db.close();
+            throw new GitException("Could not checkout " + ref, e);
+        } catch (GitAPIException e) {
+            throw new GitException("Could not checkout " + ref, e);
         }
     }
 
@@ -429,23 +408,15 @@ public class JGitAPIImpl implements GitClient {
         throw new UnsupportedOperationException("not implemented yet");
     }
 
-    public void push(String remoteName, String revspec) throws GitException {
-        Repository db = getRepository();
+    public void push(String remoteName, String refspec) throws GitException {
+        RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
         try {
-            Transport t = Transport.open(db, remoteName);
-            if (revspec == null) {
-                revspec = db.getFullBranch();
-            } else {
-                revspec = db.getRef(revspec).getName();
-            }
-            RemoteRefUpdate u = new RemoteRefUpdate(db, revspec, revspec, false, null, null);
-            t.push(new ProgressMonitor(listener), Collections.singleton(u));
-        } catch (URISyntaxException e) {
-            throw new GitException("Invalid remote", e);
+            Git git = Git.open(workspace);
+            git.push().setRemote(remoteName).setRefSpecs(ref).setProgressMonitor(new ProgressMonitor(listener)).call();
         } catch (IOException e) {
-            throw new GitException("Failed to push to " + remoteName, e);
-        } finally {
-            db.close();
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
         }
     }
 

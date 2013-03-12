@@ -59,7 +59,7 @@ public interface GitClient {
 
     /**
      * Checks out the specified commit/tag/branch into the workspace.
-     * @param ref A git object references expression
+     * @param ref A git object references expression (either a sha1, tag or branch)
      */
     void checkout(String ref) throws GitException;
 
