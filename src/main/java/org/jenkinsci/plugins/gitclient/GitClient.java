@@ -66,7 +66,7 @@ public interface GitClient {
     /**
      * Checks out the specified commit/ref into the workspace, creating specified branch
      * (equivalent to git checkout -b <em>branch</em> <em>commit</em>
-     * @param ref A git object references expression
+     * @param ref A git object references expression. For backward compatibility, <tt>null</tt> will checkout current HEAD
      * @param branch name of the branch to create from reference
      */
     void checkout(String ref, String branch) throws GitException;

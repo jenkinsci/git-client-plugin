@@ -92,8 +92,9 @@ public class JGitAPIImpl implements GitClient {
 
     public void checkout(String ref, String branch) throws GitException {
         try {
+            if (ref == null) ref = getRepository().resolve(HEAD).name();
             Git git = Git.open(workspace);
-            git.checkout().setName(branch).setForce(true).setStartPoint(ref).call();
+            git.checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         } catch (GitAPIException e) {
