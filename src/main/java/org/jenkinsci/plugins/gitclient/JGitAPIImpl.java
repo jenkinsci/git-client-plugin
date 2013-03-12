@@ -67,7 +67,7 @@ public class JGitAPIImpl implements GitClient {
             RevCommit headCommit = headId == null ? null : revWalk.parseCommit(headId);
             RevTree headTree = headCommit == null ? null : headCommit.getTree();
 
-            ObjectId target = ObjectId.fromString(commit);
+            ObjectId target = db.resolve(commit);
             RevCommit newCommit = revWalk.parseCommit(target);
 
             DirCache dc = db.lockDirCache();
@@ -366,7 +366,14 @@ public class JGitAPIImpl implements GitClient {
     }
 
     public void addSubmodule(String remoteURL, String subdir) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            Git git = Git.open(workspace);
+            git.submoduleAdd().setPath(subdir).setURI(remoteURL).call();
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     public Set<String> getTagNames(String tagPattern) throws GitException {
