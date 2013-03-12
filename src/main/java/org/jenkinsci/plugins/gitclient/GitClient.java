@@ -30,6 +30,10 @@ public interface GitClient {
 
     void add(String filePattern) throws GitException;
 
+    /**
+     * @deprecated use {@link #commit(String, org.eclipse.jgit.lib.PersonIdent, org.eclipse.jgit.lib.PersonIdent)} as
+     *             this method is environment dependent to have GIT_AUTHOR/COMMITTER set
+     */
     void commit(String message) throws GitException;
 
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException;

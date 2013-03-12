@@ -123,7 +123,7 @@ public class JGitAPIImpl implements GitClient {
     public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
         try {
             Git git = Git.open(workspace);
-            git.commit().setAuthor(author).setCommitter(committer).setMessage(message).call();
+            git.commit().setAuthor(author).setCommitter(new PersonIdent(committer, new Date())).setMessage(message).call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {
