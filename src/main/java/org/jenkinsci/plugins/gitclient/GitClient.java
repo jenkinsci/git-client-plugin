@@ -131,6 +131,11 @@ public interface GitClient {
 
     ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException;
 
+    /**
+     * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
+     * @param revName a commit sha1 or tag/branch refname
+     * @throws GitException when no such commit / revName is found in repository.
+     */
     ObjectId revParse(String revName) throws GitException;
 
     List<ObjectId> revListAll() throws GitException;

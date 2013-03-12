@@ -460,9 +460,12 @@ public class JGitAPIImpl implements GitClient {
     public ObjectId revParse(String revName) throws GitException {
         Repository db = getRepository();
         try {
-            return db.resolve(revName + "^{commit}");
+            ObjectId id = db.resolve(revName + "^{commit}");
+            if (id == null)
+                throw new GitException("Unknown git object "+ revName);
+            return id;
         } catch (IOException e) {
-            throw new GitException("Unknown git object "+ revName, e);
+            throw new GitException("Failed to resolve git reference "+ revName, e);
         } finally {
             db.close();
         }
