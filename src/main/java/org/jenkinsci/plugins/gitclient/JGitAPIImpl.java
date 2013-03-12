@@ -193,7 +193,7 @@ public class JGitAPIImpl implements GitClient {
     public void tag(String name, String message) throws GitException {
         try {
             Git git = Git.open(workspace);
-            git.tag().setName(name).setMessage(message).call();
+            git.tag().setName(name).setMessage(message).setForceUpdate(true).call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {

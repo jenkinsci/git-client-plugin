@@ -116,6 +116,9 @@ public interface GitClient {
 
     // --- manage tags
 
+    /**
+     * Create (or update) a tag. If tag already exist it gets updated (equivalent to <tt>git tag --force</tt>)
+     */
     void tag(String tagName, String comment) throws GitException;
 
     boolean tagExists(String tagName) throws GitException;
