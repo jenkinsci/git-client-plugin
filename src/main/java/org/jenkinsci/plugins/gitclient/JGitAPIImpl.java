@@ -10,6 +10,8 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheCheckout;
+import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -24,6 +26,7 @@ import java.util.*;
 
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
 import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.R_TAGS;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -200,7 +203,7 @@ public class JGitAPIImpl implements GitClient {
     public boolean tagExists(String tagName) throws GitException {
         Repository db = getRepository();
         try {
-            Ref tag =  db.getRefDatabase().getRef(Constants.R_TAGS + tagName);
+            Ref tag =  db.getRefDatabase().getRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -366,7 +369,27 @@ public class JGitAPIImpl implements GitClient {
     }
 
     public Set<String> getTagNames(String tagPattern) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        if (tagPattern == null) tagPattern = "*";
+
+        Repository db = getRepository();
+        try {
+            Set<String> tags = new HashSet<String>();
+            FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
+            Map<String, Ref> refList = db.getRefDatabase().getRefs(R_TAGS);
+            for (Ref ref : refList.values()) {
+                String name = ref.getName().substring(R_TAGS.length());
+                matcher.reset();
+                matcher.append(name);
+                if (matcher.isMatch()) tags.add(name);
+            }
+            return tags;
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (InvalidPatternException e) {
+            throw new GitException(e);
+        } finally {
+            db.close();
+        }
     }
 
     public boolean hasGitModules() throws GitException {

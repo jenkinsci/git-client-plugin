@@ -31,7 +31,7 @@ public class JGitAPIImplTest extends GitAPITestCase {
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_delete_branch"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_create_tag"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_delete_tag"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_tags_with_filter"));
+        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_tags_with_filter"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_tag_exists"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_tag_message"));
         //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_HEAD_revision"));
