@@ -150,7 +150,7 @@ public class JGitAPIImpl implements GitClient {
     public void deleteBranch(String name) throws GitException {
         try {
             Git git = Git.open(workspace);
-            git.branchDelete().setBranchNames(name).call();
+            git.branchDelete().setForce(true).setBranchNames(name).call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {

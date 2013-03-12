@@ -107,6 +107,9 @@ public interface GitClient {
 
     void branch(String name) throws GitException;
 
+    /**
+     * (force) delete a branch.
+     */
     void deleteBranch(String name) throws GitException;
 
     Set<Branch> getBranches() throws GitException;
