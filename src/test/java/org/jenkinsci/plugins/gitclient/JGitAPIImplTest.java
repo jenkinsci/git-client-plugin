@@ -39,6 +39,8 @@ public class JGitAPIImplTest extends GitAPITestCase {
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_without_git_directory"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_with_invalid_git_repo"));
         suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_with_valid_git_repo"));
+        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_show_revision_for_merge"));
+        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_show_revision_for_single_commit"));
 
         return suite;
     }

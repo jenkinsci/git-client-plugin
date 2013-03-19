@@ -326,12 +326,12 @@ public class CliGitAPIImpl implements GitClient {
     	StringWriter writer = new StringWriter();
 
     	if (from != null){
-    		writer.write(launchCommand("show", "--no-abbrev", "--format=raw", "-M", "--raw",
+    		writer.write(launchCommand("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw",
                     from.name() + ".." + to.name()));
-    		writer.write("\\n");
+        } else {
+    		writer.write(launchCommand("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw",
+                    "-1", to.name()));
     	}
-    	
-    	writer.write(launchCommand("whatchanged", "--no-abbrev", "-M", "-m", "--pretty=raw", "-1", to.name()));
 
         String result = writer.toString();
         List<String> revShow = new ArrayList<String>();
