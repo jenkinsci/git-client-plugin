@@ -52,6 +52,6 @@ public class Git {
     }
 
     // Can be use to force use of the 100% backward-compatible CLI GitClient
-    public static boolean USE_CLI = Boolean.getBoolean(Git.class.getName() + ".useCLI");
+    public static boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
 }
