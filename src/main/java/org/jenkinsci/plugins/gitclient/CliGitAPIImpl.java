@@ -18,6 +18,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -831,10 +832,19 @@ public class CliGitAPIImpl implements GitClient {
             for(Ref candidate : refs.values()) {
                 if(candidate.getName().startsWith(Constants.R_REMOTES)) {
                     Branch buildBranch = new Branch(candidate);
-                    listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
+                    if (!GitClient.quietRemoteBranches) {
+                        listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
+                    }
                     branches.add(buildBranch);
                 }
             }
+
+            if (branches.size() == 1) {
+                listener.getLogger().println("Seen 1 remote branch");
+            } else {
+                listener.getLogger().println(MessageFormat.format("Seen {0} remote branches", branches.size()));
+            }
+
             return branches;
         } finally {
             db.close();
