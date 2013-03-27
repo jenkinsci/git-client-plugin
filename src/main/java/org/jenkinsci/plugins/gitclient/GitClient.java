@@ -20,6 +20,9 @@ public interface GitClient {
 
     boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
+    // If true, do not print the list of remote branches.
+    boolean quietRemoteBranches = Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches");
+
     /**
      * Expose the JGit repository this GitClient is using.
      * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
