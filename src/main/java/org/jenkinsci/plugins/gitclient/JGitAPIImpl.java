@@ -6,6 +6,7 @@ import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
@@ -262,7 +263,11 @@ public class JGitAPIImpl implements GitClient {
     public void merge(ObjectId rev) throws GitException {
         try {
             Git git = Git.open(workspace);
-            git.merge().include(rev).call();
+            MergeResult mergeResult = git.merge().include(rev).call();
+            if (!mergeResult.getMergeStatus().isSuccessful()) {
+                git.reset().setMode(HARD).call();
+                throw new GitException("Failed to merge " + rev);
+            }
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {
