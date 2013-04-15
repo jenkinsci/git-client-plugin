@@ -264,6 +264,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("this-is-a-test", git.getTagMessage("test"));
     }
 
+    public void test_get_tag_message_multi_line() throws Exception {
+        launchCommand("git init");
+        launchCommand("git commit --allow-empty -m init");
+        launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
+
+        // Leading four spaces from each line should be stripped,
+        // but not the explicit single space before "padded",
+        // and the final errant space at the end should be trimmed
+        assertEquals("test 123!\n* multi-line tag message\n padded", git.getTagMessage("test"));
+    }
+
     public void test_get_HEAD_revision() throws Exception {
         // TODO replace with an embedded JGit server so that test run offline ?
         String sha1 = launchCommand("git ls-remote --heads https://github.com/jenkinsci/git-client-plugin.git refs/heads/master").substring(0,40);
@@ -320,6 +331,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     private String launchCommand(String args) throws IOException, InterruptedException {
         return launchCommand(repo, args);
+    }
+
+    private String launchCommand(String... args) throws IOException, InterruptedException {
+        return doLaunchCommand(repo, args);
     }
 
     private String launchCommand(File workdir, String args) throws IOException, InterruptedException {

@@ -1025,8 +1025,10 @@ public class CliGitAPIImpl implements GitClient {
     }
 
     public String getTagMessage(String tagName) throws GitException {
-        String out = launchCommand("tag", "-l", tagName, "-n");
-        return out.substring(tagName.length()).trim();
+        // 10000 lines of tag message "ought to be enough for anybody"
+        String out = launchCommand("tag", "-l", tagName, "-n10000");
+        // Strip the leading four spaces which git prefixes multi-line messages with
+        return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
