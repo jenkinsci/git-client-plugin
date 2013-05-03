@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -15,6 +16,7 @@ import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -327,6 +329,64 @@ public abstract class GitAPITestCase extends TestCase {
         git.push("origin", "master");
         String remoteSha1 = launchCommand(remote, "git rev-parse master").substring(0, 40);
         assertEquals(sha1, remoteSha1);
+    }
+
+    public void test_show_revision_for_merge() throws Exception {
+        launchCommand("git init");
+        launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git");
+        ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
+        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
+
+        List<String> revisionDetails = git.showRevision(from, to);
+
+        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith("commit ");
+            }
+        });
+        assertEquals(3, commits.size());
+        assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
+        // Merge commit is duplicated as have to capture changes that may have been made as part of merge
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
+
+        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith(":");
+            }
+        });
+        Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
+            public String apply(String diff) {
+                return diff.substring(diff.indexOf('\t')+1);
+            }
+        });
+
+        assertTrue(paths.contains(".gitignore"));
+        // Some irrelevant changes will be listed due to merge commit
+        assertTrue(paths.contains("pom.xml"));
+        assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/CliGitAPIImpl.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/Git.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/GitClient.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/JGitAPIImpl.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
+        // Previous implementation included other commits, and listed irrelevant changes
+        assertFalse(paths.contains("README.md"));
+    }
+
+    public void test_show_revision_for_single_commit() throws Exception {
+        launchCommand("git init");
+        launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git");
+        ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
+        List<String> revisionDetails = git.showRevision(null, to);
+        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith("commit ");
+            }
+        });
+        assertEquals(1, commits.size());
+        assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
 
     private String launchCommand(String args) throws IOException, InterruptedException {
