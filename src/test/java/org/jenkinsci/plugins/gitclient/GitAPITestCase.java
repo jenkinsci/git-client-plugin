@@ -329,6 +329,28 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(sha1, remoteSha1);
     }
 
+    /**
+     * A rev-parse warning message should not break revision parsing.
+     * @see https://issues.jenkins-ci.org/browse/JENKINS-11177
+     */
+    public void test_jenkins_11177() throws Exception
+    {
+        launchCommand("git init");
+        launchCommand("git commit --allow-empty -m init");
+        ObjectId base = ObjectId.fromString(launchCommand("git rev-parse master").substring(0,40));
+        ObjectId master = git.revParse("master");
+        assertEquals(base, master);
+
+        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
+        launchCommand("git tag master"); // ref "master" is now ambiguous
+        String revParse = launchCommand("git rev-parse master");
+        assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
+
+        /* Get reference to ambiguous master */
+        ObjectId ambiguous = git.revParse("master");
+        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
+    }
+
     private String launchCommand(String args) throws IOException, InterruptedException {
         return launchCommand(repo, args);
     }
