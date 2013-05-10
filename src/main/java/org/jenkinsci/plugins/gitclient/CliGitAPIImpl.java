@@ -859,6 +859,26 @@ public class CliGitAPIImpl implements GitClient {
         launchCommand("checkout", "-b", branch, ref);
     }
 
+    public void checkoutBranch(String branch, String ref) throws GitException {
+        try {
+            // First, checkout to detached HEAD, so we can delete the branch.
+            checkout(ref);
+
+            if (branch!=null) {
+                // Second, check to see if the branch actually exists, and then delete it if it does.
+                for (Branch b : getBranches()) {
+                    if (b.getName().equals(branch)) {
+                        deleteBranch(branch);
+                    }
+                }
+                // Lastly, checkout the branch, creating it in the process, using commitish as the start point.
+                checkout(ref, branch);
+            }
+        } catch (GitException e) {
+            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        }
+    }
+
     public boolean tagExists(String tagName) throws GitException {
         return launchCommand("tag", "-l", tagName).trim().equals(tagName);
     }

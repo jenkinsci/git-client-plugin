@@ -62,17 +62,48 @@ public interface GitClient {
 
     /**
      * Checks out the specified commit/tag/branch into the workspace.
+     * (equivalent of <tt>git checkout <em>branch</em></tt>.)
      * @param ref A git object references expression (either a sha1, tag or branch)
      */
     void checkout(String ref) throws GitException;
 
     /**
-     * Checks out the specified commit/ref into the workspace, creating specified branch
-     * (equivalent to git checkout -b <em>branch</em> <em>commit</em>
+     * Creates a new branch that points to the specified ref.
+     * (equivalent to git checkout -b <em>branch</em> <em>commit</em>)
+     *
+     * This will fail if the branch already exists.
+     *
      * @param ref A git object references expression. For backward compatibility, <tt>null</tt> will checkout current HEAD
      * @param branch name of the branch to create from reference
      */
     void checkout(String ref, String branch) throws GitException;
+
+    /**
+     * Regardless of the current state of the workspace (whether there is some dirty files, etc)
+     * and the state of the repository (whether the branch of the specified name exists or not),
+     * when this method exits the following conditions hold:
+     *
+     * <ul>
+     *     <li>The branch of the specified name <em>branch</em> exists and points to the specified <em>ref</em>
+     *     <li><tt>HEAD</tt> points to <em>branch</em>. IOW, the workspace is on the specified branch.
+     *     <li>Both index and workspace are the same tree with <em>ref</em>.
+     *         (no dirty files and no staged changes, although this method will not touch untracked files
+     *         in the workspace.)
+     * </ul>
+     *
+     * <p>
+     * This method is preferred over the {@link #checkout(String, String)} family of methods, as
+     * this method is affected far less by the current state of the repository. The <tt>checkout</tt>
+     * methods, in their attempt to emulate the "git checkout" command line behaviour, have too many
+     * side effects. In Jenkins, where you care a lot less about throwing away local changes and
+     * care a lot more about resetting the workspace into a known state, methods like this is more useful.
+     *
+     * <p>
+     * For compatibility reasons, the order of the parameter is different from {@link #checkout(String, String)}.
+     * @since 1.0.6
+     */
+    void checkoutBranch(String branch, String ref) throws GitException;
+
 
     /**
      * Clone a remote repository

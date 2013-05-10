@@ -83,6 +83,28 @@ public class JGitAPIImpl implements GitClient {
         }
     }
 
+    public void checkoutBranch(String branch, String ref) throws GitException {
+        try {
+            Repository r = getRepository();
+            RefUpdate refUpdate = r.updateRef(Constants.R_HEADS + branch);
+            refUpdate.setNewObjectId(r.resolve(ref));
+            switch (refUpdate.forceUpdate()) {
+            case NOT_ATTEMPTED:
+            case LOCK_FAILURE:
+            case REJECTED:
+            case REJECTED_CURRENT_BRANCH:
+            case IO_FAILURE:
+            case RENAMED:
+                throw new GitException("Could not update " + branch + " to " + ref);
+            }
+
+            checkout(ref);
+        } catch (IOException e) {
+            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        }
+    }
+
+
     public void add(String filePattern) throws GitException {
         try {
             Git git = Git.open(workspace);
