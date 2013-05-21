@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.PLUGINS_STARTED;
+import java.util.logging.Level;
 
 /**
  * Information about Git installation.
@@ -139,7 +140,9 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
                     return i;
                 }
             }
-            LOGGER.warning("invalid gitTool selection " + name);
+            if (name.length() > 0) {
+                LOGGER.log(Level.WARNING, "invalid gitTool selection {0}", name);
+            }
             return null;
         }
     }
