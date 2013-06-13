@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.api.CommitCommand;
@@ -37,7 +38,7 @@ import static org.eclipse.jgit.lib.Constants.R_TAGS;
  * </b>
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class JGitAPIImpl implements GitClient {
+public class JGitAPIImpl extends AbstractGitAPIImpl {
 
     private final File workspace;
     private final TaskListener listener;
@@ -281,6 +282,10 @@ public class JGitAPIImpl implements GitClient {
         } catch (IOException e) {
             throw new GitException(e);
         }
+    }
+
+    public FilePath getWorkTree() {
+        return new FilePath(workspace);
     }
 
     public void merge(ObjectId rev) throws GitException {

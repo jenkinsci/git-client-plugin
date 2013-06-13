@@ -1,7 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
+import hudson.remoting.Callable;
+import hudson.remoting.Channel;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -9,11 +12,17 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
 
 /**
+ * Interface to Git functionality.
+ *
+ * <p>
+ * Since 1.1, this interface is remotable, meaning it can be referenced from a remote closure call.
+ *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public interface GitClient {
@@ -26,8 +35,24 @@ public interface GitClient {
     /**
      * Expose the JGit repository this GitClient is using.
      * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
+     *
+     * @deprecated as of 1.1
+     *      This method was deprecated to make {@link GitClient} remotable. When called on
+     *      a proxy object, this method throws {@link NotSerializableException}.
+     *      Use {@link #withRepository(RepositoyCallable)} to pass in the closure instead.
+     *      This prevents the repository leak (JENKINS-12188), too.
      */
     Repository getRepository() throws GitException;
+
+    /**
+     * Runs the computation that requires local access to {@link Repository}.
+     */
+    <T> T withRepository(RepositoyCallable<T> callable) throws IOException, InterruptedException;
+
+    /**
+     * The working tree of this repository.
+     */
+    FilePath getWorkTree();
 
     public void init() throws GitException;
 

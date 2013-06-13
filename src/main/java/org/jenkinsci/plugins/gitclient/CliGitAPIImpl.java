@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  * For internal use only, dont use directly. See {@link Git}
  * </b>
  */
-public class CliGitAPIImpl implements GitClient {
+public class CliGitAPIImpl extends AbstractGitAPIImpl {
 
     Launcher launcher;
     File workspace;
@@ -1022,6 +1022,10 @@ public class CliGitAPIImpl implements GitClient {
         } catch (IOException e) {
             throw new GitException("Failed to open Git repository " + workspace, e);
         }
+    }
+
+    public FilePath getWorkTree() {
+        return new FilePath(workspace);
     }
 
     public Set<String> getTagNames(String tagPattern) throws GitException {
