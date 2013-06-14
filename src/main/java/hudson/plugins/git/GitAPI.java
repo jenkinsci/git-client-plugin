@@ -34,17 +34,17 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     private final GitClient jgit;
 
     @Deprecated
-    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) {
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
         this(gitExe, new File(repository.getRemote()), listener, environment);
     }
 
     @Deprecated
-    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment, String reference) {
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment, String reference) throws IOException, InterruptedException {
         this(gitExe, repository, listener, environment);
     }
 
     @Deprecated
-    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) {
+    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
         super(gitExe, repository, listener, environment);
         this.repository = repository;
 
