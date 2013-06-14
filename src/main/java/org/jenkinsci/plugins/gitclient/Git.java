@@ -1,18 +1,22 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
-import hudson.Functions;
+import hudson.FilePath;
+import hudson.FilePath.FileCallable;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
+import hudson.remoting.VirtualChannel;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class Git {
+public class Git implements Serializable {
 
-    private File repository;
+    private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
     private String exe;
@@ -27,6 +31,10 @@ public class Git {
     }
 
     public Git in(File repository) {
+        return in(new FilePath(repository));
+    }
+
+    public Git in(FilePath repository) {
         this.repository = repository;
         return this;
     }
@@ -40,18 +48,23 @@ public class Git {
         return this;
     }
 
-    public GitClient getClient() {
-        if (listener == null) listener = TaskListener.NULL;
-        if (env == null) env = new EnvVars();
+    public GitClient getClient() throws IOException, InterruptedException {
+        return repository.act(new FileCallable<GitClient>() {
+            public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                if (listener == null) listener = TaskListener.NULL;
+                if (env == null) env = new EnvVars();
 
-        if (exe == null || "jgit".equalsIgnoreCase(exe)) {
-            return new JGitAPIImpl(repository, listener);
-        }
-        // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
-        return new GitAPI(exe, repository, listener, env);
+                if (exe == null || "jgit".equalsIgnoreCase(exe)) {
+                    return new JGitAPIImpl(f, listener);
+                }
+                // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
+                return new GitAPI(exe, f, listener, env);
+            }
+        });
     }
 
     // Can be use to force use of the 100% backward-compatible CLI GitClient
     public static boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
+    private static final long serialVersionUID = 1L;
 }
