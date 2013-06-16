@@ -13,7 +13,7 @@ import java.io.Serializable;
  * @author Kohsuke Kawaguchi
  */
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
-    public <T> T withRepository(RepositoyCallable<T> callable) throws IOException, InterruptedException {
+    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
         Repository repo = getRepository();
         try {
             return callable.invoke(repo, MasterComputer.localChannel);

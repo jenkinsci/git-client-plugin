@@ -17,7 +17,7 @@ import java.io.Serializable;
  * @see FileCallable
  * @author Kohsuke Kawaguchi
  */
-public interface RepositoyCallable<T> extends Serializable {
+public interface RepositoryCallback<T> extends Serializable {
     /**
      * Performs the computational task on the node where the data is located.
      *

@@ -58,7 +58,7 @@ public class RemotingTest extends HudsonTestCase {
         private static final long serialVersionUID = 1L;
     }
 
-    private static class RepositoryCallableImpl implements RepositoyCallable<FilePath> {
+    private static class RepositoryCallableImpl implements RepositoryCallback<FilePath> {
         public FilePath invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
             assertNotNull(repo);
             return new FilePath(repo.getWorkTree());
