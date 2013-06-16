@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.plugins.git.IGitAPI;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -9,7 +8,7 @@ import junit.framework.TestSuite;
  */
 public class JGitAPIImplTest extends GitAPITestCase {
     @Override
-    protected GitClient setupGitAPI() {
+    protected GitClient setupGitAPI() throws Exception {
         return Git.with(listener, env).in(repo).using("jgit").getClient();
     }
 

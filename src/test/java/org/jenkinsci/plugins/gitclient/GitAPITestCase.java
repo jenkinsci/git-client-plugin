@@ -11,6 +11,7 @@ import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.eclipse.jgit.lib.ObjectId;
+import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.*;
@@ -35,7 +36,7 @@ public abstract class GitAPITestCase extends TestCase {
         git = setupGitAPI();
     }
 
-    protected abstract GitClient setupGitAPI();
+    protected abstract GitClient setupGitAPI() throws Exception;
 
     @Override
     protected void tearDown() throws Exception {
@@ -331,8 +332,8 @@ public abstract class GitAPITestCase extends TestCase {
 
     /**
      * A rev-parse warning message should not break revision parsing.
-     * @see https://issues.jenkins-ci.org/browse/JENKINS-11177
      */
+    @Bug(11177)
     public void test_jenkins_11177() throws Exception
     {
         launchCommand("git init");

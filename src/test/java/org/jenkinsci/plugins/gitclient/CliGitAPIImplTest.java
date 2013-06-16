@@ -1,13 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.plugins.git.IGitAPI;
+import java.io.IOException;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class CliGitAPIImplTest extends GitAPITestCase {
     @Override
-    protected GitClient setupGitAPI() {
+    protected GitClient setupGitAPI() throws Exception {
         return Git.with(listener, env).in(repo).using("git").getClient();
     }
 }
