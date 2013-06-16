@@ -7,6 +7,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 /**
@@ -37,9 +38,12 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     public void setCommitter(PersonIdent p) {
         if (p!=null)
-            setCommitter(p.getName(),p.getEmailAddress());
+            setCommitter(p.getName(), p.getEmailAddress());
     }
 
+    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, IOException, InterruptedException {
+        changelog().excludes(revFrom).includes(revTo).to(outputStream).execute();
+    }
 
     /**
      * When sent to remote, switch to the proxy.

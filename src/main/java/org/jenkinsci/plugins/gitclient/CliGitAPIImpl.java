@@ -8,7 +8,6 @@ import hudson.util.ArgumentListBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
@@ -301,22 +300,44 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return line;
     }
 
-    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException {
-        String revSpec = revFrom + ".." + revTo;
+    public ChangelogCommand changelog() {
+        return new ChangelogCommand() {
+            final List<String> revs = new ArrayList<String>();
+            Integer n = null;
+            OutputStream out = null;
 
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add(gitExe, "whatchanged");
-        args.add("--no-abbrev", "-M", "--pretty=raw");
-        args.add(revSpec);
-
-        try {
-            if (launcher.launch().cmds(args).envs(environment).stdout(
-                    outputStream).pwd(workspace).join() != 0) {
-                throw new GitException("Error launching git whatchanged");
+            public ChangelogCommand excludes(String rev) {
+                revs.add('^' + rev);
+                return this;
             }
-        } catch (Exception e) {
-            throw new GitException("Error performing git whatchanged", e);
-        }
+
+            public ChangelogCommand includes(String rev) {
+                revs.add(rev);
+                return this;
+            }
+
+            public ChangelogCommand to(OutputStream os) {
+                this.out = os;
+                return this;
+            }
+
+            public ChangelogCommand max(int n) {
+                this.n = n;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException, IOException {
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty-raw");
+                if (n!=null)
+                    args.add("-n").add(n);
+                for (String rev : this.revs)
+                    args.add(rev);
+
+                if (out==null)  throw new IllegalStateException();
+                if (launcher.launch().cmds(args).envs(environment).stdout(out).pwd(workspace).join() != 0)
+                    throw new GitException("Error launching git whatchanged");
+            }
+        };
     }
 
     public List<String> showRevision(ObjectId r) throws GitException {

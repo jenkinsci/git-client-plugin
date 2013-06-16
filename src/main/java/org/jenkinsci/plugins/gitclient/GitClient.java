@@ -253,8 +253,15 @@ public interface GitClient {
 
     /**
      * Adds the changelog entries for commits in the range revFrom..revTo.
+     *
+     * This is just a short cut for calling {@link #changelog()} with appropriate parameters.
      */
-    void changelog(String revFrom, String revTo, OutputStream fos) throws GitException;
+    void changelog(String revFrom, String revTo, OutputStream os) throws GitException, IOException, InterruptedException;
+
+    /**
+     * Returns a {@link ChangelogCommand} to build up the git-log invocation.
+     */
+    ChangelogCommand changelog();
 
     void appendNote(String note, String namespace ) throws GitException;
 

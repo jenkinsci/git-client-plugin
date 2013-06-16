@@ -8,22 +8,15 @@ import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.lib.*;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
@@ -329,7 +322,7 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
         throw new UnsupportedOperationException("not implemented yet");
     }
 
-    public void changelog(String revFrom, String revTo, OutputStream fos) throws GitException {
+    public ChangelogCommand changelog() {
         throw new UnsupportedOperationException("not implemented yet");
     }
 
