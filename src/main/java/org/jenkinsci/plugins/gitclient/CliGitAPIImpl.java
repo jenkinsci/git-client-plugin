@@ -13,6 +13,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
 import java.io.*;
 import java.net.URI;
@@ -304,7 +305,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return new ChangelogCommand() {
             final List<String> revs = new ArrayList<String>();
             Integer n = null;
-            OutputStream out = null;
+            Writer out = null;
 
             public ChangelogCommand excludes(String rev) {
                 revs.add('^' + rev);
@@ -316,8 +317,8 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                 return this;
             }
 
-            public ChangelogCommand to(OutputStream os) {
-                this.out = os;
+            public ChangelogCommand to(Writer w) {
+                this.out = w;
                 return this;
             }
 
@@ -334,7 +335,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                     args.add(rev);
 
                 if (out==null)  throw new IllegalStateException();
-                if (launcher.launch().cmds(args).envs(environment).stdout(out).pwd(workspace).join() != 0)
+                if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).pwd(workspace).join() != 0)
                     throw new GitException("Error launching git whatchanged");
             }
         };

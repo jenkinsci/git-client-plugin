@@ -5,6 +5,7 @@ import org.eclipse.jgit.lib.ObjectId;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Writer;
 
 /**
  * Command builder for generating changelog in the format {@code GitSCM} expects.
@@ -75,7 +76,7 @@ public abstract class ChangelogCommand {
     /**
      * Stes the {@link OutputStream} that receives the changelog.
      */
-    public abstract ChangelogCommand to(OutputStream os);
+    public abstract ChangelogCommand to(Writer w);
 
     /**
      * Limit the number of changelog entry up to N.
