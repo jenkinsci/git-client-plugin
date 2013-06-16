@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.plugins.git.GitException;
+import org.eclipse.jgit.lib.ObjectId;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -47,33 +48,42 @@ import java.io.OutputStream;
  *
  * @author Kohsuke Kawaguchi
  */
-public interface ChangelogCommand {
+public abstract class ChangelogCommand {
     /**
      * Adds the revision to exclude from the log.
      * Equivalent of {@code ^rev} on the command line.
      *
      * This method can be invoked multiple times.
      */
-    ChangelogCommand excludes(String rev);
+    public abstract ChangelogCommand excludes(String rev);
+
+    public ChangelogCommand excludes(ObjectId rev) {
+        return excludes(rev.name());
+    }
+
     /**
      * Adds the revision to include in the log.
      *
      * This method can be invoked multiple times.
      */
-    ChangelogCommand includes(String rev);
+    public abstract ChangelogCommand includes(String rev);
+
+    public ChangelogCommand includes(ObjectId rev) {
+        return includes(rev.name());
+    }
 
     /**
      * Stes the {@link OutputStream} that receives the changelog.
      */
-    ChangelogCommand to(OutputStream os);
+    public abstract ChangelogCommand to(OutputStream os);
 
     /**
      * Limit the number of changelog entry up to N.
      */
-    ChangelogCommand max(int n);
+    public abstract ChangelogCommand max(int n);
 
     /**
      * Executes the command.
      */
-    void execute() throws GitException, InterruptedException, IOException;
+    public abstract void execute() throws GitException, InterruptedException, IOException;
 }
