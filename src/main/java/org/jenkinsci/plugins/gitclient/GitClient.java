@@ -31,6 +31,18 @@ public interface GitClient {
     boolean quietRemoteBranches = Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches");
 
     /**
+     * Sets the identity of the author for future commits and merge operations.
+     */
+    void setAuthor(String name, String email) throws GitException;
+    void setAuthor(PersonIdent p) throws GitException;
+
+    /**
+     * Sets the identity of the committer for future commits and merge operations.
+     */
+    void setCommitter(String name, String email) throws GitException;
+    void setCommitter(PersonIdent p) throws GitException;
+
+    /**
      * Expose the JGit repository this GitClient is using.
      * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
      *
@@ -56,12 +68,13 @@ public interface GitClient {
 
     void add(String filePattern) throws GitException;
 
-    /**
-     * @deprecated use {@link #commit(String, org.eclipse.jgit.lib.PersonIdent, org.eclipse.jgit.lib.PersonIdent)} as
-     *             this method is environment dependent to have GIT_AUTHOR/COMMITTER set
-     */
     void commit(String message) throws GitException;
 
+    /**
+     * @deprecated as of 1.1
+     *      Use {@link #setAuthor(String, String)} and {@link #setCommitter(String, String)}
+     *      then call {@link #commit(String)}
+      */
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException;
 
     boolean hasGitRepo() throws GitException;

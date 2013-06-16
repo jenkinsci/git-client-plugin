@@ -1004,16 +1004,19 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
-        if (author != null) {
-            environment.put("GIT_AUTHOR_NAME", author.getName());
-            environment.put("GIT_AUTHOR_EMAIL", author.getEmailAddress());
-        }
-        if (committer != null) {
-            environment.put("GIT_COMMITTER_NAME", committer.getName());
-            environment.put("GIT_COMMITTER_EMAIL", committer.getEmailAddress());
-        }
-        commit(message);
+    public void setAuthor(String name, String email) throws GitException {
+        env("GIT_AUTHOR_NAME", name);
+        env("GIT_AUTHOR_EMAIL", email);
+    }
+
+    public void setCommitter(String name, String email) throws GitException {
+        env("GIT_COMMITTER_NAME", name);
+        env("GIT_COMMITTER_EMAIL", email);
+    }
+
+    private void env(String name, String value) {
+        if (value==null)    environment.remove(name);
+        else                environment.put(name,value);
     }
 
     public Repository getRepository() throws GitException {

@@ -15,7 +15,6 @@ import java.io.Serializable;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class Git implements Serializable {
-
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;

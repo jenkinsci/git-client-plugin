@@ -42,6 +42,7 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
 
     private final File workspace;
     private final TaskListener listener;
+    private PersonIdent author, committer;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         this.workspace = workspace;
@@ -50,6 +51,14 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
 
     public GitClient subGit(String subdir) {
         return new JGitAPIImpl(new File(workspace, subdir), listener);
+    }
+
+    public void setAuthor(String name, String email) throws GitException {
+        author = new PersonIdent(name,email);
+    }
+
+    public void setCommitter(String name, String email) throws GitException {
+        committer = new PersonIdent(name,email);
     }
 
     public void init() throws GitException {
@@ -120,25 +129,18 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
     public void commit(String message) throws GitException {
         try {
             Git git = Git.open(workspace);
-            git.commit().setMessage(message).call();
+            CommitCommand cmd = git.commit().setMessage(message);
+            if (author!=null)
+                cmd.setAuthor(author);
+            if (committer!=null)
+                cmd.setCommitter(new PersonIdent(committer,new Date()));
+            cmd.call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
     }
-
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
-        try {
-            Git git = Git.open(workspace);
-            git.commit().setAuthor(author).setCommitter(new PersonIdent(committer, new Date())).setMessage(message).call();
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        }
-    }
-
 
     public void branch(String name) throws GitException {
         try {
