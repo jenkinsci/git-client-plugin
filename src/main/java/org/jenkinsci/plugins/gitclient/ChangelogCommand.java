@@ -86,5 +86,5 @@ public abstract class ChangelogCommand {
     /**
      * Executes the command.
      */
-    public abstract void execute() throws GitException, InterruptedException, IOException;
+    public abstract void execute() throws GitException, InterruptedException;
 }

@@ -12,6 +12,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.util.List;
 import java.util.Set;
 
@@ -64,29 +65,29 @@ public interface GitClient {
      */
     FilePath getWorkTree();
 
-    public void init() throws GitException;
+    public void init() throws GitException, InterruptedException;
 
-    void add(String filePattern) throws GitException;
+    void add(String filePattern) throws GitException, InterruptedException;
 
-    void commit(String message) throws GitException;
+    void commit(String message) throws GitException, InterruptedException;
 
     /**
      * @deprecated as of 1.1
      *      Use {@link #setAuthor(String, String)} and {@link #setCommitter(String, String)}
      *      then call {@link #commit(String)}
       */
-    void commit(String message, PersonIdent author, PersonIdent committer) throws GitException;
+    void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
 
-    boolean hasGitRepo() throws GitException;
+    boolean hasGitRepo() throws GitException, InterruptedException;
 
-    boolean isCommitInRepo(ObjectId commit) throws GitException;
+    boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException;
 
     /**
      * From a given repository, get a remote's URL
      * @param name The name of the remote (e.g. origin)
      * @throws GitException if executing the git command fails
      */
-    String getRemoteUrl(String name) throws GitException;
+    String getRemoteUrl(String name) throws GitException, InterruptedException;
 
     /**
      * For a given repository, set a remote's URL
@@ -94,14 +95,14 @@ public interface GitClient {
      * @param url The new value of the remote's URL
      * @throws GitException if executing the git command fails
      */
-    void setRemoteUrl(String name, String url) throws GitException;
+    void setRemoteUrl(String name, String url) throws GitException, InterruptedException;
 
     /**
      * Checks out the specified commit/tag/branch into the workspace.
      * (equivalent of <tt>git checkout <em>branch</em></tt>.)
      * @param ref A git object references expression (either a sha1, tag or branch)
      */
-    void checkout(String ref) throws GitException;
+    void checkout(String ref) throws GitException, InterruptedException;
 
     /**
      * Creates a new branch that points to the specified ref.
@@ -112,7 +113,7 @@ public interface GitClient {
      * @param ref A git object references expression. For backward compatibility, <tt>null</tt> will checkout current HEAD
      * @param branch name of the branch to create from reference
      */
-    void checkout(String ref, String branch) throws GitException;
+    void checkout(String ref, String branch) throws GitException, InterruptedException;
 
     /**
      * Regardless of the current state of the workspace (whether there is some dirty files, etc)
@@ -138,7 +139,7 @@ public interface GitClient {
      * For compatibility reasons, the order of the parameter is different from {@link #checkout(String, String)}.
      * @since 1.0.6
      */
-    void checkoutBranch(String branch, String ref) throws GitException;
+    void checkoutBranch(String branch, String ref) throws GitException, InterruptedException;
 
 
     /**
@@ -148,19 +149,19 @@ public interface GitClient {
      * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
      * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
      */
-    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException;
+    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
 
 
     /**
      * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
      */
-    void fetch(String remoteName, RefSpec refspec) throws GitException;
+    void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
 
-    void push(String remoteName, String refspec) throws GitException;
+    void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
-    void merge(ObjectId rev) throws GitException;
+    void merge(ObjectId rev) throws GitException, InterruptedException;
 
-    void prune(RemoteConfig repository) throws GitException;
+    void prune(RemoteConfig repository) throws GitException, InterruptedException;
 
     /**
      * Fully revert working copy to a clean state, i.e. run both
@@ -169,22 +170,22 @@ public interface GitClient {
      * match a fresh clone.
      * @throws GitException
      */
-    void clean() throws GitException;
+    void clean() throws GitException, InterruptedException;
 
 
 
     // --- manage branches
 
-    void branch(String name) throws GitException;
+    void branch(String name) throws GitException, InterruptedException;
 
     /**
      * (force) delete a branch.
      */
-    void deleteBranch(String name) throws GitException;
+    void deleteBranch(String name) throws GitException, InterruptedException;
 
-    Set<Branch> getBranches() throws GitException;
+    Set<Branch> getBranches() throws GitException, InterruptedException;
 
-    Set<Branch> getRemoteBranches() throws GitException;
+    Set<Branch> getRemoteBranches() throws GitException, InterruptedException;
 
 
     // --- manage tags
@@ -192,31 +193,31 @@ public interface GitClient {
     /**
      * Create (or update) a tag. If tag already exist it gets updated (equivalent to <tt>git tag --force</tt>)
      */
-    void tag(String tagName, String comment) throws GitException;
+    void tag(String tagName, String comment) throws GitException, InterruptedException;
 
-    boolean tagExists(String tagName) throws GitException;
+    boolean tagExists(String tagName) throws GitException, InterruptedException;
 
-    String getTagMessage(String tagName) throws GitException;
+    String getTagMessage(String tagName) throws GitException, InterruptedException;
 
-    void deleteTag(String tagName) throws GitException;
+    void deleteTag(String tagName) throws GitException, InterruptedException;
 
-    Set<String> getTagNames(String tagPattern) throws GitException;
+    Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException;
 
 
     // --- lookup revision
 
-    ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException;
+    ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException;
 
     /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
      * @param revName a commit sha1 or tag/branch refname
      * @throws GitException when no such commit / revName is found in repository.
      */
-    ObjectId revParse(String revName) throws GitException;
+    ObjectId revParse(String revName) throws GitException, InterruptedException;
 
-    List<ObjectId> revListAll() throws GitException;
+    List<ObjectId> revListAll() throws GitException, InterruptedException;
 
-    List<ObjectId> revList(String ref) throws GitException;
+    List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
 
     // --- submodules
@@ -229,45 +230,50 @@ public interface GitClient {
     /**
      * Returns true if the repository has Git submodules.
      */
-    boolean hasGitModules() throws GitException;
+    boolean hasGitModules() throws GitException, InterruptedException;
 
-    List<IndexEntry> getSubmodules( String treeIsh ) throws GitException;
+    List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException;
 
     /**
      * Create a submodule in subdir child directory for remote repository
      */
-    void addSubmodule(String remoteURL, String subdir) throws GitException;
+    void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException;
 
-    void submoduleUpdate(boolean recursive)  throws GitException;
+    void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
 
-    void submoduleClean(boolean recursive)  throws GitException;
+    void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
 
     /**
      * Set up submodule URLs so that they correspond to the remote pertaining to
      * the revision that has been checked out.
      */
-    void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException;
+    void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException, InterruptedException;
 
 
     // --- commit log and notes
+
+    /**
+     * @deprecated use {@link #changelog(String, String, Writer)}
+     */
+    void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException;
 
     /**
      * Adds the changelog entries for commits in the range revFrom..revTo.
      *
      * This is just a short cut for calling {@link #changelog()} with appropriate parameters.
      */
-    void changelog(String revFrom, String revTo, OutputStream os) throws GitException, IOException, InterruptedException;
+    void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException;
 
     /**
      * Returns a {@link ChangelogCommand} to build up the git-log invocation.
      */
     ChangelogCommand changelog();
 
-    void appendNote(String note, String namespace ) throws GitException;
+    void appendNote(String note, String namespace ) throws GitException, InterruptedException;
 
-    void addNote(String note, String namespace ) throws GitException;
+    void addNote(String note, String namespace ) throws GitException, InterruptedException;
 
-    public List<String> showRevision(ObjectId r) throws GitException;
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
@@ -276,5 +282,5 @@ public interface GitClient {
      * Changes are computed on the [from..to] range.
      * @return The git show output, in <tt>raw</tt> format.
      */
-    List<String> showRevision(ObjectId from, ObjectId to) throws GitException;
+    List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 }

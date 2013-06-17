@@ -54,7 +54,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     // --- delegate implemented methods to JGit client
 
-    public void add(String filePattern) throws GitException {
+    public void add(String filePattern) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.add(filePattern); else  jgit.add(filePattern);
     }
 
@@ -64,15 +64,15 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public String getRemoteUrl(String name) throws GitException {
+    public String getRemoteUrl(String name) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.getRemoteUrl(name) :  jgit.getRemoteUrl(name);
     }
 
-    public void push(String remoteName, String refspec) throws GitException {
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.push(remoteName, refspec); else  jgit.push(remoteName, refspec);
     }
 
-    public String getTagMessage(String tagName) throws GitException {
+    public String getTagMessage(String tagName) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.getTagMessage(tagName) :  jgit.getTagMessage(tagName);
     }
 
@@ -122,7 +122,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         return Git.USE_CLI ? super.subGit(subdir) :  jgit.subGit(subdir);
     }
 
-    public void setRemoteUrl(String name, String url) throws GitException {
+    public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.setRemoteUrl(name, url); else  jgit.setRemoteUrl(name, url);
     }
 
@@ -150,7 +150,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public Set<Branch> getBranches() throws GitException {
+    public Set<Branch> getBranches() throws GitException, InterruptedException {
         return Git.USE_CLI ? super.getBranches() :  jgit.getBranches();
     }
 
@@ -166,27 +166,27 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public Set<Branch> getRemoteBranches() throws GitException {
+    public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         return Git.USE_CLI ? super.getRemoteBranches() :  jgit.getRemoteBranches();
     }
 
-    public void init() throws GitException {
+    public void init() throws GitException, InterruptedException {
         if (Git.USE_CLI) super.init(); else  jgit.init();
     }
 
-    public void deleteBranch(String name) throws GitException {
+    public void deleteBranch(String name) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.deleteBranch(name); else  jgit.deleteBranch(name);
     }
 
-    public void checkout(String ref, String branch) throws GitException {
+    public void checkout(String ref, String branch) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
     }
 
-    public boolean hasGitRepo() throws GitException {
+    public boolean hasGitRepo() throws GitException, InterruptedException {
         return Git.USE_CLI ? super.hasGitRepo() :  jgit.hasGitRepo();
     }
 
-    public boolean isCommitInRepo(ObjectId commit) throws GitException {
+    public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.isCommitInRepo(commit) :  jgit.isCommitInRepo(commit);
     }
 
@@ -196,19 +196,19 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public void commit(String message) throws GitException {
+    public void commit(String message) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.commit(message); else  jgit.commit(message);
     }
 
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.commit(message, author, committer); else  jgit.commit(message, author, committer);
     }
 
-    public void checkout(String ref) throws GitException {
+    public void checkout(String ref) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
     }
 
-    public void deleteTag(String tagName) throws GitException {
+    public void deleteTag(String tagName) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.deleteTag(tagName); else  jgit.deleteTag(tagName);
     }
 
@@ -216,7 +216,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
         return Git.USE_CLI ? super.getRepository() :  jgit.getRepository();
     }
 
-    public void tag(String tagName, String comment) throws GitException {
+    public void tag(String tagName, String comment) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.tag(tagName, comment); else  jgit.tag(tagName, comment);
     }
 
@@ -226,15 +226,15 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.fetch(remoteName, refspec); else  jgit.fetch(remoteName, refspec);
     }
 
-    public void merge(ObjectId rev) throws GitException {
+    public void merge(ObjectId rev) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.merge(rev); else  jgit.merge(rev);
     }
 
-    public boolean tagExists(String tagName) throws GitException {
+    public boolean tagExists(String tagName) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.tagExists(tagName) :  jgit.tagExists(tagName);
     }
 
@@ -244,15 +244,15 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
     */
 
-    public void clean() throws GitException {
+    public void clean() throws GitException, InterruptedException {
         if (Git.USE_CLI) super.clean(); else  jgit.clean();
     }
 
-    public ObjectId revParse(String revName) throws GitException {
+    public ObjectId revParse(String revName) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.revParse(revName) :  jgit.revParse(revName);
     }
 
-    public void branch(String name) throws GitException {
+    public void branch(String name) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.branch(name); else  jgit.branch(name);
     }
 
@@ -263,7 +263,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     // --- legacy methods, kept for backward compatibility
     
     @Deprecated
-    public void merge(String refSpec) throws GitException {
+    public void merge(String refSpec) throws GitException, InterruptedException {
         try {
             launchCommand("merge", refSpec);
         } catch (GitException e) {
@@ -286,7 +286,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException {
+    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
         // This is to make sure that we don't miss any new submodules or
         // changes in submodule origin paths...
         submoduleInit();
@@ -297,28 +297,28 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public void fetch(String repository, String refspec) throws GitException {
+    public void fetch(String repository, String refspec) throws GitException, InterruptedException {
         fetch(repository, new RefSpec(refspec));
     }
 
     @Deprecated
-    public void fetch(RemoteConfig remoteRepository) {
+    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
         // Assume there is only 1 URL / refspec for simplicity
         fetch(remoteRepository.getURIs().get(0).toPrivateString(), remoteRepository.getFetchRefSpecs().get(0).toString());
     }
 
     @Deprecated
-    public void fetch() throws GitException {
+    public void fetch() throws GitException, InterruptedException {
         fetch(null, (RefSpec) null);
     }
 
 
-    public void reset() throws GitException {
+    public void reset() throws GitException, InterruptedException {
         reset(false);
     }
 
     @Deprecated
-    public void push(RemoteConfig repository, String refspec) throws GitException {
+    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("push", repository.getURIs().get(0).toPrivateString());
 
@@ -332,24 +332,24 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public void clone(RemoteConfig source) throws GitException {
+    public void clone(RemoteConfig source) throws GitException, InterruptedException {
         clone(source, false);
     }
 
     @Deprecated
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException {
+    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
         // Assume only 1 URL for this repository
         final String source = rc.getURIs().get(0).toPrivateString();
         clone(source, rc.getName(), useShallowClone, null);
     }
 
     @Deprecated
-    public List<Branch> getBranchesContaining(String revspec) throws GitException {
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
         return parseBranches(launchCommand("branch", "-a", "--contains", revspec));
     }
 
     @Deprecated
-    private List<Branch> parseBranches(String fos) throws GitException {
+    private List<Branch> parseBranches(String fos) throws GitException, InterruptedException {
         // TODO: git branch -a -v --abbrev=0 would do this in one shot..
         List<Branch> tags = new ArrayList<Branch>();
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
@@ -373,12 +373,12 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public List<ObjectId> revListBranch(String branchId) throws GitException {
+    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
         return revList(branchId);
     }
 
     @Deprecated
-    public List<String> showRevision(Revision r) throws GitException {
+    public List<String> showRevision(Revision r) throws GitException, InterruptedException {
         return showRevision(null, r.getSha1());
     }
 
@@ -402,7 +402,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) {
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
         try {
             String result;
             try {
@@ -419,7 +419,9 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
+            throw new GitException("Error parsing merge base", e);
+        } catch (GitException e) {
             throw new GitException("Error parsing merge base", e);
         }
 
@@ -427,7 +429,7 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     }
 
     @Deprecated
-    public String getAllLogEntries(String branch) {
+    public String getAllLogEntries(String branch) throws InterruptedException {
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
 
     }

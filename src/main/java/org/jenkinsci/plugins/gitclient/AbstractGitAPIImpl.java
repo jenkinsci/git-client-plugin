@@ -8,7 +8,9 @@ import org.eclipse.jgit.lib.Repository;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.io.Writer;
 
 /**
  * Common parts between {@link JGitAPIImpl} and {@link CliGitAPIImpl}.
@@ -25,7 +27,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
         }
     }
 
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException {
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
         setAuthor(author);
         setCommitter(committer);
         commit(message);
@@ -41,8 +43,12 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
             setCommitter(p.getName(), p.getEmailAddress());
     }
 
-    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, IOException, InterruptedException {
-        changelog().excludes(revFrom).includes(revTo).to(outputStream).execute();
+    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException {
+        changelog(revFrom, revTo, new OutputStreamWriter(outputStream));
+    }
+
+    public void changelog(String revFrom, String revTo, Writer w) throws GitException, InterruptedException {
+        changelog().excludes(revFrom).includes(revTo).to(w).execute();
     }
 
     /**

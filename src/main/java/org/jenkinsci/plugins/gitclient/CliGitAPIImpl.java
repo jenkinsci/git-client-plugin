@@ -52,7 +52,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
-    private int[] getGitVersion() {
+    private int[] getGitVersion() throws InterruptedException {
         int minorVer = 1;
         int majorVer = 6;
 
@@ -75,7 +75,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return new int[]{majorVer,minorVer};
     }
 
-    public void init() throws GitException {
+    public void init() throws GitException, InterruptedException {
         if (hasGitRepo()) {
             throw new GitException(".git directory already exists! Has it already been initialised?");
         }
@@ -89,7 +89,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public boolean hasGitRepo() throws GitException {
+    public boolean hasGitRepo() throws GitException, InterruptedException {
         if (hasGitRepo(".git")) {
             // Check if this is actually a valid git repo by checking ls-files. If it's duff, this will
             // fail. HEAD is not guaranteed to be valid (e.g. new repo).
@@ -132,7 +132,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public List<IndexEntry> getSubmodules( String treeIsh ) throws GitException {
+    public List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException {
         List<IndexEntry> submodules = lsTree(treeIsh);
 
         // Remove anything that isn't a submodule
@@ -144,7 +144,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return submodules;
     }
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
         listener.getLogger().println(
                                      "Fetching upstream changes"
                                      + (remoteName != null ? " from " + remoteName : ""));
@@ -161,11 +161,11 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         launchCommand(args);
     }
 
-    public void fetch() throws GitException {
+    public void fetch() throws GitException, InterruptedException {
         fetch(null, null);
     }
 
-    public void reset(boolean hard) throws GitException {
+    public void reset(boolean hard) throws GitException, InterruptedException {
     	try {
     		validateRevision("HEAD");
     	} catch (GitException e) {
@@ -183,7 +183,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         launchCommand(args);
     }
 
-    public void clone(String url, String origin, final boolean useShallowClone, String reference) throws GitException {
+    public void clone(String url, String origin, final boolean useShallowClone, String reference) throws GitException, InterruptedException {
         listener.getLogger().println("Cloning repository " + url);
         final int[] gitVer = getGitVersion();
 
@@ -221,12 +221,12 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
     
-    public void clean() throws GitException {
+    public void clean() throws GitException, InterruptedException {
         reset(true);
         launchCommand("clean", "-fdx");
     }
 
-    public ObjectId revParse(String revName) throws GitException {
+    public ObjectId revParse(String revName) throws GitException, InterruptedException {
         /*
             On Windows command prompt, '^' is an escape character (http://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
             This isn't a problem if 'git' we are executing is git.exe, because '^' is a special character only for the command processor,
@@ -265,17 +265,17 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return ObjectId.fromString(firstLine(result).trim());
     }
 
-    public ObjectId validateRevision(String revName) throws GitException {
+    public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
         String result = launchCommand("rev-parse", "--verify", revName);
         return ObjectId.fromString(firstLine(result).trim());
     }
 
-    public String describe(String commitIsh) throws GitException {
+    public String describe(String commitIsh) throws GitException, InterruptedException {
         String result = launchCommand("describe", "--tags", commitIsh);
         return firstLine(result).trim();
     }
 
-    public void prune(RemoteConfig repository) throws GitException {
+    public void prune(RemoteConfig repository) throws GitException, InterruptedException {
         if (getRemoteUrl(repository.getName()) != null &&
             !getRemoteUrl(repository.getName()).equals("")) {
             ArgumentListBuilder args = new ArgumentListBuilder();
@@ -327,7 +327,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                 return this;
             }
 
-            public void execute() throws GitException, InterruptedException, IOException {
+            public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty-raw");
                 if (n!=null)
                     args.add("-n").add(n);
@@ -335,17 +335,22 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                     args.add(rev);
 
                 if (out==null)  throw new IllegalStateException();
-                if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).pwd(workspace).join() != 0)
-                    throw new GitException("Error launching git whatchanged");
+
+                try {
+                    if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).pwd(workspace).join() != 0)
+                        throw new GitException("Error launching git whatchanged");
+                } catch (IOException e) {
+                    throw new GitException("Error launching git whatchanged",e);
+                }
             }
         };
     }
 
-    public List<String> showRevision(ObjectId r) throws GitException {
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
         return showRevision(null, r);
     }
 
-    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
+    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
     	StringWriter writer = new StringWriter();
 
     	if (from != null){
@@ -370,7 +375,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @param rev the revision
      * @throws GitException if the emrge fails
      */
-    public void merge(ObjectId rev) throws GitException {
+    public void merge(ObjectId rev) throws GitException, InterruptedException {
         try {
             launchCommand("merge", rev.name());
         } catch (GitException e) {
@@ -378,18 +383,18 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void submoduleInit() throws GitException {
+    public void submoduleInit() throws GitException, InterruptedException {
         launchCommand("submodule", "init");
     }
 
-    public void addSubmodule(String remoteURL, String subdir) throws GitException {
+    public void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException {
         launchCommand("submodule", "add", remoteURL, subdir);
     }
 
     /**
      * Sync submodule URLs
      */
-    public void submoduleSync() throws GitException {
+    public void submoduleSync() throws GitException, InterruptedException {
         // Check if git submodule has sync support.
         // Only available in git 1.6.1 and above
         launchCommand("submodule", "sync");
@@ -403,7 +408,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the Git command fails
      */
-    public void submoduleUpdate(boolean recursive) throws GitException {
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
     	ArgumentListBuilder args = new ArgumentListBuilder();
     	args.add("submodule", "update");
     	if (recursive) {
@@ -420,7 +425,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public void submoduleReset(boolean recursive, boolean hard) throws GitException {
+    public void submoduleReset(boolean recursive, boolean hard) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("submodule", "foreach");
         if (recursive) {
@@ -441,7 +446,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public void submoduleClean(boolean recursive) throws GitException {
+    public void submoduleClean(boolean recursive) throws GitException, InterruptedException {
         submoduleReset(true, true);
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("submodule", "foreach");
@@ -460,7 +465,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public String getSubmoduleUrl(String name) throws GitException {
+    public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "submodule."+name+".url" );
         return firstLine(result).trim();
     }
@@ -474,34 +479,34 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public void setSubmoduleUrl(String name, String url) throws GitException {
+    public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
         launchCommand( "config", "submodule."+name+".url", url );
     }
 
-    public String getRemoteUrl(String name) throws GitException {
+    public String getRemoteUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "remote."+name+".url" );
         return firstLine(result).trim();
     }
 
-    public void setRemoteUrl(String name, String url) throws GitException {
+    public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
         launchCommand( "config", "remote."+name+".url", url );
     }
 
 
-    public String getRemoteUrl(String name, String GIT_DIR) throws GitException {
+    public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
         String result
             = launchCommand( "--git-dir=" + GIT_DIR,
                              "config", "--get", "remote."+name+".url" );
         return firstLine(result).trim();
     }
 
-    public void setRemoteUrl(String name, String url, String GIT_DIR ) throws GitException {
+    public void setRemoteUrl(String name, String url, String GIT_DIR ) throws GitException, InterruptedException {
         launchCommand( "--git-dir=" + GIT_DIR,
                        "config", "remote."+name+".url", url );
     }
 
 
-    public String getDefaultRemote( String _default_ ) throws GitException {
+    public String getDefaultRemote( String _default_ ) throws GitException, InterruptedException {
         BufferedReader rdr =
             new BufferedReader(
                 new StringReader( launchCommand( "remote" ) )
@@ -534,7 +539,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public String getDefaultRemote() throws GitException {
+    public String getDefaultRemote() throws GitException, InterruptedException {
         return getDefaultRemote("origin");
     }
 
@@ -543,7 +548,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException
      */
-    public boolean isBareRepository() throws GitException {
+    public boolean isBareRepository() throws GitException, InterruptedException {
         return isBareRepository("");
     }
 
@@ -554,7 +559,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      *
      * @throws GitException
      */
-    public boolean isBareRepository(String GIT_DIR) throws GitException {
+    public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
         String ret = null;
         if ( "".equals(GIT_DIR) )
             ret = launchCommand(        "rev-parse", "--is-bare-repository");
@@ -590,7 +595,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @throws GitException if executing the git command fails
      */
     public void fixSubmoduleUrls( String remote,
-                                  TaskListener listener ) throws GitException {
+                                  TaskListener listener ) throws GitException, InterruptedException {
         boolean is_bare = true;
 
         URI origin;
@@ -671,7 +676,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * Set up submodule URLs so that they correspond to the remote pertaining to
      * the revision that has been checked out.
      */
-    public void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException {
+    public void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException, InterruptedException {
         String remote = null;
 
         // try to locate the remote repository from where this commit came from
@@ -716,7 +721,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             setupSubmoduleUrls( remote, listener );
     }
 
-    private void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException {
+    private void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException {
         // This is to make sure that we don't miss any new submodules or
         // changes in submodule origin paths...
         submoduleInit();
@@ -725,7 +730,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         // repositories.
         fixSubmoduleUrls( remote, listener );
     }
-    public void tag(String tagName, String comment) throws GitException {
+    public void tag(String tagName, String comment) throws GitException, InterruptedException {
         tagName = tagName.replace(' ', '_');
         try {
             launchCommand("tag", "-a", "-f", "-m", comment, tagName);
@@ -734,7 +739,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void appendNote(String note, String namespace ) throws GitException {
+    public void appendNote(String note, String namespace ) throws GitException, InterruptedException {
         try {
         	launchCommand("notes", "--ref="+namespace, "append", "-m", "\'"+note+"\'" );
         } catch (GitException e) {
@@ -743,7 +748,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
 
     }
 
-    public void addNote(String note, String namespace ) throws GitException {
+    public void addNote(String note, String namespace ) throws GitException, InterruptedException {
         try {
             launchCommand("notes", "--ref="+namespace,"add", "-m", "\'"+note+"\'" );
         } catch (GitException e) {
@@ -758,7 +763,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @return command output
      * @throws GitException
      */
-    public String launchCommand(ArgumentListBuilder args) throws GitException {
+    public String launchCommand(ArgumentListBuilder args) throws GitException, InterruptedException {
         return launchCommandIn(args, workspace);
     }
 
@@ -768,7 +773,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @return command output
      * @throws GitException
      */
-    public String launchCommand(String... args) throws GitException {
+    public String launchCommand(String... args) throws GitException, InterruptedException {
         return launchCommand(new ArgumentListBuilder(args));
     }
 
@@ -778,7 +783,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @return command output
      * @throws GitException
      */
-    private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException {
+    private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         ByteArrayOutputStream fos = new ByteArrayOutputStream();
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -799,12 +804,12 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             return result;
         } catch (GitException e) {
             throw e;
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new GitException("Error performing command: " + StringUtils.join(args.toCommandArray()," "), e);
         }
     }
 
-    public void push(String remoteName, String refspec) throws GitException {
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("push", remoteName);
 
@@ -816,7 +821,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         // That are possible.
     }
 
-    private Set<Branch> parseBranches(String fos) throws GitException {
+    private Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {
         // TODO: git branch -a -v --abbrev=0 would do this in one shot..
 
         Set<Branch> branches = new HashSet<Branch>();
@@ -841,11 +846,11 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return branches;
     }
 
-    public Set<Branch> getBranches() throws GitException {
+    public Set<Branch> getBranches() throws GitException, InterruptedException {
         return parseBranches(launchCommand("branch", "-a"));
     }
 
-    public Set<Branch> getRemoteBranches() throws GitException {
+    public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         Repository db = getRepository();
         try {
             Map<String, Ref> refs = db.getAllRefs();
@@ -873,15 +878,15 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void checkout(String commit) throws GitException {
+    public void checkout(String commit) throws GitException, InterruptedException {
         launchCommand("checkout", "-f", commit);
     }
 
-    public void checkout(String ref, String branch) throws GitException {
+    public void checkout(String ref, String branch) throws GitException, InterruptedException {
         launchCommand("checkout", "-b", branch, ref);
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException {
+    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
         try {
             // First, checkout to detached HEAD, so we can delete the branch.
             checkout(ref);
@@ -901,11 +906,11 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public boolean tagExists(String tagName) throws GitException {
+    public boolean tagExists(String tagName) throws GitException, InterruptedException {
         return launchCommand("tag", "-l", tagName).trim().equals(tagName);
     }
 
-    public void deleteBranch(String name) throws GitException {
+    public void deleteBranch(String name) throws GitException, InterruptedException {
         try {
             launchCommand("branch", "-D", name);
         } catch (GitException e) {
@@ -915,7 +920,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
     }
 
 
-    public void deleteTag(String tagName) throws GitException {
+    public void deleteTag(String tagName) throws GitException, InterruptedException {
         tagName = tagName.replace(' ', '_');
         try {
             launchCommand("tag", "-d", tagName);
@@ -924,7 +929,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public List<IndexEntry> lsTree(String treeIsh) throws GitException {
+    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
         List<IndexEntry> entries = new ArrayList<IndexEntry>();
         String result = launchCommand("ls-tree", treeIsh);
 
@@ -943,15 +948,15 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return entries;
     }
 
-    public List<ObjectId> revListAll() throws GitException {
+    public List<ObjectId> revListAll() throws GitException, InterruptedException {
         return doRevList("--all");
     }
 
-    public List<ObjectId> revList(String ref) throws GitException {
+    public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
         return doRevList(ref);
     }
 
-    private List<ObjectId> doRevList(String... extraArgs) throws GitException {
+    private List<ObjectId> doRevList(String... extraArgs) throws GitException, InterruptedException {
         List<ObjectId> entries = new ArrayList<ObjectId>();
         ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
         args.add(extraArgs);
@@ -971,7 +976,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return entries;
     }
 
-    public boolean isCommitInRepo(ObjectId commit) {
+    public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
         try {
             List<ObjectId> revs = revList(commit.name());
 
@@ -985,7 +990,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void add(String filePattern) throws GitException {
+    public void add(String filePattern) throws GitException, InterruptedException {
         try {
             launchCommand("add", filePattern);
         } catch (GitException e) {
@@ -993,7 +998,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void branch(String name) throws GitException {
+    public void branch(String name) throws GitException, InterruptedException {
         try {
             launchCommand("branch", name);
         } catch (GitException e) {
@@ -1001,7 +1006,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void commit(String message) throws GitException {
+    public void commit(String message) throws GitException, InterruptedException {
         File f = null;
         try {
             f = File.createTempFile("gitcommit", ".txt");
@@ -1073,14 +1078,14 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public String getTagMessage(String tagName) throws GitException {
+    public String getTagMessage(String tagName) throws GitException, InterruptedException {
         // 10000 lines of tag message "ought to be enough for anybody"
         String out = launchCommand("tag", "-l", tagName, "-n10000");
         // Strip the leading four spaces which git prefixes multi-line messages with
         return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException {
         String[] branchExploded = branch.split("/");
         branch = branchExploded[branchExploded.length-1];
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
