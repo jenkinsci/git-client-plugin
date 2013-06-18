@@ -7,6 +7,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -15,6 +16,7 @@ import java.io.Serializable;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class Git implements Serializable {
+    @Nullable
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
@@ -48,7 +50,7 @@ public class Git implements Serializable {
     }
 
     public GitClient getClient() throws IOException, InterruptedException {
-        return repository.act(new FileCallable<GitClient>() {
+        FileCallable<GitClient> callable = new FileCallable<GitClient>() {
             public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
                 if (listener == null) listener = TaskListener.NULL;
                 if (env == null) env = new EnvVars();
@@ -59,7 +61,8 @@ public class Git implements Serializable {
                 // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
                 return new GitAPI(exe, f, listener, env);
             }
-        });
+        };
+        return repository!=null ? repository.act(callable) : callable.invoke(null,null);
     }
 
     // Can be use to force use of the 100% backward-compatible CLI GitClient
