@@ -371,8 +371,13 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                 if (out==null)  throw new IllegalStateException();
 
                 try {
-                    if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                        throw new GitException("Error launching git whatchanged");
+                    WriterOutputStream w = new WriterOutputStream(out);
+                    try {
+                        if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
+                            throw new GitException("Error launching git whatchanged");
+                    } finally {
+                        w.flush();
+                    }
                 } catch (IOException e) {
                     throw new GitException("Error launching git whatchanged",e);
                 }
