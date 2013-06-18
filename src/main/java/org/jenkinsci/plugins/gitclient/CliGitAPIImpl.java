@@ -362,7 +362,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty-raw");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty=raw");
                 if (n!=null)
                     args.add("-n").add(n);
                 for (String rev : this.revs)
@@ -371,7 +371,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                 if (out==null)  throw new IllegalStateException();
 
                 try {
-                    if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).pwd(workspace).join() != 0)
+                    if (launcher.launch().cmds(args).envs(environment).stdout(new WriterOutputStream(out)).stderr(listener.getLogger()).pwd(workspace).join() != 0)
                         throw new GitException("Error launching git whatchanged");
                 } catch (IOException e) {
                     throw new GitException("Error launching git whatchanged",e);
