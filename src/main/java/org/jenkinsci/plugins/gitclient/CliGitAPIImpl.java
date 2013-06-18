@@ -183,44 +183,78 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         launchCommand(args);
     }
 
-    public void clone(String url, String origin, final boolean useShallowClone, String reference) throws GitException, InterruptedException {
-        listener.getLogger().println("Cloning repository " + url);
-        final int[] gitVer = getGitVersion();
+    public CloneCommand clone_() {
+        return new CloneCommand() {
+            String url;
+            String origin;
+            String reference;
+            boolean shallow;
 
-        // TODO: Not here!
-        try {
-            Util.deleteContentsRecursive(workspace);
-        } catch (Exception e) {
-            e.printStackTrace(listener.error("Failed to clean the workspace"));
-            throw new GitException("Failed to delete workspace", e);
-        }
-
-        try {
-            final ArgumentListBuilder args = new ArgumentListBuilder();
-            args.add("clone");
-            if ((gitVer[0] >= 1) && (gitVer[1] >= 7)) {
-                args.add("--progress");
+            @Override
+            public CloneCommand url(String url) {
+                this.url = url;
+                return this;
             }
-            if (reference != null && !reference.equals("")) {
-                File referencePath = new File(reference);
-                if (!referencePath.exists())
-                    listener.error("Reference path does not exist: " + reference);
-                else if (!referencePath.isDirectory())
-                    listener.error("Reference path is not a directory: " + reference);
-                else
-                    args.add("--reference", reference);
 
+            @Override
+            public CloneCommand repositoryName(String name) {
+                this.origin = name;
+                return this;
             }
-            args.add("-o", origin);
-            if(useShallowClone) args.add("--depth", "1");
-            args.add(url);
-            args.add(workspace.getAbsolutePath());
-            launchCommandIn(args, null);
-        } catch (Exception e) {
-            throw new GitException("Could not clone " + url, e);
-        }
+
+            @Override
+            public CloneCommand shallow() {
+                this.shallow = true;
+                return this;
+            }
+
+            @Override
+            public CloneCommand reference(String reference) {
+                this.reference = reference;
+                return this;
+            }
+
+            @Override
+            public void execute() throws GitException, InterruptedException {
+                listener.getLogger().println("Cloning repository " + url);
+                final int[] gitVer = getGitVersion();
+
+                // TODO: Not here!
+                try {
+                    Util.deleteContentsRecursive(workspace);
+                } catch (Exception e) {
+                    e.printStackTrace(listener.error("Failed to clean the workspace"));
+                    throw new GitException("Failed to delete workspace", e);
+                }
+
+                try {
+                    final ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("clone");
+                    if ((gitVer[0] >= 1) && (gitVer[1] >= 7)) {
+                        args.add("--progress");
+                    }
+                    if (reference != null && !reference.equals("")) {
+                        File referencePath = new File(reference);
+                        if (!referencePath.exists())
+                            listener.error("Reference path does not exist: " + reference);
+                        else if (!referencePath.isDirectory())
+                            listener.error("Reference path is not a directory: " + reference);
+                        else
+                            args.add("--reference", reference);
+
+                    }
+                    args.add("-o", origin);
+                    if(shallow) args.add("--depth", "1");
+                    args.add(url);
+                    args.add(workspace);
+                    launchCommandIn(args, null);
+                } catch (Exception e) {
+                    throw new GitException("Could not clone " + url, e);
+                }
+            }
+        };
     }
-    
+
     public void clean() throws GitException, InterruptedException {
         reset(true);
         launchCommand("clean", "-fdx");

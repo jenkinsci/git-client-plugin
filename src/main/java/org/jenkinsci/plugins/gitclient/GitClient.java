@@ -151,6 +151,10 @@ public interface GitClient {
      */
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
 
+    /**
+     * Returns a {@link CloneCommand} to build up the git-log invocation.
+     */
+    CloneCommand clone_(); // can't use 'clone' as it collides with Object.clone()
 
     /**
      * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.

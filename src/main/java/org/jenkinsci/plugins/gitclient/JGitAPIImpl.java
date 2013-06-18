@@ -339,7 +339,7 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
         }
     }
 
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
+    public CloneCommand clone_() {
         throw new UnsupportedOperationException("not implemented yet");
     }
 

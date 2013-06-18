@@ -51,6 +51,12 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
         changelog().excludes(revFrom).includes(revTo).to(w).execute();
     }
 
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
+        CloneCommand c = clone_().url(url).repositoryName(origin).reference(reference);
+        if (useShallowClone)    c.shallow();
+        c.execute();
+    }
+
     /**
      * When sent to remote, switch to the proxy.
      */
