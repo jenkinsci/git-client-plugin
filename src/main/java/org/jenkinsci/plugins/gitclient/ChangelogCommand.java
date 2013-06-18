@@ -75,6 +75,14 @@ public abstract class ChangelogCommand {
 
     /**
      * Stes the {@link OutputStream} that receives the changelog.
+     *
+     * This takes {@link Writer} and not {@link OutputStream} because the chanlog is a textual format,
+     * and therefore it is a stream of chars, not bytes. (If the latter, then we'd be unable to handle
+     * multiple encodings correctly.)
+     *
+     * According to man git-commit, the "encoding" header specifies the encoding of the commit message,
+     * and git CLIs will try to translate encoding back to UTF-8. In any case, it is the implementation's
+     * responsibility to correctly handle the encoding
      */
     public abstract ChangelogCommand to(Writer w);
 
