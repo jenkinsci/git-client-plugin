@@ -1,9 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.plugins.git.GitException;
 import org.eclipse.jgit.lib.ObjectId;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 
@@ -49,29 +47,25 @@ import java.io.Writer;
  *
  * @author Kohsuke Kawaguchi
  */
-public abstract class ChangelogCommand {
+public interface ChangelogCommand extends GitCommand {
     /**
      * Adds the revision to exclude from the log.
      * Equivalent of {@code ^rev} on the command line.
      *
      * This method can be invoked multiple times.
      */
-    public abstract ChangelogCommand excludes(String rev);
+    ChangelogCommand excludes(String rev);
 
-    public ChangelogCommand excludes(ObjectId rev) {
-        return excludes(rev.name());
-    }
+    ChangelogCommand excludes(ObjectId rev);
 
     /**
      * Adds the revision to include in the log.
      *
      * This method can be invoked multiple times.
      */
-    public abstract ChangelogCommand includes(String rev);
+    ChangelogCommand includes(String rev);
 
-    public ChangelogCommand includes(ObjectId rev) {
-        return includes(rev.name());
-    }
+    ChangelogCommand includes(ObjectId rev);
 
     /**
      * Stes the {@link OutputStream} that receives the changelog.
@@ -84,15 +78,10 @@ public abstract class ChangelogCommand {
      * and git CLIs will try to translate encoding back to UTF-8. In any case, it is the implementation's
      * responsibility to correctly handle the encoding
      */
-    public abstract ChangelogCommand to(Writer w);
+    ChangelogCommand to(Writer w);
 
     /**
      * Limit the number of changelog entry up to N.
      */
-    public abstract ChangelogCommand max(int n);
-
-    /**
-     * Executes the command.
-     */
-    public abstract void execute() throws GitException, InterruptedException;
+    ChangelogCommand max(int n);
 }

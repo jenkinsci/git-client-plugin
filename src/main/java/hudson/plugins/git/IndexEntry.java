@@ -1,11 +1,13 @@
 package hudson.plugins.git;
 
+import java.io.Serializable;
+
 /**
  * An Entry in the Index / Tree
  * 
  * @author nigelmagnay
  */
-public class IndexEntry {
+public class IndexEntry implements Serializable {
     String mode, type, object, file;
 
     public String getMode() {
@@ -51,4 +53,5 @@ public class IndexEntry {
         this.object = object;
     }
 
+    private static final long serialVersionUID = 1L;
 }

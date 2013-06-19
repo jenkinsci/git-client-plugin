@@ -434,4 +434,8 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     }
 
+    @Override
+    protected Object writeReplace() {
+        return super.writeReplace();
+    }
 }

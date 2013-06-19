@@ -190,31 +190,26 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             String reference;
             boolean shallow;
 
-            @Override
             public CloneCommand url(String url) {
                 this.url = url;
                 return this;
             }
 
-            @Override
             public CloneCommand repositoryName(String name) {
                 this.origin = name;
                 return this;
             }
 
-            @Override
             public CloneCommand shallow() {
                 this.shallow = true;
                 return this;
             }
 
-            @Override
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
             }
 
-            @Override
             public void execute() throws GitException, InterruptedException {
                 listener.getLogger().println("Cloning repository " + url);
                 final int[] gitVer = getGitVersion();
@@ -346,9 +341,17 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
                 return this;
             }
 
+            public ChangelogCommand excludes(ObjectId rev) {
+                return excludes(rev.name());
+            }
+
             public ChangelogCommand includes(String rev) {
                 revs.add(rev);
                 return this;
+            }
+
+            public ChangelogCommand includes(ObjectId rev) {
+                return includes(rev.name());
             }
 
             public ChangelogCommand to(Writer w) {
