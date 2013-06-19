@@ -3,6 +3,7 @@ package hudson.plugins.git;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
+import hudson.remoting.Channel;
 import hudson.util.ArgumentListBuilder;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -436,6 +437,6 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     @Override
     protected Object writeReplace() {
-        return super.writeReplace();
+        return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
     }
 }

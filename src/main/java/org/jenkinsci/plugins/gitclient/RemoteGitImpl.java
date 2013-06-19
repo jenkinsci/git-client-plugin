@@ -5,8 +5,10 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.plugins.git.Tag;
 import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
@@ -34,12 +36,16 @@ import java.util.Set;
  *
  * @author Kohsuke Kawaguchi
  */
-class RemoteGitImpl implements GitClient, Serializable {
+class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     private final GitClient proxy;
     private transient Channel channel;
 
     RemoteGitImpl(GitClient proxy) {
         this.proxy = proxy;
+    }
+
+    private IGitAPI getGitAPI() {
+        return (IGitAPI)proxy;
     }
 
     private Object readResolve() {
@@ -239,6 +245,18 @@ class RemoteGitImpl implements GitClient, Serializable {
         proxy.checkoutBranch(branch, ref);
     }
 
+    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException {
+        return getGitAPI().mergeBase(sha1, sha12);
+    }
+
+    public String getAllLogEntries(String branch) throws InterruptedException {
+        return getGitAPI().getAllLogEntries(branch);
+    }
+
+    public List<String> showRevision(Revision r) throws GitException, InterruptedException {
+        return getGitAPI().showRevision(r);
+    }
+
     public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
         proxy.clone(url, origin, useShallowClone, reference);
     }
@@ -373,6 +391,110 @@ class RemoteGitImpl implements GitClient, Serializable {
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
         return proxy.showRevision(from, to);
+    }
+
+    public boolean hasGitModules(String treeIsh) throws GitException, InterruptedException {
+        return getGitAPI().hasGitModules(treeIsh);
+    }
+
+    public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
+        return getGitAPI().getRemoteUrl(name, GIT_DIR);
+    }
+
+    public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
+        getGitAPI().setRemoteUrl(name, url, GIT_DIR);
+    }
+
+    public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
+        return getGitAPI().getDefaultRemote(_default_);
+    }
+
+    public boolean isBareRepository() throws GitException, InterruptedException {
+        return getGitAPI().isBareRepository();
+    }
+
+    public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
+        return getGitAPI().isBareRepository(GIT_DIR);
+    }
+
+    public void submoduleInit() throws GitException, InterruptedException {
+        getGitAPI().submoduleInit();
+    }
+
+    public void submoduleSync() throws GitException, InterruptedException {
+        getGitAPI().submoduleSync();
+    }
+
+    public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
+        return getGitAPI().getSubmoduleUrl(name);
+    }
+
+    public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
+        getGitAPI().setSubmoduleUrl(name, url);
+    }
+
+    public void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+        getGitAPI().fixSubmoduleUrls(remote, listener);
+    }
+
+    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+        getGitAPI().setupSubmoduleUrls(remote, listener);
+    }
+
+    public void fetch(String repository, String refspec) throws GitException, InterruptedException {
+        getGitAPI().fetch(repository, refspec);
+    }
+
+    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+        getGitAPI().fetch(remoteRepository);
+    }
+
+    public void fetch() throws GitException, InterruptedException {
+        getGitAPI().fetch();
+    }
+
+    public void reset(boolean hard) throws GitException, InterruptedException {
+        getGitAPI().reset(hard);
+    }
+
+    public void reset() throws GitException, InterruptedException {
+        getGitAPI().reset();
+    }
+
+    public void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException {
+        getGitAPI().push(repository, revspec);
+    }
+
+    public void merge(String revSpec) throws GitException, InterruptedException {
+        getGitAPI().merge(revSpec);
+    }
+
+    public void clone(RemoteConfig source) throws GitException, InterruptedException {
+        getGitAPI().clone(source);
+    }
+
+    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
+        getGitAPI().clone(rc, useShallowClone);
+    }
+
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+        return getGitAPI().getBranchesContaining(revspec);
+    }
+
+    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+        return getGitAPI().lsTree(treeIsh);
+    }
+
+    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
+        return getGitAPI().revListBranch(branchId);
+    }
+
+    public String describe(String commitIsh) throws GitException, InterruptedException {
+        return getGitAPI().describe(commitIsh);
+    }
+
+    public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException {
+        return getGitAPI().getTagsOnCommit(revName);
     }
 
     private static final long serialVersionUID = 1L;

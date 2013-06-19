@@ -61,6 +61,10 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
      * When sent to remote, switch to the proxy.
      */
     protected Object writeReplace() {
-        return new RemoteGitImpl(Channel.current().export(GitClient.class, this));
+        return remoteProxyFor(Channel.current().export(GitClient.class, this));
+    }
+
+    protected RemoteGitImpl remoteProxyFor(GitClient proxy) {
+        return new RemoteGitImpl(proxy);
     }
 }
