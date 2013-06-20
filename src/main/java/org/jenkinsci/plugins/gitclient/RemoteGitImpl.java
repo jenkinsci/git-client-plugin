@@ -53,6 +53,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return this;
     }
 
+    private Object writeReplace() {
+        return proxy; // when sent back to where it came from, switch back to the original object
+    }
+
     static class Invocation implements Serializable {
         private final String methodName;
         private final String[] parameterTypes;
@@ -65,6 +69,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
             Class[] paramTypes = method.getParameterTypes();
             for (int i=0; i<args.length; i++) {
                 parameterTypes[i] = paramTypes[i].getName();
+            }
+            for (int i=0; i<args.length; i++) {
+                if (args[i] instanceof OutputStream)
+                    args[i] = new RemoteOutputStream((OutputStream)args[i]);
+                if (args[i] instanceof Writer)
+                    args[i] = new RemoteWriter((Writer)args[i]);
             }
         }
 
@@ -156,6 +166,13 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return new RemoteOutputStream(os);
     }
 
+    /**
+     * @deprecated
+     *      There's no way to make this method work. use {@link #withRepository(RepositoryCallback)}
+     */
+    public Repository getRepository() throws GitException {
+        throw new UnsupportedOperationException();
+    }
 
 
 
@@ -187,10 +204,6 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public void setCommitter(PersonIdent p) throws GitException {
         proxy.setCommitter(p);
-    }
-
-    public Repository getRepository() throws GitException {
-        return proxy.getRepository();
     }
 
     public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
