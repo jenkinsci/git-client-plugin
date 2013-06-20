@@ -54,7 +54,9 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     private Object writeReplace() {
-        return proxy; // when sent back to where it came from, switch back to the original object
+        if (channel!=null)
+            return proxy; // when sent back to where it came from, switch back to the original object
+        return this;
     }
 
     static class Invocation implements Serializable {
@@ -99,15 +101,19 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     private <T extends GitCommand> T command(Class<T> type) {
-        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class[]{type}, new CommandInvocationHandler(type)));
+        return type.cast(Proxy.newProxyInstance(type.getClassLoader(), new Class[]{type}, new CommandInvocationHandler(type,this)));
     }
 
-    private class CommandInvocationHandler implements InvocationHandler, GitCommand, Serializable {
+    private static class CommandInvocationHandler implements InvocationHandler, GitCommand, Serializable {
         private final Class<? extends GitCommand> command;
         private final List<Invocation> invocations = new ArrayList<Invocation>();
+        private transient final Channel channel;
+        private final GitClient proxy;
 
-        private CommandInvocationHandler(Class<? extends GitCommand> command) {
+        private CommandInvocationHandler(Class<? extends GitCommand> command, RemoteGitImpl owner) {
             this.command = command;
+            this.channel = owner.channel;
+            this.proxy = owner.proxy;
         }
 
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
