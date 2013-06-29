@@ -39,9 +39,11 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringReader;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -61,15 +63,15 @@ import static org.eclipse.jgit.lib.Constants.*;
  * For internal use only, don't use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
  * </b>
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
+ * @author Kohsuke Kawaguchi
  */
-public class JGitAPIImpl extends AbstractGitAPIImpl {
+public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
-    private final File workspace;
     private final TaskListener listener;
     private PersonIdent author, committer;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
-        this.workspace = workspace;
+        super(workspace);
         this.listener = listener;
     }
 
@@ -688,5 +690,101 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
 
     public void submoduleUpdate(boolean recursive) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
+    }
+
+
+
+
+
+    //
+    //
+    // Legacy Implementation of IGitAPI
+    //
+    //
+
+    @Deprecated
+    public void merge(String refSpec) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Deprecated
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public String getAllLogEntries(String branch) throws InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void submoduleInit() throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void submoduleSync() throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public String describe(String commitIsh) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void reset(boolean hard) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Deprecated
+    public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException();
     }
 }

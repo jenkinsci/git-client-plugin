@@ -29,18 +29,16 @@ import java.util.regex.Pattern;
  * For internal use only, dont use directly. See {@link Git}
  * </b>
  */
-public class CliGitAPIImpl extends AbstractGitAPIImpl {
+public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     Launcher launcher;
-    File workspace;
     TaskListener listener;
     String gitExe;
     EnvVars environment;
 
     protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
-
-        this.workspace = workspace;
+        super(workspace);
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
@@ -159,10 +157,6 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         }
 
         launchCommand(args);
-    }
-
-    public void fetch() throws GitException, InterruptedException {
-        fetch(null, null);
     }
 
     public void reset(boolean hard) throws GitException, InterruptedException {
@@ -586,15 +580,6 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
     }
 
     /**
-     * Detect whether a repository is bare or not.
-     *
-     * @throws GitException
-     */
-    public boolean isBareRepository() throws GitException, InterruptedException {
-        return isBareRepository("");
-    }
-
-    /**
      * Detect whether a repository at the given path is bare or not.
      *
      * @param GIT_DIR The path to the repository (must be to .git dir).
@@ -602,7 +587,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
      * @throws GitException
      */
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        String ret = null;
+        String ret;
         if ( "".equals(GIT_DIR) )
             ret = launchCommand(        "rev-parse", "--is-bare-repository");
         else {
@@ -610,10 +595,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
 
-        if ( "false".equals( firstLine(ret).trim() ) )
-            return false;
-        else
-            return true;
+        return !"false".equals(firstLine(ret).trim());
     }
 
     private String pathJoin( String a, String b ) {
@@ -763,15 +745,6 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
             setupSubmoduleUrls( remote, listener );
     }
 
-    private void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException {
-        // This is to make sure that we don't miss any new submodules or
-        // changes in submodule origin paths...
-        submoduleInit();
-        submoduleSync();
-        // This allows us to seamlessly use bare and non-bare superproject
-        // repositories.
-        fixSubmoduleUrls( remote, listener );
-    }
     public void tag(String tagName, String comment) throws GitException, InterruptedException {
         tagName = tagName.replace(' ', '_');
         try {
@@ -863,7 +836,7 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         // That are possible.
     }
 
-    private Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {
+    protected Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {
         // TODO: git branch -a -v --abbrev=0 would do this in one shot..
 
         Set<Branch> branches = new HashSet<Branch>();
@@ -1138,4 +1111,71 @@ public class CliGitAPIImpl extends AbstractGitAPIImpl {
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
 
+
+    //
+    //
+    // Legacy Implementation of IGitAPI
+    //
+    //
+
+    @Deprecated
+    public void merge(String refSpec) throws GitException, InterruptedException {
+        try {
+            launchCommand("merge", refSpec);
+        } catch (GitException e) {
+            throw new GitException("Could not merge " + refSpec, e);
+        }
+    }
+
+    @Deprecated
+    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add("push", repository.getURIs().get(0).toPrivateString());
+
+        if (refspec != null)
+            args.add(refspec);
+
+        launchCommand(args);
+        // Ignore output for now as there's many different formats
+        // That are possible.
+
+    }
+
+    @Deprecated
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+        return new ArrayList<Branch>(parseBranches(launchCommand("branch", "-a", "--contains", revspec)));
+    }
+
+    @Deprecated
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
+        try {
+            String result;
+            try {
+                result = launchCommand("merge-base", id1.name(), id2.name());
+            } catch (GitException ge) {
+                return null;
+            }
+
+
+            BufferedReader rdr = new BufferedReader(new StringReader(result));
+            String line;
+
+            while ((line = rdr.readLine()) != null) {
+                // Add the SHA1
+                return ObjectId.fromString(line);
+            }
+        } catch (IOException e) {
+            throw new GitException("Error parsing merge base", e);
+        } catch (GitException e) {
+            throw new GitException("Error parsing merge base", e);
+        }
+
+        return null;
+    }
+
+    @Deprecated
+    public String getAllLogEntries(String branch) throws InterruptedException {
+        return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
+
+    }
 }

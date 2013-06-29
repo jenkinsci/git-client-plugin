@@ -3,22 +3,15 @@ package hudson.plugins.git;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
-import hudson.remoting.Channel;
-import hudson.util.ArgumentListBuilder;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -29,9 +22,7 @@ import java.util.Set;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  * @deprecated
  */
-public class GitAPI extends CliGitAPIImpl implements IGitAPI {
-
-    private final File repository;
+public class GitAPI extends CliGitAPIImpl {
     private final GitClient jgit;
 
     @Deprecated
@@ -47,7 +38,6 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
     @Deprecated
     public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
         super(gitExe, repository, listener, environment);
-        this.repository = repository;
 
         // If USE_CLI is forced, don't delegate to JGit client
         this.jgit = Git.USE_CLI ? null : Git.with(listener, environment).in(repository).using("jgit").getClient();
@@ -255,188 +245,5 @@ public class GitAPI extends CliGitAPIImpl implements IGitAPI {
 
     public void branch(String name) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.branch(name); else  jgit.branch(name);
-    }
-
-
-
-
-
-    // --- legacy methods, kept for backward compatibility
-    
-    @Deprecated
-    public void merge(String refSpec) throws GitException, InterruptedException {
-        try {
-            launchCommand("merge", refSpec);
-        } catch (GitException e) {
-            throw new GitException("Could not merge " + refSpec, e);
-        }
-    }
-
-    @Deprecated
-    public boolean hasGitModules(String treeIsh) throws GitException {
-        try {
-            return new File(repository, ".gitmodules").exists();
-        } catch (SecurityException ex) {
-            throw new GitException(
-                    "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
-                    ex);
-        } catch (Exception e) {
-            throw new GitException("Couldn't check for .gitmodules", e);
-        }
-
-    }
-
-    @Deprecated
-    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
-        // This is to make sure that we don't miss any new submodules or
-        // changes in submodule origin paths...
-        submoduleInit();
-        submoduleSync();
-        // This allows us to seamlessly use bare and non-bare superproject
-        // repositories.
-        fixSubmoduleUrls( remote, listener );
-    }
-
-    @Deprecated
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException {
-        fetch(repository, new RefSpec(refspec));
-    }
-
-    @Deprecated
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
-        // Assume there is only 1 URL / refspec for simplicity
-        fetch(remoteRepository.getURIs().get(0).toPrivateString(), remoteRepository.getFetchRefSpecs().get(0).toString());
-    }
-
-    @Deprecated
-    public void fetch() throws GitException, InterruptedException {
-        fetch(null, (RefSpec) null);
-    }
-
-
-    public void reset() throws GitException, InterruptedException {
-        reset(false);
-    }
-
-    @Deprecated
-    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add("push", repository.getURIs().get(0).toPrivateString());
-
-        if (refspec != null)
-            args.add(refspec);
-
-        launchCommand(args);
-        // Ignore output for now as there's many different formats
-        // That are possible.
-
-    }
-
-    @Deprecated
-    public void clone(RemoteConfig source) throws GitException, InterruptedException {
-        clone(source, false);
-    }
-
-    @Deprecated
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
-        // Assume only 1 URL for this repository
-        final String source = rc.getURIs().get(0).toPrivateString();
-        clone(source, rc.getName(), useShallowClone, null);
-    }
-
-    @Deprecated
-    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
-        return parseBranches(launchCommand("branch", "-a", "--contains", revspec));
-    }
-
-    @Deprecated
-    private List<Branch> parseBranches(String fos) throws GitException, InterruptedException {
-        // TODO: git branch -a -v --abbrev=0 would do this in one shot..
-        List<Branch> tags = new ArrayList<Branch>();
-        BufferedReader rdr = new BufferedReader(new StringReader(fos));
-        String line;
-        try {
-            while ((line = rdr.readLine()) != null) {
-                // Ignore the 1st
-                line = line.substring(2);
-                // Ignore '(no branch)' or anything with " -> ", since I think
-                // that's just noise
-                if ((!line.startsWith("("))
-                        && (line.indexOf(" -> ") == -1)) {
-                    tags.add(new Branch(line, revParse(line)));
-                }
-            }
-        } catch (IOException e) {
-            throw new GitException("Error parsing branches", e);
-        }
-
-        return tags;
-    }
-
-    @Deprecated
-    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
-        return revList(branchId);
-    }
-
-    @Deprecated
-    public List<String> showRevision(Revision r) throws GitException, InterruptedException {
-        return showRevision(null, r.getSha1());
-    }
-
-
-        @Deprecated
-    public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
-        final Repository db = getRepository();
-        try {
-            final ObjectId commit = db.resolve(revName);
-            final List<Tag> ret = new ArrayList<Tag>();
-
-            for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-                final ObjectId tagId = tag.getValue().getObjectId();
-                if (commit.equals(tagId))
-                    ret.add(new Tag(tag.getKey(), tagId));
-            }
-            return ret;
-        } finally {
-            db.close();
-        }
-    }
-
-    @Deprecated
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
-        try {
-            String result;
-            try {
-                result = launchCommand("merge-base", id1.name(), id2.name());
-            } catch (GitException ge) {
-                return null;
-            }
-
-
-            BufferedReader rdr = new BufferedReader(new StringReader(result));
-            String line;
-
-            while ((line = rdr.readLine()) != null) {
-                // Add the SHA1
-                return ObjectId.fromString(line);
-            }
-        } catch (IOException e) {
-            throw new GitException("Error parsing merge base", e);
-        } catch (GitException e) {
-            throw new GitException("Error parsing merge base", e);
-        }
-
-        return null;
-    }
-
-    @Deprecated
-    public String getAllLogEntries(String branch) throws InterruptedException {
-        return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
-
-    }
-
-    @Override
-    protected Object writeReplace() {
-        return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
     }
 }
