@@ -358,7 +358,40 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
     }
 
     public CloneCommand clone_() {
-        throw new UnsupportedOperationException("not implemented yet");
+        final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
+        base.setDirectory(workspace);
+        base.setProgressMonitor(new ProgressMonitor(listener));
+
+        return new CloneCommand() {
+
+            public CloneCommand url(String url) {
+                base.setURI(url);
+                return this;
+            }
+
+            public CloneCommand repositoryName(String name) {
+                base.setRemote(name);
+                return this;
+            }
+
+            public CloneCommand shallow() {
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                return this;
+            }
+
+            public CloneCommand reference(String reference) {
+                listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    base.call();
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                }
+            }
+        };
     }
 
     public void deleteTag(String tagName) throws GitException {
