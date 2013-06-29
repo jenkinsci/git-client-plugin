@@ -29,6 +29,7 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
@@ -39,11 +40,9 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.StringReader;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -70,9 +69,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
+    /**
+     * Opened {@link Repository} object.
+     * This object cannot be passed to the caller, but so long as its use
+     * stays inside this class, use this instance for more efficiency.
+     *
+     * Use {@link #db()} to access this.
+     */
+    private Repository db;
+    private ObjectReader or;
+
     JGitAPIImpl(File workspace, TaskListener listener) {
         super(workspace);
         this.listener = listener;
+    }
+
+    private Repository db() throws GitException {
+        if (db==null) {
+            db = getRepository();
+            or = db.newObjectReader();
+        }
+        return db;
     }
 
     public GitClient subGit(String subdir) {
@@ -108,9 +125,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void checkout(String ref, String branch) throws GitException {
         try {
-            Repository r = getRepository();
-            if (ref == null) ref = r.resolve(HEAD).name();
-            Git git = Git.wrap(r);
+            if (ref == null) ref = db().resolve(HEAD).name();
+            Git git = Git.wrap(db());
             git.checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
@@ -121,9 +137,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void checkoutBranch(String branch, String ref) throws GitException {
         try {
-            Repository r = getRepository();
-            RefUpdate refUpdate = r.updateRef(Constants.R_HEADS + branch);
-            refUpdate.setNewObjectId(r.resolve(ref));
+            RefUpdate refUpdate = db().updateRef(Constants.R_HEADS + branch);
+            refUpdate.setNewObjectId(db().resolve(ref));
             switch (refUpdate.forceUpdate()) {
             case NOT_ATTEMPTED:
             case LOCK_FAILURE:
@@ -234,14 +249,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public boolean tagExists(String tagName) throws GitException {
-        Repository db = getRepository();
         try {
-            Ref tag =  db.getRefDatabase().getRef(R_TAGS + tagName);
+            Ref tag =  db().getRefDatabase().getRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
-        } finally {
-            db.close();
         }
     }
 
@@ -310,12 +322,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public String getRemoteUrl(String name) throws GitException {
-        Repository db = getRepository();
-        try {
-            return db.getConfig().getString("remote",name,"url");
-        } finally {
-            db.close();
-        }
+        return db().getConfig().getString("remote",name,"url");
     }
 
     public Repository getRepository() throws GitException {
@@ -347,15 +354,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
-        Repository db = getRepository();
         try {
-            StoredConfig config = db.getConfig();
+            StoredConfig config = db().getConfig();
             config.setString("remote", name, "url", url);
             config.save();
         } catch (IOException e) {
             throw new GitException(e);
-        } finally {
-            db.close();
         }
     }
 
@@ -371,15 +375,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ChangelogCommand changelog() {
+        db();   // ensure 'or' is set
         return new ChangelogCommand() {
-            Repository repo = getRepository();
-            ObjectReader reader = repo.newObjectReader();
-            RevWalk walk = new RevWalk(reader);
+            RevWalk walk = new RevWalk(or);
             Writer out;
 
             public ChangelogCommand excludes(String rev) {
                 try {
-                    return excludes(repo.resolve(rev));
+                    return excludes(db().resolve(rev));
                 } catch (IOException e) {
                     throw new GitException(e);
                 }
@@ -396,7 +399,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public ChangelogCommand includes(String rev) {
                 try {
-                    return includes(repo.resolve(rev));
+                    return includes(db().resolve(rev));
                 } catch (IOException e) {
                     throw new GitException(e);
                 }
@@ -424,7 +427,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException, InterruptedException {
                 PrintWriter pw = new PrintWriter(out,false);
                 try {
-                    final RenameDetector rd = new RenameDetector(repo);
+                    final RenameDetector rd = new RenameDetector(db());
 
                     for (RevCommit commit : walk) {
                         // git whatachanged doesn't show the merge commits unless -m is given
@@ -446,13 +449,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         pw.println(msg);
 
                         // see man git-diff-tree for the format
-                        TreeWalk tw = TreeWalk.forPath(reader, "", commit.getParent(0).getTree(), commit.getTree());
+                        TreeWalk tw = TreeWalk.forPath(or, "", commit.getParent(0).getTree(), commit.getTree());
                         tw.setRecursive(true);
                         tw.setFilter(TreeFilter.ANY_DIFF);
 
                         rd.reset();
                         rd.addAll(DiffEntry.scan(tw));
-                        List<DiffEntry> diffs = rd.compute(reader, null);
+                        List<DiffEntry> diffs = rd.compute(or, null);
                         for (DiffEntry diff : diffs) {
                             pw.printf(":%06o %06o %s %s %s %s",
                                     diff.getOldMode().getBits(),
@@ -473,7 +476,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException(e);
                 } finally {
                     pw.flush();
-                    repo.close();
                 }
             }
 
@@ -557,16 +559,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public String getTagMessage(String tagName) throws GitException {
-        Repository db = getRepository();
         try {
-            RevWalk walk = new RevWalk(db);
-            String s = walk.parseTag(db.resolve(tagName)).getFullMessage();
+            RevWalk walk = new RevWalk(db());
+            String s = walk.parseTag(db().resolve(tagName)).getFullMessage();
             walk.dispose();
             return s.trim();
         } catch (IOException e) {
             throw new GitException(e);
-        } finally {
-            db.close();
         }
     }
 
@@ -588,11 +587,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Set<String> getTagNames(String tagPattern) throws GitException {
         if (tagPattern == null) tagPattern = "*";
 
-        Repository db = getRepository();
         try {
             Set<String> tags = new HashSet<String>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
-            Map<String, Ref> refList = db.getRefDatabase().getRefs(R_TAGS);
+            Map<String, Ref> refList = db().getRefDatabase().getRefs(R_TAGS);
             for (Ref ref : refList.values()) {
                 String name = ref.getName().substring(R_TAGS.length());
                 matcher.reset();
@@ -604,8 +602,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } catch (InvalidPatternException e) {
             throw new GitException(e);
-        } finally {
-            db.close();
         }
     }
 
@@ -626,12 +622,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
-        Repository db = getRepository();
-        try {
-            return db.hasObject(commit);
-        } finally {
-            db.close();
-        }
+        return db().hasObject(commit);
     }
 
     public void prune(RemoteConfig repository) throws GitException {
@@ -659,16 +650,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId revParse(String revName) throws GitException {
-        Repository db = getRepository();
         try {
-            ObjectId id = db.resolve(revName + "^{commit}");
+            ObjectId id = db().resolve(revName + "^{commit}");
             if (id == null)
                 throw new GitException("Unknown git object "+ revName);
             return id;
         } catch (IOException e) {
             throw new GitException("Failed to resolve git reference "+ revName, e);
-        } finally {
-            db.close();
         }
     }
 
@@ -720,7 +708,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            db();
+            RevWalk walk = new RevWalk(or);
+            walk.setRetainBody(false);  // we don't need the body for this computation
+            walk.setRevFilter(RevFilter.MERGE_BASE);
+
+            walk.markStart(walk.parseCommit(id1));
+            walk.markStart(walk.parseCommit(id2));
+
+            RevCommit base = walk.next();
+            if (base==null)     return null;    // no common base
+            return base.getId();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
