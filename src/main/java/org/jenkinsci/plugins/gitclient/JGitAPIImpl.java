@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.FilePath;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.api.CommitCommand;
@@ -13,10 +14,12 @@ import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
@@ -234,13 +237,9 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-
-        // Require a local repository, so can't be used in git-plugin context
-        /*
-        // based on org.eclipse.jgit.pgm.LsRemote
         try {
-            final Transport tn = Transport.open(null, new URIish(remoteRepoUrl)); // fail NullPointerException
+            FileRepository repo = openDummyRepository();
+            final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
             final FetchConnection c = tn.openFetch();
             try {
                 for (final Ref r : c.getRefs()) {
@@ -248,17 +247,36 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
                         return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
                     }
                 }
-                } finally {
-                    c.close();
-                    tn.close();
-                }
-            } catch (IOException e) {
-                throw new GitException(e);
-            } catch (URISyntaxException e) {
-                throw new GitException(e);
+            } finally {
+                c.close();
+                tn.close();
+                repo.close();
             }
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (URISyntaxException e) {
+            throw new GitException(e);
+        }
         return null;
-        */
+    }
+
+    /**
+     * Creates a empty dummy {@link Repository} to keep JGit happy where it wants a valid {@link Repository} operation
+     * for remote objects.
+     */
+    private FileRepository openDummyRepository() throws IOException {
+        final File tempDir = Util.createTempDir();
+        return new FileRepository(tempDir) {
+            @Override
+            public void close() {
+                super.close();
+                try {
+                    Util.deleteRecursive(tempDir);
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        };
     }
 
     public String getRemoteUrl(String name) throws GitException {
