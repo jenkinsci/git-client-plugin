@@ -3,28 +3,56 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
-import hudson.plugins.git.*;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
-import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.storage.file.FileRepository;
-import org.eclipse.jgit.transport.*;
+import org.eclipse.jgit.transport.FetchConnection;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.TagOpt;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
-import static org.eclipse.jgit.lib.Constants.HEAD;
-import static org.eclipse.jgit.lib.Constants.R_TAGS;
+import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
+import static org.eclipse.jgit.lib.Constants.*;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -341,7 +369,128 @@ public class JGitAPIImpl extends AbstractGitAPIImpl {
     }
 
     public ChangelogCommand changelog() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return new ChangelogCommand() {
+            Repository repo = getRepository();
+            ObjectReader reader = repo.newObjectReader();
+            RevWalk walk = new RevWalk(reader);
+            Writer out;
+
+            public ChangelogCommand excludes(String rev) {
+                try {
+                    return excludes(repo.resolve(rev));
+                } catch (IOException e) {
+                    throw new GitException(e);
+                }
+            }
+
+            public ChangelogCommand excludes(ObjectId rev) {
+                try {
+                    walk.markUninteresting(walk.lookupCommit(rev));
+                    return this;
+                } catch (IOException e) {
+                    throw new GitException(e);
+                }
+            }
+
+            public ChangelogCommand includes(String rev) {
+                try {
+                    return includes(repo.resolve(rev));
+                } catch (IOException e) {
+                    throw new GitException(e);
+                }
+            }
+
+            public ChangelogCommand includes(ObjectId rev) {
+                try {
+                    walk.markStart(walk.lookupCommit(rev));
+                    return this;
+                } catch (IOException e) {
+                    throw new GitException(e);
+                }
+            }
+
+            public ChangelogCommand to(Writer w) {
+                this.out = w;
+                return this;
+            }
+
+            public ChangelogCommand max(int n) {
+                walk.setRevFilter(MaxCountRevFilter.create(n));
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                PrintWriter pw = new PrintWriter(out,false);
+                try {
+                    final RenameDetector rd = new RenameDetector(repo);
+
+                    for (RevCommit commit : walk) {
+                        // git whatachanged doesn't show the merge commits unless -m is given
+                        if (commit.getParentCount()>1)  continue;
+
+                        pw.printf("commit %s\n", commit.name());
+                        pw.printf("tree %s\n", commit.getTree().name());
+                        for (RevCommit parent : commit.getParents())
+                            pw.printf("parent %s\n",parent.name());
+                        pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
+                        pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
+
+                        // indent commit messages by 4 chars
+                        String msg = commit.getFullMessage();
+                        if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
+                        msg = msg.replace("\n","\n    ");
+                        msg="    "+msg+"\n";
+
+                        pw.println(msg);
+
+                        // see man git-diff-tree for the format
+                        TreeWalk tw = TreeWalk.forPath(reader, "", commit.getParent(0).getTree(), commit.getTree());
+                        tw.setRecursive(true);
+                        tw.setFilter(TreeFilter.ANY_DIFF);
+
+                        rd.reset();
+                        rd.addAll(DiffEntry.scan(tw));
+                        List<DiffEntry> diffs = rd.compute(reader, null);
+                        for (DiffEntry diff : diffs) {
+                            pw.printf(":%06o %06o %s %s %s %s",
+                                    diff.getOldMode().getBits(),
+                                    diff.getNewMode().getBits(),
+                                    diff.getOldId().name(),
+                                    diff.getNewId().name(),
+                                    statusOf(diff),
+                                    diff.getOldPath());
+
+                            if (hasNewPath(diff)) {
+                                pw.printf(" %s",diff.getNewPath()); // copied to
+                            }
+                            pw.println();
+                            pw.println();
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } finally {
+                    pw.flush();
+                    repo.close();
+                }
+            }
+
+            private boolean hasNewPath(DiffEntry d) {
+                return d.getChangeType()==ChangeType.COPY || d.getChangeType()==ChangeType.RENAME;
+            }
+
+            private String statusOf(DiffEntry d) {
+                switch (d.getChangeType()) {
+                case ADD:       return "A";
+                case MODIFY:    return "M";
+                case DELETE:    return "D";
+                case RENAME:    return "R"+d.getScore();
+                case COPY:      return "C"+d.getScore();
+                default:
+                    throw new AssertionError("Unexpected change type: "+d.getChangeType());
+                }
+            }
+        };
     }
 
     public void clean() throws GitException {
