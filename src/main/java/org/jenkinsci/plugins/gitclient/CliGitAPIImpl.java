@@ -579,13 +579,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getDefaultRemote("origin");
     }
 
-    /**
-     * Detect whether a repository at the given path is bare or not.
-     *
-     * @param GIT_DIR The path to the repository (must be to .git dir).
-     *
-     * @throws GitException
-     */
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
         String ret;
         if ( "".equals(GIT_DIR) )

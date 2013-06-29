@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.google.common.collect.Iterables;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -12,6 +13,7 @@ import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -27,9 +29,11 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
@@ -52,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
 import static org.eclipse.jgit.lib.Constants.*;
 
@@ -762,31 +767,70 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            db();
+            RevWalk w = new RevWalk(or);
+
+            TreeWalk tree = new TreeWalk(or);
+            tree.addTree(w.parseTree(db().resolve(treeIsh)));
+            tree.setRecursive(false);
+
+            List<IndexEntry> r = new ArrayList<IndexEntry>();
+            while (tree.next()) {
+                RevObject rev = w.parseAny(tree.getObjectId(0));
+                r.add(new IndexEntry(
+                        String.format("%06o", tree.getRawMode(0)),
+                        Constants.typeString(rev.getType()),
+                        tree.getObjectId(0).name(),
+                        tree.getNameString()));
+            }
+            return r;
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
     public void reset(boolean hard) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            ResetCommand reset = new ResetCommand(db());
+            reset.setMode(hard?HARD:MIXED);
+            reset.call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        if (isBlank(GIT_DIR))
+            return db().isBare();
+        return new File(workspace,GIT_DIR).getName().equals(".git");
     }
 
     @Deprecated
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        Set<String> remotes = getConfig(null).getNames("remote");
+        if (remotes.contains(_default_))    return _default_;
+        else    return Iterables.getFirst(remotes,null);
     }
 
     @Deprecated
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        getConfig(GIT_DIR).setString("remote", name, "url", url);
     }
 
     @Deprecated
     public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        return getConfig(GIT_DIR).getString("remote", name, "url");
+    }
+
+    private StoredConfig getConfig(String GIT_DIR) {
+        StoredConfig config;
+        if (isBlank(GIT_DIR))
+            config = db().getConfig();
+        else
+            config = new FileBasedConfig(new File(workspace,GIT_DIR),db().getFS());
+        return config;
     }
 }

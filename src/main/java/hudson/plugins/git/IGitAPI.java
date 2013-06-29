@@ -19,6 +19,13 @@ public interface IGitAPI extends GitClient {
     void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException;
     String getDefaultRemote( String _default_ ) throws GitException, InterruptedException;
     boolean isBareRepository() throws GitException, InterruptedException;
+    /**
+     * Detect whether a repository at the given path is bare or not.
+     *
+     * @param GIT_DIR The path to the repository (must be to .git dir).
+     *
+     * @throws GitException
+     */
     boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException;
     void submoduleInit()  throws GitException, InterruptedException;
     void submoduleSync() throws GitException, InterruptedException;
