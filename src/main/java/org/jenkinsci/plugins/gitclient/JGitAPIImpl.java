@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.Credentials;
 import com.google.common.collect.Iterables;
 import hudson.FilePath;
 import hudson.Util;
@@ -35,14 +36,18 @@ import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.jenkinsci.plugins.gitclient.trilead.CredentialsProviderImpl;
+import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,6 +79,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
+    private CredentialsProvider provider;
+
     /**
      * Opened {@link Repository} object.
      * This object cannot be passed to the caller, but so long as its use
@@ -87,6 +94,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     JGitAPIImpl(File workspace, TaskListener listener) {
         super(workspace);
         this.listener = listener;
+
+        // to avoid rogue plugins from clobbering what we use, always
+        // make a point of overwriting it with ours.
+        SshSessionFactory.setInstance(new TrileadSessionFactory());
+    }
+
+    public void setCredentials(Credentials cred) {
+        setCredentialsProvider(new CredentialsProviderImpl(listener,cred));
+    }
+
+    public void setCredentialsProvider(CredentialsProvider prov) {
+        this.provider = prov;
     }
 
     private Repository db() throws GitException {
@@ -268,6 +287,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Git git = Git.open(workspace);
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
             if (remoteName != null) fetch.setRemote(remoteName);
+            fetch.setCredentialsProvider(provider);
 
             // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
             List<RefSpec> refSpecs = new ArrayList<RefSpec>();
@@ -287,6 +307,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             FileRepository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
+            tn.setCredentialsProvider(provider);
             final FetchConnection c = tn.openFetch();
             try {
                 for (final Ref r : c.getRefs()) {
@@ -519,6 +540,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
         base.setDirectory(workspace);
         base.setProgressMonitor(new ProgressMonitor(listener));
+        base.setCredentialsProvider(provider);
 
         return new CloneCommand() {
 
@@ -638,7 +660,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
         try {
             Git git = Git.open(workspace);
-            git.push().setRemote(remoteName).setRefSpecs(ref).setProgressMonitor(new ProgressMonitor(listener)).call();
+            git.push().setRemote(remoteName).setRefSpecs(ref)
+                    .setProgressMonitor(new ProgressMonitor(listener))
+                    .setCredentialsProvider(provider)
+                    .call();
         } catch (IOException e) {
             throw new GitException(e);
         } catch (GitAPIException e) {

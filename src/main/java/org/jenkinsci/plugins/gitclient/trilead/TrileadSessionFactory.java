@@ -1,7 +1,10 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUser;
+import com.cloudbees.plugins.credentials.Credentials;
 import com.trilead.ssh2.Connection;
+import hudson.AbortException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteSession;
@@ -12,6 +15,8 @@ import org.eclipse.jgit.util.FS;
 import java.io.IOException;
 
 /**
+ * Makes JGit uses Trilead for connectivity.
+ *
  * @author Kohsuke Kawaguchi
  */
 public class TrileadSessionFactory extends SshSessionFactory {
@@ -24,13 +29,19 @@ public class TrileadSessionFactory extends SshSessionFactory {
             con.setTCPNoDelay(true);
             con.connect();  // TODO: host key check
 
-            SshCredentialsProvider sshcp = (SshCredentialsProvider)credentialsProvider;
+            CredentialsProviderImpl sshcp = (CredentialsProviderImpl)credentialsProvider;
 
-            if (!SSHAuthenticator.newInstance(con, sshcp.cred).authenticate(sshcp.listener) && con.isAuthenticationComplete())
+            Credentials c = sshcp.cred;
+            if (!(c instanceof SSHUser))
+                throw new AbortException("Expecting an SSH credential but got "+c+" instead");
+
+            if (!SSHAuthenticator.newInstance(con, (SSHUser)c).authenticate(sshcp.listener) && con.isAuthenticationComplete())
                 throw new TransportException("Authentication failure");
 
             return wrap(con);
         } catch (IOException e) {
+            throw new TransportException(uri,"Failed to connect",e);
+        } catch (InterruptedException e) {
             throw new TransportException(uri,"Failed to connect",e);
         }
     }

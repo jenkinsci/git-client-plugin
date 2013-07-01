@@ -9,9 +9,11 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import hudson.util.StreamTaskListener;
+import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.lib.TextProgressMonitor;
 import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.JschConfigSessionFactory;
@@ -24,14 +26,44 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
 import org.jvnet.hudson.test.HudsonTestCase;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
  * @author Kohsuke Kawaguchi
  */
 public class TrileadTest extends HudsonTestCase {
+    static class MyProvider extends CredentialsProvider implements Serializable {
+        @Override
+        public boolean isInteractive() {
+            return false;
+        }
+
+        @Override
+        public boolean supports(CredentialItem... items) {
+            return false;
+        }
+
+        @Override
+        public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
+            return false;
+        }
+
+        private static final long serialVersionUID = 1L;
+    }
+
+    public void testSerializableCredentialsProvider() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        new ObjectOutputStream(baos).writeObject(new MyProvider());
+        new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray())).readObject();
+    }
+
     public void testTrileadSsh() throws Exception {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
 
@@ -43,7 +75,7 @@ public class TrileadTest extends HudsonTestCase {
 
         FileRepository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
         Transport t = Transport.open(b, new URIish("ssh://git@github.com/cloudbees/ami-builder"));
-        t.setCredentialsProvider(new SshCredentialsProvider(StreamTaskListener.fromStdout(),sshCred));
+        t.setCredentialsProvider(new CredentialsProviderImpl(StreamTaskListener.fromStdout(),sshCred));
         t.setDryRun(true);
 
         FetchResult result = t.fetch(new TextProgressMonitor(new PrintWriter(System.out)),

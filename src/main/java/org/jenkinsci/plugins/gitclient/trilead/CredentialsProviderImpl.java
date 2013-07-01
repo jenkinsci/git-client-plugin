@@ -1,25 +1,29 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUser;
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPassword;
-import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.Credentials;
 import hudson.model.TaskListener;
-import hudson.security.ACL;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 
 /**
+ * Provides the credential to authenticate Git connection.
+ *
+ * <p>
+ * For HTTP transport we work through {@link CredentialsProvider}, and for {@link TrileadSessionFactory}
+ * it specifically downcasts {@link CredentialsProvider} to this class.
+ *
  * @author Kohsuke Kawaguchi
  */
-public class SshCredentialsProvider extends CredentialsProvider {
+public class CredentialsProviderImpl extends CredentialsProvider {
     public final TaskListener listener;
-    public final SSHUser cred;
+    /**
+     * Credential that should be used.
+     */
+    public final Credentials cred;
 
-    public SshCredentialsProvider(TaskListener listener, SSHUser cred) {
+    public CredentialsProviderImpl(TaskListener listener, Credentials cred) {
         this.listener = listener;
         this.cred = cred;
     }
@@ -29,6 +33,7 @@ public class SshCredentialsProvider extends CredentialsProvider {
         return false;
     }
 
+    // TODO: provide username/password
     @Override
     public boolean supports(CredentialItem... items) {
         return false;
