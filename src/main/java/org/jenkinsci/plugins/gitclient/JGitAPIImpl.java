@@ -354,7 +354,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public Repository getRepository() throws GitException {
         try {
-            return new RepositoryBuilder().setGitDir(workspace).build();
+            return new RepositoryBuilder().setWorkTree(workspace).build();
         } catch (IOException e) {
             throw new GitException(e);
         }
