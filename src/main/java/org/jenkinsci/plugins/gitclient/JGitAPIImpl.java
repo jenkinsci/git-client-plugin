@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.Credentials;
-import com.google.common.collect.Iterables;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -139,10 +138,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void checkout(String ref) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.checkout().setName(ref).setForce(true).call();
-        } catch (IOException e) {
-            throw new GitException("Could not checkout " + ref, e);
+            git().checkout().setName(ref).setForce(true).call();
         } catch (GitAPIException e) {
             throw new GitException("Could not checkout " + ref, e);
         }
@@ -183,26 +179,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void add(String filePattern) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.add().addFilepattern(filePattern).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().add().addFilepattern(filePattern).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
     }
 
+    private Git git() {
+        return Git.wrap(getRepository());
+    }
+
     public void commit(String message) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            CommitCommand cmd = git.commit().setMessage(message);
+            CommitCommand cmd = git().commit().setMessage(message);
             if (author!=null)
                 cmd.setAuthor(author);
             if (committer!=null)
                 cmd.setCommitter(new PersonIdent(committer,new Date()));
             cmd.call();
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -210,10 +204,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void branch(String name) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.branchCreate().setName(name).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().branchCreate().setName(name).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -221,10 +212,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void deleteBranch(String name) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.branchDelete().setForce(true).setBranchNames(name).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().branchDelete().setForce(true).setBranchNames(name).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -232,15 +220,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public Set<Branch> getBranches() throws GitException {
         try {
-            Git git = Git.open(workspace);
-            List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
+            List<Ref> refs = git().branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
             Set<Branch> branches = new HashSet<Branch>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
             return branches;
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -248,15 +233,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public Set<Branch> getRemoteBranches() throws GitException {
         try {
-            Git git = Git.open(workspace);
-            List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+            List<Ref> refs = git().branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
             Set<Branch> branches = new HashSet<Branch>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
             return branches;
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -264,10 +246,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void tag(String name, String message) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.tag().setName(name).setMessage(message).setForceUpdate(true).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().tag().setName(name).setMessage(message).setForceUpdate(true).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -285,7 +264,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void fetch(String remoteName, RefSpec refspec) throws GitException {
         try {
-            Git git = Git.open(workspace);
+            Git git = Git.wrap(getRepository());
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
             if (remoteName != null) fetch.setRemote(remoteName);
             fetch.setCredentialsProvider(provider);
@@ -297,8 +276,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             fetch.setRefSpecs(refSpecs);
 
             fetch.call();
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -366,14 +343,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void merge(ObjectId rev) throws GitException {
         try {
-            Git git = Git.open(workspace);
+            Git git = git();
             MergeResult mergeResult = git.merge().include(rev).call();
             if (!mergeResult.getMergeStatus().isSuccessful()) {
                 git.reset().setMode(HARD).call();
                 throw new GitException("Failed to merge " + rev);
             }
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException("Failed to merge " + rev, e);
         }
@@ -525,12 +500,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void clean() throws GitException {
         try {
-            Git git = Git.open(workspace);
+            Git git = git();
             git.reset().setMode(HARD).call();
             git.clean().setCleanDirectories(true).setIgnore(false).call();
-
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -576,10 +548,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void deleteTag(String tagName) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.tagDelete().setTags(tagName).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().tagDelete().setTags(tagName).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -602,10 +571,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void addSubmodule(String remoteURL, String subdir) throws GitException {
         try {
-            Git git = Git.open(workspace);
-            git.submoduleAdd().setPath(subdir).setURI(remoteURL).call();
-        } catch (IOException e) {
-            throw new GitException(e);
+            git().submoduleAdd().setPath(subdir).setURI(remoteURL).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -659,13 +625,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void push(String remoteName, String refspec) throws GitException {
         RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
         try {
-            Git git = Git.open(workspace);
-            git.push().setRemote(remoteName).setRefSpecs(ref)
+            git().push().setRemote(remoteName).setRefSpecs(ref)
                     .setProgressMonitor(new ProgressMonitor(listener))
                     .setCredentialsProvider(provider)
                     .call();
-        } catch (IOException e) {
-            throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -837,7 +800,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
         Set<String> remotes = getConfig(null).getNames("remote");
         if (remotes.contains(_default_))    return _default_;
-        else    return Iterables.getFirst(remotes,null);
+        else    return com.google.common.collect.Iterables.getFirst(remotes, null);
     }
 
     @Deprecated
