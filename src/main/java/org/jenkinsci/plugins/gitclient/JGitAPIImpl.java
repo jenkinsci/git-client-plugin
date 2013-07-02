@@ -606,7 +606,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Repository db = null;
         try {
             db = getRepository();
-            return true;
+            return db.getObjectDatabase().exists();
         } catch (GitException e) {
             return false;
         } finally {
