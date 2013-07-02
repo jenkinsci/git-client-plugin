@@ -538,8 +538,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public void execute() throws GitException, InterruptedException {
                 try {
+                    // the directory needs to be clean or else JGit complains
+                    if (workspace.exists())
+                        Util.deleteContentsRecursive(workspace);
+
                     base.call();
                 } catch (GitAPIException e) {
+                    throw new GitException(e);
+                } catch (IOException e) {
                     throw new GitException(e);
                 }
             }
