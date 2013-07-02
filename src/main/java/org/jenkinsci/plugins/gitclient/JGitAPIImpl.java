@@ -28,6 +28,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -353,8 +354,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public Repository getRepository() throws GitException {
         try {
-            Git git = Git.open(workspace);
-            return git.getRepository();
+            return new RepositoryBuilder().setGitDir(workspace).build();
         } catch (IOException e) {
             throw new GitException(e);
         }
