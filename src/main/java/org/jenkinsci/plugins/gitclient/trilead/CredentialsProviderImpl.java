@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPassword;
 import com.cloudbees.plugins.credentials.Credentials;
 import hudson.model.TaskListener;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
@@ -33,32 +34,56 @@ public class CredentialsProviderImpl extends CredentialsProvider {
         return false;
     }
 
-    // TODO: provide username/password
+    /**
+     * If username/password is given, use it for HTTP auth.
+     */
     @Override
     public boolean supports(CredentialItem... items) {
-        return false;
+        // TODO: define a separate Credentials type for HTTP username/password?
+        if (!(cred instanceof SSHUserPassword))
+            return false;
+
+        for (CredentialItem i : items) {
+            if (i instanceof CredentialItem.Username)
+                continue;
+
+            else if (i instanceof CredentialItem.Password)
+                continue;
+
+            else
+                return false;
+        }
+        return true;
     }
 
+    /**
+     * If username/password is given, use it for HTTP auth.
+     */
     @Override
     public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
-        return false;
-    }
+        if (!(cred instanceof SSHUserPassword))
+            return false;
 
-//    public SSHUser getCredentials() {
-//        try {
-//            // only ever want from the system
-//            // lookup every time so that we always have the latest
-//            for (SSHUser u: com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials(SSHUser.class, Jenkins.getInstance(), ACL.SYSTEM)) {
-//                if (StringUtils.equals(u.getId(), credentialsId)) {
-//                    return u;
-//                }
-//            }
-//        } catch (Throwable t) {
-//            // ignore
-//        }
-//
-//        // return something in the hope that ~/.ssh/id* saves the day
-//        return new BasicSSHUserPassword(
-//                CredentialsScope.SYSTEM, null, System.getProperty("user.name"), null, null);
-//    }
+        for (CredentialItem i : items) {
+            if (i instanceof CredentialItem.Username) {
+                ((CredentialItem.Username) i).setValue(((SSHUserPassword) cred).getUsername());
+                continue;
+            }
+            if (i instanceof CredentialItem.Password) {
+                ((CredentialItem.Password) i).setValue(
+                        ((SSHUserPassword) cred).getPassword().getPlainText().toCharArray());
+                continue;
+            }
+            if (i instanceof CredentialItem.StringType) {
+                if (i.getPromptText().equals("Password: ")) {
+                    ((CredentialItem.StringType) i).setValue(
+                            ((SSHUserPassword) cred).getPassword().getPlainText());
+                    continue;
+                }
+            }
+            throw new UnsupportedCredentialItem(uri, i.getClass().getName()
+                    + ":" + i.getPromptText());
+        }
+        return true;
+    }
 }
