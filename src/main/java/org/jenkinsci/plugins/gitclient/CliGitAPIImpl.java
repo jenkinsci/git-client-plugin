@@ -456,10 +456,23 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws GitException if executing the Git command fails
      */
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+        submoduleUpdate(recursive, null);
+    }
+
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
     	ArgumentListBuilder args = new ArgumentListBuilder();
     	args.add("submodule", "update");
     	if (recursive) {
             args.add("--init", "--recursive");
+        }
+        if (reference != null && !reference.equals("")) {
+            File referencePath = new File(reference);
+            if (!referencePath.exists())
+                listener.error("Reference path does not exist: " + reference);
+            else if (!referencePath.isDirectory())
+                listener.error("Reference path is not a directory: " + reference);
+            else
+                args.add("--reference", reference);
         }
 
         launchCommand(args);
