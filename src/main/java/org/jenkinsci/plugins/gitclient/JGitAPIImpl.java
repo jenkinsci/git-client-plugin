@@ -605,7 +605,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public boolean hasGitModules() throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+//      throw new UnsupportedOperationException("not implemented yet");
+        // as long as we don't support submodules, we should just return false, because this method is called
+        return false;
     }
 
     public boolean hasGitRepo() throws GitException {
