@@ -20,6 +20,7 @@ import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -35,7 +36,6 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
@@ -283,7 +283,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
-            FileRepository repo = openDummyRepository();
+            Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
             tn.setCredentialsProvider(provider);
             final FetchConnection c = tn.openFetch();
@@ -310,7 +310,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Creates a empty dummy {@link Repository} to keep JGit happy where it wants a valid {@link Repository} operation
      * for remote objects.
      */
-    private FileRepository openDummyRepository() throws IOException {
+    private Repository openDummyRepository() throws IOException {
         final File tempDir = Util.createTempDir();
         return new FileRepository(tempDir) {
             @Override
