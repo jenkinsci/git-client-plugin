@@ -10,8 +10,8 @@ import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import hudson.util.StreamTaskListener;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TextProgressMonitor;
-import org.eclipse.jgit.storage.file.FileRepository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -73,7 +73,7 @@ public class TrileadTest extends HudsonTestCase {
                 "git", new FileOnMasterPrivateKeySource("/home/kohsuke/.ssh/id_rsa"), System.getenv("TRILEAD_PASSPHRASE"), null);
         // TODO: it's very common for URI to override the user name
 
-        FileRepository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
+        Repository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
         Transport t = Transport.open(b, new URIish("ssh://git@github.com/cloudbees/ami-builder"));
         t.setCredentialsProvider(new CredentialsProviderImpl(StreamTaskListener.fromStdout(),sshCred));
         t.setDryRun(true);
@@ -125,7 +125,7 @@ public class TrileadTest extends HudsonTestCase {
             }
         });
 
-        FileRepository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
+        Repository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
         Transport t = Transport.open(b, new URIish("ssh://localhost/cloudbees/ami-builder.git"));
         t.setDryRun(true);
 
@@ -140,7 +140,7 @@ public class TrileadTest extends HudsonTestCase {
      */
     public static void usernamePassword(String[] args) throws Exception {
         CredentialsProvider cp = new UsernamePasswordCredentialsProvider(args[0],args[1]);
-        FileRepository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
+        Repository b = new FileRepositoryBuilder().setWorkTree(new File("/tmp/foo")).build();
         Transport t = Transport.open(b, new URIish("https://github.com/cloudbees/ami-builder.git"));
         t.setCredentialsProvider(cp);
         t.setDryRun(true);

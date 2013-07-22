@@ -10,7 +10,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepository;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
@@ -1056,7 +1056,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public Repository getRepository() throws GitException {
         try {
-            return new FileRepository(new File(workspace, Constants.DOT_GIT));
+            return FileRepositoryBuilder.create(new File(workspace, Constants.DOT_GIT));
         } catch (IOException e) {
             throw new GitException("Failed to open Git repository " + workspace, e);
         }
