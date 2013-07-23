@@ -6,7 +6,6 @@ import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.IndexEntry;
-import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
@@ -47,25 +46,21 @@ public abstract class GitAPITestCase extends TestCase {
         }        
 
         String launchCommand(String args) throws IOException, InterruptedException {
-            return launchCommand(repo, args);
+            return launchCommand(args.split(" "));
         }
     
         String launchCommand(String... args) throws IOException, InterruptedException {
-            return dolaunchCommand(repo, args);
-        }
-    
-        String launchCommand(File workdir, String args) throws IOException, InterruptedException {
-            return dolaunchCommand(workdir, args.split(" "));
-        }
-    
-        String dolaunchCommand(File workdir, String ... args) throws IOException, InterruptedException {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            int st = new Launcher.LocalLauncher(listener).launch().pwd(workdir).cmds(args).
+            int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
                     envs(env).stdout(out).join();
             String s = out.toString();
             assertEquals(s, 0, st);
             System.out.println(s);
             return s;
+        }
+
+        String repoPath() {
+            return repo.getAbsolutePath();
         }
 
         /**
@@ -189,37 +184,37 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_fetch() throws Exception {
-        File remote = temporaryDirectoryAllocator.allocate();
-        w.launchCommand(remote, "git init");
-        w.launchCommand(remote, "git commit --allow-empty -m init");
-        String sha1 = w.launchCommand(remote, "git rev-list --max-count=1 HEAD");
+        WorkingArea r = new WorkingArea();
+        r.launchCommand("git init");
+        r.launchCommand("git commit --allow-empty -m init");
+        String sha1 = r.launchCommand("git rev-list --max-count=1 HEAD");
 
         w.launchCommand("git init");
-        w.launchCommand("git remote add origin " + remote.getAbsolutePath());
+        w.launchCommand("git remote add origin " + r.repoPath());
         w.git.fetch("origin", null);
-        assertTrue(sha1.equals(w.launchCommand(remote, "git rev-list --max-count=1 HEAD")));
+        assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 HEAD")));
     }
 
     public void test_fetch_with_updated_tag() throws Exception {
-        File remote = temporaryDirectoryAllocator.allocate();
-        w.launchCommand(remote, "git init");
-        w.launchCommand(remote, "git commit --allow-empty -m init");
-        w.launchCommand(remote, "git tag t");
-        String sha1 = w.launchCommand(remote, "git rev-list --max-count=1 t");
+        WorkingArea r = new WorkingArea();
+        r.launchCommand("git init");
+        r.launchCommand("git commit --allow-empty -m init");
+        r.launchCommand("git tag t");
+        String sha1 = r.launchCommand("git rev-list --max-count=1 t");
 
         w.launchCommand("git init");
-        w.launchCommand("git remote add origin " + remote.getAbsolutePath());
+        w.launchCommand("git remote add origin " + r.repoPath());
         w.git.fetch("origin", null);
-        assertTrue(sha1.equals(w.launchCommand(remote, "git rev-list --max-count=1 t")));
+        assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 t")));
 
-        new File(remote, "file.txt").createNewFile();
-        w.launchCommand(remote, "git add file.txt");
-        w.launchCommand(remote, "git commit -m update");
-        w.launchCommand(remote, "git tag -d t");
-        w.launchCommand(remote, "git tag t");
-        sha1 = w.launchCommand(remote, "git rev-list --max-count=1 t");
+        r.touch("file.txt");
+        r.launchCommand("git add file.txt");
+        r.launchCommand("git commit -m update");
+        r.launchCommand("git tag -d t");
+        r.launchCommand("git tag t");
+        sha1 = r.launchCommand("git rev-list --max-count=1 t");
         w.git.fetch("origin", null);
-        assertTrue(sha1.equals(w.launchCommand(remote, "git rev-list --max-count=1 t")));
+        assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 t")));
 
     }
 
@@ -251,14 +246,14 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_list_remote_branches() throws Exception {
-        File remote = temporaryDirectoryAllocator.allocate();
-        w.launchCommand(remote, "git init");
-        w.launchCommand(remote, "git commit --allow-empty -m init");
-        w.launchCommand(remote, "git branch test");
-        w.launchCommand(remote, "git branch another");
+        WorkingArea r = new WorkingArea();
+        r.launchCommand("git init");
+        r.launchCommand("git commit --allow-empty -m init");
+        r.launchCommand("git branch test");
+        r.launchCommand("git branch another");
 
         w.launchCommand("git init");
-        w.launchCommand("git remote add origin " + remote.getAbsolutePath());
+        w.launchCommand("git remote add origin " + r.repoPath());
         w.launchCommand("git fetch origin");
         Set<Branch> branches = w.git.getRemoteBranches();
         Collection names = Collections2.transform(branches, new Function<Branch, String>() {
@@ -400,13 +395,13 @@ public abstract class GitAPITestCase extends TestCase {
         w.launchCommand("git commit -m 'commit1'");
         String sha1 = w.launchCommand("git rev-parse HEAD").substring(0,40);
 
-        File remote = temporaryDirectoryAllocator.allocate();
-        w.launchCommand(remote, "git init");
-        w.launchCommand(remote, "git checkout -b tmp"); // can't push on active branch
-        w.launchCommand("git remote add origin " + remote.getAbsolutePath());
+        WorkingArea r = new WorkingArea();
+        r.launchCommand("git init");
+        r.launchCommand("git checkout -b tmp"); // can't push on active branch
+        w.launchCommand("git remote add origin " + r.repoPath());
 
         w.git.push("origin", "master");
-        String remoteSha1 = w.launchCommand(remote, "git rev-parse master").substring(0, 40);
+        String remoteSha1 = r.launchCommand("git rev-parse master").substring(0, 40);
         assertEquals(sha1, remoteSha1);
     }
 
