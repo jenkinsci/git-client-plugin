@@ -115,22 +115,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public boolean hasGitModules() throws GitException {
-        try {
-
-            File dotGit = new File(workspace, ".gitmodules");
-
-            return dotGit.exists();
-
-        } catch (SecurityException ex) {
-            throw new GitException(
-                                   "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
-                                   ex);
-        } catch (Exception e) {
-            throw new GitException("Couldn't check for .gitmodules", e);
-        }
-    }
-
     public List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException {
         List<IndexEntry> submodules = lsTree(treeIsh,true);
 

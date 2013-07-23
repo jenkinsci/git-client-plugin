@@ -682,10 +682,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public boolean hasGitModules() throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
     public boolean hasGitRepo() throws GitException {
         Repository db = null;
         try {

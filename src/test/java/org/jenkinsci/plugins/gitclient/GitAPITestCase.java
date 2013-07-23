@@ -419,5 +419,17 @@ public abstract class GitAPITestCase extends TestCase {
         );
     }
 
+    public void test_hasSubmodules() throws Exception {
+        launchCommand("git init");
+
+        launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
+        launchCommand("git checkout t");
+        assertTrue(git.hasGitModules());
+
+        launchCommand("git","fetch",localMirror(),"master:t2");
+        launchCommand("git checkout t2");
+        assertFalse(git.hasGitModules());
+    }
+
     private static final Logger LOGGER = Logger.getLogger(GitAPITestCase.class.getName());
 }
