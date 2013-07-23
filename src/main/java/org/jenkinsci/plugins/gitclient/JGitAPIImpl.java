@@ -41,6 +41,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.RefSpec;
@@ -632,7 +633,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            List<IndexEntry> r = new ArrayList<IndexEntry>();
+
+            Repository db = db();
+            SubmoduleWalk walk = SubmoduleWalk.forPath(db, db.resolve(treeIsh), "/");
+            while (walk.next()) {
+                r.add(new IndexEntry(walk));
+            }
+
+            return r;
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     public void addSubmodule(String remoteURL, String subdir) throws GitException {

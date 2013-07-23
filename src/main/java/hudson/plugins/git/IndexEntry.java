@@ -1,5 +1,7 @@
 package hudson.plugins.git;
 
+import org.eclipse.jgit.submodule.SubmoduleWalk;
+
 import java.io.Serializable;
 
 /**
@@ -51,6 +53,13 @@ public class IndexEntry implements Serializable {
         this.type = type;
         this.file = file;
         this.object = object;
+    }
+
+    /**
+     * Populates an {@link IndexEntry} from the current node that {@link SubmoduleWalk} is pointing to.
+     */
+    public IndexEntry(SubmoduleWalk walk) {
+        this("160000","commit",walk.getObjectId().name(),walk.getPath());
     }
 
     private static final long serialVersionUID = 1L;
