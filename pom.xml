@@ -41,18 +41,6 @@
 	</developers>
 
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <version>1.96</version>
-        <configuration>
-          <dependencyResolution>runtime</dependencyResolution>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -110,6 +98,9 @@
                 <artifactId>maven-hpi-plugin</artifactId>
                 <version>1.96</version>
                 <extensions>true</extensions>
+                <configuration>
+                  <dependencyResolution>runtime</dependencyResolution>
+                </configuration>
             </plugin>
         </plugins>         
         <pluginManagement>
