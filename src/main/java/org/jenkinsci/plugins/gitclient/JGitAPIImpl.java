@@ -40,6 +40,7 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
@@ -756,7 +757,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<ObjectId> revListAll() throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            RevWalk walk = new RevWalk(db());
+            for (Ref r : db().getAllRefs().values()) {
+                walk.markStart(walk.parseCommit(r.getObjectId()));
+            }
+            walk.setRetainBody(false);
+            walk.sort(RevSort.COMMIT_TIME_DESC);
+
+            List<ObjectId> r = new ArrayList<ObjectId>();
+            for (RevCommit c : walk) {
+                r.add(c.copy());
+            }
+            return r;
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     public List<ObjectId> revList(String ref) throws GitException {

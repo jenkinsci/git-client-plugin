@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.IndexEntry;
@@ -43,9 +44,13 @@ public abstract class GitAPITestCase extends TestCase {
         final GitClient git;
         
         WorkingArea() throws Exception {
-            repo = temporaryDirectoryAllocator.allocate();
+            this(temporaryDirectoryAllocator.allocate());
+        }
+
+        WorkingArea(File repo) throws Exception {
+            this.repo = repo;
             git = setupGitAPI(repo);
-        }        
+        }
 
         String launchCommand(String args) throws IOException, InterruptedException {
             return launchCommand(args.split(" "));
@@ -511,5 +516,15 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(ws2.exists(".git/refs/remotes/origin/b3"));
     }
 
-    private static final Logger LOGGER = Logger.getLogger(GitAPITestCase.class.getName());
+    public void test_revListAll() throws Exception {
+        WorkingArea w = new WorkingArea().init();
+        w.launchCommand("git pull "+localMirror());
+
+        StringBuilder out = new StringBuilder();
+        for (ObjectId id : w.git.revListAll()) {
+            out.append(id.name()).append('\n');
+        }
+        String all = w.launchCommand("git rev-list --all");
+        assertEquals(all,out.toString());
+    }
 }
