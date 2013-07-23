@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
 import hudson.remoting.Channel;
@@ -125,6 +126,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         } finally {
             db.close();
         }
+    }
+
+    public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+        return lsTree(treeIsh,false);
     }
 
     @Override

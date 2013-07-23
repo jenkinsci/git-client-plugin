@@ -132,7 +132,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException {
-        List<IndexEntry> submodules = lsTree(treeIsh);
+        List<IndexEntry> submodules = lsTree(treeIsh,true);
 
         // Remove anything that isn't a submodule
         for (Iterator<IndexEntry> it = submodules.iterator(); it.hasNext();) {
@@ -944,9 +944,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+    public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
         List<IndexEntry> entries = new ArrayList<IndexEntry>();
-        String result = launchCommand("ls-tree", treeIsh);
+        String result = launchCommand("ls-tree", recursive?"-r":null, treeIsh);
 
         BufferedReader rdr = new BufferedReader(new StringReader(result));
         String line;

@@ -833,14 +833,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Deprecated
-    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+    public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
         try {
             db();
             RevWalk w = new RevWalk(or);
 
             TreeWalk tree = new TreeWalk(or);
             tree.addTree(w.parseTree(db().resolve(treeIsh)));
-            tree.setRecursive(false);
+            tree.setRecursive(recursive);
 
             List<IndexEntry> r = new ArrayList<IndexEntry>();
             while (tree.next()) {

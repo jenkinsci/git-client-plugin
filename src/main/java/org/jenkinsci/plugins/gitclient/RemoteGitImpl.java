@@ -505,6 +505,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return getGitAPI().lsTree(treeIsh);
     }
 
+    public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
+        return getGitAPI().lsTree(treeIsh,recursive);
+    }
+
     public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
         return getGitAPI().revListBranch(branchId);
     }

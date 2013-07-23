@@ -43,7 +43,17 @@ public interface IGitAPI extends GitClient {
     void clone(RemoteConfig source) throws GitException, InterruptedException;
     void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException;
     List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException;
+
+    /**
+     * This method has been implemented as non-recursive historically, but
+     * often that is not what the caller wants.
+     *
+     * @deprecated
+     *  Use {@link #lsTree(String, boolean)} to be explicit about the recursion behaviour.
+     */
     List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException;
+    List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException;
+
     List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException;
     String describe(String commitIsh) throws GitException, InterruptedException;
     List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException;
