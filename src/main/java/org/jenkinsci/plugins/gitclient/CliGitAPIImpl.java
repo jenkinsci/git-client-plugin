@@ -5,6 +5,7 @@ import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.util.ArgumentListBuilder;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -748,23 +749,29 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void appendNote(String note, String namespace ) throws GitException, InterruptedException {
-        try {
-        	launchCommand("notes", "--ref="+namespace, "append", "-m", "\'"+note+"\'" );
-        } catch (GitException e) {
-            throw new GitException("Could not apply note " + note, e);
-        }
-
+        createNote(note,namespace,"append");
     }
 
     public void addNote(String note, String namespace ) throws GitException, InterruptedException {
+        createNote(note,namespace,"add");
+    }
+
+    private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException {
+        File msg = null;
         try {
-            launchCommand("notes", "--ref="+namespace,"add", "-m", "\'"+note+"\'" );
+            msg = File.createTempFile("git-note", "txt", workspace);
+            FileUtils.writeStringToFile(msg,note);
+            launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
+        } catch (IOException e) {
+            throw new GitException("Could not apply note " + note, e);
         } catch (GitException e) {
             throw new GitException("Could not apply note " + note, e);
+        } finally {
+            if (msg!=null)
+                msg.delete();
         }
-
     }
-    
+
     /**
      * Launch command using the workspace as working directory
      * @param args
