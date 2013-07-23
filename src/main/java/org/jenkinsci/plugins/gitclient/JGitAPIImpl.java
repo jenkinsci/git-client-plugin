@@ -762,21 +762,31 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             for (Ref r : db().getAllRefs().values()) {
                 walk.markStart(walk.parseCommit(r.getObjectId()));
             }
-            walk.setRetainBody(false);
-            walk.sort(RevSort.COMMIT_TIME_DESC);
-
-            List<ObjectId> r = new ArrayList<ObjectId>();
-            for (RevCommit c : walk) {
-                r.add(c.copy());
-            }
-            return r;
+            return revList(walk);
         } catch (IOException e) {
             throw new GitException(e);
         }
     }
 
     public List<ObjectId> revList(String ref) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            RevWalk walk = new RevWalk(db());
+            walk.markStart(walk.parseCommit(db().resolve(ref)));
+            return revList(walk);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
+    private List<ObjectId> revList(RevWalk walk) {
+        walk.setRetainBody(false);
+        walk.sort(RevSort.COMMIT_TIME_DESC);
+
+        List<ObjectId> r = new ArrayList<ObjectId>();
+        for (RevCommit c : walk) {
+            r.add(c.copy());
+        }
+        return r;
     }
 
     public ObjectId revParse(String revName) throws GitException {

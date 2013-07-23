@@ -527,4 +527,18 @@ public abstract class GitAPITestCase extends TestCase {
         String all = w.launchCommand("git rev-list --all");
         assertEquals(all,out.toString());
     }
+
+    public void test_revList() throws Exception {
+        WorkingArea w = new WorkingArea().init();
+        w.launchCommand("git pull "+localMirror());
+
+        for (Branch b : w.git.getRemoteBranches()) {
+            StringBuilder out = new StringBuilder();
+            for (ObjectId id : w.git.revList(b.getName())) {
+                out.append(id.name()).append('\n');
+            }
+            String all = w.launchCommand("git rev-list "+b.getName());
+            assertEquals(all,out.toString());
+        }
+    }
 }
