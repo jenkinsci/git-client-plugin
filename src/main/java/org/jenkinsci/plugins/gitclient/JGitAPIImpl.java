@@ -22,6 +22,8 @@ import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.errors.NotSupportedException;
+import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Constants;
@@ -699,7 +701,47 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void prune(RemoteConfig repository) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            ArrayList<Ref> refs = new ArrayList<Ref>(db().getAllRefs().values());
+
+            StoredConfig config = db().getConfig();
+            for (String remote : config.getNames("remote")) {
+                String prefix = "remotes/" + remote + "/";
+
+                Set<String> branches = listRemoteBranches(config, remote);
+
+                for (Ref r : refs) {
+                    if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
+                        // delete this ref
+                        RefUpdate update = db().updateRef(r.getName());
+                        update.setRefLogMessage("remote branch pruned", false);
+                        update.setForceUpdate(false);
+                        update.delete();
+                    }
+                }
+            }
+        } catch (URISyntaxException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
+    private Set<String> listRemoteBranches(StoredConfig config, String remote) throws NotSupportedException, TransportException, URISyntaxException {
+        Set<String> branches = new HashSet<String>();
+        final Transport tn = Transport.open(db(), new URIish(config.getString("remote",remote,"url")));
+        tn.setCredentialsProvider(provider);
+        final FetchConnection c = tn.openFetch();
+        try {
+            for (final Ref r : c.getRefs()) {
+                if (r.getName().startsWith(Constants.R_HEADS))
+                    branches.add("remotes/"+remote+"/"+r.getName().substring(Constants.R_HEADS.length()));
+            }
+        } finally {
+            c.close();
+            tn.close();
+        }
+        return branches;
     }
 
     public void push(String remoteName, String refspec) throws GitException {
