@@ -5,8 +5,6 @@ import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
@@ -19,6 +17,7 @@ import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -37,6 +36,23 @@ public abstract class GitAPITestCase extends TestCase {
         repo = temporaryDirectoryAllocator.allocate();
         git = setupGitAPI();
     }
+
+    /**
+     * Obtains the local mirror of https://github.com/jenkinsci/git-client-plugin.git and return URLish to it.
+     */
+    public String localMirror() throws IOException, InterruptedException {
+        File base = new File(".").getAbsoluteFile();
+        for (File f=base; f!=null; f=f.getParentFile()) {
+            if (new File(f,"target").exists()) {
+                File clone = new File(f, "target/clone.git");
+                if (!clone.exists())    // TODO: perhaps some kind of quick timestamp-based up-to-date check?
+                    launchCommand("git clone --mirror https://github.com/jenkinsci/git-client-plugin.git "+clone.getAbsolutePath());
+                return clone.getPath();
+            }
+        }
+        throw new IllegalStateException();
+    }
+
 
     protected abstract GitClient setupGitAPI() throws Exception;
 
@@ -393,7 +409,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getSubmodules() throws Exception {
         launchCommand("git init");
-        launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git tests/getSubmodules:t");
+        launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
         launchCommand("git checkout t");
         List<IndexEntry> r = git.getSubmodules("HEAD");
         assertEquals(
@@ -402,4 +418,6 @@ public abstract class GitAPITestCase extends TestCase {
             r.toString()
         );
     }
+
+    private static final Logger LOGGER = Logger.getLogger(GitAPITestCase.class.getName());
 }
