@@ -290,6 +290,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
+            if (!branch.startsWith(Constants.R_HEADS))
+                branch = Constants.R_HEADS+branch;
+
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
             tn.setCredentialsProvider(provider);

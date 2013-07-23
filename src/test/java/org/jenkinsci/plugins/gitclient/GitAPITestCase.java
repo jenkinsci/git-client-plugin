@@ -276,7 +276,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("test 123!\n* multi-line tag message\n padded", git.getTagMessage("test"));
     }
 
-    @NotImplementedInJGit
     public void test_get_HEAD_revision() throws Exception {
         // TODO replace with an embedded JGit server so that test run offline ?
         String sha1 = launchCommand("git ls-remote --heads https://github.com/jenkinsci/git-client-plugin.git refs/heads/master").substring(0,40);
