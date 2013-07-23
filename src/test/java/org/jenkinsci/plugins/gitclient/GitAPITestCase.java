@@ -62,6 +62,18 @@ public abstract class GitAPITestCase extends TestCase {
         String repoPath() {
             return repo.getAbsolutePath();
         }
+        
+        void init() throws IOException, InterruptedException {
+            launchCommand("git init");
+        }
+
+        void add(String path) throws IOException, InterruptedException {
+            launchCommand("git add "+path);
+        }
+
+        void commit(String msg) throws IOException, InterruptedException {
+            launchCommand("git commit --allow-empty -m "+msg);
+        }
 
         /**
          * Refers to a file in this workspace
@@ -132,10 +144,10 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_detect_commit_in_repo() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         w.touch("file1");
-        w.launchCommand("git add file1");
-        w.launchCommand("git commit -m 'commit1'");
+        w.add("file1");
+        w.commit("commit1");
         String sha1 = w.launchCommand("git rev-parse HEAD").substring(0,40);
         assertTrue("HEAD commit not found", w.git.isCommitInRepo(ObjectId.fromString(sha1)));
         // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
@@ -144,7 +156,7 @@ public abstract class GitAPITestCase extends TestCase {
 
 
     public void test_getRemoteURL() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
         w.launchCommand("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = w.git.getRemoteUrl("origin");
@@ -152,7 +164,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_setRemoteURL() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
         w.git.setRemoteUrl("origin", "git@github.com:ndeloof/git-client-plugin.git");
         String remotes = w.launchCommand("git remote -v");
@@ -160,16 +172,16 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_clean() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
 
         w.touch("file", "content");
-        w.launchCommand("git add file");
-        w.launchCommand("git commit -m file");
+        w.add("file");
+        w.commit("file");
 
         w.touch(".gitignore", ".test");
-        w.launchCommand("git add .gitignore");
-        w.launchCommand("git commit -m ignore");
+        w.add(".gitignore");
+        w.commit("ignore");
 
         w.touch("file1");
         w.touch(".test");
@@ -185,11 +197,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_fetch() throws Exception {
         WorkingArea r = new WorkingArea();
-        r.launchCommand("git init");
-        r.launchCommand("git commit --allow-empty -m init");
+        r.init();
+        r.commit("init");
         String sha1 = r.launchCommand("git rev-list --max-count=1 HEAD");
 
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git remote add origin " + r.repoPath());
         w.git.fetch("origin", null);
         assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 HEAD")));
@@ -197,19 +209,19 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_fetch_with_updated_tag() throws Exception {
         WorkingArea r = new WorkingArea();
-        r.launchCommand("git init");
-        r.launchCommand("git commit --allow-empty -m init");
+        r.init();
+        r.commit("init");
         r.launchCommand("git tag t");
         String sha1 = r.launchCommand("git rev-list --max-count=1 t");
 
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git remote add origin " + r.repoPath());
         w.git.fetch("origin", null);
         assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 t")));
 
         r.touch("file.txt");
-        r.launchCommand("git add file.txt");
-        r.launchCommand("git commit -m update");
+        r.add("file.txt");
+        r.commit("update");
         r.launchCommand("git tag -d t");
         r.launchCommand("git tag t");
         sha1 = r.launchCommand("git rev-list --max-count=1 t");
@@ -220,8 +232,8 @@ public abstract class GitAPITestCase extends TestCase {
 
 
     public void test_create_branch() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.git.branch("test");
         String branches = w.launchCommand("git branch -l");
         assertTrue("master branch not listed", branches.contains("master"));
@@ -229,8 +241,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_list_branches() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git branch test");
         w.launchCommand("git branch another");
         Set<Branch> branches = w.git.getBranches();
@@ -247,12 +259,12 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_list_remote_branches() throws Exception {
         WorkingArea r = new WorkingArea();
-        r.launchCommand("git init");
-        r.launchCommand("git commit --allow-empty -m init");
+        r.init();
+        r.commit("init");
         r.launchCommand("git branch test");
         r.launchCommand("git branch another");
 
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git remote add origin " + r.repoPath());
         w.launchCommand("git fetch origin");
         Set<Branch> branches = w.git.getRemoteBranches();
@@ -268,8 +280,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_list_branches_containing_ref() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git branch test");
         w.launchCommand("git branch another");
         Set<Branch> branches = w.git.getBranches();
@@ -285,8 +297,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_delete_branch() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git branch test");
         w.git.deleteBranch("test");
         String branches = w.launchCommand("git branch -l");
@@ -294,8 +306,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_create_tag() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.git.tag("test", "this is a tag");
         assertTrue("test tag not created", w.launchCommand("git tag").contains("test"));
         String message = w.launchCommand("git tag -l -n1");
@@ -303,8 +315,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_delete_tag() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git tag test");
         w.launchCommand("git tag another");
         w.git.deleteTag("test");
@@ -314,8 +326,8 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_list_tags_with_filter() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git tag test");
         w.launchCommand("git tag another_test");
         w.launchCommand("git tag yet_another");
@@ -326,23 +338,23 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_tag_exists() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git tag test");
         assertTrue(w.git.tagExists("test"));
         assertFalse(w.git.tagExists("unknown"));
     }
 
     public void test_get_tag_message() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git tag test -m this-is-a-test");
         assertEquals("this-is-a-test", w.git.getTagMessage("test"));
     }
 
     public void test_get_tag_message_multi_line() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
 
         // Leading four spaces from each line should be stripped,
@@ -358,11 +370,11 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.touch("file1");
-        w.launchCommand("git add file1");
-        w.launchCommand("git commit -m 'commit1'");
+        w.add("file1");
+        w.commit("commit1");
         w.launchCommand("git tag test");
         String sha1 = w.launchCommand("git rev-parse HEAD").substring(0,40);
         assertEquals(sha1, w.git.revParse(sha1).name());
@@ -383,20 +395,20 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_hasGitRepo_with_valid_git_repo() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         assertTrue("Valid Git repo reported as invalid", w.git.hasGitRepo());
     }
 
     public void test_push() throws Exception {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         w.touch("file1");
-        w.launchCommand("git add file1");
-        w.launchCommand("git commit -m 'commit1'");
+        w.add("file1");
+        w.commit("commit1");
         String sha1 = w.launchCommand("git rev-parse HEAD").substring(0,40);
 
         WorkingArea r = new WorkingArea();
-        r.launchCommand("git init");
+        r.init();
         r.launchCommand("git checkout -b tmp"); // can't push on active branch
         w.launchCommand("git remote add origin " + r.repoPath());
 
@@ -406,10 +418,10 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_notes_add() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         w.touch("file1");
-        w.launchCommand("git add file1");
-        w.launchCommand("git commit -m init");
+        w.add("file1");
+        w.commit("init");
 
         w.git.addNote("foo","commits");
         assertEquals("foo\n", w.launchCommand("git notes show"));
@@ -426,8 +438,8 @@ public abstract class GitAPITestCase extends TestCase {
     @Bug(11177)
     public void test_jenkins_11177() throws Exception
     {
-        w.launchCommand("git init");
-        w.launchCommand("git commit --allow-empty -m init");
+        w.init();
+        w.commit("init");
         ObjectId base = ObjectId.fromString(w.launchCommand("git rev-parse master").substring(0,40));
         ObjectId master = w.git.revParse("master");
         assertEquals(base, master);
@@ -443,7 +455,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_getSubmodules() throws Exception {
-        w.launchCommand("git init");
+        w.init();
         w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
         w.launchCommand("git checkout t");
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
@@ -455,7 +467,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_hasSubmodules() throws Exception {
-        w.launchCommand("git init");
+        w.init();
 
         w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
         w.launchCommand("git checkout t");
@@ -467,7 +479,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
 //    public void test_prune() throws Exception {
-//        w.launchCommand("git init");
+//        w.init();
 //        temporaryDirectoryAllocator.allocate()
 //        File remote = temporaryDirectoryAllocator.allocate();
 //
