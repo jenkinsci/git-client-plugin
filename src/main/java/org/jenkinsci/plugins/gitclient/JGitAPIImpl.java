@@ -37,6 +37,7 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
@@ -637,7 +638,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             List<IndexEntry> r = new ArrayList<IndexEntry>();
 
             Repository db = db();
-            SubmoduleWalk walk = SubmoduleWalk.forPath(db, db.resolve(treeIsh), "/");
+            RevWalk w=new RevWalk(or);
+            RevTree t = w.parseTree(db.resolve(treeIsh));
+            SubmoduleWalk walk = new SubmoduleWalk(db);
+            walk.setTree(t);
+            walk.setRootTree(t);
             while (walk.next()) {
                 r.add(new IndexEntry(walk));
             }

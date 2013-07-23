@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 import java.io.Serializable;
@@ -45,7 +46,7 @@ public class IndexEntry implements Serializable {
     }
 
     public String toString() {
-        return file;
+        return String.format("IndexEntry[mode=%s,type=%s,file=%s,object=%s]",mode,type,file,object);
     }
   
     public IndexEntry(String mode, String type, String object, String file) {

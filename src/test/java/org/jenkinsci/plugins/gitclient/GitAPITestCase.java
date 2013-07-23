@@ -7,6 +7,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
 import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
@@ -16,6 +17,7 @@ import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -337,12 +339,12 @@ public abstract class GitAPITestCase extends TestCase {
         launchCommand("git commit -m init");
 
         git.addNote("foo","commits");
-        assertEquals("foo\n",launchCommand("git notes show"));
+        assertEquals("foo\n", launchCommand("git notes show"));
         git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n","commits");
         // cgit normalizes CR+LF aggressively
         // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
         // note that CR itself is left as is
-        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n",launchCommand("git notes show"));
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", launchCommand("git notes show"));
     }
 
     /**
@@ -387,5 +389,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(s, 0, st);
         System.out.println(s);
         return s;
+    }
+
+    public void test_getSubmodules() throws Exception {
+        launchCommand("git init");
+        launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git tests/getSubmodules:t");
+        launchCommand("git checkout t");
+        List<IndexEntry> r = git.getSubmodules("HEAD");
+        assertEquals(
+            "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=63264ca1dcf198545b90bb6361b4575ef220dcfa], "+
+             "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
+            r.toString()
+        );
     }
 }

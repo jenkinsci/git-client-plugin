@@ -236,6 +236,11 @@ public interface GitClient {
      */
     boolean hasGitModules() throws GitException, InterruptedException;
 
+    /**
+     * Finds all the submodule references in this repository at the specified tree.
+     *
+     * @return never null.
+     */
     List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException;
 
     /**
