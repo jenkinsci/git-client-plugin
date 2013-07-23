@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -12,34 +12,25 @@ public class JGitAPIImplTest extends GitAPITestCase {
         return Git.with(listener, env).in(repo).using("jgit").getClient();
     }
 
-    public static Test suite() {
-        TestSuite suite =
-                new TestSuite("JGitAPIImplTest, only covers implemented methods");
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_initialize_repository"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_detect_commit_in_repo"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_getRemoteURL"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_setRemoteURL"));
+    /**
+     * Override to run the test and assert its state.
+     *
+     * @throws Throwable if any exception is thrown
+     */
+    protected void runTest() throws Throwable {
+        Method m = getClass().getMethod(getName());
 
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_clean"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_fetch"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_fetch_with_updated_tag"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_create_branch"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_branches"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_remote_branches"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_branches_containing_ref"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_delete_branch"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_create_tag"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_delete_tag"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_list_tags_with_filter"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_tag_exists"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_tag_message"));
-        //suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_get_HEAD_revision"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_revparse_sha1_HEAD_or_tag"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_without_git_directory"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_with_invalid_git_repo"));
-        suite.addTest(TestSuite.createTest(JGitAPIImplTest.class, "test_hasGitRepo_with_valid_git_repo"));
+        if (m.getAnnotation(NotImplementedInJGit.class)!=null)
+            return; // skip this test case
 
-        return suite;
+        try {
+            m.invoke(this);
+        } catch (InvocationTargetException e) {
+            e.fillInStackTrace();
+            throw e.getTargetException();
+        } catch (IllegalAccessException e) {
+            e.fillInStackTrace();
+            throw e;
+        }
     }
-
 }
