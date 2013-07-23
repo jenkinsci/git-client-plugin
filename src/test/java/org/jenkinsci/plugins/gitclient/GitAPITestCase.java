@@ -9,7 +9,9 @@ import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -63,8 +65,9 @@ public abstract class GitAPITestCase extends TestCase {
             return repo.getAbsolutePath();
         }
         
-        void init() throws IOException, InterruptedException {
+        WorkingArea init() throws IOException, InterruptedException {
             launchCommand("git init");
+            return this;
         }
 
         void add(String path) throws IOException, InterruptedException {
@@ -478,12 +481,35 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.hasGitModules());
     }
 
-//    public void test_prune() throws Exception {
-//        w.init();
-//        temporaryDirectoryAllocator.allocate()
-//        File remote = temporaryDirectoryAllocator.allocate();
-//
-//    }
+    public void test_prune() throws Exception {
+        // pretend that 'r' is a team repository and ws1 and ws2 are team members
+        WorkingArea r = new WorkingArea();
+        r.launchCommand("git init --bare");
+
+        WorkingArea ws1 = new WorkingArea().init();
+        WorkingArea ws2 = w.init();
+
+        ws1.commit("c");
+        ws1.launchCommand("git remote add origin " + r.repoPath());
+
+        ws1.launchCommand("git push origin master:b1");
+        ws1.launchCommand("git push origin master:b2");
+        ws1.launchCommand("git push origin master");
+
+        ws2.launchCommand("git remote add origin " + r.repoPath());
+        ws2.launchCommand("git fetch origin");
+
+        // at this point both ws1&ws2 have several remote tracking branches
+
+        ws1.launchCommand("git push origin :b1");
+        ws1.launchCommand("git push origin master:b3");
+
+        ws2.git.prune(new RemoteConfig(new Config(),"origin"));
+
+        assertFalse(ws2.exists(".git/refs/remotes/origin/b1"));
+        assertTrue( ws2.exists(".git/refs/remotes/origin/b2"));
+        assertFalse(ws2.exists(".git/refs/remotes/origin/b3"));
+    }
 
     private static final Logger LOGGER = Logger.getLogger(GitAPITestCase.class.getName());
 }

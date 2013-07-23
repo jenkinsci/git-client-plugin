@@ -33,6 +33,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -702,22 +703,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void prune(RemoteConfig repository) throws GitException {
         try {
-            ArrayList<Ref> refs = new ArrayList<Ref>(db().getAllRefs().values());
+            String remote = repository.getName();
+            String prefix = "refs/remotes/" + remote + "/";
 
-            StoredConfig config = db().getConfig();
-            for (String remote : config.getNames("remote")) {
-                String prefix = "remotes/" + remote + "/";
+            Set<String> branches = listRemoteBranches(remote);
 
-                Set<String> branches = listRemoteBranches(config, remote);
-
-                for (Ref r : refs) {
-                    if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
-                        // delete this ref
-                        RefUpdate update = db().updateRef(r.getName());
-                        update.setRefLogMessage("remote branch pruned", false);
-                        update.setForceUpdate(false);
-                        update.delete();
-                    }
+            for (Ref r : new ArrayList<Ref>(db().getAllRefs().values())) {
+                if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
+                    // delete this ref
+                    RefUpdate update = db().updateRef(r.getName());
+                    update.setRefLogMessage("remote branch pruned", false);
+                    update.setForceUpdate(true);
+                    Result res = update.delete();
                 }
             }
         } catch (URISyntaxException e) {
@@ -727,7 +724,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Set<String> listRemoteBranches(StoredConfig config, String remote) throws NotSupportedException, TransportException, URISyntaxException {
+    private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
+        StoredConfig config = db().getConfig();
+
         Set<String> branches = new HashSet<String>();
         final Transport tn = Transport.open(db(), new URIish(config.getString("remote",remote,"url")));
         tn.setCredentialsProvider(provider);
@@ -735,7 +734,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             for (final Ref r : c.getRefs()) {
                 if (r.getName().startsWith(Constants.R_HEADS))
-                    branches.add("remotes/"+remote+"/"+r.getName().substring(Constants.R_HEADS.length()));
+                    branches.add("refs/remotes/"+remote+"/"+r.getName().substring(Constants.R_HEADS.length()));
             }
         } finally {
             c.close();
