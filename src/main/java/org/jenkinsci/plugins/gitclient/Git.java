@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
+import hudson.plugins.git.JGitTool;
 import hudson.remoting.VirtualChannel;
 
 import javax.annotation.Nullable;
@@ -55,7 +56,7 @@ public class Git implements Serializable {
                 if (listener == null) listener = TaskListener.NULL;
                 if (env == null) env = new EnvVars();
 
-                if (exe == null || "jgit".equalsIgnoreCase(exe)) {
+                if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
                     return new JGitAPIImpl(f, listener);
                 }
                 // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient

@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Functions;
 import hudson.init.Initializer;
+import hudson.model.Descriptor;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -21,6 +22,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -33,7 +36,7 @@ import java.util.logging.Level;
  *
  * @author Jyrki Puttonen
  */
-public final class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, EnvironmentSpecific<GitTool> {
+public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, EnvironmentSpecific<GitTool> {
 
     @DataBoundConstructor
     public GitTool(String name, String home, List<? extends ToolProperty<?>> properties) {
@@ -82,7 +85,7 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) Jenkins.getInstance().getDescriptor(GitTool.class);
+        return (DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(getClass());
     }
 
     @Initializer(after=PLUGINS_STARTED)
@@ -119,7 +122,7 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
 
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            super.configure(req, json);
+            setInstallations(req.bindJSONToList(clazz, json.get("tool")).toArray(new GitTool[0]));
             save();
             return true;
         }
@@ -144,6 +147,15 @@ public final class GitTool extends ToolInstallation implements NodeSpecific<GitT
                 LOGGER.log(Level.WARNING, "invalid gitTool selection {0}", name);
             }
             return null;
+        }
+
+        public List<ToolDescriptor<? extends GitTool>> getApplicableDesccriptors() {
+            List<ToolDescriptor<? extends GitTool>> r = new ArrayList<ToolDescriptor<? extends GitTool>>();
+            for (ToolDescriptor td : Jenkins.getInstance().<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
+                if (GitTool.class.isAssignableFrom(td.clazz))
+                    r.add(td);
+            }
+            return r;
         }
     }
 

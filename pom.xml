@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.424</version>
+    <version>1.466</version>
   </parent>
 
   <artifactId>git-client</artifactId>
@@ -41,6 +41,18 @@
 	</developers>
 
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <version>1.96</version>
+        <configuration>
+          <dependencyResolution>runtime</dependencyResolution>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
