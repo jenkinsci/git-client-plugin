@@ -273,8 +273,26 @@ public interface GitClient {
      */
     ChangelogCommand changelog();
 
+    /**
+     * Appends to an existing git-note on the current HEAD commit.
+     *
+     * If a note doesn't exist, it works just like {@link #addNote(String, String)}
+     *
+     * @param note
+     *      Content of the note.
+     * @param namespace
+     *      If unqualified, interpreted as "refs/notes/NAMESPACE" just like cgit.
+     */
     void appendNote(String note, String namespace ) throws GitException, InterruptedException;
 
+    /**
+     * Adds a new git-note on the current HEAD commit.
+     *
+     * @param note
+     *      Content of the note.
+     * @param namespace
+     *      If unqualified, interpreted as "refs/notes/NAMESPACE" just like cgit.
+     */
     void addNote(String note, String namespace ) throws GitException, InterruptedException;
 
     public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
