@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -8,8 +9,8 @@ import java.lang.reflect.Method;
  */
 public class JGitAPIImplTest extends GitAPITestCase {
     @Override
-    protected GitClient setupGitAPI() throws Exception {
-        return Git.with(listener, env).in(repo).using("jgit").getClient();
+    protected GitClient setupGitAPI(File ws) throws Exception {
+        return Git.with(listener, env).in(ws).using("jgit").getClient();
     }
 
     /**
