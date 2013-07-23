@@ -8,12 +8,15 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.util.IOUtils;
+import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -23,6 +26,7 @@ import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -30,6 +34,7 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -51,7 +56,9 @@ import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -365,14 +372,64 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
 
-    // --- to be implemented
-
     public void addNote(String note, String namespace) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            ObjectId head = db().resolve(Constants.HEAD); // commit to put a note on
+
+            AddNoteCommand cmd = git().notesAdd();
+            cmd.setMessage(normalizeNote(note));
+            cmd.setNotesRef(qualifyNotesNamespace(namespace));
+            RevWalk walk = new RevWalk(or);
+            cmd.setObjectId(walk.parseAny(head));
+            cmd.call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
+    /**
+     * Git-notes normalizes newlines.
+     *
+     * This behaviour is reverse engineered from limited experiments, so it may be incomplete.
+     */
+    private String normalizeNote(String note) {
+        note = note.trim();
+        note = note.replaceAll("\r\n","\n").replaceAll("\n{3,}","\n\n");
+        note += "\n";
+        return note;
+    }
+
+    private String qualifyNotesNamespace(String namespace) {
+        if (!namespace.startsWith("refs/")) namespace = "refs/notes/"+namespace;
+        return namespace;
     }
 
     public void appendNote(String note, String namespace) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            ObjectId head = db().resolve(Constants.HEAD); // commit to put a note on
+
+            ShowNoteCommand cmd = git().notesShow();
+            cmd.setNotesRef(qualifyNotesNamespace(namespace));
+            RevWalk walk = new RevWalk(or);
+            cmd.setObjectId(walk.parseAny(head));
+            Note n = cmd.call();
+
+            if (n==null) {
+                addNote(note,namespace);
+            } else {
+                ObjectLoader ol = or.open(n.getData());
+                StringWriter sw = new StringWriter();
+                IOUtils.copy(new InputStreamReader(ol.openStream(),Constants.CHARSET),sw);
+                sw.write("\n");
+                addNote(sw.toString() + normalizeNote(note), namespace);
+            }
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     public ChangelogCommand changelog() {

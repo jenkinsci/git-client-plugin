@@ -26,7 +26,7 @@ public abstract class GitAPITestCase extends TestCase {
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
     
     protected hudson.EnvVars env = new hudson.EnvVars();
-    protected TaskListener listener = StreamTaskListener.fromStderr();
+    protected TaskListener listener = StreamTaskListener.fromStdout();
     protected File repo;
     private GitClient git;
 
@@ -330,6 +330,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(sha1, remoteSha1);
     }
 
+    public void test_notes_add() throws Exception {
+        launchCommand("git init");
+        (new File(repo, "file1")).createNewFile();
+        launchCommand("git add file1");
+        launchCommand("git commit -m init");
+
+        git.addNote("foo","commits");
+        assertEquals("foo\n",launchCommand("git notes show"));
+        git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n","commits");
+        // cgit normalizes CR+LF aggressively
+        // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
+        // note that CR itself is left as is
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n",launchCommand("git notes show"));
+    }
+
     /**
      * A rev-parse warning message should not break revision parsing.
      */
@@ -369,7 +384,7 @@ public abstract class GitAPITestCase extends TestCase {
         int st = new Launcher.LocalLauncher(listener).launch().pwd(workdir).cmds(args).
                 envs(env).stdout(out).join();
         String s = out.toString();
-        assertEquals(0, st);
+        assertEquals(s, 0, st);
         System.out.println(s);
         return s;
     }
