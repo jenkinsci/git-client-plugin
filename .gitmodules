@@ -1,0 +1,6 @@
+[submodule "modules/firewall"]
+	path = modules/firewall
+	url = git://github.com/puppetlabs/puppetlabs-firewall.git
+[submodule "modules/ntp"]
+	path = modules/ntp
+	url = git://github.com/puppetlabs/puppetlabs-ntp.git
