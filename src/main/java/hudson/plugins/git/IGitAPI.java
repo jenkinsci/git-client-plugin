@@ -4,6 +4,9 @@ import hudson.model.TaskListener;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.jenkinsci.plugins.gitclient.GitClient;
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.DoNotUse;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -59,6 +62,14 @@ public interface IGitAPI extends GitClient {
     void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException;
     void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException;
     ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException;
-    String getAllLogEntries(String branch) throws InterruptedException;
     List<String> showRevision(Revision r) throws GitException, InterruptedException;
+
+    /**
+     * This method makes no sense, in that it lists all log entries across all refs and yet it
+     * takes a meaningless 'branch' parameter. Please do not use this.
+     *
+     * @deprecated
+     */
+    @Restricted(NoExternalUse.class)
+    String getAllLogEntries(String branch) throws InterruptedException;
 }
