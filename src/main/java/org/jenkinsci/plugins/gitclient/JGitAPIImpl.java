@@ -807,10 +807,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public List<String> showRevision(ObjectId r) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }

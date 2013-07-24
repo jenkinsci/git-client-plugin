@@ -367,10 +367,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
-        return showRevision(null, r);
-    }
-
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
     	StringWriter writer = new StringWriter();
 
