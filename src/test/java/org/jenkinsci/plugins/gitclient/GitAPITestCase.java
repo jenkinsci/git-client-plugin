@@ -5,6 +5,7 @@ import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
@@ -120,6 +121,14 @@ public abstract class GitAPITestCase extends TestCase {
          */
         protected GitClient cgit() throws Exception {
             return Git.with(listener, env).in(repo).using("git").getClient();
+        }
+
+        public void checkout(String branch) throws IOException, InterruptedException {
+            launchCommand("git checkout "+branch);
+        }
+
+        public IGitAPI igit() {
+            return (IGitAPI)git;
         }
     }
     
@@ -448,9 +457,9 @@ public abstract class GitAPITestCase extends TestCase {
         w.add("file1");
         w.commit("init");
 
-        w.git.addNote("foo","commits");
+        w.git.addNote("foo", "commits");
         assertEquals("foo\n", w.launchCommand("git notes show"));
-        w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n","commits");
+        w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
         // cgit normalizes CR+LF aggressively
         // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
         // note that CR itself is left as is
@@ -485,22 +494,50 @@ public abstract class GitAPITestCase extends TestCase {
         w.launchCommand("git checkout t");
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
-            "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=63264ca1dcf198545b90bb6361b4575ef220dcfa], "+
-             "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
-            r.toString()
+                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=63264ca1dcf198545b90bb6361b4575ef220dcfa], " +
+                        "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
+                r.toString()
         );
     }
 
     public void test_hasSubmodules() throws Exception {
         w.init();
 
-        w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
+        w.launchCommand("git", "fetch", localMirror(), "tests/getSubmodules:t");
         w.launchCommand("git checkout t");
         assertTrue(w.git.hasGitModules());
 
         w.launchCommand("git","fetch",localMirror(),"master:t2");
         w.launchCommand("git checkout t2");
         assertFalse(w.git.hasGitModules());
+    }
+
+    public void test_getSubmoduleUrl() throws Exception {
+        w = clone(localMirror());
+        w.checkout("tests/getSubmodules");
+        w.git.submoduleInit();
+
+        assertEquals("git://github.com/puppetlabs/puppetlabs-firewall.git", w.igit().getSubmoduleUrl("modules/firewall"));
+
+        try {
+            w.igit().getSubmoduleUrl("bogus");
+            fail();
+        } catch (GitException e) {
+            // expected
+        }
+    }
+
+    public void test_setSubmoduleUrl() throws Exception {
+        w = clone(localMirror());
+        w.checkout("tests/getSubmodules");
+        w.git.submoduleInit();
+
+        String DUMMY = "/dummy";
+        w.igit().setSubmoduleUrl("modules/firewall", DUMMY);
+
+        // create a brand new Git object to make sure it's persisted
+        w = new WorkingArea(w.repo);
+        assertEquals(DUMMY, w.igit().getSubmoduleUrl("modules/firewall"));
     }
 
     public void test_prune() throws Exception {
@@ -576,7 +613,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
 
         assertEquals(
-            ((IGitAPI)w.cgit()).getAllLogEntries("origin/master"),
-            ((IGitAPI)w.git).getAllLogEntries("origin/master"));
+                ((IGitAPI) w.cgit()).getAllLogEntries("origin/master"),
+                w.igit().getAllLogEntries("origin/master"));
     }
 }

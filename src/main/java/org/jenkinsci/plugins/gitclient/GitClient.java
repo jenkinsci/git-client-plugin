@@ -255,6 +255,8 @@ public interface GitClient {
 
     void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
 
+    void submoduleInit()  throws GitException, InterruptedException;
+
     /**
      * Set up submodule URLs so that they correspond to the remote pertaining to
      * the revision that has been checked out.

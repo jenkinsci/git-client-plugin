@@ -30,7 +30,6 @@ public interface IGitAPI extends GitClient {
      * @throws GitException
      */
     boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException;
-    void submoduleInit()  throws GitException, InterruptedException;
     void submoduleSync() throws GitException, InterruptedException;
     String getSubmoduleUrl(String name) throws GitException, InterruptedException;
     void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException;

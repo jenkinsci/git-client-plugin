@@ -807,10 +807,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
     public List<String> showRevision(ObjectId r) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }
@@ -820,7 +816,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void submoduleClean(boolean recursive) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            SubmoduleWalk generator = SubmoduleWalk.forIndex(db());
+            while (generator.next()) {
+                JGitAPIImpl subgit = new JGitAPIImpl(generator.getDirectory(), listener);
+                subgit.clean();
+                if (recursive) {
+                    subgit.submoduleClean(true);
+                }
+            }
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     public void submoduleUpdate(boolean recursive) throws GitException {
@@ -916,12 +923,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        String v = db().getConfig().getString("submodule", name, "url");
+        if (v==null)    throw new GitException("No such submodule: "+name);
+        return v.trim();
     }
 
     @Deprecated
     public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            StoredConfig config = db().getConfig();
+            config.setString("submodule", name, "url", url);
+            config.save();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     @Deprecated
