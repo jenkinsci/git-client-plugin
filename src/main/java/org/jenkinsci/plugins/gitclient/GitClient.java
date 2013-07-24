@@ -310,8 +310,15 @@ public interface GitClient {
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
      * can be parsed by GitChangeLogParser.
+     *
      * <p>
-     * Changes are computed on the [from..to] range.
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * For merge commit, this method reports one diff per each parent. This makes this method
+     * behave differently from {@link #changelog()}.
+     *
      * @return The git show output, in <tt>raw</tt> format.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;

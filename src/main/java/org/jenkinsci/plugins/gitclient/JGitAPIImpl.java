@@ -61,6 +61,7 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.CredentialsProviderImpl;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -69,6 +70,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -503,7 +505,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         // git whatachanged doesn't show the merge commits unless -m is given
                         if (commit.getParentCount()>1)  continue;
 
-                        formatter.format(commit, pw);
+                        formatter.format(commit, null, pw);
                     }
                 } catch (IOException e) {
                     throw new GitException(e);
@@ -538,12 +540,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         /**
          * Formats a commit into the raw format.
+         *
+         * @param commit
+         *      Commit to format.
+         * @param parent
+         *      Optional parent commit to produce the diff against. This only matters
+         *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
          */
-        void format(RevCommit commit, PrintWriter pw) throws IOException {
-            pw.printf("commit %s\n", commit.name());
+        void format(RevCommit commit, @Nullable RevCommit parent, PrintWriter pw) throws IOException {
+            if (parent!=null)
+                pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
+            else
+                pw.printf("commit %s\n", commit.name());
+
             pw.printf("tree %s\n", commit.getTree().name());
-            for (RevCommit parent : commit.getParents())
-                pw.printf("parent %s\n",parent.name());
+            for (RevCommit p : commit.getParents())
+                pw.printf("parent %s\n",p.name());
             pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
             pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
 
@@ -557,7 +569,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             // see man git-diff-tree for the format
             TreeWalk tw = new TreeWalk(or);
-            tw.reset(commit.getParent(0).getTree(), commit.getTree());
+            tw.reset(parent!=null ? parent.getTree() : commit.getParent(0).getTree(), commit.getTree());
             tw.setRecursive(true);
             tw.setFilter(TreeFilter.ANY_DIFF);
 
@@ -565,13 +577,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             rd.addAll(DiffEntry.scan(tw));
             List<DiffEntry> diffs = rd.compute(or, null);
             for (DiffEntry diff : diffs) {
-                pw.printf(":%06o %06o %s %s %s %s",
+                pw.printf(":%06o %06o %s %s %s\t%s",
                         diff.getOldMode().getBits(),
                         diff.getNewMode().getBits(),
                         diff.getOldId().name(),
                         diff.getNewId().name(),
                         statusOf(diff),
-                        diff.getOldPath());
+                        diff.getChangeType()==ChangeType.ADD ? diff.getNewPath() : diff.getOldPath());
 
                 if (hasNewPath(diff)) {
                     pw.printf(" %s",diff.getNewPath()); // copied to
@@ -822,7 +834,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            db();
+            RevWalk w = new RevWalk(or);
+            w.markStart(w.parseCommit(to));
+            if (from!=null)
+                w.markUninteresting(w.parseCommit(from));
+            else
+                w.setRevFilter(MaxCountRevFilter.create(1));
+
+            List<String> r = new ArrayList<String>();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            RawFormatter f = new RawFormatter();
+            for (RevCommit c : w) {
+                if (c.getParentCount()==1) {
+                    f.format(c,null,pw);
+                } else {
+                    // the effect of the -m option, which makes the diff produce for each parent of a merge commit
+                    for (RevCommit p : c.getParents()) {
+                        f.format(c,p,pw);
+                    }
+                }
+
+                pw.flush();
+                r.addAll(Arrays.asList(sw.toString().split("\n")));
+                sw.getBuffer().setLength(0);
+            }
+            return r;
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     public void submoduleClean(boolean recursive) throws GitException {
