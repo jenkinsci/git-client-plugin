@@ -5,7 +5,6 @@ import hudson.FilePath;
 import hudson.FilePath.FileCallable;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
-import hudson.plugins.git.JGitTool;
 import hudson.remoting.VirtualChannel;
 
 import javax.annotation.Nullable;

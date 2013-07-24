@@ -1,6 +1,7 @@
-package hudson.plugins.git;
+package org.jenkinsci.plugins.gitclient;
 
 import hudson.Extension;
+import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
