@@ -152,4 +152,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             throw new GitException("Couldn't check for .gitmodules", e);
         }
     }
+
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
+        return showRevision(null, r);
+    }
 }

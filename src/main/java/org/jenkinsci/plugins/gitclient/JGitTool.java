@@ -1,6 +1,7 @@
-package hudson.plugins.git;
+package org.jenkinsci.plugins.gitclient;
 
 import hudson.Extension;
+import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
@@ -33,7 +34,7 @@ public class JGitTool extends GitTool {
     }
 
     /**
-     * {@link Git} redcognizes this as a magic executable name to use {@link JGitAPIImpl}.
+     * {@link Git} recognizes this as a magic executable name to use {@link JGitAPIImpl}.
      */
     public static final String MAGIC_EXENAME = "jgit";
 }
