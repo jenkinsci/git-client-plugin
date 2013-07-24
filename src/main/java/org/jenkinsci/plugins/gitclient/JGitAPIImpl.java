@@ -968,13 +968,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 public String describe(ObjectId tip) throws IOException {
-                    if (depth==0)   return tag.getName();
                     return String.format("%s-%d-%s", tag.getName(), depth, or.abbreviate(tip).toString());
                 }
             }
             List<Candidate> candidates = new ArrayList<Candidate>();    // all the candidates we find
 
             ObjectId tipId = db().resolve(tip);
+
+            Ref lucky = tags.get(tipId);
+            if (lucky!=null)
+                return lucky.getName();
+
             w.markStart(w.parseCommit(tipId));
 
             int maxCandidates = 10;
