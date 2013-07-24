@@ -26,7 +26,6 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -840,13 +839,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public void merge(String refSpec) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            merge(db().resolve(refSpec));
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
     public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
-
+        push(repository.getName(),refspec);
     }
 
     @Deprecated
