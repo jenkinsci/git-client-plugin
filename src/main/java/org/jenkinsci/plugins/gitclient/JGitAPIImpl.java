@@ -39,6 +39,8 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevFlag;
+import org.eclipse.jgit.revwalk.RevFlagSet;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -68,7 +70,10 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -628,7 +633,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public String getTagMessage(String tagName) throws GitException {
         try {
-            RevWalk walk = new RevWalk(db());
+            RevWalk walk = new RevWalk(or);
             String s = walk.parseTag(db().resolve(tagName)).getFullMessage();
             walk.dispose();
             return s.trim();
@@ -758,7 +763,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public List<ObjectId> revListAll() throws GitException {
         try {
-            RevWalk walk = new RevWalk(db());
+            RevWalk walk = new RevWalk(or);
             for (Ref r : db().getAllRefs().values()) {
                 walk.markStart(walk.parseCommit(r.getObjectId()));
             }
@@ -770,7 +775,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public List<ObjectId> revList(String ref) throws GitException {
         try {
-            RevWalk walk = new RevWalk(db());
+            RevWalk walk = new RevWalk(or);
             walk.markStart(walk.parseCommit(db().resolve(ref)));
             return revList(walk);
         } catch (IOException e) {
@@ -872,12 +877,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public void submoduleInit() throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            git().submoduleInit().call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
     public void submoduleSync() throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            git().submoduleSync().call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
@@ -895,9 +908,143 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * This implementation is based on my reading of the cgit source code at https://github.com/git/git/blob/master/builtin/describe.c
+     *
+     * <p>
+     * The basic structure of the algorithm is as follows. We walk the commit graph,
+     * find tags, and mark commits that are reachable from those tags. The marking
+     * uses flags given by JGit, so there's a fairly small upper bound in the number of tags
+     * we can keep track of.
+     *
+     * <p>
+     * As we walk commits, we count commits that each tag doesn't contain.
+     * We call it "depth", following the variable name in C Git.
+     * As we walk further and find enough tags, we go into wind-down mode and only walk
+     * to the point of accurately determining all the depths.
+     */
     @Deprecated
-    public String describe(String commitIsh) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+    public String describe(String tip) throws GitException, InterruptedException {
+        try {
+            final RevWalk w = new RevWalk(or);
+            w.setRetainBody(false);
+
+            Map<ObjectId,Ref> tags = new HashMap<ObjectId, Ref>();
+            for (Ref r : db().getTags().values()) {
+                tags.put(r.getPeeledObjectId(), r);
+            }
+
+            final RevFlagSet allFlags = new RevFlagSet(); // combined flags of all the Candidate instances
+
+            /**
+             * Tracks the depth of each tag as we find them.
+             */
+            class Candidate {
+                final RevCommit commit;
+                final Ref tag;
+                final RevFlag flag;
+
+                /**
+                 * This field number of commits that are reachable from the tip but
+                 * not reachable from the tag.
+                 */
+                int depth;
+
+                Candidate(RevCommit commit, Ref tag) {
+                    this.commit = commit;
+                    this.tag = tag;
+                    this.flag = w.newFlag(tag.getName());
+                    // we'll mark all the notes reachable from this tag accordingly
+                    w.carry(flag);
+                    commit.add(flag);
+                    allFlags.add(flag);
+                }
+
+                /**
+                 * Does this tag contains the given commit?
+                 */
+                public boolean reaches(RevCommit c) {
+                    return c.has(flag);
+                }
+
+                public String describe(ObjectId tip) throws IOException {
+                    if (depth==0)   return tag.getName();
+                    return String.format("%s-%d-%s", tag.getName(), depth, or.abbreviate(tip).toString());
+                }
+            }
+            List<Candidate> candidates = new ArrayList<Candidate>();    // all the candidates we find
+
+            ObjectId tipId = db().resolve(tip);
+            w.markStart(w.parseCommit(tipId));
+
+            int maxCandidates = 10;
+
+            int seen = 0;   // commit seen thus far
+            RevCommit c;
+            while ((c=w.next())!=null) {
+                if (!c.hasAny(allFlags)) {
+                    // if a tag already dominates this commit,
+                    // then there's no point in picking a tag on this commit
+                    // since the one that dominates it is always more preferable
+                    Ref t = tags.get(c);
+                    if (t!=null) {
+                        Candidate cd = new Candidate(c, t);
+                        candidates.add(cd);
+                        cd.depth = seen;
+                    }
+                }
+
+                // if the newly discovered commit isn't reachable from a tag that we've seen
+                // it counts toward the total depth.
+                for (Candidate cd : candidates) {
+                    if (!cd.reaches(c)) {
+                        cd.depth++;
+                    }
+                }
+
+                // if we have search going for enough tags, we wil start closing down.
+                // JGit can only give us a finite number of bits, so we can't track
+                // all tags even if we wanted to.
+                if (candidates.size()>=maxCandidates)
+                    break;
+
+                // TODO: if all the commits in the queue of RevWalk has allFlags
+                // there's no point in continuing search as we'll not discover any more
+                // tags. But RevWalk doesn't expose this.
+
+                seen++;
+            }
+
+            // at this point we aren't adding any more tags to our search,
+            // but we still need to count all the depths correctly.
+            while ((c=w.next())!=null) {
+                if (c.hasAll(allFlags)) {
+                    // no point in visiting further from here, so cut the search here
+                    for (RevCommit p : c.getParents())
+                        p.add(RevFlag.SEEN);
+                } else {
+                    for (Candidate cd : candidates) {
+                        if (!cd.reaches(c)) {
+                            cd.depth++;
+                        }
+                    }
+                }
+            }
+
+            if (candidates.isEmpty())
+                throw new GitException("No tags can describe "+tip);
+
+            // if all the nodes are dominated by all the tags, the walk stops
+            Collections.sort(candidates,new Comparator<Candidate>() {
+                public int compare(Candidate o1, Candidate o2) {
+                    return o1.depth-o2.depth;
+                }
+            });
+
+            return candidates.get(0).describe(tipId);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
