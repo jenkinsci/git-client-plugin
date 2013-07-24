@@ -372,22 +372,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
-    	StringWriter writer = new StringWriter();
-
+        ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw");
     	if (from != null){
-    		writer.write(launchCommand("show", "--no-abbrev", "--format=raw", "-M", "--raw",
-                    from.name() + ".." + to.name()));
-    		writer.write("\\n");
+            args.add(from.name() + ".." + to.name());
+        } else {
+            args.add("-1", to.name());
     	}
-    	
-    	writer.write(launchCommand("whatchanged", "--no-abbrev", "-M", "-m", "--pretty=raw", "-1", to.name()));
 
-        String result = writer.toString();
-        List<String> revShow = new ArrayList<String>();
-        if (result != null) {
-            revShow = new ArrayList<String>(Arrays.asList(result.split("\\n")));
-        }
-        return revShow;
+        StringWriter writer = new StringWriter();
+        writer.write(launchCommand(args));
+        return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
     }
 
     /**
