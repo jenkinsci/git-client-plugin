@@ -76,6 +76,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -867,14 +868,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    private Iterable<JGitAPIImpl> submodules() throws IOException {
+        List<JGitAPIImpl> submodules = new ArrayList<JGitAPIImpl>();
+        SubmoduleWalk generator = SubmoduleWalk.forIndex(db());
+        while (generator.next()) {
+            submodules.add(new JGitAPIImpl(generator.getDirectory(), listener));
+        }
+        return submodules;
+    }
+
     public void submoduleClean(boolean recursive) throws GitException {
         try {
-            SubmoduleWalk generator = SubmoduleWalk.forIndex(db());
-            while (generator.next()) {
-                JGitAPIImpl subgit = new JGitAPIImpl(generator.getDirectory(), listener);
-                subgit.clean();
+            for (JGitAPIImpl sub : submodules()) {
+                sub.clean();
                 if (recursive) {
-                    subgit.submoduleClean(true);
+                    sub.submoduleClean(true);
                 }
             }
         } catch (IOException e) {
@@ -883,7 +891,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void submoduleUpdate(boolean recursive) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        try {
+            git().submoduleUpdate().call();
+            if (recursive) {
+                for (JGitAPIImpl sub : submodules()) {
+                    sub.submoduleUpdate(recursive);
+                }
+            }
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
     }
 
 
