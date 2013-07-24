@@ -323,22 +323,16 @@ public class CliGitAPIImpl implements GitClient {
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
-    	StringWriter writer = new StringWriter();
-
+        ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw");
     	if (from != null){
-    		writer.write(launchCommand("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw",
-                    from.name() + ".." + to.name()));
+            args.add(from.name() + ".." + to.name());
         } else {
-    		writer.write(launchCommand("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw",
-                    "-1", to.name()));
+            args.add("-1", to.name());
     	}
 
-        String result = writer.toString();
-        List<String> revShow = new ArrayList<String>();
-        if (result != null) {
-            revShow = new ArrayList<String>(Arrays.asList(result.split("\\n")));
-        }
-        return revShow;
+        StringWriter writer = new StringWriter();
+        writer.write(launchCommand(args));
+        return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
     }
 
     /**
