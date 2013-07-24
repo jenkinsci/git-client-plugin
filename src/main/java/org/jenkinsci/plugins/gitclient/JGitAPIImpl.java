@@ -176,7 +176,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void checkoutBranch(String branch, String ref) throws GitException {
         try {
-            RefUpdate refUpdate = db().updateRef(Constants.R_HEADS + branch);
+            RefUpdate refUpdate = db().updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(db().resolve(ref));
             switch (refUpdate.forceUpdate()) {
             case NOT_ATTEMPTED:
@@ -301,8 +301,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
-            if (!branch.startsWith(Constants.R_HEADS))
-                branch = Constants.R_HEADS+branch;
+            if (!branch.startsWith(R_HEADS))
+                branch = R_HEADS+branch;
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
@@ -388,7 +388,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void addNote(String note, String namespace) throws GitException {
         try {
-            ObjectId head = db().resolve(Constants.HEAD); // commit to put a note on
+            ObjectId head = db().resolve(HEAD); // commit to put a note on
 
             AddNoteCommand cmd = git().notesAdd();
             cmd.setMessage(normalizeNote(note));
@@ -422,7 +422,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void appendNote(String note, String namespace) throws GitException {
         try {
-            ObjectId head = db().resolve(Constants.HEAD); // commit to put a note on
+            ObjectId head = db().resolve(HEAD); // commit to put a note on
 
             ShowNoteCommand cmd = git().notesShow();
             cmd.setNotesRef(qualifyNotesNamespace(namespace));
@@ -435,7 +435,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             } else {
                 ObjectLoader ol = or.open(n.getData());
                 StringWriter sw = new StringWriter();
-                IOUtils.copy(new InputStreamReader(ol.openStream(),Constants.CHARSET),sw);
+                IOUtils.copy(new InputStreamReader(ol.openStream(),CHARSET),sw);
                 sw.write("\n");
                 addNote(sw.toString() + normalizeNote(note), namespace);
             }
@@ -633,6 +633,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public String getTagMessage(String tagName) throws GitException {
         try {
+            db();
             RevWalk walk = new RevWalk(or);
             String s = walk.parseTag(db().resolve(tagName)).getFullMessage();
             walk.dispose();
@@ -739,8 +740,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         final FetchConnection c = tn.openFetch();
         try {
             for (final Ref r : c.getRefs()) {
-                if (r.getName().startsWith(Constants.R_HEADS))
-                    branches.add("refs/remotes/"+remote+"/"+r.getName().substring(Constants.R_HEADS.length()));
+                if (r.getName().startsWith(R_HEADS))
+                    branches.add("refs/remotes/"+remote+"/"+r.getName().substring(R_HEADS.length()));
             }
         } finally {
             c.close();
@@ -763,6 +764,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public List<ObjectId> revListAll() throws GitException {
         try {
+            db();
             RevWalk walk = new RevWalk(or);
             for (Ref r : db().getAllRefs().values()) {
                 walk.markStart(walk.parseCommit(r.getObjectId()));
@@ -775,6 +777,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public List<ObjectId> revList(String ref) throws GitException {
         try {
+            db();
             RevWalk walk = new RevWalk(or);
             walk.markStart(walk.parseCommit(db().resolve(ref)));
             return revList(walk);
@@ -923,15 +926,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * As we walk further and find enough tags, we go into wind-down mode and only walk
      * to the point of accurately determining all the depths.
      */
-    @Deprecated
     public String describe(String tip) throws GitException, InterruptedException {
         try {
+            db();
             final RevWalk w = new RevWalk(or);
             w.setRetainBody(false);
 
             Map<ObjectId,Ref> tags = new HashMap<ObjectId, Ref>();
             for (Ref r : db().getTags().values()) {
-                tags.put(r.getPeeledObjectId(), r);
+                ObjectId key = db.peel(r).getPeeledObjectId();
+                if (key==null)  key = r.getObjectId();
+                tags.put(key, r);
             }
 
             final RevFlagSet allFlags = new RevFlagSet(); // combined flags of all the Candidate instances
@@ -968,7 +973,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 public String describe(ObjectId tip) throws IOException {
-                    return String.format("%s-%d-%s", tag.getName(), depth, or.abbreviate(tip).toString());
+                    return String.format("%s-%d-g%s", tag.getName().substring(R_TAGS.length()),
+                            depth, or.abbreviate(tip).name());
                 }
             }
             List<Candidate> candidates = new ArrayList<Candidate>();    // all the candidates we find
@@ -977,7 +983,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Ref lucky = tags.get(tipId);
             if (lucky!=null)
-                return lucky.getName();
+                return lucky.getName().substring(R_TAGS.length());
 
             w.markStart(w.parseCommit(tipId));
 
@@ -1066,7 +1072,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 RevObject rev = w.parseAny(tree.getObjectId(0));
                 r.add(new IndexEntry(
                         String.format("%06o", tree.getRawMode(0)),
-                        Constants.typeString(rev.getType()),
+                        typeString(rev.getType()),
                         tree.getObjectId(0).name(),
                         tree.getNameString()));
             }

@@ -313,4 +313,11 @@ public interface GitClient {
      * @return The git show output, in <tt>raw</tt> format.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
+
+    /**
+     * Equivalent of "git-describe --tags".
+     *
+     * Find a nearby tag (including unannotated ones) and come up with a short identifier to describe the tag.
+     */
+    String describe(String commitIsh) throws GitException, InterruptedException;
 }

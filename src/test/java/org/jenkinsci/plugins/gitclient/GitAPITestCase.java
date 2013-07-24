@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.IndexEntry;
@@ -20,7 +19,6 @@ import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -77,6 +75,10 @@ public abstract class GitAPITestCase extends TestCase {
 
         void add(String path) throws IOException, InterruptedException {
             launchCommand("git add "+path);
+        }
+
+        void tag(String tag) throws IOException, InterruptedException {
+            launchCommand("git tag "+tag);
         }
 
         void commit(String msg) throws IOException, InterruptedException {
@@ -219,7 +221,7 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea r = new WorkingArea();
         r.init();
         r.commit("init");
-        r.launchCommand("git tag t");
+        r.tag("t");
         String sha1 = r.launchCommand("git rev-list --max-count=1 t");
 
         w.init();
@@ -230,8 +232,8 @@ public abstract class GitAPITestCase extends TestCase {
         r.touch("file.txt");
         r.add("file.txt");
         r.commit("update");
-        r.launchCommand("git tag -d t");
-        r.launchCommand("git tag t");
+        r.tag("-d t");
+        r.tag("t");
         sha1 = r.launchCommand("git rev-list --max-count=1 t");
         w.git.fetch("origin", null);
         assertTrue(sha1.equals(r.launchCommand("git rev-list --max-count=1 t")));
@@ -325,8 +327,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_delete_tag() throws Exception {
         w.init();
         w.commit("init");
-        w.launchCommand("git tag test");
-        w.launchCommand("git tag another");
+        w.tag("test");
+        w.tag("another");
         w.git.deleteTag("test");
         String tags = w.launchCommand("git tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
@@ -336,9 +338,9 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_list_tags_with_filter() throws Exception {
         w.init();
         w.commit("init");
-        w.launchCommand("git tag test");
-        w.launchCommand("git tag another_test");
-        w.launchCommand("git tag yet_another");
+        w.tag("test");
+        w.tag("another_test");
+        w.tag("yet_another");
         Set<String> tags = w.git.getTagNames("*test");
         assertTrue("expected tag not listed", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another_test"));
@@ -348,7 +350,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_tag_exists() throws Exception {
         w.init();
         w.commit("init");
-        w.launchCommand("git tag test");
+        w.tag("test");
         assertTrue(w.git.tagExists("test"));
         assertFalse(w.git.tagExists("unknown"));
     }
@@ -356,7 +358,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_get_tag_message() throws Exception {
         w.init();
         w.commit("init");
-        w.launchCommand("git tag test -m this-is-a-test");
+        w.tag("test -m this-is-a-test");
         assertEquals("this-is-a-test", w.git.getTagMessage("test"));
     }
 
@@ -383,7 +385,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file1");
         w.add("file1");
         w.commit("commit1");
-        w.launchCommand("git tag test");
+        w.tag("test");
         String sha1 = w.launchCommand("git rev-parse HEAD").substring(0,40);
         assertEquals(sha1, w.git.revParse(sha1).name());
         assertEquals(sha1, w.git.revParse("HEAD").name());
@@ -453,7 +455,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(base, master);
 
         /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
-        w.launchCommand("git tag master"); // ref "master" is now ambiguous
+        w.tag("master"); // ref "master" is now ambiguous
         String revParse = w.launchCommand("git rev-parse master");
         assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
 
@@ -540,5 +542,18 @@ public abstract class GitAPITestCase extends TestCase {
             String all = w.launchCommand("git rev-list "+b.getName());
             assertEquals(all,out.toString());
         }
+    }
+
+    public void test_describe() throws Exception {
+        WorkingArea w = new WorkingArea().init();
+        w.commit("first");
+        w.tag("-m test t1");
+        w.touch("a");
+        w.add("a");
+        w.commit("second");
+        assertEquals(w.launchCommand("git describe").trim(), w.git.describe("HEAD"));
+
+        w.tag("-m test2 t2");
+        assertEquals(w.launchCommand("git describe").trim(), w.git.describe("HEAD"));
     }
 }

@@ -55,7 +55,6 @@ public interface IGitAPI extends GitClient {
     List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException;
 
     List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException;
-    String describe(String commitIsh) throws GitException, InterruptedException;
     List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException;
     void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException;
     void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException;
