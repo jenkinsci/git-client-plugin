@@ -119,14 +119,17 @@ public abstract class GitAPITestCase extends TestCase {
         /**
          * Creates a CGit implementation. Sometimes we need this for testing JGit impl.
          */
-        protected GitClient cgit() throws Exception {
-            return Git.with(listener, env).in(repo).using("git").getClient();
+        protected CliGitAPIImpl cgit() throws Exception {
+            return (CliGitAPIImpl)Git.with(listener, env).in(repo).using("git").getClient();
         }
 
         public void checkout(String branch) throws IOException, InterruptedException {
             cmd("git checkout " + branch);
         }
 
+        /**
+         * Casts the {@link #git} to {@link IGitAPI}
+         */
         public IGitAPI igit() {
             return (IGitAPI)git;
         }
@@ -613,7 +616,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
 
         assertEquals(
-                ((IGitAPI) w.cgit()).getAllLogEntries("origin/master"),
+                w.cgit().getAllLogEntries("origin/master"),
                 w.igit().getAllLogEntries("origin/master"));
     }
 }
