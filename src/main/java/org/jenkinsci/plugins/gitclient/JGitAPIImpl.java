@@ -498,50 +498,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException, InterruptedException {
                 PrintWriter pw = new PrintWriter(out,false);
                 try {
-                    final RenameDetector rd = new RenameDetector(db());
-
+                    RawFormatter formatter= new RawFormatter();
                     for (RevCommit commit : walk) {
                         // git whatachanged doesn't show the merge commits unless -m is given
                         if (commit.getParentCount()>1)  continue;
 
-                        pw.printf("commit %s\n", commit.name());
-                        pw.printf("tree %s\n", commit.getTree().name());
-                        for (RevCommit parent : commit.getParents())
-                            pw.printf("parent %s\n",parent.name());
-                        pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
-                        pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
-
-                        // indent commit messages by 4 chars
-                        String msg = commit.getFullMessage();
-                        if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
-                        msg = msg.replace("\n","\n    ");
-                        msg="    "+msg+"\n";
-
-                        pw.println(msg);
-
-                        // see man git-diff-tree for the format
-                        TreeWalk tw = TreeWalk.forPath(or, "", commit.getParent(0).getTree(), commit.getTree());
-                        tw.setRecursive(true);
-                        tw.setFilter(TreeFilter.ANY_DIFF);
-
-                        rd.reset();
-                        rd.addAll(DiffEntry.scan(tw));
-                        List<DiffEntry> diffs = rd.compute(or, null);
-                        for (DiffEntry diff : diffs) {
-                            pw.printf(":%06o %06o %s %s %s %s",
-                                    diff.getOldMode().getBits(),
-                                    diff.getNewMode().getBits(),
-                                    diff.getOldId().name(),
-                                    diff.getNewId().name(),
-                                    statusOf(diff),
-                                    diff.getOldPath());
-
-                            if (hasNewPath(diff)) {
-                                pw.printf(" %s",diff.getNewPath()); // copied to
-                            }
-                            pw.println();
-                            pw.println();
-                        }
+                        formatter.format(commit, pw);
                     }
                 } catch (IOException e) {
                     throw new GitException(e);
@@ -549,23 +511,75 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     pw.flush();
                 }
             }
-
-            private boolean hasNewPath(DiffEntry d) {
-                return d.getChangeType()==ChangeType.COPY || d.getChangeType()==ChangeType.RENAME;
-            }
-
-            private String statusOf(DiffEntry d) {
-                switch (d.getChangeType()) {
-                case ADD:       return "A";
-                case MODIFY:    return "M";
-                case DELETE:    return "D";
-                case RENAME:    return "R"+d.getScore();
-                case COPY:      return "C"+d.getScore();
-                default:
-                    throw new AssertionError("Unexpected change type: "+d.getChangeType());
-                }
-            }
         };
+    }
+
+    /**
+     * Formats {@link RevCommit}.
+     */
+    class RawFormatter {
+        private final RenameDetector rd = new RenameDetector(db());
+
+        private boolean hasNewPath(DiffEntry d) {
+            return d.getChangeType()==ChangeType.COPY || d.getChangeType()==ChangeType.RENAME;
+        }
+
+        private String statusOf(DiffEntry d) {
+            switch (d.getChangeType()) {
+            case ADD:       return "A";
+            case MODIFY:    return "M";
+            case DELETE:    return "D";
+            case RENAME:    return "R"+d.getScore();
+            case COPY:      return "C"+d.getScore();
+            default:
+                throw new AssertionError("Unexpected change type: "+d.getChangeType());
+            }
+        }
+
+        /**
+         * Formats a commit into the raw format.
+         */
+        void format(RevCommit commit, PrintWriter pw) throws IOException {
+            pw.printf("commit %s\n", commit.name());
+            pw.printf("tree %s\n", commit.getTree().name());
+            for (RevCommit parent : commit.getParents())
+                pw.printf("parent %s\n",parent.name());
+            pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
+            pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
+
+            // indent commit messages by 4 chars
+            String msg = commit.getFullMessage();
+            if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
+            msg = msg.replace("\n","\n    ");
+            msg="    "+msg+"\n";
+
+            pw.println(msg);
+
+            // see man git-diff-tree for the format
+            TreeWalk tw = new TreeWalk(or);
+            tw.reset(commit.getParent(0).getTree(), commit.getTree());
+            tw.setRecursive(true);
+            tw.setFilter(TreeFilter.ANY_DIFF);
+
+            rd.reset();
+            rd.addAll(DiffEntry.scan(tw));
+            List<DiffEntry> diffs = rd.compute(or, null);
+            for (DiffEntry diff : diffs) {
+                pw.printf(":%06o %06o %s %s %s %s",
+                        diff.getOldMode().getBits(),
+                        diff.getNewMode().getBits(),
+                        diff.getOldId().name(),
+                        diff.getNewId().name(),
+                        statusOf(diff),
+                        diff.getOldPath());
+
+                if (hasNewPath(diff)) {
+                    pw.printf(" %s",diff.getNewPath()); // copied to
+                }
+                pw.println();
+                pw.println();
+            }
+        }
     }
 
     public void clean() throws GitException {
