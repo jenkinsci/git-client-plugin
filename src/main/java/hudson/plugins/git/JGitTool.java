@@ -33,7 +33,7 @@ public class JGitTool extends GitTool {
     }
 
     /**
-     * {@link Git} redcognizes this as a magic executable name to use {@link JGitAPIImpl}.
+     * {@link Git} recognizes this as a magic executable name to use {@link JGitAPIImpl}.
      */
     public static final String MAGIC_EXENAME = "jgit";
 }
