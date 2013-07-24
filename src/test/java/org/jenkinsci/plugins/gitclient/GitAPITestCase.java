@@ -5,6 +5,7 @@ import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
+import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
@@ -113,9 +114,23 @@ public abstract class GitAPITestCase extends TestCase {
         public String contentOf(String path) throws IOException {
             return FileUtils.readFileToString(file(path));
         }
+
+        /**
+         * Creates a CGit implementation. Sometimes we need this for testing JGit impl.
+         */
+        protected GitClient cgit() throws Exception {
+            return Git.with(listener, env).in(repo).using("git").getClient();
+        }
     }
     
     private WorkingArea w;
+
+    WorkingArea clone(String src) throws Exception {
+        WorkingArea x = new WorkingArea();
+        x.launchCommand("git clone "+src+" "+x.repoPath());
+        return new WorkingArea(x.repo);
+    }
+
     
 
     @Override
@@ -555,5 +570,13 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.tag("-m test2 t2");
         assertEquals(w.launchCommand("git describe").trim(), w.git.describe("HEAD"));
+    }
+
+    public void test_getAllLogEntries() throws Exception {
+        w = clone(localMirror());
+
+        assertEquals(
+            ((IGitAPI)w.cgit()).getAllLogEntries("origin/master"),
+            ((IGitAPI)w.git).getAllLogEntries("origin/master"));
     }
 }

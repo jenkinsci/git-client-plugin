@@ -1159,7 +1159,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public String getAllLogEntries(String branch) throws InterruptedException {
+        // BROKEN: --all and branch are conflicting.
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
-
     }
 }

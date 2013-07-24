@@ -877,7 +877,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public String getAllLogEntries(String branch) throws InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            StringBuilder w = new StringBuilder();
+
+            db();
+            RevWalk walk = new RevWalk(or);
+            for (Ref r : db().getAllRefs().values()) {
+                walk.markStart(walk.parseCommit(r.getObjectId()));
+            }
+            walk.setRetainBody(false);
+
+            for (RevCommit c : walk) {
+                w.append('\'').append(c.name()).append('#').append(c.getCommitTime()).append("'\n");
+            }
+            return w.toString().trim();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
     }
 
     @Deprecated
