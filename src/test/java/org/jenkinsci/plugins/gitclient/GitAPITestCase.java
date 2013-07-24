@@ -601,8 +601,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_show_revision_for_merge() throws Exception {
-        w.init();
-        w.launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git");
+        w = clone(localMirror());
         ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
         ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
 
@@ -645,8 +644,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_show_revision_for_single_commit() throws Exception {
-        w.init();
-        w.launchCommand("git fetch https://github.com/jenkinsci/git-client-plugin.git");
+        w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
         List<String> revisionDetails = w.git.showRevision(null, to);
         Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
