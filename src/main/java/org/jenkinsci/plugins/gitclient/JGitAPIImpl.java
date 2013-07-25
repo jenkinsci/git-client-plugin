@@ -46,7 +46,6 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
@@ -932,20 +931,38 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * {@inheritDoc}
      *
-     * For efficiency,
+     * "git branch --contains=X" is a pretty plain traversal. We walk the commit graph until we find the target
+     * revision we want.
+     *
+     * Doing this individually for every branch is too expensive, so we use flags to track multiple branches
+     * at once. JGit gives us 24 bits of flags, so we divide up all the branches to batches of 24, then
+     * perform a graph walk. For flags to carry correctly over from children to parents, all the children
+     * must be visited before we see the parent. This requires a topological sorting order. In addition,
+     * we want kind of a "breadth first search" to avoid going down a part of the graph that's not terribly
+     * interesting and topo sort helps with that, too (imagine the following commit graph,
+     * and compute "git branch --contains=t"; we don't want to visit all the way to c1 before visiting c.)
+     *
+     *
+     *   INIT -> c1 -> c2 -> ... long history of commits --+--> c1000 --+--> branch1
+     *                                                     |            |
+     *                                                      --> t ------
+     *
+     * <p>
+     * Since we reuse {@link RevWalk}, it'd be nice to flag commits reachable from 't' as uninteresting
+     * and keep them across resets, but I'm not sure how to do it.
      */
     public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
         try {
             db();
             RevWalk walk = new RevWalk(or);
             walk.setRetainBody(false);
-            walk.sort(RevSort.COMMIT_TIME_DESC); // so that we won't chase down pointless graph too long
+            walk.sort(RevSort.TOPO);// so that by the time we hit target we have all that we want
 
             ObjectId id = db().resolve(revspec);
             if (id==null)   throw new GitException("Invalid commit: "+revspec);
             RevCommit target = walk.parseCommit(id);
 
-            // we can track up to 24 flags at a time in JGit, so that's how many branches we can traverse at one time
+            // we can track up to 24 flags at a time in JGit, so that's how many branches we will traverse in every iteration
             List<RevFlag> flags = new ArrayList<RevFlag>(24);
             for (int i=0; i<24; i++)
                 flags.add(walk.newFlag("branch" + i));
