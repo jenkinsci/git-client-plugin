@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -22,6 +23,7 @@ import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -129,6 +131,13 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         /**
+         * Obtain the current HEAD revision
+         */
+        ObjectId head() throws IOException, InterruptedException {
+            return ObjectId.fromString(w.cmd("git rev-parse HEAD").substring(0,40));
+        }
+
+        /**
          * Casts the {@link #git} to {@link IGitAPI}
          */
         public IGitAPI igit() {
@@ -186,8 +195,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file1");
         w.add("file1");
         w.commit("commit1");
-        String sha1 = w.cmd("git rev-parse HEAD").substring(0,40);
-        assertTrue("HEAD commit not found", w.git.isCommitInRepo(ObjectId.fromString(sha1)));
+        assertTrue("HEAD commit not found", w.git.isCommitInRepo(w.head()));
         // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
         assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
@@ -443,7 +451,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file1");
         w.add("file1");
         w.commit("commit1");
-        String sha1 = w.cmd("git rev-parse HEAD").substring(0,40);
+        ObjectId sha1 = w.head();
 
         WorkingArea r = new WorkingArea();
         r.init();
@@ -452,7 +460,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.git.push("origin", "master");
         String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
-        assertEquals(sha1, remoteSha1);
+        assertEquals(sha1.name(), remoteSha1);
     }
 
     public void test_notes_add() throws Exception {
@@ -478,7 +486,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         w.init();
         w.commit("init");
-        ObjectId base = ObjectId.fromString(w.cmd("git rev-parse master").substring(0,40));
+        ObjectId base = w.head();
         ObjectId master = w.git.revParse("master");
         assertEquals(base, master);
 
@@ -675,5 +683,54 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(
                 w.cgit().getAllLogEntries("origin/master"),
                 w.igit().getAllLogEntries("origin/master"));
+    }
+
+    public void test_branchContaining() throws Exception {
+        /*
+         OLD                                    NEW
+                   -> X
+                  /
+                c1 -> T -> c2 -> Z
+                  \            \
+                   -> c3 --------> Y
+         */
+        w.init();
+
+        w.commit("c1");
+        ObjectId c1 = w.head();
+
+        w.cmd("git branch Z "+c1.name());
+        w.checkout("Z");
+        w.commit("T");
+        ObjectId t = w.head();
+        w.commit("c2");
+        ObjectId c2 = w.head();
+        w.commit("Z");
+
+        w.cmd("git branch X "+c1.name());
+        w.checkout("X");
+        w.commit("X");
+
+        w.cmd("git branch Y "+c1.name());
+        w.checkout("Y");
+        w.commit("c3");
+        ObjectId c3 = w.head();
+        w.cmd("git merge --no-ff -m Y "+c2.name());
+
+        w.git.deleteBranch("master");
+        assertEquals(3,w.git.getBranches().size());     // X, Y, and Z
+
+        assertEquals("X,Y,Z",formatBranches(w.igit().getBranchesContaining(c1.name())));
+        assertEquals("Y,Z",formatBranches(w.igit().getBranchesContaining(t.name())));
+        assertEquals("Y",formatBranches(w.igit().getBranchesContaining(c3.name())));
+        assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
+    }
+
+    private String formatBranches(List<Branch> branches) {
+        Set<String> names = new TreeSet<String>();
+        for (Branch b : branches) {
+            names.add(b.getName());
+        }
+        return Util.join(names,",");
     }
 }

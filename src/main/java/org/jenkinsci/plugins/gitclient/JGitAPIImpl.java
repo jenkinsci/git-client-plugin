@@ -1,6 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.Credentials;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -44,6 +46,7 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.CommitTimeRevFilter;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
@@ -76,7 +79,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -792,9 +794,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             db();
             RevWalk walk = new RevWalk(or);
-            for (Ref r : db().getAllRefs().values()) {
-                walk.markStart(walk.parseCommit(r.getObjectId()));
-            }
+            markAllRefs(walk);
             return revList(walk);
         } catch (IOException e) {
             throw new GitException(e);
@@ -929,9 +929,78 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         push(repository.getName(),refspec);
     }
 
-    @Deprecated
+    /**
+     * {@inheritDoc}
+     *
+     * For efficiency,
+     */
     public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
+        try {
+            db();
+            RevWalk walk = new RevWalk(or);
+            walk.setRetainBody(false);
+            walk.sort(RevSort.COMMIT_TIME_DESC); // so that we won't chase down pointless graph too long
+
+            ObjectId id = db().resolve(revspec);
+            if (id==null)   throw new GitException("Invalid commit: "+revspec);
+            RevCommit target = walk.parseCommit(id);
+
+            // we can track up to 24 flags at a time in JGit, so that's how many branches we can traverse at one time
+            List<RevFlag> flags = new ArrayList<RevFlag>(24);
+            for (int i=0; i<24; i++)
+                flags.add(walk.newFlag("branch" + i));
+            walk.carry(flags);
+
+            List<Branch> result = new ArrayList<Branch>();  // we'll built up the return value in here
+
+            List<Ref> branches = getAllBranchRefs();
+            while (!branches.isEmpty()) {
+                List<Ref> batch = branches.subList(0,Math.min(flags.size(),branches.size()));
+                branches = branches.subList(batch.size(),branches.size());  // remaining
+
+                walk.reset();
+                int idx=0;
+                for (Ref r : batch) {
+                    RevCommit c = walk.parseCommit(r.getObjectId());
+                    walk.markStart(c);
+                    c.add(flags.get(idx));
+                    idx++;
+                }
+
+                // anything reachable from the target commit in question is not worth traversing.
+                for (RevCommit p : target.getParents()) {
+                    walk.markUninteresting(p);
+                }
+
+                for (RevCommit c : walk) {
+                    if (c.equals(target))
+                        break;
+                }
+
+
+                idx=0;
+                for (Ref r : batch) {
+                    if (target.has(flags.get(idx))) {
+                        result.add(new Branch(r));
+                    }
+                    idx++;
+                }
+            }
+
+            return result;
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
+    private List<Ref> getAllBranchRefs() {
+        List<Ref> branches = new ArrayList<Ref>();
+        for (Ref r : db().getAllRefs().values()) {
+            if (r.getName().startsWith(R_HEADS)) {
+                branches.add(r);
+            }
+        }
+        return branches;
     }
 
     @Deprecated
@@ -960,9 +1029,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             db();
             RevWalk walk = new RevWalk(or);
-            for (Ref r : db().getAllRefs().values()) {
-                walk.markStart(walk.parseCommit(r.getObjectId()));
-            }
+            markAllRefs(walk);
             walk.setRetainBody(false);
 
             for (RevCommit c : walk) {
@@ -971,6 +1038,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return w.toString().trim();
         } catch (IOException e) {
             throw new GitException(e);
+        }
+    }
+
+    /**
+     * Adds all the refs as start commits.
+     */
+    private void markAllRefs(RevWalk walk) throws IOException {
+        markRefs(walk, Predicates.<Ref>alwaysTrue());
+    }
+
+    /**
+     * Adds all matching refs as start commits.
+     */
+    private void markRefs(RevWalk walk, Predicate<Ref> filter) throws IOException {
+        for (Ref r : db().getAllRefs().values()) {
+            if (filter.apply(r)) {
+                RevCommit c = walk.parseCommit(r.getObjectId());
+                walk.markStart(c);
+            }
+        }
+    }
+
+    static class PrefixPredicate implements Predicate<Ref> {
+        private final String prefix;
+
+        PrefixPredicate(String prefix) {
+            this.prefix = prefix;
+        }
+
+        public boolean apply(Ref r) {
+            return r.getName().startsWith(prefix);
         }
     }
 
