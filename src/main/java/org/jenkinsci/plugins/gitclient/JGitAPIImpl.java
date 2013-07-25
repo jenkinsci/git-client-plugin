@@ -1195,10 +1195,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     this.commit = commit;
                     this.tag = tag;
                     this.flag = w.newFlag(tag.getName());
-                    // we'll mark all the notes reachable from this tag accordingly
+                    // we'll mark all the nodes reachable from this tag accordingly
+                    allFlags.add(flag);
                     w.carry(flag);
                     commit.add(flag);
-                    allFlags.add(flag);
+                    commit.carry(flag);
                 }
 
                 /**
