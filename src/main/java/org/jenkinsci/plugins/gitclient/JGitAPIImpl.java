@@ -1131,6 +1131,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * This kind of logic doesn't belong here, as it lacks generality. It should be
      * whoever manipulating Git.
      */
+    @Deprecated
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }
