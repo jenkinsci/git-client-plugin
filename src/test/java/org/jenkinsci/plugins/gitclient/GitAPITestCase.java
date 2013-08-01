@@ -16,6 +16,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.RefSpec;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -249,7 +250,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch("origin", null);
+        w.git.fetch("origin", new RefSpec[] {null});
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
     }
 
@@ -262,7 +263,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch("origin", null);
+        w.git.fetch("origin", new RefSpec[] {null});
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
 
         r.touch("file.txt");
@@ -271,7 +272,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.tag("-d t");
         r.tag("t");
         sha1 = r.cmd("git rev-list --max-count=1 t");
-        w.git.fetch("origin", null);
+        w.git.fetch("origin", new RefSpec[] {null});
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
 
     }
