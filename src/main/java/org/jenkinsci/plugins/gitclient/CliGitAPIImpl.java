@@ -213,10 +213,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if ((gitVer[0] >= 1) && (gitVer[1] >= 7)) {
                         args.add("--progress");
                     }
-                    if (shared) {
-                        listener.getLogger().println("Using shared option");
-                        args.add("--shared");
-                    }
+
                     if (reference != null && !reference.equals("")) {
                         File referencePath = new File(reference);
                         if (!referencePath.exists())
