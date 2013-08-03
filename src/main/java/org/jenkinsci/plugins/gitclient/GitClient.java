@@ -148,8 +148,9 @@ public interface GitClient {
      * @param origin upstream track name, defaults to <tt>origin</tt> by convention
      * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
      * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
+     * @param useSharedclone Clone option to share git objects with the source repository
      */
-    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
+    void clone(String url, String origin, boolean useShallowClone, String reference, boolean useSharedClone) throws GitException, InterruptedException;
 
     /**
      * Returns a {@link CloneCommand} to build up the git-log invocation.

@@ -90,14 +90,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     @Deprecated
     public void clone(RemoteConfig source) throws GitException, InterruptedException {
-        clone(source, false);
+        clone(source, false, false);
     }
 
     @Deprecated
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
+    public void clone(RemoteConfig rc, boolean useShallowClone, boolean useSharedClone) throws GitException, InterruptedException {
         // Assume only 1 URL for this repository
         final String source = rc.getURIs().get(0).toPrivateString();
-        clone(source, rc.getName(), useShallowClone, null);
+        clone(source, rc.getName(), useShallowClone, null, useSharedClone);
     }
 
     @Deprecated

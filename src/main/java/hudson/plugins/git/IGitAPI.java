@@ -43,7 +43,7 @@ public interface IGitAPI extends GitClient {
     void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException;
     void merge(String revSpec) throws GitException, InterruptedException;
     void clone(RemoteConfig source) throws GitException, InterruptedException;
-    void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException;
+    void clone(RemoteConfig rc, boolean useShallowClone, boolean useShared) throws GitException, InterruptedException;
 
     /**
      * Find all the branches that include the given commit.

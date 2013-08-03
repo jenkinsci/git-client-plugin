@@ -13,5 +13,7 @@ public interface CloneCommand extends GitCommand {
 
     CloneCommand shallow();
 
+    CloneCommand shared();
+
     CloneCommand reference(String reference);
 }

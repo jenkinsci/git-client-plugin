@@ -277,8 +277,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return getGitAPI().showRevision(r);
     }
 
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
-        proxy.clone(url, origin, useShallowClone, reference);
+    public void clone(String url, String origin, boolean useShallowClone, String reference, boolean useSharedClone) throws GitException, InterruptedException {
+        proxy.clone(url, origin, useShallowClone, reference, useSharedClone);
     }
 
     public CloneCommand clone_() {
@@ -493,8 +493,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         getGitAPI().clone(source);
     }
 
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
-        getGitAPI().clone(rc, useShallowClone);
+    public void clone(RemoteConfig rc, boolean useShallowClone, boolean useSharedClone) throws GitException, InterruptedException {
+        getGitAPI().clone(rc, useShallowClone, useSharedClone);
     }
 
     public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {

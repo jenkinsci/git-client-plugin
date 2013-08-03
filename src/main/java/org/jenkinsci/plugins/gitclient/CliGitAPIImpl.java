@@ -168,6 +168,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String origin;
             String reference;
             boolean shallow;
+            boolean shared;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -181,6 +182,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand shallow() {
                 this.shallow = true;
+                return this;
+            }
+
+            public CloneCommand shared() {
+                this.shared = true;
                 return this;
             }
 
@@ -207,6 +213,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if ((gitVer[0] >= 1) && (gitVer[1] >= 7)) {
                         args.add("--progress");
                     }
+                    if (shared) {
+                        listener.getLogger().println("Using shared option");
+                        args.add("--shared");
+                    }
                     if (reference != null && !reference.equals("")) {
                         File referencePath = new File(reference);
                         if (!referencePath.exists())
@@ -219,6 +229,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add("-o", origin);
                     if(shallow) args.add("--depth", "1");
+                    if(shared) args.add("--shared");
                     args.add(url);
                     args.add(workspace);
                     launchCommandIn(args, null);

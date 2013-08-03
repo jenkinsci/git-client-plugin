@@ -152,8 +152,8 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /*
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException {
-        if (Git.USE_CLI) super.clone(url, origin, useShallowClone, reference); else  jgit.clone(url, origin, useShallowClone, reference);
+    public void clone(String url, String origin, boolean useShallowClone, String reference, boolean useSharedClone) throws GitException {
+        if (Git.USE_CLI) super.clone(url, origin, useShallowClone, reference, useSharedClone); else  jgit.clone(url, origin, useShallowClone, reference, useSharedClone);
     }
     */
 
