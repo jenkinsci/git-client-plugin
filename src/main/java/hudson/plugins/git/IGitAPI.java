@@ -63,7 +63,7 @@ public interface IGitAPI extends GitClient {
     List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException;
     List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException;
     void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException;
-    void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException;
+    void checkoutBranch(String branch, String commitish) throws IOException, GitException, InterruptedException;
     ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException;
     List<String> showRevision(Revision r) throws GitException, InterruptedException;
 

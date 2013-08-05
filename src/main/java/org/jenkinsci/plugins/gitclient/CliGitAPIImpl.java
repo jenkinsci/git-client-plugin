@@ -875,7 +875,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         launchCommand("checkout", "-b", branch, ref);
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
+    public void checkoutBranch(String branch, String ref) throws IOException, GitException, InterruptedException {
         try {
             // First, checkout to detached HEAD, so we can delete the branch.
             checkout(ref);
@@ -891,7 +891,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 checkout(ref, branch);
             }
         } catch (GitException e) {
-            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+            // Throw IOException so the retry will be able to catch it
+            throw new IOException("Could not checkout " + branch + " with start point " + ref, e);
         }
     }
 

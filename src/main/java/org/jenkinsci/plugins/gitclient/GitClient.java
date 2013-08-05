@@ -139,7 +139,7 @@ public interface GitClient {
      * For compatibility reasons, the order of the parameter is different from {@link #checkout(String, String)}.
      * @since 1.0.6
      */
-    void checkoutBranch(String branch, String ref) throws GitException, InterruptedException;
+    void checkoutBranch(String branch, String ref) throws IOException, GitException, InterruptedException;
 
 
     /**
