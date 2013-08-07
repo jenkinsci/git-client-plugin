@@ -121,6 +121,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
     }
 
+    /**
+     * @param cred to be useful must be either a {@link UsernamePasswordCredentials} (for HTTP) or {@link StandardUsernameCredentials} (for SSH)
+     */
     public void setCredentials(Credentials cred) {
         setCredentialsProvider(new CredentialsProviderImpl(listener,cred));
     }

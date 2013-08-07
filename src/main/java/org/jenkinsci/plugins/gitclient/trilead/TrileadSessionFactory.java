@@ -1,8 +1,8 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUser;
 import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.trilead.ssh2.Connection;
 import hudson.AbortException;
 import org.eclipse.jgit.errors.TransportException;
@@ -32,10 +32,10 @@ public class TrileadSessionFactory extends SshSessionFactory {
             CredentialsProviderImpl sshcp = (CredentialsProviderImpl)credentialsProvider;
 
             Credentials c = sshcp.cred;
-            if (!(c instanceof SSHUser))
-                throw new AbortException("Expecting an SSH credential but got "+c+" instead");
+            if (!(c instanceof StandardUsernameCredentials))
+                throw new AbortException("Expecting username-based credentials but got "+c+" instead");
 
-            if (!SSHAuthenticator.newInstance(con, (SSHUser)c).authenticate(sshcp.listener) && con.isAuthenticationComplete())
+            if (!SSHAuthenticator.newInstance(con, (StandardUsernameCredentials) c).authenticate(sshcp.listener) && con.isAuthenticationComplete())
                 throw new TransportException("Authentication failure");
 
             return wrap(con);
