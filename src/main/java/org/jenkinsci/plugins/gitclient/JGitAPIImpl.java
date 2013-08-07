@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import hudson.FilePath;
@@ -121,10 +121,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
     }
 
-    /**
-     * @param cred to be useful must be either a {@link UsernamePasswordCredentials} (for HTTP) or {@link StandardUsernameCredentials} (for SSH)
-     */
-    public void setCredentials(Credentials cred) {
+    public void setCredentials(StandardUsernameCredentials cred) {
         setCredentialsProvider(new CredentialsProviderImpl(listener,cred));
     }
 

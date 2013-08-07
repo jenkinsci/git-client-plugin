@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import hudson.model.TaskListener;
@@ -16,8 +15,7 @@ import org.eclipse.jgit.transport.URIish;
  * For HTTP transport we work through {@link CredentialsProvider},
  * in which case this must be supplied with a {@link UsernamePasswordCredentials}.
  * For SSH transport, {@link TrileadSessionFactory}
- * downcasts {@link CredentialsProvider} to this class,
- * which must be supplied with a {@link StandardUsernameCredentials}.
+ * downcasts {@link CredentialsProvider} to this class.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -26,9 +24,9 @@ public class CredentialsProviderImpl extends CredentialsProvider {
     /**
      * Credential that should be used.
      */
-    public final Credentials cred;
+    public final StandardUsernameCredentials cred;
 
-    public CredentialsProviderImpl(TaskListener listener, Credentials cred) {
+    public CredentialsProviderImpl(TaskListener listener, StandardUsernameCredentials cred) {
         this.listener = listener;
         this.cred = cred;
     }
