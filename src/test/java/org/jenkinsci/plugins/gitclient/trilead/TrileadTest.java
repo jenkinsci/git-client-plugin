@@ -1,9 +1,9 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUser;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey.FileOnMasterPrivateKeySource;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.jcraft.jsch.Identity;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -64,12 +64,13 @@ public class TrileadTest extends HudsonTestCase {
         new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray())).readObject();
     }
 
-    public void testTrileadSsh() throws Exception {
+    // TODO since obviously only Kohsuke can run this test, have to suppress until something better is created
+    public void _testTrileadSsh() throws Exception {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
 
 //        SSHUser sshCred = new BasicSSHUserPassword(
 //                        CredentialsScope.SYSTEM, null, System.getProperty("user.name"), null, null);
-        SSHUser sshCred = new BasicSSHUserPrivateKey(CredentialsScope.SYSTEM, null,
+        StandardUsernameCredentials sshCred = new BasicSSHUserPrivateKey(CredentialsScope.SYSTEM, null,
                 "git", new FileOnMasterPrivateKeySource("/home/kohsuke/.ssh/id_rsa"), System.getenv("TRILEAD_PASSPHRASE"), null);
         // TODO: it's very common for URI to override the user name
 
