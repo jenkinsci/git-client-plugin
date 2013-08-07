@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.model.TaskListener;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
@@ -13,7 +13,7 @@ import org.eclipse.jgit.transport.URIish;
  *
  * <p>
  * For HTTP transport we work through {@link CredentialsProvider},
- * in which case this must be supplied with a {@link UsernamePasswordCredentials}.
+ * in which case this must be supplied with a {@link StandardUsernamePasswordCredentials}.
  * For SSH transport, {@link TrileadSessionFactory}
  * downcasts {@link CredentialsProvider} to this class.
  *
@@ -41,7 +41,7 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     @Override
     public boolean supports(CredentialItem... items) {
-        if (!(cred instanceof UsernamePasswordCredentials))
+        if (!(cred instanceof StandardUsernamePasswordCredentials))
             return false;
 
         for (CredentialItem i : items) {
@@ -62,23 +62,24 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     @Override
     public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
-        if (!(cred instanceof UsernamePasswordCredentials))
+        if (!(cred instanceof StandardUsernamePasswordCredentials))
             return false;
+        StandardUsernamePasswordCredentials _cred = (StandardUsernamePasswordCredentials) cred;
 
         for (CredentialItem i : items) {
             if (i instanceof CredentialItem.Username) {
-                ((CredentialItem.Username) i).setValue(((UsernamePasswordCredentials) cred).getUsername());
+                ((CredentialItem.Username) i).setValue(_cred.getUsername());
                 continue;
             }
             if (i instanceof CredentialItem.Password) {
                 ((CredentialItem.Password) i).setValue(
-                        ((UsernamePasswordCredentials) cred).getPassword().getPlainText().toCharArray());
+                        _cred.getPassword().getPlainText().toCharArray());
                 continue;
             }
             if (i instanceof CredentialItem.StringType) {
                 if (i.getPromptText().equals("Password: ")) {
                     ((CredentialItem.StringType) i).setValue(
-                            ((UsernamePasswordCredentials) cred).getPassword().getPlainText());
+                            _cred.getPassword().getPlainText());
                     continue;
                 }
             }
