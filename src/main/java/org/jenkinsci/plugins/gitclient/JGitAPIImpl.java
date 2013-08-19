@@ -38,6 +38,7 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
@@ -372,10 +373,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new FilePath(workspace);
     }
 
-    public void merge(ObjectId rev) throws GitException {
+    public void merge(ObjectId rev, GitMergeStrategy mergeStrategy) throws GitException {
         try {
             Git git = git();
-            MergeResult mergeResult = git.merge().include(rev).call();
+            MergeStrategy strategy = convertFromCliStrategy(mergeStrategy);
+            MergeResult mergeResult;
+            if (strategy != null)
+                mergeResult = git.merge().setStrategy(strategy).include(rev).call();
+            else
+            {
+                if (mergeStrategy != null && !mergeStrategy.toString().isEmpty() && mergeStrategy != GitMergeStrategy.DEFAULT)
+                    listener.getLogger().println("[WARNING] JGit doesn't support this merge strategy. Using default one instead...");
+                mergeResult = git.merge().include(rev).call();
+            }
             if (!mergeResult.getMergeStatus().isSuccessful()) {
                 git.reset().setMode(HARD).call();
                 throw new GitException("Failed to merge " + rev);
@@ -383,6 +393,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (GitAPIException e) {
             throw new GitException("Failed to merge " + rev, e);
         }
+    }
+
+    public void merge(ObjectId rev) throws GitException {
+        merge(rev, null);
     }
 
     public void setRemoteUrl(String name, String url) throws GitException {
@@ -1368,5 +1382,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         else
             config = new FileBasedConfig(new File(workspace,GIT_DIR),db().getFS());
         return config;
+    }
+
+    private MergeStrategy convertFromCliStrategy(GitMergeStrategy mergeStrategy) {
+        if (mergeStrategy != null && !mergeStrategy.toString().isEmpty() && mergeStrategy != GitMergeStrategy.DEFAULT) {
+            if (mergeStrategy == GitMergeStrategy.OURS) return MergeStrategy.OURS;
+            if (mergeStrategy == GitMergeStrategy.RESOLVE) return MergeStrategy.RESOLVE;
+            if (mergeStrategy == GitMergeStrategy.OCTOPUS) return MergeStrategy.SIMPLE_TWO_WAY_IN_CORE;
+        }
+        return null;
     }
 }

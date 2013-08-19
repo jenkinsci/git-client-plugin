@@ -392,12 +392,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param rev the revision
      * @throws GitException if the emrge fails
      */
-    public void merge(ObjectId rev) throws GitException, InterruptedException {
+    public void merge(ObjectId rev, GitMergeStrategy mergeStrategy) throws GitException, InterruptedException {
         try {
-            launchCommand("merge", rev.name());
+            if (mergeStrategy != null && !mergeStrategy.toString().isEmpty() && mergeStrategy != GitMergeStrategy.DEFAULT)
+                launchCommand("merge", "-s", mergeStrategy.toString(), rev.name());
+            else
+                launchCommand("merge", rev.name());
         } catch (GitException e) {
             throw new GitException("Could not merge " + rev, e);
         }
+    }
+
+    public void merge(ObjectId rev) throws GitException, InterruptedException {
+        merge(rev, null);
     }
 
     public void submoduleInit() throws GitException, InterruptedException {

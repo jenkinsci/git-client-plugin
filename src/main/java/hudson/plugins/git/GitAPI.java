@@ -10,6 +10,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
+import org.jenkinsci.plugins.gitclient.GitMergeStrategy;
 
 import java.io.*;
 import java.util.Set;
@@ -225,8 +226,12 @@ public class GitAPI extends CliGitAPIImpl {
         fetch(remoteName, new RefSpec[] {refspec});
     }
 
+    public void merge(ObjectId rev, GitMergeStrategy mergeStrategy) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.merge(rev, mergeStrategy); else  jgit.merge(rev, mergeStrategy);
+    }
+
     public void merge(ObjectId rev) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.merge(rev); else  jgit.merge(rev);
+        if (Git.USE_CLI) super.merge(rev, null); else  jgit.merge(rev, null);
     }
 
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
