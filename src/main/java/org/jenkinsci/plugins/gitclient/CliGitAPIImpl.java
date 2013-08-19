@@ -394,7 +394,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public void merge(ObjectId rev) throws GitException, InterruptedException {
         try {
-            launchCommand("merge", rev.name());
+            String mergeFlag= environment.get("GIT_MERGE_FLAG");
+            listener.getLogger().println("Git-client-plugin: Received merge flag: "+ mergeFlag);
+            if ( mergeFlag==null || mergeFlag.equals("") ) {
+                listener.getLogger().println("Git-client-plugin: Merge flag invalid. Performing flagless merge.");
+                launchCommand("merge", rev.name());
+            } else {
+                listener.getLogger().println("Git-client-plugin: Passing merge flag to Git.");
+                launchCommand("merge", mergeFlag , rev.name());
+            }
         } catch (GitException e) {
             throw new GitException("Could not merge " + rev, e);
         }
