@@ -285,8 +285,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(CloneCommand.class);
     }
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+    public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         proxy.fetch(remoteName, refspec);
+    }
+
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+        fetch(remoteName, new RefSpec[] {refspec});
     }
 
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
