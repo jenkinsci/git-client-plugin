@@ -734,4 +734,18 @@ public abstract class GitAPITestCase extends TestCase {
         }
         return Util.join(names,",");
     }
+
+    public void test_checkoutBranchFailure() throws Exception {
+        w = clone(localMirror());
+        File lock = new File(w.repo, ".git/index.lock");
+        try {
+            FileUtils.touch(lock);
+            w.git.checkoutBranch("somebranch", "master");
+            fail();
+        } catch (IOException e) {
+            // expected
+        } finally {
+            lock.delete();
+        }
+    }
 }

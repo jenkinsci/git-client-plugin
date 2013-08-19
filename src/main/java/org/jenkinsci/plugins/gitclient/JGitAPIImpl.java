@@ -20,6 +20,7 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
@@ -177,7 +178,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException {
+    public void checkoutBranch(String branch, String ref) throws IOException, GitException {
         try {
             RefUpdate refUpdate = db().updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(db().resolve(ref));
@@ -194,6 +195,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             checkout(ref);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        } catch (JGitInternalException e) {
+            // Throw IOException so the retry will be able to catch it
+            throw new IOException(e.getMessage());
         }
     }
 
