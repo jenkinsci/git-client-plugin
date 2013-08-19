@@ -159,6 +159,8 @@ public interface GitClient {
     /**
      * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
      */
+    void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
+
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
 
     void push(String remoteName, String refspec) throws GitException, InterruptedException;

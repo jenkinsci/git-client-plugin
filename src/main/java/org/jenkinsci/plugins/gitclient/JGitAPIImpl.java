@@ -283,7 +283,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException {
+    public void fetch(String remoteName, RefSpec... refspec) throws GitException {
         try {
             Git git = Git.wrap(getRepository());
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
@@ -293,13 +293,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
             List<RefSpec> refSpecs = new ArrayList<RefSpec>();
             refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
-            if (refspec != null) refSpecs.add(refspec);
+            if (refspec != null && refspec.length > 0)
+                for (RefSpec rs: refspec)
+                    if (rs != null)
+                        refSpecs.add(rs);
             fetch.setRefSpecs(refSpecs);
 
             fetch.call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
+    }
+
+    public void fetch(String remoteName, RefSpec refspec) throws GitException {
+        fetch(remoteName, new RefSpec[] {refspec});
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {

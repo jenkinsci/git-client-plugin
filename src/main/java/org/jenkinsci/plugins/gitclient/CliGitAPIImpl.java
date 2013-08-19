@@ -127,7 +127,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return submodules;
     }
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+    public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         listener.getLogger().println(
                                      "Fetching upstream changes"
                                      + (remoteName != null ? " from " + remoteName : ""));
@@ -137,11 +137,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         if (remoteName != null) {
             args.add(remoteName);
-            if (refspec != null)
-                args.add(refspec.toString());
+            if (refspec != null && refspec.length > 0)
+                for (RefSpec rs: refspec)
+                    if (rs != null)
+                        args.add(rs.toString());
         }
 
         launchCommand(args);
+    }
+
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+        fetch(remoteName, new RefSpec[] {refspec});
     }
 
     public void reset(boolean hard) throws GitException, InterruptedException {

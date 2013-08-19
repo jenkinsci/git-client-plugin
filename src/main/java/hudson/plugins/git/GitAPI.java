@@ -217,8 +217,12 @@ public class GitAPI extends CliGitAPIImpl {
     }
     */
 
-    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+    public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.fetch(remoteName, refspec); else  jgit.fetch(remoteName, refspec);
+    }
+
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+        fetch(remoteName, new RefSpec[] {refspec});
     }
 
     public void merge(ObjectId rev) throws GitException, InterruptedException {
