@@ -167,6 +167,8 @@ public interface GitClient {
 
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
+    MergeCommand merge();
+
     /**
      * Prune stale remote tracking branches with "git remote prune" on the specified remote.
      */

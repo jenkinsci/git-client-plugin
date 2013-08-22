@@ -285,6 +285,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(CloneCommand.class);
     }
 
+    public MergeCommand merge() {
+        return command(MergeCommand.class);
+    }
+
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         proxy.fetch(remoteName, refspec);
     }

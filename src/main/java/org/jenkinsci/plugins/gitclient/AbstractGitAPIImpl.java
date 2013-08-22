@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;
 import jenkins.model.Jenkins.MasterComputer;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 
@@ -55,6 +56,10 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
         CloneCommand c = clone_().url(url).repositoryName(origin).reference(reference);
         if (useShallowClone)    c.shallow();
         c.execute();
+    }
+
+    public void merge(ObjectId rev) throws GitException, InterruptedException {
+        merge().setRevisionToMerge(rev).execute();
     }
 
     /**

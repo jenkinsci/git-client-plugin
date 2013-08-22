@@ -225,10 +225,6 @@ public class GitAPI extends CliGitAPIImpl {
         fetch(remoteName, new RefSpec[] {refspec});
     }
 
-    public void merge(ObjectId rev) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.merge(rev); else  jgit.merge(rev);
-    }
-
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.tagExists(tagName) :  jgit.tagExists(tagName);
     }

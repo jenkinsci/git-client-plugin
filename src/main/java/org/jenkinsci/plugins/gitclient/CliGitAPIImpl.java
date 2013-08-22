@@ -235,6 +235,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    public MergeCommand merge() {
+        return new MergeCommand() {
+            public ObjectId rev;
+            public String strategy = "default";
+
+            public MergeCommand setRevisionToMerge(ObjectId rev) {
+                this.rev = rev;
+                return this;
+            }
+
+            public MergeCommand setStrategy(Strategy strategy) {
+                this.strategy = strategy.name().toLowerCase();
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    launchCommand("merge", "-s", strategy, rev.name());
+                } catch (GitException e) {
+                    throw new GitException("Could not merge " + rev, e);
+                }
+            }
+        };
+    }
+
     public void clean() throws GitException, InterruptedException {
         reset(true);
         launchCommand("clean", "-fdx");
@@ -384,20 +409,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StringWriter writer = new StringWriter();
         writer.write(launchCommand(args));
         return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
-    }
-
-    /**
-     * Merge any changes into the head.
-     *
-     * @param rev the revision
-     * @throws GitException if the emrge fails
-     */
-    public void merge(ObjectId rev) throws GitException, InterruptedException {
-        try {
-            launchCommand("merge", rev.name());
-        } catch (GitException e) {
-            throw new GitException("Could not merge " + rev, e);
-        }
     }
 
     public void submoduleInit() throws GitException, InterruptedException {
@@ -1106,6 +1117,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException("Could not merge " + refSpec, e);
         }
     }
+
+
 
     @Deprecated
     public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {

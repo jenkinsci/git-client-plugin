@@ -372,19 +372,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new FilePath(workspace);
     }
 
-    public void merge(ObjectId rev) throws GitException {
-        try {
-            Git git = git();
-            MergeResult mergeResult = git.merge().include(rev).call();
-            if (!mergeResult.getMergeStatus().isSuccessful()) {
-                git.reset().setMode(HARD).call();
-                throw new GitException("Failed to merge " + rev);
-            }
-        } catch (GitAPIException e) {
-            throw new GitException("Failed to merge " + rev, e);
-        }
-    }
-
     public void setRemoteUrl(String name, String url) throws GitException {
         try {
             StoredConfig config = db().getConfig();
@@ -652,6 +639,36 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException(e);
                 } catch (IOException e) {
                     throw new GitException(e);
+                }
+            }
+        };
+    }
+
+    public MergeCommand merge() {
+        return new MergeCommand() {
+
+            ObjectId rev;
+
+            public MergeCommand setRevisionToMerge(ObjectId rev) {
+                this.rev = rev;
+                return this;
+            }
+
+            public MergeCommand setStrategy(MergeCommand.Strategy strategy) {
+                listener.getLogger().println("[WARNING] JGit doesn't support merge strategies. This flag is ignored");
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    Git git = git();
+                    MergeResult mergeResult = git.merge().include(rev).call();
+                    if (!mergeResult.getMergeStatus().isSuccessful()) {
+                        git.reset().setMode(HARD).call();
+                        throw new GitException("Failed to merge " + rev);
+                    }
+                } catch (GitAPIException e) {
+                    throw new GitException("Failed to merge " + rev, e);
                 }
             }
         };
