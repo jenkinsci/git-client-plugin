@@ -297,8 +297,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.push(remoteName, refspec);
     }
 
+    public void merge(ObjectId rev, GitMergeStrategy mergeStrategy) throws GitException, InterruptedException {
+        proxy.merge(rev, mergeStrategy);
+    }
+
     public void merge(ObjectId rev) throws GitException, InterruptedException {
-        proxy.merge(rev);
+        proxy.merge(rev, null);
     }
 
     public void prune(RemoteConfig repository) throws GitException, InterruptedException {

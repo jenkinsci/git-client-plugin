@@ -165,6 +165,8 @@ public interface GitClient {
 
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
+    void merge(ObjectId rev, GitMergeStrategy mergeStrategy) throws GitException, InterruptedException;
+
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
     /**
