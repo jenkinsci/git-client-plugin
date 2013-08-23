@@ -238,21 +238,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public MergeCommand merge() {
         return new MergeCommand() {
             public ObjectId rev;
-            public String strategy = "default";
+            public String strategy;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
                 return this;
             }
 
-            public MergeCommand setStrategy(Strategy strategy) {
-                this.strategy = strategy.name().toLowerCase();
+            public MergeCommand setStrategy(MergeCommand.Strategy strategy) {
+                this.strategy = strategy.toString();
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
                 try {
-                    launchCommand("merge", "-s", strategy, rev.name());
+                    if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
+                        launchCommand("merge", "-s", strategy, rev.name()); }
+                    else {
+                        launchCommand("merge", rev.name()); }
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);
                 }
