@@ -609,6 +609,46 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    public void test_merge_strategy() throws Exception {
+        w.init();
+        w.commit("init");
+        w.cmd("git branch branch1");
+        w.cmd("git checkout branch1");
+        w.touch("file", "content1");
+        w.add("file");
+        w.commit("commit1");
+        w.cmd("git checkout master");
+        w.cmd("git branch branch2");
+        w.cmd("git checkout branch2");
+        w.touch("file", "content2");
+        w.add("file");
+        w.commit("commit2");
+        w.git.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+    }
+
+    public void test_merge_strategy_correct_fail() throws Exception {
+        w.init();
+        w.commit("init");
+        w.cmd("git branch branch1");
+        w.cmd("git checkout branch1");
+        w.touch("file", "content1");
+        w.add("file");
+        w.commit("commit1");
+        w.cmd("git checkout master");
+        w.cmd("git branch branch2");
+        w.cmd("git checkout branch2");
+        w.touch("file", "content2");
+        w.add("file");
+        w.commit("commit2");
+        try {
+            w.git.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+            fail();
+        }
+        catch (GitException e) {
+            // expected
+        }
+    }
+
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());
         ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
