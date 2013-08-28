@@ -38,6 +38,7 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
@@ -648,6 +649,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new MergeCommand() {
 
             ObjectId rev;
+            MergeStrategy strategy;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -655,14 +657,32 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public MergeCommand setStrategy(MergeCommand.Strategy strategy) {
-                listener.getLogger().println("[WARNING] JGit doesn't support merge strategies. This flag is ignored");
+                if (strategy != null && !strategy.toString().isEmpty() && strategy != MergeCommand.Strategy.DEFAULT) {
+                    if (strategy == MergeCommand.Strategy.OURS) {
+                        this.strategy = MergeStrategy.OURS;
+                        return this;
+                    }
+                    if (strategy == MergeCommand.Strategy.RESOLVE) {
+                        this.strategy = MergeStrategy.RESOLVE;
+                        return this;
+                    }
+                    if (strategy == MergeCommand.Strategy.OCTOPUS) {
+                        this.strategy = MergeStrategy.SIMPLE_TWO_WAY_IN_CORE;
+                        return this;
+                    }
+                    listener.getLogger().println("[WARNING] JGit doesn't fully support merge strategies. This flag is ignored");
+                }
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
                 try {
                     Git git = git();
-                    MergeResult mergeResult = git.merge().include(rev).call();
+                    MergeResult mergeResult;
+                    if (strategy != null)
+                        mergeResult = git.merge().setStrategy(strategy).include(rev).call();
+                    else
+                        mergeResult = git.merge().include(rev).call();
                     if (!mergeResult.getMergeStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
