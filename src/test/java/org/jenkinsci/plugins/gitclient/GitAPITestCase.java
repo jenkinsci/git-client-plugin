@@ -13,10 +13,12 @@ import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
+import org.junit.rules.ExpectedException;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -112,8 +114,10 @@ public abstract class GitAPITestCase extends TestCase {
         /**
          * Creates a file in the workspace.
          */
-        void touch(String path, String content) throws IOException {
-            FileUtils.writeStringToFile(file(path), content);
+        File touch(String path, String content) throws IOException {
+            File f = file(path);
+            FileUtils.writeStringToFile(f, content);
+            return f;
         }
 
         public String contentOf(String path) throws IOException {
@@ -620,10 +624,11 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git checkout master");
         w.cmd("git branch branch2");
         w.cmd("git checkout branch2");
-        w.touch("file", "content2");
+        File f = w.touch("file", "content2");
         w.add("file");
         w.commit("commit2");
         w.git.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f));
     }
 
     public void test_merge_strategy_correct_fail() throws Exception {
