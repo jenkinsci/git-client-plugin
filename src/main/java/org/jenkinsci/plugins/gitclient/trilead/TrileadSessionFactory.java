@@ -28,7 +28,8 @@ public class TrileadSessionFactory extends SshSessionFactory {
 
             CredentialsProviderImpl sshcp = (CredentialsProviderImpl)credentialsProvider;
 
-            if (!SSHAuthenticator.newInstance(con, sshcp.cred).authenticate(sshcp.listener) && con.isAuthenticationComplete())
+            boolean authenticated = sshcp == null ? false : SSHAuthenticator.newInstance(con, sshcp.cred).authenticate(sshcp.listener);
+            if (!authenticated && con.isAuthenticationComplete())
                 throw new TransportException("Authentication failure");
 
             return wrap(con);
