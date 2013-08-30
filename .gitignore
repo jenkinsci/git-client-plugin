@@ -1,2 +1,7 @@
-/target/
-work
+*.iml
+*.ipr
+*.iws
+.idea/
+
+target/
+work/
