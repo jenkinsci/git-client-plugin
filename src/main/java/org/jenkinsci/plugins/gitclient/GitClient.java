@@ -373,4 +373,5 @@ public interface GitClient {
      * Find a nearby tag (including unannotated ones) and come up with a short identifier to describe the tag.
      */
     String describe(String commitIsh) throws GitException, InterruptedException;
+
 }
