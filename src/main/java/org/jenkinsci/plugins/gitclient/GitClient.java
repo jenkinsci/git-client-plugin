@@ -1,5 +1,12 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.Credentials;
+import com.cloudbees.plugins.credentials.CredentialsMatcher;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
@@ -30,6 +37,39 @@ public interface GitClient {
 
     // If true, do not print the list of remote branches.
     boolean quietRemoteBranches = Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches");
+
+    /**
+     * The supported credential types.
+     * @since 1.2.0
+     */
+    CredentialsMatcher CREDENTIALS_MATCHER = CredentialsMatchers.anyOf(
+            CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
+            CredentialsMatchers.instanceOf(SSHUserPrivateKey.class)
+            // TODO does anyone use SSL client certificates with GIT?
+    );
+
+    /**
+     * Remove all credentials from the client.
+     * @since 1.2.0
+     */
+    void clearCredentials();
+
+    /**
+     * Adds credentials to be used against a specific url.
+     * @param url the url for the credentials to be used against.
+     * @param credentials the credentials to use.
+     * @since 1.2.0
+     */
+    void addCredentials(String url, StandardUsernameCredentials credentials);
+
+    /**
+     * Adds credentials to be used when there are not url specific credentials defined.
+     *
+     * @param credentials the credentials to use.
+     * @see {@link #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardUsernameCredentials)}
+     * @since 1.2.0
+     */
+    void addDefaultCredentials(StandardUsernameCredentials credentials);
 
     /**
      * Sets the identity of the author for future commits and merge operations.
