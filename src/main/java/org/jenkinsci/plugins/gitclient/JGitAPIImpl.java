@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -61,7 +62,7 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.jenkinsci.plugins.gitclient.trilead.CredentialsProviderImpl;
+import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import javax.annotation.Nullable;
@@ -122,12 +123,36 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
     }
 
-    public void setCredentials(StandardUsernameCredentials cred) {
-        setCredentialsProvider(new CredentialsProviderImpl(listener,cred));
+    public void clearCredentials() {
+        asSmartCredentialsProvider().clearCredentials();
     }
 
-    public void setCredentialsProvider(CredentialsProvider prov) {
+    public void addCredentials(String url, StandardCredentials credentials) {
+        asSmartCredentialsProvider().addCredentials(url, credentials);
+    }
+
+    public void addDefaultCredentials(StandardCredentials credentials) {
+        asSmartCredentialsProvider().addDefaultCredentials(credentials);
+    }
+
+    public void setCredentials(StandardUsernameCredentials cred) {
+        clearCredentials();
+        addDefaultCredentials(cred);
+    }
+
+    private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
+        if (!(provider instanceof SmartCredentialsProvider)) {
+            provider = new SmartCredentialsProvider(listener);
+        }
+        return ((SmartCredentialsProvider) provider);
+    }
+
+    public synchronized void setCredentialsProvider(CredentialsProvider prov) {
         this.provider = prov;
+    }
+
+    private synchronized CredentialsProvider getProvider() {
+        return provider;
     }
 
     private Repository db() throws GitException {
@@ -289,7 +314,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Git git = Git.wrap(getRepository());
             FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
             if (remoteName != null) fetch.setRemote(remoteName);
-            fetch.setCredentialsProvider(provider);
+            fetch.setCredentialsProvider(getProvider());
 
             // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
             List<RefSpec> refSpecs = new ArrayList<RefSpec>();
@@ -317,7 +342,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
-            tn.setCredentialsProvider(provider);
+            tn.setCredentialsProvider(getProvider());
             final FetchConnection c = tn.openFetch();
             try {
                 for (final Ref r : c.getRefs()) {
@@ -605,7 +630,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
         base.setDirectory(workspace);
         base.setProgressMonitor(new ProgressMonitor(listener));
-        base.setCredentialsProvider(provider);
+        base.setCredentialsProvider(getProvider());
 
         return new CloneCommand() {
 
@@ -807,7 +832,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         Set<String> branches = new HashSet<String>();
         final Transport tn = Transport.open(db(), new URIish(config.getString("remote",remote,"url")));
-        tn.setCredentialsProvider(provider);
+        tn.setCredentialsProvider(getProvider());
         final FetchConnection c = tn.openFetch();
         try {
             for (final Ref r : c.getRefs()) {
@@ -826,7 +851,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             git().push().setRemote(remoteName).setRefSpecs(ref)
                     .setProgressMonitor(new ProgressMonitor(listener))
-                    .setCredentialsProvider(provider)
+                    .setCredentialsProvider(getProvider())
                     .call();
         } catch (GitAPIException e) {
             throw new GitException(e);
