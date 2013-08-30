@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient.trilead;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.trilead.ssh2.Connection;
 import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.RemoteSession;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -26,13 +27,28 @@ public class TrileadSessionFactory extends SshSessionFactory {
             con.setTCPNoDelay(true);
             con.connect();  // TODO: host key check
 
-            CredentialsProviderImpl sshcp = (CredentialsProviderImpl)credentialsProvider;
+            boolean authenticated;
+            if (credentialsProvider instanceof SmartCredentialsProvider) {
+                final SmartCredentialsProvider smart = (SmartCredentialsProvider) credentialsProvider;
+                StandardUsernameCredentialsCredentialItem
+                        item = new StandardUsernameCredentialsCredentialItem("Credentials for " + uri, false);
+                authenticated = smart.supports(item)
+                        && smart.get(uri, item)
+                        && SSHAuthenticator.newInstance(con, item.getValue(), uri.getUser())
+                        .authenticate(smart.listener);
+            } else if (credentialsProvider instanceof CredentialsProviderImpl) {
+                CredentialsProviderImpl sshcp = (CredentialsProviderImpl) credentialsProvider;
 
-            boolean authenticated = sshcp == null ? false : SSHAuthenticator.newInstance(con, sshcp.cred).authenticate(sshcp.listener);
+                authenticated = SSHAuthenticator.newInstance(con, sshcp.cred).authenticate(sshcp.listener);
+            } else {
+                authenticated = false;
+            }
             if (!authenticated && con.isAuthenticationComplete())
                 throw new TransportException("Authentication failure");
 
             return wrap(con);
+        } catch (UnsupportedCredentialItem e) {
+            throw new TransportException(uri,"Failed to connect",e);
         } catch (IOException e) {
             throw new TransportException(uri,"Failed to connect",e);
         } catch (InterruptedException e) {

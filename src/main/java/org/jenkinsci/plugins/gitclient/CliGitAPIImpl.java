@@ -1,10 +1,17 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.jenkins.plugins.sshagent.RemoteAgent;
+import com.cloudbees.jenkins.plugins.sshagent.RemoteAgentFactory;
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.*;
 import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.Secret;
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
@@ -36,6 +43,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     TaskListener listener;
     String gitExe;
     EnvVars environment;
+    private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
+    private StandardCredentials defaultCredentials;
 
     protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
@@ -135,15 +144,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
-        if (remoteName != null) {
-            args.add(remoteName);
-            if (refspec != null && refspec.length > 0)
-                for (RefSpec rs: refspec)
-                    if (rs != null)
-                        args.add(rs.toString());
-        }
+        if (remoteName != null)
+            remoteName = getDefaultRemote();
 
-        launchCommand(args);
+        args.add(remoteName);
+        if (refspec != null && refspec.length > 0)
+            for (RefSpec rs: refspec)
+                if (rs != null)
+                    args.add(rs.toString());
+
+
+        StandardCredentials cred = credentials.get(getRemoteUrl(remoteName));
+        if (cred == null) cred = defaultCredentials;
+        launchCommandWithCredentials(args, workspace, cred);
     }
 
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
@@ -227,7 +240,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if(shallow) args.add("--depth", "1");
                     args.add(url);
                     args.add(workspace);
-                    launchCommandIn(args, null);
+
+                    StandardCredentials cred = credentials.get(url);
+                    if (cred == null) cred = defaultCredentials;
+                    launchCommandWithCredentials(args, null, cred);
                 } catch (Exception e) {
                     throw new GitException("Could not clone " + url, e);
                 }
@@ -554,7 +570,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException("Error parsing remotes", e);
         }
 
-        if        ( remotes.contains(_default_) ) {
+        if (remotes.contains(_default_)) {
             return _default_;
         } else if ( remotes.size() >= 1 ) {
             return remotes.get(0);
@@ -792,13 +808,78 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return command output
      * @throws GitException
      */
+    private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
+                                                StandardCredentials credentials) throws GitException, InterruptedException {
+        File pk = null;
+        File gitssh = null;
+        RemoteAgent agent = null;
+        String password = "";
+        try {
+            if (credentials != null && credentials instanceof SSHUserPrivateKey) {
+                SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
+
+                for (RemoteAgentFactory factory : Jenkins.getInstance().getExtensionList(RemoteAgentFactory.class)) {
+                    if (factory.isSupported(launcher, TaskListener.NULL)) {
+                        try {
+                            agent = factory.start(launcher, TaskListener.NULL);
+                            for (String key : sshUser.getPrivateKeys()) {
+                                agent.addIdentity(key, Secret.toString(sshUser.getPassphrase()), sshUser.getId());
+                            }
+                            break;
+                        } catch (Throwable throwable) {
+                            // can't start, ignore
+                        }
+                    }
+                }
+
+                // If SSH Agent can't start, or none availalbe fall-back to GIT_SSH hack
+                if (agent == null) {
+
+                    if (sshUser.getPassphrase() != null) {
+                        // Could use SSH_ASKPASS but has lower priority vs GIT_ASKPASS
+                        throw new UnsupportedOperationException("cli git don't support encrypted private key (yet)");
+                    }
+
+                    pk = File.createTempFile("key", null, workDir);
+                    PrintWriter p = new PrintWriter(pk);
+                    p.print(sshUser.getPrivateKey());
+                    p.close();
+
+                    gitssh = File.createTempFile("gitssh", null, workDir);
+                    p = new PrintWriter(gitssh);
+                    if (launcher.isUnix()) p.print("#! /bin/sh");
+                    p.print("ssh -i '"+pk.getAbsolutePath()+"' $@");
+                    p.close();
+                    gitssh.setExecutable(true);
+
+                    environment.put("GIT_SSH", gitssh.getAbsolutePath());
+                }
+
+            } else if (credentials instanceof UsernamePasswordCredentialsImpl) {
+
+                // TODO could use https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html
+                throw new UnsupportedOperationException("cli git don't support username/password authentication (yet)");
+
+            }
+
+            return launchCommandIn(args, workDir);
+        } catch (IOException e) {
+            throw new GitException("Failed to setup environment for git command", e);
+        } finally {
+            if (pk != null) pk.delete();
+            if (gitssh != null) gitssh.delete();
+            if (agent != null) agent.stop();
+        }
+    }
+
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         ByteArrayOutputStream fos = new ByteArrayOutputStream();
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
+        environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo " : "echo ");
         try {
-            environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
+
             args.prepend(gitExe);
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
@@ -815,7 +896,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw e;
         } catch (IOException e) {
             throw new GitException("Error performing command: " + StringUtils.join(args.toCommandArray()," "), e);
+        } catch (Throwable t) {
+            throw new GitException("Error performing git command", t);
         }
+
     }
 
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
@@ -825,7 +909,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (refspec != null)
             args.add(refspec);
 
-        launchCommand(args);
+        StandardCredentials cred = credentials.get(getRemoteUrl(remoteName));
+        if (cred == null) cred = defaultCredentials;
+        launchCommandWithCredentials(args, workspace, cred);
         // Ignore output for now as there's many different formats
         // That are possible.
     }
@@ -1040,6 +1126,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    public void addCredentials(String url, StandardCredentials credentials) {
+        this.credentials.put(url, credentials);
+    }
+
+    public void clearCredentials() {
+        this.credentials.clear();
+    }
+
+    public void addDefaultCredentials(StandardCredentials credentials) {
+        this.defaultCredentials = credentials;
+    }
+
     public void setAuthor(String name, String email) throws GitException {
         env("GIT_AUTHOR_NAME", name);
         env("GIT_AUTHOR_EMAIL", email);
@@ -1126,12 +1224,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add("push", repository.getURIs().get(0).toPrivateString());
+        String remote = repository.getURIs().get(0).toPrivateString();
+        args.add("push", remote);
 
         if (refspec != null)
             args.add(refspec);
 
-        launchCommand(args);
+        StandardCredentials cred = credentials.get(remote);
+        if (cred == null) cred = defaultCredentials;
+        launchCommandWithCredentials(args, workspace, cred);
         // Ignore output for now as there's many different formats
         // That are possible.
 
