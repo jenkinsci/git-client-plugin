@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -122,15 +123,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
     }
 
-    public void addCredentials(String url, StandardUsernameCredentials credentials) {
-        asSmartCredentialsProvider().addCredentials(url, credentials);
-    }
-
     public void clearCredentials() {
         asSmartCredentialsProvider().clearCredentials();
     }
 
-    public void addDefaultCredentials(StandardUsernameCredentials credentials) {
+    public void addCredentials(String url, StandardCredentials credentials) {
+        asSmartCredentialsProvider().addCredentials(url, credentials);
+    }
+
+    public void addDefaultCredentials(StandardCredentials credentials) {
         asSmartCredentialsProvider().addDefaultCredentials(credentials);
     }
 

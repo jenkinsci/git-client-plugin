@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.*;
 import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
@@ -1045,11 +1045,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         listener.getLogger().println("[WARNING] CliGit doesn't currently support credentials");
     }
 
-    public void addCredentials(String url, StandardUsernameCredentials credentials) {
+    public void addCredentials(String url, StandardCredentials credentials) {
         listener.getLogger().println("[WARNING] CliGit doesn't currently support credentials");
     }
 
-    public void addDefaultCredentials(StandardUsernameCredentials credentials) {
+    public void addDefaultCredentials(StandardCredentials credentials) {
         listener.getLogger().println("[WARNING] CliGit doesn't currently support credentials");
     }
 

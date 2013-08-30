@@ -60,16 +60,16 @@ public interface GitClient {
      * @param credentials the credentials to use.
      * @since 1.2.0
      */
-    void addCredentials(String url, StandardUsernameCredentials credentials);
+    void addCredentials(String url, StandardCredentials credentials);
 
     /**
      * Adds credentials to be used when there are not url specific credentials defined.
      *
      * @param credentials the credentials to use.
-     * @see {@link #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardUsernameCredentials)}
+     * @see {@link #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)}
      * @since 1.2.0
      */
-    void addDefaultCredentials(StandardUsernameCredentials credentials);
+    void addDefaultCredentials(StandardCredentials credentials);
 
     /**
      * Sets the identity of the author for future commits and merge operations.
