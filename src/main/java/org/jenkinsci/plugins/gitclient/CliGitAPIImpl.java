@@ -810,64 +810,33 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials) throws GitException, InterruptedException {
-        File pk = null;
-        File gitssh = null;
         RemoteAgent agent = null;
-        String password = "";
         try {
             if (credentials != null && credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
 
                 for (RemoteAgentFactory factory : Jenkins.getInstance().getExtensionList(RemoteAgentFactory.class)) {
-                    if (factory.isSupported(launcher, TaskListener.NULL)) {
+                    if (factory.isSupported(launcher, listener)) {
                         try {
-                            agent = factory.start(launcher, TaskListener.NULL);
+                            agent = factory.start(launcher, listener);
                             for (String key : sshUser.getPrivateKeys()) {
                                 agent.addIdentity(key, Secret.toString(sshUser.getPassphrase()), sshUser.getId());
                             }
                             break;
                         } catch (Throwable throwable) {
-                            // can't start, ignore
+                            throwable.printStackTrace(listener.getLogger());
                         }
                     }
-                }
-
-                // If SSH Agent can't start, or none availalbe fall-back to GIT_SSH hack
-                if (agent == null) {
-
-                    if (sshUser.getPassphrase() != null) {
-                        // Could use SSH_ASKPASS but has lower priority vs GIT_ASKPASS
-                        throw new UnsupportedOperationException("cli git don't support encrypted private key (yet)");
-                    }
-
-                    pk = File.createTempFile("key", null, workDir);
-                    PrintWriter p = new PrintWriter(pk);
-                    p.print(sshUser.getPrivateKey());
-                    p.close();
-
-                    gitssh = File.createTempFile("gitssh", null, workDir);
-                    p = new PrintWriter(gitssh);
-                    if (launcher.isUnix()) p.print("#! /bin/sh");
-                    p.print("ssh -i '"+pk.getAbsolutePath()+"' $@");
-                    p.close();
-                    gitssh.setExecutable(true);
-
-                    environment.put("GIT_SSH", gitssh.getAbsolutePath());
                 }
 
             } else if (credentials instanceof UsernamePasswordCredentialsImpl) {
 
                 // TODO could use https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html
                 throw new UnsupportedOperationException("cli git don't support username/password authentication (yet)");
-
             }
 
             return launchCommandIn(args, workDir);
-        } catch (IOException e) {
-            throw new GitException("Failed to setup environment for git command", e);
         } finally {
-            if (pk != null) pk.delete();
-            if (gitssh != null) gitssh.delete();
             if (agent != null) agent.stop();
         }
     }
