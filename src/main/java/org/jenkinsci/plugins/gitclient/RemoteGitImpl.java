@@ -20,6 +20,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -66,7 +67,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         private final String[] parameterTypes;
         private final Object[] args;
 
-        Invocation(Method method, Object[] args) {
+        Invocation(Method method, @Nonnull Object[] args) {
             this.methodName = method.getName();
             this.args = args;
             this.parameterTypes = new String[args.length];
@@ -120,6 +121,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Class<?> decl = method.getDeclaringClass();
+            if (args == null) args = new Object[0];
             if (GitCommand.class == decl || Object.class==decl) {
                 try {
                     return method.invoke(this,args);
