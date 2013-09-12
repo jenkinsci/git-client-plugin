@@ -144,7 +144,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
-        if (remoteName != null)
+        if (remoteName == null)
             remoteName = getDefaultRemote();
 
         args.add(remoteName);
