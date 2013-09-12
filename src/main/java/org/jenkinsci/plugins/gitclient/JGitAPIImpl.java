@@ -135,11 +135,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         asSmartCredentialsProvider().addDefaultCredentials(credentials);
     }
 
-    public void setCredentials(StandardUsernameCredentials cred) {
-        clearCredentials();
-        addDefaultCredentials(cred);
-    }
-
     private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
         if (!(provider instanceof SmartCredentialsProvider)) {
             provider = new SmartCredentialsProvider(listener);

@@ -376,4 +376,5 @@ public interface GitClient {
      */
     String describe(String commitIsh) throws GitException, InterruptedException;
 
+    void setCredentials(StandardUsernameCredentials cred);
 }

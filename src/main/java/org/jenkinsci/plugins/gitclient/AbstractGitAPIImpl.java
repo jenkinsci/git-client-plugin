@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;
 import jenkins.model.Jenkins.MasterComputer;
@@ -71,5 +72,10 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     protected RemoteGitImpl remoteProxyFor(GitClient proxy) {
         return new RemoteGitImpl(proxy);
+    }
+
+    public void setCredentials(StandardUsernameCredentials cred) {
+        clearCredentials();
+        addDefaultCredentials(cred);
     }
 }

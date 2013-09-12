@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -190,6 +191,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public void addCredentials(String url, StandardCredentials credentials) {
         proxy.addCredentials(url, credentials); // credentials are Serializable
+    }
+
+    public void setCredentials(StandardUsernameCredentials cred) {
+        proxy.setCredentials(cred);
     }
 
     public void addDefaultCredentials(StandardCredentials credentials) {
