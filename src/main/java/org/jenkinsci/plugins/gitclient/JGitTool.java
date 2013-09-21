@@ -3,10 +3,9 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
-import org.jenkinsci.plugins.gitclient.Git;
-import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -19,6 +18,11 @@ public class JGitTool extends GitTool {
     public JGitTool(List<? extends ToolProperty<?>> properties) {
         super("jgit", MAGIC_EXENAME, properties);
     }
+
+    public JGitTool() {
+        this(Collections.<ToolProperty<?>>emptyList());
+    }
+
 
     @Override
     public GitTool.DescriptorImpl getDescriptor() {
