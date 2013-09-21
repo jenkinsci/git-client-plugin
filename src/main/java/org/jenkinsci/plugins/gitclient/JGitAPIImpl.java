@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import hudson.FilePath;
@@ -212,7 +211,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not update " + branch + " to " + ref);
             }
 
-            checkout(ref);
+            checkout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }

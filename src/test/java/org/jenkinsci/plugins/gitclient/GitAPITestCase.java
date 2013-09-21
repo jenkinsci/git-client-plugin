@@ -13,12 +13,13 @@ import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
-import org.junit.rules.ExpectedException;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -131,6 +132,13 @@ public abstract class GitAPITestCase extends TestCase {
             return (CliGitAPIImpl)Git.with(listener, env).in(repo).using("git").getClient();
         }
 
+        /**
+         * Creates a {@link Repository} object out of it.
+         */
+        protected FileRepository repo() throws IOException {
+            return new FileRepository(new File(repo,".git"));
+        }
+
         public void checkout(String branch) throws IOException, InterruptedException {
             cmd("git checkout " + branch);
         }
@@ -139,7 +147,11 @@ public abstract class GitAPITestCase extends TestCase {
          * Obtain the current HEAD revision
          */
         ObjectId head() throws IOException, InterruptedException {
-            return ObjectId.fromString(w.cmd("git rev-parse HEAD").substring(0,40));
+            return revParse("HEAD");
+        }
+
+        ObjectId revParse(String commit) throws IOException, InterruptedException {
+            return ObjectId.fromString(w.cmd("git rev-parse "+commit).substring(0,40));
         }
 
         /**
@@ -770,6 +782,23 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Y,Z",formatBranches(w.igit().getBranchesContaining(t.name())));
         assertEquals("Y",formatBranches(w.igit().getBranchesContaining(c3.name())));
         assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
+    }
+
+    @Bug(19108)
+    public void test_checkoutBranch() throws Exception {
+        w.init();
+        w.commit("c1");
+        w.tag("t1");
+        w.commit("c2");
+
+        w.git.checkoutBranch("foo", "t1");
+
+        assertEquals(w.head(),w.revParse("t1"));
+        assertEquals(w.head(),w.revParse("foo"));
+
+        Ref head = w.repo().getRef("HEAD");
+        assertTrue(head.isSymbolic());
+        assertEquals("refs/heads/foo",head.getTarget().getName());
     }
 
     private String formatBranches(List<Branch> branches) {
