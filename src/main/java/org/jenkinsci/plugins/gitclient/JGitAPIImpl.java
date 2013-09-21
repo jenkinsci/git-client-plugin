@@ -12,6 +12,8 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
 import org.eclipse.jgit.api.AddNoteCommand;
+import org.eclipse.jgit.api.CheckoutResult;
+import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
@@ -19,10 +21,12 @@ import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
+import org.eclipse.jgit.dircache.DirCacheCheckout;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
@@ -178,10 +182,26 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void checkout(String ref) throws GitException {
-        try {
-            git().checkout().setName(ref).setForce(true).call();
-        } catch (GitAPIException e) {
-            throw new GitException("Could not checkout " + ref, e);
+        boolean retried = false;
+        while (true) {
+            try {
+                git().checkout().setName(ref).setForce(true).call();
+                return;
+            } catch (CheckoutConflictException e) {
+                // "git checkout -f" seems to overwrite local untracked files but git CheckoutCommand doesn't.
+                // see the test case GitAPITestCase.test_localCheckoutConflict. so in this case we manually
+                // clean up the conflicts and try it again
+
+                if (retried)
+                    throw new GitException("Could not checkout " + ref, e);
+                retried = true;
+                for (String path : e.getConflictingPaths()) {
+                    File conflict = new File(db().getWorkTree(), path);
+                    conflict.delete();
+                }
+            } catch (GitAPIException e) {
+                throw new GitException("Could not checkout " + ref, e);
+            }
         }
     }
 

@@ -121,6 +121,10 @@ public abstract class GitAPITestCase extends TestCase {
             return f;
         }
 
+        public void rm(String path) {
+            file(path).delete();
+        }
+
         public String contentOf(String path) throws IOException {
             return FileUtils.readFileToString(file(path));
         }
@@ -807,5 +811,27 @@ public abstract class GitAPITestCase extends TestCase {
             names.add(b.getName());
         }
         return Util.join(names,",");
+    }
+
+    @Bug(18988)
+    public void test_localCheckoutConflict() throws Exception {
+        w.init();
+        w.touch("foo","old");
+        w.add("foo");
+        w.commit("c1");
+        w.tag("t1");
+
+        // delete the file from git
+        w.cmd("git rm foo");
+        w.commit("c2");
+        assertFalse(w.file("foo").exists());
+
+        // now create an untracked local file
+        w.touch("foo","new");
+
+        // this should overwrite foo
+        w.git.checkout("t1");
+
+        assertEquals("old",FileUtils.readFileToString(w.file("foo")));
     }
 }
