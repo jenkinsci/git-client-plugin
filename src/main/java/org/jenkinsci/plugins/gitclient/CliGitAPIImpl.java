@@ -186,7 +186,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String url;
             String origin;
             String reference;
-            boolean shallow;
+            boolean shallow,shared;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -195,6 +195,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand repositoryName(String name) {
                 this.origin = name;
+                return this;
+            }
+
+            public CloneCommand shared() {
+                this.shared = true;
                 return this;
             }
 
@@ -237,6 +242,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     }
                     args.add("-o", origin);
+                    if (shared)
+                        args.add("--shared");
                     if(shallow) args.add("--depth", "1");
                     args.add(url);
                     args.add(workspace);

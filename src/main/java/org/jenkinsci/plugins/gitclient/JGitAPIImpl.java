@@ -663,6 +663,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand shared() {
+                listener.getLogger().println("[WARNING] JGit doesn't support shared flag. This flag is ignored");
+                return this;
+            }
+
             public CloneCommand reference(String reference) {
                 listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
                 return this;

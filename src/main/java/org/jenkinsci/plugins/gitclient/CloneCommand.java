@@ -13,5 +13,11 @@ public interface CloneCommand extends GitCommand {
 
     CloneCommand shallow();
 
+    /**
+     * When the repository to clone is on the local machine, instead of using hard links, automatically setup
+     * .git/objects/info/alternates to share the objects with the source repository
+     */
+    CloneCommand shared();
+
     CloneCommand reference(String reference);
 }
