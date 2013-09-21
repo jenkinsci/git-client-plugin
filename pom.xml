@@ -24,7 +24,7 @@
     <repository>
       <id>jgit-repository</id>
       <name>Eclipse JGit Repository</name>
-      <url>http://download.eclipse.org/jgit/maven</url>
+      <url>https://repo.eclipse.org/content/groups/releases/</url>
     </repository>
     <repository>
       <id>repo.jenkins-ci.org</id>
@@ -52,7 +52,7 @@
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>3.0.0.201306101825-r</version>
+      <version>3.0.3.201309161630-r</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -103,7 +103,7 @@
             <url>http://repo.jenkins-ci.org/public/</url>
         </pluginRepository>
     </pluginRepositories>
-    
+
     <build>
         <plugins>
             <plugin>
