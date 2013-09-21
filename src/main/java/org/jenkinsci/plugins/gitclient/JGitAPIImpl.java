@@ -668,6 +668,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand shared() {
+                listener.getLogger().println("[WARNING] JGit doesn't support shared clone. This flag is ignored");
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 try {
                     // the directory needs to be clean or else JGit complains

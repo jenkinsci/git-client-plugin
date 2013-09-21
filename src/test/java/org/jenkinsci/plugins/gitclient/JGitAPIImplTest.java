@@ -34,4 +34,5 @@ public class JGitAPIImplTest extends GitAPITestCase {
             throw e;
         }
     }
+
 }
