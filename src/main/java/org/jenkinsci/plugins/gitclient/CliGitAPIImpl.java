@@ -963,7 +963,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void checkout(String commit) throws GitException, InterruptedException {
-        launchCommand("checkout", "-f", commit);
+        try {
+            launchCommand("checkout", "-f", commit);
+        } catch (GitException e) {
+            // In rare cases, git will exit with an error even though
+            // it was able to check out the commit.
+            // For example, if a file has type symlink but invalid content:
+            // http://stackoverflow.com/questions/18411200/git-unable-to-create-symlink-file-name-too-long
+            // To handle these cases, we check whether the commit was successfully
+            // checked out; if so, we ignore the error.
+            String actualCommit = launchCommand("log", "-1", "--format=%H").trim();
+            if (!actualCommit.equals(commit)) {
+                throw e;
+            }
+        }
     }
 
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
