@@ -250,7 +250,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     StandardCredentials cred = credentials.get(url);
                     if (cred == null) cred = defaultCredentials;
 
-                    else if (cred instanceof UsernamePasswordCredentialsImpl) {
+                    if (cred instanceof UsernamePasswordCredentialsImpl) {
                         args.add( getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred) );
                     } else {
                         args.add(url);
@@ -864,10 +864,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
 
-            } else if (credentials instanceof UsernamePasswordCredentialsImpl) {
-
-                // TODO could use https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html
-                throw new UnsupportedOperationException("cli git don't support username/password authentication (yet)");
             }
 
             return launchCommandIn(args, workDir);
