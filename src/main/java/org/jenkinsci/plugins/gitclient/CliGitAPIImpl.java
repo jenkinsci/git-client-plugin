@@ -32,7 +32,6 @@ import org.kohsuke.stapler.framework.io.WriterOutputStream;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -141,6 +140,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         return submodules;
+    }
+
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+        listener.getLogger().println(
+                "Fetching upstream changes from " + url);
+
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add("fetch", "-t");
+
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) cred = defaultCredentials;
+        args.add( getURLWithCrendentials(url, cred) );
+
+        if (refspecs != null)
+            for (RefSpec rs: refspecs)
+                if (rs != null)
+                    args.add(rs.toString());
+
+        launchCommandWithCredentials(args, workspace, cred);
+
     }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {

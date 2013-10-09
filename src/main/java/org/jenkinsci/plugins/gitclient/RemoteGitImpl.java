@@ -20,6 +20,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -291,6 +292,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public MergeCommand merge() {
         return command(MergeCommand.class);
+    }
+
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+        proxy.fetch(url, refspecs);
     }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {

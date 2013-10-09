@@ -12,8 +12,6 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
 import org.eclipse.jgit.api.AddNoteCommand;
-import org.eclipse.jgit.api.CheckoutResult;
-import org.eclipse.jgit.api.CheckoutResult.Status;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
@@ -26,7 +24,6 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
 import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
@@ -322,6 +319,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException {
+        try {
+            Git git = Git.wrap(getRepository());
+            FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
+            fetch.setRemote(url.toString());
+            fetch.setCredentialsProvider(getProvider());
+
+            // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
+            List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+            refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+            if (refspecs != null)
+                for (RefSpec rs: refspecs)
+                    if (rs != null)
+                        refSpecs.add(rs);
+            fetch.setRefSpecs(refSpecs);
+
+            fetch.call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
+    }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException {
         try {

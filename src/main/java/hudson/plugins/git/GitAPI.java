@@ -7,11 +7,13 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.*;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -222,6 +224,10 @@ public class GitAPI extends CliGitAPIImpl {
         return Git.USE_CLI ? super.showRevision(r) :  jgit.showRevision(r);
     }
     */
+
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
+    }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         if (Git.USE_CLI) super.fetch(remoteName, refspec); else  jgit.fetch(remoteName, refspec);

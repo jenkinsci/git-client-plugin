@@ -15,6 +15,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
@@ -199,6 +200,8 @@ public interface GitClient {
     /**
      * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
      */
+    void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException;
+
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;

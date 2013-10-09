@@ -20,11 +20,13 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.URIish;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.*;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -271,6 +273,18 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
         w.git.fetch("origin", new RefSpec[] {null});
+        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
+    }
+
+    public void test_fetch_from_url() throws Exception {
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.commit("init");
+        String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
+
+        w.init();
+        w.cmd("git remote add origin " + r.repoPath());
+        w.git.fetch(new URIish(r.repo.toString()), Collections.EMPTY_LIST);
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
     }
 
