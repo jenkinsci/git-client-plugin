@@ -1201,9 +1201,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         branch = branchExploded[branchExploded.length-1];
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
-        args.add(remoteRepoUrl);
+
+        StandardCredentials cred = credentials.get(remoteRepoUrl);
+        if (cred == null) cred = defaultCredentials;
+
+        if (cred instanceof UsernamePasswordCredentialsImpl) {
+            args.add( getURLWithCrendentials(remoteRepoUrl, (UsernamePasswordCredentialsImpl) cred) );
+        } else {
+            args.add(remoteRepoUrl);
+        }
+
         args.add(branch);
-        String result = launchCommand(args);
+        String result = launchCommandWithCredentials(args, null, cred);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
 
