@@ -21,6 +21,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
 import java.io.*;
@@ -245,16 +246,23 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (shared)
                         args.add("--shared");
                     if(shallow) args.add("--depth", "1");
-                    args.add(url);
-                    args.add(workspace);
 
                     StandardCredentials cred = credentials.get(url);
                     if (cred == null) cred = defaultCredentials;
+
+                    else if (cred instanceof UsernamePasswordCredentialsImpl) {
+                        args.add( getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred) );
+                    } else {
+                        args.add(url);
+                    }
+                    args.add(workspace);
+
                     launchCommandWithCredentials(args, null, cred);
                 } catch (Exception e) {
                     throw new GitException("Could not clone " + url, e);
                 }
             }
+
         };
     }
 
@@ -556,6 +564,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) cred = defaultCredentials;
+
+        if (cred instanceof UsernamePasswordCredentialsImpl) {
+            url = getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred);
+        }
+
         launchCommand( "config", "remote."+name+".url", url );
     }
 
@@ -1213,14 +1228,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        String remote = repository.getURIs().get(0).toPrivateString();
+        URIish uri = repository.getURIs().get(0);
+        String remote = uri.toPrivateString();
+        StandardCredentials cred = credentials.get(remote);
+        if (cred == null) cred = defaultCredentials;
+
+        if (cred instanceof UsernamePasswordCredentialsImpl) {
+            remote = getURLWithCrendentials(uri, (UsernamePasswordCredentialsImpl) cred);
+        }
         args.add("push", remote);
 
         if (refspec != null)
             args.add(refspec);
 
-        StandardCredentials cred = credentials.get(remote);
-        if (cred == null) cred = defaultCredentials;
         launchCommandWithCredentials(args, workspace, cred);
         // Ignore output for now as there's many different formats
         // That are possible.
@@ -1264,4 +1284,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // BROKEN: --all and branch are conflicting.
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
     }
+
+    private String getURLWithCrendentials(String url, UsernamePasswordCredentialsImpl cred) {
+        try {
+            return getURLWithCrendentials(new URIish(url), cred);
+        } catch (URISyntaxException e) {
+            throw new GitException("invalid repository URL " + url, e);
+        }
+    }
+    private String getURLWithCrendentials(URIish u, UsernamePasswordCredentialsImpl cred) {
+        URIish uri = new URIish();
+        uri.setScheme(u.getScheme());
+        uri.setHost(u.getHost());
+        uri.setPort(u.getPort());
+        uri.setPath(u.getPath());
+
+        uri.setUser(cred.getUsername());
+        uri.setPass(Secret.toString(cred.getPassword()));
+        return uri.toPrivateASCIIString();
+    }
+
+
 }
