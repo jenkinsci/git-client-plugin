@@ -27,6 +27,7 @@ import org.kohsuke.stapler.framework.io.WriterOutputStream;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -250,11 +251,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     StandardCredentials cred = credentials.get(url);
                     if (cred == null) cred = defaultCredentials;
 
-                    if (cred instanceof UsernamePasswordCredentialsImpl) {
-                        args.add( getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred) );
-                    } else {
-                        args.add(url);
-                    }
+                    args.add( getURLWithCrendentials(url, cred) );
                     args.add(workspace);
 
                     launchCommandWithCredentials(args, null, cred);
@@ -567,18 +564,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
 
-        if (cred instanceof UsernamePasswordCredentialsImpl) {
-            url = getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred);
-        }
-
+        url = getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred);
         launchCommand( "config", "remote."+name+".url", url );
     }
 
 
     public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
         String result
-            = launchCommand( "--git-dir=" + GIT_DIR,
-                             "config", "--get", "remote."+name+".url" );
+            = launchCommand("--git-dir=" + GIT_DIR,
+                "config", "--get", "remote." + name + ".url");
         return firstLine(result).trim();
     }
 
@@ -1201,12 +1195,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(remoteRepoUrl);
         if (cred == null) cred = defaultCredentials;
 
-        if (cred instanceof UsernamePasswordCredentialsImpl) {
-            args.add( getURLWithCrendentials(remoteRepoUrl, (UsernamePasswordCredentialsImpl) cred) );
-        } else {
-            args.add(remoteRepoUrl);
-        }
-
+        args.add( getURLWithCrendentials(remoteRepoUrl, (UsernamePasswordCredentialsImpl) cred) );
         args.add(branch);
         String result = launchCommandWithCredentials(args, null, cred);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
@@ -1238,10 +1227,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(remote);
         if (cred == null) cred = defaultCredentials;
 
-        if (cred instanceof UsernamePasswordCredentialsImpl) {
-            remote = getURLWithCrendentials(uri, (UsernamePasswordCredentialsImpl) cred);
-        }
-        args.add("push", remote);
+        args.add("push", getURLWithCrendentials(uri, (UsernamePasswordCredentialsImpl) cred));
 
         if (refspec != null)
             args.add(refspec);
@@ -1290,24 +1276,47 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
     }
 
-    private String getURLWithCrendentials(String url, UsernamePasswordCredentialsImpl cred) {
+    private String getURLWithCrendentials(String url, StandardCredentials cred) {
         try {
             return getURLWithCrendentials(new URIish(url), cred);
         } catch (URISyntaxException e) {
             throw new GitException("invalid repository URL " + url, e);
         }
     }
-    private String getURLWithCrendentials(URIish u, UsernamePasswordCredentialsImpl cred) {
+    private String getURLWithCrendentials(URIish u, StandardCredentials cred) {
+        String scheme = u.getScheme();
         URIish uri = new URIish()
-            .setScheme(u.getScheme())
+            .setScheme(scheme)
+            .setUser(u.getUser())
+            .setPass(u.getPass())
             .setHost(u.getHost())
             .setPort(u.getPort())
             .setPath(u.getPath());
-        if (cred != null) {
-            uri = uri.setUser(cred.getUsername())
-                .setPass(Secret.toString(cred.getPassword()));
+        if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
+            UsernamePasswordCredentialsImpl up = (UsernamePasswordCredentialsImpl) cred;
+            uri = uri.setUser(up.getUsername())
+                     .setPass(Secret.toString(up.getPassword()));
         }
-        return uri.toPrivateASCIIString();
+
+        String url = uri.toPrivateASCIIString();
+
+        // assert http URL is accessible to avoid git process to hung asking for username
+        if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+            try {
+                // dumb-http
+                new URL(url + "/info/refs").openStream().read();
+            } catch (IOException e) {
+                try {
+                    // smart-http
+                    new URL(url + "/info/refs?service=git-upload-pack").openStream().read();
+                } catch (IOException e2) {
+                    throw new GitException("Failed to connect to " + u.toString()
+                            + (cred != null ? " using credentials " + cred.getId() : "" ));
+                }
+            }
+        }
+
+        return url;
     }
 
 
