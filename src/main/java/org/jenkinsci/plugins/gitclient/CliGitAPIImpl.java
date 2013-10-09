@@ -12,6 +12,11 @@ import hudson.plugins.git.*;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
+import org.apache.commons.httpclient.Credentials;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.auth.AuthScope;
+import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
@@ -1302,17 +1307,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // assert http URL is accessible to avoid git process to hung asking for username
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
+            HttpClient client = new HttpClient();
+            if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
+                client.getParams().setAuthenticationPreemptive(true);
+                Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
+                client.getState().setCredentials(AuthScope.ANY, defaultcreds);
+            }
+            int status = 0;
             try {
-                // dumb-http
-                new URL(url + "/info/refs").openStream().read();
+                status = client.executeMethod(new GetMethod(url + "/info/refs"));
+                if (status != 200)
+                    status = client.executeMethod(new GetMethod(url + "/info/refs?service=git-upload-pack"));
             } catch (IOException e) {
-                try {
-                    // smart-http
-                    new URL(url + "/info/refs?service=git-upload-pack").openStream().read();
-                } catch (IOException e2) {
-                    throw new GitException("Failed to connect to " + u.toString()
-                            + (cred != null ? " using credentials " + cred.getId() : "" ));
-                }
+            }
+            if (status != 200) {
+                throw new GitException("Failed to connect to " + u.toString()
+                        + (cred != null ? " using credentials " + cred.getId() : "" ));
             }
         }
 
