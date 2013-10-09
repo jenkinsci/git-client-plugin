@@ -1298,14 +1298,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
     private String getURLWithCrendentials(URIish u, UsernamePasswordCredentialsImpl cred) {
-        URIish uri = new URIish();
-        uri.setScheme(u.getScheme());
-        uri.setHost(u.getHost());
-        uri.setPort(u.getPort());
-        uri.setPath(u.getPath());
-
-        uri.setUser(cred.getUsername());
-        uri.setPass(Secret.toString(cred.getPassword()));
+        URIish uri = new URIish()
+            .setScheme(u.getScheme())
+            .setHost(u.getHost())
+            .setPort(u.getPort())
+            .setPath(u.getPath());
+        if (cred != null) {
+            uri = uri.setUser(cred.getUsername())
+                .setPass(Secret.toString(cred.getPassword()));
+        }
         return uri.toPrivateASCIIString();
     }
 
