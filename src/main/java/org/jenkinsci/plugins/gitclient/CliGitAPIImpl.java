@@ -149,7 +149,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
 
-        StandardCredentials cred = credentials.get(url);
+        StandardCredentials cred = credentials.get(url.toPrivateString());
         if (cred == null) cred = defaultCredentials;
         args.add( getURLWithCrendentials(url, cred) );
 
