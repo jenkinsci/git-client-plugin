@@ -6,3 +6,4 @@ to make it easier for other plugins to use and contribute new features.
 
 
 see [https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin]
+use [https://issues.jenkins-ci.org] to report issues / feature requests
