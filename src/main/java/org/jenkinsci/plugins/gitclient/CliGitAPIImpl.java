@@ -1338,11 +1338,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (status != 200)
                     status = client.executeMethod(new GetMethod(url + "/info/refs?service=git-upload-pack"));
                 if (status != 200)
-                    throw new GitException("Failed to connect to " + u.toString()
+                    throw new GitException("Failed to connect to " + u.toPrivateString()
                         + (cred != null ? " using credentials " + cred.getId() : "" )
                         + " (status = "+status+")");
             } catch (IOException e) {
-                throw new GitException("Failed to connect to " + u.toString()
+                throw new GitException("Failed to connect to " + u.toPrivateString()
                         + (cred != null ? " using credentials " + cred.getId() : "" ), e);
 
             }
