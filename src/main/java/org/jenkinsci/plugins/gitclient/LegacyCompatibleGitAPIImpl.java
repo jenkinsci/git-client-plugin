@@ -74,7 +74,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     @Deprecated
     public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
         // Assume there is only 1 URL for simplicity
-        fetch(remoteRepository.getURIs().get(0).toPrivateString(), remoteRepository.getFetchRefSpecs().toArray(new RefSpec[0]));
+        fetch(remoteRepository.getURIs().get(0), remoteRepository.getFetchRefSpecs());
     }
 
     @Deprecated
