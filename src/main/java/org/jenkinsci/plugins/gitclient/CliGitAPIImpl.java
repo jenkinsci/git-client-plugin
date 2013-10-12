@@ -1332,17 +1332,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
+            // Username and password could still have been provided in the URL string.
+            else if (uri.getUser() != null && uri.getPass() != null) {
+                client.getParams().setAuthenticationPreemptive(true);
+                Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
+                client.getState().setCredentials(AuthScope.ANY, defaultcreds);
+            }
+
             int status = 0;
             try {
                 status = client.executeMethod(new GetMethod(url + "/info/refs"));
                 if (status != 200)
                     status = client.executeMethod(new GetMethod(url + "/info/refs?service=git-upload-pack"));
                 if (status != 200)
-                    throw new GitException("Failed to connect to " + u.toString()
+                    throw new GitException("Failed to connect to " + u.toPrivateString()
                         + (cred != null ? " using credentials " + cred.getId() : "" )
                         + " (status = "+status+")");
             } catch (IOException e) {
-                throw new GitException("Failed to connect to " + u.toString()
+                throw new GitException("Failed to connect to " + u.toPrivateString()
                         + (cred != null ? " using credentials " + cred.getId() : "" ), e);
 
             }
