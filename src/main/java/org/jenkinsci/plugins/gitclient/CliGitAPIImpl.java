@@ -1332,6 +1332,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
+            // Username and password could still have been provided in the URL string.
+            else if (uri.getUser() != null && uri.getPass() != null) {
+                client.getParams().setAuthenticationPreemptive(true);
+                Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
+                client.getState().setCredentials(AuthScope.ANY, defaultcreds);
+            }
+
             int status = 0;
             try {
                 status = client.executeMethod(new GetMethod(url + "/info/refs"));
