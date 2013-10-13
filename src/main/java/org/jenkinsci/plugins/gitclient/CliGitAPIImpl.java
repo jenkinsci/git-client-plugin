@@ -1342,7 +1342,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // assert http URL is accessible to avoid git process to hung asking for username
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
             HttpClient client = new HttpClient();
-            if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
+            if (uri.getUser() != null && uri.getPass() != null) {
                 client.getParams().setAuthenticationPreemptive(true);
                 Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
