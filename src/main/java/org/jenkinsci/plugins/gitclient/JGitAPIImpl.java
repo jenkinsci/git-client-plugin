@@ -440,6 +440,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    public void sparseCheckout(List<String> paths) throws GitException, InterruptedException {
+        listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
+        listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
+        throw new UnsupportedOperationException("not implemented yet");
+    }
 
     public void addNote(String note, String namespace) throws GitException {
         try {
@@ -688,6 +697,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand reference(String reference) {
                 listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
+                return this;
+            }
+
+            public CloneCommand noCheckout() {
+                base.setNoCheckout(true);
                 return this;
             }
 

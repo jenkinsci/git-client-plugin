@@ -258,6 +258,14 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.setRemoteUrl(name, url);
     }
 
+    public void sparseCheckout(List<String> paths) throws GitException, InterruptedException {
+        proxy.sparseCheckout(paths);
+    }
+
+    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
+        return proxy.retrieveSparseCheckoutPaths();
+    }
+
     public void checkout(String ref) throws GitException, InterruptedException {
         proxy.checkout(ref);
     }
@@ -284,6 +292,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
         proxy.clone(url, origin, useShallowClone, reference);
+    }
+
+    public void clone(String url, String origin, boolean useShallowClone, boolean noCheckout, String reference) throws GitException, InterruptedException {
+        proxy.clone(url, origin, useShallowClone, noCheckout, reference);
     }
 
     public CloneCommand clone_() {

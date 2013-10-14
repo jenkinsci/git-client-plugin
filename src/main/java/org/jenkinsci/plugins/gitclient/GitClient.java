@@ -139,6 +139,19 @@ public interface GitClient {
     void setRemoteUrl(String name, String url) throws GitException, InterruptedException;
 
     /**
+     * Add a list of path to sparse checkout
+     * @param paths the workspace paths to sparse checkout
+     * @throws GitException if executing the git command fails
+     */
+    void sparseCheckout(List<String> paths) throws GitException, InterruptedException;
+
+    /**
+     * Get the current sparse checkout paths of the repo
+     * @throws GitException if executing the git command fails
+     */
+    List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException;
+
+    /**
      * Checks out the specified commit/tag/branch into the workspace.
      * (equivalent of <tt>git checkout <em>branch</em></tt>.)
      * @param ref A git object references expression (either a sha1, tag or branch)
@@ -191,6 +204,17 @@ public interface GitClient {
      * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
      */
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
+
+    /**
+     * Clone a remote repository
+     * @param url URL for remote repository to clone
+     * @param origin upstream track name, defaults to <tt>origin</tt> by convention
+     * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
+     * @param noCheckout option to create a no checkout clone, useful for sparse checkout for instance
+     * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
+     */
+    void clone(String url, String origin, boolean useShallowClone, boolean noCheckout, String reference) throws GitException, InterruptedException;
+
 
     /**
      * Returns a {@link CloneCommand} to build up the git-log invocation.
