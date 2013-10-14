@@ -621,7 +621,7 @@ public abstract class GitAPITestCase extends TestCase {
         repoToClone.commit("commit");
 
         // Clone it with no checkout
-        w.git.clone(repoToClone.repoPath(), "origin", false, true, null);
+        w.git.clone_().url(repoToClone.repoPath()).repositoryName("origin").noCheckout().execute();
         assertFalse(w.exists("file1"));
     }
 

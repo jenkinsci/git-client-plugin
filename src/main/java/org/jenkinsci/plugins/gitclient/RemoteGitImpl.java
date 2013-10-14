@@ -294,10 +294,6 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.clone(url, origin, useShallowClone, reference);
     }
 
-    public void clone(String url, String origin, boolean useShallowClone, boolean noCheckout, String reference) throws GitException, InterruptedException {
-        proxy.clone(url, origin, useShallowClone, noCheckout, reference);
-    }
-
     public CloneCommand clone_() {
         return command(CloneCommand.class);
     }

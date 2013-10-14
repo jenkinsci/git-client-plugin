@@ -206,17 +206,6 @@ public interface GitClient {
     void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
 
     /**
-     * Clone a remote repository
-     * @param url URL for remote repository to clone
-     * @param origin upstream track name, defaults to <tt>origin</tt> by convention
-     * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
-     * @param noCheckout option to create a no checkout clone, useful for sparse checkout for instance
-     * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
-     */
-    void clone(String url, String origin, boolean useShallowClone, boolean noCheckout, String reference) throws GitException, InterruptedException;
-
-
-    /**
      * Returns a {@link CloneCommand} to build up the git-log invocation.
      */
     CloneCommand clone_(); // can't use 'clone' as it collides with Object.clone()
