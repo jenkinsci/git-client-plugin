@@ -158,7 +158,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String ref) throws GitException {
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
+
+            public void execute() throws GitException, InterruptedException {
+                if (branch == null)
+                    doCheckout(ref);
+                else if (deleteBranch)
+                    doCheckoutBranch(branch, ref);
+                else
+                    doCheckout(ref, branch);
+            }
+        };
+    }
+
+    private void doCheckout(String ref) throws GitException {
         boolean retried = false;
         Repository repo = null;
         while (true) {
@@ -201,7 +215,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String ref, String branch) throws GitException {
+    private void doCheckout(String ref, String branch) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
@@ -216,7 +230,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException {
+    private void doCheckoutBranch(String branch, String ref) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
@@ -234,8 +248,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not update " + (branch!= null ? branch : "") + " to " + ref);
             }
 
-            if (branch != null) checkout(branch);
-
+            if (branch != null) doCheckout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + (branch!= null ? branch : "") + " with start point " + ref, e);
         } finally {

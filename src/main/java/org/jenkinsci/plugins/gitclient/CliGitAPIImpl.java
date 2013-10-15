@@ -1280,36 +1280,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String commit) throws GitException, InterruptedException {
-        launchCommand("checkout", "-f", commit);
-    }
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
 
-    public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        launchCommand("checkout", "-b", branch, ref);
-    }
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    if (branch!=null && deleteBranch) {
+                        // First, checkout to detached HEAD, so we can delete the branch.
+                        launchCommand("checkout", "-f", ref);
 
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
-        try {
-            // First, checkout to detached HEAD, so we can delete the branch.
-            checkout(ref);
-
-            if (branch!=null) {
-                // Second, check to see if the branch actually exists, and then delete it if it does.
-                for (Branch b : getBranches()) {
-                    if (b.getName().equals(branch)) {
-                        deleteBranch(branch);
+                        // Second, check to see if the branch actually exists, and then delete it if it does.
+                        for (Branch b : getBranches()) {
+                            if (b.getName().equals(branch)) {
+                                deleteBranch(branch);
+                            }
+                        }
+                    }
+                    if (branch != null)
+                        launchCommand("checkout", "-b", branch, ref);
+                    else
+                        launchCommand("checkout", "-f", ref);
+                } catch (GitException e) {
+                    if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
+                        throw new GitLockFailedException("Could not lock repository. Please try again", e);
+                    } else {
+                        throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
                     }
                 }
-                // Lastly, checkout the branch, creating it in the process, using commitish as the start point.
-                checkout(ref, branch);
+
             }
-        } catch (GitException e) {
-            if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
-                throw new GitLockFailedException("Could not lock repository. Please try again", e);
-            } else {
-                throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
-            }
-        }
+        };
     }
 
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
