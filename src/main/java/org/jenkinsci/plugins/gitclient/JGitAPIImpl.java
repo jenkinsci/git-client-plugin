@@ -178,7 +178,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String ref) throws GitException {
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
+
+            public void execute() throws GitException, InterruptedException {
+                if (branch == null)
+                    doCheckout(ref);
+                else if (deleteBranch)
+                    doCheckoutBranch(branch, ref);
+                else
+                    doCheckout(ref, branch);
+            }
+        };
+    }
+
+    private void doCheckout(String ref) throws GitException {
         boolean retried = false;
         while (true) {
             try {
@@ -202,7 +216,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String ref, String branch) throws GitException {
+    private void doCheckout(String ref, String branch) throws GitException {
         try {
             if (ref == null) ref = db().resolve(HEAD).name();
             Git git = Git.wrap(db());
@@ -214,7 +228,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException {
+    private void doCheckoutBranch(String branch, String ref) throws GitException {
         try {
             RefUpdate refUpdate = db().updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(db().resolve(ref));
@@ -228,7 +242,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not update " + branch + " to " + ref);
             }
 
-            checkout(branch);
+            doCheckout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }

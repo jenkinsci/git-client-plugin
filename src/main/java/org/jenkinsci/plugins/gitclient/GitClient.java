@@ -142,6 +142,7 @@ public interface GitClient {
      * Checks out the specified commit/tag/branch into the workspace.
      * (equivalent of <tt>git checkout <em>branch</em></tt>.)
      * @param ref A git object references expression (either a sha1, tag or branch)
+     * @deprecated use {@link #checkout()} and {@link CheckoutCommand}
      */
     void checkout(String ref) throws GitException, InterruptedException;
 
@@ -153,8 +154,11 @@ public interface GitClient {
      *
      * @param ref A git object references expression. For backward compatibility, <tt>null</tt> will checkout current HEAD
      * @param branch name of the branch to create from reference
+     * @deprecated use {@link #checkout()} and {@link CheckoutCommand}
      */
     void checkout(String ref, String branch) throws GitException, InterruptedException;
+
+    CheckoutCommand checkout();
 
     /**
      * Regardless of the current state of the workspace (whether there is some dirty files, etc)
