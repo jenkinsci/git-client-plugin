@@ -10,6 +10,7 @@ import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.IOUtils;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.apache.commons.httpclient.Credentials;
@@ -1347,11 +1348,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // assert http URL is accessible to avoid git process to hung asking for username
         if ("http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme)) {
             HttpClient client = new HttpClient();
+            Credentials defaultcreds;
             if (uri.getUser() != null && uri.getPass() != null) {
+                defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
+            } else {
+                defaultcreds = getCredentialsFromNetrc(uri.getHost());
+            }
+            if (defaultcreds != null) {
                 client.getParams().setAuthenticationPreemptive(true);
-                Credentials defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
+
             int status = 0;
             try {
                 // dump-http
@@ -1372,5 +1379,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
 
         return url;
+    }
+
+    public static final Pattern NETRC = Pattern.compile("machine (.*) login (.*) password (.*)");
+
+    private Credentials getCredentialsFromNetrc(String host) {
+        File home = new File(System.getProperty("user.home"));
+        File netrc = new File(home, ".netrc");
+        if (!netrc.exists()) netrc = new File("_netrc"); // windows variant
+        if (!netrc.exists()) return null;
+
+        BufferedReader r = null;
+        try {
+            r = new BufferedReader(new FileReader(netrc));
+            String line = null;
+            while ((line = r.readLine()) != null) {
+                Matcher matcher = NETRC.matcher(line);
+                if (!matcher.matches()) continue;
+                if (matcher.group(1).equals(host));
+                    return new UsernamePasswordCredentials(matcher.group(2), matcher.group(3));
+            }
+        } catch (IOException e) {
+            throw new GitException("Invalid $HOME/.netrc file", e);
+        } finally {
+            IOUtils.closeQuietly(r);
+        }
+        return null;
     }
 }
