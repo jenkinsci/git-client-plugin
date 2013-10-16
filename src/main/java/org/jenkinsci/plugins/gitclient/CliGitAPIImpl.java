@@ -323,42 +323,47 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
-        /*
-            On Windows command prompt, '^' is an escape character (http://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
-            This isn't a problem if 'git' we are executing is git.exe, because '^' is a special character only for the command processor,
-            but if 'git' we are executing is git.cmd (which is the case of msysgit), then the arguments we pass in here ends up getting
-            processed by the command processor, and so 'xyz^{commit}' becomes 'xyz{commit}' and fails.
 
-            We work around this problem by surrounding this with double-quote on Windows.
-            Unlike POSIX, where the arguments of a process is modeled as String[], Win32 API models the
-            arguments of a process as a single string (see CreateProcess). When we surround one argument with a quote,
-            java.lang.ProcessImpl on Windows preserve as-is and generate a single string like the following to pass to CreateProcess:
-
-                git rev-parse "tag^{commit}"
-
-            If we invoke git.exe, MSVCRT startup code in git.exe will handle escape and executes it as we expect.
-            If we invoke git.cmd, cmd.exe will not eats this ^ that's in double-quote. So it works on both cases.
-
-            Note that this is a borderline-buggy behaviour arguably. If I were implementing ProcessImpl for Windows
-            in JDK, My passing a string with double-quotes around it to be expanded to the following:
-
-               git rev-parse "\"tag^{commit}\""
-
-            So this work around that we are doing for Windows relies on the assumption that Java runtime will not
-            change this behaviour.
-
-            Also note that on Unix we cannot do this. Similarly, other ways of quoting (like using '^^' instead of '^'
-            that you do on interactive command prompt) do not work either, because MSVCRT startup won't handle
-            those in the same way cmd.exe does.
-
-            See JENKINS-13007 where this blew up on Windows users.
-            See https://github.com/msysgit/msysgit/issues/36 where I filed this as a bug to msysgit.
-         */
-        String arg = revName + "^{commit}";
-        if (Functions.isWindows())
-            arg = '"'+arg+'"';
+        String arg = sanitize(revName + "^{commit}");
         String result = launchCommand("rev-parse", arg);
         return ObjectId.fromString(firstLine(result).trim());
+    }
+
+    /**
+     * On Windows command prompt, '^' is an escape character (http://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
+     * This isn't a problem if 'git' we are executing is git.exe, because '^' is a special character only for the command processor,
+     * but if 'git' we are executing is git.cmd (which is the case of msysgit), then the arguments we pass in here ends up getting
+     * processed by the command processor, and so 'xyz^{commit}' becomes 'xyz{commit}' and fails.
+     * <p>
+     * We work around this problem by surrounding this with double-quote on Windows.
+     * Unlike POSIX, where the arguments of a process is modeled as String[], Win32 API models the
+     * arguments of a process as a single string (see CreateProcess). When we surround one argument with a quote,
+     * java.lang.ProcessImpl on Windows preserve as-is and generate a single string like the following to pass to CreateProcess:
+     * <pre>
+     *     git rev-parse "tag^{commit}"
+     * </pre>
+     * If we invoke git.exe, MSVCRT startup code in git.exe will handle escape and executes it as we expect.
+     * If we invoke git.cmd, cmd.exe will not eats this ^ that's in double-quote. So it works on both cases.
+     * <p>
+     * Note that this is a borderline-buggy behaviour arguably. If I were implementing ProcessImpl for Windows
+     * in JDK, My passing a string with double-quotes around it to be expanded to the following:
+     * <pre>
+     *    git rev-parse "\"tag^{commit}\""
+     * </pre>
+     * So this work around that we are doing for Windows relies on the assumption that Java runtime will not
+     * change this behaviour.
+     * <p>
+     * Also note that on Unix we cannot do this. Similarly, other ways of quoting (like using '^^' instead of '^'
+     * that you do on interactive command prompt) do not work either, because MSVCRT startup won't handle
+     * those in the same way cmd.exe does.
+     *
+     * See JENKINS-13007 where this blew up on Windows users.
+     * See https://github.com/msysgit/msysgit/issues/36 where I filed this as a bug to msysgit.
+     **/
+    private String sanitize(String arg) {
+        if (Functions.isWindows())
+            arg = '"'+arg+'"';
+        return arg;
     }
 
     public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
@@ -404,7 +409,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Writer out = null;
 
             public ChangelogCommand excludes(String rev) {
-                revs.add('^' + rev);
+                revs.add(sanitize('^'+rev));
                 return this;
             }
 
