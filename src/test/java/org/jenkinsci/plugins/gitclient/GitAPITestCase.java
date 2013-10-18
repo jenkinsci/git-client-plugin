@@ -444,12 +444,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("test 123!\n* multi-line tag message\n padded", w.git.getTagMessage("test"));
     }
 
-    public void test_get_HEAD_revision() throws Exception {
-        // TODO replace with an embedded JGit server so that test run offline ?
-        String sha1 = w.cmd("git ls-remote --heads https://github.com/jenkinsci/git-client-plugin.git refs/heads/master").substring(0,40);
-        assertEquals(sha1, w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git", "master").name());
-    }
-
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
         w.init();
         w.commit("init");

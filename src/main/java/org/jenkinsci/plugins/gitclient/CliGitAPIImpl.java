@@ -1359,6 +1359,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
 
+            ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+            if (proxy != null) {
+                client.getHostConfiguration().setProxy(proxy.name, proxy.port);
+                client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
+            }
+
             int status = 0;
             try {
                 // dump-http
