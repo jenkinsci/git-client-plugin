@@ -258,6 +258,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.setRemoteUrl(name, url);
     }
 
+    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
+        return proxy.retrieveSparseCheckoutPaths();
+    }
+
     public void checkout(String ref) throws GitException, InterruptedException {
         proxy.checkout(ref);
     }

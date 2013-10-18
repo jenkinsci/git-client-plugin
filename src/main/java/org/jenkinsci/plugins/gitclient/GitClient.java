@@ -139,6 +139,12 @@ public interface GitClient {
     void setRemoteUrl(String name, String url) throws GitException, InterruptedException;
 
     /**
+     * Get the current sparse checkout paths of the repo
+     * @throws GitException if executing the git command fails
+     */
+    List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException;
+
+    /**
      * Checks out the specified commit/tag/branch into the workspace.
      * (equivalent of <tt>git checkout <em>branch</em></tt>.)
      * @param ref A git object references expression (either a sha1, tag or branch)
