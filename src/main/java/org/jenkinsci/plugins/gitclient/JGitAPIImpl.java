@@ -162,6 +162,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new CheckoutCommand() {
 
             public void execute() throws GitException, InterruptedException {
+
+                if(! sparseCheckoutPaths.isEmpty()) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+
                 if (branch == null)
                     doCheckout(ref);
                 else if (deleteBranch)
@@ -391,7 +397,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
                 throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
             }
-            
+
             public org.jenkinsci.plugins.gitclient.FetchCommand timeout(Integer timeout) {
             	// noop in jgit
             	return this;
@@ -611,6 +617,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } finally {
             if (repo != null) repo.close();
         }
+    }
+
+    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
+        listener.getLogger().println("[WARNING] JGit doesn't support sparse checkout.");
+        return Collections.emptyList();
     }
 
     public void addNote(String note, String namespace) throws GitException {
@@ -912,6 +923,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public CloneCommand timeout(Integer timeout) {
             	// noop in jgit
             	return this;
+            }
+
+            public CloneCommand noCheckout() {
+                base.setNoCheckout(true);
+                return this;
             }
 
             public void execute() throws GitException, InterruptedException {

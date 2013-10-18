@@ -13,6 +13,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
+import com.google.common.collect.Lists;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -93,6 +94,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private static final long serialVersionUID = 1;
+    static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
@@ -278,7 +280,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String url;
             String origin = "origin";
             String reference;
-            boolean shallow,shared;
+            boolean shallow,shared,noCheckout;
 			Integer timeout;
 
             public CloneCommand url(String url) {
@@ -298,6 +300,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand shallow() {
                 this.shallow = true;
+                return this;
+            }
+
+            public CloneCommand noCheckout() {
+                this.noCheckout = true;
                 return this;
             }
 
@@ -332,6 +339,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
+                // the CloneCommand.noCheckout option is then useless
 
                 init();
                 if (reference != null && !reference.isEmpty()) {
@@ -1285,6 +1293,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public void execute() throws GitException, InterruptedException {
                 try {
+
+                    // Will activate or deactivate sparse checkout depending on the given paths
+                    sparseCheckout(sparseCheckoutPaths);
+
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
                         launchCommand("checkout", "-f", ref);
@@ -1308,6 +1320,61 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
 
+            }
+
+            private void sparseCheckout(List<String> paths) throws GitException, InterruptedException {
+
+                boolean coreSparseCheckoutConfigEnable;
+                try {
+                    coreSparseCheckoutConfigEnable = launchCommand("config", "core.sparsecheckout").contains("true");
+                } catch (GitException ge) {
+                    coreSparseCheckoutConfigEnable = false;
+                }
+
+                boolean deactivatingSparseCheckout = false;
+                if(paths.isEmpty() && ! coreSparseCheckoutConfigEnable) { // Nothing to do
+                    return;
+                } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
+                    deactivatingSparseCheckout = true;
+                    paths = Lists.newArrayList("/*");
+                } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
+                    launchCommand( "config", "core.sparsecheckout", "true" );
+                }
+
+                File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+                PrintWriter writer;
+                try {
+                    writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+                } catch (IOException ex){
+                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+                for(String path : paths) {
+                    writer.println(path);
+                }
+
+                try {
+                    writer.close();
+                } catch (Exception ex) {
+                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+
+                try {
+                    launchCommand( "read-tree", "-mu", "HEAD" );
+                } catch (GitException ge) {
+                    // Normal return code if sparse checkout path has never exist on the current checkout branch
+                    String normalReturnCode = "128";
+                    if(ge.getMessage().contains(normalReturnCode)) {
+                        listener.getLogger().println(ge.getMessage());
+                    } else {
+                        throw ge;
+                    }
+                }
+
+                if(deactivatingSparseCheckout) {
+                    launchCommand( "config", "core.sparsecheckout", "false" );
+                }
             }
         };
     }

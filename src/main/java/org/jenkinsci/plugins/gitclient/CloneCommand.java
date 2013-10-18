@@ -22,4 +22,9 @@ public interface CloneCommand extends GitCommand {
     CloneCommand reference(String reference);
     
     CloneCommand timeout(Integer timeout);
+
+    /**
+     * When we just need to clone repository without populating the workspace (for instance when sparse checkouts are used)
+     */
+    CloneCommand noCheckout();
 }
