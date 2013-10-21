@@ -1104,39 +1104,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
-        File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-        if(! isCoreSparseCheckoutEnable() || ! sparseCheckoutFile.exists()) {
-            return Collections.emptyList();
-        }
-
-        BufferedReader reader;
-        try {
-            reader = new BufferedReader(new InputStreamReader(new FileInputStream(sparseCheckoutFile), "UTF-8"));
-        } catch (IOException ex){
-            throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
-        }
-
-        List<String> sparseCheckoutPaths = Lists.newArrayList();
-        try {
-            String path;
-            while ((path = reader.readLine()) != null) {
-                sparseCheckoutPaths.add(path);
-            }
-        } catch (IOException ex){
-            throw new GitException("Impossible to read sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
-        }
-
-        try {
-            reader.close();
-        } catch (Exception ex) {
-            throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
-        }
-
-        return sparseCheckoutPaths;
-    }
-
-
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
         return launchCommand("tag", "-l", tagName).trim().equals(tagName);
     }

@@ -588,29 +588,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir3"));
     }
 
-    @NotImplementedInJGit
-    public void test_retrieve_sparse_checkout_paths() throws Exception {
-        w.init();
-        w.commit("init");
-        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
-
-        w.cmd("git config core.sparseCheckout true");
-        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
-
-        w.cmd("git config core.sparseCheckout false");
-        List<String> expectedPaths = Lists.newArrayList("path1", "path2");
-        File sparseCheckoutFile = w.file(CliGitAPIImpl.SPARSE_CHECKOUT_FILE_PATH);
-        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
-        for(String path : expectedPaths) {
-            writer.println(path);
-        }
-        writer.close();
-        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
-
-        w.cmd("git config core.sparseCheckout true");
-        assertEquals(expectedPaths, w.git.retrieveSparseCheckoutPaths());
-    }
-
     public void test_clone_no_checkout() throws Exception {
         // Create a repo for cloning purpose
         WorkingArea repoToClone = new WorkingArea();
