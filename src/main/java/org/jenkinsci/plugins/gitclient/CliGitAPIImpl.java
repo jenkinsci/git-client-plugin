@@ -5,6 +5,7 @@ import com.cloudbees.jenkins.plugins.sshagent.RemoteAgentFactory;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.google.common.collect.Lists;
 import hudson.*;
 import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
@@ -45,6 +46,8 @@ import java.util.regex.Pattern;
  * </b>
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
+
+    static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
 
     Launcher launcher;
     TaskListener listener;
@@ -214,7 +217,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String url;
             String origin;
             String reference;
-            boolean shallow,shared;
+            boolean shallow,shared,noCheckout;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -233,6 +236,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand shallow() {
                 this.shallow = true;
+                return this;
+            }
+
+            public CloneCommand noCheckout() {
+                this.noCheckout = true;
                 return this;
             }
 
@@ -273,6 +281,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (shared)
                         args.add("--shared");
                     if(shallow) args.add("--depth", "1");
+                    if(noCheckout) args.add("--no-checkout");
 
                     StandardCredentials cred = credentials.get(url);
                     if (cred == null) cred = defaultCredentials;
@@ -598,6 +607,96 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         url = getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred);
         launchCommand( "config", "remote."+name+".url", url );
+    }
+
+    private boolean isCoreSparseCheckoutEnable() throws InterruptedException {
+        try {
+            return launchCommand("config", "core.sparsecheckout").contains("true");
+        } catch (GitException ge) {
+            return false;
+        }
+    }
+
+    public void sparseCheckout(List<String> paths) throws GitException, InterruptedException {
+
+        boolean coreSparseCheckoutConfigEnable = isCoreSparseCheckoutEnable();
+
+        boolean deactivatingSparseCheckout = false;
+        if(paths.isEmpty() && ! coreSparseCheckoutConfigEnable) { // Nothing to do
+            return;
+        } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
+            deactivatingSparseCheckout = true;
+            paths = Lists.newArrayList("/*");
+        } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
+            launchCommand( "config", "core.sparsecheckout", "true" );
+        }
+
+        File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+        PrintWriter writer;
+        try {
+            writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+        } catch (IOException ex){
+            throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+        }
+
+        for(String path : paths) {
+            writer.println(path);
+        }
+
+        try {
+            writer.close();
+        } catch (Exception ex) {
+            throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+        }
+
+
+        try {
+            launchCommand( "read-tree", "-mu", "HEAD" );
+        } catch (GitException ge) {
+            // Normal return code if sparse checkout path has never exist on the current checkout branch
+            String normalReturnCode = "128";
+            if(ge.getMessage().contains(normalReturnCode)) {
+                listener.getLogger().println(ge.getMessage());
+            } else {
+                throw ge;
+            }
+        }
+
+        if(deactivatingSparseCheckout) {
+            launchCommand( "config", "core.sparsecheckout", "false" );
+        }
+    }
+
+    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
+        File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+        if(! isCoreSparseCheckoutEnable() || ! sparseCheckoutFile.exists()) {
+            return Collections.emptyList();
+        }
+
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(new InputStreamReader(new FileInputStream(sparseCheckoutFile), "UTF-8"));
+        } catch (IOException ex){
+            throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+        }
+
+        List<String> sparseCheckoutPaths = Lists.newArrayList();
+        try {
+            String path;
+            while ((path = reader.readLine()) != null) {
+                sparseCheckoutPaths.add(path);
+            }
+        } catch (IOException ex){
+            throw new GitException("Impossible to read sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+        }
+
+        try {
+            reader.close();
+        } catch (Exception ex) {
+            throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+        }
+
+        return sparseCheckoutPaths;
     }
 
 

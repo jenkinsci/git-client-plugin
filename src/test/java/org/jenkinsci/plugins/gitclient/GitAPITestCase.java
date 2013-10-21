@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -176,7 +177,7 @@ public abstract class GitAPITestCase extends TestCase {
         return new WorkingArea(x.repo);
     }
 
-    
+
 
     @Override
     protected void setUp() throws Exception {
@@ -539,6 +540,83 @@ public abstract class GitAPITestCase extends TestCase {
                         "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
                 r.toString()
         );
+    }
+
+    @NotImplementedInJGit
+    public void test_sparse_checkout() throws Exception {
+        // Create a repo for cloning purpose
+        w.init();
+        w.commit("init");
+        w.file("dir1").mkdir();
+        w.touch("dir1/file1");
+        w.file("dir2").mkdir();
+        w.touch("dir2/file2");
+        w.file("dir3").mkdir();
+        w.touch("dir3/file3");
+        w.add("dir1/file1");
+        w.add("dir2/file2");
+        w.add("dir3/file3");
+        w.commit("commit");
+
+        // Clone it
+        WorkingArea workingArea = clone(w.repoPath());
+
+        workingArea.git.sparseCheckout(Lists.newArrayList("dir1"));
+        assertTrue(workingArea.exists("dir1"));
+        assertFalse(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.sparseCheckout(Lists.newArrayList("dir2"));
+        assertFalse(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.sparseCheckout(Lists.newArrayList("dir1", "dir2"));
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.sparseCheckout(Collections.<String>emptyList());
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertTrue(workingArea.exists("dir3"));
+    }
+
+    @NotImplementedInJGit
+    public void test_retrieve_sparse_checkout_paths() throws Exception {
+        w.init();
+        w.commit("init");
+        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
+
+        w.cmd("git config core.sparseCheckout true");
+        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
+
+        w.cmd("git config core.sparseCheckout false");
+        List<String> expectedPaths = Lists.newArrayList("path1", "path2");
+        File sparseCheckoutFile = w.file(CliGitAPIImpl.SPARSE_CHECKOUT_FILE_PATH);
+        PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+        for(String path : expectedPaths) {
+            writer.println(path);
+        }
+        writer.close();
+        assertTrue(w.git.retrieveSparseCheckoutPaths().isEmpty());
+
+        w.cmd("git config core.sparseCheckout true");
+        assertEquals(expectedPaths, w.git.retrieveSparseCheckoutPaths());
+    }
+
+    public void test_clone_no_checkout() throws Exception {
+        // Create a repo for cloning purpose
+        WorkingArea repoToClone = new WorkingArea();
+        repoToClone.init();
+        repoToClone.commit("init");
+        repoToClone.touch("file1");
+        repoToClone.add("file1");
+        repoToClone.commit("commit");
+
+        // Clone it with no checkout
+        w.git.clone_().url(repoToClone.repoPath()).repositoryName("origin").noCheckout().execute();
+        assertFalse(w.exists("file1"));
     }
 
     public void test_hasSubmodules() throws Exception {

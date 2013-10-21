@@ -20,4 +20,9 @@ public interface CloneCommand extends GitCommand {
     CloneCommand shared();
 
     CloneCommand reference(String reference);
+
+    /**
+     * When we just need to clone repository without populating the workspace (for instance when sparse checkouts are used)
+     */
+    CloneCommand noCheckout();
 }
