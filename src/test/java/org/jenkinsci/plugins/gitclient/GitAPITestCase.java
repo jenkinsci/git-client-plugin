@@ -842,4 +842,18 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertEquals("old",FileUtils.readFileToString(w.file("foo")));
     }
+
+    public void test_checkoutBranchFailure() throws Exception {
+        w = clone(localMirror());
+        File lock = new File(w.repo, ".git/index.lock");
+        try {
+            FileUtils.touch(lock);
+            w.git.checkoutBranch("somebranch", "master");
+            fail();
+        } catch (GitException e) {
+            // expected
+        } finally {
+            lock.delete();
+        }
+    }
 }

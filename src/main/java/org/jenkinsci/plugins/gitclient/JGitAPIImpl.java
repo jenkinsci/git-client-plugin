@@ -21,6 +21,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
@@ -231,6 +232,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             checkout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        } catch (JGitInternalException e) {
+            // Making consistent with CliGitAPIImpl
+            throw new GitException(e.getMessage());
         }
     }
 
