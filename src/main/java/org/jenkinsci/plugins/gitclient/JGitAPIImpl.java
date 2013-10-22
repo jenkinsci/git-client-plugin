@@ -21,6 +21,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
@@ -83,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
@@ -198,6 +200,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
+            } catch (JGitInternalException e) {
+                if (Pattern.matches("Cannot lock.+", e.getMessage())){
+                    throw new GitException("Could not checkout " + ref, e);
+                } else {
+                    throw e;
+                }
             }
         }
     }
