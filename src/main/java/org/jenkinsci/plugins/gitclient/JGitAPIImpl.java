@@ -84,6 +84,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
@@ -199,6 +200,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
+            } catch (JGitInternalException e) {
+                if (Pattern.matches("Cannot lock.+", e.getMessage())){
+                    throw new GitException("Could not checkout " + ref, e);
+                } else {
+                    throw e;
+                }
             }
         }
     }
@@ -232,9 +239,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             checkout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
-        } catch (JGitInternalException e) {
-            // Making consistent with CliGitAPIImpl
-            throw new GitException(e.getMessage());
         }
     }
 
