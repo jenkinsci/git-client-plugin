@@ -17,7 +17,9 @@ import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
 import org.apache.commons.httpclient.auth.AuthScope;
+import org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory;
 import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
@@ -41,10 +43,17 @@ import java.util.regex.Pattern;
 /**
  * Implementation class using command line CLI ran as external command.
  * <b>
- * For internal use only, dont use directly. See {@link Git}
+ * For internal use only, don't use directly. See {@link Git}
  * </b>
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
+
+    static {
+        if (Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL")) {
+            Protocol.registerProtocol("https",
+                new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
+        }
+    }
 
     Launcher launcher;
     TaskListener listener;
