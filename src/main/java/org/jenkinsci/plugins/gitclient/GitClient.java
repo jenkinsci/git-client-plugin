@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.lib.ObjectId;
@@ -380,4 +381,6 @@ public interface GitClient {
     String describe(String commitIsh) throws GitException, InterruptedException;
 
     void setCredentials(StandardUsernameCredentials cred);
+
+    void setProxy(ProxyConfiguration proxy);
 }

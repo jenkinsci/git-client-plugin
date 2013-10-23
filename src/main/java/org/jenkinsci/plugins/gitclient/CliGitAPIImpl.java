@@ -9,6 +9,8 @@ import hudson.*;
 import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
+import hudson.remoting.Callable;
+import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
 import hudson.util.Secret;
@@ -37,6 +39,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -1368,7 +1371,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
 
-            ProxyConfiguration proxy = Jenkins.getInstance().proxy;
             if (proxy != null) {
                 client.getHostConfiguration().setProxy(proxy.name, proxy.port);
                 client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
