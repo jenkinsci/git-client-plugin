@@ -1238,6 +1238,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
 
+    public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
+        args.add("-h");
+
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) cred = defaultCredentials;
+
+        String urlWithCrendentials = getURLWithCrendentials(url, cred);
+        args.add(urlWithCrendentials);
+        String result = launchCommandWithCredentials(args, null, cred, urlWithCrendentials, url);
+
+        Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
+        String[] lines = result.split("\n");
+        for (String line : lines) {
+            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
+            heads.put(line.substring(41), ObjectId.fromString(result.substring(0, 40)));
+        }
+        return heads;
+    }
+
     public ObjectId getHeadRev(String url, String branch) throws GitException, InterruptedException {
         String[] branchExploded = branch.split("/");
         branch = branchExploded[branchExploded.length-1];
@@ -1368,7 +1388,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 client.getState().setCredentials(AuthScope.ANY, defaultcreds);
             }
 
-            ProxyConfiguration proxy = Jenkins.getInstance().proxy;
+            ProxyConfiguration proxy = Jenkins.getInstance() != null ? Jenkins.getInstance().proxy : null; // null when running unit tests
             if (proxy != null) {
                 client.getHostConfiguration().setProxy(proxy.name, proxy.port);
                 client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));

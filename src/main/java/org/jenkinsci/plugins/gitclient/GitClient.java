@@ -22,6 +22,7 @@ import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -260,6 +261,8 @@ public interface GitClient {
 
     // --- lookup revision
 
+    Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException;
+
     ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException;
 
     /**
@@ -380,4 +383,5 @@ public interface GitClient {
     String describe(String commitIsh) throws GitException, InterruptedException;
 
     void setCredentials(StandardUsernameCredentials cred);
+
 }

@@ -375,6 +375,30 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         fetch(remoteName, new RefSpec[] {refspec});
     }
 
+    public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
+        Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
+        try {
+            Repository repo = openDummyRepository();
+            final Transport tn = Transport.open(repo, new URIish(url));
+            tn.setCredentialsProvider(getProvider());
+            final FetchConnection c = tn.openFetch();
+            try {
+                for (final Ref r : c.getRefs()) {
+                    heads.put(r.getName(), r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
+                }
+            } finally {
+                c.close();
+                tn.close();
+                repo.close();
+            }
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (URISyntaxException e) {
+            throw new GitException(e);
+        }
+        return heads;
+    }
+
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
             if (!branch.startsWith(R_HEADS))

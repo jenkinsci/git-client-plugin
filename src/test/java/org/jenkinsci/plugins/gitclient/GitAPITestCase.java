@@ -28,6 +28,7 @@ import java.io.*;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -677,6 +678,13 @@ public abstract class GitAPITestCase extends TestCase {
             // expected
         }
     }
+
+    public void test_getHeadRev() throws Exception {
+        Map<String,ObjectId> heads = w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git");
+        System.out.println(heads);
+        assertTrue(heads.containsKey("refs/heads/master"));
+    }
+
 
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());

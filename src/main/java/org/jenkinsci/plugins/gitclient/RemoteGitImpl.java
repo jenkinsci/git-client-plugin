@@ -34,6 +34,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -356,6 +357,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException {
         return proxy.getTagNames(tagPattern);
+    }
+
+    public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
+        return proxy.getHeadRev(url);
     }
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException {
