@@ -1,20 +1,25 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.jenkins.plugins.sshagent.RemoteAgent;
-import com.cloudbees.jenkins.plugins.sshagent.RemoteAgentFactory;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.*;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Functions;
+import hudson.Launcher;
 import hudson.Launcher.LocalLauncher;
+import hudson.Util;
 import hudson.model.TaskListener;
-import hudson.plugins.git.*;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
 import hudson.util.Secret;
-import jenkins.model.Jenkins;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
@@ -38,8 +43,14 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -886,35 +897,59 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
                                                 String urlWithCrendentials, String safeurl) throws GitException, InterruptedException {
-        RemoteAgent agent = null;
+        File key = null;
+        File ssh = null;
+        EnvVars env = environment;
         try {
             if (credentials != null && credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
+                listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
-                for (RemoteAgentFactory factory : Jenkins.getInstance().getExtensionList(RemoteAgentFactory.class)) {
-                    if (factory.isSupported(launcher, listener)) {
-                        try {
-                            agent = factory.start(launcher, listener);
-                            for (String key : sshUser.getPrivateKeys()) {
-                                agent.addIdentity(key, Secret.toString(sshUser.getPassphrase()), sshUser.getId());
-                            }
-                            break;
-                        } catch (Throwable throwable) {
-                            throwable.printStackTrace(listener.getLogger());
-                        }
-                    }
-                }
+                key = createSshKeyFile(key, sshUser);
+                ssh = createGitSSH(key, ssh);
 
+                env = new EnvVars(env);
+                env.put("GIT_SSH", ssh.getAbsolutePath());
             }
 
             String command = StringUtils.join(args.toCommandArray(), " ");
             if (urlWithCrendentials != null && safeurl != null) {
                 command = command.replace(urlWithCrendentials, safeurl);
             }
-            return launchCommandIn(args, workDir, command);
+            return launchCommandIn(args, workDir, command, env);
+        } catch (IOException e) {
+            throw new GitException("Failed to setup ssh credentials", e);
         } finally {
-            if (agent != null) agent.stop();
+            if (key != null) key.delete();
+            if (ssh != null) ssh.delete();
+
         }
+    }
+
+    private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
+        key = File.createTempFile("ssh", "key");
+        PrintWriter w = new PrintWriter(key);
+        List<String> privateKeys = SlaveComputer.getChannelToMaster().call(new CliGitAPIImpl.GetPrivateKeys(sshUser));
+        for (String s : privateKeys) {
+            w.println(s);
+        }
+        w.close();
+        new FilePath(key).chmod(0400);
+        return key;
+    }
+
+    private File createGitSSH(File key, File ssh) throws IOException {
+        PrintWriter w;
+
+        ssh = File.createTempFile("ssh", ".exe");
+        w = new PrintWriter(ssh);
+        if (File.pathSeparatorChar != ';') {
+            w.println("#!/bin/sh");
+        }
+        w.println("ssh -i \"" + key.getAbsolutePath() + "\" \"$@\"");
+        w.close();
+        ssh.setExecutable(true);
+        return ssh;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
@@ -922,10 +957,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, String publicCommand) throws GitException, InterruptedException {
+        return launchCommandIn(args, workDir, publicCommand, environment);
+    }
+
+    private String launchCommandIn(ArgumentListBuilder args, File workDir, String publicCommand, EnvVars env) throws GitException, InterruptedException {
         ByteArrayOutputStream fos = new ByteArrayOutputStream();
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
+        EnvVars environment = new EnvVars(env);
         environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo " : "echo ");
         try {
 
@@ -1422,5 +1462,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             IOUtils.closeQuietly(r);
         }
         return null;
+    }
+
+    private static class GetPrivateKeys implements Callable<List<String>, RuntimeException> {
+        private final SSHUserPrivateKey sshUser;
+
+        public GetPrivateKeys(SSHUserPrivateKey sshUser) {
+            this.sshUser = sshUser;
+        }
+
+        public List<String> call() throws RuntimeException {
+            return sshUser.getPrivateKeys();
+        }
     }
 }
