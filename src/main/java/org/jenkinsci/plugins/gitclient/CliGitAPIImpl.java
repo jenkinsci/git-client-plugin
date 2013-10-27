@@ -1416,13 +1416,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
             }
 
+            List<String> candidates = new ArrayList<String>();
+            candidates.add(url + "/info/refs"); // dump-http
+            candidates.add(url + "/info/refs?service=git-upload-pack"); // smart-http
+            if (!url.endsWith(".git")) {
+                candidates.add(url + ".git/info/refs"); // dump-http
+                candidates.add(url + ".git/info/refs?service=git-upload-pack"); // smart-http
+            }
+
             int status = 0;
             try {
-                // dump-http
-                status = client.executeMethod(new GetMethod(url + "/info/refs"));
-                if (status != 200)
-                    // smart-http
-                    status = client.executeMethod(new GetMethod(url + "/info/refs?service=git-upload-pack"));
+                for (String candidate : candidates) {
+                    status = client.executeMethod(new GetMethod(candidate));
+                    if (status == 200) break;
+                }
+
                 if (status != 200)
                     throw new GitException("Failed to connect to " + u.toString()
                         + (cred != null ? " using credentials " + cred.getDescription() : "" )
