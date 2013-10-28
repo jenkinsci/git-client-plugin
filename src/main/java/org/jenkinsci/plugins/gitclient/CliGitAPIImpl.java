@@ -51,6 +51,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -973,7 +974,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
-            int status = p.join();
+            int status = p.start().joinWithTimeout(TIMEOUT, TimeUnit.MINUTES, listener);
 
             String result = fos.toString();
             if (status != 0) {
@@ -1483,4 +1484,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return sshUser.getPrivateKeys();
         }
     }
+
+    /**
+     * preventive Time-out for git command execution.
+     * <p>
+     * We run git as an external process so can't guarantee it won't hang for whatever reason. Even plugin does its
+     * best to avoid git interactively asking for credentials, but there's a bunch of other cases git may hung.
+     */
+    public static int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
 }
