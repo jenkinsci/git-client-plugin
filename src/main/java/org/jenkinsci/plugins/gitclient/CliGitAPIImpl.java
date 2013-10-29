@@ -1414,7 +1414,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (proxy != null) {
                 client.getHostConfiguration().setProxy(proxy.name, proxy.port);
-                client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
+                if (proxy.getUserName() != null && proxy.getPassword() != null)
+                    client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
             }
 
             List<String> candidates = new ArrayList<String>();
