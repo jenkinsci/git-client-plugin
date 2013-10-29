@@ -167,25 +167,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return submodules;
     }
 
+    public FetchCommand fetch_() {
+        return new FetchCommand() {
+            public URIish url;
+            public List<RefSpec> refspecs;
+            public boolean prune;
+
+            public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
+                this.url = remote;
+                this.refspecs = refspecs;
+                return this;
+            }
+
+            public FetchCommand prune() {
+                this.prune = true;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                listener.getLogger().println(
+                        "Fetching upstream changes from " + url);
+
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("fetch", "-t");
+
+                StandardCredentials cred = credentials.get(url.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+                String urlWithCrendentials = getURLWithCrendentials(url, cred);
+                args.add(urlWithCrendentials);
+
+                if (refspecs != null)
+                    for (RefSpec rs: refspecs)
+                        if (rs != null)
+                            args.add(rs.toString());
+
+                if (prune) args.add("--prune");
+
+                launchCommandWithCredentials(args, workspace, cred, urlWithCrendentials, url.toString());
+            }
+        };
+    }
+
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        listener.getLogger().println(
-                "Fetching upstream changes from " + url);
-
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add("fetch", "-t");
-
-        StandardCredentials cred = credentials.get(url.toPrivateString());
-        if (cred == null) cred = defaultCredentials;
-        String urlWithCrendentials = getURLWithCrendentials(url, cred);
-        args.add(urlWithCrendentials);
-
-        if (refspecs != null)
-            for (RefSpec rs: refspecs)
-                if (rs != null)
-                    args.add(rs.toString());
-
-        launchCommandWithCredentials(args, workspace, cred, urlWithCrendentials, url.toString());
-
+        fetch_().from(url, refspecs).execute();
     }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {

@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -206,6 +205,8 @@ public interface GitClient {
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
+
+    FetchCommand fetch_(); // can't use 'fetch' as legacy IGitAPI already define this method
 
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 

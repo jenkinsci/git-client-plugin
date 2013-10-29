@@ -295,6 +295,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(MergeCommand.class);
     }
 
+    public FetchCommand fetch_() {
+        return command(FetchCommand.class);
+    }
+
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         proxy.fetch(url, refspecs);
     }

@@ -327,26 +327,47 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException {
-        try {
-            Git git = Git.wrap(getRepository());
-            FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
-            fetch.setRemote(url.toString());
-            fetch.setCredentialsProvider(getProvider());
+    public org.jenkinsci.plugins.gitclient.FetchCommand fetch_() {
+        return new org.jenkinsci.plugins.gitclient.FetchCommand() {
+            public URIish url;
+            public List<RefSpec> refspecs;
 
-            // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
-            List<RefSpec> refSpecs = new ArrayList<RefSpec>();
-            refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
-            if (refspecs != null)
-                for (RefSpec rs: refspecs)
-                    if (rs != null)
-                        refSpecs.add(rs);
-            fetch.setRefSpecs(refSpecs);
+            public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
+                this.url = remote;
+                this.refspecs = refspecs;
+                return this;
+            }
 
-            fetch.call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        }
+            public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
+                throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    Git git = Git.wrap(getRepository());
+                    FetchCommand fetch = git.fetch().setTagOpt(TagOpt.FETCH_TAGS);
+                    fetch.setRemote(url.toString());
+                    fetch.setCredentialsProvider(getProvider());
+
+                    // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
+                    List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+                    refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+                    if (refspecs != null)
+                        for (RefSpec rs: refspecs)
+                            if (rs != null)
+                                refSpecs.add(rs);
+                    fetch.setRefSpecs(refSpecs);
+
+                    fetch.call();
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                }
+            }
+        };
+    }
+
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+        fetch_().from(url, refspecs).execute();
     }
 
     public void fetch(String remoteName, RefSpec... refspec) throws GitException {
