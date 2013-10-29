@@ -4,7 +4,7 @@ import com.cloudbees.jenkins.plugins.sshagent.RemoteAgent;
 import com.cloudbees.jenkins.plugins.sshagent.RemoteAgentFactory;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.*;
 import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
@@ -605,7 +605,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
 
-        url = getURLWithCrendentials(url, (UsernamePasswordCredentialsImpl) cred);
+        url = getURLWithCrendentials(url, (StandardUsernamePasswordCredentials) cred);
         launchCommand( "config", "remote."+name+".url", url );
     }
 
@@ -1366,8 +1366,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             .setHost(u.getHost())
             .setPort(u.getPort())
             .setPath(u.getPath());
-        if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
-            UsernamePasswordCredentialsImpl up = (UsernamePasswordCredentialsImpl) cred;
+        if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
             uri = uri.setUser(up.getUsername())
                      .setPass(Secret.toString(up.getPassword()));
         }
