@@ -55,6 +55,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.commons.httpclient.params.HttpMethodParams.USER_AGENT;
+
 /**
  * Implementation class using command line CLI ran as external command.
  * <b>
@@ -1453,7 +1455,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             int status = 0;
             try {
                 for (String candidate : candidates) {
-                    status = client.executeMethod(new GetMethod(candidate));
+                    GetMethod get = new GetMethod(candidate);
+                    get.setFollowRedirects(true);
+                    get.getParams().setParameter(USER_AGENT, "git/1.7.0");
+                    status = client.executeMethod(get);
                     if (status == 200) break;
                 }
 
