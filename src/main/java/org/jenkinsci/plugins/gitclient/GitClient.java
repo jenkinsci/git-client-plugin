@@ -17,6 +17,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
+import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.OutputStream;
@@ -180,7 +181,7 @@ public interface GitClient {
      * For compatibility reasons, the order of the parameter is different from {@link #checkout(String, String)}.
      * @since 1.0.6
      */
-    void checkoutBranch(String branch, String ref) throws GitException, InterruptedException;
+    void checkoutBranch(@CheckForNull String branch, String ref) throws GitException, InterruptedException;
 
 
     /**

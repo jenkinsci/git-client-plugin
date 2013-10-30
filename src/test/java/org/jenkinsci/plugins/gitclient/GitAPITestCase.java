@@ -813,6 +813,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("refs/heads/foo",head.getTarget().getName());
     }
 
+    @Bug(20153)
+    public void test_checkoutBranch_null() throws Exception {
+        w.init();
+        w.commit("c1");
+        String sha1 = w.revParse("HEAD").name();
+        w.commit("c2");
+
+        w.git.checkoutBranch(null, sha1);
+
+        assertEquals(w.head(),w.revParse(sha1));
+
+        Ref head = w.repo().getRef("HEAD");
+        assertFalse(head.isSymbolic());
+    }
+
     private String formatBranches(List<Branch> branches) {
         Set<String> names = new TreeSet<String>();
         for (Branch b : branches) {

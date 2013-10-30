@@ -30,16 +30,8 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.lib.RefUpdate.Result;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -224,7 +216,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public void checkoutBranch(String branch, String ref) throws GitException {
         try {
-            RefUpdate refUpdate = db().updateRef(R_HEADS + branch);
+            RefUpdate refUpdate =
+                branch == null ? db().updateRef(Constants.HEAD, true)
+                               : db().updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(db().resolve(ref));
             switch (refUpdate.forceUpdate()) {
             case NOT_ATTEMPTED:
@@ -233,12 +227,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             case REJECTED_CURRENT_BRANCH:
             case IO_FAILURE:
             case RENAMED:
-                throw new GitException("Could not update " + branch + " to " + ref);
+                throw new GitException("Could not update " + (branch!= null ? branch : "") + " to " + ref);
             }
 
-            checkout(branch);
+            if (branch != null) checkout(branch);
+
         } catch (IOException e) {
-            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+            throw new GitException("Could not checkout " + (branch!= null ? branch : "") + " with start point " + ref, e);
         }
     }
 
