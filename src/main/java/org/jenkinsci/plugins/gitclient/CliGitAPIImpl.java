@@ -933,7 +933,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
                 key = createSshKeyFile(key, sshUser);
-                ssh = createGitSSH(key, ssh);
+                ssh = createGitSSH(key);
 
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
@@ -965,15 +965,37 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return key;
     }
 
-    private File createGitSSH(File key, File ssh) throws IOException {
-        PrintWriter w;
+    private File createGitSSH(File key) throws IOException {
 
-        ssh = File.createTempFile("ssh", ".exe");
-        w = new PrintWriter(ssh);
-        if (File.pathSeparatorChar != ';') {
-            w.println("#!/bin/sh");
+        if (File.pathSeparatorChar == ';')
+            return createWindowsGitSSH(key);
+        else
+            return createUnixGitSSH(key);
+    }
+
+    private File createWindowsGitSSH(File key) throws IOException {
+        File ssh = File.createTempFile("ssh", ".bat");
+        PrintWriter w;
+        // windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
+        File sshexe = new File(new File(gitExe).getParentFile().getParentFile(), "bin/ssh.exe");
+        if (!sshexe.exists()) {
+            throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
         }
-        w.println("ssh -i \"" + key.getAbsolutePath() + "\" \"$@\"");
+        w = new PrintWriter(ssh);
+        w .println("@echo off");
+        w .println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
+        w.flush();
+        w.close();
+        ssh.setExecutable(true);
+        return ssh;
+    }
+
+    private File createUnixGitSSH(File key) throws IOException {
+        File ssh = File.createTempFile("ssh", ".sh");
+        PrintWriter w;
+        w = new PrintWriter(ssh);
+        w.println("#!/bin/sh");
+        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -o StrictHostKeyChecking=no \"$@\"");
         w.close();
         ssh.setExecutable(true);
         return ssh;
