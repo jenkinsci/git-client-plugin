@@ -926,6 +926,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                                 String urlWithCrendentials, String safeurl) throws GitException, InterruptedException {
         File key = null;
         File ssh = null;
+        File pass = null;
         EnvVars env = environment;
         try {
             if (credentials != null && credentials instanceof SSHUserPrivateKey) {
@@ -933,10 +934,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
                 key = createSshKeyFile(key, sshUser);
-                ssh = createGitSSH(key);
+                if (launcher.isUnix()) {
+                    ssh =  createUnixGitSSH(key);
+                    pass =  createUnixSshAskpass(sshUser);
+                } else {
+                    ssh =  createWindowsGitSSH(key);
+                    pass =  createWindowsSshAskpass(sshUser);
+                }
 
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
+                env.put("SSH_ASKPASS", pass.getAbsolutePath());
             }
 
             String command = StringUtils.join(args.toCommandArray(), " ");
@@ -947,6 +955,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException e) {
             throw new GitException("Failed to setup ssh credentials", e);
         } finally {
+            if (pass != null) pass.delete();
             if (key != null) key.delete();
             if (ssh != null) ssh.delete();
 
@@ -965,23 +974,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return key;
     }
 
-    private File createGitSSH(File key) throws IOException {
-
-        if (File.pathSeparatorChar == ';')
-            return createWindowsGitSSH(key);
-        else
-            return createUnixGitSSH(key);
+    private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
+        File ssh = File.createTempFile("pass", ".bat");
+        PrintWriter w = new PrintWriter(ssh);
+        w .println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+        w.flush();
+        w.close();
+        ssh.setExecutable(true);
+        return ssh;
     }
+
+    private File createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
+        File ssh = File.createTempFile("pass", ".sh");
+        PrintWriter w = new PrintWriter(ssh);
+        w.println("#!/bin/sh");
+        w.println("/bin/echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+        w.close();
+        ssh.setExecutable(true);
+        return ssh;
+    }
+
 
     private File createWindowsGitSSH(File key) throws IOException {
         File ssh = File.createTempFile("ssh", ".bat");
-        PrintWriter w;
         // windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
         File sshexe = new File(new File(gitExe).getParentFile().getParentFile(), "bin/ssh.exe");
         if (!sshexe.exists()) {
             throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
         }
-        w = new PrintWriter(ssh);
+        PrintWriter w = new PrintWriter(ssh);
         w .println("@echo off");
         w .println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
         w.flush();
@@ -992,8 +1013,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixGitSSH(File key) throws IOException {
         File ssh = File.createTempFile("ssh", ".sh");
-        PrintWriter w;
-        w = new PrintWriter(ssh);
+        PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
         w.println("ssh -i \"" + key.getAbsolutePath() + "\" -o StrictHostKeyChecking=no \"$@\"");
         w.close();
