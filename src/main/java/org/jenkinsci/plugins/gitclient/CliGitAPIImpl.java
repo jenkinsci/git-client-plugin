@@ -977,7 +977,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("ssh", ".bat");
         PrintWriter w;
         // windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
-        File sshexe = new File(new File(gitExe).getParentFile().getParentFile(), "bin/ssh.exe");
+
+        String progFiles = System.getenv("ProgramFiles");
+        String sshPath = "/Git/bin/ssh.exe";
+        File sshexe = new File(progFiles + sshPath);
+        if (!sshexe.exists()) {
+          // try the (x86) version for 64-bit Windows builds
+          sshexe = new File(progFiles + " (x86)" + sshPath);
+        }
+
         if (!sshexe.exists()) {
             throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
         }
