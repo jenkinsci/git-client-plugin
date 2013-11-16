@@ -1261,6 +1261,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId getHeadRev(String url, String branch) throws GitException, InterruptedException {
+        if (branch.startsWith("origin/")) {
+            branch = branch.substring("origin/".length());
+        }
         if (!branch.startsWith(REFS_HEADS)) {
             branch = String.format("%s%s", REFS_HEADS, branch.startsWith("/") ? branch.substring(1) : branch);
         }
