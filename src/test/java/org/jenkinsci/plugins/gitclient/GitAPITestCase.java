@@ -890,6 +890,9 @@ public abstract class GitAPITestCase extends TestCase {
         final String headBetaDevelop = w.head().getName();
         
         assertEquals(headDevelop, w.git.getHeadRev(w.repoPath(), "develop").getName());
+        assertEquals(headDevelop, w.git.getHeadRev(w.repoPath(), "origin/develop").getName());
+        
         assertEquals(headBetaDevelop, w.git.getHeadRev(w.repoPath(), "beta/develop").getName());
+        assertEquals(headBetaDevelop, w.git.getHeadRev(w.repoPath(), "origin/beta/develop").getName());
     }
 }
