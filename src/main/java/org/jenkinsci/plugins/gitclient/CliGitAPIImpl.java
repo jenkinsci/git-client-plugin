@@ -1407,7 +1407,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         + " (status = "+status+")");
             } catch (IOException e) {
                 throw new GitException("Failed to connect to " + u.toString()
-                        + (cred != null ? " using credentials " + cred.getDescription() : "" ));
+                        + (cred != null ? " using credentials " + cred.getDescription() : "" ), e);
             } catch (IllegalArgumentException e) {
                 throw new GitException("Invalid URL " + u.toString());
             }
