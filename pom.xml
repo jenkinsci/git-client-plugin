@@ -7,7 +7,7 @@
   </parent>
 
   <artifactId>git-client</artifactId>
-  <version>1.4.5-SNAPSHOT</version>
+  <version>1.5.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
@@ -93,6 +93,12 @@
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
       <version>3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.8</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
