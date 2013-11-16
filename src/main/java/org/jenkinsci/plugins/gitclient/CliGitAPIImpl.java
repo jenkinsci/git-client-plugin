@@ -1390,9 +1390,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             ProxyConfiguration proxy = Jenkins.getInstance() != null ? Jenkins.getInstance().proxy : null; // null when running unit tests
             if (proxy != null) {
-                client.getHostConfiguration().setProxy(proxy.name, proxy.port);
-                client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
-            }
+            	
+				boolean isProxyUsed = true;
+
+				for (Pattern noProxyHostPattern : proxy.getNoProxyHostPatterns()) {
+					if (noProxyHostPattern.matcher(uri.getHost()).matches()) {
+						isProxyUsed = false;
+						break;
+					}
+				}
+				if (isProxyUsed) {
+					client.getHostConfiguration().setProxy(proxy.name, proxy.port);
+					if (proxy.getUserName() != null && proxy.getPassword() != null) {
+						client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
+					}
+				}
+			}
 
             int status = 0;
             try {
