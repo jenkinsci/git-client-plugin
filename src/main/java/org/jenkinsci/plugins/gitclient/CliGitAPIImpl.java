@@ -1512,7 +1512,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Credentials getCredentialsFromNetrc(String host) {
         File home = new File(System.getProperty("user.home"));
         File netrc = new File(home, ".netrc");
-        if (!netrc.exists()) netrc = new File("_netrc"); // windows variant
+        if (!netrc.exists()) netrc = new File(home, "_netrc"); // windows variant
         if (!netrc.exists()) return null;
 
         BufferedReader r = null;
