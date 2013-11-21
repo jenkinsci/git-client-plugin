@@ -1450,7 +1450,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
 
     private enum ParseState {
-        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, END;
+        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, MACDEF, END;
     };
 
     private static final Pattern NETRC_TOKEN = Pattern.compile("(\\S+)");
@@ -1471,6 +1471,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ParseState state = ParseState.START;
             Matcher matcher = NETRC_TOKEN.matcher("");
             while (state != ParseState.END && (line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    if (state == ParseState.MACDEF) {
+                        state = ParseState.REQ_KEY;
+                    }
+                    continue;
+                }
+
                 matcher.reset(line);
                 while (state != ParseState.END && matcher.find()) {
                     String match = matcher.group();
@@ -1513,6 +1521,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     case PASSWORD:
                         password = match;
                         state = ParseState.REQ_KEY;
+                        break;
+
+                    case MACDEF:
+                        // Only way out is an empty line, handled before the find() loop.
                         break;
                     }
                 }
