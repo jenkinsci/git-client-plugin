@@ -1,0 +1,35 @@
+machine 1-srvr-lp.example.com
+	login jenkins
+    password pw4jenkins
+	
+	
+machine 2-ldap-lp.example.com	login ldap  password pw4ldap
+
+	
+	machine 3-jenk-pl.example.com	password   jenkinspwd	 	login	 jenkins    
+
+	
+machine 
+	4-slv1-lp.example.com
+
+login fool
+	login
+		jenk
+    password
+      slavepwd
+	 
+machine 6-slv2-p_.example.com	password passwd login builduser
+
+machine 
+	7-slv3-lp.example.com
+
+	login		jenkins
+    password      pw4jenkins
+
+	account something
+	
+machine 8-empt-__.nowhere.com
+	login master
+	password key
+
+machine 12-last-lp login lager password topaz

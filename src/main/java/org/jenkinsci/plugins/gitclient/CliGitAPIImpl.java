@@ -18,7 +18,6 @@ import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.IOUtils;
 import hudson.util.Secret;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
@@ -1405,7 +1404,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (uri.getUser() != null && uri.getPass() != null) {
                 defaultcreds = new UsernamePasswordCredentials(uri.getUser(), uri.getPass());
             } else {
-                defaultcreds = getCredentialsFromNetrc(uri.getHost());
+                defaultcreds = Netrc.getInstance().getCredentials(uri.getHost());
             }
             if (defaultcreds != null) {
                 client.getParams().setAuthenticationPreemptive(true);
@@ -1448,31 +1447,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return url;
     }
 
-    public static final Pattern NETRC = Pattern.compile("machine (.*) login (.*) password (.*)");
-
-    private Credentials getCredentialsFromNetrc(String host) {
-        File home = new File(System.getProperty("user.home"));
-        File netrc = new File(home, ".netrc");
-        if (!netrc.exists()) netrc = new File("_netrc"); // windows variant
-        if (!netrc.exists()) return null;
-
-        BufferedReader r = null;
-        try {
-            r = new BufferedReader(new FileReader(netrc));
-            String line = null;
-            while ((line = r.readLine()) != null) {
-                Matcher matcher = NETRC.matcher(line);
-                if (!matcher.matches()) continue;
-                if (matcher.group(1).equals(host));
-                    return new UsernamePasswordCredentials(matcher.group(2), matcher.group(3));
-            }
-        } catch (IOException e) {
-            throw new GitException("Invalid $HOME/.netrc file", e);
-        } finally {
-            IOUtils.closeQuietly(r);
-        }
-        return null;
-    }
 
     private static class GetPrivateKeys implements Callable<List<String>, RuntimeException> {
         private final SSHUserPrivateKey sshUser;
