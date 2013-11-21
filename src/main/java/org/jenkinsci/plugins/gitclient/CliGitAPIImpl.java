@@ -1448,7 +1448,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return url;
     }
 
-    public static final Pattern NETRC = Pattern.compile("machine (.*) login (.*) password (.*)");
+
+    private enum ParseState {
+        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, END;
+    };
+
+    private static final Pattern NETRC_TOKEN = Pattern.compile("(\\S+)");
 
     private Credentials getCredentialsFromNetrc(String host) {
         File home = new File(System.getProperty("user.home"));
@@ -1460,12 +1465,63 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             r = new BufferedReader(new FileReader(netrc));
             String line = null;
-            while ((line = r.readLine()) != null) {
-                Matcher matcher = NETRC.matcher(line);
-                if (!matcher.matches()) continue;
-                if (matcher.group(1).equals(host));
-                    return new UsernamePasswordCredentials(matcher.group(2), matcher.group(3));
+            String login = null;
+            String password = null;
+
+            ParseState state = ParseState.START;
+            Matcher matcher = NETRC_TOKEN.matcher("");
+            while (state != ParseState.END && (line = r.readLine()) != null) {
+                matcher.reset(line);
+                while (state != ParseState.END && matcher.find()) {
+                    String match = matcher.group();
+                    switch (state) {
+                    case START:
+                        if ("machine".equals(match)) {
+                            state = ParseState.MACHINE;
+                        }
+                        break;
+
+                    case MACHINE:
+                        if (host.equals(match)) {
+                            state = ParseState.REQ_KEY;
+                        } else {
+                            state = ParseState.START;
+                        }
+                        break;
+
+                    case REQ_KEY:
+                        if ("login".equals(match)) {
+                            state = ParseState.LOGIN;
+                        } else if ("password".equals(match)) {
+                            state = ParseState.PASSWORD;
+                        } else if ("machine".equals(match)) {
+                            state = ParseState.END;
+                        } else {
+                            state = ParseState.REQ_VALUE;
+                        }
+                        break;
+
+                    case REQ_VALUE:
+                        state = ParseState.REQ_KEY;
+                        break;
+
+                    case LOGIN:
+                        login = match;
+                        state = ParseState.REQ_KEY;
+                        break;
+
+                    case PASSWORD:
+                        password = match;
+                        state = ParseState.REQ_KEY;
+                        break;
+                    }
+                }
             }
+
+            if (login != null && password != null) {
+                return new UsernamePasswordCredentials(login, password);
+            }
+
         } catch (IOException e) {
             throw new GitException("Invalid $HOME/.netrc file", e);
         } finally {
