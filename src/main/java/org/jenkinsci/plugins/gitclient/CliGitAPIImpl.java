@@ -18,7 +18,6 @@ import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.IOUtils;
 import hudson.util.Secret;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
@@ -1449,97 +1448,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
 
-    private enum ParseState {
-        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, MACDEF, END;
-    };
-
-    private static final Pattern NETRC_TOKEN = Pattern.compile("(\\S+)");
-
     private Credentials getCredentialsFromNetrc(String host) {
-        File home = new File(System.getProperty("user.home"));
-        File netrc = new File(home, ".netrc");
-        if (!netrc.exists()) netrc = new File("_netrc"); // windows variant
-        if (!netrc.exists()) return null;
+        final Netrc netrc = Netrc.getInstance((String)null);
 
-        BufferedReader r = null;
-        try {
-            r = new BufferedReader(new FileReader(netrc));
-            String line = null;
-            String login = null;
-            String password = null;
-
-            ParseState state = ParseState.START;
-            Matcher matcher = NETRC_TOKEN.matcher("");
-            while (state != ParseState.END && (line = r.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    if (state == ParseState.MACDEF) {
-                        state = ParseState.REQ_KEY;
-                    }
-                    continue;
-                }
-
-                matcher.reset(line);
-                while (state != ParseState.END && matcher.find()) {
-                    String match = matcher.group();
-                    switch (state) {
-                    case START:
-                        if ("machine".equals(match)) {
-                            state = ParseState.MACHINE;
-                        }
-                        break;
-
-                    case MACHINE:
-                        if (host.equals(match)) {
-                            state = ParseState.REQ_KEY;
-                        } else {
-                            state = ParseState.START;
-                        }
-                        break;
-
-                    case REQ_KEY:
-                        if ("login".equals(match)) {
-                            state = ParseState.LOGIN;
-                        } else if ("password".equals(match)) {
-                            state = ParseState.PASSWORD;
-                        } else if ("machine".equals(match)) {
-                            state = ParseState.END;
-                        } else {
-                            state = ParseState.REQ_VALUE;
-                        }
-                        break;
-
-                    case REQ_VALUE:
-                        state = ParseState.REQ_KEY;
-                        break;
-
-                    case LOGIN:
-                        login = match;
-                        state = ParseState.REQ_KEY;
-                        break;
-
-                    case PASSWORD:
-                        password = match;
-                        state = ParseState.REQ_KEY;
-                        break;
-
-                    case MACDEF:
-                        // Only way out is an empty line, handled before the find() loop.
-                        break;
-                    }
-                }
-            }
-
-            if (login != null && password != null) {
-                return new UsernamePasswordCredentials(login, password);
-            }
-
-        } catch (IOException e) {
-            throw new GitException("Invalid $HOME/.netrc file", e);
-        } finally {
-            IOUtils.closeQuietly(r);
-        }
-        return null;
+        return netrc.getCredentials(host);
     }
 
     private static class GetPrivateKeys implements Callable<List<String>, RuntimeException> {
