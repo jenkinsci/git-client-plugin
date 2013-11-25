@@ -195,9 +195,9 @@ public class NetrcTest
     public void testGetCredentialsModifyFile() throws IOException
     {
         String testFilePath = testFilePath_1 + "_m";
-        
+
         copyFileContents(testFilePath_1, testFilePath);
-        
+
         Netrc netrc = Netrc.getInstance(testFilePath);
         assertNotNull(netrc);
 
@@ -215,6 +215,9 @@ public class NetrcTest
         assertCredentials(TestHost.H1_12, netrc.getCredentials(TestHost.H1_12.machine));
 
 
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) { /* ignored */ }
         copyFileContents(testFilePath_1a, testFilePath);
 
 
