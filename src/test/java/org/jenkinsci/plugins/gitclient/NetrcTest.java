@@ -66,12 +66,12 @@ public class NetrcTest
     private void assertCredentials(TestHost host, Credentials cred)
     {
         if (cred == null) {
-            assertTrue("Credentials are null, although both login and password are set. (" + host.login + ":" + host.password + ")",
+            assertTrue("Host." + host.name() + ": Credentials are null, although both login and password are set. (" + host.login + ":" + host.password + ")",
                     host.login == null || host.password == null);
         }
         else {
-            assertEquals(host.login, ((UsernamePasswordCredentials)cred).getUserName());
-            assertEquals(host.password, ((UsernamePasswordCredentials)cred).getPassword());
+            assertEquals("Host." + host.name() + ": Login mismatch.", host.login, ((UsernamePasswordCredentials)cred).getUserName());
+            assertEquals("Host." + host.name() + ": Password mismatch.", host.password, ((UsernamePasswordCredentials)cred).getPassword());
         }
     }
 
@@ -194,7 +194,11 @@ public class NetrcTest
     @Test
     public void testGetCredentialsModifyFile() throws IOException
     {
-        Netrc netrc = Netrc.getInstance(testFilePath_1);
+        String testFilePath = testFilePath_1 + "_m";
+        
+        copyFileContents(testFilePath_1, testFilePath);
+        
+        Netrc netrc = Netrc.getInstance(testFilePath);
         assertNotNull(netrc);
 
         assertCredentials(TestHost.H1_01, netrc.getCredentials(TestHost.H1_01.machine));
@@ -211,7 +215,7 @@ public class NetrcTest
         assertCredentials(TestHost.H1_12, netrc.getCredentials(TestHost.H1_12.machine));
 
 
-        copyFileContents(testFilePath_1a, testFilePath_1);
+        copyFileContents(testFilePath_1a, testFilePath);
 
 
         assertCredentials(TestHost.H1_01, netrc.getCredentials(TestHost.H1_01.machine));
