@@ -1,0 +1,24 @@
+# some comment
+# login username
+# password password
+# account not used
+
+machine builder1.example.com
+	login jenkins
+    password secret
+	
+	
+machine builder2.example.com	login builder	 password buildpass
+
+machine builder3.example.com
+
+machine 
+	builder4.example.com
+
+login fool
+	account barl
+	login
+		jenk
+    password
+      myvoice
+	 
