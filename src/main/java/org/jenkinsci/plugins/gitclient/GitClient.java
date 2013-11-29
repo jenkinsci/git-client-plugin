@@ -68,7 +68,7 @@ public interface GitClient {
      * Adds credentials to be used when there are not url specific credentials defined.
      *
      * @param credentials the credentials to use.
-     * @see {@link #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)}
+     * @see #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)
      * @since 1.2.0
      */
     void addDefaultCredentials(StandardCredentials credentials);
