@@ -1,13 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.eclipse.jgit.lib.ObjectId;
@@ -17,6 +17,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
+import javax.annotation.CheckForNull;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.OutputStream;
@@ -68,7 +69,7 @@ public interface GitClient {
      * Adds credentials to be used when there are not url specific credentials defined.
      *
      * @param credentials the credentials to use.
-     * @see {@link #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)}
+     * @see #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)
      * @since 1.2.0
      */
     void addDefaultCredentials(StandardCredentials credentials);
@@ -181,7 +182,7 @@ public interface GitClient {
      * For compatibility reasons, the order of the parameter is different from {@link #checkout(String, String)}.
      * @since 1.0.6
      */
-    void checkoutBranch(String branch, String ref) throws GitException, InterruptedException;
+    void checkoutBranch(@CheckForNull String branch, String ref) throws GitException, InterruptedException;
 
 
     /**
@@ -206,6 +207,8 @@ public interface GitClient {
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
+
+    FetchCommand fetch_(); // can't use 'fetch' as legacy IGitAPI already define this method
 
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
@@ -384,4 +387,5 @@ public interface GitClient {
 
     void setCredentials(StandardUsernameCredentials cred);
 
+    void setProxy(ProxyConfiguration proxy);
 }

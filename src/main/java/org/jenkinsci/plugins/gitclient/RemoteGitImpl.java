@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import hudson.FilePath;
+import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -295,6 +296,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(MergeCommand.class);
     }
 
+    public FetchCommand fetch_() {
+        return command(FetchCommand.class);
+    }
+
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         proxy.fetch(url, refspecs);
     }
@@ -304,7 +309,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
-        fetch(remoteName, new RefSpec[] {refspec});
+        fetch(remoteName, new RefSpec[]{refspec});
     }
 
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
@@ -532,7 +537,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
-        return getGitAPI().lsTree(treeIsh,recursive);
+        return getGitAPI().lsTree(treeIsh, recursive);
     }
 
     public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
@@ -546,6 +551,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException {
         return getGitAPI().getTagsOnCommit(revName);
     }
+
+    public void setProxy(ProxyConfiguration proxyConfiguration) {
+        proxy.setProxy(proxyConfiguration);
+    }
+
 
     private static final long serialVersionUID = 1L;
 }

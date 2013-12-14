@@ -6,6 +6,7 @@ import hudson.FilePath.FileCallable;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
+import jenkins.model.Jenkins;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -62,7 +63,10 @@ public class Git implements Serializable {
                 return new GitAPI(exe, f, listener, env);
             }
         };
-        return repository!=null ? repository.act(callable) : callable.invoke(null,null);
+        GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
+        if (Jenkins.getInstance() != null)
+            git.setProxy(Jenkins.getInstance().proxy);
+        return git;
     }
 
     // Can be use to force use of the 100% backward-compatible CLI GitClient
