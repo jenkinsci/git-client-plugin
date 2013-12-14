@@ -337,6 +337,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
             }
 
+            public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
+                throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
+            }
+
             public void execute() throws GitException, InterruptedException {
                 try {
                     Git git = Git.wrap(getRepository());
