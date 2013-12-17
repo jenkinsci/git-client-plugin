@@ -32,7 +32,7 @@ class Netrc {
 
     public static Netrc getInstance() {
         File netrc = getDefaultFile();
-        return netrc.exists() ? getInstance(netrc) : null;
+        return getInstance(netrc);
     }
 
     public static Netrc getInstance(@NonNull String netrcPath) {
@@ -63,7 +63,7 @@ class Netrc {
     }
 
     synchronized private Netrc parse() {
-        if (!netrc.exists()) return null;
+        if (!netrc.exists()) return this;
 
         this.hosts.clear();
         this.lastModified = this.netrc.lastModified();
