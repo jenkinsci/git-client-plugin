@@ -140,6 +140,8 @@ public interface GitClient {
      */
     void setRemoteUrl(String name, String url) throws GitException, InterruptedException;
 
+    void addRemoteUrl(String name, String url) throws GitException, InterruptedException;
+
     /**
      * Checks out the specified commit/tag/branch into the workspace.
      * (equivalent of <tt>git checkout <em>branch</em></tt>.)

@@ -260,6 +260,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.setRemoteUrl(name, url);
     }
 
+    public void addRemoteUrl(String name, String url) throws GitException, InterruptedException {
+        proxy.addRemoteUrl(name, url);
+    }
+
     public void checkout(String ref) throws GitException, InterruptedException {
         proxy.checkout(ref);
     }

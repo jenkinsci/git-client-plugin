@@ -658,12 +658,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) cred = defaultCredentials;
-
         launchCommand( "config", "remote."+name+".url", url );
     }
 
+    public void addRemoteUrl(String name, String url) throws GitException, InterruptedException {
+        launchCommand( "config", "--add", "remote."+name+".url", url );
+    }
 
     public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
         String result

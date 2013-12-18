@@ -492,6 +492,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    public void addRemoteUrl(String name, String url) throws GitException, InterruptedException {
+        try {
+            StoredConfig config = db().getConfig();
+
+            List<String> urls = new ArrayList();
+            urls.addAll(Arrays.asList(config.getStringList("remote", name, "url")));
+            urls.add(url);
+
+            config.setStringList("remote", name, "url", urls);
+            config.save();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
 
     public void addNote(String note, String namespace) throws GitException {
         try {
