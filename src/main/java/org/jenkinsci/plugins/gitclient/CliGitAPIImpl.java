@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
@@ -451,7 +452,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private String firstLine(String result) {
+    private @CheckForNull String firstLine(String result) {
         BufferedReader reader = new BufferedReader(new StringReader(result));
         String line;
         try {
@@ -633,9 +634,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @throws GitException if executing the git command fails
      */
-    public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
+    public @CheckForNull String getSubmoduleUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "submodule."+name+".url" );
-        return firstLine(result).trim();
+        return StringUtils.trim(firstLine(result));
     }
 
     /**
@@ -651,9 +652,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         launchCommand( "config", "submodule."+name+".url", url );
     }
 
-    public String getRemoteUrl(String name) throws GitException, InterruptedException {
+    public @CheckForNull String getRemoteUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "remote."+name+".url" );
-        return firstLine(result).trim();
+        return StringUtils.trim(firstLine(result));
     }
 
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
@@ -1109,10 +1110,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     }
 
-    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+    public void push(URIish url, String refspec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        String url = getRemoteUrl(remoteName);
-        args.add("push", url);
+        args.add("push", url.toPrivateASCIIString());
 
         if (refspec != null) {
             args.add(refspec);
@@ -1123,6 +1123,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         launchCommandWithCredentials(args, workspace, cred, url);
         // Ignore output for now as there's many different formats
         // That are possible.
+    }
+
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+        String url = getRemoteUrl(remoteName);
+        if (url == null) {
+            throw new GitException("bad remote name, URL not set in working copy");
+        }
+
+        try {
+            push(new URIish(url), refspec);
+        } catch (URISyntaxException e) {
+            throw new GitException("bad repository URL", e);
+        }
     }
 
     protected Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {

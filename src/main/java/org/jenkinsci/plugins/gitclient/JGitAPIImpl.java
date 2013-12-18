@@ -935,6 +935,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return branches;
     }
 
+    public void push(URIish url, String refspec) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
     public void push(String remoteName, String refspec) throws GitException {
         RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
         try {

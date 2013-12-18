@@ -212,6 +212,8 @@ public interface GitClient {
 
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
+    void push(URIish url, String refspec) throws GitException, InterruptedException;
+
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
     MergeCommand merge();
