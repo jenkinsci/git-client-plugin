@@ -959,8 +959,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
 
-                    String urlWithCrendentials = getGitCrendentialsURL(url, credentials);
-                    store = createGitCrendetialsStore(urlWithCrendentials);
+                    String urlWithCredentials = getGitCrendentialsURL(url, credentials);
+                    store = createGitCredentialsStore(urlWithCredentials);
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --store=\"" + store.getAbsolutePath() + "\"");
                 }
             }
@@ -983,10 +983,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private File createGitCrendetialsStore(String urlWithCrendentials) throws IOException {
+    private File createGitCredentialsStore(String urlWithCredentials) throws IOException {
         File store = File.createTempFile("git", ".credentials");
         PrintWriter w = new PrintWriter(store);
-        w.println(urlWithCrendentials);
+        w.println(urlWithCredentials);
         w.flush();
         w.close();
         return store;
