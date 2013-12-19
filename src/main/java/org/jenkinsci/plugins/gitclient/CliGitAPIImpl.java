@@ -991,7 +991,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (ssh != null) ssh.delete();
             if (store != null) {
                 store.delete();
-                launchCommandIn(workDir, "config", "--local", "--remove-section", "credential.helper");
+                try {
+                    launchCommandIn(workDir, "config", "--local", "--remove-section", "credential.helper");
+                } catch (GitException e) {
+                    listener.getLogger().println("Could not remove the credential.helper section from the git configuration");
+                }
             }
         }
     }
