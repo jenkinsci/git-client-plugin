@@ -975,7 +975,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (store != null) {
                 store.delete();
                 try {
-                    launchCommandIn(workDir, "config", "--local", "--unset", "credential.helper");
+                    launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
                 } catch (GitException e) {
                     listener.getLogger().println("Could not remove the credential.helper section from the git configuration");
                 }
