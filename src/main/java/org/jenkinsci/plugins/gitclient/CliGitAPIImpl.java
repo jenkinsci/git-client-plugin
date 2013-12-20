@@ -978,9 +978,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     String urlWithCredentials = getGitCrendentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
-                    // git cli needs forward slashes for the store path
-                    String path = store.getAbsolutePath().replace('\\','/');
-                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + path + "\\\"");
+                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + store.getAbsolutePath() + "\\\"");
                 }
             }
 
@@ -1005,7 +1003,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private File createGitCredentialsStore(String urlWithCredentials) throws IOException {
         File store = File.createTempFile("git", ".credentials");
         PrintWriter w = new PrintWriter(store);
-        w.println(urlWithCredentials);
+        w.print(urlWithCredentials);
         w.flush();
         w.close();
         return store;
