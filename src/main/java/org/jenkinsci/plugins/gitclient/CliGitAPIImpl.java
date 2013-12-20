@@ -961,7 +961,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     String urlWithCredentials = getGitCrendentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
-                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --store=\"" + store.getAbsolutePath() + "\"");
+                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + store.getAbsolutePath() + "\\\"");
                 }
             }
 
@@ -975,7 +975,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (store != null) {
                 store.delete();
                 try {
-                    launchCommandIn(workDir, "config", "--local", "--unset", "credential.helper");
+                    launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
                 } catch (GitException e) {
                     listener.getLogger().println("Could not remove the credential.helper section from the git configuration");
                 }
@@ -986,7 +986,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private File createGitCredentialsStore(String urlWithCredentials) throws IOException {
         File store = File.createTempFile("git", ".credentials");
         PrintWriter w = new PrintWriter(store);
-        w.println(urlWithCredentials);
+        w.print(urlWithCredentials);
         w.flush();
         w.close();
         return store;
@@ -1537,7 +1537,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                      .setPass(Secret.toString(up.getPassword()));
         }
 
-        return uri.toString();
+        // use toPrivateString to include the password too
+        return uri.toPrivateString();
     }
 
     /**
