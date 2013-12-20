@@ -961,7 +961,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     String urlWithCredentials = getGitCrendentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
-                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --store=\"" + store.getAbsolutePath() + "\"");
+                    // git cli needs forward slashes for the store path
+                    String path = store.getAbsolutePath().replace('\\','/');
+                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + path + "\\\"");
                 }
             }
 
@@ -1537,7 +1539,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                      .setPass(Secret.toString(up.getPassword()));
         }
 
-        return uri.toString();
+        // use toPrivateString to include the password too
+        return uri.toPrivateString();
     }
 
     /**
