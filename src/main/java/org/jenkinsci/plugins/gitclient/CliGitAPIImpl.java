@@ -976,7 +976,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
 
-                    String urlWithCredentials = getGitCrendentialsURL(url, credentials);
+                    String urlWithCredentials = getGitCredentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + store.getAbsolutePath() + "\\\"");
                 }
@@ -1530,15 +1530,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Compute the URL to be used by <a href="https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html">git-credentials-store</a>
      */
-    private String getGitCrendentialsURL(String url, StandardCredentials cred) {
+    private String getGitCredentialsURL(String url, StandardCredentials cred) {
         try {
-            return getGitCrendentialsURL(new URIish(url), cred);
+            return getGitCredentialsURL(new URIish(url), cred);
         } catch (URISyntaxException e) {
             throw new GitException("invalid repository URL " + url, e);
         }
     }
 
-    private String getGitCrendentialsURL(URIish u, StandardCredentials cred) {
+    private String getGitCredentialsURL(URIish u, StandardCredentials cred) {
         String scheme = u.getScheme();
         // gitcredentials format is sheme://user:password@hostname
         URIish uri = new URIish()
