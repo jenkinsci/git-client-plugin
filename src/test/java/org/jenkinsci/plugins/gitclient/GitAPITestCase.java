@@ -715,7 +715,7 @@ public abstract class GitAPITestCase extends TestCase {
             }
         });
 
-        assertTrue(paths.contains(".gitignore"));
+        assertTrue("Paths is: " + paths, paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
         assertTrue(paths.contains("pom.xml"));
         assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
