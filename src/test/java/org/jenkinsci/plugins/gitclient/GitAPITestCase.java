@@ -21,6 +21,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.ChangelogCommand;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -685,6 +686,31 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(heads.containsKey("refs/heads/master"));
     }
 
+    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
+    {
+        ChangelogCommand changelogCommand = w.git.changelog();
+        changelogCommand.max(1);
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
+        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
+    }
+
+    /* Is implemented in JGit, but returns no results.  Temporarily
+     * marking this test as not implemented in JGit so that its
+     * failure does not distract from other development.
+     */
+    @NotImplementedInJGit
+    public void test_changelog() throws Exception {
+        w = clone(localMirror());
+        String sha1Prev = w.revParse("HEAD").name();
+        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
+        w.add("changelog-file");
+        w.commit("changelog-commit-message");
+        String sha1 = w.revParse("HEAD").name();
+        check_changelog_sha1(sha1, "master");
+    }
 
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());
