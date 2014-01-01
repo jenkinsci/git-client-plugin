@@ -729,6 +729,25 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(paths.contains("README.md"));
     }
 
+    private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException
+    {
+        StringWriter writer = new StringWriter();
+        w.git.changelog(sha1Begin, sha1End, writer);
+        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
+        assertEquals("Wrong bounded changelog line 1 on branch " + branchName, "commit " + sha1End, splitLog[0]);
+        assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer.toString(), writer.toString().contains(sha1Begin));
+    }
+
+    public void test_changelog_bounded() throws Exception {
+        w = clone(localMirror());
+        String sha1Prev = w.revParse("HEAD").name();
+        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
+        w.add("changelog-file");
+        w.commit("changelog-commit-message");
+        String sha1 = w.revParse("HEAD").name();
+        check_bounded_changelog_sha1(sha1Prev, sha1, "master");
+    }
+
     public void test_show_revision_for_single_commit() throws Exception {
         w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
