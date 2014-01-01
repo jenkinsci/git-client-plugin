@@ -804,6 +804,33 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
     }
 
+    public void test_checkout_null_ref() throws Exception {
+        w = clone(localMirror());
+        String branches = w.cmd("git branch -l");
+        assertTrue("master branch not current branch in " + branches, branches.contains("* master"));
+        final String branchName = "test-checkout-null-ref-branch-" + java.util.UUID.randomUUID().toString();
+        branches = w.cmd("git branch -l");
+        assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
+        w.git.checkout(null, branchName);
+        branches = w.cmd("git branch -l");
+        assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
+    }
+
+    public void test_checkout() throws Exception {
+        w = clone(localMirror());
+        String branches = w.cmd("git branch -l");
+        assertTrue("master branch not current branch in " + branches, branches.contains("* master"));
+        final String branchName = "test-checkout-branch-" + java.util.UUID.randomUUID().toString();
+        branches = w.cmd("git branch -l");
+        assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
+        w.git.checkout("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea", branchName); // git-client-1.6.0
+        branches = w.cmd("git branch -l");
+        assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
+        String sha1 = w.revParse("HEAD").name();
+        String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
+        assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
+    }
+
     @Bug(19108)
     public void test_checkoutBranch() throws Exception {
         w.init();
