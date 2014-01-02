@@ -224,6 +224,20 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
 
+    /** Is implemented in JGit, but returns an empty URL for this
+     * case.  Test is disabled for JGit, since it is a deprecated API
+     * that we can hope is not used with the newer JGit
+     * implementation.
+     */
+    @NotImplementedInJGit
+    @Deprecated
+    public void test_getRemoteURL_two_args() throws Exception {
+        w.init();
+        w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
+        w.cmd("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
+        String remoteUrl = w.igit().getRemoteUrl("origin", ".git");
+        assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
+    }
 
     public void test_getRemoteURL() throws Exception {
         w.init();
