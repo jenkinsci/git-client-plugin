@@ -711,7 +711,7 @@ public abstract class GitAPITestCase extends TestCase {
         });
         Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
             public String apply(String diff) {
-                return diff.substring(diff.indexOf('\t')+1);
+                return diff.substring(diff.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
             }
         });
 
