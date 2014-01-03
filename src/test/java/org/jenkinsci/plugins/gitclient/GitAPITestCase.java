@@ -679,6 +679,25 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Deprecated
+    public void test_merge_refspec() throws Exception {
+        w.init();
+        w.commit("init");
+        w.cmd("git branch branch1");
+        w.cmd("git checkout branch1");
+        w.touch("file1", "content1");
+        w.add("file1");
+        w.commit("commit1-branch1");
+        w.cmd("git branch branch2 master");
+        w.cmd("git checkout branch2");
+        File f = w.touch("file2", "content2");
+        w.add("file2");
+        w.commit("commit2-branch2");
+        assertFalse("file1 exists before merge", w.exists("file1"));
+        w.igit().merge("branch1");
+        assertTrue("file1 does not exist after merge", w.exists("file1"));
+    }
+
     public void test_getHeadRev() throws Exception {
         Map<String,ObjectId> heads = w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git");
         System.out.println(heads);
