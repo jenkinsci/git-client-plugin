@@ -925,6 +925,36 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("refs/heads/foo",head.getTarget().getName());
     }
 
+    public void test_revList_remote_branch() throws Exception {
+        w = clone(localMirror());
+        List<ObjectId> revList = w.git.revList("origin/1.4.x");
+        assertEquals("Wrong list size: " + revList, 267, revList.size());
+        Ref branchRef = w.repo().getRef("origin/1.4.x");
+        assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
+    }
+
+    public void test_revList_tag() throws Exception {
+        w.init();
+        w.commit("c1");
+        Ref commitRefC1 = w.repo().getRef("HEAD");
+        w.tag("t1");
+        Ref tagRefT1 = w.repo().getRef("t1");
+        w.commit("c2");
+        Ref commitRefC2 = w.repo().getRef("HEAD");
+        List<ObjectId> revList = w.git.revList("t1");
+        assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
+        assertEquals("Wrong list size: " + revList, 1, revList.size());
+    }
+
+    public void test_revList_local_branch() throws Exception {
+        w.init();
+        w.commit("c1");
+        w.tag("t1");
+        w.commit("c2");
+        List<ObjectId> revList = w.git.revList("master");
+        assertEquals("Wrong list size: " + revList, 2, revList.size());
+    }
+
     @Bug(20153)
     public void test_checkoutBranch_null() throws Exception {
         w.init();
