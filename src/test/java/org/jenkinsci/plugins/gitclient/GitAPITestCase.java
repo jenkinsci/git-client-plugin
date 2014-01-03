@@ -769,11 +769,11 @@ public abstract class GitAPITestCase extends TestCase {
         });
         Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
             public String apply(String diff) {
-                return diff.substring(diff.indexOf('\t')+1);
+                return diff.substring(diff.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
             }
         });
 
-        assertTrue(paths.contains(".gitignore"));
+        assertTrue("Paths is: " + paths, paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
         assertTrue(paths.contains("pom.xml"));
         assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
