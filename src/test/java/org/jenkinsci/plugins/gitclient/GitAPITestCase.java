@@ -233,12 +233,37 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
 
+    public void test_getRemoteURL_local_clone() throws Exception {
+        w = clone(localMirror());
+        assertEquals("Wrong origin URL", localMirror(), w.git.getRemoteUrl("origin"));
+        String remotes = w.cmd("git remote -v");
+        assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
+    }
+
     public void test_setRemoteURL() throws Exception {
         w.init();
         w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
         w.git.setRemoteUrl("origin", "git@github.com:ndeloof/git-client-plugin.git");
         String remotes = w.cmd("git remote -v");
         assertTrue("remote URL has not been updated", remotes.contains("git@github.com:ndeloof/git-client-plugin.git"));
+    }
+
+    public void test_setRemoteURL_local_clone() throws Exception {
+        w = clone(localMirror());
+        String originURL = "https://github.com/jenkinsci/git-client-plugin.git";
+        w.git.setRemoteUrl("origin", originURL);
+        assertEquals("Wrong origin URL", originURL, w.git.getRemoteUrl("origin"));
+        String remotes = w.cmd("git remote -v");
+        assertTrue("remote URL has not been updated", remotes.contains(originURL));
+    }
+
+    public void test_addRemoteUrl_local_clone() throws Exception {
+        w = clone(localMirror());
+        assertEquals("Wrong origin URL before add", localMirror(), w.git.getRemoteUrl("origin"));
+        String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
+        w.git.addRemoteUrl("upstream", upstreamURL);
+        assertEquals("Wrong upstream URL", upstreamURL, w.git.getRemoteUrl("upstream"));
+        assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
     }
 
     public void test_clean() throws Exception {
