@@ -737,6 +737,40 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file1 does not exist after merge", w.exists("file1"));
     }
 
+    /**
+     * Checks that the ChangelogCommand abort() API does not write
+     * output to the destination.  Does not check that the abort() API
+     * releases resources.
+     *
+     * Annotated as @NotImplementedInJGit because the test fails in
+     * the JGit implementation.  There is an implementation in JGit,
+     * but it does not seem to provide any data when executed.
+     */
+    @NotImplementedInJGit
+    public void test_changelog_abort() throws InterruptedException, IOException
+    {
+        final String logMessage = "changelog-abort-test-commit";
+        w.init();
+        w.touch("file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
+        w.add("file-changelog-abort");
+        w.commit(logMessage);
+        String sha1 = w.revParse("HEAD").name();
+        ChangelogCommand changelogCommand = w.git.changelog();
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+
+        /* Abort the changelog, confirm no content was written */
+        changelogCommand.abort();
+        assertEquals("aborted changelog wrote data", "", writer.toString());
+
+        /* Execute the changelog, confirm expected content was written */
+        changelogCommand = w.git.changelog();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        assertTrue("No log message in " + writer.toString(), writer.toString().contains(logMessage));
+        assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
+    }
+
     public void test_getHeadRev() throws Exception {
         Map<String,ObjectId> heads = w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git");
         System.out.println(heads);

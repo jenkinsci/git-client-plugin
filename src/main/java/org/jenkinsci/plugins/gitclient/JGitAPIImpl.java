@@ -683,10 +683,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            private void closeResources() {
+                walk.dispose();
+                or.release();
+                repo.close();
+            }
+
+            public void abort() {
+                closeResources();
+            }
+
             /** Execute the changelog command.  Assumed that this is
              * only performed once per instance of this object.
              * Resources opened by this ChangelogCommand object are
-             * closed at exit from the execute method.
+             * closed at exit from the execute method.  Either execute
+             * or abort must be called for each ChangelogCommand or
+             * files will remain open.
              */
             public void execute() throws GitException, InterruptedException {
                 PrintWriter pw = new PrintWriter(out,false);
@@ -701,10 +713,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (IOException e) {
                     throw new GitException(e);
                 } finally {
+                    closeResources();
                     pw.flush();
-                    walk.dispose();
-                    or.release();
-                    repo.close();
                 }
             }
         };

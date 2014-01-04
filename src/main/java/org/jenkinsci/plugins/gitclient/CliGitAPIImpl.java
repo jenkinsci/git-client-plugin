@@ -502,6 +502,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public void abort() {
+                /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty=raw");
                 if (n!=null)
