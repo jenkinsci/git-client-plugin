@@ -84,4 +84,17 @@ public interface ChangelogCommand extends GitCommand {
      * Limit the number of changelog entry up to N.
      */
     ChangelogCommand max(int n);
+
+    /**
+     * Abort this ChangelogCommand without executing it, close any
+     * open resources.  The JGit implementation of changelog
+     * calculation opens the git repository and will close it when the
+     * changelog.execute() is processed.  However, there are cases
+     * (like GitSCM.computeChangeLog) which create a changelog and
+     * never call execute().
+     *
+     * Either execute() or abort() must be called for each
+     * ChangelogCommand instance or files will be left open.
+     */
+    void abort();
 }
