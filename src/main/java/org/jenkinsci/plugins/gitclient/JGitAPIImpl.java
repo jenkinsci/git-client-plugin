@@ -8,6 +8,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
@@ -183,7 +184,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not checkout " + ref, e);
             } catch (JGitInternalException e) {
                 if (Pattern.matches("Cannot lock.+", e.getMessage())){
-                    throw new GitException("Could not checkout " + ref, e);
+                    throw new GitLockFailedException("Could not lock repository. Please try again", e);
                 } else {
                     throw e;
                 }
