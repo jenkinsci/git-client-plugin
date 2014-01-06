@@ -14,6 +14,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -1227,7 +1228,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 checkout(ref, branch);
             }
         } catch (GitException e) {
-            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+            if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
+                throw new GitLockFailedException("Could not lock repository. Please try again", e);
+            } else {
+                throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+            }
         }
     }
 

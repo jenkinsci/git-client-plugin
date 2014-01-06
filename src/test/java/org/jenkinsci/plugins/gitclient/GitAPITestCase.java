@@ -8,6 +8,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
@@ -1041,7 +1042,7 @@ public abstract class GitAPITestCase extends TestCase {
             FileUtils.touch(lock);
             w.git.checkoutBranch("somebranch", "master");
             fail();
-        } catch (GitException e) {
+        } catch (GitLockFailedException e) {
             // expected
         } finally {
             lock.delete();
