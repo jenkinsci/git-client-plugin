@@ -58,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.net.ssl.SSLException;
 
 import static org.apache.commons.httpclient.params.HttpMethodParams.USER_AGENT;
 
@@ -1624,6 +1625,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Failed to connect to " + u.toString()
                     + (cred != null ? " using credentials " + cred.getDescription() : "" )
                     + " (status = "+status+")");
+        } catch (SSLException e) {
+            throw new GitException(e.getLocalizedMessage());
         } catch (IOException e) {
             throw new GitException("Failed to connect to " + u.toString()
                     + (cred != null ? " using credentials " + cred.getDescription() : "" ));
