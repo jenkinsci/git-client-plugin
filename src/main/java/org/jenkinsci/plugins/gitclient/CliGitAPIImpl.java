@@ -575,10 +575,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+        submoduleUpdate(recursive, false, null);
+    }
+
+    /**
+     * Reset submodules
+     *
+     * @param shallow if true, will shallow update (requres git>=1.8.4)
+     *
+     * @throws GitException if executing the git command fails
+     */
+    public void submoduleUpdate(boolean recursive, boolean shallow, String reference) throws GitException, InterruptedException {
     	ArgumentListBuilder args = new ArgumentListBuilder();
     	args.add("submodule", "update");
     	if (recursive) {
             args.add("--init", "--recursive");
+        }
+        if (shallow) {
+            args.add("--depth=1");
         }
         if (reference != null && !reference.equals("")) {
             File referencePath = new File(reference);

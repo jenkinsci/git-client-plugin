@@ -138,6 +138,12 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /*
+    public void submoduleUpdate(boolean recursive, boolean shallow, String reference) throws GitException {
+        if (Git.USE_CLI) super.submoduleUpdate(recursive, shallow, reference); else  jgit.submoduleUpdate(recursive, shallow, reference);
+    }
+    */
+
+    /*
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
         return Git.USE_CLI ? super.showRevision(from, to) :  jgit.showRevision(from, to);
     }
