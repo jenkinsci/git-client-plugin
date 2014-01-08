@@ -374,9 +374,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
+                FetchCommand fetch = null;
                 try {
                     repo = getRepository();
-                    FetchCommand fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
+                    fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
 
@@ -393,6 +394,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (GitAPIException e) {
                     throw new GitException(e);
                 } finally {
+                    if (fetch != null && fetch.getRepository() != null) fetch.getRepository().close();
                     if (repo != null) repo.close();
                 }
             }
