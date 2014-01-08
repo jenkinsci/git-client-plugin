@@ -862,6 +862,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException(e);
                 } catch (IOException e) {
                     throw new GitException(e);
+                } finally {
+                    if (base.getRepository() != null) base.getRepository().close();
                 }
             }
         };
