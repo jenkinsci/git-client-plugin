@@ -209,10 +209,88 @@ public abstract class GitAPITestCase extends TestCase {
         temporaryDirectoryAllocator.dispose();
     }
 
-    public void test_initialize_repository() throws Exception {
-        w.git.init();
-        String status = w.cmd("git status");
-        assertTrue("unexpected status " + status, status.contains("On branch master"));
+    private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
+        assertEquals("Wrong remote URL", localMirror(), w.git.getRemoteUrl(repositoryName));
+        String remotes = w.cmd("git remote -v");
+        assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
+    }
+
+    private void check_branches(String expectedBranchName) throws InterruptedException {
+        Set<Branch> branches = w.git.getBranches();
+        Collection names = Collections2.transform(branches, new Function<Branch, String>() {
+            public String apply(Branch branch) {
+                return branch.getName();
+            }
+        });
+        assertTrue(expectedBranchName + " branch not listed in " + names, names.contains(expectedBranchName));
+    }
+
+    /** Clone arguments include:
+     *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
+     *   shallow() - no relevant assertion of success or failure of this argument
+     *   shared() - not implemented on CliGit, not verified on JGit
+     *   reference() - not implemented on JGit, not verified on CliGit
+     *
+     * CliGit requires the w.git.checkout() call otherwise no branch
+     * is checked out.  JGit checks out the master branch by default.
+     * That means JGit is nearer to command line git (in that case)
+     * than CliGit is.
+     */
+    public void test_clone() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("origin", localMirror());
+            w.git.checkout("origin/master", "master");
+        }
+        check_remote_url("origin");
+        check_branches("master");
+    }
+
+    public void test_clone_repositoryName() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("upstream").execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("upstream", localMirror());
+            w.git.checkout("upstream/master", "master");
+        }
+        check_remote_url("upstream");
+        check_branches("master");
+    }
+
+    public void test_clone_shallow() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("origin", localMirror());
+            w.git.checkout("origin/master", "master");
+        }
+        check_remote_url("origin");
+        check_branches("master");
+    }
+
+    /** shared is not implemented in CliGitAPIImpl. */
+    @NotImplementedInCliGit
+    public void test_clone_shared() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("origin", localMirror());
+            w.git.checkout("origin/master", "master");
+        }
+        check_remote_url("origin");
+        check_branches("master");
+    }
+
+    public void test_clone_reference() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").reference(localMirror()).execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("origin", localMirror());
+            w.git.checkout("origin/master", "master");
+        }
+        check_remote_url("origin");
+        check_branches("master");
     }
 
     public void test_detect_commit_in_repo() throws Exception {
