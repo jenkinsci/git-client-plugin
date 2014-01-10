@@ -967,7 +967,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return launchCommandIn(args, workDir, env);
         } catch (IOException e) {
-            throw new GitException("Failed to setup ssh credentials", e);
+            throw new GitException("Failed to setup credentials", e);
         } finally {
             if (pass != null) pass.delete();
             if (key != null) key.delete();
