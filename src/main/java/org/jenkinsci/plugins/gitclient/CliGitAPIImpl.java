@@ -99,26 +99,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private int[] getGitVersion() throws InterruptedException {
-        int minorVer = 1;
-        int majorVer = 6;
+        int majorVer = 1;
+        int minorVer = 6;
+        int microVer = 0;
 
         try {
             String v = firstLine(launchCommand("--version")).trim();
             listener.getLogger().println("git --version\n" + v);
-            Pattern p = Pattern.compile("git version ([0-9]+)\\.([0-9+])\\..*");
+            Pattern p = Pattern.compile("git version ([0-9]+)\\.([0-9+])\\.([0-9+]).*");
             Matcher m = p.matcher(v);
-            if (m.matches() && m.groupCount() >= 2) {
+            if (m.matches() && m.groupCount() >= 3) {
                 try {
                     majorVer = Integer.parseInt(m.group(1));
                     minorVer = Integer.parseInt(m.group(2));
+                    microVer = Integer.parseInt(m.group(3));
                 } catch (NumberFormatException e) { }
             }
         } catch(GitException ex) {
             listener.getLogger().println("Error trying to determine the git version: " + ex.getMessage());
-            listener.getLogger().println("Assuming 1.6");
+            listener.getLogger().println("Assuming 1.6.0");
         }
 
-        return new int[]{majorVer,minorVer};
+        return new int[]{majorVer,minorVer,microVer};
     }
 
     public void init() throws GitException, InterruptedException {
@@ -202,7 +204,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         "Fetching upstream changes from " + url);
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
-                args.add("fetch", "--tags", "--progress");
+                args.add("fetch", "--tags");
+
+                // git fetch --progress was added in 1.7.1.
+                final int[] gitVer = getGitVersion();
+                if (gitVer[0] > 1 ||
+                    (gitVer[0] == 1 && gitVer[1] > 7) ||
+                    (gitVer[0] == 1 && gitVer[1] == 7 && gitVer[2] >= 1)) {
+                    args.add("--progress");
+                }
 
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) cred = defaultCredentials;
