@@ -98,29 +98,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
-    private int[] getGitVersion() throws InterruptedException {
-        int minorVer = 1;
-        int majorVer = 6;
-
-        try {
-            String v = firstLine(launchCommand("--version")).trim();
-            listener.getLogger().println("git --version\n" + v);
-            Pattern p = Pattern.compile("git version ([0-9]+)\\.([0-9+])\\..*");
-            Matcher m = p.matcher(v);
-            if (m.matches() && m.groupCount() >= 2) {
-                try {
-                    majorVer = Integer.parseInt(m.group(1));
-                    minorVer = Integer.parseInt(m.group(2));
-                } catch (NumberFormatException e) { }
-            }
-        } catch(GitException ex) {
-            listener.getLogger().println("Error trying to determine the git version: " + ex.getMessage());
-            listener.getLogger().println("Assuming 1.6");
-        }
-
-        return new int[]{majorVer,minorVer};
-    }
-
     public void init() throws GitException, InterruptedException {
         if (hasGitRepo()) {
             throw new GitException(".git directory already exists! Has it already been initialised?");
