@@ -225,6 +225,35 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
 
+    @Deprecated
+    public void test_lsTree_non_recursive() throws IOException, InterruptedException {
+        w.init();
+        w.touch("file1", "file1 fixed content");
+        w.add("file1");
+        w.commit("commit1");
+        String expectedBlobSHA1 = "3f5a898e0c8ea62362dbf359cf1a400f3cfd46ae";
+        List<IndexEntry> tree = w.igit().lsTree("HEAD", false);
+        assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
+        assertEquals("Wrong number of tree entries", 1, tree.size());
+    }
+
+    @Deprecated
+    public void test_lsTree_recursive() throws IOException, InterruptedException {
+        w.init();
+        w.file("dir1").mkdir();
+        w.touch("dir1/file1", "dir1/file1 fixed content");
+        w.add("dir1/file1");
+        w.touch("file2", "file2 fixed content");
+        w.add("file2");
+        w.commit("commit-dir-and-file");
+        String expectedBlob1SHA1 = "a3ee484019f0576fcdeb48e682fa1058d0c74435";
+        String expectedBlob2SHA1 = "aa1b259ac5e8d6cfdfcf4155a9ff6836b048d0ad";
+        List<IndexEntry> tree = w.igit().lsTree("HEAD", true);
+        assertEquals("Wrong blob 1 sha1", expectedBlob1SHA1, tree.get(0).getObject());
+        assertEquals("Wrong blob 2 sha1", expectedBlob2SHA1, tree.get(1).getObject());
+        assertEquals("Wrong number of tree entries", 2, tree.size());
+    }
+    
     /** Is implemented in JGit, but returns an empty URL for this
      * case.  Test is disabled for JGit, since it is a deprecated API
      * that we can hope is not used with the newer JGit
