@@ -910,11 +910,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommand(new ArgumentListBuilder(args));
     }
 
-    public String launchCommandIn(File workDir, String... args) throws GitException, InterruptedException {
-        return launchCommandIn(new ArgumentListBuilder(args), workspace);
-    }
-
-
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
                                                 @NonNull String url) throws GitException, InterruptedException {
@@ -1057,6 +1052,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         w.close();
         ssh.setExecutable(true);
         return ssh;
+    }
+
+    private String launchCommandIn(File workDir, String... args) throws GitException, InterruptedException {
+        return launchCommandIn(new ArgumentListBuilder(args), workDir);
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
