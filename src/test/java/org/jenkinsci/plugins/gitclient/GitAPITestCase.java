@@ -454,9 +454,21 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("another_test");
         w.tag("yet_another");
         Set<String> tags = w.git.getTagNames("*test");
-        assertTrue("expected tag not listed", tags.contains("test"));
-        assertTrue("expected tag not listed", tags.contains("another_test"));
-        assertFalse("unexpected tag listed", tags.contains("yet_another"));
+        assertTrue("expected tag test not listed", tags.contains("test"));
+        assertTrue("expected tag another_test not listed", tags.contains("another_test"));
+        assertFalse("unexpected yet_another tag listed", tags.contains("yet_another"));
+    }
+
+    public void test_list_tags_without_filter() throws Exception {
+        w.init();
+        w.commit("init");
+        w.tag("test");
+        w.tag("another_test");
+        w.tag("yet_another");
+        Set<String> allTags = w.git.getTagNames(null);
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
     public void test_tag_exists() throws Exception {
