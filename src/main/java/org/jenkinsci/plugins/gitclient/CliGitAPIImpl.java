@@ -85,17 +85,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials defaultCredentials;
 
     protected CliGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
+                         Launcher launcher, TaskListener listener, EnvVars environment) {
         super(workspace);
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-
-        launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+        this.launcher = launcher;
     }
 
     public GitClient subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), launcher, listener, environment);
     }
 
     public void init() throws GitException, InterruptedException {

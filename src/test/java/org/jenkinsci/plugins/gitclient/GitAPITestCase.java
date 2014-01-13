@@ -4,9 +4,11 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import hudson.Launcher;
+import hudson.Launcher.RemoteLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitAPI;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
@@ -1192,5 +1194,15 @@ public abstract class GitAPITestCase extends TestCase {
         } finally {
             lock.delete();
         }
+    }
+
+    public void test_remotelauncher() throws Exception {
+      w.init();
+      final Launcher launcher = new RemoteLauncher(listener, null, false);
+      final GitClient gitClient = Git.with(launcher, listener, env).in(w.repo).using("git").getClient();
+      assertEquals("GitClient does not use desired Launcher", launcher, ((CliGitAPIImpl)gitClient).launcher);
+
+      final GitAPI gitApi = new GitAPI("git", w.repo, launcher, listener, env);
+      assertEquals("GitAPI does not use desired Launcher", launcher, ((CliGitAPIImpl)gitApi).launcher);
     }
 }
