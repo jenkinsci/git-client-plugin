@@ -2,9 +2,12 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.FilePath.FileCallable;
+import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
+import hudson.plugins.git.IGitAPI;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 
@@ -19,17 +22,28 @@ import java.io.Serializable;
 public class Git implements Serializable {
     @Nullable
     private FilePath repository;
+    private Launcher launcher;
     private TaskListener listener;
     private EnvVars env;
     private String exe;
 
     public Git(TaskListener listener, EnvVars env) {
-        this.listener = listener;
-        this.env = env;
+      this(null, listener, env);
+      launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+    }
+
+    public Git(Launcher launcher, TaskListener listener, EnvVars env) {
+      this.launcher = launcher;
+      this.listener = listener;
+      this.env = env;
     }
 
     public static Git with(TaskListener listener, EnvVars env) {
         return new Git(listener, env);
+    }
+
+    public static Git with(Launcher launcher, TaskListener listener, EnvVars env) {
+      return new Git(launcher, listener, env);
     }
 
     public Git in(File repository) {
@@ -60,7 +74,7 @@ public class Git implements Serializable {
                     return new JGitAPIImpl(f, listener);
                 }
                 // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
-                return new GitAPI(exe, f, listener, env);
+                return new GitAPI(exe, f, launcher, listener, env);
             }
         };
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
