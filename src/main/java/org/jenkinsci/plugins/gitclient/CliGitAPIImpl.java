@@ -956,7 +956,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     String urlWithCredentials = getGitCredentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
-                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=\\\"" + store.getAbsolutePath() + "\\\"");
+                    String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
+                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
             }
 
