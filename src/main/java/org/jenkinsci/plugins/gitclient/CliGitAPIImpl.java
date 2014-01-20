@@ -311,13 +311,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     else if (!referencePath.isDirectory())
                         listener.error("Reference path is not a directory: " + reference);
                     else {
-                        try {
-                            File alternates = new File(workspace, ".git/objects/info/alternates");
-                            PrintWriter w = new PrintWriter(alternates);
-                            w.println(new File(referencePath, ".git/objects").getAbsolutePath());
-                            w.close();
-                        } catch (FileNotFoundException e) {
-                            listener.error("Failed to setup reference");
+                        // reference path can either be a normal or a base repository
+                        File objectsPath = new File(referencePath, ".git/objects");
+                        if (!objectsPath.isDirectory()) {
+                            // reference path is bare repo
+                            objectsPath = new File(referencePath, "objects");
+                        }
+                        if (!objectsPath.isDirectory())
+                            listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                        else {
+                            try {
+                                File alternates = new File(workspace, ".git/objects/info/alternates");
+                                PrintWriter w = new PrintWriter(alternates);
+                                // git implementations on windows also use 
+                                w.println(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                w.close();
+                            } catch (FileNotFoundException e) {
+                                listener.error("Failed to setup reference");
+                            }
                         }
                     }
                 }
