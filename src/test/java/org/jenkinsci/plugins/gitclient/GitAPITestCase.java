@@ -690,6 +690,38 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
     }
 
+    public void test_no_submodules() throws IOException, InterruptedException {
+        w.init();
+        w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        w.add("committed-file");
+        w.commit("commit1");
+        w.igit().submoduleClean(false);
+        w.igit().submoduleClean(true);
+        w.igit().submoduleUpdate(false);
+        w.igit().submoduleUpdate(true);
+        assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
+    }
+
+    public void test_addSubmodule() throws Exception {
+        String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
+        String readme1 = sub1 + File.separator + "README.md";
+        w.init();
+        assertFalse("submodule1 dir found too soon", w.file(sub1).exists());
+        assertFalse("submodule1 file found too soon", w.file(readme1).exists());
+
+        w.git.addSubmodule(localMirror(), sub1);
+        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
+        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
+
+        w.igit().submoduleUpdate(false);
+        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
+        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
+
+        w.igit().submoduleUpdate(true);
+        assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
+        assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
+    }
+
     public void test_getSubmodules() throws Exception {
         w.init();
         w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
