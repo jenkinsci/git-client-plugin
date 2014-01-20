@@ -1193,4 +1193,35 @@ public abstract class GitAPITestCase extends TestCase {
             lock.delete();
         }
     }
+
+    @Deprecated
+    public void test_reset() throws IOException, InterruptedException {
+        w.init();
+        w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        w.add("committed-file");
+        w.commit("commit1");
+        assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
+        assertFalse("added-file exists at commit1", w.file("added-file").exists());
+        assertFalse("touched-file exists at commit1", w.file("added-file").exists());
+
+        w.cmd("git rm committed-file");
+        w.touch("added-file", "File 2 content " + java.util.UUID.randomUUID().toString());
+        w.add("added-file");
+        w.touch("touched-file", "File 3 content " + java.util.UUID.randomUUID().toString());
+        assertFalse("committed-file exists", w.file("committed-file").exists());
+        assertTrue("added-file missing", w.file("added-file").exists());
+        assertTrue("touched-file missing", w.file("touched-file").exists());
+
+        w.igit().reset(false);
+        assertFalse("committed-file exists", w.file("committed-file").exists());
+        assertTrue("added-file missing", w.file("added-file").exists());
+        assertTrue("touched-file missing", w.file("touched-file").exists());
+
+        w.add("added-file"); /* Add the file which soft reset "unadded" */
+
+        w.igit().reset(true);
+        assertTrue("committed-file missing", w.file("committed-file").exists());
+        assertFalse("added-file exists at hard reset", w.file("added-file").exists());
+        assertTrue("touched-file missing", w.file("touched-file").exists());
+    }
 }
