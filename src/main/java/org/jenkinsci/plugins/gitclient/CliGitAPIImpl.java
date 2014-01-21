@@ -1116,7 +1116,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             args.add(refspec);
         }
 
-        StandardCredentials cred = credentials.get(url);
+        StandardCredentials cred = credentials.get(url.toPrivateString());
         if (cred == null) cred = defaultCredentials;
         launchCommandWithCredentials(args, workspace, cred, url);
         // Ignore output for now as there's many different formats
