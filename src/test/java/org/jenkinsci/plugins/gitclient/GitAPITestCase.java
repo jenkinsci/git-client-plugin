@@ -246,6 +246,8 @@ public abstract class GitAPITestCase extends TestCase {
         }
         check_remote_url("origin");
         check_branches("master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
     public void test_clone_repositoryName() throws IOException, InterruptedException
@@ -257,6 +259,8 @@ public abstract class GitAPITestCase extends TestCase {
         }
         check_remote_url("upstream");
         check_branches("master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
     public void test_clone_shallow() throws IOException, InterruptedException
@@ -268,6 +272,8 @@ public abstract class GitAPITestCase extends TestCase {
         }
         check_remote_url("origin");
         check_branches("master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
     /** shared is not implemented in CliGitAPIImpl. */
@@ -292,6 +298,16 @@ public abstract class GitAPITestCase extends TestCase {
         }
         check_remote_url("origin");
         check_branches("master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        if (w.git instanceof CliGitAPIImpl) {
+            assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
+            final String expectedContent = localMirror().replace("\\", "/") + "/objects";
+            final String actualContent = w.contentOf(alternates).trim(); // Remove trailing line terminator(s)
+            assertEquals("Alternates file wrong content", expectedContent, actualContent);
+        } else {
+            /* JGit does not implement reference cloning yet */
+            assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        }
     }
 
     public void test_detect_commit_in_repo() throws Exception {
