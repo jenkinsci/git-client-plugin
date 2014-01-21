@@ -44,6 +44,8 @@ public abstract class GitAPITestCase extends TestCase {
     protected hudson.EnvVars env = new hudson.EnvVars();
     protected TaskListener listener = StreamTaskListener.fromStdout();
 
+    private static final String SRC_DIR = (new File(".")).getAbsolutePath();
+
     /**
      * One local workspace of a Git repository on a temporary directory
      * that gets automatically cleaned up in the end.
@@ -304,6 +306,31 @@ public abstract class GitAPITestCase extends TestCase {
             final String expectedContent = localMirror().replace("\\", "/") + "/objects";
             final String actualContent = w.contentOf(alternates).trim(); // Remove trailing line terminator(s)
             assertEquals("Alternates file wrong content", expectedContent, actualContent);
+            final File alternatesDir = new File(actualContent);
+            assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
+        } else {
+            /* JGit does not implement reference cloning yet */
+            assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        }
+    }
+
+    public void test_clone_reference_working_repo() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.setRemoteUrl("origin", localMirror());
+            w.git.checkout("origin/master", "master");
+        }
+        check_remote_url("origin");
+        check_branches("master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        if (w.git instanceof CliGitAPIImpl) {
+            assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
+            final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
+            final String actualContent = w.contentOf(alternates).trim(); // Remove trailing line terminator(s)
+            assertEquals("Alternates file wrong content", expectedContent, actualContent);
+            final File alternatesDir = new File(actualContent);
+            assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
         } else {
             /* JGit does not implement reference cloning yet */
             assertFalse("Alternates file found: " + alternates, w.exists(alternates));
