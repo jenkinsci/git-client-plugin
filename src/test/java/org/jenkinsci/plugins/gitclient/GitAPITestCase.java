@@ -316,6 +316,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_reference_working_repo() throws IOException, InterruptedException
     {
+        assertTrue("SRC_DIR " + SRC_DIR + " has no .git subdir", (new File(SRC_DIR + File.separator + ".git").isDirectory()));
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
         if (w.git instanceof CliGitAPIImpl) {
             w.git.setRemoteUrl("origin", localMirror());
@@ -659,6 +660,18 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(sha1, w.git.revParse(sha1).name());
         assertEquals(sha1, w.git.revParse("HEAD").name());
         assertEquals(sha1, w.git.revParse("test").name());
+    }
+
+    public void test_revparse_throws_expected_exception() throws Exception {
+        w.init();
+        w.commit("init");
+        try {
+            w.git.revParse("unknown-rev-to-parse");
+            fail("Did not throw exception");
+        } catch (GitException ge) {
+            final String msg = ge.getMessage();
+            assertTrue("Wrong exception: " + msg, msg.contains("unknown-rev-to-parse"));
+        }
     }
 
     public void test_hasGitRepo_without_git_directory() throws Exception
