@@ -931,17 +931,28 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_merge_refspec() throws Exception {
         w.init();
         w.commit("init");
+        w.touch("file-master", "content-master");
+        w.add("file-master");
+        w.commit("commit1-master");
+        final ObjectId base = w.head();
+
         w.cmd("git branch branch1");
         w.cmd("git checkout branch1");
         w.touch("file1", "content1");
         w.add("file1");
         w.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
         w.cmd("git branch branch2 master");
         w.cmd("git checkout branch2");
         File f = w.touch("file2", "content2");
         w.add("file2");
         w.commit("commit2-branch2");
+        final ObjectId branch2 = w.head();
+
         assertFalse("file1 exists before merge", w.exists("file1"));
+        assertEquals("Wrong merge-base branch1 branch2", base, w.igit().mergeBase(branch1, branch2));
+
         w.igit().merge("branch1");
         assertTrue("file1 does not exist after merge", w.exists("file1"));
     }
