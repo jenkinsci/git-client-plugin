@@ -415,6 +415,15 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains("git@github.com:ndeloof/git-client-plugin.git"));
     }
 
+    @Deprecated
+    public void test_setRemoteURL_three_args() throws Exception {
+        w.init();
+        w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
+        w.igit().setRemoteUrl("origin", "https://github.com/jenkinsci/git-client-plugin.git", ".git");
+        String remotes = w.cmd("git remote -v");
+        assertTrue("remote URL missing https URL", remotes.contains("https://github.com/jenkinsci/git-client-plugin.git"));
+    }
+
     public void test_setRemoteURL_local_clone() throws Exception {
         w = clone(localMirror());
         String originURL = "https://github.com/jenkinsci/git-client-plugin.git";
