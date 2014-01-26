@@ -304,7 +304,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
             final String expectedContent = localMirror().replace("\\", "/") + "/objects";
-            final String actualContent = w.contentOf(alternates).trim(); // Remove trailing line terminator(s)
+            final String actualContent = w.contentOf(alternates);
             assertEquals("Alternates file wrong content", expectedContent, actualContent);
             final File alternatesDir = new File(actualContent);
             assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
@@ -328,7 +328,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
             final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
-            final String actualContent = w.contentOf(alternates).trim(); // Remove trailing line terminator(s)
+            final String actualContent = w.contentOf(alternates);
             assertEquals("Alternates file wrong content", expectedContent, actualContent);
             final File alternatesDir = new File(actualContent);
             assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());

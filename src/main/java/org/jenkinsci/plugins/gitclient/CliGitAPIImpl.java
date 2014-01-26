@@ -324,7 +324,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 File alternates = new File(workspace, ".git/objects/info/alternates");
                                 PrintWriter w = new PrintWriter(alternates);
                                 // git implementations on windows also use 
-                                w.println(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
                                 w.close();
                             } catch (FileNotFoundException e) {
                                 listener.error("Failed to setup reference");
