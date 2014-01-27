@@ -358,6 +358,10 @@ public abstract class GitAPITestCase extends TestCase {
         List<IndexEntry> tree = w.igit().lsTree("HEAD", false);
         assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
         assertEquals("Wrong number of tree entries", 1, tree.size());
+        final String remoteUrl = localMirror();
+        w.git.setRemoteUrl("origin", remoteUrl);
+        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+        assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
 
     @Deprecated
@@ -375,6 +379,10 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong blob 1 sha1", expectedBlob1SHA1, tree.get(0).getObject());
         assertEquals("Wrong blob 2 sha1", expectedBlob2SHA1, tree.get(1).getObject());
         assertEquals("Wrong number of tree entries", 2, tree.size());
+        final String remoteUrl = "https://github.com/jenkinsci/git-client-plugin.git";
+        w.git.setRemoteUrl("origin", remoteUrl);
+        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+        assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
     
     /** Is implemented in JGit, but returns an empty URL for this
@@ -390,6 +398,11 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = w.igit().getRemoteUrl("origin", ".git");
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
+        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+        assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
+        /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
+        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+                     w.igit().getDefaultRemote("invalid"));
     }
 
     public void test_getRemoteURL() throws Exception {
@@ -955,6 +968,11 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.igit().merge("branch1");
         assertTrue("file1 does not exist after merge", w.exists("file1"));
+
+        final String remoteUrl = "ssh://mwaite.example.com//var/lib/git/mwaite/jenkins/git-client-plugin.git";
+        w.git.setRemoteUrl("origin", remoteUrl);
+        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+        assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
 
     /**
@@ -1322,5 +1340,14 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("committed-file missing", w.file("committed-file").exists());
         assertFalse("added-file exists at hard reset", w.file("added-file").exists());
         assertTrue("touched-file missing", w.file("touched-file").exists());
+
+        final String remoteUrl = "git@github.com:MarkEWaite/git-client-plugin.git";
+        w.git.setRemoteUrl("origin", remoteUrl);
+        w.git.setRemoteUrl("ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
+        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+        assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
+        /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
+        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+                     w.igit().getDefaultRemote("invalid"));
     }
 }
