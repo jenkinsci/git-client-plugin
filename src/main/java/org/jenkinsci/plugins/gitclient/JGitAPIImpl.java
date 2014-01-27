@@ -1760,7 +1760,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
-        Set<String> remotes = getConfig(null).getNames("remote");
+        Set<String> remotes = getConfig(null).getSubsections("remote");
         if (remotes.contains(_default_))    return _default_;
         else    return com.google.common.collect.Iterables.getFirst(remotes, null);
     }
