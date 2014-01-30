@@ -1430,7 +1430,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String[] lines = result.split("\n");
         for (String line : lines) {
             if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
-            heads.put(line.substring(41), ObjectId.fromString(result.substring(0, 40)));
+            heads.put(line.substring(41), ObjectId.fromString(line.substring(0, 40)));
         }
         return heads;
     }

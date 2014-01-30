@@ -1011,8 +1011,38 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getHeadRev() throws Exception {
         Map<String,ObjectId> heads = w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git");
-        System.out.println(heads);
         assertTrue(heads.containsKey("refs/heads/master"));
+    }
+
+    public void test_getHeadRev_returns_accurate_SHA1_values() throws Exception {
+        /* CliGitAPIImpl had a longstanding bug that it inserted the
+         * same SHA1 in all the values, rather than inserting the SHA1
+         * which matched the key.
+         */
+        w.init();
+        w.commit("init");
+        w.touch("file-master", "content-master");
+        w.add("file-master");
+        w.commit("commit1-master");
+        final ObjectId base = w.head();
+
+        w.cmd("git branch branch1");
+        w.cmd("git checkout branch1");
+        w.touch("file1", "content1");
+        w.add("file1");
+        w.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
+        w.cmd("git branch branch2 master");
+        w.cmd("git checkout branch2");
+        File f = w.touch("file2", "content2");
+        w.add("file2");
+        w.commit("commit2-branch2");
+        final ObjectId branch2 = w.head();
+
+        Map<String,ObjectId> heads = w.git.getHeadRev(w.repoPath());
+        assertEquals("Wrong branch1 in " + heads, branch1, heads.get("refs/heads/branch1"));
+        assertEquals("Wrong branch2 in " + heads, branch2, heads.get("refs/heads/branch2"));
     }
 
     private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
