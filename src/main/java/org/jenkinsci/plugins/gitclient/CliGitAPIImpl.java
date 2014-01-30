@@ -21,7 +21,6 @@ import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.IOUtils;
 import hudson.util.Secret;
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
@@ -56,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.SSLException;
 
@@ -1089,7 +1087,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             args.prepend(gitExe);
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
-            if (workDir != null) p.pwd(workDir);
+            if (workDir == null) {
+                String home = System.getenv("HOME");
+                workDir = new File(home);
+            }
+
+            if (workDir.exists() && workDir.isDirectory()) {
+                p.pwd(workDir);
+            }
+
             int status = p.start().joinWithTimeout(TIMEOUT, TimeUnit.MINUTES, listener);
 
             String result = fos.toString();
