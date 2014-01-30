@@ -1088,7 +1088,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir == null) {
-                String home = System.getenv("HOME");
+                String home = System.getProperty("user.home");
                 workDir = new File(home);
             }
 
