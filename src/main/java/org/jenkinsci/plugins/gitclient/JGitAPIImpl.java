@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -12,6 +13,7 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
+
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
@@ -60,6 +62,7 @@ import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -370,6 +373,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
                 throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
+            }
+            
+            public org.jenkinsci.plugins.gitclient.FetchCommand timeout(Integer timeout) {
+            	// noop in jgit
+            	return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -851,6 +859,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public CloneCommand reference(String reference) {
                 listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
                 return this;
+            }
+            
+            public CloneCommand timeout(Integer timeout) {
+            	// noop in jgit
+            	return this;
             }
 
             public void execute() throws GitException, InterruptedException {
