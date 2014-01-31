@@ -1043,6 +1043,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
           // try the (x86) version for 64-bit Windows builds
           sshexe = new File(progFiles + " (x86)" + sshPath);
         }
+        if (!sshexe.exists()) {
+		  // try the ssh.exe next to known git.exe
+		  sshexe = new File(new File(gitExe).getParentFile(), "ssh.exe");
+        }
 
         if (!sshexe.exists()) {
             throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
