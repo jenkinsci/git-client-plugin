@@ -187,6 +187,21 @@ public abstract class GitAPITestCase extends TestCase {
         w = new WorkingArea();
     }
 
+    /* HEAD ref of local mirror - all read access should use getMirrorHead */
+    private static ObjectId mirrorHead = null;
+
+    private ObjectId getMirrorHead() throws IOException, InterruptedException 
+    {
+        if (mirrorHead == null) {
+            final String mirrorPath = new File(localMirror()).getAbsolutePath();
+            mirrorHead = ObjectId.fromString(w.cmd("git --git-dir=" + mirrorPath + " rev-parse HEAD").substring(0,40));
+        }
+        return mirrorHead;
+    }
+
+    private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
+    private final String remoteSshURL = "git@github.com:ndeloof/git-client-plugin.git";
+
     /**
      * Obtains the local mirror of https://github.com/jenkinsci/git-client-plugin.git and return URLish to it.
      */
@@ -1009,8 +1024,57 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_getHeadRev() throws Exception {
-        Map<String,ObjectId> heads = w.git.getHeadRev("https://github.com/jenkinsci/git-client-plugin.git");
-        assertTrue(heads.containsKey("refs/heads/master"));
+        Map<String, ObjectId> heads = w.git.getHeadRev(remoteMirrorURL);
+        ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
+    }
+
+    private void check_headRev(String repoURL) throws InterruptedException, IOException {
+        final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
+        assertEquals("origin/master mismatch", getMirrorHead(), originMaster);
+
+        final ObjectId simpleMaster = w.git.getHeadRev(repoURL, "master");
+        assertEquals("simple master mismatch", getMirrorHead(), simpleMaster);
+
+        final ObjectId wildcardSCMMaster = w.git.getHeadRev(repoURL, "*/master");
+        assertEquals("wildcard SCM master mismatch", getMirrorHead(), wildcardSCMMaster);
+
+        /* This assertion may fail if the localMirror has more than
+         * one branch matching the wildcard expression in the call to
+         * getHeadRev.  The expression is chosen to be unlikely to
+         * match with typical branch names, while still matching a
+         * known branch name. Should be fine so long as no one creates
+         * branches named like master-master or new-master on the
+         * remote repo */
+        final ObjectId wildcardEndMaster = w.git.getHeadRev(repoURL, "origin/m*aste?");
+        assertEquals("wildcard end master mismatch", getMirrorHead(), wildcardEndMaster);
+    }
+
+    public void test_getHeadRev_localMirror() throws Exception {
+        check_headRev(localMirror());
+    }
+
+    public void test_getHeadRev_remote() throws Exception {
+        check_headRev(remoteMirrorURL);
+    }
+
+    public void test_getHeadRev_current_directory() throws Exception {
+        w = clone(localMirror());
+        w.checkout("master");
+        final ObjectId master = w.head();
+
+        w.cmd("git branch branch1");
+        w.cmd("git checkout branch1");
+        w.touch("file1", "branch1 contents " + java.util.UUID.randomUUID().toString());
+        w.add("file1");
+        w.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
+        Map<String, ObjectId> heads = w.git.getHeadRev(w.repoPath());
+        assertEquals(master, heads.get("refs/heads/master"));
+        assertEquals(branch1, heads.get("refs/heads/branch1"));
+
+        check_headRev(w.repoPath());
     }
 
     public void test_getHeadRev_returns_accurate_SHA1_values() throws Exception {
@@ -1018,12 +1082,9 @@ public abstract class GitAPITestCase extends TestCase {
          * same SHA1 in all the values, rather than inserting the SHA1
          * which matched the key.
          */
-        w.init();
-        w.commit("init");
-        w.touch("file-master", "content-master");
-        w.add("file-master");
-        w.commit("commit1-master");
-        final ObjectId base = w.head();
+        w = clone(localMirror());
+        w.checkout("master");
+        final ObjectId master = w.head();
 
         w.cmd("git branch branch1");
         w.cmd("git checkout branch1");
@@ -1032,16 +1093,21 @@ public abstract class GitAPITestCase extends TestCase {
         w.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
-        w.cmd("git branch branch2 master");
-        w.cmd("git checkout branch2");
-        File f = w.touch("file2", "content2");
-        w.add("file2");
-        w.commit("commit2-branch2");
-        final ObjectId branch2 = w.head();
+        w.cmd("git branch branch.2 master");
+        w.cmd("git checkout branch.2");
+        File f = w.touch("file.2", "content2");
+        w.add("file.2");
+        w.commit("commit2-branch.2");
+        final ObjectId branchDot2 = w.head();
 
         Map<String,ObjectId> heads = w.git.getHeadRev(w.repoPath());
+        assertEquals("Wrong master in " + heads, master, heads.get("refs/heads/master"));
         assertEquals("Wrong branch1 in " + heads, branch1, heads.get("refs/heads/branch1"));
-        assertEquals("Wrong branch2 in " + heads, branch2, heads.get("refs/heads/branch2"));
+        assertEquals("Wrong branch.2 in " + heads, branchDot2, heads.get("refs/heads/branch.2"));
+
+        assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
+
+        check_headRev(w.repoPath());
     }
 
     private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
