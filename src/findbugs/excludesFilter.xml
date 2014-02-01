@@ -33,4 +33,13 @@
     <Class name="org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory"/>
   </Match>
 
+  <!-- Findbugs 2.0.1 detector is incorrect in this case -->
+  <!-- If the value is null, then the result of a method call is
+       assigned, which most likely will not leave the value as null
+       -->
+  <Match>
+    <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
+    <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl"/>
+  </Match>
+
 </FindBugsFilter>
