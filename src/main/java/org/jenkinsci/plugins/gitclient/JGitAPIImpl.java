@@ -179,7 +179,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 repo = getRepository(); /* Reusing repo declared and assigned earlier */
                 for (String path : e.getConflictingPaths()) {
                     File conflict = new File(repo.getWorkTree(), path);
-                    conflict.delete();
+                    if (!conflict.delete()) {
+                        if (conflict.exists()) {
+                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                        }
+                    }
                 }
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);

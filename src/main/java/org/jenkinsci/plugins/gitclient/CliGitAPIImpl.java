@@ -885,6 +885,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         createNote(note,namespace,"add");
     }
 
+    private void deleteTempFile(File tempFile) {
+        if (tempFile != null) {
+            if (!tempFile.delete()) {
+                if (tempFile.exists()) {
+                    listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
+                }
+            }
+        }
+    }
+
     private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException {
         File msg = null;
         try {
@@ -896,8 +906,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (GitException e) {
             throw new GitException("Could not apply note " + note, e);
         } finally {
-            if (msg!=null)
-                msg.delete();
+            deleteTempFile(msg);
         }
     }
 
@@ -976,11 +985,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException e) {
             throw new GitException("Failed to setup credentials", e);
         } finally {
-            if (pass != null) pass.delete();
-            if (key != null) key.delete();
-            if (ssh != null) ssh.delete();
+            deleteTempFile(pass);
+            deleteTempFile(key);
+            deleteTempFile(ssh);
+            deleteTempFile(store);
             if (store != null) {
-                store.delete();
                 try {
                     launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
                 } catch (GitException e) {
@@ -1350,7 +1359,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
-            if (f != null) f.delete();
+            deleteTempFile(f);
         }
     }
 
