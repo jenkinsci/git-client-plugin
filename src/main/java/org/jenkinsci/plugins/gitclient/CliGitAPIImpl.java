@@ -1381,6 +1381,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         else                environment.put(name,value);
     }
 
+    @NonNull
     public Repository getRepository() throws GitException {
         try {
             return FileRepositoryBuilder.create(new File(workspace, Constants.DOT_GIT));

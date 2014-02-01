@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -543,6 +544,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return url;
     }
 
+    @NonNull
     public Repository getRepository() throws GitException {
         try {
             return new RepositoryBuilder().setWorkTree(workspace).build();
