@@ -1542,14 +1542,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Compute the URL to be used by <a href="https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html">git-credentials-store</a>
      */
-    private String getGitCredentialsURL(String url, StandardCredentials cred) {
-        try {
-            return getGitCredentialsURL(new URIish(url), cred);
-        } catch (URISyntaxException e) {
-            throw new GitException("invalid repository URL " + url, e);
-        }
-    }
-
     private String getGitCredentialsURL(URIish u, StandardCredentials cred) {
         String scheme = u.getScheme();
         // gitcredentials format is sheme://user:password@hostname
