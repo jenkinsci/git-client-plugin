@@ -77,7 +77,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    Launcher launcher;
+    transient Launcher launcher;
     TaskListener listener;
     String gitExe;
     EnvVars environment;
