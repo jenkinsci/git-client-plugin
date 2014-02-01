@@ -77,6 +77,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    private static final long serialVersionUID = 1;
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
