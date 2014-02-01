@@ -1655,5 +1655,5 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * We run git as an external process so can't guarantee it won't hang for whatever reason. Even plugin does its
      * best to avoid git interactively asking for credentials, but there's a bunch of other cases git may hung.
      */
-    public static int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
+    public static final int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
 }
