@@ -10,7 +10,6 @@ import java.io.PrintStream;
 public class ProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor {
 
     private final PrintStream log;
-    private int totalTasks;
     private int completed;
 
     public ProgressMonitor(TaskListener listener) {
@@ -18,8 +17,6 @@ public class ProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor {
     }
 
     public void start(int totalTasks) {
-        // not set ?
-        this.totalTasks = totalTasks;
     }
 
     public void beginTask(String title, int totalWork) {

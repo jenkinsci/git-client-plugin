@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -211,6 +212,7 @@ public class GitAPI extends CliGitAPIImpl {
         if (Git.USE_CLI) super.deleteTag(tagName); else  jgit.deleteTag(tagName);
     }
 
+    @NonNull
     public Repository getRepository() throws GitException {
         return Git.USE_CLI ? super.getRepository() :  jgit.getRepository();
     }

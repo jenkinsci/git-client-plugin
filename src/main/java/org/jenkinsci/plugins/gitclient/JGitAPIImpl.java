@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -178,7 +179,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 repo = getRepository(); /* Reusing repo declared and assigned earlier */
                 for (String path : e.getConflictingPaths()) {
                     File conflict = new File(repo.getWorkTree(), path);
-                    conflict.delete();
+                    if (!conflict.delete()) {
+                        if (conflict.exists()) {
+                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                        }
+                    }
                 }
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
@@ -543,6 +548,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return url;
     }
 
+    @NonNull
     public Repository getRepository() throws GitException {
         try {
             return new RepositoryBuilder().setWorkTree(workspace).build();

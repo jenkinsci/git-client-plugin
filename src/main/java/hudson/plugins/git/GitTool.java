@@ -45,6 +45,8 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
     public static transient final String DEFAULT = "Default";
 
+    private static final long serialVersionUID = 1;
+
     public String getGitExe() {
         return getHome();
     }

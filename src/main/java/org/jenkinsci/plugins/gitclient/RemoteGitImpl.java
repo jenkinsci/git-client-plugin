@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.Util;
@@ -184,6 +185,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @deprecated
      *      There's no way to make this method work. use {@link #withRepository(RepositoryCallback)}
      */
+    @NonNull
     public Repository getRepository() throws GitException {
         throw new UnsupportedOperationException();
     }

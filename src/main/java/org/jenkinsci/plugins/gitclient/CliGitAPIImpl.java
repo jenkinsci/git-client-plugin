@@ -77,7 +77,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    Launcher launcher;
+    private static final long serialVersionUID = 1;
+    transient Launcher launcher;
     TaskListener listener;
     String gitExe;
     EnvVars environment;
@@ -885,6 +886,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         createNote(note,namespace,"add");
     }
 
+    private void deleteTempFile(File tempFile) {
+        if (tempFile != null) {
+            if (!tempFile.delete()) {
+                if (tempFile.exists()) {
+                    listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
+                }
+            }
+        }
+    }
+
     private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException {
         File msg = null;
         try {
@@ -896,8 +907,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (GitException e) {
             throw new GitException("Could not apply note " + note, e);
         } finally {
-            if (msg!=null)
-                msg.delete();
+            deleteTempFile(msg);
         }
     }
 
@@ -976,11 +986,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException e) {
             throw new GitException("Failed to setup credentials", e);
         } finally {
-            if (pass != null) pass.delete();
-            if (key != null) key.delete();
-            if (ssh != null) ssh.delete();
+            deleteTempFile(pass);
+            deleteTempFile(key);
+            deleteTempFile(ssh);
+            deleteTempFile(store);
             if (store != null) {
-                store.delete();
                 try {
                     launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
                 } catch (GitException e) {
@@ -1350,7 +1360,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
-            if (f != null) f.delete();
+            deleteTempFile(f);
         }
     }
 
@@ -1381,6 +1391,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         else                environment.put(name,value);
     }
 
+    @NonNull
     public Repository getRepository() throws GitException {
         try {
             return FileRepositoryBuilder.create(new File(workspace, Constants.DOT_GIT));
@@ -1532,14 +1543,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Compute the URL to be used by <a href="https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html">git-credentials-store</a>
      */
-    private String getGitCredentialsURL(String url, StandardCredentials cred) {
-        try {
-            return getGitCredentialsURL(new URIish(url), cred);
-        } catch (URISyntaxException e) {
-            throw new GitException("invalid repository URL " + url, e);
-        }
-    }
-
     private String getGitCredentialsURL(URIish u, StandardCredentials cred) {
         String scheme = u.getScheme();
         // gitcredentials format is sheme://user:password@hostname
@@ -1645,5 +1648,5 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * We run git as an external process so can't guarantee it won't hang for whatever reason. Even plugin does its
      * best to avoid git interactively asking for credentials, but there's a bunch of other cases git may hung.
      */
-    public static int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
+    public static final int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
 }

@@ -70,7 +70,7 @@ public class Git implements Serializable {
     }
 
     // Can be use to force use of the 100% backward-compatible CLI GitClient
-    public static boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
+    public static final boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
     private static final long serialVersionUID = 1L;
 }
