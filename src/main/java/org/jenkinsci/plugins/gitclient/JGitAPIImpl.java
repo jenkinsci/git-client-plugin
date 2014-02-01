@@ -458,10 +458,41 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return heads;
     }
 
+    /* Adapted from http://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
+    private String createRefRegexFromGlob(String glob)
+    {
+        StringBuilder out = new StringBuilder();
+        out.append("^.*/");
+
+        for (int i = 0; i < glob.length(); ++i) {
+            final char c = glob.charAt(i);
+            switch(c) {
+            case '*':
+                out.append(".*");
+                break;
+            case '?':
+                out.append('.');
+                break;
+            case '.':
+                out.append("\\.");
+                break;
+            case '\\':
+                out.append("\\\\");
+                break;
+            default:
+                out.append(c);
+                break;
+            }
+        }
+        out.append('$');
+        return out.toString();
+    }
+
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
-            if (!branch.startsWith(R_HEADS))
-                branch = R_HEADS+branch;
+            String[] branchExploded = branch.split("/"); /* mimic CliGitAPIImpl */
+            branch = branchExploded[branchExploded.length-1];
+            String regexBranch = createRefRegexFromGlob(branch);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
@@ -469,7 +500,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final FetchConnection c = tn.openFetch();
             try {
                 for (final Ref r : c.getRefs()) {
-                    if (branch.equals(r.getName())) {
+                    if (r.getName().matches(regexBranch)) {
                         return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
                     }
                 }
