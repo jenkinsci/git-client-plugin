@@ -962,7 +962,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
                 checkCredentials(url, credentials);
 
-                if (credentials != null) {
+                if (credentials != null && workDir != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
 
                     String urlWithCredentials = getGitCredentialsURL(url, credentials);
@@ -979,7 +979,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (pass != null) pass.delete();
             if (key != null) key.delete();
             if (ssh != null) ssh.delete();
-            if (store != null) {
+            if (store != null && workDir != null) {
                 store.delete();
                 try {
                     launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
