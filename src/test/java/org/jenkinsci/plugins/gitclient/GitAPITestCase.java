@@ -88,6 +88,15 @@ public abstract class GitAPITestCase extends TestCase {
             return this;
         }
 
+        WorkingArea init(boolean bare) throws IOException, InterruptedException {
+            if (bare) {
+                cmd("git init --bare");
+            } else {
+                init();
+            }
+            return this;
+        }
+
         void add(String path) throws IOException, InterruptedException {
             cmd("git add " + path);
         }
@@ -727,8 +736,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId sha1 = w.head();
 
         WorkingArea r = new WorkingArea();
-        r.init();
-        r.cmd("git checkout -b tmp"); // can't push on active branch
+        r.init(true);
         w.cmd("git remote add origin " + r.repoPath());
 
         w.git.push("origin", "master");
@@ -860,7 +868,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_prune() throws Exception {
         // pretend that 'r' is a team repository and ws1 and ws2 are team members
         WorkingArea r = new WorkingArea();
-        r.cmd("git init --bare");
+        r.init(true);
 
         WorkingArea ws1 = new WorkingArea().init();
         WorkingArea ws2 = w.init();
