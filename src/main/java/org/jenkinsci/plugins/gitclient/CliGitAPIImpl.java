@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -23,6 +24,7 @@ import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
 import hudson.util.Secret;
+
 import org.apache.commons.httpclient.Credentials;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.UsernamePasswordCredentials;
@@ -58,6 +60,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLException;
 
 import static org.apache.commons.httpclient.params.HttpMethodParams.USER_AGENT;
@@ -157,6 +160,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public List<RefSpec> refspecs;
             public boolean prune;
             public boolean shallow;
+            public Integer timeout;
 
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -172,6 +176,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public FetchCommand shallow(boolean shallow) {
                 this.shallow = shallow;
                 return this;
+            }
+            
+            public FetchCommand timeout(Integer timeout) {
+            	this.timeout = timeout;
+            	return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -194,7 +203,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (shallow) args.add("--depth=1");
 
-                launchCommandWithCredentials(args, workspace, cred, url);
+                launchCommandWithCredentials(args, workspace, cred, url, timeout);
             }
         };
     }
@@ -255,6 +264,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String origin;
             String reference;
             boolean shallow,shared;
+			Integer timeout;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -279,6 +289,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
+            }
+            
+            public CloneCommand timeout(Integer timeout) {
+            	this.timeout = timeout;
+            	return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -339,6 +354,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+origin+"/*");
                 fetch_().from(urIish, Collections.singletonList(refSpec))
                         .shallow(shallow)
+                        .timeout(timeout)
                         .execute();
             }
 
@@ -932,8 +948,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
+    		StandardCredentials credentials,
+    		@NonNull URIish url) throws GitException, InterruptedException {
+    	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);    	
+    }
+    private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
-                                                @NonNull URIish url) throws GitException, InterruptedException {
+                                                @NonNull URIish url,
+                                                Integer timeout) throws GitException, InterruptedException {
 
         File key = null;
         File ssh = null;
@@ -983,7 +1005,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
-            return launchCommandIn(args, workDir, env);
+            return launchCommandIn(args, workDir, env, timeout);
         } catch (IOException e) {
             throw new GitException("Failed to setup credentials", e);
         } finally {
@@ -1088,8 +1110,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
     }
-
+    
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env) throws GitException, InterruptedException {
+    	return launchCommandIn(args, workDir, environment, TIMEOUT);
+    }
+
+    private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env, Integer timeout) throws GitException, InterruptedException {
         ByteArrayOutputStream fos = new ByteArrayOutputStream();
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
@@ -1105,7 +1131,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
-            int status = p.start().joinWithTimeout(TIMEOUT, TimeUnit.MINUTES, listener);
+            int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
             String result = fos.toString();
             if (status != 0) {

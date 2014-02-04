@@ -20,4 +20,6 @@ public interface CloneCommand extends GitCommand {
     CloneCommand shared();
 
     CloneCommand reference(String reference);
+    
+    CloneCommand timeout(Integer timeout);
 }
