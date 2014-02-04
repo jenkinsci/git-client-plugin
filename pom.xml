@@ -15,7 +15,7 @@
   </licenses>
 
   <artifactId>git-client</artifactId>
-  <version>1.6.2</version>
+  <version>1.6.3-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
