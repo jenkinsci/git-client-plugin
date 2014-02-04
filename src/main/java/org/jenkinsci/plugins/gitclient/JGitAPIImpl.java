@@ -393,6 +393,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
+            if (branch.startsWith("origin/")) {
+                branch = branch.substring("origin/".length());
+            }
             if (!branch.startsWith(R_HEADS))
                 branch = R_HEADS+branch;
 

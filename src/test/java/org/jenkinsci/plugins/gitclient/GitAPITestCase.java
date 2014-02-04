@@ -871,4 +871,28 @@ public abstract class GitAPITestCase extends TestCase {
             lock.delete();
         }
     }
+    
+    public void test_similarBranchesWithSameSuffix() throws Exception {
+        w.init();
+        w.commit("init");
+        w.cmd("git branch develop");
+        w.cmd("git checkout develop");
+        w.touch("file", "content1");
+        w.add("file");
+        w.commit("commit1");
+        final String headDevelop = w.head().getName();
+        w.cmd("git checkout master");
+        w.cmd("git branch beta/develop");
+        w.cmd("git checkout beta/develop");
+        File f = w.touch("file", "content2");
+        w.add("file");
+        w.commit("commit2");
+        final String headBetaDevelop = w.head().getName();
+        
+        assertEquals(headDevelop, w.git.getHeadRev(w.repoPath(), "develop").getName());
+        assertEquals(headDevelop, w.git.getHeadRev(w.repoPath(), "origin/develop").getName());
+        
+        assertEquals(headBetaDevelop, w.git.getHeadRev(w.repoPath(), "beta/develop").getName());
+        assertEquals(headBetaDevelop, w.git.getHeadRev(w.repoPath(), "origin/beta/develop").getName());
+    }
 }
