@@ -1037,15 +1037,15 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
     }
 
-    private void check_headRev(String repoURL) throws InterruptedException, IOException {
+    private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
         final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
-        assertEquals("origin/master mismatch", getMirrorHead(), originMaster);
+        assertEquals("origin/master mismatch", expectedId, originMaster);
 
         final ObjectId simpleMaster = w.git.getHeadRev(repoURL, "master");
-        assertEquals("simple master mismatch", getMirrorHead(), simpleMaster);
+        assertEquals("simple master mismatch", expectedId, simpleMaster);
 
         final ObjectId wildcardSCMMaster = w.git.getHeadRev(repoURL, "*/master");
-        assertEquals("wildcard SCM master mismatch", getMirrorHead(), wildcardSCMMaster);
+        assertEquals("wildcard SCM master mismatch", expectedId, wildcardSCMMaster);
 
         /* This assertion may fail if the localMirror has more than
          * one branch matching the wildcard expression in the call to
@@ -1055,15 +1055,17 @@ public abstract class GitAPITestCase extends TestCase {
          * branches named like master-master or new-master on the
          * remote repo */
         final ObjectId wildcardEndMaster = w.git.getHeadRev(repoURL, "origin/m*aste?");
-        assertEquals("wildcard end master mismatch", getMirrorHead(), wildcardEndMaster);
+        assertEquals("wildcard end master mismatch", expectedId, wildcardEndMaster);
     }
 
     public void test_getHeadRev_localMirror() throws Exception {
-        check_headRev(localMirror());
+        check_headRev(localMirror(), getMirrorHead());
     }
 
     public void test_getHeadRev_remote() throws Exception {
-        check_headRev(remoteMirrorURL);
+        String lsRemote = w.cmd("git ls-remote -h " + remoteMirrorURL + " refs/heads/master");
+        ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
+        check_headRev(remoteMirrorURL, lsRemoteId);
     }
 
     public void test_getHeadRev_current_directory() throws Exception {
@@ -1082,7 +1084,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(master, heads.get("refs/heads/master"));
         assertEquals(branch1, heads.get("refs/heads/branch1"));
 
-        check_headRev(w.repoPath());
+        check_headRev(w.repoPath(), getMirrorHead());
     }
 
     public void test_getHeadRev_returns_accurate_SHA1_values() throws Exception {
@@ -1115,7 +1117,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
 
-        check_headRev(w.repoPath());
+        check_headRev(w.repoPath(), getMirrorHead());
     }
 
     private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
