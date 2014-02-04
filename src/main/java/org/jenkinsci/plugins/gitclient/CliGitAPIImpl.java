@@ -967,6 +967,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     String urlWithCredentials = getGitCredentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
+
+                    // Create a temporary workspace directory in the event that no
+                    // workspace has been created.  Call git init to allow for
+                    // credentials to be stored here during execution for HTTP-based
+                    // form validation.
+                    // See https://issues.jenkins-ci.org/browse/JENKINS-21016
+                    if (workDir == null) {
+                        workDir = store.getParentFile();
+                        launchCommandIn(workDir, "init");
+                    }
+
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
