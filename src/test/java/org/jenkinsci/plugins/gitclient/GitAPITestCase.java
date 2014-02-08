@@ -564,8 +564,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_list_branches() throws Exception {
         w.init();
         w.commit("init");
-        w.cmd("git branch test");
-        w.cmd("git branch another");
+        w.git.branch("test");
+        w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
         Collection names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
@@ -582,8 +582,8 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea r = new WorkingArea();
         r.init();
         r.commit("init");
-        r.cmd("git branch test");
-        r.cmd("git branch another");
+        r.git.branch("test");
+        r.git.branch("another");
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
@@ -603,8 +603,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_list_branches_containing_ref() throws Exception {
         w.init();
         w.commit("init");
-        w.cmd("git branch test");
-        w.cmd("git branch another");
+        w.git.branch("test");
+        w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
         Collection names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
@@ -620,7 +620,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_delete_branch() throws Exception {
         w.init();
         w.commit("init");
-        w.cmd("git branch test");
+        w.git.branch("test");
         w.git.deleteBranch("test");
         String branches = w.cmd("git branch -l");
         assertFalse("deleted test branch still present", branches.contains("test"));
@@ -860,7 +860,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getSubmodules() throws Exception {
         w.init();
         w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
-        w.cmd("git checkout t");
+        w.git.checkout("t");
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
                 "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=63264ca1dcf198545b90bb6361b4575ef220dcfa], " +
@@ -873,11 +873,11 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
 
         w.launchCommand("git", "fetch", localMirror(), "tests/getSubmodules:t");
-        w.cmd("git checkout t");
+        w.git.checkout("t");
         assertTrue(w.git.hasGitModules());
 
         w.launchCommand("git", "fetch", localMirror(), "master:t2");
-        w.cmd("git checkout t2");
+        w.git.checkout("t2");
         assertFalse(w.git.hasGitModules());
     }
 
@@ -968,14 +968,14 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_merge_strategy() throws Exception {
         w.init();
         w.commit("init");
-        w.cmd("git branch branch1");
-        w.cmd("git checkout branch1");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
         w.touch("file", "content1");
         w.add("file");
         w.commit("commit1");
-        w.cmd("git checkout master");
-        w.cmd("git branch branch2");
-        w.cmd("git checkout branch2");
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
         File f = w.touch("file", "content2");
         w.add("file");
         w.commit("commit2");
@@ -986,14 +986,14 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_merge_strategy_correct_fail() throws Exception {
         w.init();
         w.commit("init");
-        w.cmd("git branch branch1");
-        w.cmd("git checkout branch1");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
         w.touch("file", "content1");
         w.add("file");
         w.commit("commit1");
-        w.cmd("git checkout master");
-        w.cmd("git branch branch2");
-        w.cmd("git checkout branch2");
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
         w.touch("file", "content2");
         w.add("file");
         w.commit("commit2");
@@ -1015,15 +1015,15 @@ public abstract class GitAPITestCase extends TestCase {
         w.commit("commit1-master");
         final ObjectId base = w.head();
 
-        w.cmd("git branch branch1");
-        w.cmd("git checkout branch1");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
         w.touch("file1", "content1");
         w.add("file1");
         w.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.cmd("git branch branch2 master");
-        w.cmd("git checkout branch2");
+        w.git.checkout("branch2");
         File f = w.touch("file2", "content2");
         w.add("file2");
         w.commit("commit2-branch2");
@@ -1117,8 +1117,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.checkout("master");
         final ObjectId master = w.head();
 
-        w.cmd("git branch branch1");
-        w.cmd("git checkout branch1");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
         w.touch("file1", "branch1 contents " + java.util.UUID.randomUUID().toString());
         w.add("file1");
         w.commit("commit1-branch1");
@@ -1140,15 +1140,15 @@ public abstract class GitAPITestCase extends TestCase {
         w.checkout("master");
         final ObjectId master = w.head();
 
-        w.cmd("git branch branch1");
-        w.cmd("git checkout branch1");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
         w.touch("file1", "content1");
         w.add("file1");
         w.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.cmd("git branch branch.2 master");
-        w.cmd("git checkout branch.2");
+        w.git.checkout("branch.2");
         File f = w.touch("file.2", "content2");
         w.add("file.2");
         w.commit("commit2-branch.2");
