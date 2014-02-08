@@ -677,9 +677,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
-        String result
-            = launchCommand("--git-dir=" + GIT_DIR,
-                "config", "--get", "remote." + name + ".url");
+        final String remoteNameUrl = "remote." + name + ".url";
+        String result;
+        if (StringUtils.isBlank(GIT_DIR)) { /* Match JGitAPIImpl */
+            result = launchCommand("config", "--get", remoteNameUrl);
+        } else {
+            final String dirArg = "--git-dir=" + GIT_DIR;
+            result = launchCommand(dirArg, "config", "--get", remoteNameUrl);
+        }
         return firstLine(result).trim();
     }
 
