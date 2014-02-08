@@ -83,7 +83,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
         
         WorkingArea init() throws IOException, InterruptedException {
-            cmd("git init");
+            git.init();
             return this;
         }
 
@@ -96,15 +96,11 @@ public abstract class GitAPITestCase extends TestCase {
             return this;
         }
 
-        void add(String path) throws IOException, InterruptedException {
-            cmd("git add " + path);
-        }
-
         void tag(String tag) throws IOException, InterruptedException {
             cmd("git tag " + tag);
         }
 
-        void commit(String msg) throws IOException, InterruptedException {
+        void commitEmpty(String msg) throws IOException, InterruptedException {
             cmd("git commit --allow-empty -m " + msg);
         }
 
@@ -157,19 +153,11 @@ public abstract class GitAPITestCase extends TestCase {
             return new FileRepository(new File(repo,".git"));
         }
 
-        public void checkout(String branch) throws IOException, InterruptedException {
-            cmd("git checkout " + branch);
-        }
-
         /**
          * Obtain the current HEAD revision
          */
         ObjectId head() throws IOException, InterruptedException {
-            return revParse("HEAD");
-        }
-
-        ObjectId revParse(String commit) throws IOException, InterruptedException {
-            return ObjectId.fromString(w.cmd("git rev-parse "+commit).substring(0,40));
+            return git.revParse("HEAD");
         }
 
         /**
@@ -363,8 +351,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_detect_commit_in_repo() throws Exception {
         w.init();
         w.touch("file1");
-        w.add("file1");
-        w.commit("commit1");
+        w.git.add("file1");
+        w.git.commit("commit1");
         assertTrue("HEAD commit not found", w.git.isCommitInRepo(w.head()));
         // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
         assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
@@ -374,8 +362,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_lsTree_non_recursive() throws IOException, InterruptedException {
         w.init();
         w.touch("file1", "file1 fixed content");
-        w.add("file1");
-        w.commit("commit1");
+        w.git.add("file1");
+        w.git.commit("commit1");
         String expectedBlobSHA1 = "3f5a898e0c8ea62362dbf359cf1a400f3cfd46ae";
         List<IndexEntry> tree = w.igit().lsTree("HEAD", false);
         assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
@@ -391,10 +379,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.file("dir1").mkdir();
         w.touch("dir1/file1", "dir1/file1 fixed content");
-        w.add("dir1/file1");
+        w.git.add("dir1/file1");
         w.touch("file2", "file2 fixed content");
-        w.add("file2");
-        w.commit("commit-dir-and-file");
+        w.git.add("file2");
+        w.git.commit("commit-dir-and-file");
         String expectedBlob1SHA1 = "a3ee484019f0576fcdeb48e682fa1058d0c74435";
         String expectedBlob2SHA1 = "aa1b259ac5e8d6cfdfcf4155a9ff6836b048d0ad";
         List<IndexEntry> tree = w.igit().lsTree("HEAD", true);
@@ -482,15 +470,15 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clean() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
 
         w.touch("file", "content");
-        w.add("file");
-        w.commit("file");
+        w.git.add("file");
+        w.git.commit("file");
 
         w.touch(".gitignore", ".test");
-        w.add(".gitignore");
-        w.commit("ignore");
+        w.git.add(".gitignore");
+        w.git.commit("ignore");
 
         w.touch("file1");
         w.touch(".test");
@@ -507,7 +495,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_fetch() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
-        r.commit("init");
+        r.commitEmpty("init");
         String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
 
         w.init();
@@ -519,7 +507,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_fetch_from_url() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
-        r.commit("init");
+        r.commitEmpty("init");
         String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
 
         w.init();
@@ -531,7 +519,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_fetch_with_updated_tag() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
-        r.commit("init");
+        r.commitEmpty("init");
         r.tag("t");
         String sha1 = r.cmd("git rev-list --max-count=1 t");
 
@@ -541,8 +529,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
 
         r.touch("file.txt");
-        r.add("file.txt");
-        r.commit("update");
+        r.git.add("file.txt");
+        r.git.commit("update");
         r.tag("-d t");
         r.tag("t");
         sha1 = r.cmd("git rev-list --max-count=1 t");
@@ -554,7 +542,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_create_branch() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("test");
         String branches = w.cmd("git branch -l");
         assertTrue("master branch not listed", branches.contains("master"));
@@ -563,7 +551,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_list_branches() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("test");
         w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
@@ -581,7 +569,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_list_remote_branches() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
-        r.commit("init");
+        r.commitEmpty("init");
         r.git.branch("test");
         r.git.branch("another");
 
@@ -602,7 +590,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_list_branches_containing_ref() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("test");
         w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
@@ -619,7 +607,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_delete_branch() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("test");
         w.git.deleteBranch("test");
         String branches = w.cmd("git branch -l");
@@ -628,7 +616,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_create_tag() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.tag("test", "this is a tag");
         assertTrue("test tag not created", w.cmd("git tag").contains("test"));
         String message = w.cmd("git tag -l -n1");
@@ -637,7 +625,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_delete_tag() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.tag("test");
         w.tag("another");
         w.git.deleteTag("test");
@@ -648,7 +636,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_list_tags_with_filter() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.tag("test");
         w.tag("another_test");
         w.tag("yet_another");
@@ -660,7 +648,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_list_tags_without_filter() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.tag("test");
         w.tag("another_test");
         w.tag("yet_another");
@@ -672,7 +660,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_tag_exists() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.tag("test");
         assertTrue(w.git.tagExists("test"));
         assertFalse(w.git.tagExists("unknown"));
@@ -680,14 +668,14 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_get_tag_message() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.tag("test -m this-is-a-test");
         assertEquals("this-is-a-test", w.git.getTagMessage("test"));
     }
 
     public void test_get_tag_message_multi_line() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
 
         // Leading four spaces from each line should be stripped,
@@ -698,10 +686,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.touch("file1");
-        w.add("file1");
-        w.commit("commit1");
+        w.git.add("file1");
+        w.git.commit("commit1");
         w.tag("test");
         String sha1 = w.cmd("git rev-parse HEAD").substring(0,40);
         assertEquals(sha1, w.git.revParse(sha1).name());
@@ -711,7 +699,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revparse_throws_expected_exception() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         try {
             w.git.revParse("unknown-rev-to-parse");
             fail("Did not throw exception");
@@ -740,10 +728,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_push() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.touch("file1");
-        w.add("file1");
-        w.commit("commit1");
+        w.git.add("file1");
+        w.git.commit("commit1");
         ObjectId sha1 = w.head();
 
         WorkingArea r = new WorkingArea();
@@ -758,8 +746,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_notes_add() throws Exception {
         w.init();
         w.touch("file1");
-        w.add("file1");
-        w.commit("init");
+        w.git.add("file1");
+        w.commitEmpty("init");
 
         w.git.addNote("foo", "commits");
         assertEquals("foo\n", w.cmd("git notes show"));
@@ -777,7 +765,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_jenkins_11177() throws Exception
     {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         ObjectId base = w.head();
         ObjectId master = w.git.revParse("master");
         assertEquals(base, master);
@@ -795,15 +783,15 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Exploring JENKINS-20991 ambigous revision breaks checkout */
         w.touch("file-master", "content-master");
-        w.add("file-master");
-        w.commit("commit1-master");
+        w.git.add("file-master");
+        w.git.commit("commit1-master");
         final ObjectId masterTip = w.head();
 
         w.cmd("git branch branch1 " + masterTip.name());
         w.cmd("git checkout branch1");
         w.touch("file1", "content1");
-        w.add("file1");
-        w.commit("commit1-branch1");
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         /* JGit checks out the masterTag, while CliGit checks out
@@ -828,8 +816,8 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_no_submodules() throws IOException, InterruptedException {
         w.init();
         w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
-        w.add("committed-file");
-        w.commit("commit1");
+        w.git.add("committed-file");
+        w.git.commit("commit1");
         w.igit().submoduleClean(false);
         w.igit().submoduleClean(true);
         w.igit().submoduleUpdate(false);
@@ -883,7 +871,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getSubmoduleUrl() throws Exception {
         w = clone(localMirror());
-        w.checkout("tests/getSubmodules");
+        w.cmd("git checkout tests/getSubmodules");
         w.git.submoduleInit();
 
         assertEquals("git://github.com/puppetlabs/puppetlabs-firewall.git", w.igit().getSubmoduleUrl("modules/firewall"));
@@ -898,7 +886,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_setSubmoduleUrl() throws Exception {
         w = clone(localMirror());
-        w.checkout("tests/getSubmodules");
+        w.cmd("git checkout tests/getSubmodules");
         w.git.submoduleInit();
 
         String DUMMY = "/dummy";
@@ -917,7 +905,7 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea ws1 = new WorkingArea().init();
         WorkingArea ws2 = w.init();
 
-        ws1.commit("c");
+        ws1.commitEmpty("c");
         ws1.cmd("git remote add origin " + r.repoPath());
 
         ws1.cmd("git push origin master:b1");
@@ -967,36 +955,36 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_merge_strategy() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("branch1");
         w.git.checkout("branch1");
         w.touch("file", "content1");
-        w.add("file");
-        w.commit("commit1");
+        w.git.add("file");
+        w.git.commit("commit1");
         w.git.checkout("master");
         w.git.branch("branch2");
         w.git.checkout("branch2");
         File f = w.touch("file", "content2");
-        w.add("file");
-        w.commit("commit2");
+        w.git.add("file");
+        w.git.commit("commit2");
         w.git.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f));
     }
 
     public void test_merge_strategy_correct_fail() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.git.branch("branch1");
         w.git.checkout("branch1");
         w.touch("file", "content1");
-        w.add("file");
-        w.commit("commit1");
+        w.git.add("file");
+        w.git.commit("commit1");
         w.git.checkout("master");
         w.git.branch("branch2");
         w.git.checkout("branch2");
         w.touch("file", "content2");
-        w.add("file");
-        w.commit("commit2");
+        w.git.add("file");
+        w.git.commit("commit2");
         try {
             w.git.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
             fail();
@@ -1009,24 +997,24 @@ public abstract class GitAPITestCase extends TestCase {
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
-        w.commit("init");
+        w.commitEmpty("init");
         w.touch("file-master", "content-master");
-        w.add("file-master");
-        w.commit("commit1-master");
+        w.git.add("file-master");
+        w.git.commit("commit1-master");
         final ObjectId base = w.head();
 
         w.git.branch("branch1");
         w.git.checkout("branch1");
         w.touch("file1", "content1");
-        w.add("file1");
-        w.commit("commit1-branch1");
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.cmd("git branch branch2 master");
         w.git.checkout("branch2");
         File f = w.touch("file2", "content2");
-        w.add("file2");
-        w.commit("commit2-branch2");
+        w.git.add("file2");
+        w.git.commit("commit2-branch2");
         final ObjectId branch2 = w.head();
 
         assertFalse("file1 exists before merge", w.exists("file1"));
@@ -1056,9 +1044,9 @@ public abstract class GitAPITestCase extends TestCase {
         final String logMessage = "changelog-abort-test-commit";
         w.init();
         w.touch("file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
-        w.add("file-changelog-abort");
-        w.commit(logMessage);
-        String sha1 = w.revParse("HEAD").name();
+        w.git.add("file-changelog-abort");
+        w.git.commit(logMessage);
+        String sha1 = w.git.revParse("HEAD").name();
         ChangelogCommand changelogCommand = w.git.changelog();
         StringWriter writer = new StringWriter();
         changelogCommand.to(writer);
@@ -1114,14 +1102,14 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getHeadRev_current_directory() throws Exception {
         w = clone(localMirror());
-        w.checkout("master");
+        w.git.checkout("master");
         final ObjectId master = w.head();
 
         w.git.branch("branch1");
         w.git.checkout("branch1");
         w.touch("file1", "branch1 contents " + java.util.UUID.randomUUID().toString());
-        w.add("file1");
-        w.commit("commit1-branch1");
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         Map<String, ObjectId> heads = w.git.getHeadRev(w.repoPath());
@@ -1137,21 +1125,21 @@ public abstract class GitAPITestCase extends TestCase {
          * which matched the key.
          */
         w = clone(localMirror());
-        w.checkout("master");
+        w.git.checkout("master");
         final ObjectId master = w.head();
 
         w.git.branch("branch1");
         w.git.checkout("branch1");
         w.touch("file1", "content1");
-        w.add("file1");
-        w.commit("commit1-branch1");
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.cmd("git branch branch.2 master");
         w.git.checkout("branch.2");
         File f = w.touch("file.2", "content2");
-        w.add("file.2");
-        w.commit("commit2-branch.2");
+        w.git.add("file.2");
+        w.git.commit("commit2-branch.2");
         final ObjectId branchDot2 = w.head();
 
         Map<String,ObjectId> heads = w.git.getHeadRev(w.repoPath());
@@ -1182,11 +1170,11 @@ public abstract class GitAPITestCase extends TestCase {
     @NotImplementedInJGit
     public void test_changelog() throws Exception {
         w = clone(localMirror());
-        String sha1Prev = w.revParse("HEAD").name();
+        String sha1Prev = w.git.revParse("HEAD").name();
         w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.add("changelog-file");
-        w.commit("changelog-commit-message");
-        String sha1 = w.revParse("HEAD").name();
+        w.git.add("changelog-file");
+        w.git.commit("changelog-commit-message");
+        String sha1 = w.git.revParse("HEAD").name();
         check_changelog_sha1(sha1, "master");
     }
 
@@ -1244,11 +1232,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_changelog_bounded() throws Exception {
         w = clone(localMirror());
-        String sha1Prev = w.revParse("HEAD").name();
+        String sha1Prev = w.git.revParse("HEAD").name();
         w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.add("changelog-file");
-        w.commit("changelog-commit-message");
-        String sha1 = w.revParse("HEAD").name();
+        w.git.add("changelog-file");
+        w.git.commit("changelog-commit-message");
+        String sha1 = w.git.revParse("HEAD").name();
         check_bounded_changelog_sha1(sha1Prev, sha1, "master");
     }
 
@@ -1267,11 +1255,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_describe() throws Exception {
         WorkingArea w = new WorkingArea().init();
-        w.commit("first");
+        w.commitEmpty("first");
         w.tag("-m test t1");
         w.touch("a");
-        w.add("a");
-        w.commit("second");
+        w.git.add("a");
+        w.git.commit("second");
         assertEquals(w.cmd("git describe").trim(), w.git.describe("HEAD"));
 
         w.tag("-m test2 t2");
@@ -1297,24 +1285,24 @@ public abstract class GitAPITestCase extends TestCase {
          */
         w.init();
 
-        w.commit("c1");
+        w.commitEmpty("c1");
         ObjectId c1 = w.head();
 
         w.cmd("git branch Z "+c1.name());
-        w.checkout("Z");
-        w.commit("T");
+        w.git.checkout("Z");
+        w.commitEmpty("T");
         ObjectId t = w.head();
-        w.commit("c2");
+        w.commitEmpty("c2");
         ObjectId c2 = w.head();
-        w.commit("Z");
+        w.commitEmpty("Z");
 
         w.cmd("git branch X "+c1.name());
-        w.checkout("X");
-        w.commit("X");
+        w.git.checkout("X");
+        w.commitEmpty("X");
 
         w.cmd("git branch Y "+c1.name());
-        w.checkout("Y");
-        w.commit("c3");
+        w.git.checkout("Y");
+        w.commitEmpty("c3");
         ObjectId c3 = w.head();
         w.cmd("git merge --no-ff -m Y "+c2.name());
 
@@ -1349,7 +1337,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea", branchName); // git-client-1.6.0
         branches = w.cmd("git branch -l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
-        String sha1 = w.revParse("HEAD").name();
+        String sha1 = w.git.revParse("HEAD").name();
         String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
         assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
     }
@@ -1357,14 +1345,14 @@ public abstract class GitAPITestCase extends TestCase {
     @Bug(19108)
     public void test_checkoutBranch() throws Exception {
         w.init();
-        w.commit("c1");
+        w.commitEmpty("c1");
         w.tag("t1");
-        w.commit("c2");
+        w.commitEmpty("c2");
 
         w.git.checkoutBranch("foo", "t1");
 
-        assertEquals(w.head(),w.revParse("t1"));
-        assertEquals(w.head(),w.revParse("foo"));
+        assertEquals(w.head(),w.git.revParse("t1"));
+        assertEquals(w.head(),w.git.revParse("foo"));
 
         Ref head = w.repo().getRef("HEAD");
         assertTrue(head.isSymbolic());
@@ -1381,11 +1369,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revList_tag() throws Exception {
         w.init();
-        w.commit("c1");
+        w.commitEmpty("c1");
         Ref commitRefC1 = w.repo().getRef("HEAD");
         w.tag("t1");
         Ref tagRefT1 = w.repo().getRef("t1");
-        w.commit("c2");
+        w.commitEmpty("c2");
         Ref commitRefC2 = w.repo().getRef("HEAD");
         List<ObjectId> revList = w.git.revList("t1");
         assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
@@ -1394,9 +1382,9 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revList_local_branch() throws Exception {
         w.init();
-        w.commit("c1");
+        w.commitEmpty("c1");
         w.tag("t1");
-        w.commit("c2");
+        w.commitEmpty("c2");
         List<ObjectId> revList = w.git.revList("master");
         assertEquals("Wrong list size: " + revList, 2, revList.size());
     }
@@ -1404,13 +1392,13 @@ public abstract class GitAPITestCase extends TestCase {
     @Bug(20153)
     public void test_checkoutBranch_null() throws Exception {
         w.init();
-        w.commit("c1");
-        String sha1 = w.revParse("HEAD").name();
-        w.commit("c2");
+        w.commitEmpty("c1");
+        String sha1 = w.git.revParse("HEAD").name();
+        w.commitEmpty("c2");
 
         w.git.checkoutBranch(null, sha1);
 
-        assertEquals(w.head(),w.revParse(sha1));
+        assertEquals(w.head(),w.git.revParse(sha1));
 
         Ref head = w.repo().getRef("HEAD");
         assertFalse(head.isSymbolic());
@@ -1428,13 +1416,13 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_localCheckoutConflict() throws Exception {
         w.init();
         w.touch("foo","old");
-        w.add("foo");
-        w.commit("c1");
+        w.git.add("foo");
+        w.git.commit("c1");
         w.tag("t1");
 
         // delete the file from git
         w.cmd("git rm foo");
-        w.commit("c2");
+        w.git.commit("c2");
         assertFalse(w.file("foo").exists());
 
         // now create an untracked local file
@@ -1464,15 +1452,15 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_reset() throws IOException, InterruptedException {
         w.init();
         w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
-        w.add("committed-file");
-        w.commit("commit1");
+        w.git.add("committed-file");
+        w.git.commit("commit1");
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
         assertFalse("added-file exists at commit1", w.file("added-file").exists());
         assertFalse("touched-file exists at commit1", w.file("added-file").exists());
 
         w.cmd("git rm committed-file");
         w.touch("added-file", "File 2 content " + java.util.UUID.randomUUID().toString());
-        w.add("added-file");
+        w.git.add("added-file");
         w.touch("touched-file", "File 3 content " + java.util.UUID.randomUUID().toString());
         assertFalse("committed-file exists", w.file("committed-file").exists());
         assertTrue("added-file missing", w.file("added-file").exists());
@@ -1483,7 +1471,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("added-file missing", w.file("added-file").exists());
         assertTrue("touched-file missing", w.file("touched-file").exists());
 
-        w.add("added-file"); /* Add the file which soft reset "unadded" */
+        w.git.add("added-file"); /* Add the file which soft reset "unadded" */
 
         w.igit().reset(true);
         assertTrue("committed-file missing", w.file("committed-file").exists());
