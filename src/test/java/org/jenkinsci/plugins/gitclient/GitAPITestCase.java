@@ -786,10 +786,43 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("master"); // ref "master" is now ambiguous
         String revParse = w.cmd("git rev-parse master");
         assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
+        ObjectId masterTag = w.git.revParse("refs/tags/master");
+        assertEquals("masterTag != head", w.head(), masterTag);
 
         /* Get reference to ambiguous master */
         ObjectId ambiguous = w.git.revParse("master");
         assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
+
+        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
+        w.touch("file-master", "content-master");
+        w.add("file-master");
+        w.commit("commit1-master");
+        final ObjectId masterTip = w.head();
+
+        w.cmd("git branch branch1 " + masterTip.name());
+        w.cmd("git checkout branch1");
+        w.touch("file1", "content1");
+        w.add("file1");
+        w.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
+        /* JGit checks out the masterTag, while CliGit checks out
+         * master branch.  It is risky that there are different
+         * behaviors between the two implementations, but when a
+         * reference is ambiguous, it is safe to assume that
+         * resolution of the ambiguous reference is an implementation
+         * specific detail. */
+        w.git.checkout("master");
+        String messageDetails =
+            ", head=" + w.head().name() +
+            ", masterTip=" + masterTip.name() +
+            ", masterTag=" + masterTag.name() +
+            ", branch1=" + branch1.name();
+        if (w.git instanceof CliGitAPIImpl) {
+            assertEquals("head != master branch" + messageDetails, masterTip, w.head());
+        } else {
+            assertEquals("head != master tag" + messageDetails, masterTag, w.head());
+        }
     }
 
     public void test_no_submodules() throws IOException, InterruptedException {
