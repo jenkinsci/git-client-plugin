@@ -74,8 +74,7 @@ public abstract class GitAPITestCase extends TestCase {
             int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
                     envs(env).stdout(out).join();
             String s = out.toString();
-            assertEquals(s, 0, st);
-            System.out.println(s);
+            assertEquals(s, 0, st); /* Reports full output of failing commands */
             return s;
         }
 
