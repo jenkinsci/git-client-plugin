@@ -1824,13 +1824,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
-    private StoredConfig getConfig(String GIT_DIR) {
+    private StoredConfig getConfig(String GIT_DIR) throws GitException {
         StoredConfig config;
-        Repository repo = getRepository();
-        if (isBlank(GIT_DIR))
-            config = repo.getConfig();
-        else
-            config = new FileBasedConfig(new File(workspace,GIT_DIR),repo.getFS());
+        Repository repo = null;
+        if (isBlank(GIT_DIR)) {
+            repo = getRepository();
+        } else {
+            try {
+                /* Construct a Repository using GIT_DIR as its working tree */
+                repo = new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build();
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
+        }
+        config = repo.getConfig();
         repo.close();
         return config;
     }
