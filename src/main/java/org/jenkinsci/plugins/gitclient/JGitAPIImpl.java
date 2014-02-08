@@ -867,7 +867,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
         final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
         base.setDirectory(workspace);
-        base.setProgressMonitor(new ProgressMonitor(listener));
+        base.setProgressMonitor(new JGitProgressMonitor(listener));
         base.setCredentialsProvider(getProvider());
 
         return new CloneCommand() {
@@ -1145,7 +1145,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             repo = getRepository();
             git(repo).push().setRemote(remoteName).setRefSpecs(ref)
-                    .setProgressMonitor(new ProgressMonitor(listener))
+                    .setProgressMonitor(new JGitProgressMonitor(listener))
                     .setCredentialsProvider(getProvider())
                     .call();
         } catch (GitAPIException e) {
