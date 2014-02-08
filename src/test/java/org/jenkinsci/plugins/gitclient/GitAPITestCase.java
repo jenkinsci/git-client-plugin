@@ -893,8 +893,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().setSubmoduleUrl("modules/firewall", DUMMY);
 
         // create a brand new Git object to make sure it's persisted
-        w = new WorkingArea(w.repo);
-        assertEquals(DUMMY, w.igit().getSubmoduleUrl("modules/firewall"));
+        WorkingArea subModuleVerify = new WorkingArea(w.repo);
+        assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
     public void test_prune() throws Exception {
@@ -928,7 +928,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_revListAll() throws Exception {
-        WorkingArea w = new WorkingArea().init();
+        w.init();
         w.cmd("git pull " + localMirror());
 
         StringBuilder out = new StringBuilder();
@@ -940,7 +940,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_revList() throws Exception {
-        WorkingArea w = new WorkingArea().init();
+        w.init();
         w.cmd("git pull " + localMirror());
 
         for (Branch b : w.git.getRemoteBranches()) {
@@ -1254,7 +1254,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_describe() throws Exception {
-        WorkingArea w = new WorkingArea().init();
+        w.init();
         w.commitEmpty("first");
         w.tag("-m test t1");
         w.touch("a");
