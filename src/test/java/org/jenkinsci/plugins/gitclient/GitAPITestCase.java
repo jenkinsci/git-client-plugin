@@ -166,6 +166,21 @@ public abstract class GitAPITestCase extends TestCase {
         public IGitAPI igit() {
             return (IGitAPI)git;
         }
+
+        /* CliGitAPIImpl.clone_() method does not set the remote URL,
+         * nor does it perform a checkout.  That is different than the
+         * default behavior of command line git, and different than
+         * the default behavior of the JGitAPIImpl.clone_() method.
+         * This convenience method adapts the CliGitAPIImpl clone
+         * results to be more consistent with the JGitAPIImpl clone
+         * results.
+         */
+        void adaptCliGitClone(String repoName) throws IOException, InterruptedException {
+            if (git instanceof CliGitAPIImpl) {
+                git.setRemoteUrl(repoName, localMirror());
+                git.checkout(repoName + "/master", "master");
+            }
+        }
     }
     
     private WorkingArea w;
@@ -252,10 +267,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("origin", localMirror());
-            w.git.checkout("origin/master", "master");
-        }
+        w.adaptCliGitClone("origin");
         check_remote_url("origin");
         check_branches("master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -265,10 +277,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_repositoryName() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("upstream").execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("upstream", localMirror());
-            w.git.checkout("upstream/master", "master");
-        }
+        w.adaptCliGitClone("upstream");
         check_remote_url("upstream");
         check_branches("master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -278,10 +287,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_shallow() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("origin", localMirror());
-            w.git.checkout("origin/master", "master");
-        }
+        w.adaptCliGitClone("origin");
         check_remote_url("origin");
         check_branches("master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -293,10 +299,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_shared() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("origin", localMirror());
-            w.git.checkout("origin/master", "master");
-        }
+        w.adaptCliGitClone("upstream");
         check_remote_url("origin");
         check_branches("master");
     }
@@ -304,10 +307,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_reference() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(localMirror()).execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("origin", localMirror());
-            w.git.checkout("origin/master", "master");
-        }
+        w.adaptCliGitClone("origin");
         check_remote_url("origin");
         check_branches("master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -328,10 +328,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         assertTrue("SRC_DIR " + SRC_DIR + " has no .git subdir", (new File(SRC_DIR + File.separator + ".git").isDirectory()));
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
-        if (w.git instanceof CliGitAPIImpl) {
-            w.git.setRemoteUrl("origin", localMirror());
-            w.git.checkout("origin/master", "master");
-        }
+        w.adaptCliGitClone("origin");
         check_remote_url("origin");
         check_branches("master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
