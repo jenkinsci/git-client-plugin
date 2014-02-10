@@ -26,6 +26,7 @@ import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -490,15 +491,49 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_fetch() throws Exception {
-        WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("init");
-        String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
-
+        /* Create a working repo containing a commit */
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch("origin", new RefSpec[] {null});
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
+        w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file1");
+        w.git.commit("commit1");
+        ObjectId commit1 = w.head();
+
+        /* Clone working repo into a bare repo */
+        WorkingArea bare = new WorkingArea();
+        bare.init(true);
+        w.git.setRemoteUrl("origin", bare.repoPath());
+        w.git.push("origin", "master");
+        ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare != working", commit1, bareCommit1);
+
+        /* Clone new working repo from bare repo */
+        WorkingArea newArea = clone(bare.repoPath());
+        ObjectId newAreaHead = newArea.head();
+        assertEquals("bare != newArea", bareCommit1, newAreaHead);
+
+        /* Commit a new change to the original repo */
+        w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file2");
+        w.git.commit("commit2");
+        ObjectId commit2 = w.head();
+
+        /* Push the new change to the bare repo */
+        w.git.push("origin", "master");
+        ObjectId bareCommit2 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare2 != working2", commit2, bareCommit2);
+
+        /* Fetch new change into newArea repo */
+        RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
+        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        refSpecs.add(defaultRefSpec);
+        newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
+
+        /* Confirm the fetch did not alter working branch */
+        assertEquals("beforeMerge != commit1", commit1, newArea.head());
+
+        /* Merge the fetch results into working branch */
+        newArea.git.merge().setRevisionToMerge(bareCommit2).execute();
+        assertEquals("bare2 != newArea2", bareCommit2, newArea.head());
     }
 
     public void test_fetch_from_url() throws Exception {
