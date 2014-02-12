@@ -225,6 +225,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             remoteName = getDefaultRemote();
 
         String url = getRemoteUrl(remoteName);
+        if (url == null)
+            throw new GitException("remote." + remoteName + ".url not defined");
         args.add(url);
         if (refspec != null && refspec.length > 0)
             for (RefSpec rs: refspec)
@@ -400,7 +402,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String arg = sanitize(revName + "^{commit}");
         String result = launchCommand("rev-parse", arg);
-        return ObjectId.fromString(firstLine(result).trim());
+        String line = firstLine(result);
+        if (line == null)
+            throw new GitException("rev-parse no content returned for " + revName);
+        return ObjectId.fromString(line.trim());
     }
 
     /**
@@ -442,12 +447,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
         String result = launchCommand("rev-parse", "--verify", revName);
-        return ObjectId.fromString(firstLine(result).trim());
+        String line = firstLine(result);
+        if (line == null)
+            throw new GitException("null first line from rev-parse(" + revName +")");
+        return ObjectId.fromString(line.trim());
     }
 
     public String describe(String commitIsh) throws GitException, InterruptedException {
         String result = launchCommand("describe", "--tags", commitIsh);
-        return firstLine(result).trim();
+        String line = firstLine(result);
+        if (line == null)
+            throw new GitException("null first line from describe(" + commitIsh +")");
+        return line.trim();
     }
 
     public void prune(RemoteConfig repository) throws GitException, InterruptedException {
@@ -686,7 +697,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final String dirArg = "--git-dir=" + GIT_DIR;
             result = launchCommand(dirArg, "config", "--get", remoteNameUrl);
         }
-        return firstLine(result).trim();
+        String line = firstLine(result);
+        if (line == null)
+            throw new GitException("No output from bare repository check for " + GIT_DIR);
+        return line.trim();
     }
 
     public void setRemoteUrl(String name, String url, String GIT_DIR ) throws GitException, InterruptedException {
@@ -740,8 +754,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String gitDir = "--git-dir=" + GIT_DIR;
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
+        String line = firstLine(ret);
+        if (line == null)
+            throw new GitException("No output from bare repository check for " + GIT_DIR);
 
-        return !"false".equals(firstLine(ret).trim());
+        return !"false".equals(line.trim());
     }
 
     private String pathJoin( String a, String b ) {
@@ -771,6 +788,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         URI origin;
         try {
             String url = getRemoteUrl(remote);
+            if (url == null)
+                throw new GitException("remote." + remote + ".url not defined in workspace");
 
             // ensure that any /.git ending is removed
             String gitEnd = pathJoin("", ".git");
