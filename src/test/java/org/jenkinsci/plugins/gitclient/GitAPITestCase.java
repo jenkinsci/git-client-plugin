@@ -178,7 +178,6 @@ public abstract class GitAPITestCase extends TestCase {
          */
         void adaptCliGitClone(String repoName) throws IOException, InterruptedException {
             if (git instanceof CliGitAPIImpl) {
-                git.setRemoteUrl(repoName, localMirror());
                 git.checkout(repoName + "/master", "master");
             }
         }
@@ -397,8 +396,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteURL_two_args() throws Exception {
         w.init();
         String originUrl = "https://github.com/bogus/bogus.git";
-        w.cmd("git remote add origin " + originUrl);
-        // w.git.setRemoteUrl("origin", originUrl);
+        w.git.setRemoteUrl("origin", originUrl);
         assertEquals("Wrong remote URL", originUrl, w.git.getRemoteUrl("origin"));
         assertEquals("Wrong null remote URL", originUrl, w.igit().getRemoteUrl("origin", null));
         assertEquals("Wrong blank remote URL", originUrl, w.igit().getRemoteUrl("origin", ""));

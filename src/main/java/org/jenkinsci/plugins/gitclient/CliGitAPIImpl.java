@@ -262,7 +262,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
         return new CloneCommand() {
             String url;
-            String origin;
+            String origin = "origin";
             String reference;
             boolean shallow,shared;
 			Integer timeout;
@@ -357,6 +357,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .shallow(shallow)
                         .timeout(timeout)
                         .execute();
+                setRemoteUrl(origin, url);
             }
 
         };
