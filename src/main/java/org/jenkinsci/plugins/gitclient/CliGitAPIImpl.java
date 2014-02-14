@@ -806,7 +806,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // In these cases, origin is null and it's best to just exit early.
             return;
         } catch (Exception e) {
-            throw new GitException("Could determine remote.origin.url", e);
+            throw new GitException("Could not determine remote." + remote + ".url", e);
         }
 
         if ( origin.getScheme() == null ||
