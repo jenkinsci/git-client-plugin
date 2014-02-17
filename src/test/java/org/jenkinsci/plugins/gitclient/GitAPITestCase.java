@@ -542,6 +542,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
         ObjectId commit1 = w.head();
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
 
         /* Clone working repo into a bare repo */
         WorkingArea bare = new WorkingArea();
@@ -550,6 +552,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
 
         /* Create a branch in working repo named "parent" */
         w.git.branch("parent");
@@ -558,16 +562,30 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file2");
         w.git.commit("commit2");
         ObjectId commit2 = w.head();
+        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
 
         /* Push branch named "parent" to bare repo */
         w.git.push("origin", "parent");
         ObjectId bareCommit2 = bare.git.getHeadRev(bare.repoPath(), "parent");
         assertEquals("working parent != bare parent", commit2, bareCommit2);
+        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
 
         /* Clone new working repo from bare repo */
         WorkingArea newArea = clone(bare.repoPath());
         ObjectId newAreaHead = newArea.head();
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
+        Set<Branch> remoteBranches = newArea.git.getRemoteBranches();
+        Collection names = Collections2.transform(remoteBranches, new Function<Branch, String>() {
+            public String apply(Branch branch) {
+                return branch.getName();
+            }
+        });
+        assertEquals("Wrong count in " + remoteBranches, 3, remoteBranches.size());
+        assertTrue("origin/master not in " + names, names.contains("origin/master"));
+        assertTrue("origin/parent not in " + names, names.contains("origin/parent"));
+        assertTrue("origin/HEAD not in "+ names, names.contains("origin/HEAD"));
 
         /* Checkout parent in new working repo */
         newArea.git.checkout("origin/parent", "parent");
@@ -577,9 +595,11 @@ public abstract class GitAPITestCase extends TestCase {
         /* Delete parent branch from w */
         w.git.checkout("master");
         w.cmd("git branch -D parent");
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
 
         /* Delete parent branch on bare repo*/
         bare.cmd("git branch -D parent");
+        // assertEquals("Wrong branch count", 1, bare.git.getBranches().size());
 
         /* Create parent/a branch in working repo */
         w.git.branch("parent/a");
@@ -593,6 +613,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push("origin", "parent/a");
         ObjectId bareCommit3 = bare.git.getHeadRev(bare.repoPath(), "parent/a");
         assertEquals("parent/a != bare", commit3, bareCommit3);
+        remoteBranches = bare.git.getRemoteBranches();
+        assertEquals("Wrong count in " + remoteBranches, 0, remoteBranches.size());
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<RefSpec>();
