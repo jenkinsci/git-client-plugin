@@ -793,6 +793,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* JGitAPIImpl revParse fails unexpectedly when used here */
         ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
         assertEquals("Heads don't match", workHead, bareHead);
+        assertEquals("Heads don't match", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
 
         /* Commit a new file */
         w.touch("file1");
@@ -809,6 +810,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.cmd("git rev-parse master").substring(0, 40));
         ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
         assertEquals("Working SHA1 != bare SHA1", workHead2, bareHead2);
+        assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
     }
 
     public void test_notes_add() throws Exception {
