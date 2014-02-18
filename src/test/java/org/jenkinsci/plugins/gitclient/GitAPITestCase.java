@@ -545,6 +545,16 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
 
+        /* Prune when a remote is not yet defined */
+        try {
+            w.git.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
+            fail("Should have thrown an exception");
+        } catch (GitException ge) {
+            String expected = w.git instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
+            final String msg = ge.getMessage();
+            assertTrue("Wrong exception: " + msg, msg.contains(expected));
+        }
+
         /* Clone working repo into a bare repo */
         WorkingArea bare = new WorkingArea();
         bare.init(true);
