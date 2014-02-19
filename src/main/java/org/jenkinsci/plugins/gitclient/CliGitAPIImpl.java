@@ -30,8 +30,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
+import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.routing.HttpRoutePlanner;
@@ -1633,6 +1635,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             defaultcreds = Netrc.getInstance().getCredentials(u.getHost());
         }
         if (defaultcreds != null) {
+            final AuthScope ntlmSchemeScope = new AuthScope(u.getHost(), u.getPort(), AuthScope.ANY_REALM, AuthSchemes.NTLM);
+            final UsernamePasswordCredentials up = (UsernamePasswordCredentials) defaultcreds;
+            final NTCredentials ntCredentials = new NTCredentials(up.getUserName(), up.getPassword(), u.getHost(), "");
+            credentialsProvider.setCredentials(ntlmSchemeScope, ntCredentials);
+
             credentialsProvider.setCredentials(AuthScope.ANY, defaultcreds);
         }
 
