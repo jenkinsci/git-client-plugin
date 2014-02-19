@@ -35,6 +35,9 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.SSLContexts;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -53,6 +56,9 @@ import org.kohsuke.stapler.framework.io.WriterOutputStream;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +73,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 
 /**
@@ -79,7 +86,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final boolean acceptSelfSignedCertificates;
     static {
-        // TODO: add support for that when initializing the HttpClient
         acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
     }
 
@@ -1656,7 +1662,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
 
         clientBuilder.setUserAgent("git/1.7.0");
-        // TODO: configure self-signed certificate support for SSL
+        if(acceptSelfSignedCertificates && "https".equalsIgnoreCase(u.getScheme())) {
+            final SSLContextBuilder contextBuilder = SSLContexts.custom();
+            try {
+                contextBuilder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+            } catch (NoSuchAlgorithmException e) {
+                throw new GitException(e.getLocalizedMessage(), e);
+            } catch (KeyStoreException e) {
+                throw new GitException(e.getLocalizedMessage(), e);
+            }
+            SSLContext sslContext = null;
+            try {
+                sslContext = contextBuilder.build();
+            } catch (KeyManagementException e) {
+                throw new GitException(e.getLocalizedMessage(), e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new GitException(e.getLocalizedMessage(), e);
+            }
+            clientBuilder.setSslcontext(sslContext);
+        }
         final CloseableHttpClient client = clientBuilder.build();
         int status = 0;
         try {
