@@ -25,15 +25,21 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
 import hudson.util.Secret;
 
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
-import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.conn.routing.HttpRoutePlanner;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.DefaultProxyRoutePlanner;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -63,8 +69,6 @@ import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLException;
 
-import static org.apache.commons.httpclient.params.HttpMethodParams.USER_AGENT;
-
 /**
  * Implementation class using command line CLI ran as external command.
  * <b>
@@ -73,11 +77,10 @@ import static org.apache.commons.httpclient.params.HttpMethodParams.USER_AGENT;
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
+    private static final boolean acceptSelfSignedCertificates;
     static {
-        if (Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL")) {
-            Protocol.registerProtocol("https",
-                new Protocol("https", new EasySSLProtocolSocketFactory(), 443));
-        }
+        // TODO: add support for that when initializing the HttpClient
+        acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
     }
 
     private static final long serialVersionUID = 1;
@@ -1611,7 +1614,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private void checkCredentials(URIish u, StandardCredentials cred) {
         String url = u.toPrivateString();
-        HttpClient client = new HttpClient();
+        final HttpClientBuilder clientBuilder = HttpClients.custom();
+        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
         Credentials defaultcreds;
         if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
             UsernamePasswordCredentialsImpl up = (UsernamePasswordCredentialsImpl) cred;
@@ -1622,8 +1627,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             defaultcreds = Netrc.getInstance().getCredentials(u.getHost());
         }
         if (defaultcreds != null) {
-            client.getParams().setAuthenticationPreemptive(true);
-            client.getState().setCredentials(AuthScope.ANY, defaultcreds);
+            credentialsProvider.setCredentials(AuthScope.ANY, defaultcreds);
         }
 
         if (proxy != null) {
@@ -1635,9 +1639,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
             if(shouldProxy) {
-                client.getHostConfiguration().setProxy(proxy.name, proxy.port);
+                final HttpHost proxyHost = new HttpHost(proxy.name, proxy.port); 
+                final HttpRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxyHost);
+                clientBuilder.setRoutePlanner(routePlanner);
                 if (proxy.getUserName() != null && proxy.getPassword() != null)
-                    client.getState().setProxyCredentials(AuthScope.ANY, new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
+                    credentialsProvider.setCredentials(new AuthScope(proxyHost), new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
             }
         }
 
@@ -1649,14 +1655,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             candidates.add(url + ".git/info/refs?service=git-upload-pack"); // smart-http
         }
 
+        clientBuilder.setUserAgent("git/1.7.0");
+        // TODO: configure self-signed certificate support for SSL
+        final CloseableHttpClient client = clientBuilder.build();
         int status = 0;
         try {
             for (String candidate : candidates) {
-                GetMethod get = new GetMethod(candidate);
-                get.setFollowRedirects(true);
-                get.getParams().setParameter(USER_AGENT, "git/1.7.0");
-                status = client.executeMethod(get);
-                if (status == 200) break;
+                HttpGet get = new HttpGet(candidate);
+                
+                final CloseableHttpResponse response = client.execute(get);
+                try{
+                    status = response.getStatusLine().getStatusCode();
+                    if (status == 200) break;
+                }
+                finally {
+                    response.close();
+                }
             }
 
             if (status != 200)
@@ -1671,6 +1685,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     + " (exception: " + e + ")" );
         } catch (IllegalArgumentException e) {
             throw new GitException("Invalid URL " + u.toString());
+        }
+        finally {
+            try {
+                client.close();
+            } catch (IOException e) {
+                throw new GitException(e.getLocalizedMessage());
+            }
         }
     }
 

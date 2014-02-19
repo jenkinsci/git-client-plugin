@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Before;
 import org.junit.Test;
 
