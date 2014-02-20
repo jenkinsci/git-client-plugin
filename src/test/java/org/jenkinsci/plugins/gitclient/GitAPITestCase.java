@@ -885,6 +885,46 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(sha1.name(), remoteSha1);
     }
 
+    @Deprecated
+    public void test_push_deprecated_signature() throws Exception {
+        /* Make working repo a remote of the bare repo */
+        w.init();
+        w.commitEmpty("init");
+        ObjectId workHead = w.head();
+
+        /* Create a bare repo */
+        WorkingArea bare = new WorkingArea();
+        bare.init(true);
+
+        /* Set working repo origin to point to bare */
+        w.git.setRemoteUrl("origin", bare.repoPath());
+        assertEquals("Wrong remote URL", w.git.getRemoteUrl("origin"), bare.repoPath());
+
+        /* Push to bare repo */
+        w.git.push("origin", "master");
+        /* JGitAPIImpl revParse fails unexpectedly when used here */
+        ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
+        assertEquals("Heads don't match", workHead, bareHead);
+        assertEquals("Heads don't match", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
+
+        /* Commit a new file */
+        w.touch("file1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+
+        /* Push commit to the bare repo */
+        Config config = new Config();
+        config.fromText(w.contentOf(".git/config"));
+        RemoteConfig origin = new RemoteConfig(config, "origin");
+        w.igit().push(origin, "master");
+
+        /* JGitAPIImpl revParse fails unexpectedly when used here */
+        ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.cmd("git rev-parse master").substring(0, 40));
+        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
+        assertEquals("Working SHA1 != bare SHA1", workHead2, bareHead2);
+        assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
+    }
+
     public void test_notes_add() throws Exception {
         w.init();
         w.touch("file1");
