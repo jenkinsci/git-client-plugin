@@ -584,8 +584,6 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Fetch into newArea repo with null RefSpec - should only pull tags, not commits */
         newArea.git.fetch("origin", null, null);
-        /* Fetch into newArea repo with no RefSpec - should only pull tags, not commits */
-        newArea.git.fetch("origin");
         /* Assert that change did not arrive in repo - before merge */
         assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
         try {
@@ -600,6 +598,14 @@ public abstract class GitAPITestCase extends TestCase {
         }
         /* Assert that change did not arrive in repo - after merge */
         assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
+
+        try { 
+            /* Fetch into newArea repo with invalid repo name and no RefSpec */
+            newArea.git.fetch("invalid-remote-name");
+            fail("Should have thrown an exception");
+        } catch (GitException ge) {
+            assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains("invalid-remote-name"));
+        }
     }
 
     @Bug(19591)
