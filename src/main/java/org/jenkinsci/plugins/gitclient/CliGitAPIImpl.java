@@ -322,7 +322,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
                 init();
-                if (reference != null && !reference.equals("")) {
+                if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
                         listener.error("Reference path does not exist: " + reference);
@@ -462,10 +462,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void prune(RemoteConfig repository) throws GitException, InterruptedException {
-        if (getRemoteUrl(repository.getName()) != null &&
-            !getRemoteUrl(repository.getName()).equals("")) {
+        String repoName = repository.getName();
+        String repoUrl = getRemoteUrl(repoName);
+        if (repoUrl != null && !repoUrl.isEmpty()) {
             ArgumentListBuilder args = new ArgumentListBuilder();
-            args.add("remote", "prune", repository.getName());
+            args.add("remote", "prune", repoName);
 
             launchCommand(args);
         }
@@ -597,7 +598,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     	if (recursive) {
             args.add("--init", "--recursive");
         }
-        if (reference != null && !reference.equals("")) {
+        if (reference != null && !reference.isEmpty()) {
             File referencePath = new File(reference);
             if (!referencePath.exists())
                 listener.error("Reference path does not exist: " + reference);
