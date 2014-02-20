@@ -534,6 +534,118 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("bare2 != newArea2", bareCommit2, newArea.head());
     }
 
+    @Bug(19591)
+    public void test_fetch_needs_preceding_prune() throws Exception {
+        /* Create a working repo containing a commit */
+        w.init();
+        w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file1");
+        w.git.commit("commit1");
+        ObjectId commit1 = w.head();
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+
+        /* Prune when a remote is not yet defined */
+        try {
+            w.git.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
+            fail("Should have thrown an exception");
+        } catch (GitException ge) {
+            String expected = w.git instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
+            final String msg = ge.getMessage();
+            assertTrue("Wrong exception: " + msg, msg.contains(expected));
+        }
+
+        /* Clone working repo into a bare repo */
+        WorkingArea bare = new WorkingArea();
+        bare.init(true);
+        w.git.setRemoteUrl("origin", bare.repoPath());
+        w.git.push("origin", "master");
+        ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare != working", commit1, bareCommit1);
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+
+        /* Create a branch in working repo named "parent" */
+        w.git.branch("parent");
+        w.git.checkout("parent");
+        w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file2");
+        w.git.commit("commit2");
+        ObjectId commit2 = w.head();
+        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+
+        /* Push branch named "parent" to bare repo */
+        w.git.push("origin", "parent");
+        ObjectId bareCommit2 = bare.git.getHeadRev(bare.repoPath(), "parent");
+        assertEquals("working parent != bare parent", commit2, bareCommit2);
+        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
+        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+
+        /* Clone new working repo from bare repo */
+        WorkingArea newArea = clone(bare.repoPath());
+        ObjectId newAreaHead = newArea.head();
+        assertEquals("bare != newArea", bareCommit1, newAreaHead);
+        Set<Branch> remoteBranches = newArea.git.getRemoteBranches();
+        Collection names = Collections2.transform(remoteBranches, new Function<Branch, String>() {
+            public String apply(Branch branch) {
+                return branch.getName();
+            }
+        });
+        assertEquals("Wrong count in " + remoteBranches, 3, remoteBranches.size());
+        assertTrue("origin/master not in " + names, names.contains("origin/master"));
+        assertTrue("origin/parent not in " + names, names.contains("origin/parent"));
+        assertTrue("origin/HEAD not in "+ names, names.contains("origin/HEAD"));
+
+        /* Checkout parent in new working repo */
+        newArea.git.checkout("origin/parent", "parent");
+        ObjectId newAreaParent = newArea.head();
+        assertEquals("parent1 != newAreaParent", commit2, newAreaParent);
+
+        /* Delete parent branch from w */
+        w.git.checkout("master");
+        w.cmd("git branch -D parent");
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+
+        /* Delete parent branch on bare repo*/
+        bare.cmd("git branch -D parent");
+        // assertEquals("Wrong branch count", 1, bare.git.getBranches().size());
+
+        /* Create parent/a branch in working repo */
+        w.git.branch("parent/a");
+        w.git.checkout("parent/a");
+        w.touch("file3", "file3 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file3");
+        w.git.commit("commit3");
+        ObjectId commit3 = w.head();
+
+        /* Push parent/a branch to bare repo */
+        w.git.push("origin", "parent/a");
+        ObjectId bareCommit3 = bare.git.getHeadRev(bare.repoPath(), "parent/a");
+        assertEquals("parent/a != bare", commit3, bareCommit3);
+        remoteBranches = bare.git.getRemoteBranches();
+        assertEquals("Wrong count in " + remoteBranches, 0, remoteBranches.size());
+
+        RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
+        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        refSpecs.add(defaultRefSpec);
+        try {
+            /* Fetch parent/a into newArea repo - fails for
+             * CliGitAPIImpl, succeeds for JGitAPIImpl */
+            newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
+            assertTrue("CliGit should have thrown an exception", newArea.git instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            final String msg = ge.getMessage();
+            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated"));
+        }
+
+        /* Use git remote prune origin to remove obsolete branch named "parent" */
+        newArea.git.prune(new RemoteConfig(new Config(), "origin"));
+
+        /* Fetch should succeed */
+        newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
+    }
+
     public void test_fetch_from_url() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
