@@ -2,7 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -178,7 +178,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.shallow = shallow;
                 return this;
             }
-            
+
             public FetchCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
@@ -293,7 +293,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.reference = reference;
                 return this;
             }
-            
+
             public CloneCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
@@ -341,7 +341,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             try {
                                 File alternates = new File(workspace, ".git/objects/info/alternates");
                                 PrintWriter w = new PrintWriter(alternates);
-                                // git implementations on windows also use 
+                                // git implementations on windows also use
                                 w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
                                 w.close();
                             } catch (FileNotFoundException e) {
@@ -985,7 +985,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
     		StandardCredentials credentials,
     		@NonNull URIish url) throws GitException, InterruptedException {
-    	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);    	
+    	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
     }
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
@@ -1145,7 +1145,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
     }
-    
+
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env) throws GitException, InterruptedException {
     	return launchCommandIn(args, workDir, environment, TIMEOUT);
     }
@@ -1615,8 +1615,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             .setHost(u.getHost())
             .setPort(u.getPort());
 
-        if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
-            UsernamePasswordCredentialsImpl up = (UsernamePasswordCredentialsImpl) cred;
+        if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
             uri = uri.setUser(up.getUsername())
                      .setPass(Secret.toString(up.getPassword()));
         }
@@ -1632,8 +1632,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String url = u.toPrivateString();
         HttpClient client = new HttpClient();
         Credentials defaultcreds;
-        if (cred != null && cred instanceof UsernamePasswordCredentialsImpl) {
-            UsernamePasswordCredentialsImpl up = (UsernamePasswordCredentialsImpl) cred;
+        if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
+            StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
             defaultcreds = new UsernamePasswordCredentials(up.getUsername(), Secret.toString(up.getPassword()));
         } else if (u.getUser() != null && u.getPass() != null) {
             defaultcreds = new UsernamePasswordCredentials(u.getUser(), u.getPass());
