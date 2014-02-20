@@ -532,6 +532,74 @@ public abstract class GitAPITestCase extends TestCase {
         /* Merge the fetch results into working branch */
         newArea.git.merge().setRevisionToMerge(bareCommit2).execute();
         assertEquals("bare2 != newArea2", bareCommit2, newArea.head());
+
+        /* Commit a new change to the original repo */
+        w.touch("file3", "file3 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file3");
+        w.git.commit("commit3");
+        ObjectId commit3 = w.head();
+
+        /* Push the new change to the bare repo */
+        w.git.push("origin", "master");
+        ObjectId bareCommit3 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare3 != working3", commit3, bareCommit3);
+
+        /* Fetch new change into newArea repo using different argument forms */
+        newArea.git.fetch(null, defaultRefSpec);
+        newArea.git.fetch(null, defaultRefSpec, defaultRefSpec);
+
+        /* Merge the fetch results into working branch */
+        newArea.git.merge().setRevisionToMerge(bareCommit3).execute();
+        assertEquals("bare3 != newArea3", bareCommit3, newArea.head());
+
+        /* Commit a new change to the original repo */
+        w.touch("file4", "file4 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file4");
+        w.git.commit("commit4");
+        ObjectId commit4 = w.head();
+
+        /* Push the new change to the bare repo */
+        w.git.push("origin", "master");
+        ObjectId bareCommit4 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare4 != working4", commit4, bareCommit4);
+
+        /* Fetch new change into newArea repo using a different argument form */
+        RefSpec [] refSpecArray = { defaultRefSpec, defaultRefSpec };
+        newArea.git.fetch("origin", refSpecArray);
+
+        /* Merge the fetch results into working branch */
+        newArea.git.merge().setRevisionToMerge(bareCommit4).execute();
+        assertEquals("bare4 != newArea4", bareCommit4, newArea.head());
+
+        /* Commit a new change to the original repo */
+        w.touch("file5", "file5 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file5");
+        w.git.commit("commit5");
+        ObjectId commit5 = w.head();
+
+        /* Push the new change to the bare repo */
+        w.git.push("origin", "master");
+        ObjectId bareCommit5 = bare.git.getHeadRev(bare.repoPath(), "master");
+        assertEquals("bare5 != working5", commit5, bareCommit5);
+
+        /* Fetch into newArea repo with null RefSpec - should only pull tags, not commits */
+        newArea.git.fetch("origin", null);
+        /* Fetch into newArea repo with no RefSpec - should only pull tags, not commits */
+        newArea.git.fetch("origin");
+        /* Assert that change did not arrive in repo - before merge */
+        assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
+        try {
+            newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
+            fail("Should have thrown an exception");
+        } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
+            String expectedSubString = "Missing commit " + bareCommit5.name();
+            assertTrue("Wrong message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
+        } catch (GitException ge) {
+            assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains("Could not merge"));
+            assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains(bareCommit5.name()));
+        }
+        /* Assert that change did not arrive in repo - after merge */
+        assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
     }
 
     @Bug(19591)
