@@ -583,7 +583,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("bare5 != working5", commit5, bareCommit5);
 
         /* Fetch into newArea repo with null RefSpec - should only pull tags, not commits */
-        newArea.git.fetch("origin", null);
+        newArea.git.fetch("origin", null, null);
         /* Fetch into newArea repo with no RefSpec - should only pull tags, not commits */
         newArea.git.fetch("origin");
         /* Assert that change did not arrive in repo - before merge */
