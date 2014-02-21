@@ -1798,13 +1798,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        if (isBlank(GIT_DIR)) {
-            Repository repo = getRepository();
-            boolean isBare = repo.isBare();
-            repo.close();
-            return isBare;
+        Repository repo = null;
+        boolean isBare = false;
+        if (GIT_DIR == null) {
+            throw new GitException("Not a git repository"); // Compatible with CliGitAPIImpl
         }
-        return new File(workspace,GIT_DIR).getName().equals(".git");
+        try {
+            if (isBlank(GIT_DIR) || !(new File(GIT_DIR)).isAbsolute()) {
+                if ((new File(workspace, ".git")).exists()) {
+                    repo = getRepository();
+                } else {
+                    repo = new RepositoryBuilder().setGitDir(workspace).build();
+                }
+            } else {
+                repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+            }
+            isBare = repo.isBare();
+        } catch (IOException ioe) {
+            throw new GitException(ioe);
+        } finally {
+            if (repo != null) repo.close();
+        }
+        return isBare;
     }
 
     @Deprecated
