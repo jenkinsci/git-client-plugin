@@ -56,6 +56,7 @@ public abstract class GitAPITestCase extends TestCase {
     class WorkingArea {
         final File repo;
         final GitClient git;
+        boolean bare = false;
         
         WorkingArea() throws Exception {
             this(temporaryDirectoryAllocator.allocate());
@@ -91,6 +92,7 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea init(boolean bare) throws IOException, InterruptedException {
             if (bare) {
                 cmd("git init --bare");
+                bare = true;
             } else {
                 init();
             }
@@ -151,7 +153,7 @@ public abstract class GitAPITestCase extends TestCase {
          * Creates a {@link Repository} object out of it.
          */
         protected FileRepository repo() throws IOException {
-            return new FileRepository(new File(repo,".git"));
+            return bare ? new FileRepository(repo) : new FileRepository(new File(repo, ".git"));
         }
 
         /**
@@ -1688,6 +1690,169 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("t1");
 
         assertEquals("old",FileUtils.readFileToString(w.file("foo")));
+    }
+
+    public void test_bare_repo_init() throws IOException, InterruptedException {
+        w.init(true);
+        assertFalse(".git exists unexpectedly", w.file(".git").exists());
+        assertFalse(".git/objects exists unexpectedly", w.file(".git/objects").exists());
+        assertTrue("objects is not a directory", w.file("objects").isDirectory());
+    }
+
+    /* The most critical use cases of isBareRepository respond the
+     * same for both the JGit implementation and the CliGit
+     * implementation.  Those are asserted first in this section of
+     * assertions.
+     */
+
+    @Deprecated
+    public void test_isBareRepository_working_repoPath_dot_git() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-false-repoPath-dot-git");
+        assertFalse("repoPath/.git is a bare repository", w.igit().isBareRepository(w.repoPath() + File.separator + ".git"));
+    }
+
+    @Deprecated
+    public void test_isBareRepository_working_null() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-working-null");
+        try {
+            assertFalse("null is a bare repository", w.igit().isBareRepository(null));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
+    }
+
+    @Deprecated
+    public void test_isBareRepository_bare_null() throws IOException, InterruptedException {
+        w.init(true);
+        try {
+            assertTrue("null is not a bare repository", w.igit().isBareRepository(null));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
+    }
+
+    @Deprecated
+    public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
+        w.init(true);
+        assertTrue("repoPath is not a bare repository", w.igit().isBareRepository(w.repoPath()));
+        assertTrue("abs(.) is not a bare repository", w.igit().isBareRepository(w.file(".").getAbsolutePath()));
+    }
+
+    @Deprecated
+    public void test_isBareRepository_working_no_arg() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-no-arg");
+        assertFalse("no arg is a bare repository", w.igit().isBareRepository());
+    }
+
+    @Deprecated
+    public void test_isBareRepository_bare_no_arg() throws IOException, InterruptedException {
+        w.init(true);
+        assertTrue("no arg is not a bare repository", w.igit().isBareRepository());
+    }
+
+    @Deprecated
+    public void test_isBareRepository_working_empty_string() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-empty-string");
+        assertFalse("empty string is a bare repository", w.igit().isBareRepository(""));
+    }
+
+    @Deprecated
+    public void test_isBareRepository_bare_empty_string() throws IOException, InterruptedException {
+        w.init(true);
+        assertTrue("empty string is not a bare repository", w.igit().isBareRepository(""));
+    }
+
+    /* The less critical assertions do not respond the same for the
+     * JGit and the CliGit implementation. They are implemented here
+     * so that the current behavior is described in tests and can be
+     * used to assure that changes to current behavior are
+     * detected.
+     */
+
+    // Fails on both JGit and CliGit, though with different failure modes
+    // @Deprecated
+    // public void test_isBareRepository_working_repoPath() throws IOException, InterruptedException {
+    //     w.init();
+    //     w.commitEmpty("Not-a-bare-repository-working-repoPath-dot-git");
+    //     assertFalse("repoPath is a bare repository", w.igit().isBareRepository(w.repoPath()));
+    //     assertFalse("abs(.) is a bare repository", w.igit().isBareRepository(w.file(".").getAbsolutePath()));
+    // }
+
+    @Deprecated
+    public void test_isBareRepository_working_dot() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-working-dot");
+        try {
+            assertFalse(". is a bare repository", w.igit().isBareRepository("."));
+            if (w.git instanceof CliGitAPIImpl) {
+                /* No exception from JGit */
+                fail("Did not throw expected exception");
+            }
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
+    }
+
+    @Deprecated
+    public void test_isBareRepository_bare_dot() throws IOException, InterruptedException {
+        w.init(true);
+        assertTrue(". is not a bare repository", w.igit().isBareRepository("."));
+    }
+
+    @Deprecated
+    public void test_isBareRepository_working_dot_git() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-dot-git");
+        assertFalse(".git is a bare repository", w.igit().isBareRepository(".git"));
+    }
+
+    @Deprecated
+    @NotImplementedInJGit
+    public void test_isBareRepository_bare_dot_git() throws IOException, InterruptedException {
+        w.init(true);
+        /* Bare repository does not have a .git directory.  This is
+         * another no-such-location test but is included here for
+         * consistency.
+         */
+        try {
+            assertFalse(".git is a bare repository", w.igit().isBareRepository(".git"));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
+    }
+
+    @Deprecated
+    public void test_isBareRepository_working_no_such_location() throws IOException, InterruptedException {
+        w.init();
+        w.commitEmpty("Not-a-bare-repository-working-no-such-location");
+        try {
+            assertFalse("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
+            if (w.git instanceof CliGitAPIImpl) {
+                /* Exception not expected with JGit */
+                fail("Did not throw expected exception");
+            }
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
+    }
+
+    @Deprecated
+    @NotImplementedInJGit
+    public void test_isBareRepository_bare_no_such_location() throws IOException, InterruptedException {
+        w.init(true);
+        try {
+            assertFalse("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+        }
     }
 
     public void test_checkoutBranchFailure() throws Exception {
