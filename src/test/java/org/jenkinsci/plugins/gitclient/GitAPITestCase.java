@@ -1194,6 +1194,20 @@ public abstract class GitAPITestCase extends TestCase {
         String all = w.cmd("git rev-list --all");
         assertEquals(all,out.toString());
     }
+    
+    public void test_revListFirstParent() throws Exception {
+        w.init();
+        w.cmd("git pull " + localMirror());
+
+        for (Branch b : w.git.getRemoteBranches()) {
+            StringBuilder out = new StringBuilder();
+            for (ObjectId id : w.git.revListFirstParent(b.getName())) {
+                out.append(id.name()).append('\n');
+            }
+            String all = w.cmd("git rev-list --first-parent " + b.getName());
+            assertEquals(all,out.toString());
+        }
+    }
 
     public void test_revList() throws Exception {
         w.init();
