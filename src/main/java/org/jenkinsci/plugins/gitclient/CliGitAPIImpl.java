@@ -1690,6 +1690,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public List<ObjectId> revListAll() throws GitException, InterruptedException {
         return doRevList("--all");
     }
+    
+    public List<ObjectId> revListFirstParent(String ref) throws GitException, InterruptedException {
+        return doRevList("--first-parent", ref);
+    }
 
     public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
         return doRevList(ref);

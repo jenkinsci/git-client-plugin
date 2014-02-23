@@ -334,6 +334,8 @@ public interface GitClient {
 
     List<ObjectId> revListAll() throws GitException, InterruptedException;
 
+    List<ObjectId> revListFirstParent(String ref) throws GitException, InterruptedException;
+    
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
 

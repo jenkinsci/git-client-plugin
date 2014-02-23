@@ -1388,6 +1388,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (repo != null) repo.close();
         }
     }
+    
+    public List<ObjectId> revListFirstParent(String ref) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
 
     public List<ObjectId> revList(String ref) throws GitException {
         Repository repo = null;
