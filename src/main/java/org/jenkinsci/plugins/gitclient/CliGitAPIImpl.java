@@ -635,10 +635,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (recursive) {
             args.add("--recursive");
         }
-        args.add("git reset");
-        if (hard) {
-            args.add("--hard");
-        }
+        args.add("git reset" + (hard ? " --hard" : ""));
 
         launchCommand(args);
     }
