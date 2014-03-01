@@ -1,6 +1,5 @@
 package hudson.plugins.git;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 import java.io.Serializable;

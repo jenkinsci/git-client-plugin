@@ -4,7 +4,6 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.HostnamePortRequirement;
 import com.cloudbees.plugins.credentials.domains.HostnameRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
-import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
 import java.util.List;
