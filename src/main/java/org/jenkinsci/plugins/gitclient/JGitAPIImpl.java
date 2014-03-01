@@ -587,7 +587,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             repo = getRepository();
             StoredConfig config = repo.getConfig();
 
-            List<String> urls = new ArrayList();
+            List<String> urls = new ArrayList<String>();
             urls.addAll(Arrays.asList(config.getStringList("remote", name, "url")));
             urls.add(url);
 
