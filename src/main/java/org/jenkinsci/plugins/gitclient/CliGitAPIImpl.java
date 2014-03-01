@@ -22,7 +22,6 @@ import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.IOUtils;
 import hudson.util.Secret;
 
 import org.apache.commons.io.FileUtils;
@@ -72,7 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
