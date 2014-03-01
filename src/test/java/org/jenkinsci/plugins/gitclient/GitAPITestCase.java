@@ -1634,7 +1634,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("t1");
         Ref tagRefT1 = w.repo().getRef("t1");
         Ref head = w.repo().getRef("HEAD");
-        assertEquals("head != t1", head, tagRefT1);
+        assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
         w.commitEmpty("c2");
         Ref commitRefC2 = w.repo().getRef("HEAD");
         List<ObjectId> revList = w.git.revList("t1");
