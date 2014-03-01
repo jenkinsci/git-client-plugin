@@ -247,7 +247,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void check_branches(String expectedBranchName) throws InterruptedException {
         Set<Branch> branches = w.git.getBranches();
-        Collection names = Collections2.transform(branches, new Function<Branch, String>() {
+        Collection<String> names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
                 return branch.getName();
             }
@@ -663,7 +663,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId newAreaHead = newArea.head();
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
         Set<Branch> remoteBranches = newArea.git.getRemoteBranches();
-        Collection names = Collections2.transform(remoteBranches, new Function<Branch, String>() {
+        Collection<String> names = Collections2.transform(remoteBranches, new Function<Branch, String>() {
             public String apply(Branch branch) {
                 return branch.getName();
             }
@@ -773,7 +773,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.branch("test");
         w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
-        Collection names = Collections2.transform(branches, new Function<Branch, String>() {
+        Collection<String> names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
                 return branch.getName();
             }
@@ -795,7 +795,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git remote add origin " + r.repoPath());
         w.cmd("git fetch origin");
         Set<Branch> branches = w.git.getRemoteBranches();
-        Collection names = Collections2.transform(branches, new Function<Branch, String>() {
+        Collection<String> names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
                 return branch.getName();
             }
@@ -812,7 +812,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.branch("test");
         w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
-        Collection names = Collections2.transform(branches, new Function<Branch, String>() {
+        Collection<String> names = Collections2.transform(branches, new Function<Branch, String>() {
             public String apply(Branch branch) {
                 return branch.getName();
             }
@@ -1274,6 +1274,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file2");
         w.git.commit("commit2-branch2");
         final ObjectId branch2 = w.head();
+        assertTrue("file2 does not exist", f.exists());
 
         assertFalse("file1 exists before merge", w.exists("file1"));
         assertEquals("Wrong merge-base branch1 branch2", base, w.igit().mergeBase(branch1, branch2));
@@ -1399,6 +1400,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file.2");
         w.git.commit("commit2-branch.2");
         final ObjectId branchDot2 = w.head();
+        assertTrue("file.2 does not exist", f.exists());
 
         Map<String,ObjectId> heads = w.git.getHeadRev(w.repoPath());
         assertEquals("Wrong master in " + heads, master, heads.get("refs/heads/master"));
@@ -1631,6 +1633,8 @@ public abstract class GitAPITestCase extends TestCase {
         Ref commitRefC1 = w.repo().getRef("HEAD");
         w.tag("t1");
         Ref tagRefT1 = w.repo().getRef("t1");
+        Ref head = w.repo().getRef("HEAD");
+        assertEquals("head != t1", head, tagRefT1);
         w.commitEmpty("c2");
         Ref commitRefC2 = w.repo().getRef("HEAD");
         List<ObjectId> revList = w.git.revList("t1");
