@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -13,6 +14,7 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
+
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
@@ -1374,14 +1376,19 @@ public abstract class GitAPITestCase extends TestCase {
      */
     public void test_getHeadRev_namespaces() throws Exception {
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
-        ObjectId ns1 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace1/master");
-        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace1/master"), ns1);
-        ObjectId ns2 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace2/master");
-        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace2/master"), ns2);
-        ObjectId ns3 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace3/master");
-        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace3/master"), ns3);
+        check_getHeadRev(heads, "remotes/origin/tests/namespace1/master", "refs/heads/tests/namespace1/master");
+        check_getHeadRev(heads, "remotes/origin/tests/namespace2/master", "refs/heads/tests/namespace2/master");
+        check_getHeadRev(heads, "remotes/origin/tests/namespace3/master", "refs/heads/tests/namespace3/master");
     }
     
+    private void check_getHeadRev(Map<String, ObjectId> heads, String branchSpec, String expectedHeadSpec) throws Exception
+    {
+      ObjectId actualObjectId = w.git.getHeadRev(localMirror(), branchSpec);
+      ObjectId expectedObjectId = heads.get(expectedHeadSpec);
+      assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'", expectedHeadSpec), expectedObjectId);
+      assertEquals("Actual ObjectId differs from expected one. Heads is " + heads, expectedObjectId, actualObjectId);
+    }
+
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
         final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
         assertEquals("origin/master mismatch", expectedId, originMaster);
