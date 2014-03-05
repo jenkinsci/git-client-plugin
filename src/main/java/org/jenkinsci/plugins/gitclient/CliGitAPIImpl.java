@@ -1,5 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.util.Arrays.copyOfRange;
+import static org.apache.commons.lang.StringUtils.join;
+
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -1521,7 +1524,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String url, String branch) throws GitException, InterruptedException {
         String[] branchExploded = branch.split("/");
-        branch = branchExploded[branchExploded.length-1];
+        if(branch.startsWith("remotes/")) {
+          branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+        } else {
+          branch = branchExploded[branchExploded.length-1];
+        }
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
 
