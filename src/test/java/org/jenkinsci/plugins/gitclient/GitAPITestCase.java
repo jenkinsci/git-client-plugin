@@ -224,8 +224,13 @@ public abstract class GitAPITestCase extends TestCase {
             if (new File(f,"target").exists()) {
                 File clone = new File(f, "target/clone.git");
                 if (!clone.exists())    // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    //TODO: Switch back to jenkinsci
-                    w.cmd("git clone --mirror https://github.com/alexanderlink/git-client-plugin.git " + clone.getAbsolutePath());
+                    /* TODO: The repo requires the following branches pointing to different commits:
+                     *   - test/namespace1/master
+                     *   - test/namespace2/master
+                     *   - test/namespace3/master
+                     *  You can switch "jenkinsci" to "alexanderlink" in the repo URL to test locally for now
+                     */
+                    w.cmd("git clone --mirror https://github.com/jenkinsci/git-client-plugin.git " + clone.getAbsolutePath());
                 return clone.getPath();
             }
         }
