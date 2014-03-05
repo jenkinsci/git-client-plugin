@@ -1,8 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -12,20 +9,11 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
-import junit.framework.TestCase;
-import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.URIish;
-import org.jvnet.hudson.test.Bug;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,6 +21,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import junit.framework.TestCase;
+
+import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.jvnet.hudson.test.Bug;
+import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -224,7 +230,8 @@ public abstract class GitAPITestCase extends TestCase {
             if (new File(f,"target").exists()) {
                 File clone = new File(f, "target/clone.git");
                 if (!clone.exists())    // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    w.cmd("git clone --mirror https://github.com/jenkinsci/git-client-plugin.git " + clone.getAbsolutePath());
+                    //TODO: Switch back to jenkinsci
+                    w.cmd("git clone --mirror https://github.com/alexanderlink/git-client-plugin.git " + clone.getAbsolutePath());
                 return clone.getPath();
             }
         }
@@ -1358,6 +1365,24 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
+    /**
+     * Test getHeadRev with namespaces in the branch name.
+     * Relies on the branches in the git-client-plugin repository
+     * include at least branches named:
+     *   test/namespace1/master
+     *   test/namespace2/master
+     *   test/namespace3/master
+     */
+    public void test_getHeadRev_namespaces() throws Exception {
+        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
+        ObjectId ns1 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace1/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace1/master"), ns1);
+        ObjectId ns2 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace2/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace2/master"), ns2);
+        ObjectId ns3 = w.git.getHeadRev(localMirror(), "remotes/origin/test/namespace3/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/test/namespace3/master"), ns3);
+    }
+    
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
         final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
         assertEquals("origin/master mismatch", expectedId, originMaster);
