@@ -1328,6 +1328,36 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
     }
 
+    /**
+     * Test getHeadRev with wildcard matching in the branch name.
+     * Relies on the branches in the git-client-plugin repository
+     * include at least branches named:
+     *   master
+     *   mergeCommand
+     *   recovery
+     *   remote
+     *
+     * Also relies on a specific return ordering of the values in the
+     * pattern matching performed by getHeadRev, and relies on not
+     * having new branches created which match the patterns and will
+     * occur earlier than the expected value.
+     */
+    public void test_getHeadRev_wildcards() throws Exception {
+        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
+        ObjectId master = w.git.getHeadRev(localMirror(), "refs/heads/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
+        ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "origin/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
+        ObjectId recovery = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*cov*"); // matches recovery
+        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery);
+        ObjectId mergeCommand = w.git.getHeadRev(localMirror(), "yyzzy*/*er*"); // matches master, MergeCommand, and recovery
+        assertEquals("heads is " + heads, heads.get("refs/heads/MergeCommand"), mergeCommand);
+        ObjectId recovery1 = w.git.getHeadRev(localMirror(), "X/re[mc]*o*e*"); // matches recovery and remote
+        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery1);
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
+    }
+
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
         final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
         assertEquals("origin/master mismatch", expectedId, originMaster);
