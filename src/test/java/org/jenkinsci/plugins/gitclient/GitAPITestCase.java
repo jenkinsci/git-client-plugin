@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -1361,20 +1362,21 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * Checkout the master branch, create a namespaceN/master branch
+     * Checkout the master branch, create the specified branch
      * based on it, add a commit to that branch, push that commit to
      * the origin (localMirror), and checkout the master branch.
      */
-    private void pushNamespaceBranchToLocalMirror(int namespaceNumber) throws InterruptedException, IOException {
+    private void pushNamespaceBranchToLocalMirror(String branchSpec) throws InterruptedException, IOException {
         w.git.checkout("master");
-        String branchName = "tests/namespace" + namespaceNumber + "/master";
-        w.git.branch(branchName);
-        w.touch("file" + namespaceNumber, "content" + namespaceNumber);
-        w.git.add("file" + namespaceNumber);
-        w.git.commit("commit-namespace" + namespaceNumber);
-        ObjectId namespaceHead = w.head();
-        System.out.println("namespace " + namespaceNumber + " head is " + namespaceHead);
-        w.igit().push("origin", branchName + ":" + branchName);
+        w.git.branch(branchSpec);
+        w.git.checkout(branchSpec);
+        String filename = UUID.randomUUID().toString();
+        w.touch(filename, branchSpec);
+        w.git.add(filename);
+        w.git.commit("Initial commit for new branch " + branchSpec);
+        ObjectId head = w.head();
+        System.out.println(branchSpec + " head is " + head);
+        w.igit().push("origin", branchSpec + ":" + branchSpec);
         w.git.checkout("master");
     }
     
@@ -1382,17 +1384,18 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getHeadRev with namespaces in the branch name.
      */
     public void test_getHeadRev_namespaces() throws Exception {
+        final String[] namespaceBranches = {"tests/namespace1/master", "tests/namespace2/master", "tests/namespace3/master"};
         if (w.git.getHeadRev(localMirror(), "remotes/origin/tests/namespace1/master") == null) {
             /* create branches for tests in localMirror */
             w = clone(localMirror());
-            pushNamespaceBranchToLocalMirror(1);
-            pushNamespaceBranchToLocalMirror(2);
-            pushNamespaceBranchToLocalMirror(3);
+            for(String branch : namespaceBranches) {
+                pushNamespaceBranchToLocalMirror(branch);
+            }
         }
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
-        check_getHeadRev(heads, "remotes/origin/tests/namespace1/master", "refs/heads/tests/namespace1/master");
-        check_getHeadRev(heads, "remotes/origin/tests/namespace2/master", "refs/heads/tests/namespace2/master");
-        check_getHeadRev(heads, "remotes/origin/tests/namespace3/master", "refs/heads/tests/namespace3/master");
+        for(String branch : namespaceBranches) {
+            check_getHeadRev(heads, "remotes/origin/"+branch, "refs/heads/"+branch);
+        }
     }
     
     private void check_getHeadRev(Map<String, ObjectId> heads, String branchSpec, String expectedHeadSpec) throws Exception
