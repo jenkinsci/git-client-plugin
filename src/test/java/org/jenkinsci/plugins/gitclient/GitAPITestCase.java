@@ -226,12 +226,6 @@ public abstract class GitAPITestCase extends TestCase {
             if (new File(f,"target").exists()) {
                 File clone = new File(f, "target/clone.git");
                 if (!clone.exists())    // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    /* TODO: The repo requires the following branches pointing to different commits:
-                     *   - test/namespace1/master
-                     *   - test/namespace2/master
-                     *   - test/namespace3/master
-                     *  You can switch "jenkinsci" to "alexanderlink" in the repo URL to test locally for now
-                     */
                     w.cmd("git clone --mirror https://github.com/jenkinsci/git-client-plugin.git " + clone.getAbsolutePath());
                 return clone.getPath();
             }
@@ -1367,14 +1361,34 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
+     * Checkout the master branch, create a namespaceN/master branch
+     * based on it, add a commit to that branch, push that commit to
+     * the origin (localMirror), and checkout the master branch.
+     */
+    private void pushNamespaceBranchToLocalMirror(int namespaceNumber) throws InterruptedException, IOException {
+        w.git.checkout("master");
+        String branchName = "tests/namespace" + namespaceNumber + "/master";
+        w.git.branch(branchName);
+        w.touch("file" + namespaceNumber, "content" + namespaceNumber);
+        w.git.add("file" + namespaceNumber);
+        w.git.commit("commit-namespace" + namespaceNumber);
+        ObjectId namespaceHead = w.head();
+        System.out.println("namespace " + namespaceNumber + " head is " + namespaceHead);
+        w.igit().push("origin", branchName + ":" + branchName);
+        w.git.checkout("master");
+    }
+    
+    /**
      * Test getHeadRev with namespaces in the branch name.
-     * Relies on the branches in the git-client-plugin repository
-     * include at least branches named:
-     *   test/namespace1/master
-     *   test/namespace2/master
-     *   test/namespace3/master
      */
     public void test_getHeadRev_namespaces() throws Exception {
+        if (w.git.getHeadRev(localMirror(), "remotes/origin/tests/namespace1/master") == null) {
+            /* create branches for tests in localMirror */
+            w = clone(localMirror());
+            pushNamespaceBranchToLocalMirror(1);
+            pushNamespaceBranchToLocalMirror(2);
+            pushNamespaceBranchToLocalMirror(3);
+        }
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
         check_getHeadRev(heads, "remotes/origin/tests/namespace1/master", "refs/heads/tests/namespace1/master");
         check_getHeadRev(heads, "remotes/origin/tests/namespace2/master", "refs/heads/tests/namespace2/master");
