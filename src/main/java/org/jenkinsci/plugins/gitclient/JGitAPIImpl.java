@@ -81,6 +81,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static java.util.Arrays.copyOfRange;
 import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
 import static org.eclipse.jgit.lib.Constants.*;
@@ -502,7 +503,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
         try {
             String[] branchExploded = branch.split("/"); /* mimic CliGitAPIImpl */
-            branch = branchExploded[branchExploded.length-1];
+            if (branch.startsWith("remotes/")) {
+                branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+            } else {
+                branch = branchExploded[branchExploded.length-1];
+            }
             String regexBranch = createRefRegexFromGlob(branch);
 
             Repository repo = openDummyRepository();
