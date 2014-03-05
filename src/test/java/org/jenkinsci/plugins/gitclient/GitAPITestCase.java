@@ -1346,7 +1346,7 @@ public abstract class GitAPITestCase extends TestCase {
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
         ObjectId master = w.git.getHeadRev(localMirror(), "refs/heads/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
-        ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "origin/master");
+        ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
         ObjectId recovery = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*cov*"); // matches recovery
         assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery);
