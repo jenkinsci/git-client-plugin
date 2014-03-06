@@ -1522,13 +1522,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return heads;
     }
 
-    public ObjectId getHeadRev(String url, String branch) throws GitException, InterruptedException {
-        String[] branchExploded = branch.split("/");
-        if (branch.startsWith("remotes/")) {
-            branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
-        } else {
-            branch = branchExploded[branchExploded.length-1];
-        }
+    public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
+        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
 
@@ -1536,7 +1531,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(branch);
+        args.add(branchName);
         String result = launchCommandWithCredentials(args, null, cred, url);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }

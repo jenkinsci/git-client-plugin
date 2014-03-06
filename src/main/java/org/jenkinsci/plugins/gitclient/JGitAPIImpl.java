@@ -500,15 +500,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.toString();
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try {
-            String[] branchExploded = branch.split("/"); /* mimic CliGitAPIImpl */
-            if (branch.startsWith("remotes/")) {
-                branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
-            } else {
-                branch = branchExploded[branchExploded.length-1];
-            }
-            String regexBranch = createRefRegexFromGlob(branch);
+            final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+            String regexBranch = createRefRegexFromGlob(branchName);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
