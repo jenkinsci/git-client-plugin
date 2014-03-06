@@ -510,6 +510,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
+        assertEquals(commit1, bare.git.getHeadRev(bare.repoPath(), "refs/heads/master"));
 
         /* Clone new working repo from bare repo */
         WorkingArea newArea = clone(bare.repoPath());
@@ -517,17 +518,20 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
         Set<Branch> remoteBranches1 = newArea.git.getRemoteBranches();
         assertEquals("Unexpected branch count in " + remoteBranches1, 2, remoteBranches1.size());
+        assertEquals(bareCommit1, newArea.git.getHeadRev(newArea.repoPath(), "refs/heads/master"));
 
         /* Commit a new change to the original repo */
         w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file2");
         w.git.commit("commit2");
         ObjectId commit2 = w.head();
+        assertEquals(commit2, w.git.getHeadRev(w.repoPath(), "refs/heads/master"));
 
         /* Push the new change to the bare repo */
         w.git.push("origin", "master");
         ObjectId bareCommit2 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare2 != working2", commit2, bareCommit2);
+        assertEquals(commit2, bare.git.getHeadRev(bare.repoPath(), "refs/heads/master"));
 
         /* Fetch new change into newArea repo */
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
@@ -591,13 +595,23 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId bareCommit5 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare5 != working5", commit5, bareCommit5);
 
-        /* Fetch into newArea repo with null RefSpec - should only pull tags, not commits */
+        /* Fetch into newArea repo with null RefSpec - should only
+         * pull tags, not commits in git versions prior to git 1.9.0.
+         * In git 1.9.0, fetch -t pulls tags and versions. */
         newArea.git.fetch("origin", null, null);
-        /* Assert that change did not arrive in repo - before merge */
         assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
+        ObjectId expectedHead = bareCommit4;
         try {
+            /* Assert that change did not arrive in repo if git
+             * command line 1.7 or 1.8.  Assert that change arrives in
+             * repo if git command line 1.9 or later. */
             newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
-            fail("Should have thrown an exception");
+            assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
+            String[] version = newArea.cmd("git --version").split(" ");
+            assertEquals("Wrong base value in version output", "git", version[0]);
+            assertEquals("Wrong base value in version output", "version", version[1]);
+            assertFalse("Wrong git version: " + version[2], version[2].startsWith("1.7") || version[2].startsWith("1.8"));
+            expectedHead = bareCommit5;
         } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
             String expectedSubString = "Missing commit " + bareCommit5.name();
             assertTrue("Wrong message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
@@ -605,8 +619,10 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains("Could not merge"));
             assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains(bareCommit5.name()));
         }
-        /* Assert that change did not arrive in repo - after merge */
-        assertEquals("null refSpec fetch modified local repo", bareCommit4, newArea.head());
+        /* Assert that expected change is in repo after merge.  With
+         * git 1.7 and 1.8, it should be bareCommit4.  With git 1.9
+         * and later, it should be bareCommit5. */
+        assertEquals("null refSpec fetch modified local repo", expectedHead, newArea.head());
 
         try { 
             /* Fetch into newArea repo with invalid repo name and no RefSpec */
