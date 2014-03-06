@@ -169,11 +169,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * <tr><td><tt>feature1</tt></th><td><tt>feature1</td></tr>
      * <tr><td><tt>origin/master</tt></th><td><tt>master</td></tr>
      * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1</td></tr>
+     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>feature1</td></tr>
      * <tr><td valign="top"><div style="color:red"><strike><tt>origin/namespaceA/fix15</tt></strike></div></th>
      *     <td><div style="color:red"><strike><tt>namespaceA/fix15</tt></strike> *)</div></td><td></td></tr>
      * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</tt></td></tr>
-     * <tr><td><tt>remotes/origin/master</tt></th><td><tt>master</tt></td></tr>
-     * <tr><td><tt>remotes/repo2/feature1</tt></th><td><tt>feature1</tt></td></tr>
+     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</td></tr>
      * </table><br/>
      * *) If hierarchical branch names with namespaces are used the branch specification has to start
      *    with "<tt>remotes/&lt;repoId/</tt>". Otherwise it is hard to identify if the branch spec contains the remote repo id or not.<br/>
@@ -187,6 +187,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         String[] branchExploded = branchSpec.split("/");
         if (branchSpec.startsWith("remotes/")) {
             branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+        } else if (branchSpec.startsWith("refs/heads/")) {
+            branch = branchSpec.substring("refs/heads/".length());
         } else {
             branch = branchExploded[branchExploded.length-1];
         }
