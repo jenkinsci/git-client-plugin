@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -13,6 +14,7 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
+
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -1356,6 +1359,51 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery1);
         ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
+    }
+
+    /**
+     * Checkout the master branch, create the specified branch
+     * based on it, add a commit to that branch, push that commit to
+     * the origin (localMirror), and checkout the master branch.
+     */
+    private void pushNamespaceBranchToLocalMirror(String branchSpec) throws InterruptedException, IOException {
+        w.git.checkout("master");
+        w.git.branch(branchSpec);
+        w.git.checkout(branchSpec);
+        String filename = UUID.randomUUID().toString();
+        w.touch(filename, branchSpec);
+        w.git.add(filename);
+        w.git.commit("Initial commit for new branch " + branchSpec);
+        ObjectId head = w.head();
+        System.out.println(branchSpec + " head is " + head);
+        w.igit().push("origin", branchSpec + ":" + branchSpec);
+        w.git.checkout("master");
+    }
+    
+    /**
+     * Test getHeadRev with namespaces in the branch name.
+     */
+    public void test_getHeadRev_namespaces() throws Exception {
+        final String[] namespaceBranches = {"tests/namespace1/master", "tests/namespace2/master", "tests/namespace3/master"};
+        if (w.git.getHeadRev(localMirror(), "remotes/origin/tests/namespace1/master") == null) {
+            /* create branches for tests in localMirror */
+            w = clone(localMirror());
+            for(String branch : namespaceBranches) {
+                pushNamespaceBranchToLocalMirror(branch);
+            }
+        }
+        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
+        for(String branch : namespaceBranches) {
+            check_getHeadRev(heads, "remotes/origin/"+branch, "refs/heads/"+branch);
+        }
+    }
+    
+    private void check_getHeadRev(Map<String, ObjectId> heads, String branchSpec, String expectedHeadSpec) throws Exception
+    {
+      ObjectId actualObjectId = w.git.getHeadRev(localMirror(), branchSpec);
+      ObjectId expectedObjectId = heads.get(expectedHeadSpec);
+      assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'", expectedHeadSpec), expectedObjectId);
+      assertEquals("Actual ObjectId differs from expected one. Heads is " + heads, expectedObjectId, actualObjectId);
     }
 
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
