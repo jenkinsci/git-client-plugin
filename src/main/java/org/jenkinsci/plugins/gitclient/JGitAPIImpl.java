@@ -1830,7 +1830,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
-        getConfig(GIT_DIR).setString("remote", name, "url", url);
+        Repository repo = null;
+        try {
+            repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", name, "url", url);
+            config.save();
+        } catch (IOException ioe) {
+            throw new GitException(ioe);
+        } finally {
+            if (repo != null) repo.close();
+        }
     }
 
     @Deprecated

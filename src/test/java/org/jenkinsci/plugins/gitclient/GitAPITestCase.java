@@ -371,7 +371,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
         assertEquals("Wrong number of tree entries", 1, tree.size());
         final String remoteUrl = localMirror();
-        w.git.setRemoteUrl("origin", remoteUrl);
+        w.igit().setRemoteUrl("origin", remoteUrl, w.repoPath() + File.separator + ".git");
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
@@ -505,6 +505,8 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea bare = new WorkingArea();
         bare.init(true);
         w.git.setRemoteUrl("origin", bare.repoPath());
+        Set<Branch> remoteBranchesEmpty = w.git.getRemoteBranches();
+        assertEquals("Unexpected branch count", 0, remoteBranchesEmpty.size());
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
@@ -513,6 +515,8 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea newArea = clone(bare.repoPath());
         ObjectId newAreaHead = newArea.head();
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
+        Set<Branch> remoteBranches1 = newArea.git.getRemoteBranches();
+        assertEquals("Unexpected branch count in " + remoteBranches1, 2, remoteBranches1.size());
 
         /* Commit a new change to the original repo */
         w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
@@ -1083,6 +1087,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().submoduleClean(true);
         w.igit().submoduleUpdate(false);
         w.igit().submoduleUpdate(true);
+        w.igit().submoduleSync();
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
     }
 
@@ -1104,6 +1109,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().submoduleUpdate(true);
         assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
         assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
+
+        w.igit().submoduleSync();
     }
 
     public void test_getSubmodules() throws Exception {
