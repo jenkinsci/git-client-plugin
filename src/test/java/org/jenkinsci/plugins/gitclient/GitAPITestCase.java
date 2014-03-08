@@ -1643,12 +1643,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(w.cmd("git describe").trim(), w.git.describe("HEAD"));
     }
 
-    // public void test_getAllLogEntries() throws Exception {
-    //     w = clone(localMirror());
-    //     assertEquals(
-    //             w.cgit().getAllLogEntries("origin/master"),
-    //             w.igit().getAllLogEntries("origin/master"));
-    // }
+    public void test_getAllLogEntries() throws Exception {
+        /* Use original clone source instead of localMirror.  The
+         * namespace test modifies the localMirror content by creating
+         * three independent branches very rapidly.  Those three
+         * branches may be created within the same second, making it
+         * more difficult for git to provide a time ordered log. The
+         * reference to localMirror will help performance of the C git
+         * implementation, since that will avoid copying content which
+         * is already local. */
+        String gitUrl = "git://github.com/jenkinsci/git-client-plugin.git";
+        w.git.clone_().url(gitUrl).repositoryName("origin").reference(localMirror()).execute();
+        assertEquals(
+                w.cgit().getAllLogEntries("origin/master"),
+                w.igit().getAllLogEntries("origin/master"));
+    }
 
     public void test_branchContaining() throws Exception {
         /*
