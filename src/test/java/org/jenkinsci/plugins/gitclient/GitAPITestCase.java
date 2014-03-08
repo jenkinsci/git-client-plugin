@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import org.apache.commons.lang.SystemUtils;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -185,6 +187,23 @@ public abstract class GitAPITestCase extends TestCase {
             if (git instanceof CliGitAPIImpl) {
                 git.checkout(repoName + "/master", "master");
             }
+        }
+
+        private String gitVersion = null;
+
+        String getGitVersion() throws IOException, InterruptedException {
+            if (gitVersion == null) {
+                if (git instanceof CliGitAPIImpl) {
+                    String[] version = cmd("git --version").split(" ");
+                    assertEquals("Wrong output value " + version, "git", version[0]);
+                    assertEquals("Wrong output value " + version, "version", version[1]);
+                    assertTrue("Wrong version value " + version[2], version[2].startsWith("1"));
+                    gitVersion = version[2];
+                } else {
+                    gitVersion = "";
+                }
+            }
+            return gitVersion;
         }
     }
     
@@ -607,10 +626,7 @@ public abstract class GitAPITestCase extends TestCase {
              * repo if git command line 1.9 or later. */
             newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
             assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
-            String[] version = newArea.cmd("git --version").split(" ");
-            assertEquals("Wrong base value in version output", "git", version[0]);
-            assertEquals("Wrong base value in version output", "version", version[1]);
-            assertFalse("Wrong git version: " + version[2], version[2].startsWith("1.7") || version[2].startsWith("1.8"));
+            assertFalse("Wrong git version: " + newArea.getGitVersion(), newArea.getGitVersion().startsWith("1.7") || newArea.getGitVersion().startsWith("1.8"));
             expectedHead = bareCommit5;
         } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
             String expectedSubString = "Missing commit " + bareCommit5.name();
@@ -2011,5 +2027,81 @@ public abstract class GitAPITestCase extends TestCase {
         /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
         assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
                      w.igit().getDefaultRemote("invalid"));
+    }
+
+    private static final int MAX_PATH = 256;
+
+    private void commitFile(String dirName, String fileName, boolean longpathsEnabled) throws IOException, InterruptedException {
+        assertTrue("Didn't mkdir " + dirName, w.file(dirName).mkdir());
+
+        String fullName = dirName + File.separator + fileName;
+        w.touch(fullName, fullName + " content " + UUID.randomUUID().toString());
+
+        boolean shouldThrow = !longpathsEnabled &&
+            SystemUtils.IS_OS_WINDOWS &&
+            w.git instanceof CliGitAPIImpl &&
+            w.getGitVersion().startsWith("1.9") &&
+            (new File(fullName)).getAbsolutePath().length() > MAX_PATH;
+
+        try {
+            w.git.add(fullName);
+            w.git.commit("commit-" + fileName);
+            assertFalse("unexpected success " + fullName, shouldThrow);
+        } catch (GitException ge) {
+            assertEquals("Wrong message", "Cannot add " + fullName, ge.getMessage());
+        }
+        assertTrue("file " + fullName + " missing at commit", w.file(fullName).exists());
+    }
+
+    private void commitFile(String dirName, String fileName) throws IOException, InterruptedException {
+        commitFile(dirName, fileName, false);
+    }
+
+    /**
+     * msysgit prior to 1.9 forbids file names longer than MAXPATH.
+     * msysgit 1.9 and later allows longer paths if core.longpaths is
+     * set to true.
+     *
+     * JGit does not have that limitation.
+     */
+    public void check_longpaths(boolean longpathsEnabled) throws Exception {
+        String shortName = "0123456789abcdef";
+        String longName = shortName + shortName + shortName + shortName;
+
+        String dirName1 = longName;
+        commitFile(dirName1, "file1", longpathsEnabled);
+
+        String dirName2 = dirName1 + File.separator + longName;
+        commitFile(dirName2, "file2", longpathsEnabled);
+
+        String dirName3 = dirName2 + File.separator + longName;
+        commitFile(dirName3, "file3", longpathsEnabled);
+
+        String dirName4 = dirName3 + File.separator + longName;
+        commitFile(dirName4, "file4", longpathsEnabled);
+
+        String dirName5 = dirName4 + File.separator + longName;
+        commitFile(dirName5, "file5", longpathsEnabled);
+    }
+
+    public void test_longpaths_default() throws Exception {
+        w.init();
+        check_longpaths(false);
+    }
+
+    @NotImplementedInJGit
+    /* Not implemented in JGit because it is not needed there */
+    public void test_longpaths_enabled() throws Exception {
+        w.init();
+        w.cmd("git config --add core.longpaths true");
+        check_longpaths(true);
+    }
+
+    @NotImplementedInJGit
+    /* Not implemented in JGit because it is not needed there */
+    public void test_longpaths_disabled() throws Exception {
+        w.init();
+        w.cmd("git config --add core.longpaths false");
+        check_longpaths(false);
     }
 }
