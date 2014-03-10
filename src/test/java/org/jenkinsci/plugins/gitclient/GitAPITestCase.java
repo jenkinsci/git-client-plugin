@@ -869,6 +869,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.deleteBranch("test");
         String branches = w.cmd("git branch -l");
         assertFalse("deleted test branch still present", branches.contains("test"));
+        try {
+            w.git.deleteBranch("test");
+            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            assertEquals("Could not delete branch test", ge.getMessage());
+        }
     }
 
     public void test_create_tag() throws Exception {
@@ -889,6 +895,12 @@ public abstract class GitAPITestCase extends TestCase {
         String tags = w.cmd("git tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another"));
+        try {
+            w.git.deleteTag("test");
+            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            assertEquals("Could not delete tag test", ge.getMessage());
+        }
     }
 
     public void test_list_tags_with_filter() throws Exception {
@@ -2007,6 +2019,9 @@ public abstract class GitAPITestCase extends TestCase {
     @Deprecated
     public void test_reset() throws IOException, InterruptedException {
         w.init();
+        /* No valid HEAD yet - nothing to reset, should give no error */
+        w.igit().reset(false);
+        w.igit().reset(true);
         w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
         w.git.add("committed-file");
         w.git.commit("commit1");
