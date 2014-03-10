@@ -1653,7 +1653,13 @@ public abstract class GitAPITestCase extends TestCase {
          * implementation, since that will avoid copying content which
          * is already local. */
         String gitUrl = "git://github.com/jenkinsci/git-client-plugin.git";
-        w.git.clone_().url(gitUrl).repositoryName("origin").reference(localMirror()).execute();
+        if (SystemUtils.IS_OS_WINDOWS) {
+            // Does not leak an open file
+            w = clone(gitUrl);
+        } else {
+            // Leaks an open file - unclear why
+            w.git.clone_().url(gitUrl).repositoryName("origin").reference(localMirror()).execute();
+        }
         assertEquals(
                 w.cgit().getAllLogEntries("origin/master"),
                 w.igit().getAllLogEntries("origin/master"));
