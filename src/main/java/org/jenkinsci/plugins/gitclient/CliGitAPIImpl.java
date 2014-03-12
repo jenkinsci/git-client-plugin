@@ -372,6 +372,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .timeout(timeout)
                         .execute();
                 setRemoteUrl(origin, url);
+                launchCommand("config", "remote." + origin + ".fetch", refSpec.toString());
             }
 
         };

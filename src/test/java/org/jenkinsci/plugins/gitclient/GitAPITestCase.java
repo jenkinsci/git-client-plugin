@@ -14,12 +14,15 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
+import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -367,6 +370,24 @@ public abstract class GitAPITestCase extends TestCase {
             /* JGit does not implement reference cloning yet */
             assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         }
+    }
+
+    public void test_clone_refspec() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        final WorkingArea w2 = new WorkingArea();
+        w2.cmd("git clone " + localMirror() + " ./");
+        w2.git.withRepository(new RepositoryCallback<Void>() {
+            public Void invoke(final Repository realRepo, VirtualChannel channel) throws IOException, InterruptedException {
+                return w.git.withRepository(new RepositoryCallback<Void>() {
+                    public Void invoke(final Repository implRepo, VirtualChannel channel) {
+                        final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+                        final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+                        assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
+                        return null;
+                    }
+                });
+            }
+        });
     }
 
     public void test_detect_commit_in_repo() throws Exception {
