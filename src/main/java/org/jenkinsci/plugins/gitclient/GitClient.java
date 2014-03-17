@@ -310,7 +310,9 @@ public interface GitClient {
 
     void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
 
-    void submoduleUpdate(boolean recursive, String reference)  throws GitException, InterruptedException;
+    void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException;
+
+    void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException;
 
     void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
 

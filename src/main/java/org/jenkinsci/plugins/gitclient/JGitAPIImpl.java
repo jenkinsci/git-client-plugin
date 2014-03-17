@@ -1303,7 +1303,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }
 
