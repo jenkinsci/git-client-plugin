@@ -100,6 +100,32 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
 
+    private long gitVersion = 0;
+    private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
+       return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
+    }
+    private void getGitVersion() {
+       if (gitVersion != 0) {
+          return;
+       }
+       try {
+          String version = launchCommand("--version").trim();
+          String[] fields = version.split(" ")[2].split("\\.");
+
+          gitVersion = computeVersionFromBits(Integer.parseInt(fields[0]),
+                                              ((fields.length > 1) ? Integer.parseInt(fields[1]) : 0),
+                                              ((fields.length > 2) ? Integer.parseInt(fields[2]) : 0),
+                                              ((fields.length > 3) ? Integer.parseInt(fields[3]) : 0));
+       } catch (Throwable e) {
+          /* Oh well */
+       }
+    }
+    private boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
+       getGitVersion();
+       long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
+       return gitVersion >= requestedVersion;
+    }
+
     protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
         super(workspace);
@@ -616,7 +642,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     	if (recursive) {
             args.add("--init", "--recursive");
         }
-        if (remoteTracking) {
+        if (remoteTracking && isAtLeastVersion(1, 8, 2, 0)) {
             args.add("--remote");
         }
         if (reference != null && !reference.isEmpty()) {
