@@ -619,11 +619,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public List<String> retrieveSparseCheckoutPaths() throws GitException, InterruptedException {
-        listener.getLogger().println("[WARNING] JGit doesn't support sparse checkout.");
-        return Collections.emptyList();
-    }
-
     public void addNote(String note, String namespace) throws GitException {
         Repository repo = null;
         RevWalk walk = null;
