@@ -192,7 +192,12 @@ public abstract class GitAPITestCase extends TestCase {
             }
         }
 
-        private String gitVersion = null;
+        private String gitVersion         = null;
+        private int    gitMajorVersion    = -1; /* -1 meaning couldn't parse */
+        private int    gitMinorVersion    = 0;
+        private int    gitRevVersion      = 0;
+        private int    gitBugfixVersion   = 0;
+        private String gitPackagerVersion = "";
 
         String getGitVersion() throws IOException, InterruptedException {
             if (gitVersion == null) {
@@ -201,12 +206,44 @@ public abstract class GitAPITestCase extends TestCase {
                     assertEquals("Wrong output value " + version, "git", version[0]);
                     assertEquals("Wrong output value " + version, "version", version[1]);
                     assertTrue("Wrong version value " + version[2], version[2].startsWith("1"));
-                    gitVersion = version[2];
+                    gitVersion = version[2].trim();
+
+                    String[] fields = gitVersion.split("\\.");
+                    try {
+                       gitMajorVersion = Integer.parseInt(fields[0]);
+                       if (fields.length > 1) { gitMinorVersion  = Integer.parseInt(fields[1]); }
+                       if (fields.length > 2) { gitRevVersion    = Integer.parseInt(fields[2]); }
+                       if (fields.length > 3) { gitBugfixVersion = Integer.parseInt(fields[3]); }
+                       if (fields.length > 4) {
+                          StringBuilder sb = new StringBuilder();
+                          sb.append(fields[4]);
+                          for (int i = 5; i < fields.length; ++i) {
+                             sb.append(".");
+                             sb.append(fields[i]);
+                          }
+                          gitPackagerVersion = sb.toString();
+                       }
+                    } catch (Throwable e) {
+                       /* Oh well */
+                    }
                 } else {
                     gitVersion = "";
                 }
             }
             return gitVersion;
+        }
+
+        boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
+           try { // If it fails, we'll just fail this too with false.
+              getGitVersion();
+           } catch (Exception e) {
+           }
+           if (gitMajorVersion < 0) {
+              return false;
+           }
+           long version =        gitMajorVersion*1000000 + gitMinorVersion*10000 + gitRevVersion*100 + gitBugfixVersion;
+           long requestVersion =           major*1000000 +           minor*10000 +           rev*100 + bugfix;
+           return version >= requestVersion;
         }
     }
     
@@ -1181,6 +1218,9 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_trackingSubmodule() throws Exception {
+        if (!w.isAtLeastVersion(1,8,2,0)) {
+              return;
+        }
         w.init(); // bare repository
 
         // create a new GIT repo.
