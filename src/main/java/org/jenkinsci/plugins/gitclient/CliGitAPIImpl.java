@@ -1321,7 +1321,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             }
 
-            private void sparseCheckout(List<String> paths) throws GitException, InterruptedException {
+            private void sparseCheckout(@NonNull List<String> paths) throws GitException, InterruptedException {
 
                 boolean coreSparseCheckoutConfigEnable;
                 try {
