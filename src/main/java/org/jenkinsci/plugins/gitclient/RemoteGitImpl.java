@@ -274,6 +274,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.checkout(ref, branch);
     }
 
+    public CheckoutCommand checkout() {
+        return command(CheckoutCommand.class);
+    }
+
     public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
         proxy.checkoutBranch(branch, ref);
     }

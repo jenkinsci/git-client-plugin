@@ -60,6 +60,18 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
         c.execute();
     }
 
+    public void checkout(String commit) throws GitException, InterruptedException {
+        checkout().ref(commit).execute();
+    }
+
+    public void checkout(String ref, String branch) throws GitException, InterruptedException {
+        checkout().ref(ref).branch(branch).execute();
+    }
+
+    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
+        checkout().ref(ref).branch(branch).deleteBranchIfExist(true).execute();
+    }
+
     public void merge(ObjectId rev) throws GitException, InterruptedException {
         merge().setRevisionToMerge(rev).execute();
     }

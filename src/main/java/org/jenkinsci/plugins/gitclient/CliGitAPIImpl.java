@@ -13,6 +13,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
+import com.google.common.collect.Lists;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -93,6 +94,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private static final long serialVersionUID = 1;
+    static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
@@ -298,6 +300,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CloneCommand shallow() {
                 this.shallow = true;
+                return this;
+            }
+
+            public CloneCommand noCheckout() {
+                //this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the --no-checkout option is always satisfied
                 return this;
             }
 
@@ -1280,36 +1287,95 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String commit) throws GitException, InterruptedException {
-        launchCommand("checkout", "-f", commit);
-    }
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
 
-    public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        launchCommand("checkout", "-b", branch, ref);
-    }
+            public void execute() throws GitException, InterruptedException {
+                try {
 
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
-        try {
-            // First, checkout to detached HEAD, so we can delete the branch.
-            checkout(ref);
+                    // Will activate or deactivate sparse checkout depending on the given paths
+                    sparseCheckout(sparseCheckoutPaths);
 
-            if (branch!=null) {
-                // Second, check to see if the branch actually exists, and then delete it if it does.
-                for (Branch b : getBranches()) {
-                    if (b.getName().equals(branch)) {
-                        deleteBranch(branch);
+                    if (branch!=null && deleteBranch) {
+                        // First, checkout to detached HEAD, so we can delete the branch.
+                        launchCommand("checkout", "-f", ref);
+
+                        // Second, check to see if the branch actually exists, and then delete it if it does.
+                        for (Branch b : getBranches()) {
+                            if (b.getName().equals(branch)) {
+                                deleteBranch(branch);
+                            }
+                        }
+                    }
+                    if (branch != null)
+                        launchCommand("checkout", "-b", branch, ref);
+                    else
+                        launchCommand("checkout", "-f", ref);
+                } catch (GitException e) {
+                    if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
+                        throw new GitLockFailedException("Could not lock repository. Please try again", e);
+                    } else {
+                        throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
                     }
                 }
-                // Lastly, checkout the branch, creating it in the process, using commitish as the start point.
-                checkout(ref, branch);
+
             }
-        } catch (GitException e) {
-            if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
-                throw new GitLockFailedException("Could not lock repository. Please try again", e);
-            } else {
-                throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+
+            private void sparseCheckout(@NonNull List<String> paths) throws GitException, InterruptedException {
+
+                boolean coreSparseCheckoutConfigEnable;
+                try {
+                    coreSparseCheckoutConfigEnable = launchCommand("config", "core.sparsecheckout").contains("true");
+                } catch (GitException ge) {
+                    coreSparseCheckoutConfigEnable = false;
+                }
+
+                boolean deactivatingSparseCheckout = false;
+                if(paths.isEmpty() && ! coreSparseCheckoutConfigEnable) { // Nothing to do
+                    return;
+                } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
+                    deactivatingSparseCheckout = true;
+                    paths = Lists.newArrayList("/*");
+                } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
+                    launchCommand( "config", "core.sparsecheckout", "true" );
+                }
+
+                File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+                PrintWriter writer;
+                try {
+                    writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+                } catch (IOException ex){
+                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+                for(String path : paths) {
+                    writer.println(path);
+                }
+
+                try {
+                    writer.close();
+                } catch (Exception ex) {
+                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+
+                try {
+                    launchCommand( "read-tree", "-mu", "HEAD" );
+                } catch (GitException ge) {
+                    // Normal return code if sparse checkout path has never exist on the current checkout branch
+                    String normalReturnCode = "128";
+                    if(ge.getMessage().contains(normalReturnCode)) {
+                        listener.getLogger().println(ge.getMessage());
+                    } else {
+                        throw ge;
+                    }
+                }
+
+                if(deactivatingSparseCheckout) {
+                    launchCommand( "config", "core.sparsecheckout", "false" );
+                }
             }
-        }
+        };
     }
 
     public boolean tagExists(String tagName) throws GitException, InterruptedException {

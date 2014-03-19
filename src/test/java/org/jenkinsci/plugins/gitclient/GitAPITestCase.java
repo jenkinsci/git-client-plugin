@@ -5,7 +5,7 @@ import org.apache.commons.lang.SystemUtils;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-
+import com.google.common.collect.Lists;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -218,7 +218,7 @@ public abstract class GitAPITestCase extends TestCase {
         return new WorkingArea(x.repo);
     }
 
-    
+
 
     @Override
     protected void setUp() throws Exception {
@@ -1188,6 +1188,65 @@ public abstract class GitAPITestCase extends TestCase {
                         "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
                 r.toString()
         );
+    }
+
+    @NotImplementedInJGit
+    public void test_sparse_checkout() throws Exception {
+        // Create a repo for cloning purpose
+        w.init();
+        w.commitEmpty("init");
+        w.file("dir1").mkdir();
+        w.touch("dir1/file1");
+        w.file("dir2").mkdir();
+        w.touch("dir2/file2");
+        w.file("dir3").mkdir();
+        w.touch("dir3/file3");
+        w.git.add("dir1/file1");
+        w.git.add("dir2/file2");
+        w.git.add("dir3/file3");
+        w.git.commit("commit");
+
+        // Clone it
+        WorkingArea workingArea = clone(w.repoPath());
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1")).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertFalse(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir2")).execute();
+        assertFalse(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1", "dir2")).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Collections.<String>emptyList()).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertTrue(workingArea.exists("dir3"));
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(null).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertTrue(workingArea.exists("dir3"));
+    }
+
+    public void test_clone_no_checkout() throws Exception {
+        // Create a repo for cloning purpose
+        WorkingArea repoToClone = new WorkingArea();
+        repoToClone.init();
+        repoToClone.commitEmpty("init");
+        repoToClone.touch("file1");
+        repoToClone.git.add("file1");
+        repoToClone.git.commit("commit");
+
+        // Clone it with no checkout
+        w.git.clone_().url(repoToClone.repoPath()).repositoryName("origin").noCheckout().execute();
+        assertFalse(w.exists("file1"));
     }
 
     public void test_hasSubmodules() throws Exception {
