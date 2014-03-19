@@ -1228,6 +1228,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
+
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(null).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertTrue(workingArea.exists("dir3"));
     }
 
     public void test_clone_no_checkout() throws Exception {
