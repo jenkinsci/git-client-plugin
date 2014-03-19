@@ -280,7 +280,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String url;
             String origin = "origin";
             String reference;
-            boolean shallow,shared,noCheckout;
+            boolean shallow,shared;
 			Integer timeout;
 
             public CloneCommand url(String url) {
@@ -304,7 +304,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand noCheckout() {
-                this.noCheckout = true;
+                //this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the --no-checkout option is always satisfied
                 return this;
             }
 
@@ -339,7 +339,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
-                // the CloneCommand.noCheckout option is then useless
 
                 init();
                 if (reference != null && !reference.isEmpty()) {
