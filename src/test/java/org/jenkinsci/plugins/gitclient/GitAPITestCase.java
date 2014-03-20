@@ -419,7 +419,7 @@ public abstract class GitAPITestCase extends TestCase {
     @Deprecated
     public void test_lsTree_recursive() throws IOException, InterruptedException {
         w.init();
-        w.file("dir1").mkdir();
+        assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
         w.touch("dir1/file1", "dir1/file1 fixed content");
         w.git.add("dir1/file1");
         w.touch("file2", "file2 fixed content");
@@ -1007,7 +1007,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_hasGitRepo_with_invalid_git_repo() throws Exception
     {
         // Create an empty directory named .git - "corrupt" git repo
-        w.file(".git").mkdir();
+        assertTrue("mkdir .git failed", w.file(".git").mkdir());
         assertFalse("Invalid Git repo reported as valid", w.git.hasGitRepo());
     }
 
@@ -1195,11 +1195,11 @@ public abstract class GitAPITestCase extends TestCase {
         // Create a repo for cloning purpose
         w.init();
         w.commitEmpty("init");
-        w.file("dir1").mkdir();
+        assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
         w.touch("dir1/file1");
-        w.file("dir2").mkdir();
+        assertTrue("mkdir dir2 failed", w.file("dir2").mkdir());
         w.touch("dir2/file2");
-        w.file("dir3").mkdir();
+        assertTrue("mkdir dir3 failed", w.file("dir3").mkdir());
         w.touch("dir3/file3");
         w.git.add("dir1/file1");
         w.git.add("dir2/file2");
