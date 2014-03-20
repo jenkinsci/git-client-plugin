@@ -1221,7 +1221,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (!w.isAtLeastVersion(1,8,2,0)) {
               return;
         }
-        w.init(); // bare repository
+        w.init(); // empty repository
 
         // create a new GIT repo.
         //   master -- <file1>C  <file2>C
