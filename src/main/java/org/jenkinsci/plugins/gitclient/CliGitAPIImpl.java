@@ -635,34 +635,30 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @throws GitException if executing the Git command fails
      */
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        submoduleUpdate(recursive, false, null);
-    }
+    public SubmoduleUpdateCommand submoduleUpdate() {
+        return new SubmoduleUpdateCommand() {
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("submodule", "update");
+                if (recursive) {
+                    args.add("--init", "--recursive");
+                }
+                if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
+                    args.add("--remote");
+                }
+                if ((ref != null) && !ref.isEmpty()) {
+                    File referencePath = new File(ref);
+                    if (!referencePath.exists())
+                        listener.error("Reference path does not exist: " + ref);
+                    else if (!referencePath.isDirectory())
+                        listener.error("Reference path is not a directory: " + ref);
+                    else
+                        args.add("--reference", ref);
+                }
 
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
-        submoduleUpdate(recursive, remoteTracking, null);
-    }
-
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
-    	ArgumentListBuilder args = new ArgumentListBuilder();
-    	args.add("submodule", "update");
-    	if (recursive) {
-            args.add("--init", "--recursive");
-        }
-        if (remoteTracking && isAtLeastVersion(1, 8, 2, 0)) {
-            args.add("--remote");
-        }
-        if (reference != null && !reference.isEmpty()) {
-            File referencePath = new File(reference);
-            if (!referencePath.exists())
-                listener.error("Reference path does not exist: " + reference);
-            else if (!referencePath.isDirectory())
-                listener.error("Reference path is not a directory: " + reference);
-            else
-                args.add("--reference", reference);
-        }
-
-        launchCommand(args);
+                launchCommand(args);
+            }
+        };
     }
 
     /**
