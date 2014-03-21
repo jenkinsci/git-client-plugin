@@ -4,7 +4,7 @@ Utility plugin for Git-related support
 Extracted from [git-plugin](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin)
 to make it easier for other plugins to use and contribute new features.
 
-* see [Jenkins wiki](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin) for detailed feature descriptions
+* see [Jenkins wiki](https://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin) for detailed feature descriptions
 * use [JIRA](https://issues.jenkins-ci.org) to report issues / feature requests
 
 Contributing to the Plugin
