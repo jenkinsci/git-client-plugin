@@ -39,3 +39,4 @@ To Do
 * Create credential tests to verify various credentials scenarios
 * Create submodule tests to verify submodule behaviors
 * Improve code coverage in current tests
+* Improve javadoc
