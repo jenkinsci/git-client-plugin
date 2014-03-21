@@ -31,3 +31,11 @@ when you submit.
 
 Before submitting your change, please review the findbugs output to
 assure that you haven't introduced new findbugs warnings.
+
+To Do
+=====
+
+* Fix [bugs](https://issues.jenkins-ci.org/secure/IssueNavigator.jspa?mode=hide&reset=true&jqlQuery=project+%3D+JENKINS+AND+status+in+%28Open%2C+"In+Progress"%2C+Reopened%29+AND+component+%3D+git-client)
+* Create credential tests to verify various credentials scenarios
+* Create submodule tests to verify submodule behaviors
+* Improve code coverage in current tests
