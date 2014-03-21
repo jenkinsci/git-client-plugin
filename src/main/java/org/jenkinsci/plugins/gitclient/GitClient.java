@@ -207,19 +207,38 @@ public interface GitClient {
 
     /**
      * Fetch a remote repository. Assumes <tt>remote.remoteName.url</tt> has been set.
+     * @deprecated use {@link #fetch_()} and configure a {@link org.jenkinsci.plugins.gitclient.FetchCommand}
      */
     void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException;
 
+    /**
+     * @deprecated use {@link #fetch_()} and configure a {@link org.jenkinsci.plugins.gitclient.FetchCommand}
+     */
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
+    /**
+     * @deprecated use {@link #fetch_()} and configure a {@link org.jenkinsci.plugins.gitclient.FetchCommand}
+     */
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
 
     FetchCommand fetch_(); // can't use 'fetch' as legacy IGitAPI already define this method
 
+    /**
+     * @deprecated use {@link #push()} and configure a {@link org.jenkinsci.plugins.gitclient.PushCommand}
+     */
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
+    /**
+     * @deprecated use {@link #push()} and configure a {@link org.jenkinsci.plugins.gitclient.PushCommand}
+     */
     void push(URIish url, String refspec) throws GitException, InterruptedException;
 
+    PushCommand push();
+
+
+    /**
+     * @deprecated use {@link #merge()} and configure a {@link org.jenkinsci.plugins.gitclient.MergeCommand}
+     */
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
     MergeCommand merge();

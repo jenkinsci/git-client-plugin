@@ -1158,24 +1158,53 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return branches;
     }
 
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
+    public PushCommand push() {
+        return new PushCommand() {
+            public URIish remote;
+            public String refspec;
+            public boolean force;
+            public Integer timeout;
 
-    public void push(String remoteName, String refspec) throws GitException {
-        RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
-        Repository repo = null;
-        try {
-            repo = getRepository();
-            git(repo).push().setRemote(remoteName).setRefSpecs(ref)
-                    .setProgressMonitor(new JGitProgressMonitor(listener))
-                    .setCredentialsProvider(getProvider())
-                    .call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
-        }
+            public PushCommand to(URIish remote) {
+                this.remote = remote;
+                return this;
+            }
+
+            public PushCommand ref(String refspec) {
+                this.refspec = refspec;
+                return this;
+            }
+
+            public PushCommand force() {
+                this.force = true;
+                return this;
+            }
+
+            public PushCommand timeout(Integer timeout) {
+                throw new UnsupportedOperationException("Not implemented yet");
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
+                Repository repo = null;
+                try {
+                    repo = getRepository();
+                    Git g = git(repo);
+                    Config config = g.getRepository().getConfig();
+                    config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
+                    g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
+                            .setProgressMonitor(new JGitProgressMonitor(listener))
+                            .setCredentialsProvider(getProvider())
+                            .setForce(force)
+                            .call();
+                    config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                } finally {
+                    if (repo != null) repo.close();
+                }
+            }
+        };
     }
 
     public List<ObjectId> revListAll() throws GitException {

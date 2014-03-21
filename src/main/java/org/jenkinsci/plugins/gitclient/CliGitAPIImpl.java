@@ -1202,32 +1202,52 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     }
 
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add("push", url.toPrivateASCIIString());
+    public PushCommand push() {
+        return new PushCommand() {
+            public URIish remote;
+            public String refspec;
+            public boolean force;
+            public Integer timeout;
 
-        if (refspec != null) {
-            args.add(refspec);
-        }
+            public PushCommand to(URIish remote) {
+                this.remote = remote;
+                return this;
+            }
 
-        StandardCredentials cred = credentials.get(url.toPrivateString());
-        if (cred == null) cred = defaultCredentials;
-        launchCommandWithCredentials(args, workspace, cred, url);
-        // Ignore output for now as there's many different formats
-        // That are possible.
-    }
+            public PushCommand ref(String refspec) {
+                this.refspec = refspec;
+                return this;
+            }
 
-    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
-        String url = getRemoteUrl(remoteName);
-        if (url == null) {
-            throw new GitException("bad remote name, URL not set in working copy");
-        }
+            public PushCommand force() {
+                this.force = true;
+                return this;
+            }
 
-        try {
-            push(new URIish(url), refspec);
-        } catch (URISyntaxException e) {
-            throw new GitException("bad repository URL", e);
-        }
+            public PushCommand timeout(Integer timeout) {
+                this.timeout = timeout;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("push", remote.toPrivateASCIIString());
+
+                if (refspec != null) {
+                    args.add(refspec);
+                }
+
+                if (force) {
+                    args.add("-f");
+                }
+
+                StandardCredentials cred = credentials.get(remote.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+                launchCommandWithCredentials(args, workspace, cred, remote, timeout);
+                // Ignore output for now as there's many different formats
+                // That are possible.
+            }
+        };
     }
 
     protected Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {

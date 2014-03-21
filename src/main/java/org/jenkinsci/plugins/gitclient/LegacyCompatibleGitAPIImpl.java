@@ -15,9 +15,11 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -85,11 +87,30 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         fetch(null, (RefSpec) null);
     }
 
-
+    @Deprecated
     public void reset() throws GitException, InterruptedException {
         reset(false);
     }
 
+
+    @Deprecated
+    public void push(URIish url, String refspec) throws GitException, InterruptedException {
+        push().ref(refspec).to(url).execute();
+    }
+
+    @Deprecated
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+        String url = getRemoteUrl(remoteName);
+        if (url == null) {
+            throw new GitException("bad remote name, URL not set in working copy");
+        }
+
+        try {
+            push(new URIish(url), refspec);
+        } catch (URISyntaxException e) {
+            throw new GitException("bad repository URL", e);
+        }
+    }
 
     @Deprecated
     public void clone(RemoteConfig source) throws GitException, InterruptedException {
