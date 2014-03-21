@@ -1261,6 +1261,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.hasGitModules());
     }
 
+    public void test_init() throws Exception {
+        assertFalse(w.file(".git").exists());
+        w.git.init();
+        assertTrue(w.file(".git").exists());
+    }
+
     public void test_getSubmoduleUrl() throws Exception {
         w = clone(localMirror());
         w.cmd("git checkout tests/getSubmodules");

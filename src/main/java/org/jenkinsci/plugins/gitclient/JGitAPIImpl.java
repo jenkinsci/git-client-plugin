@@ -150,9 +150,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         committer = new PersonIdent(name,email);
     }
 
-    public void init() throws GitException {
+    public void init() throws GitException, InterruptedException {
+        init_().workspace(workspace.getAbsolutePath()).execute();
+    }
+
+    private void doInit(String workspace) throws GitException {
         try {
-            Git.init().setDirectory(workspace).call();
+            Git.init().setDirectory(new File(workspace)).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -992,6 +996,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+        };
+    }
+
+    public InitCommand init_() {
+        return new InitCommand() {
+            public void execute() throws GitException, InterruptedException {
+                doInit(workspace);
             }
         };
     }
