@@ -1207,7 +1207,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit");
 
         // Clone it
-        WorkingArea workingArea = clone(w.repoPath());
+        WorkingArea workingArea = new WorkingArea();
+        workingArea.git.clone_().url(w.repoPath()).execute();
 
         workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1")).execute();
         assertTrue(workingArea.exists("dir1"));

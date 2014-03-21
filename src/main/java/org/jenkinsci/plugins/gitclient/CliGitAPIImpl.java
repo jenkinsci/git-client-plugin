@@ -94,6 +94,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private static final long serialVersionUID = 1;
+    static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     transient Launcher launcher;
     TaskListener listener;
@@ -1358,6 +1359,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     paths = Lists.newArrayList("/*");
                 } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
                     launchCommand( "config", "core.sparsecheckout", "true" );
+                }
+
+                File sparseCheckoutDir = new File(workspace, SPARSE_CHECKOUT_FILE_DIR);
+                if(! sparseCheckoutDir.exists()) {
+                    if(! sparseCheckoutDir.mkdir()) {
+                        throw new GitException("Impossible to create sparse checkout dir " + sparseCheckoutDir.getAbsolutePath());
+                    }
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
