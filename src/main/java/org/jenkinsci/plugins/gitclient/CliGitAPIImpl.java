@@ -110,17 +110,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
        if (gitVersion != 0) {
           return;
        }
+
+       int gitMajorVersion  = 0;
+       int gitMinorVersion  = 0;
+       int gitRevVersion    = 0;
+       int gitBugfixVersion = 0;
+
        try {
           String version = launchCommand("--version").trim();
           String[] fields = version.split(" ")[2].split("\\.");
 
-          gitVersion = computeVersionFromBits(Integer.parseInt(fields[0]),
-                                              ((fields.length > 1) ? Integer.parseInt(fields[1]) : 0),
-                                              ((fields.length > 2) ? Integer.parseInt(fields[2]) : 0),
-                                              ((fields.length > 3) ? Integer.parseInt(fields[3]) : 0));
+          gitMajorVersion  = Integer.parseInt(fields[0]);
+          gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
+          gitRevVersion    = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
+          gitBugfixVersion = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
        } catch (Throwable e) {
           /* Oh well */
        }
+
+       gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
     }
     private boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
        getGitVersion();
