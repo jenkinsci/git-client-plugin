@@ -1163,7 +1163,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public URIish remote;
             public String refspec;
             public boolean force;
-            public Integer timeout;
+            // timeout is not yet implemented for push
+            // public Integer timeout;
 
             public PushCommand to(URIish remote) {
                 this.remote = remote;
