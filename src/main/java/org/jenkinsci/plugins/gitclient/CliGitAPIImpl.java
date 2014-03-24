@@ -111,13 +111,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return;
         }
 
+        String version = "";
+        try {
+            version = launchCommand("--version").trim();
+        } catch (Throwable e) {
+        }
+
+        computeGitVersion(version);
+    }
+
+    /* package */ void computeGitVersion(String version) {
         int gitMajorVersion  = 0;
         int gitMinorVersion  = 0;
         int gitRevVersion    = 0;
         int gitBugfixVersion = 0;
 
         try {
-            String version = launchCommand("--version").trim();
             String[] fields = version.split(" ")[2].split("\\.");
 
             gitMajorVersion  = Integer.parseInt(fields[0]);
@@ -130,7 +139,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
     }
-    private boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
+
+    /* package */ boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
         getGitVersion();
         long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
         return gitVersion >= requestedVersion;
