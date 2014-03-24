@@ -104,36 +104,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private long gitVersion = 0;
     private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
-       return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
+        return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
     }
     private void getGitVersion() {
-       if (gitVersion != 0) {
-          return;
-       }
+        if (gitVersion != 0) {
+            return;
+        }
 
-       int gitMajorVersion  = 0;
-       int gitMinorVersion  = 0;
-       int gitRevVersion    = 0;
-       int gitBugfixVersion = 0;
+        int gitMajorVersion  = 0;
+        int gitMinorVersion  = 0;
+        int gitRevVersion    = 0;
+        int gitBugfixVersion = 0;
 
-       try {
-          String version = launchCommand("--version").trim();
-          String[] fields = version.split(" ")[2].split("\\.");
+        try {
+            String version = launchCommand("--version").trim();
+            String[] fields = version.split(" ")[2].split("\\.");
 
-          gitMajorVersion  = Integer.parseInt(fields[0]);
-          gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
-          gitRevVersion    = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
-          gitBugfixVersion = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
-       } catch (Throwable e) {
-          /* Oh well */
-       }
+            gitMajorVersion  = Integer.parseInt(fields[0]);
+            gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
+            gitRevVersion    = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
+            gitBugfixVersion = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
+        } catch (Throwable e) {
+            /* Oh well */
+        }
 
-       gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
+        gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
     }
     private boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
-       getGitVersion();
-       long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
-       return gitVersion >= requestedVersion;
+        getGitVersion();
+        long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
+        return gitVersion >= requestedVersion;
     }
 
     protected CliGitAPIImpl(String gitExe, File workspace,
