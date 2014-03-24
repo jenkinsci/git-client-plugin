@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.util.Arrays.copyOfRange;
-import static org.apache.commons.lang.StringUtils.join;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -406,8 +404,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public InitCommand init_() {
         return new InitCommand() {
             public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("init", workspace);
+
+                if(bare) args.add("--bare");
                 try {
-                    launchCommand("init", workspace);
+                    launchCommand(args);
                 } catch (GitException e) {
                     throw new GitException("Could not init " + workspace, e);
                 }

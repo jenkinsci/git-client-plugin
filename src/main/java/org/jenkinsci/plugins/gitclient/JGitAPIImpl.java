@@ -81,7 +81,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Arrays.copyOfRange;
 import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
 import static org.eclipse.jgit.lib.Constants.*;
@@ -154,9 +153,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         init_().workspace(workspace.getAbsolutePath()).execute();
     }
 
-    private void doInit(String workspace) throws GitException {
+    private void doInit(String workspace, boolean bare) throws GitException {
         try {
-            Git.init().setDirectory(new File(workspace)).call();
+            Git.init().setBare(bare).setDirectory(new File(workspace)).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -1003,7 +1002,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public InitCommand init_() {
         return new InitCommand() {
             public void execute() throws GitException, InterruptedException {
-                doInit(workspace);
+                doInit(workspace, bare);
             }
         };
     }

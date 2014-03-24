@@ -98,12 +98,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         WorkingArea init(boolean bare) throws IOException, InterruptedException {
-            if (bare) {
-                cmd("git init --bare");
-                bare = true;
-            } else {
-                init();
-            }
+            git.init_().workspace(repoPath()).bare(bare).execute();
             return this;
         }
 
@@ -1265,6 +1260,28 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.file(".git").exists());
         w.git.init();
         assertTrue(w.file(".git").exists());
+    }
+
+    public void test_init_() throws Exception {
+        assertFalse(w.file(".git").exists());
+        w.git.init_().workspace(w.repoPath()).execute();
+        assertTrue(w.file(".git").exists());
+    }
+
+    public void test_init_bare() throws Exception {
+        assertFalse(w.file(".git").exists());
+        assertFalse(w.file("branches").exists());
+        w.git.init_().workspace(w.repoPath()).bare(false).execute();
+        assertTrue(w.file(".git").exists());
+        assertFalse(w.file("branches").exists());
+
+
+        WorkingArea anotherRepo = new WorkingArea();
+        assertFalse(anotherRepo.file(".git").exists());
+        assertFalse(anotherRepo.file("branches").exists());
+        anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
+        assertFalse(anotherRepo.file(".git").exists());
+        assertTrue(anotherRepo.file("branches").exists());
     }
 
     public void test_getSubmoduleUrl() throws Exception {
