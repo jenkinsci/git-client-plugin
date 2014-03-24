@@ -1181,7 +1181,8 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_trackingSubmodule() throws Exception {
-        if (((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
             return;
         }
         w.init(); // empty repository
