@@ -6,30 +6,13 @@ import java.util.List;
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public abstract class CheckoutCommand implements GitCommand {
+public interface CheckoutCommand extends GitCommand {
 
-    public String ref;
-    public String branch;
-    public boolean deleteBranch;
-    public List<String> sparseCheckoutPaths = Collections.emptyList();
+    CheckoutCommand ref(String ref);
 
-    public CheckoutCommand ref(String ref) {
-        this.ref = ref;
-        return this;
-    }
+    CheckoutCommand branch(String branch);
 
-    public CheckoutCommand branch(String branch) {
-        this.branch = branch;
-        return this;
-    }
+    CheckoutCommand deleteBranchIfExist(boolean deleteBranch);
 
-    public CheckoutCommand deleteBranchIfExist(boolean deleteBranch) {
-        this.deleteBranch = deleteBranch;
-        return this;
-    }
-
-    public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-        this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
-        return this;
-    }
+    CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths);
 }
