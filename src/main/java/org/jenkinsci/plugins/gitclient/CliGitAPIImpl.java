@@ -403,6 +403,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public InitCommand init_() {
         return new InitCommand() {
+
+            public String workspace;
+            public boolean bare;
+
+            public InitCommand workspace(String workspace) {
+                this.workspace = workspace;
+                return this;
+            }
+
+            public InitCommand bare(boolean bare) {
+                this.bare = bare;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("init", workspace);
