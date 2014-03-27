@@ -306,6 +306,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(MergeCommand.class);
     }
 
+    public InitCommand init_() {
+        return command(InitCommand.class);
+    }
+
     public FetchCommand fetch_() {
         return command(FetchCommand.class);
     }

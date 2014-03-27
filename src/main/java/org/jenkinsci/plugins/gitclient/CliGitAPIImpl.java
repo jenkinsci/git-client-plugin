@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.util.Arrays.copyOfRange;
-import static org.apache.commons.lang.StringUtils.join;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -162,17 +160,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void init() throws GitException, InterruptedException {
-        if (hasGitRepo()) {
-            throw new GitException(".git directory already exists! Has it already been initialised?");
-        }
-        Repository repo = getRepository();
-        try {
-            repo.create();
-        } catch (IOException ioe) {
-            throw new GitException("Error initiating git repo.", ioe);
-        } finally {
-            repo.close();
-        }
+        init_().workspace(workspace.getAbsolutePath()).execute();
     }
 
     public boolean hasGitRepo() throws GitException, InterruptedException {
@@ -385,7 +373,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
-                init();
+                init_().workspace(workspace.getAbsolutePath()).execute();
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
@@ -453,6 +441,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         launchCommand("merge", rev.name()); }
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);
+                }
+            }
+        };
+    }
+
+    public InitCommand init_() {
+        return new InitCommand() {
+
+            public String workspace;
+            public boolean bare;
+
+            public InitCommand workspace(String workspace) {
+                this.workspace = workspace;
+                return this;
+            }
+
+            public InitCommand bare(boolean bare) {
+                this.bare = bare;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("init", workspace);
+
+                if(bare) args.add("--bare");
+                try {
+                    launchCommand(args);
+                } catch (GitException e) {
+                    throw new GitException("Could not init " + workspace, e);
                 }
             }
         };
@@ -1099,7 +1117,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // See https://issues.jenkins-ci.org/browse/JENKINS-21016
                     if (workDir == null) {
                         workDir = store.getParentFile();
-                        launchCommandIn(workDir, "init");
+                        init_().workspace(workDir.getAbsolutePath()).execute();
                     }
 
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";

@@ -81,7 +81,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static java.util.Arrays.copyOfRange;
 import static org.apache.commons.lang.StringUtils.*;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
 import static org.eclipse.jgit.lib.Constants.*;
@@ -150,9 +149,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         committer = new PersonIdent(name,email);
     }
 
-    public void init() throws GitException {
+    public void init() throws GitException, InterruptedException {
+        init_().workspace(workspace.getAbsolutePath()).execute();
+    }
+
+    private void doInit(String workspace, boolean bare) throws GitException {
         try {
-            Git.init().setDirectory(workspace).call();
+            Git.init().setBare(bare).setDirectory(new File(workspace)).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -1017,6 +1020,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+        };
+    }
+
+    public InitCommand init_() {
+        return new InitCommand() {
+
+            public String workspace;
+            public boolean bare;
+
+            public InitCommand workspace(String workspace) {
+                this.workspace = workspace;
+                return this;
+            }
+
+            public InitCommand bare(boolean bare) {
+                this.bare = bare;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                doInit(workspace, bare);
             }
         };
     }

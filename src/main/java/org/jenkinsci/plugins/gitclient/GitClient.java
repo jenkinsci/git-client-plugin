@@ -243,6 +243,8 @@ public interface GitClient {
 
     MergeCommand merge();
 
+    InitCommand init_(); // can't use 'init' as legacy IGitAPI already define this method
+
     /**
      * Prune stale remote tracking branches with "git remote prune" on the specified remote.
      */
