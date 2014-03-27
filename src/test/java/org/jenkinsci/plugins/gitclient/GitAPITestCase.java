@@ -1309,18 +1309,18 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_init_bare() throws Exception {
         assertFalse(w.file(".git").exists());
-        assertFalse(w.file("branches").exists());
+        assertFalse(w.file("refs").exists());
         w.git.init_().workspace(w.repoPath()).bare(false).execute();
         assertTrue(w.file(".git").exists());
-        assertFalse(w.file("branches").exists());
+        assertFalse(w.file("refs").exists());
 
 
         WorkingArea anotherRepo = new WorkingArea();
         assertFalse(anotherRepo.file(".git").exists());
-        assertFalse(anotherRepo.file("branches").exists());
+        assertFalse(anotherRepo.file("refs").exists());
         anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
         assertFalse(anotherRepo.file(".git").exists());
-        assertTrue(anotherRepo.file("branches").exists());
+        assertTrue(anotherRepo.file("refs").exists());
     }
 
     public void test_getSubmoduleUrl() throws Exception {
