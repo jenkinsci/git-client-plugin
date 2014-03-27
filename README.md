@@ -40,3 +40,4 @@ To Do
 * Create submodule tests to verify submodule behaviors
 * Improve code coverage in current tests
 * Improve javadoc
+* Complete more of the JGit implementation
