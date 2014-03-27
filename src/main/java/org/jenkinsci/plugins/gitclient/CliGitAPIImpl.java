@@ -103,6 +103,50 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
 
+    private long gitVersion = 0;
+    private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
+        return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
+    }
+    private void getGitVersion() {
+        if (gitVersion != 0) {
+            return;
+        }
+
+        String version = "";
+        try {
+            version = launchCommand("--version").trim();
+        } catch (Throwable e) {
+        }
+
+        computeGitVersion(version);
+    }
+
+    /* package */ void computeGitVersion(String version) {
+        int gitMajorVersion  = 0;
+        int gitMinorVersion  = 0;
+        int gitRevVersion    = 0;
+        int gitBugfixVersion = 0;
+
+        try {
+            String[] fields = version.split(" ")[2].split("\\.");
+
+            gitMajorVersion  = Integer.parseInt(fields[0]);
+            gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
+            gitRevVersion    = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
+            gitBugfixVersion = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
+        } catch (Throwable e) {
+            /* Oh well */
+        }
+
+        gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
+    }
+
+    /* package */ boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
+        getGitVersion();
+        long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
+        return gitVersion >= requestedVersion;
+    }
+
     protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
         super(workspace);
@@ -606,30 +650,34 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Update submodules.
      *
      * @param recursive if true, will recursively update submodules (requires git>=1.6.5)
+     * @param remote if true, will update the submodule to the tip of the branch requested (requires git>=1.8.2)
      *
      * @throws GitException if executing the Git command fails
      */
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        submoduleUpdate(recursive, null);
-    }
+    public SubmoduleUpdateCommand submoduleUpdate() {
+        return new SubmoduleUpdateCommand() {
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("submodule", "update");
+                if (recursive) {
+                    args.add("--init", "--recursive");
+                }
+                if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
+                    args.add("--remote");
+                }
+                if ((ref != null) && !ref.isEmpty()) {
+                    File referencePath = new File(ref);
+                    if (!referencePath.exists())
+                        listener.error("Reference path does not exist: " + ref);
+                    else if (!referencePath.isDirectory())
+                        listener.error("Reference path is not a directory: " + ref);
+                    else
+                        args.add("--reference", ref);
+                }
 
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
-    	ArgumentListBuilder args = new ArgumentListBuilder();
-    	args.add("submodule", "update");
-    	if (recursive) {
-            args.add("--init", "--recursive");
-        }
-        if (reference != null && !reference.isEmpty()) {
-            File referencePath = new File(reference);
-            if (!referencePath.exists())
-                listener.error("Reference path does not exist: " + reference);
-            else if (!referencePath.isDirectory())
-                listener.error("Reference path is not a directory: " + reference);
-            else
-                args.add("--reference", reference);
-        }
-
-        launchCommand(args);
+                launchCommand(args);
+            }
+        };
     }
 
     /**

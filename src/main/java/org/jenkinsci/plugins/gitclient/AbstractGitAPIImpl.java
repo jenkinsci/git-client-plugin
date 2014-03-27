@@ -97,4 +97,18 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     public void setProxy(ProxyConfiguration proxy) {
         this.proxy = proxy;
     }
+
+
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).execute();
+    }
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).ref(reference).execute();
+    }
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
+    }
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
+    }
 }

@@ -201,7 +201,7 @@ public abstract class GitAPITestCase extends TestCase {
                     assertEquals("Wrong output value " + version, "git", version[0]);
                     assertEquals("Wrong output value " + version, "version", version[1]);
                     assertTrue("Wrong version value " + version[2], version[2].startsWith("1"));
-                    gitVersion = version[2];
+                    gitVersion = version[2].trim();
                 } else {
                     gitVersion = "";
                 }
@@ -1177,6 +1177,44 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.igit().submoduleSync();
     }
+
+
+    @NotImplementedInJGit
+    public void test_trackingSubmodule() throws Exception {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+            return;
+        }
+        w.init(); // empty repository
+
+        // create a new GIT repo.
+        //   master -- <file1>C  <file2>C
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.touch("file1", "content1");
+        r.git.add("file1");
+        r.git.commit("submod-commit1");
+      
+        // Add new GIT repo to w
+        String subModDir = "submod1-" + java.util.UUID.randomUUID().toString();
+        w.git.addSubmodule(r.repoPath(), subModDir);
+        w.git.submoduleInit();
+
+        // Add a new file to the separate GIT repo.
+        r.touch("file2", "content2");
+        r.git.add("file2");
+        r.git.commit("submod-branch1-commit1");
+
+        // Make sure that the new file doesn't exist in the repo with remoteTracking
+        String subFile = subModDir + File.separator + "file2";
+        w.git.submoduleUpdate(true, false);
+        assertFalse("file2 exists and should not because we didn't update to the tip of the branch (master).", w.exists(subFile));
+
+        // Run submodule update with remote tracking
+        w.git.submoduleUpdate(true, true);
+        assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
+    }
+
 
     public void test_getSubmodules() throws Exception {
         w.init();

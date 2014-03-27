@@ -331,9 +331,36 @@ public interface GitClient {
      */
     void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException;
 
+    /**
+     * Run submodule update optionally recursively on all submodules
+     * (equivalent of <tt>git submodule update <em>--recursive</em></tt>.)
+     * @deprecated use {@link #submoduleUpdate()} and {@link SubmoduleUpdateCommand}
+     */
     void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
 
-    void submoduleUpdate(boolean recursive, String reference)  throws GitException, InterruptedException;
+    /**
+     * Run submodule update optionally recursively on all submodules, with a specific
+     * reference passed to git clone if needing to --init.
+     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--reference 'reference'</em></tt>.)
+     * @deprecated use {@link #submoduleUpdate()} and {@link SubmoduleUpdateCommand}
+     */
+    void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException;
+
+    /**
+     * Run submodule update optionally recursively on all submodules, optionally with remoteTracking submodules
+     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--remote</em></tt>.)
+     * @deprecated use {@link #submoduleUpdate()} and {@link SubmoduleUpdateCommand}
+     */
+    void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException;
+    /**
+     * Run submodule update optionally recursively on all submodules, optionally with remoteTracking, with a specific
+     * reference passed to git clone if needing to --init.
+     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--remote</em> <em>--reference 'reference'</em></tt>.)
+     * @deprecated use {@link #submoduleUpdate()} and {@link SubmoduleUpdateCommand}
+     */
+    void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException;
+
+    SubmoduleUpdateCommand submoduleUpdate();
 
     void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
 

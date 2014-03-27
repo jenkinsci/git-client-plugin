@@ -1363,27 +1363,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void submoduleUpdate(boolean recursive) throws GitException {
-        Repository repo = null;
-        try {
-            repo = getRepository();
-            git(repo).submoduleUpdate().call();
-            if (recursive) {
-                for (JGitAPIImpl sub : submodules()) {
-                    sub.submoduleUpdate(recursive);
+    public SubmoduleUpdateCommand submoduleUpdate() {
+        return new SubmoduleUpdateCommand() {
+            public void execute() throws GitException, InterruptedException {
+                Repository repo = null;
+
+                if (remoteTracking) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support remoteTracking submodules yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if ((ref != null) && !ref.isEmpty()) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                    
+                try {
+                    repo = getRepository();
+                    git(repo).submoduleUpdate().call();
+                    if (recursive) {
+                        for (JGitAPIImpl sub : submodules()) {
+                            sub.submoduleUpdate(recursive);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                } finally {
+                    if (repo != null) repo.close();
                 }
             }
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
-        }
-    }
-
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        };
     }
 
 
