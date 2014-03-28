@@ -1784,6 +1784,28 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
 
+    /* Is implemented in JGit, but returns no results.  Temporarily
+     * marking this test as not implemented in JGit so that its
+     * failure does not distract from other development.
+     */
+    @Bug(22343)
+    @NotImplementedInJGit
+    public void test_show_revision_for_first_commit() throws Exception {
+        w.init();
+        w.touch("a");
+        w.git.add("a");
+        w.git.commit("first");
+        ObjectId first = w.head();
+        List<String> revisionDetails = w.git.showRevision(first);
+        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith("commit ");
+            }
+        });
+        assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
+        assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
+    }
+
     public void test_describe() throws Exception {
         w.init();
         w.commitEmpty("first");
