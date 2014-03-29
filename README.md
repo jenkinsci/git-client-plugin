@@ -36,7 +36,6 @@ To Do
 =====
 
 * Fix [bugs](https://issues.jenkins-ci.org/secure/IssueNavigator.jspa?mode=hide&reset=true&jqlQuery=project+%3D+JENKINS+AND+status+in+%28Open%2C+"In+Progress"%2C+Reopened%29+AND+component+%3D+git-client)
-* Create tests to verify [symlink behavior](https://issues.jenkins-ci.org/browse/JENKINS-22391)
 * Create infrastructure to detect [files opened during a unit test](https://issues.jenkins-ci.org/browse/JENKINS-19994) and left open at exit from test
 * Create credential tests to verify various credentials scenarios
 * Create submodule tests to verify submodule behaviors

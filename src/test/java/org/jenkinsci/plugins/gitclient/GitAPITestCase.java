@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang.StringUtils;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -79,12 +80,25 @@ public abstract class GitAPITestCase extends TestCase {
             return launchCommand(args.split(" "));
         }
     
+        String cmd(boolean ignoreError, String args) throws IOException, InterruptedException {
+            return launchCommand(ignoreError, args.split(" "));
+        }
+    
         String launchCommand(String... args) throws IOException, InterruptedException {
+            return launchCommand(false, args);
+        }
+
+        String launchCommand(boolean ignoreError, String... args) throws IOException, InterruptedException {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
                     envs(env).stdout(out).join();
             String s = out.toString();
-            assertEquals(s, 0, st); /* Reports full output of failing commands */
+            if (!ignoreError) {
+                if (s == null || s.isEmpty()) {
+                    s = StringUtils.join(args, ' ');
+                }
+                assertEquals(s, 0, st); /* Reports full output of failing commands */
+            }
             return s;
         }
 
@@ -1295,16 +1309,34 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.hasGitModules());
     }
 
+    /**
+     * core.symlinks is set to false by msysgit on Windows and by JGit
+     * 3.3.0 on all platforms.  It is not set on Linux.  Refer to
+     * JENKINS-21168, JENKINS-22376, and JENKINS-22391 for details.
+     */
+    private void checkSymlinkSetting(WorkingArea area) throws IOException {
+        String expected = SystemUtils.IS_OS_WINDOWS || area.git instanceof JGitAPIImpl ? "false" : "";
+        String symlinkValue = null;
+        try {
+            symlinkValue = w.cmd(true, "git config core.symlinks").trim();
+        } catch (Exception e) {
+            symlinkValue = e.getMessage();
+        }
+        assertEquals(expected, symlinkValue);
+    }
+ 
     public void test_init() throws Exception {
         assertFalse(w.file(".git").exists());
         w.git.init();
         assertTrue(w.file(".git").exists());
+        checkSymlinkSetting(w);
     }
 
     public void test_init_() throws Exception {
         assertFalse(w.file(".git").exists());
         w.git.init_().workspace(w.repoPath()).execute();
         assertTrue(w.file(".git").exists());
+        checkSymlinkSetting(w);
     }
 
     public void test_init_bare() throws Exception {
@@ -1313,7 +1345,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.init_().workspace(w.repoPath()).bare(false).execute();
         assertTrue(w.file(".git").exists());
         assertFalse(w.file("refs").exists());
-
+        checkSymlinkSetting(w);
 
         WorkingArea anotherRepo = new WorkingArea();
         assertFalse(anotherRepo.file(".git").exists());
@@ -1321,6 +1353,7 @@ public abstract class GitAPITestCase extends TestCase {
         anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
         assertFalse(anotherRepo.file(".git").exists());
         assertTrue(anotherRepo.file("refs").exists());
+        checkSymlinkSetting(w);
     }
 
     public void test_getSubmoduleUrl() throws Exception {
