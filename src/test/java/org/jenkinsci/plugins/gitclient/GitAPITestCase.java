@@ -1353,7 +1353,7 @@ public abstract class GitAPITestCase extends TestCase {
         anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
         assertFalse(anotherRepo.file(".git").exists());
         assertTrue(anotherRepo.file("refs").exists());
-        checkSymlinkSetting(w);
+        checkSymlinkSetting(anotherRepo);
     }
 
     public void test_getSubmoduleUrl() throws Exception {
