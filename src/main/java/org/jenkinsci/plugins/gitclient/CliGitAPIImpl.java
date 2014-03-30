@@ -666,14 +666,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Update submodules.
-     *
-     * @param recursive if true, will recursively update submodules (requires git>=1.6.5)
-     * @param remote if true, will update the submodule to the tip of the branch requested (requires git>=1.8.2)
-     *
-     * @throws GitException if executing the Git command fails
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
+            /**
+             * @throws GitException if executing the Git command fails
+             * @throws InterruptedException if called methods throw same exception
+             */
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("submodule", "update");
