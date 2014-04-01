@@ -41,4 +41,4 @@ To Do
 * Create submodule tests to verify submodule behaviors
 * Improve code coverage in current tests
 * Improve javadoc
-* Complete more of the JGit implementation
+* Complete more of the JGit implementation (add prune during fetch, available with JGit 3.3.0)
