@@ -411,6 +411,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
             public URIish url;
             public List<RefSpec> refspecs;
+            // JGit 3.3.0 and 3.3.1 prune more branches than expected
+            // Refer to GitAPITestCase.test_fetch_with_prune()
+            // private boolean shouldPrune = false;
 
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -420,6 +423,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
                 throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
+                // shouldPrune = true;
+                // return this;
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
@@ -448,6 +453,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             if (rs != null)
                                 refSpecs.add(rs);
                     fetch.setRefSpecs(refSpecs);
+                    // fetch.setRemoveDeletedRefs(shouldPrune);
 
                     fetch.call();
                 } catch (GitAPIException e) {
