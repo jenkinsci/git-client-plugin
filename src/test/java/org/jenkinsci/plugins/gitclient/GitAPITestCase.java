@@ -1990,7 +1990,7 @@ public abstract class GitAPITestCase extends TestCase {
          * reference to localMirror will help performance of the C git
          * implementation, since that will avoid copying content which
          * is already local. */
-        String gitUrl = "git://github.com/jenkinsci/git-client-plugin.git";
+        String gitUrl = "https://github.com/jenkinsci/git-client-plugin.git";
         if (SystemUtils.IS_OS_WINDOWS) {
             // Does not leak an open file
             w = clone(gitUrl);
