@@ -21,6 +21,7 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
+import hudson.util.IOException2;
 import hudson.util.ReflectionUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
@@ -320,7 +321,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     @Override
     protected void tearDown() throws Exception {
+      try {
         temporaryDirectoryAllocator.dispose();
+      } catch (IOException2 e) {
+        e.printStackTrace(System.err);
+      }
     }
 
     private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
