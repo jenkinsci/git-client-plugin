@@ -1725,43 +1725,57 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * Checkout the master branch, create the specified branch
      * based on it, add a commit to that branch, push that commit to
-     * the origin (localMirror), and checkout the master branch.
+     * the origin (remote repo of repo in workArea), and checkout the master branch.
+     * @param workArea 
      */
-    private void pushNamespaceBranchToLocalMirror(String branchSpec) throws InterruptedException, IOException {
-        w.git.checkout("master");
-        w.git.branch(branchSpec);
-        w.git.checkout(branchSpec);
+    private void pushNamespaceBranchToRemote(WorkingArea workArea, String branchSpec) throws InterruptedException, IOException {
+        workArea.git.checkout("master");
+        workArea.git.branch(branchSpec);
+        workArea.git.checkout(branchSpec);
         String filename = UUID.randomUUID().toString();
-        w.touch(filename, branchSpec);
-        w.git.add(filename);
-        w.git.commit("Initial commit for new branch " + branchSpec);
-        ObjectId head = w.head();
-        w.igit().push("origin", branchSpec + ":" + branchSpec);
-        w.git.checkout("master");
+        workArea.touch(filename, branchSpec);
+        workArea.git.add(filename);
+        workArea.git.commit("Initial commit for new branch " + branchSpec);
+        ObjectId head = workArea.head();
+        System.out.println(branchSpec + " head is " + head);
+        workArea.git.push("origin", branchSpec + ":" + branchSpec);
+        workArea.git.checkout("master");
     }
     
     /**
      * Test getHeadRev with namespaces in the branch name.
      */
     public void test_getHeadRev_namespaces() throws Exception {
-        final String[] namespaceBranches = {"tests/namespace1/master", "tests/namespace2/master", "tests/namespace3/master"};
-        if (w.git.getHeadRev(localMirror(), "remotes/origin/tests/namespace1/master") == null) {
-            /* create branches for tests in localMirror */
-            w = clone(localMirror());
-            for(String branch : namespaceBranches) {
-                pushNamespaceBranchToLocalMirror(branch);
+        final String[] namespaceBranches = {"a_tests/b_namespace1/master", 
+              "a_tests/b_namespace2/master", "a_tests/b_namespace3/master", "b_namespace3/master", "master"};
+        /* create branches for tests in localMirror */
+        w = clone(localMirror()); //clone local mirror - don't modify, might have impact on other tests.
+        final String remoteRepoPath = w.repoPath();
+        w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
+        for(String branch : namespaceBranches) {
+            if(!branchExists(w, branch)) {
+                pushNamespaceBranchToRemote(w, branch);
             }
         }
-        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
         for(String branch : namespaceBranches) {
-            check_getHeadRev(heads, "remotes/origin/"+branch, "refs/heads/"+branch);
+            check_getHeadRev(remoteRepoPath, "remotes/origin/"+branch, "refs/heads/"+branch);
         }
     }
     
-    private void check_getHeadRev(Map<String, ObjectId> heads, String branchSpec, String expectedHeadSpec) throws Exception
+    private boolean branchExists(WorkingArea workArea, String branch) throws GitException, InterruptedException
     {
-      ObjectId actualObjectId = w.git.getHeadRev(localMirror(), branchSpec);
+        Set<Branch> branches = workArea.git.getBranches();
+        for(Branch b : branches) if(b.getName().equals(branch)) return true;
+        return false;
+    }
+
+
+
+    private void check_getHeadRev(String remote, String branchSpec, String expectedHeadSpec) throws Exception
+    {
+      Map<String, ObjectId> heads = w.git.getHeadRev(remote);
       ObjectId expectedObjectId = heads.get(expectedHeadSpec);
+      ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
       assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'", expectedHeadSpec), expectedObjectId);
       assertEquals("Actual ObjectId differs from expected one. Heads is " + heads, expectedObjectId, actualObjectId);
     }
