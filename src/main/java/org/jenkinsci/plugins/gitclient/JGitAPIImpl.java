@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
@@ -556,7 +557,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try {
             final String branchName = extractBranchNameFromBranchSpec(branchSpec);
-            String regexBranch = createRefRegexFromGlob(branchName);
+            final String fullBranchSpec = "refs/heads/" + branchName;
+            String regexBranch = createRefRegexFromGlob(fullBranchSpec);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));

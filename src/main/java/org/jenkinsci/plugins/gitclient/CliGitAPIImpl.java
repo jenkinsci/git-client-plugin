@@ -1728,6 +1728,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
         final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+        final String fullBranchSpec = "refs/heads/" + branchName;
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
 
@@ -1735,7 +1736,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(branchName);
+        args.add(fullBranchSpec);
         String result = launchCommandWithCredentials(args, null, cred, url);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
