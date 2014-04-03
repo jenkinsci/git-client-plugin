@@ -1,19 +1,12 @@
 package org.jenkinsci.plugins.gitclient;
 
-public abstract class SubmoduleUpdateCommand implements GitCommand {
-    protected boolean recursive      = false;
-    protected boolean remoteTracking = false;
-    protected String  ref            = null;
-
+public interface SubmoduleUpdateCommand extends GitCommand {
     /**
      * If set true, submodule update will be recursive.  Default is
      * non-recursive.
      * @param recursive if true, will recursively update submodules (requires git>=1.6.5)
      */
-    public SubmoduleUpdateCommand recursive(boolean recursive) {
-        this.recursive = recursive;
-        return this;
-    }
+    SubmoduleUpdateCommand recursive(boolean recursive);
 
     /**
      * If set true and if the git version supports it, update the
@@ -23,13 +16,7 @@ public abstract class SubmoduleUpdateCommand implements GitCommand {
      * SHA1 (compatible with previous versions of git)
      * @param remoteTracking if true, will update the submodule to the tip of the branch requested (requires git>=1.8.2)
      */
-    public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
-        this.remoteTracking = remoteTracking;
-        return this;
-    }
+    SubmoduleUpdateCommand remoteTracking(boolean remoteTracking);
 
-    public SubmoduleUpdateCommand ref(String ref) {
-        this.ref = ref;
-        return this;
-    }
+    SubmoduleUpdateCommand ref(String ref);
 }

@@ -1396,6 +1396,25 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
+            boolean recursive      = false;
+            boolean remoteTracking = false;
+            String  ref            = null;
+
+            public SubmoduleUpdateCommand recursive(boolean recursive) {
+                this.recursive = recursive;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
+                this.remoteTracking = remoteTracking;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
 
