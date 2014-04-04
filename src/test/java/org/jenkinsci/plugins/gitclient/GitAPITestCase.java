@@ -2,6 +2,10 @@ package org.jenkinsci.plugins.gitclient;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 
+import static java.lang.String.format;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.junit.Assert.fail;
+
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -37,6 +41,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
+import org.junit.Assert;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.Objenesis;
@@ -1726,22 +1731,31 @@ public abstract class GitAPITestCase extends TestCase {
      * Checkout the master branch, create the specified branch
      * based on it, add a commit to that branch, push that commit to
      * the origin (remote repo of repo in workArea), and checkout the master branch.
-     * @param workArea 
+     * @return 
      */
-    private void pushNamespaceBranchToRemote(WorkingArea workArea, String branchSpec) throws InterruptedException, IOException {
+    private void pushBranchToRemote(WorkingArea workArea, String branchName) throws InterruptedException, IOException {
         workArea.git.checkout("master");
-        workArea.git.branch(branchSpec);
-        workArea.git.checkout(branchSpec);
-        String filename = UUID.randomUUID().toString();
-        workArea.touch(filename, branchSpec);
-        workArea.git.add(filename);
-        workArea.git.commit("Initial commit for new branch " + branchSpec);
-        ObjectId head = workArea.head();
-        System.out.println(branchSpec + " head is " + head);
-        workArea.git.push("origin", branchSpec + ":" + branchSpec);
-        workArea.git.checkout("master");
+        workArea.git.branch(branchName);
+        pushNewCommitToRemote(workArea, branchName);
     }
     
+    /**
+     * Add a commit to that branch, push that commit to
+     * the origin (remote repo of repo in workArea), and checkout the master branch.
+     * @return 
+     */
+    private void pushNewCommitToRemote(WorkingArea workArea, String branchName) throws InterruptedException, IOException {
+        workArea.git.checkout(branchName);
+        String filename = UUID.randomUUID().toString();
+        workArea.touch(filename, branchName);
+        workArea.git.add(filename);
+        workArea.git.commit("Initial commit for new branch " + branchName);
+        ObjectId head = workArea.head();
+        System.out.println(branchName + " head is " + head);
+        workArea.git.push("origin", "refs/heads/" + branchName + ":refs/heads/" + branchName);
+        workArea.git.checkout("master");
+    }
+
     /**
      * Test getHeadRev with namespaces in the branch name.
      */
@@ -1754,7 +1768,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
         for(String branch : namespaceBranches) {
             if(!branchExists(w, branch)) {
-                pushNamespaceBranchToRemote(w, branch);
+                pushBranchToRemote(w, branch);
             }
         }
         for(String branch : namespaceBranches) {
@@ -1762,6 +1776,45 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
     
+    /**
+     * Test getHeadRev with branch names which SHOULD BE reserved by Git, but ARE NOT.<br/>
+     * E.g. it is possible to create the following LOCAL (!) branches:<br/>
+     * <ul>
+     *   <li> origin/master
+     *   <li> remotes/origin/master
+     *   <li> refs/heads/master
+     *   <li> refs/remotes/origin/master
+     * </ul>
+     */
+    public void test_getHeadRev_reservedBranchNames() throws Exception {
+        //REMARK: Local branch names called exactly like follows! NOT "master branch in origin/remote, etc."!
+        final String[] reservedBranches = {"origin/master", 
+            "remotes/origin/master", "refs/heads/master", "refs/remotes/origin/master", 
+            "refs/heads/refs/heads/master", "master"};
+        /* create branches for tests in localMirror */
+        w = clone(localMirror()); //clone local mirror - don't modify, might have impact on other tests.
+        final String remoteRepoPath = w.repoPath();
+        w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
+        for(String branch : reservedBranches) {
+          if(!branchExists(w, branch)) {
+              pushBranchToRemote(w, branch);
+          }
+        }
+        for(String branch : reservedBranches) {
+          check_getHeadRev(remoteRepoPath, branch, "refs/heads/"+branch);
+        }
+    }
+    
+    private void assertNotEqual(Object...objects)
+    {
+        for(int i = 0; i < objects.length; i++) {
+            for(int j = 0; j < objects.length; j++) {
+                if(i == j) continue;
+                if(objects[i].equals(objects[j])) fail(format("Object %d and %d are equal", i, j));
+            }
+        }
+    }
+
     private boolean branchExists(WorkingArea workArea, String branch) throws GitException, InterruptedException
     {
         Set<Branch> branches = workArea.git.getBranches();
