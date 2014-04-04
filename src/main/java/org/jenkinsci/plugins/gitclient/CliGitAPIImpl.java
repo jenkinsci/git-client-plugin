@@ -669,6 +669,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
+            boolean recursive       = false;
+            boolean remoteTracking  = false;
+            String  ref             = null;
+
+            public SubmoduleUpdateCommand recursive(boolean recursive) {
+                this.recursive = recursive;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
+                this.remoteTracking = remoteTracking;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
             /**
              * @throws GitException if executing the Git command fails
              * @throws InterruptedException if called methods throw same exception
