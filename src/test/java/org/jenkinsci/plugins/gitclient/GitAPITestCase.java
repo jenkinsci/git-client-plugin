@@ -1280,6 +1280,67 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @NotImplementedInJGit
+    public void test_trackingSubmoduleBranches() throws Exception {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+            return;
+        }
+        w.init(); // empty repository
+
+        // create a new GIT repo.
+        //    master  -- <file1>C
+        //    branch1 -- <file1>C <file2>C
+        //    branch2 -- <file1>C <file3>C
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.touch("file1", "content1");
+        r.git.add("file1");
+        r.git.commit("submod-commit1");
+
+        r.git.branch("branch1");
+        r.git.checkout("branch1");
+        r.touch("file2", "content2");
+        r.git.add("file2");
+        r.git.commit("submod-commit2");
+        r.git.checkout("master");
+
+        r.git.branch("branch2");
+        r.git.checkout("branch2");
+        r.touch("file3", "content3");
+        r.git.add("file3");
+        r.git.commit("submod-commit3");
+        r.git.checkout("master");
+
+        // Setup variables for use in tests
+        String submodDir = "submod1" + java.util.UUID.randomUUID().toString();
+        String subFile1 = submodDir + File.separator + "file1";
+        String subFile2 = submodDir + File.separator + "file2";
+        String subFile3 = submodDir + File.separator + "file3";
+
+        // Add new GIT repo to w, at the master branch
+        w.git.addSubmodule(r.repoPath(), submodDir);
+        w.git.submoduleInit();
+        assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Switch to branch1
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch1").execute();
+        assertTrue("file2 does not exist and should because on branch1", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Switch to branch2
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch2").execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertTrue("file3 does not exist and should because on branch2", w.exists(subFile3));
+
+        // Switch to master
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "master").execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+    }
+
+    @NotImplementedInJGit
     public void test_sparse_checkout() throws Exception {
         // Create a repo for cloning purpose
         w.init();

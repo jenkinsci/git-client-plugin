@@ -66,6 +66,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -669,9 +670,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
-            boolean recursive       = false;
-            boolean remoteTracking  = false;
-            String  ref             = null;
+            boolean recursive                      = false;
+            boolean remoteTracking                 = false;
+            String  ref                            = null;
+            Hashtable<String, String> submodBranch = new Hashtable<String, String>();
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -688,6 +690,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+                this.submodBranch.put(submodule, branchname);
+                return this;
+            }
+
             /**
              * @throws GitException if executing the Git command fails
              * @throws InterruptedException if called methods throw same exception
@@ -700,6 +707,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
                     args.add("--remote");
+
+                    for (String key : submodBranch.keySet()) {
+                        launchCommand("config", "-f", ".gitmodules", "submodule."+key+".branch", submodBranch.get(key));
+                    }
                 }
                 if ((ref != null) && !ref.isEmpty()) {
                     File referencePath = new File(ref);
