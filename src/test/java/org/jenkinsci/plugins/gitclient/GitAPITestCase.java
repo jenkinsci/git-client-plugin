@@ -804,7 +804,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-master");
         w.git.commit("master-commit");
         ObjectId master = w.head();
-        System.out.println("master = " + master);
         assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         w.git.setRemoteUrl("origin", bare.repoPath());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
@@ -815,7 +814,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-branch1");
         w.git.commit("branch1-commit");
         ObjectId branch1 = w.head();
-        System.out.println("branch1 = " + branch1);
         assertEquals("Wrong branch count", 2, w.git.getBranches().size());
         w.git.push("origin", "branch1"); /* branch1 is now on bare repo */
 
@@ -825,7 +823,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-branch2");
         w.git.commit("branch2-commit");
         ObjectId branch2 = w.head();
-        System.out.println("branch2 = " + branch2);
         assertEquals("Wrong branch count", 3, w.git.getBranches().size());
         assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
         w.git.push("origin", "branch2"); /* branch2 is now on bare repo */
@@ -1646,7 +1643,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add(filename);
         w.git.commit("Initial commit for new branch " + branchSpec);
         ObjectId head = w.head();
-        System.out.println(branchSpec + " head is " + head);
         w.igit().push("origin", branchSpec + ":" + branchSpec);
         w.git.checkout("master");
     }
