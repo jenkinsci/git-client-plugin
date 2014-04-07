@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
@@ -17,6 +18,7 @@ import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -25,6 +27,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.Nonnull;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -254,6 +257,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.isCommitInRepo(commit);
     }
 
+    public String[] getRemoteNames() throws GitException, InterruptedException {
+        return proxy.getRemoteNames();
+    }
+    
     public String getRemoteUrl(String name) throws GitException, InterruptedException {
         return proxy.getRemoteUrl(name);
     }
@@ -364,6 +371,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         return proxy.getRemoteBranches();
+    }
+
+    public Set<Branch> getLocalBranches() throws GitException, InterruptedException {
+        return proxy.getLocalBranches();
     }
 
     public void tag(String tagName, String comment) throws GitException, InterruptedException {

@@ -182,7 +182,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
     
     /**
-     * This method takes a branch spcecification and extracts the branch name.<br/>
+     * This method takes a branch spcecification and normalizes it.<br/>
      * E.g.
      * <table>
      * <tr><th align="left">branch spec</th><th align="left">branch name</th></tr>
@@ -202,18 +202,29 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *    branch name.
      * @param branchSpec
      * @return branch name
+     * @throws InterruptedException 
+     * @throws GitException 
      */
-    protected String extractBranchNameFromBranchSpec(String branchSpec) {
-        String branch = branchSpec;
-        String[] branchExploded = branchSpec.split("/");
-        if (branchSpec.startsWith("remotes/")) {
-            branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
-        } else if (branchSpec.startsWith("refs/heads/")) {
-            branch = branchSpec.substring("refs/heads/".length());
-        } else {
-            branch = branchExploded[branchExploded.length-1];
-        }
-        return branch;
+    protected String normalizeBranchSpec(String branchSpec) {
+//TODO: Stupid...
+        //        if (branchSpec.startsWith("remotes/")) {
+//            //Remote names can contain slashes!
+//            for (String remote : getRemoteNames()) {
+//                final String checkString = "remotes/" + remote + "/";
+//                if (branchSpec.startsWith(checkString)) {
+//                    return branchSpec.substring(checkString.length());
+//                }
+//            }
+//        } else if (branchSpec.startsWith("refs/heads/")) {
+//            return branchSpec.substring("refs/heads/".length());
+//        } else if (branchSpec.startsWith("refs/heads/")) {
+//            return branchSpec.substring("refs/heads/".length());
+//        } else {
+//            String[] branchExploded = branchSpec.split("/");
+//            branch = branchExploded[branchExploded.length-1];
+//        }
+//        return branch;
+        return branchSpec;
     }
     
 }

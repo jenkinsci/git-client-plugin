@@ -1,17 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
-import com.google.common.collect.Lists;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -25,6 +18,38 @@ import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -56,27 +81,13 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.google.common.collect.Lists;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * Implementation class using command line CLI ran as external command.
@@ -778,6 +789,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         launchCommand( "config", "submodule."+name+".url", url );
     }
 
+    public String[] getRemoteNames() throws GitException, InterruptedException {
+        String result = launchCommand("remote");
+        return result.split("[\\r\\n]+");
+    }
+
     public @CheckForNull String getRemoteUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "remote."+name+".url" );
         return StringUtils.trim(firstLine(result));
@@ -1364,6 +1380,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return parseBranches(launchCommand("branch", "-a"));
     }
 
+    public Set<Branch> getLocalBranches() throws GitException, InterruptedException {
+      return parseBranches(launchCommand("branch"));
+    }
+    
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         Repository db = getRepository();
         try {
@@ -1726,9 +1746,39 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return heads;
     }
 
-    public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
-        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
-        final String fullBranchSpec = "refs/heads/" + branchName;
+    public ObjectId getHeadRev(final String url, final String branchSpec) throws GitException, InterruptedException {
+        if(branchSpec.startsWith("refs/")) {
+            return getHeadRevRecursive(url, branchSpec);
+        } else if(branchSpec.startsWith("remotes/")) {
+            //Check if the branch is really named "remotes/..."
+            ObjectId rev = getHeadRevRecursive(url, "refs/heads/" + branchSpec);
+            //Try to get /refs/remotes/... rev
+            if(rev == null) rev = getHeadRevRecursive(url, "refs/" + branchSpec);
+            return rev;
+        } else {
+            return getHeadRevRecursive(url, "refs/heads/" + branchSpec);
+        }
+    }
+    
+    /**
+     * Returns the head rev for the specified branchSpec.<br/>
+     * If more than one branch matches the branchSpec it is checked if one of the results matches 100%.
+     * Otherwise it is checked recursively by prepending "refs/heads/" (assuming there might be a branch
+     * having exactly the name of the branchSpec.<br/>
+     */
+    private ObjectId getHeadRevRecursive(String url, String branchSpec) throws GitException, InterruptedException
+    {
+        List<RefObjectId> revs = getHeadRevs(url, branchSpec);
+        if(revs.size() < 1) return null;
+        if(revs.size() == 1) return revs.get(0).id;
+        for(RefObjectId rev : revs) if(rev.ref.equals(branchSpec)) return rev.id;
+        return getHeadRevRecursive(url, "refs/heads/"+branchSpec);
+    }
+    
+    /**
+     * Returns the whole list of head revs matching the specified branchSpec.   
+     */
+    private List<RefObjectId> getHeadRevs(final String url, final String exactbranchSpec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
 
@@ -1736,12 +1786,38 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(fullBranchSpec);
+        args.add(exactbranchSpec);
         String result = launchCommandWithCredentials(args, null, cred, url);
-        return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
+        return parseObjectIds(result);
     }
 
-
+    /**
+     * Parses the "git ls-remote" results and returns a list of RefObjectIds containing the ObjectId and the ref.
+     */
+    private List<RefObjectId> parseObjectIds(String result)
+    {
+        if(result == null || result.length() < 40) return Collections.<RefObjectId>emptyList();
+        List<RefObjectId> list = new ArrayList<RefObjectId>();
+        String[] lines = result.split("\n");
+        for(String line : lines) {
+          if(line.length() >= 40) {
+              String id = line.substring(0, 40);
+              String ref = line.substring(40).trim();
+              list.add(new RefObjectId(id, ref));
+          }
+        }
+        return list;
+    }
+    
+    private class RefObjectId {
+        public final ObjectId id;
+        public final String ref;
+        public RefObjectId(String id, String ref) {
+            this.id = ObjectId.fromString(id);
+            this.ref = ref;
+        }
+    }
+    
     //
     //
     // Legacy Implementation of IGitAPI

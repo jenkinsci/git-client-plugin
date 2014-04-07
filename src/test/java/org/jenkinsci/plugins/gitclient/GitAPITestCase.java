@@ -1735,7 +1735,11 @@ public abstract class GitAPITestCase extends TestCase {
      */
     private void pushBranchToRemote(WorkingArea workArea, String branchName) throws InterruptedException, IOException {
         workArea.git.checkout("master");
-        workArea.git.branch(branchName);
+        if(workArea.git instanceof JGitAPIImpl) {
+            workArea.git.branch("refs/heads/" + branchName);
+        } else {
+            workArea.git.branch(branchName);
+        }
         pushNewCommitToRemote(workArea, branchName);
     }
     
@@ -1767,7 +1771,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String remoteRepoPath = w.repoPath();
         w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
         for(String branch : namespaceBranches) {
-            if(!branchExists(w, branch)) {
+            if(!branchExistsRemote(w, branch)) {
                 pushBranchToRemote(w, branch);
             }
         }
@@ -1787,21 +1791,37 @@ public abstract class GitAPITestCase extends TestCase {
      * </ul>
      */
     public void test_getHeadRev_reservedBranchNames() throws Exception {
-        //REMARK: Local branch names called exactly like follows! NOT "master branch in origin/remote, etc."!
-        final String[] reservedBranches = {"origin/master", 
-            "remotes/origin/master", "refs/heads/master", "refs/remotes/origin/master", 
-            "refs/heads/refs/heads/master", "master"};
+        /* REMARK: Local branch names in this test are called exactly like follows!
+         *   e.g. origin/master means the branch is called "origin/master", it does NOT mean master branch in remote "origin".
+         *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
+         */
+        final String[] createBranchNames = {"origin/master", "remotes/origin/master", "refs/heads/master",
+                    "refs/remotes/origin/master", "refs/heads/refs/heads/master"};
+        /*
+         * The first entry in the String[2] is the branch name.
+         * The second entry is the expected exact reference to result in.   
+         */
+        final String[][] checkBranchSpecs = {
+                    {"master", "refs/heads/master"},
+                    {"origin/master", "refs/heads/origin/master"}, 
+                    {"remotes/origin/master", "refs/heads/remotes/origin/master"},
+                    {"refs/heads/master", "refs/heads/master"},
+                    {"refs/heads/refs/heads/master", "refs/heads/refs/heads/master"},
+                    {"refs/remotes/origin/master", "refs/heads/refs/remotes/origin/master"}, 
+                    {"refs/heads/refs/heads/master", "refs/heads/refs/heads/master"}, 
+                    {"refs/heads/refs/heads/refs/heads/master", "refs/heads/refs/heads/refs/heads/master"}, 
+                    };
         /* create branches for tests in localMirror */
         w = clone(localMirror()); //clone local mirror - don't modify, might have impact on other tests.
         final String remoteRepoPath = w.repoPath();
         w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
-        for(String branch : reservedBranches) {
-          if(!branchExists(w, branch)) {
+        for(String branch : createBranchNames) {
+          if(!branchExistsRemote(w, branch)) {
               pushBranchToRemote(w, branch);
           }
         }
-        for(String branch : reservedBranches) {
-          check_getHeadRev(remoteRepoPath, branch, "refs/heads/"+branch);
+        for(String[] branch : checkBranchSpecs) {
+          check_getHeadRev(remoteRepoPath, branch[0], branch[1]);
         }
     }
     
@@ -1810,15 +1830,21 @@ public abstract class GitAPITestCase extends TestCase {
         for(int i = 0; i < objects.length; i++) {
             for(int j = 0; j < objects.length; j++) {
                 if(i == j) continue;
-                if(objects[i].equals(objects[j])) fail(format("Object %d and %d are equal", i, j));
+                if(objects[i].equals(objects[j])) fail(String.format("Object %d and %d are equal", i, j));
             }
         }
     }
 
-    private boolean branchExists(WorkingArea workArea, String branch) throws GitException, InterruptedException
+    private boolean branchExistsRemote(WorkingArea workArea, String branchName) throws GitException, InterruptedException
     {
-        Set<Branch> branches = workArea.git.getBranches();
-        for(Branch b : branches) if(b.getName().equals(branch)) return true;
+        Set<Branch> branches = workArea.git.getRemoteBranches();
+        String[] remoteNames = workArea.git.getRemoteNames();
+        for(Branch b : branches) {
+            for(String remote : remoteNames) {
+                //remote names can contain slashes but let's ignore this here
+                if(b.getName().equals(remote + "/" + branchName)) return true;
+            }
+        }
         return false;
     }
 
@@ -1826,11 +1852,13 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void check_getHeadRev(String remote, String branchSpec, String expectedHeadSpec) throws Exception
     {
-      Map<String, ObjectId> heads = w.git.getHeadRev(remote);
-      ObjectId expectedObjectId = heads.get(expectedHeadSpec);
-      ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
-      assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'", expectedHeadSpec), expectedObjectId);
-      assertEquals("Actual ObjectId differs from expected one. Heads is " + heads, expectedObjectId, actualObjectId);
+        Map<String, ObjectId> heads = w.git.getHeadRev(remote);
+        ObjectId expectedObjectId = heads.get(expectedHeadSpec);
+        ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
+        assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'. Heads is %s", expectedHeadSpec, heads),
+                expectedObjectId);
+        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s'. Heads is %s", 
+                branchSpec, heads), expectedObjectId, actualObjectId);
     }
 
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {

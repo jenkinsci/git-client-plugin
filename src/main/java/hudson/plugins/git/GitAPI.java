@@ -170,6 +170,10 @@ public class GitAPI extends CliGitAPIImpl {
         return Git.USE_CLI ? super.getRemoteBranches() :  jgit.getRemoteBranches();
     }
 
+    public Set<Branch> getLocalBranches() throws GitException, InterruptedException {
+        return Git.USE_CLI ? super.getLocalBranches() :  jgit.getLocalBranches();
+    }
+    
     public void init() throws GitException, InterruptedException {
         if (Git.USE_CLI) super.init(); else  jgit.init();
     }

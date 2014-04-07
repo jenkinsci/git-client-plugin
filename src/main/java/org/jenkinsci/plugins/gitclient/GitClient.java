@@ -6,10 +6,12 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -18,6 +20,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.CheckForNull;
+
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.OutputStream;
@@ -125,6 +128,14 @@ public interface GitClient {
 
     boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException;
 
+    /**
+     * From a given repository, get the names of all remotes
+     * @return names of remotes
+     * @throws GitException
+     * @throws InterruptedException
+     */
+    String[] getRemoteNames() throws GitException, InterruptedException;
+    
     /**
      * From a given repository, get a remote's URL
      * @param name The name of the remote (e.g. origin)
@@ -273,6 +284,8 @@ public interface GitClient {
     Set<Branch> getBranches() throws GitException, InterruptedException;
 
     Set<Branch> getRemoteBranches() throws GitException, InterruptedException;
+
+    Set<Branch> getLocalBranches() throws GitException, InterruptedException;
 
 
     // --- manage tags
