@@ -66,7 +66,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Hashtable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -673,7 +672,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean recursive                      = false;
             boolean remoteTracking                 = false;
             String  ref                            = null;
-            Hashtable<String, String> submodBranch = new Hashtable<String, String>();
+            HashMap<String, String> submodBranch   = new HashMap<String, String>();
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
