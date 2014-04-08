@@ -27,10 +27,12 @@ import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOException2;
 import hudson.util.ReflectionUtils;
+import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.tools.zip.ZipUtil;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -53,11 +55,17 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import jenkins.model.Jenkins;
 
@@ -1795,36 +1803,69 @@ public abstract class GitAPITestCase extends TestCase {
          *   e.g. origin/master means the branch is called "origin/master", it does NOT mean master branch in remote "origin".
          *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
          */
-        final String[] createBranchNames = {"origin/master", "remotes/origin/master", "refs/heads/master",
-                    "refs/remotes/origin/master", "refs/heads/refs/heads/master"};
+        
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/specialBranchRepo.zip"), tempRemoteDir);
+        Properties commits = parseLsRemote(new File("src/test/resources/specialBranchRepo.ls-remote"));
+        w = clone(tempRemoteDir.getAbsolutePath());
+        
         /*
-         * The first entry in the String[2] is the branch name.
-         * The second entry is the expected exact reference to result in.   
+         * The first entry in the String[2] is the branch name (as specified in the job config).
+         * The second entry is the expected commit.   
          */
         final String[][] checkBranchSpecs = {
-                    {"master", "refs/heads/master"},
-                    {"origin/master", "refs/heads/origin/master"}, 
-                    {"remotes/origin/master", "refs/heads/remotes/origin/master"},
-                    {"refs/heads/master", "refs/heads/master"},
-                    {"refs/heads/refs/heads/master", "refs/heads/refs/heads/master"},
-                    {"refs/remotes/origin/master", "refs/heads/refs/remotes/origin/master"}, 
-                    {"refs/heads/refs/heads/master", "refs/heads/refs/heads/master"}, 
-                    {"refs/heads/refs/heads/refs/heads/master", "refs/heads/refs/heads/refs/heads/master"}, 
+                    {"master", commits.getProperty("refs/heads/master")},
+                    {"origin/master", commits.getProperty("refs/heads/origin/master")}, 
+                    {"remotes/origin/master", commits.getProperty("refs/heads/remotes/origin/master")},
+                    {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
+                    {"refs/heads/master", commits.getProperty("refs/heads/master")},
+                    {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
+                    {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")}, 
+                    {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
+                    {"refs/tags/master", commits.getProperty("refs/heads/refs/tags/master")}, 
                     };
-        /* create branches for tests in localMirror */
-        w = clone(localMirror()); //clone local mirror - don't modify, might have impact on other tests.
-        final String remoteRepoPath = w.repoPath();
-        w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
-        for(String branch : createBranchNames) {
-          if(!branchExistsRemote(w, branch)) {
-              pushBranchToRemote(w, branch);
-          }
-        }
         for(String[] branch : checkBranchSpecs) {
-          check_getHeadRev(remoteRepoPath, branch[0], branch[1]);
+          check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));
         }
     }
     
+    private Properties parseLsRemote(File file) throws IOException
+    {
+        Properties properties = new Properties();
+        Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
+        for(Object lineO : FileUtils.readLines(file)) {
+            String line = ((String)lineO).trim();
+            Matcher matcher = pattern.matcher(line);
+            if(matcher.matches()) {
+                properties.setProperty(matcher.group(2), matcher.group(1));
+            } else {
+                System.err.println("ls-remote pattern does not match '" + line + "'");
+            }
+        }
+        return properties;
+    }
+
+
+
+    private void extract(ZipFile zipFile, File outputDir) throws IOException
+    {
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            File entryDestination = new File(outputDir,  entry.getName());
+            entryDestination.getParentFile().mkdirs();
+            if (entry.isDirectory())
+                entryDestination.mkdirs();
+            else {
+                InputStream in = zipFile.getInputStream(entry);
+                OutputStream out = new FileOutputStream(entryDestination);
+                IOUtils.copy(in, out);
+                IOUtils.closeQuietly(in);
+                IOUtils.closeQuietly(out);
+            }
+        }
+    }
+
     private void assertNotEqual(Object...objects)
     {
         for(int i = 0; i < objects.length; i++) {
@@ -1854,11 +1895,18 @@ public abstract class GitAPITestCase extends TestCase {
     {
         Map<String, ObjectId> heads = w.git.getHeadRev(remote);
         ObjectId expectedObjectId = heads.get(expectedHeadSpec);
-        ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
         assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'. Heads is %s", expectedHeadSpec, heads),
-                expectedObjectId);
-        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s'. Heads is %s", 
-                branchSpec, heads), expectedObjectId, actualObjectId);
+                    expectedObjectId);
+        check_getHeadRev(remote, branchSpec, expectedObjectId);
+    }
+    
+    private void check_getHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception
+    {
+        ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
+        assertNotNull(String.format("ObjectId is null for expectedObjectId '%s'.", expectedObjectId),
+                    expectedObjectId);
+        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s'.", 
+                branchSpec), expectedObjectId, actualObjectId);
     }
 
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
