@@ -1749,7 +1749,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public ObjectId getHeadRev(final String url, final String branchSpec) throws GitException, InterruptedException {
         String[] branchSpecs = normalizeBranchSpec(branchSpec);
         for(String branch : branchSpecs) {
-            ObjectId rev = getHeadRevRecursive(url, branch);
+            ObjectId rev = getExactHeadRev(url, branch);
             if(rev != null) return rev;
         }
         return null;
@@ -1761,19 +1761,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Otherwise it is checked recursively by prepending "refs/heads/" (assuming there might be a branch
      * having exactly the name of the branchSpec.<br/>
      */
-    private ObjectId getHeadRevRecursive(String url, String branchSpec) throws GitException, InterruptedException
+    private ObjectId getExactHeadRev(String url, String exactbranchSpec) throws GitException, InterruptedException
     {
-        List<RefObjectId> revs = getHeadRevs(url, branchSpec);
-        if(revs.size() < 1) return null;
-        if(revs.size() == 1) return revs.get(0).id;
-        for(RefObjectId rev : revs) if(rev.ref.equals(branchSpec)) return rev.id;
-        return getHeadRevRecursive(url, "refs/heads/"+branchSpec);
-    }
-    
-    /**
-     * Returns the whole list of head revs matching the specified branchSpec.   
-     */
-    private List<RefObjectId> getHeadRevs(final String url, final String exactbranchSpec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         //args.add("-h"); TODO: allow refs/tags, etc.?
 
@@ -1783,9 +1772,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         args.add(url);
         args.add(exactbranchSpec);
         String result = launchCommandWithCredentials(args, null, cred, url);
-        return parseObjectIds(result);
-    }
+        List<RefObjectId> revs = parseObjectIds(result);
 
+        if(revs.size() < 1) {
+            return null;
+        } else if(revs.size() == 1) {
+            return revs.get(0).id;
+        } else {
+            for(RefObjectId rev : revs) {
+                if(rev.ref.equals(exactbranchSpec)) return rev.id;
+            }
+            throw new GitException(String.format(
+                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s", exactbranchSpec, revs));
+        }
+    }
+    
     /**
      * Parses the "git ls-remote" results and returns a list of RefObjectIds containing the ObjectId and the ref.
      */
@@ -1810,6 +1811,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         public RefObjectId(String id, String ref) {
             this.id = ObjectId.fromString(id);
             this.ref = ref;
+        }
+        public String toString() {
+            return "RefObjectId ["+ ref + " : " + id + "]";
         }
     }
     

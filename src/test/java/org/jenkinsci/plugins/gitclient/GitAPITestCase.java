@@ -112,7 +112,7 @@ public abstract class GitAPITestCase extends TestCase {
           //final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword", "https.proxyPassword");
           final String noProxyHosts = getSystemProperty("noProxyHosts", "http.noProxyHosts", "https.noProxyHosts");
           if(isBlank(proxyHost) || isBlank(proxyPort)) return;
-          ProxyConfiguration proxyConfig = new ObjenesisStd().newInstance(ProxyConfiguration.class);
+          ProxyConfiguration proxyConfig = (ProxyConfiguration) new ObjenesisStd().newInstance(ProxyConfiguration.class);
           setField(ProxyConfiguration.class, "name", proxyConfig, proxyHost);
           setField(ProxyConfiguration.class, "port", proxyConfig, Integer.parseInt(proxyPort));
           setField(ProxyConfiguration.class, "userName", proxyConfig, proxyUser);
@@ -1720,18 +1720,34 @@ public abstract class GitAPITestCase extends TestCase {
      * occur earlier than the expected value.
      */
     public void test_getHeadRev_wildcards() throws Exception {
+        w = clone(localMirror());
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
         ObjectId master = w.git.getHeadRev(localMirror(), "refs/heads/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
         ObjectId recovery = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*cov*"); // matches recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery);
-        ObjectId mergeCommand = w.git.getHeadRev(localMirror(), "yyzzy*/*er*"); // matches master, MergeCommand, and recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/MergeCommand"), mergeCommand);
-        ObjectId recovery1 = w.git.getHeadRev(localMirror(), "X/re[mc]*o*e*"); // matches recovery and remote
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
+        assertEquals("heads is " + heads, null, recovery); //remote name does not match anything
+        try {
+            w.git.getHeadRev(localMirror(), "he*/*er*"); // matches master, MergeCommand, and recovery
+            fail("Exception expected");
+        }
+        catch (GitException e) {
+            //"More than one rev matches branchSpec ('he*/*er*') but none of them matches exactly:
+            // [RefObjectId [refs/heads/MergeCommand : AnyObjectId[f3ea3283dea7c685429b1df95da4242f64e9099b]],
+            // RefObjectId [refs/heads/master : AnyObjectId[79b09609c1304a3db713c6a4f3bab0d46c85db56]],
+            // RefObjectId [refs/heads/recovery : AnyObjectId[50afccd498d57184dfa870b8d1f4d357d5dfe4c8]]]"
+        }
+        try {
+            w.git.getHeadRev(localMirror(), "re[mc]*o*e*"); // matches recovery and remote
+            fail("Exception expected");
+        }
+        catch (GitException e) {
+            //"hudson.plugins.git.GitException: More than one rev matches branchSpec ('refs/heads/re[mc]*o*e*') but none of them matches exactly: 
+            // [RefObjectId [refs/heads/recovery : AnyObjectId[50afccd498d57184dfa870b8d1f4d357d5dfe4c8]], 
+            // RefObjectId [refs/heads/remote : AnyObjectId[4aafc649a266863c435ed22ad3c2430060a6fbe1]]]
+        }
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "*s/*etSub*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
@@ -1814,16 +1830,16 @@ public abstract class GitAPITestCase extends TestCase {
          * The second entry is the expected commit.   
          */
         final String[][] checkBranchSpecs = {
-                    {"master", commits.getProperty("refs/heads/master")},
-                    {"origin/master", commits.getProperty("refs/heads/origin/master")}, 
-                    {"remotes/origin/master", commits.getProperty("refs/heads/master")},
-                    {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
-                    {"refs/heads/master", commits.getProperty("refs/heads/master")},
-                    {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
-                    {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")}, 
-                    {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
-                    {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}, 
-                    };
+                {"master", commits.getProperty("refs/heads/master")},
+                {"origin/master", commits.getProperty("refs/heads/master")}, 
+                {"remotes/origin/master", commits.getProperty("refs/heads/master")},
+                {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
+                {"refs/heads/origin/master", commits.getProperty("refs/heads/origin/master")},
+                {"refs/heads/master", commits.getProperty("refs/heads/master")},
+                {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
+                {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
+                {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}
+                };
         for(String[] branch : checkBranchSpecs) {
           check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));
         }
@@ -1931,10 +1947,12 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_getHeadRev_localMirror() throws Exception {
+        w = clone(localMirror());
         check_headRev(localMirror(), getMirrorHead());
     }
 
     public void test_getHeadRev_remote() throws Exception {
+        w = clone(localMirror());
         String lsRemote = w.cmd("git ls-remote -h " + remoteMirrorURL + " refs/heads/master");
         ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
         check_headRev(remoteMirrorURL, lsRemoteId);

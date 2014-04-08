@@ -524,11 +524,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
-        out.append("^.*/");
+        if(glob.startsWith("refs/") || glob.startsWith("*")) {
+            out.append("^");
+        } else {
+            out.append("^.*");
+        }
 
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
             switch(c) {
+            case '^': //needs to be escaped e.g. for refs/tags/v1.0^{}
+                out.append("\\^");
+                break;
+            case '{': //needs to be escaped e.g. for refs/tags/v1.0^{}
+                out.append("\\{");
+                break;
             case '*':
                 out.append(".*");
                 break;
@@ -553,7 +563,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException, InterruptedException {
         try {
             final String[] branchSpecs = normalizeBranchSpec(branchSpec);
-            //String regexBranch = createRefRegexFromGlob(fullBranchSpec);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
@@ -561,12 +570,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final FetchConnection c = tn.openFetch();
             try {
                 for(String branch : branchSpecs) {
-                    String regexBranch = "^" + branch.replaceAll("\\^", "\\\\^").replaceAll("\\{", "\\\\{") + "$";
+                    String regexBranch = createRefRegexFromGlob(branch);
+                    List<ObjectId> matches = new ArrayList<ObjectId>();
                     for (final Ref r : c.getRefs()) {
                         if (r.getName().matches(regexBranch)) {
-                            return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                            matches.add(r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
                         }
                     }
+                    if(matches.size() > 2) throw new GitException(String.format(
+                                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s", branchSpec, c.getRefs()));
+                    else if(matches.size() == 1) return matches.get(0); 
                 }
             } finally {
                 c.close();

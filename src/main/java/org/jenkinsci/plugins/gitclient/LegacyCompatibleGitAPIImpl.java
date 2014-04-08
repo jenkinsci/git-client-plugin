@@ -184,27 +184,29 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
     
     /**
-     * This method takes a branch spcecification and normalizes it.<br/>
+     * This method takes a branch spcecification and normalizes it to a local refs specification.<br/>
+     * Since branch specifications are not necessarily definite the method returns a list ordered by priority containing all potential variants.
+     * The caller can use the normalized values to check if a revision exists for it.
      * E.g.
      * <table>
      * <tr><th align="left">branch spec</th><th align="left">branch name</th></tr>
-     * <tr><td><tt>master</tt></th><td><tt>master</td></tr>
-     * <tr><td><tt>feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td><tt>origin/master</tt></th><td><tt>master</td></tr>
-     * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td valign="top"><div style="color:red"><strike><tt>origin/namespaceA/fix15</tt></strike></div></th>
-     *     <td><div style="color:red"><strike><tt>namespaceA/fix15</tt></strike> *)</div></td><td></td></tr>
-     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</tt></td></tr>
-     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</td></tr>
+     * <tr><td><tt>master</tt></th><td><tt>[refs/heads/master, master]</td></tr>
+     * <tr><td><tt>feature1</tt></th><td><tt>[refs/heads/feature1, feature1]</td></tr>
+     * <tr><td><tt>origin/master</tt></th><td><tt>[refs/heads/master*, refs/heads/origin/master**, origin/master]</td></tr>
+     * <tr><td><tt>repo2/feature1</tt></th><td><tt>[refs/heads/feature1*, refs/heads/repo2/feature1**, repo2/feature1]</td></tr>
+     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>[refs/heads/feature1, refs/heads/refs/heads/feature1]</td></tr>
+     * <tr><td valign="top"><tt>origin/namespaceA/fix15</tt></div></th>
+     *     <td><tt>[refs/heads/namespaceA/fix15*, refs/heads/origin/namespaceA/fix15**, origin/namespaceA/fix15]</tt></td></tr>
+     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>[refs/heads/namespaceA/fix15, refs/heads/remotes/origin/namespaceA/fix15, remotes/origin/namespaceA/fix15]</tt></td></tr>
+     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>[refs/heads/namespaceA/fix15, refs/heads/refs/heads/namespaceA/fix15]</tt></td></tr>
+     * <tr><td><tt>&#42/master</tt></th><td><tt>[refs/heads/&#42/master, refs/heads&#42/master, &#42/master]</tt></td></tr>
+     * <tr><td><tt>X/re[mc]&#42o&#42e&#42</tt></th><td><tt>[refs/heads/X/re[mc]&#42o&#42e&#42, refs/headsX/re[mc]&#42o&#42e&#42, X/re[mc]&#42o&#42e&#42]</tt></td></tr>
      * </table><br/>
-     * *) If hierarchical branch names with namespaces are used the branch specification has to start
-     *    with "<tt>remotes/&lt;repoId/</tt>". Otherwise it is hard to identify if the branch spec contains the remote repo id or not.<br/>
-     *    E.g. in <tt>repo2/feature1</tt> the <tt>repo2</tt> could be the repo id or it could belong to a hierarchical
-     *    branch name.
+     * *) If a remote with the specified name exists. Otherwise see **.<br/>
+     * **) A local branch with this name exists.<br/>
      * @param branchSpec
      * @return list of full qualified local branch specs ordered by priority.
-     *     The first entry shall be taken first if no rev is found for it, try the next one, etc.
+     *     The first entry shall be taken first. If no rev is found for it, try the next one, etc.
      * @throws InterruptedException 
      * @throws GitException 
      */
@@ -225,9 +227,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     results.add("refs/heads/" + branchSpec.substring(checkString.length()));
                 }
             }
+        } else {
+            //e.g. origin/master
+            for (String remote : getRemoteNames()) {
+                if(branchSpec.startsWith(remote + "/")) {
+                    results.add("refs/heads/" + branchSpec.substring((remote + "/").length()));
+                }
+            }            
         }
-        //If first ref does not match, check if a branch with this name exists
+        //If first refs did not match so far, check if a branch with this name exists
         results.add("refs/heads/" + branchSpec);
+        //...or in case of a regex, e.g. */master
+        results.add("refs/heads" + branchSpec);
+        //If still nothing matches use branchSpec as is
+        results.add(branchSpec);
         return results.toArray(new String[0]);
     }
     
