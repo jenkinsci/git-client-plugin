@@ -550,20 +550,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.toString();
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException, InterruptedException {
         try {
-            final String branchName = normalizeBranchSpec(branchSpec);
-            final String fullBranchSpec = "refs/heads/" + branchName;
-            String regexBranch = createRefRegexFromGlob(fullBranchSpec);
+            final String[] branchSpecs = normalizeBranchSpec(branchSpec);
+            //String regexBranch = createRefRegexFromGlob(fullBranchSpec);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
             tn.setCredentialsProvider(getProvider());
             final FetchConnection c = tn.openFetch();
             try {
-                for (final Ref r : c.getRefs()) {
-                    if (r.getName().matches(regexBranch)) {
-                        return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                for(String branch : branchSpecs) {
+                    String regexBranch = "^" + branch.replaceAll("\\^", "\\\\^").replaceAll("\\{", "\\\\{") + "$";
+                    for (final Ref r : c.getRefs()) {
+                        if (r.getName().matches(regexBranch)) {
+                            return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                        }
                     }
                 }
             } finally {

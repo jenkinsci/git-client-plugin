@@ -17,6 +17,8 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
+import com.cloudbees.plugins.credentials.domains.DomainSpecification.Result;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -201,30 +203,32 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *    E.g. in <tt>repo2/feature1</tt> the <tt>repo2</tt> could be the repo id or it could belong to a hierarchical
      *    branch name.
      * @param branchSpec
-     * @return branch name
+     * @return list of full qualified local branch specs ordered by priority.
+     *     The first entry shall be taken first if no rev is found for it, try the next one, etc.
      * @throws InterruptedException 
      * @throws GitException 
      */
-    protected String normalizeBranchSpec(String branchSpec) {
-//TODO: Stupid...
-        //        if (branchSpec.startsWith("remotes/")) {
-//            //Remote names can contain slashes!
-//            for (String remote : getRemoteNames()) {
-//                final String checkString = "remotes/" + remote + "/";
-//                if (branchSpec.startsWith(checkString)) {
-//                    return branchSpec.substring(checkString.length());
-//                }
-//            }
-//        } else if (branchSpec.startsWith("refs/heads/")) {
-//            return branchSpec.substring("refs/heads/".length());
-//        } else if (branchSpec.startsWith("refs/heads/")) {
-//            return branchSpec.substring("refs/heads/".length());
-//        } else {
-//            String[] branchExploded = branchSpec.split("/");
-//            branch = branchExploded[branchExploded.length-1];
-//        }
-//        return branch;
-        return branchSpec;
+    protected String[] normalizeBranchSpec(String branchSpec) throws GitException, InterruptedException {
+        List<String> results = new ArrayList<String>();
+        if(branchSpec.startsWith("refs/")) {
+            //Always try refs/ as is first
+            if(branchSpec.startsWith("refs/tags/") && !branchSpec.endsWith("^{}")) {
+                //Annotated tags have an own entry
+                results.add(branchSpec + "^{}");
+            }
+            results.add(branchSpec);
+        } else if (branchSpec.startsWith("remotes/")) {
+            //Remote names can contain slashes!
+            for (String remote : getRemoteNames()) {
+                final String checkString = "remotes/" + remote + "/";
+                if (branchSpec.startsWith(checkString)) {
+                    results.add("refs/heads/" + branchSpec.substring(checkString.length()));
+                }
+            }
+        }
+        //If first ref does not match, check if a branch with this name exists
+        results.add("refs/heads/" + branchSpec);
+        return results.toArray(new String[0]);
     }
     
 }

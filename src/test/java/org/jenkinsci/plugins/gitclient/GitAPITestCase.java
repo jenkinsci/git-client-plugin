@@ -1816,13 +1816,13 @@ public abstract class GitAPITestCase extends TestCase {
         final String[][] checkBranchSpecs = {
                     {"master", commits.getProperty("refs/heads/master")},
                     {"origin/master", commits.getProperty("refs/heads/origin/master")}, 
-                    {"remotes/origin/master", commits.getProperty("refs/heads/remotes/origin/master")},
+                    {"remotes/origin/master", commits.getProperty("refs/heads/master")},
                     {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
                     {"refs/heads/master", commits.getProperty("refs/heads/master")},
                     {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
                     {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")}, 
                     {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
-                    {"refs/tags/master", commits.getProperty("refs/heads/refs/tags/master")}, 
+                    {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}, 
                     };
         for(String[] branch : checkBranchSpecs) {
           check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));

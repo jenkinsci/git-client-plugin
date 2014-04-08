@@ -1747,17 +1747,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId getHeadRev(final String url, final String branchSpec) throws GitException, InterruptedException {
-        if(branchSpec.startsWith("refs/")) {
-            return getHeadRevRecursive(url, branchSpec);
-        } else if(branchSpec.startsWith("remotes/")) {
-            //Check if the branch is really named "remotes/..."
-            ObjectId rev = getHeadRevRecursive(url, "refs/heads/" + branchSpec);
-            //Try to get /refs/remotes/... rev
-            if(rev == null) rev = getHeadRevRecursive(url, "refs/" + branchSpec);
-            return rev;
-        } else {
-            return getHeadRevRecursive(url, "refs/heads/" + branchSpec);
+        String[] branchSpecs = normalizeBranchSpec(branchSpec);
+        for(String branch : branchSpecs) {
+            ObjectId rev = getHeadRevRecursive(url, branch);
+            if(rev != null) return rev;
         }
+        return null;
     }
     
     /**
@@ -1780,7 +1775,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private List<RefObjectId> getHeadRevs(final String url, final String exactbranchSpec) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
-        args.add("-h");
+        //args.add("-h"); TODO: allow refs/tags, etc.?
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
