@@ -1732,7 +1732,7 @@ public abstract class GitAPITestCase extends TestCase {
             w.git.getHeadRev(localMirror(), "he*/*er*"); // matches master, MergeCommand, and recovery
             fail("Exception expected");
         }
-        catch (GitException e) {
+        catch (AmbiguousResultException e) {
             //"More than one rev matches branchSpec ('he*/*er*') but none of them matches exactly:
             // [RefObjectId [refs/heads/MergeCommand : AnyObjectId[f3ea3283dea7c685429b1df95da4242f64e9099b]],
             // RefObjectId [refs/heads/master : AnyObjectId[79b09609c1304a3db713c6a4f3bab0d46c85db56]],
@@ -1742,8 +1742,8 @@ public abstract class GitAPITestCase extends TestCase {
             w.git.getHeadRev(localMirror(), "re[mc]*o*e*"); // matches recovery and remote
             fail("Exception expected");
         }
-        catch (GitException e) {
-            //"hudson.plugins.git.GitException: More than one rev matches branchSpec ('refs/heads/re[mc]*o*e*') but none of them matches exactly: 
+        catch (AmbiguousResultException e) {
+            //"More than one rev matches branchSpec ('refs/heads/re[mc]*o*e*') but none of them matches exactly: 
             // [RefObjectId [refs/heads/recovery : AnyObjectId[50afccd498d57184dfa870b8d1f4d357d5dfe4c8]], 
             // RefObjectId [refs/heads/remote : AnyObjectId[4aafc649a266863c435ed22ad3c2430060a6fbe1]]]
         }
@@ -1752,55 +1752,29 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * Checkout the master branch, create the specified branch
-     * based on it, add a commit to that branch, push that commit to
-     * the origin (remote repo of repo in workArea), and checkout the master branch.
-     * @return 
-     */
-    private void pushBranchToRemote(WorkingArea workArea, String branchName) throws InterruptedException, IOException {
-        workArea.git.checkout("master");
-        if(workArea.git instanceof JGitAPIImpl) {
-            workArea.git.branch("refs/heads/" + branchName);
-        } else {
-            workArea.git.branch(branchName);
-        }
-        pushNewCommitToRemote(workArea, branchName);
-    }
-    
-    /**
-     * Add a commit to that branch, push that commit to
-     * the origin (remote repo of repo in workArea), and checkout the master branch.
-     * @return 
-     */
-    private void pushNewCommitToRemote(WorkingArea workArea, String branchName) throws InterruptedException, IOException {
-        workArea.git.checkout(branchName);
-        String filename = UUID.randomUUID().toString();
-        workArea.touch(filename, branchName);
-        workArea.git.add(filename);
-        workArea.git.commit("Initial commit for new branch " + branchName);
-        ObjectId head = workArea.head();
-        System.out.println(branchName + " head is " + head);
-        workArea.git.push("origin", "refs/heads/" + branchName + ":refs/heads/" + branchName);
-        workArea.git.checkout("master");
-    }
-
-    /**
      * Test getHeadRev with namespaces in the branch name.
      */
     public void test_getHeadRev_namespaces() throws Exception {
-        final String[] namespaceBranches = {"a_tests/b_namespace1/master", 
-              "a_tests/b_namespace2/master", "a_tests/b_namespace3/master", "b_namespace3/master", "master"};
-        /* create branches for tests in localMirror */
-        w = clone(localMirror()); //clone local mirror - don't modify, might have impact on other tests.
-        final String remoteRepoPath = w.repoPath();
-        w = clone(remoteRepoPath); //clone temp mirror - we need to test the remote behaviour and push to remote
-        for(String branch : namespaceBranches) {
-            if(!branchExistsRemote(w, branch)) {
-                pushBranchToRemote(w, branch);
-            }
-        }
-        for(String branch : namespaceBranches) {
-            check_getHeadRev(remoteRepoPath, "remotes/origin/"+branch, "refs/heads/"+branch);
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
+        Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
+        w = clone(tempRemoteDir.getAbsolutePath());
+        final String remote = tempRemoteDir.getAbsolutePath();
+        
+        final String[][] checkBranchSpecs = {
+                {"master", commits.getProperty("refs/heads/master")},
+                {"a_tests/b_namespace1/master", commits.getProperty("refs/heads/a_tests/b_namespace1/master")},
+                {"a_tests/b_namespace2/master", commits.getProperty("refs/heads/a_tests/b_namespace2/master")},
+                {"a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
+                {"b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")}
+                };
+        
+        for(String[] branch : checkBranchSpecs) {
+            final ObjectId objectId = ObjectId.fromString(branch[1]);
+            final String branchName = branch[0];
+            check_getHeadRev(remote, branchName, objectId);
+            check_getHeadRev(remote, "remotes/origin/" + branchName, objectId);
+            check_getHeadRev(remote, "refs/heads/" + branchName, objectId);
         }
     }
     

@@ -1747,19 +1747,39 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId getHeadRev(final String url, final String branchSpec) throws GitException, InterruptedException {
-        String[] branchSpecs = normalizeBranchSpec(branchSpec);
-        for(String branch : branchSpecs) {
-            ObjectId rev = getExactHeadRev(url, branch);
-            if(rev != null) return rev;
+        final String[] branchSpecs = normalizeBranchSpec(branchSpec);
+        List<AmbiguousResultException> issues = new ArrayList<AmbiguousResultException>();
+        for(int i = 0; i < branchSpecs.length; i++) {
+            try {
+                String branch = branchSpecs[i];
+                ObjectId rev = getExactHeadRev(url, branch);
+                if(rev != null) return rev;
+            }
+            catch (AmbiguousResultException e) {
+                //Collect issues and try next possible branchSpec
+                issues.add(e);
+            }
+        }
+        if(!issues.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for(AmbiguousResultException e : issues) sb.append(e.getMessage()).append("\n");
+            throw new AmbiguousResultException(sb.toString(), issues.get(0));
         }
         return null;
     }
     
     /**
      * Returns the head rev for the specified branchSpec.<br/>
-     * If more than one branch matches the branchSpec it is checked if one of the results matches 100%.
-     * Otherwise it is checked recursively by prepending "refs/heads/" (assuming there might be a branch
-     * having exactly the name of the branchSpec.<br/>
+     * If more than one branch matches the branchSpec it is checked if one of the results matches 100%.<br/>
+     * If the results are ambiguous an AmbiguousResultException is thrown.<br/>
+     * If nothing was found null is returned.
+     * 
+     * @param url
+     * @param exactbranchSpec
+     * @return the one ObjectId, null if nothing found or AmbiguousResultException in case the result is ambiguous
+     * @throws AmbiguousResultException in case the result is ambiguous
+     * @throws GitException
+     * @throws InterruptedException
      */
     private ObjectId getExactHeadRev(String url, String exactbranchSpec) throws GitException, InterruptedException
     {
@@ -1782,8 +1802,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             for(RefObjectId rev : revs) {
                 if(rev.ref.equals(exactbranchSpec)) return rev.id;
             }
-            throw new GitException(String.format(
-                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s", exactbranchSpec, revs));
+            throw new AmbiguousResultException(
+                        "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s",
+                        exactbranchSpec, revs);
         }
     }
     

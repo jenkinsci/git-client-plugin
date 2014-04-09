@@ -577,8 +577,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             matches.add(r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
                         }
                     }
-                    if(matches.size() > 2) throw new GitException(String.format(
-                                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s", branchSpec, c.getRefs()));
+                    if(matches.size() > 2) throw new AmbiguousResultException(
+                                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s",
+                                branchSpec, c.getRefs());
                     else if(matches.size() == 1) return matches.get(0); 
                 }
             } finally {
