@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
@@ -18,7 +17,6 @@ import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
-
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -27,7 +25,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.Nonnull;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;

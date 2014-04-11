@@ -17,8 +17,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
-import com.cloudbees.plugins.credentials.domains.DomainSpecification.Result;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;

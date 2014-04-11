@@ -1,15 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-
-import static java.lang.String.format;
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.junit.Assert.fail;
-
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.StringUtils;
 
-import com.gargoylesoftware.htmlunit.ProxyConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -26,13 +19,11 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOException2;
-import hudson.util.ReflectionUtils;
 import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.tools.zip.ZipUtil;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -43,11 +34,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Assert;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisBase;
 import org.objenesis.ObjenesisStd;
 
 import java.io.*;
@@ -66,8 +54,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
-import jenkins.model.Jenkins;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -111,7 +97,7 @@ public abstract class GitAPITestCase extends TestCase {
           final String proxyUser = getSystemProperty("proxyUser", "http.proxyUser", "https.proxyUser");
           //final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword", "https.proxyPassword");
           final String noProxyHosts = getSystemProperty("noProxyHosts", "http.noProxyHosts", "https.noProxyHosts");
-          if(isBlank(proxyHost) || isBlank(proxyPort)) return;
+          if(StringUtils.isBlank(proxyHost) || StringUtils.isBlank(proxyPort)) return;
           ProxyConfiguration proxyConfig = (ProxyConfiguration) new ObjenesisStd().newInstance(ProxyConfiguration.class);
           setField(ProxyConfiguration.class, "name", proxyConfig, proxyHost);
           setField(ProxyConfiguration.class, "port", proxyConfig, Integer.parseInt(proxyPort));

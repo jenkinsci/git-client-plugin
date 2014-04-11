@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
@@ -62,7 +61,6 @@ import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import javax.annotation.Nullable;
-import javax.naming.OperationNotSupportedException;
 
 import java.io.File;
 import java.io.IOException;
