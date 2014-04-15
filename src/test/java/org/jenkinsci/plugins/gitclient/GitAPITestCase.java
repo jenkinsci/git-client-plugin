@@ -589,7 +589,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("ignore");
 
         String fileName1 = "\u5c4f\u5e55\u622a\u56fe-not-added.xml";
-        String fileName2 = ".test-\u000f8";
+        String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-not-added";
         w.touch(fileName1);
         w.touch(fileName2);
         w.touch(fileName, "new content");
