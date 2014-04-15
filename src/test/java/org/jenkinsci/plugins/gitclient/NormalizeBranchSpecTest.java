@@ -25,7 +25,7 @@ public class NormalizeBranchSpecTest
 
     @Before
     public void before() throws GitException, InterruptedException {
-        mock = PowerMockito.spy(new CliGitAPIImpl("git.exe", null, null, new EnvVars()));
+        mock = PowerMockito.spy(new CliGitAPIImpl("git", null, null, new EnvVars()));
         Mockito.when(mock.getRemoteNames()).thenReturn(ORIGIN);
     }
     
