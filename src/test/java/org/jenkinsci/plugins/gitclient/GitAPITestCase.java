@@ -198,7 +198,7 @@ public abstract class GitAPITestCase extends TestCase {
          */
         File touch(String path, String content) throws IOException {
             File f = file(path);
-            FileUtils.writeStringToFile(f, content);
+            FileUtils.writeStringToFile(f, content, "UTF-8");
             return f;
         }
 
@@ -207,7 +207,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         public String contentOf(String path) throws IOException {
-            return FileUtils.readFileToString(file(path));
+            return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
         /**
