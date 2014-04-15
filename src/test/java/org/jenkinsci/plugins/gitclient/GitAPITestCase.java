@@ -574,26 +574,30 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
     }
 
+    @Bug(20410)
     public void test_clean() throws Exception {
         w.init();
         w.commitEmpty("init");
 
-        w.touch("file", "content");
-        w.git.add("file");
-        w.git.commit("file");
+        String fileName = "\u5c4f\u5e55\u622a\u56fe.xml";
+        w.touch(fileName, "content " + fileName);
+        w.git.add(fileName);
+        w.git.commit(fileName);
 
         w.touch(".gitignore", ".test");
         w.git.add(".gitignore");
         w.git.commit("ignore");
 
-        w.touch("file1");
-        w.touch(".test");
-        w.touch("file", "new content");
+        String fileName1 = "\u5c4f\u5e55\u622a\u56fe-not-added.xml";
+        String fileName2 = ".test-\u000f8";
+        w.touch(fileName1);
+        w.touch(fileName2);
+        w.touch(fileName, "new content");
 
         w.git.clean();
-        assertFalse(w.exists("file1"));
-        assertFalse(w.exists(".test"));
-        assertEquals("content", w.contentOf("file"));
+        assertFalse(w.exists(fileName1));
+        assertFalse(w.exists(fileName2));
+        assertEquals("content " + fileName, w.contentOf(fileName));
         String status = w.cmd("git status");
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
     }
