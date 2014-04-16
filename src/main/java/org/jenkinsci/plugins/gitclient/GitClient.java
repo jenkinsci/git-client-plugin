@@ -279,10 +279,10 @@ public interface GitClient {
      */
     ObjectId revParse(String revName) throws GitException, InterruptedException;
 
+    RevListCommand revList_();
+
     List<ObjectId> revListAll() throws GitException, InterruptedException;
 
-    List<ObjectId> revListFirstParent(String ref) throws GitException, InterruptedException;
-    
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
 
