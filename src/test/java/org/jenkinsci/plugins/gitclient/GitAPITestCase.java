@@ -1,11 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.StringUtils;
 
-import com.gargoylesoftware.htmlunit.ProxyConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -22,7 +19,7 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOException2;
-import hudson.util.ReflectionUtils;
+import hudson.util.IOUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
@@ -39,8 +36,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisBase;
 import org.objenesis.ObjenesisStd;
 
 import java.io.*;
@@ -48,13 +43,17 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-
-import jenkins.model.Jenkins;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -98,8 +97,8 @@ public abstract class GitAPITestCase extends TestCase {
           final String proxyUser = getSystemProperty("proxyUser", "http.proxyUser", "https.proxyUser");
           //final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword", "https.proxyPassword");
           final String noProxyHosts = getSystemProperty("noProxyHosts", "http.noProxyHosts", "https.noProxyHosts");
-          if(isBlank(proxyHost) || isBlank(proxyPort)) return;
-          ProxyConfiguration proxyConfig = new ObjenesisStd().newInstance(ProxyConfiguration.class);
+          if(StringUtils.isBlank(proxyHost) || StringUtils.isBlank(proxyPort)) return;
+          ProxyConfiguration proxyConfig = (ProxyConfiguration) new ObjenesisStd().newInstance(ProxyConfiguration.class);
           setField(ProxyConfiguration.class, "name", proxyConfig, proxyHost);
           setField(ProxyConfiguration.class, "port", proxyConfig, Integer.parseInt(proxyPort));
           setField(ProxyConfiguration.class, "userName", proxyConfig, proxyUser);
@@ -1768,63 +1767,183 @@ public abstract class GitAPITestCase extends TestCase {
      * occur earlier than the expected value.
      */
     public void test_getHeadRev_wildcards() throws Exception {
+        w = clone(localMirror());
         Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
         ObjectId master = w.git.getHeadRev(localMirror(), "refs/heads/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
         ObjectId recovery = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*cov*"); // matches recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery);
-        ObjectId mergeCommand = w.git.getHeadRev(localMirror(), "yyzzy*/*er*"); // matches master, MergeCommand, and recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/MergeCommand"), mergeCommand);
-        ObjectId recovery1 = w.git.getHeadRev(localMirror(), "X/re[mc]*o*e*"); // matches recovery and remote
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
+        assertEquals("heads is " + heads, null, recovery); //remote name does not match anything
+        try {
+            w.git.getHeadRev(localMirror(), "he*/*er*"); // matches master, MergeCommand, and recovery
+            fail("Exception expected");
+        }
+        catch (AmbiguousResultException e) {
+            //"More than one rev matches branchSpec ('he*/*er*') but none of them matches exactly:
+            // [RefObjectId [refs/heads/MergeCommand : AnyObjectId[f3ea3283dea7c685429b1df95da4242f64e9099b]],
+            // RefObjectId [refs/heads/master : AnyObjectId[79b09609c1304a3db713c6a4f3bab0d46c85db56]],
+            // RefObjectId [refs/heads/recovery : AnyObjectId[50afccd498d57184dfa870b8d1f4d357d5dfe4c8]]]"
+        }
+        try {
+            w.git.getHeadRev(localMirror(), "re[mc]*o*e*"); // matches recovery and remote
+            fail("Exception expected");
+        }
+        catch (AmbiguousResultException e) {
+            //"More than one rev matches branchSpec ('refs/heads/re[mc]*o*e*') but none of them matches exactly: 
+            // [RefObjectId [refs/heads/recovery : AnyObjectId[50afccd498d57184dfa870b8d1f4d357d5dfe4c8]], 
+            // RefObjectId [refs/heads/remote : AnyObjectId[4aafc649a266863c435ed22ad3c2430060a6fbe1]]]
+        }
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "*s/*etSub*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
     /**
-     * Checkout the master branch, create the specified branch
-     * based on it, add a commit to that branch, push that commit to
-     * the origin (localMirror), and checkout the master branch.
-     */
-    private void pushNamespaceBranchToLocalMirror(String branchSpec) throws InterruptedException, IOException {
-        w.git.checkout("master");
-        w.git.branch(branchSpec);
-        w.git.checkout(branchSpec);
-        String filename = UUID.randomUUID().toString();
-        w.touch(filename, branchSpec);
-        w.git.add(filename);
-        w.git.commit("Initial commit for new branch " + branchSpec);
-        ObjectId head = w.head();
-        w.igit().push("origin", branchSpec + ":" + branchSpec);
-        w.git.checkout("master");
-    }
-    
-    /**
      * Test getHeadRev with namespaces in the branch name.
      */
     public void test_getHeadRev_namespaces() throws Exception {
-        final String[] namespaceBranches = {"tests/namespace1/master", "tests/namespace2/master", "tests/namespace3/master"};
-        if (w.git.getHeadRev(localMirror(), "remotes/origin/tests/namespace1/master") == null) {
-            /* create branches for tests in localMirror */
-            w = clone(localMirror());
-            for(String branch : namespaceBranches) {
-                pushNamespaceBranchToLocalMirror(branch);
-            }
-        }
-        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
-        for(String branch : namespaceBranches) {
-            check_getHeadRev(heads, "remotes/origin/"+branch, "refs/heads/"+branch);
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
+        Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
+        w = clone(tempRemoteDir.getAbsolutePath());
+        final String remote = tempRemoteDir.getAbsolutePath();
+        
+        final String[][] checkBranchSpecs = {
+                {"master", commits.getProperty("refs/heads/master")},
+                {"a_tests/b_namespace1/master", commits.getProperty("refs/heads/a_tests/b_namespace1/master")},
+                {"a_tests/b_namespace2/master", commits.getProperty("refs/heads/a_tests/b_namespace2/master")},
+                {"a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
+                {"b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")}
+                };
+        
+        for(String[] branch : checkBranchSpecs) {
+            final ObjectId objectId = ObjectId.fromString(branch[1]);
+            final String branchName = branch[0];
+            check_getHeadRev(remote, branchName, objectId);
+            check_getHeadRev(remote, "remotes/origin/" + branchName, objectId);
+            check_getHeadRev(remote, "refs/heads/" + branchName, objectId);
         }
     }
     
-    private void check_getHeadRev(Map<String, ObjectId> heads, String branchSpec, String expectedHeadSpec) throws Exception
+    /**
+     * Test getHeadRev with branch names which SHOULD BE reserved by Git, but ARE NOT.<br/>
+     * E.g. it is possible to create the following LOCAL (!) branches:<br/>
+     * <ul>
+     *   <li> origin/master
+     *   <li> remotes/origin/master
+     *   <li> refs/heads/master
+     *   <li> refs/remotes/origin/master
+     * </ul>
+     */
+    public void test_getHeadRev_reservedBranchNames() throws Exception {
+        /* REMARK: Local branch names in this test are called exactly like follows!
+         *   e.g. origin/master means the branch is called "origin/master", it does NOT mean master branch in remote "origin".
+         *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
+         */
+        
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/specialBranchRepo.zip"), tempRemoteDir);
+        Properties commits = parseLsRemote(new File("src/test/resources/specialBranchRepo.ls-remote"));
+        w = clone(tempRemoteDir.getAbsolutePath());
+        
+        /*
+         * The first entry in the String[2] is the branch name (as specified in the job config).
+         * The second entry is the expected commit.   
+         */
+        final String[][] checkBranchSpecs = {
+                {"master", commits.getProperty("refs/heads/master")},
+                {"origin/master", commits.getProperty("refs/heads/master")}, 
+                {"remotes/origin/master", commits.getProperty("refs/heads/master")},
+                {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
+                {"refs/heads/origin/master", commits.getProperty("refs/heads/origin/master")},
+                {"refs/heads/master", commits.getProperty("refs/heads/master")},
+                {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
+                {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
+                {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}
+                };
+        for(String[] branch : checkBranchSpecs) {
+          check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));
+        }
+    }
+    
+    private Properties parseLsRemote(File file) throws IOException
     {
-      ObjectId actualObjectId = w.git.getHeadRev(localMirror(), branchSpec);
-      ObjectId expectedObjectId = heads.get(expectedHeadSpec);
-      assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'", expectedHeadSpec), expectedObjectId);
-      assertEquals("Actual ObjectId differs from expected one. Heads is " + heads, expectedObjectId, actualObjectId);
+        Properties properties = new Properties();
+        Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
+        for(Object lineO : FileUtils.readLines(file)) {
+            String line = ((String)lineO).trim();
+            Matcher matcher = pattern.matcher(line);
+            if(matcher.matches()) {
+                properties.setProperty(matcher.group(2), matcher.group(1));
+            } else {
+                System.err.println("ls-remote pattern does not match '" + line + "'");
+            }
+        }
+        return properties;
+    }
+
+
+
+    private void extract(ZipFile zipFile, File outputDir) throws IOException
+    {
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+        while (entries.hasMoreElements()) {
+            ZipEntry entry = entries.nextElement();
+            File entryDestination = new File(outputDir,  entry.getName());
+            entryDestination.getParentFile().mkdirs();
+            if (entry.isDirectory())
+                entryDestination.mkdirs();
+            else {
+                InputStream in = zipFile.getInputStream(entry);
+                OutputStream out = new FileOutputStream(entryDestination);
+                IOUtils.copy(in, out);
+                IOUtils.closeQuietly(in);
+                IOUtils.closeQuietly(out);
+            }
+        }
+    }
+
+    private void assertNotEqual(Object...objects)
+    {
+        for(int i = 0; i < objects.length; i++) {
+            for(int j = 0; j < objects.length; j++) {
+                if(i == j) continue;
+                if(objects[i].equals(objects[j])) fail(String.format("Object %d and %d are equal", i, j));
+            }
+        }
+    }
+
+    private boolean branchExistsRemote(WorkingArea workArea, String branchName) throws GitException, InterruptedException
+    {
+        Set<Branch> branches = workArea.git.getRemoteBranches();
+        String[] remoteNames = workArea.git.getRemoteNames();
+        for(Branch b : branches) {
+            for(String remote : remoteNames) {
+                //remote names can contain slashes but let's ignore this here
+                if(b.getName().equals(remote + "/" + branchName)) return true;
+            }
+        }
+        return false;
+    }
+
+
+
+    private void check_getHeadRev(String remote, String branchSpec, String expectedHeadSpec) throws Exception
+    {
+        Map<String, ObjectId> heads = w.git.getHeadRev(remote);
+        ObjectId expectedObjectId = heads.get(expectedHeadSpec);
+        assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'. Heads is %s", expectedHeadSpec, heads),
+                    expectedObjectId);
+        check_getHeadRev(remote, branchSpec, expectedObjectId);
+    }
+    
+    private void check_getHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception
+    {
+        ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
+        assertNotNull(String.format("ObjectId is null for expectedObjectId '%s'.", expectedObjectId),
+                    expectedObjectId);
+        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s'.", 
+                branchSpec), expectedObjectId, actualObjectId);
     }
 
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
@@ -1849,10 +1968,12 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_getHeadRev_localMirror() throws Exception {
+        w = clone(localMirror());
         check_headRev(localMirror(), getMirrorHead());
     }
 
     public void test_getHeadRev_remote() throws Exception {
+        w = clone(localMirror());
         String lsRemote = w.cmd("git ls-remote -h " + remoteMirrorURL + " refs/heads/master");
         ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
         check_headRev(remoteMirrorURL, lsRemoteId);

@@ -254,6 +254,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.isCommitInRepo(commit);
     }
 
+    public String[] getRemoteNames() throws GitException, InterruptedException {
+        return proxy.getRemoteNames();
+    }
+    
     public String getRemoteUrl(String name) throws GitException, InterruptedException {
         return proxy.getRemoteUrl(name);
     }
@@ -364,6 +368,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         return proxy.getRemoteBranches();
+    }
+
+    public Set<Branch> getLocalBranches() throws GitException, InterruptedException {
+        return proxy.getLocalBranches();
     }
 
     public void tag(String tagName, String comment) throws GitException, InterruptedException {
