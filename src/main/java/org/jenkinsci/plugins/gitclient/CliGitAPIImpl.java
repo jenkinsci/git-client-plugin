@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -10,6 +11,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
+import com.google.common.collect.Lists;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -22,7 +24,6 @@ import hudson.plugins.git.Revision;
 import hudson.remoting.Callable;
 import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
-import hudson.util.IOUtils;
 import hudson.util.Secret;
 
 import org.apache.commons.io.FileUtils;
@@ -72,7 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
@@ -92,12 +92,58 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private static final long serialVersionUID = 1;
+    static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
+    static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
     EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
+
+    private long gitVersion = 0;
+    private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
+        return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
+    }
+    private void getGitVersion() {
+        if (gitVersion != 0) {
+            return;
+        }
+
+        String version = "";
+        try {
+            version = launchCommand("--version").trim();
+        } catch (Throwable e) {
+        }
+
+        computeGitVersion(version);
+    }
+
+    /* package */ void computeGitVersion(String version) {
+        int gitMajorVersion  = 0;
+        int gitMinorVersion  = 0;
+        int gitRevVersion    = 0;
+        int gitBugfixVersion = 0;
+
+        try {
+            String[] fields = version.split(" ")[2].split("\\.");
+
+            gitMajorVersion  = Integer.parseInt(fields[0]);
+            gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
+            gitRevVersion    = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
+            gitBugfixVersion = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
+        } catch (Throwable e) {
+            /* Oh well */
+        }
+
+        gitVersion = computeVersionFromBits(gitMajorVersion, gitMinorVersion, gitRevVersion, gitBugfixVersion);
+    }
+
+    /* package */ boolean isAtLeastVersion(int major, int minor, int rev, int bugfix) {
+        getGitVersion();
+        long requestedVersion = computeVersionFromBits(major, minor, rev, bugfix);
+        return gitVersion >= requestedVersion;
+    }
 
     protected CliGitAPIImpl(String gitExe, File workspace,
                          TaskListener listener, EnvVars environment) {
@@ -114,17 +160,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void init() throws GitException, InterruptedException {
-        if (hasGitRepo()) {
-            throw new GitException(".git directory already exists! Has it already been initialised?");
-        }
-        Repository repo = getRepository();
-        try {
-            repo.create();
-        } catch (IOException ioe) {
-            throw new GitException("Error initiating git repo.", ioe);
-        } finally {
-            repo.close();
-        }
+        init_().workspace(workspace.getAbsolutePath()).execute();
     }
 
     public boolean hasGitRepo() throws GitException, InterruptedException {
@@ -300,6 +336,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand noCheckout() {
+                //this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the --no-checkout option is always satisfied
+                return this;
+            }
+
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
@@ -332,7 +373,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
-                init();
+                init_().workspace(workspace.getAbsolutePath()).execute();
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
@@ -371,6 +412,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .timeout(timeout)
                         .execute();
                 setRemoteUrl(origin, url);
+                launchCommand("config", "remote." + origin + ".fetch", refSpec.toString());
             }
 
         };
@@ -399,6 +441,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         launchCommand("merge", rev.name()); }
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);
+                }
+            }
+        };
+    }
+
+    public InitCommand init_() {
+        return new InitCommand() {
+
+            public String workspace;
+            public boolean bare;
+
+            public InitCommand workspace(String workspace) {
+                this.workspace = workspace;
+                return this;
+            }
+
+            public InitCommand bare(boolean bare) {
+                this.bare = bare;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("init", workspace);
+
+                if(bare) args.add("--bare");
+                try {
+                    launchCommand(args);
+                } catch (GitException e) {
+                    throw new GitException("Could not init " + workspace, e);
                 }
             }
         };
@@ -594,32 +666,64 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Update submodules.
-     *
-     * @param recursive if true, will recursively update submodules (requires git>=1.6.5)
-     *
-     * @throws GitException if executing the Git command fails
      */
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        submoduleUpdate(recursive, null);
-    }
+    public SubmoduleUpdateCommand submoduleUpdate() {
+        return new SubmoduleUpdateCommand() {
+            boolean recursive                      = false;
+            boolean remoteTracking                 = false;
+            String  ref                            = null;
+            HashMap<String, String> submodBranch   = new HashMap<String, String>();
 
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
-    	ArgumentListBuilder args = new ArgumentListBuilder();
-    	args.add("submodule", "update");
-    	if (recursive) {
-            args.add("--init", "--recursive");
-        }
-        if (reference != null && !reference.isEmpty()) {
-            File referencePath = new File(reference);
-            if (!referencePath.exists())
-                listener.error("Reference path does not exist: " + reference);
-            else if (!referencePath.isDirectory())
-                listener.error("Reference path is not a directory: " + reference);
-            else
-                args.add("--reference", reference);
-        }
+            public SubmoduleUpdateCommand recursive(boolean recursive) {
+                this.recursive = recursive;
+                return this;
+            }
 
-        launchCommand(args);
+            public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
+                this.remoteTracking = remoteTracking;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+                this.submodBranch.put(submodule, branchname);
+                return this;
+            }
+
+            /**
+             * @throws GitException if executing the Git command fails
+             * @throws InterruptedException if called methods throw same exception
+             */
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("submodule", "update");
+                if (recursive) {
+                    args.add("--init", "--recursive");
+                }
+                if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
+                    args.add("--remote");
+
+                    for (String key : submodBranch.keySet()) {
+                        launchCommand("config", "-f", ".gitmodules", "submodule."+key+".branch", submodBranch.get(key));
+                    }
+                }
+                if ((ref != null) && !ref.isEmpty()) {
+                    File referencePath = new File(ref);
+                    if (!referencePath.exists())
+                        listener.error("Reference path does not exist: " + ref);
+                    else if (!referencePath.isDirectory())
+                        listener.error("Reference path is not a directory: " + ref);
+                    else
+                        args.add("--reference", ref);
+                }
+
+                launchCommand(args);
+            }
+        };
     }
 
     /**
@@ -635,10 +739,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (recursive) {
             args.add("--recursive");
         }
-        args.add("git reset");
-        if (hard) {
-            args.add("--hard");
-        }
+        args.add("git reset" + (hard ? " --hard" : ""));
 
         launchCommand(args);
     }
@@ -1044,7 +1145,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // See https://issues.jenkins-ci.org/browse/JENKINS-21016
                     if (workDir == null) {
                         workDir = store.getParentFile();
-                        launchCommandIn(workDir, "init");
+                        init_().workspace(workDir.getAbsolutePath()).execute();
                     }
 
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
@@ -1196,32 +1297,52 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     }
 
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder();
-        args.add("push", url.toPrivateASCIIString());
+    public PushCommand push() {
+        return new PushCommand() {
+            public URIish remote;
+            public String refspec;
+            public boolean force;
+            public Integer timeout;
 
-        if (refspec != null) {
-            args.add(refspec);
-        }
+            public PushCommand to(URIish remote) {
+                this.remote = remote;
+                return this;
+            }
 
-        StandardCredentials cred = credentials.get(url.toPrivateString());
-        if (cred == null) cred = defaultCredentials;
-        launchCommandWithCredentials(args, workspace, cred, url);
-        // Ignore output for now as there's many different formats
-        // That are possible.
-    }
+            public PushCommand ref(String refspec) {
+                this.refspec = refspec;
+                return this;
+            }
 
-    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
-        String url = getRemoteUrl(remoteName);
-        if (url == null) {
-            throw new GitException("bad remote name, URL not set in working copy");
-        }
+            public PushCommand force() {
+                this.force = true;
+                return this;
+            }
 
-        try {
-            push(new URIish(url), refspec);
-        } catch (URISyntaxException e) {
-            throw new GitException("bad repository URL", e);
-        }
+            public PushCommand timeout(Integer timeout) {
+                this.timeout = timeout;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("push", remote.toPrivateASCIIString());
+
+                if (refspec != null) {
+                    args.add(refspec);
+                }
+
+                if (force) {
+                    args.add("-f");
+                }
+
+                StandardCredentials cred = credentials.get(remote.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+                launchCommandWithCredentials(args, workspace, cred, remote, timeout);
+                // Ignore output for now as there's many different formats
+                // That are possible.
+            }
+        };
     }
 
     protected Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {
@@ -1281,36 +1402,127 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String commit) throws GitException, InterruptedException {
-        launchCommand("checkout", "-f", commit);
-    }
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
 
-    public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        launchCommand("checkout", "-b", branch, ref);
-    }
+            public String ref;
+            public String branch;
+            public boolean deleteBranch;
+            public List<String> sparseCheckoutPaths = Collections.emptyList();
 
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
-        try {
-            // First, checkout to detached HEAD, so we can delete the branch.
-            checkout(ref);
+            public CheckoutCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
 
-            if (branch!=null) {
-                // Second, check to see if the branch actually exists, and then delete it if it does.
-                for (Branch b : getBranches()) {
-                    if (b.getName().equals(branch)) {
-                        deleteBranch(branch);
+            public CheckoutCommand branch(String branch) {
+                this.branch = branch;
+                return this;
+            }
+
+            public CheckoutCommand deleteBranchIfExist(boolean deleteBranch) {
+                this.deleteBranch = deleteBranch;
+                return this;
+            }
+
+            public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+
+                    // Will activate or deactivate sparse checkout depending on the given paths
+                    sparseCheckout(sparseCheckoutPaths);
+
+                    if (branch!=null && deleteBranch) {
+                        // First, checkout to detached HEAD, so we can delete the branch.
+                        launchCommand("checkout", "-f", ref);
+
+                        // Second, check to see if the branch actually exists, and then delete it if it does.
+                        for (Branch b : getBranches()) {
+                            if (b.getName().equals(branch)) {
+                                deleteBranch(branch);
+                            }
+                        }
+                    }
+                    if (branch != null)
+                        launchCommand("checkout", "-b", branch, ref);
+                    else
+                        launchCommand("checkout", "-f", ref);
+                } catch (GitException e) {
+                    if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
+                        throw new GitLockFailedException("Could not lock repository. Please try again", e);
+                    } else {
+                        throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
                     }
                 }
-                // Lastly, checkout the branch, creating it in the process, using commitish as the start point.
-                checkout(ref, branch);
+
             }
-        } catch (GitException e) {
-            if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
-                throw new GitLockFailedException("Could not lock repository. Please try again", e);
-            } else {
-                throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+
+            private void sparseCheckout(@NonNull List<String> paths) throws GitException, InterruptedException {
+
+                boolean coreSparseCheckoutConfigEnable;
+                try {
+                    coreSparseCheckoutConfigEnable = launchCommand("config", "core.sparsecheckout").contains("true");
+                } catch (GitException ge) {
+                    coreSparseCheckoutConfigEnable = false;
+                }
+
+                boolean deactivatingSparseCheckout = false;
+                if(paths.isEmpty() && ! coreSparseCheckoutConfigEnable) { // Nothing to do
+                    return;
+                } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
+                    deactivatingSparseCheckout = true;
+                    paths = Lists.newArrayList("/*");
+                } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
+                    launchCommand( "config", "core.sparsecheckout", "true" );
+                }
+
+                File sparseCheckoutDir = new File(workspace, SPARSE_CHECKOUT_FILE_DIR);
+                if(! sparseCheckoutDir.exists()) {
+                    if(! sparseCheckoutDir.mkdir()) {
+                        throw new GitException("Impossible to create sparse checkout dir " + sparseCheckoutDir.getAbsolutePath());
+                    }
+                }
+
+                File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+                PrintWriter writer;
+                try {
+                    writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+                } catch (IOException ex){
+                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+                for(String path : paths) {
+                    writer.println(path);
+                }
+
+                try {
+                    writer.close();
+                } catch (Exception ex) {
+                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                }
+
+
+                try {
+                    launchCommand( "read-tree", "-mu", "HEAD" );
+                } catch (GitException ge) {
+                    // Normal return code if sparse checkout path has never exist on the current checkout branch
+                    String normalReturnCode = "128";
+                    if(ge.getMessage().contains(normalReturnCode)) {
+                        listener.getLogger().println(ge.getMessage());
+                    } else {
+                        throw ge;
+                    }
+                }
+
+                if(deactivatingSparseCheckout) {
+                    launchCommand( "config", "core.sparsecheckout", "false" );
+                }
             }
-        }
+        };
     }
 
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
@@ -1595,9 +1807,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return heads;
     }
 
-    public ObjectId getHeadRev(String url, String branch) throws GitException, InterruptedException {
-        String[] branchExploded = branch.split("/");
-        branch = branchExploded[branchExploded.length-1];
+    public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
+        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
 
@@ -1605,7 +1816,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(branch);
+        args.add(branchName);
         String result = launchCommandWithCredentials(args, null, cred, url);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }

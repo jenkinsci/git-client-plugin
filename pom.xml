@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.480</version>
+    <version>1.509</version>
   </parent>
   
   <licenses>
@@ -15,15 +15,13 @@
   </licenses>
 
   <artifactId>git-client</artifactId>
-  <version>1.6.4-SNAPSHOT</version>
+  <version>1.8.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
 
   <properties>
-    <maven.compiler.source>1.5</maven.compiler.source>
-    <maven.compiler.target>1.5</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
@@ -46,6 +44,11 @@
 			<name>Nicolas De Loof</name>
 			<email>nicolas.deloof@gmail.com</email>
 		</developer>
+		<developer>
+			<id>markewaite</id>
+			<name>Mark Waite</name>
+			<email>mark.earl.waite@gmail.com</email>
+		</developer>
 	</developers>
 
 
@@ -54,7 +57,7 @@
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>3.2.0.201312181205-r</version>
+      <version>3.3.1.201403241930-r</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -89,7 +92,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.3.2</version>
+      <version>4.3.3</version>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -103,8 +106,12 @@
       <version>11.0.1</version>
       <scope>provided</scope>
     </dependency>
-
-
+    <dependency>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
+      <version>2.1</version>
+      <scope>test</scope>
+      </dependency>
   </dependencies>
 
   <scm>

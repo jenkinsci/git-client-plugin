@@ -46,7 +46,6 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
-import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
@@ -150,15 +149,64 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         committer = new PersonIdent(name,email);
     }
 
-    public void init() throws GitException {
+    public void init() throws GitException, InterruptedException {
+        init_().workspace(workspace.getAbsolutePath()).execute();
+    }
+
+    private void doInit(String workspace, boolean bare) throws GitException {
         try {
-            Git.init().setDirectory(workspace).call();
+            Git.init().setBare(bare).setDirectory(new File(workspace)).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
     }
 
-    public void checkout(String ref) throws GitException {
+    public CheckoutCommand checkout() {
+        return new CheckoutCommand() {
+
+            public String ref;
+            public String branch;
+            public boolean deleteBranch;
+            public List<String> sparseCheckoutPaths = Collections.emptyList();
+
+            public CheckoutCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
+            public CheckoutCommand branch(String branch) {
+                this.branch = branch;
+                return this;
+            }
+
+            public CheckoutCommand deleteBranchIfExist(boolean deleteBranch) {
+                this.deleteBranch = deleteBranch;
+                return this;
+            }
+
+            public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+
+                if(! sparseCheckoutPaths.isEmpty()) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+
+                if (branch == null)
+                    doCheckout(ref);
+                else if (deleteBranch)
+                    doCheckoutBranch(branch, ref);
+                else
+                    doCheckout(ref, branch);
+            }
+        };
+    }
+
+    private void doCheckout(String ref) throws GitException {
         boolean retried = false;
         Repository repo = null;
         while (true) {
@@ -201,7 +249,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkout(String ref, String branch) throws GitException {
+    private void doCheckout(String ref, String branch) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
@@ -216,7 +264,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void checkoutBranch(String branch, String ref) throws GitException {
+    private void doCheckoutBranch(String branch, String ref) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
@@ -234,8 +282,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not update " + (branch!= null ? branch : "") + " to " + ref);
             }
 
-            if (branch != null) checkout(branch);
-
+            if (branch != null) doCheckout(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + (branch!= null ? branch : "") + " with start point " + ref, e);
         } finally {
@@ -364,6 +411,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
             public URIish url;
             public List<RefSpec> refspecs;
+            // JGit 3.3.0 and 3.3.1 prune more branches than expected
+            // Refer to GitAPITestCase.test_fetch_with_prune()
+            // private boolean shouldPrune = false;
 
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -373,6 +423,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
                 throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
+                // shouldPrune = true;
+                // return this;
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
@@ -401,6 +453,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             if (rs != null)
                                 refSpecs.add(rs);
                     fetch.setRefSpecs(refSpecs);
+                    // fetch.setRemoveDeletedRefs(shouldPrune);
 
                     fetch.call();
                 } catch (GitAPIException e) {
@@ -500,11 +553,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.toString();
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try {
-            String[] branchExploded = branch.split("/"); /* mimic CliGitAPIImpl */
-            branch = branchExploded[branchExploded.length-1];
-            String regexBranch = createRefRegexFromGlob(branch);
+            final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+            String regexBranch = createRefRegexFromGlob(branchName);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
@@ -588,7 +640,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             repo = getRepository();
             StoredConfig config = repo.getConfig();
 
-            List<String> urls = new ArrayList();
+            List<String> urls = new ArrayList<String>();
             urls.addAll(Arrays.asList(config.getStringList("remote", name, "url")));
             urls.add(url);
 
@@ -902,6 +954,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             	return this;
             }
 
+            public CloneCommand noCheckout() {
+                base.setNoCheckout(true);
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 try {
                     // the directory needs to be clean or else JGit complains
@@ -969,6 +1026,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+        };
+    }
+
+    public InitCommand init_() {
+        return new InitCommand() {
+
+            public String workspace;
+            public boolean bare;
+
+            public InitCommand workspace(String workspace) {
+                this.workspace = workspace;
+                return this;
+            }
+
+            public InitCommand bare(boolean bare) {
+                this.bare = bare;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                doInit(workspace, bare);
             }
         };
     }
@@ -1135,24 +1214,54 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return branches;
     }
 
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
+    public PushCommand push() {
+        return new PushCommand() {
+            public URIish remote;
+            public String refspec;
+            public boolean force;
+            // timeout is not yet implemented for push
+            // public Integer timeout;
 
-    public void push(String remoteName, String refspec) throws GitException {
-        RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
-        Repository repo = null;
-        try {
-            repo = getRepository();
-            git(repo).push().setRemote(remoteName).setRefSpecs(ref)
-                    .setProgressMonitor(new JGitProgressMonitor(listener))
-                    .setCredentialsProvider(getProvider())
-                    .call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
-        }
+            public PushCommand to(URIish remote) {
+                this.remote = remote;
+                return this;
+            }
+
+            public PushCommand ref(String refspec) {
+                this.refspec = refspec;
+                return this;
+            }
+
+            public PushCommand force() {
+                this.force = true;
+                return this;
+            }
+
+            public PushCommand timeout(Integer timeout) {
+                throw new UnsupportedOperationException("Not implemented yet");
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
+                Repository repo = null;
+                try {
+                    repo = getRepository();
+                    Git g = git(repo);
+                    Config config = g.getRepository().getConfig();
+                    config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
+                    g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
+                            .setProgressMonitor(new JGitProgressMonitor(listener))
+                            .setCredentialsProvider(getProvider())
+                            .setForce(force)
+                            .call();
+                    config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                } finally {
+                    if (repo != null) repo.close();
+                }
+            }
+        };
     }
 
     public RevListCommand revList_()
@@ -1331,27 +1440,60 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    public void submoduleUpdate(boolean recursive) throws GitException {
-        Repository repo = null;
-        try {
-            repo = getRepository();
-            git(repo).submoduleUpdate().call();
-            if (recursive) {
-                for (JGitAPIImpl sub : submodules()) {
-                    sub.submoduleUpdate(recursive);
+    public SubmoduleUpdateCommand submoduleUpdate() {
+        return new SubmoduleUpdateCommand() {
+            boolean recursive      = false;
+            boolean remoteTracking = false;
+            String  ref            = null;
+
+            public SubmoduleUpdateCommand recursive(boolean recursive) {
+                this.recursive = recursive;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
+                this.remoteTracking = remoteTracking;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand ref(String ref) {
+                this.ref = ref;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                Repository repo = null;
+
+                if (remoteTracking) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support remoteTracking submodules yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if ((ref != null) && !ref.isEmpty()) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                    
+                try {
+                    repo = getRepository();
+                    git(repo).submoduleUpdate().call();
+                    if (recursive) {
+                        for (JGitAPIImpl sub : submodules()) {
+                            sub.submoduleUpdate(recursive);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
+                } finally {
+                    if (repo != null) repo.close();
                 }
             }
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
-        }
-    }
-
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+        };
     }
 
 
@@ -1844,13 +1986,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        if (isBlank(GIT_DIR)) {
-            Repository repo = getRepository();
-            boolean isBare = repo.isBare();
-            repo.close();
-            return isBare;
+        Repository repo = null;
+        boolean isBare = false;
+        if (GIT_DIR == null) {
+            throw new GitException("Not a git repository"); // Compatible with CliGitAPIImpl
         }
-        return new File(workspace,GIT_DIR).getName().equals(".git");
+        try {
+            if (isBlank(GIT_DIR) || !(new File(GIT_DIR)).isAbsolute()) {
+                if ((new File(workspace, ".git")).exists()) {
+                    repo = getRepository();
+                } else {
+                    repo = new RepositoryBuilder().setGitDir(workspace).build();
+                }
+            } else {
+                repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+            }
+            isBare = repo.isBare();
+        } catch (IOException ioe) {
+            throw new GitException(ioe);
+        } finally {
+            if (repo != null) repo.close();
+        }
+        return isBare;
     }
 
     @Deprecated
@@ -1862,7 +2019,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Deprecated
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
-        getConfig(GIT_DIR).setString("remote", name, "url", url);
+        Repository repo = null;
+        try {
+            repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", name, "url", url);
+            config.save();
+        } catch (IOException ioe) {
+            throw new GitException(ioe);
+        } finally {
+            if (repo != null) repo.close();
+        }
     }
 
     @Deprecated

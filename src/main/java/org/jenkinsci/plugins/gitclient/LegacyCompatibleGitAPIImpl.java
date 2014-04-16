@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.util.Arrays.copyOfRange;
+import static org.apache.commons.lang.StringUtils.join;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
@@ -7,14 +9,17 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
 import hudson.remoting.Channel;
+
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,11 +87,30 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         fetch(null, (RefSpec) null);
     }
 
-
+    @Deprecated
     public void reset() throws GitException, InterruptedException {
         reset(false);
     }
 
+
+    @Deprecated
+    public void push(URIish url, String refspec) throws GitException, InterruptedException {
+        push().ref(refspec).to(url).execute();
+    }
+
+    @Deprecated
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+        String url = getRemoteUrl(remoteName);
+        if (url == null) {
+            throw new GitException("bad remote name, URL not set in working copy");
+        }
+
+        try {
+            push(new URIish(url), refspec);
+        } catch (URISyntaxException e) {
+            throw new GitException("bad repository URL", e);
+        }
+    }
 
     @Deprecated
     public void clone(RemoteConfig source) throws GitException, InterruptedException {
@@ -156,4 +180,40 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
         return showRevision(null, r);
     }
+    
+    /**
+     * This method takes a branch spcecification and extracts the branch name.<br/>
+     * E.g.
+     * <table>
+     * <tr><th align="left">branch spec</th><th align="left">branch name</th></tr>
+     * <tr><td><tt>master</tt></th><td><tt>master</td></tr>
+     * <tr><td><tt>feature1</tt></th><td><tt>feature1</td></tr>
+     * <tr><td><tt>origin/master</tt></th><td><tt>master</td></tr>
+     * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1</td></tr>
+     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>feature1</td></tr>
+     * <tr><td valign="top"><div style="color:red"><strike><tt>origin/namespaceA/fix15</tt></strike></div></th>
+     *     <td><div style="color:red"><strike><tt>namespaceA/fix15</tt></strike> *)</div></td><td></td></tr>
+     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</tt></td></tr>
+     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</td></tr>
+     * </table><br/>
+     * *) If hierarchical branch names with namespaces are used the branch specification has to start
+     *    with "<tt>remotes/&lt;repoId/</tt>". Otherwise it is hard to identify if the branch spec contains the remote repo id or not.<br/>
+     *    E.g. in <tt>repo2/feature1</tt> the <tt>repo2</tt> could be the repo id or it could belong to a hierarchical
+     *    branch name.
+     * @param branchSpec
+     * @return branch name
+     */
+    protected String extractBranchNameFromBranchSpec(String branchSpec) {
+        String branch = branchSpec;
+        String[] branchExploded = branchSpec.split("/");
+        if (branchSpec.startsWith("remotes/")) {
+            branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+        } else if (branchSpec.startsWith("refs/heads/")) {
+            branch = branchSpec.substring("refs/heads/".length());
+        } else {
+            branch = branchExploded[branchExploded.length-1];
+        }
+        return branch;
+    }
+    
 }

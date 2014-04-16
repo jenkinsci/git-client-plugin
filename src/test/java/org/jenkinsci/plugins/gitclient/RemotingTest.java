@@ -28,7 +28,9 @@ public class RemotingTest extends HudsonTestCase {
 
         Computer c = s.toComputer();
         c.connect(false).get();
-        c.getChannel().call(new Work(jgit));
+        VirtualChannel channel = c.getChannel();
+        channel.call(new Work(jgit));
+        channel.close();
     }
 
     private static class Work implements Callable<Void,IOException> {

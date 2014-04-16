@@ -60,6 +60,18 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
         c.execute();
     }
 
+    public void checkout(String commit) throws GitException, InterruptedException {
+        checkout().ref(commit).execute();
+    }
+
+    public void checkout(String ref, String branch) throws GitException, InterruptedException {
+        checkout().ref(ref).branch(branch).execute();
+    }
+
+    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
+        checkout().ref(ref).branch(branch).deleteBranchIfExist(true).execute();
+    }
+
     public void merge(ObjectId rev) throws GitException, InterruptedException {
         merge().setRevisionToMerge(rev).execute();
     }
@@ -84,5 +96,19 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     public void setProxy(ProxyConfiguration proxy) {
         this.proxy = proxy;
+    }
+
+
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).execute();
+    }
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).ref(reference).execute();
+    }
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
+    }
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
+        submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
     }
 }
