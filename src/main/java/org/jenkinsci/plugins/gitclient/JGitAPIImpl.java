@@ -1054,7 +1054,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
                 return this;
             }
-            
+
             public CloneCommand timeout(Integer timeout) {
             	// noop in jgit
             	return this;
@@ -1370,57 +1370,99 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
-    public List<ObjectId> revListAll() throws GitException {
-        Repository repo = null;
-        ObjectReader or = null;
-        RevWalk walk = null;
-        try {
-            repo = getRepository();
-            or = repo.newObjectReader();
-            walk = new RevWalk(or);
-            markAllRefs(walk);
-            return revList(walk);
-        } catch (IOException e) {
-            throw new GitException(e);
-        } finally {
-            if (walk != null) walk.dispose();
-            if (or != null) or.release();
-            if (repo != null) repo.close();
-        }
+    public RevListCommand revList_()
+    {
+        return new RevListCommand() {
+            public boolean all;
+            public boolean firstParent;
+            public String refspec;
+            public List<ObjectId> out;
+
+            public RevListCommand all() {
+                this.all = true;
+                return this;
+            }
+
+            public RevListCommand firstParent() {
+                this.firstParent = true;
+                return this;
+            }
+
+            public RevListCommand to(List<ObjectId> revs){
+                this.out = revs;
+                return this;
+            }
+
+            public RevListCommand reference(String reference){
+                this.refspec = reference;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+
+                Repository repo = null;
+                ObjectReader or = null;
+                RevWalk walk = null;
+
+                if (firstParent) {
+                  throw new UnsupportedOperationException("not implemented yet");
+                }
+
+                try {
+                    repo = getRepository();
+                    or = repo.newObjectReader();
+                    walk = new RevWalk(or);
+
+                    if (all)
+                    {
+                        markAllRefs(walk);
+                    }
+                    else if (refspec != null)
+                    {
+                        walk.markStart(walk.parseCommit(repo.resolve(refspec)));
+                    }
+
+                    walk.setRetainBody(false);
+                    walk.sort(RevSort.COMMIT_TIME_DESC);
+
+                    for (RevCommit c : walk) {
+                        out.add(c.copy());
+                    }
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } finally {
+                    if (walk != null) walk.dispose();
+                    if (or != null) or.release();
+                    if (repo != null) repo.close();
+                }
+            }
+        };
     }
-    
-    public List<ObjectId> revListFirstParent(String ref) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
+
+    public List<ObjectId> revListAll() throws GitException {
+        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        RevListCommand revListCommand = revList_();
+        revListCommand.all();
+        revListCommand.to(oidList);
+        try {
+            revListCommand.execute();
+        } catch (InterruptedException e) {
+            throw new GitException(e);
+        }
+        return oidList;
     }
 
     public List<ObjectId> revList(String ref) throws GitException {
-        Repository repo = null;
-        ObjectReader or = null;
-        RevWalk walk = null;
+        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        RevListCommand revListCommand = revList_();
+        revListCommand.reference(ref);
+        revListCommand.to(oidList);
         try {
-            repo = getRepository();
-            or = repo.newObjectReader();
-            walk = new RevWalk(or);
-            walk.markStart(walk.parseCommit(repo.resolve(ref)));
-            return revList(walk);
-        } catch (IOException e) {
+            revListCommand.execute();
+        } catch (InterruptedException e) {
             throw new GitException(e);
-        } finally {
-            if (walk != null) walk.dispose();
-            if (or != null) or.release();
-            if (repo != null) repo.close();
         }
-    }
-
-    private List<ObjectId> revList(RevWalk walk) {
-        walk.setRetainBody(false);
-        walk.sort(RevSort.COMMIT_TIME_DESC);
-
-        List<ObjectId> r = new ArrayList<ObjectId>();
-        for (RevCommit c : walk) {
-            r.add(c.copy());
-        }
-        return r;
+        return oidList;
     }
 
     public ObjectId revParse(String revName) throws GitException {
@@ -1728,7 +1770,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         RevWalk walk = null;
         try {
             StringBuilder w = new StringBuilder();
-            
+
             repo = getRepository();
             or = repo.newObjectReader();
             walk = new RevWalk(or);
