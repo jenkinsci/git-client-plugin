@@ -1825,7 +1825,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return list;
     }
     
-    private class RefObjectId {
+    private static class RefObjectId {
         public final ObjectId id;
         public final String ref;
         public RefObjectId(String id, String ref) {
