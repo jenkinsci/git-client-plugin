@@ -11,13 +11,16 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
+
 import com.google.common.collect.Lists;
+
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -1791,15 +1794,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         args.add(url);
         args.add(exactbranchSpec);
         String result = launchCommandWithCredentials(args, null, cred, url);
-        List<RefObjectId> revs = parseObjectIds(result);
+        List<GitObject> revs = parseObjectIds(result);
 
         if(revs.size() < 1) {
             return null;
         } else if(revs.size() == 1) {
-            return revs.get(0).id;
+            return revs.get(0).getSHA1();
         } else {
-            for(RefObjectId rev : revs) {
-                if(rev.ref.equals(exactbranchSpec)) return rev.id;
+            for(GitObject rev : revs) {
+                if(rev.getName().equals(exactbranchSpec)) return rev.getSHA1();
             }
             throw new AmbiguousResultException(
                         "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s",
@@ -1810,31 +1813,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Parses the "git ls-remote" results and returns a list of RefObjectIds containing the ObjectId and the ref.
      */
-    private List<RefObjectId> parseObjectIds(String result)
+    private List<GitObject> parseObjectIds(String result)
     {
-        if(result == null || result.length() < 40) return Collections.<RefObjectId>emptyList();
-        List<RefObjectId> list = new ArrayList<RefObjectId>();
+        if(result == null || result.length() < 40) return Collections.<GitObject>emptyList();
+        List<GitObject> list = new ArrayList<GitObject>();
         String[] lines = result.split("\n");
         for(String line : lines) {
           if(line.length() >= 40) {
               String id = line.substring(0, 40);
               String ref = line.substring(40).trim();
-              list.add(new RefObjectId(id, ref));
+              list.add(new GitObject(ref, ObjectId.fromString(id)));
           }
         }
         return list;
-    }
-    
-    private static class RefObjectId {
-        public final ObjectId id;
-        public final String ref;
-        public RefObjectId(String id, String ref) {
-            this.id = ObjectId.fromString(id);
-            this.ref = ref;
-        }
-        public String toString() {
-            return "RefObjectId ["+ ref + " : " + id + "]";
-        }
     }
     
     //
