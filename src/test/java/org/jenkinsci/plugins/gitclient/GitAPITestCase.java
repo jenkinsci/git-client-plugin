@@ -1903,40 +1903,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    private void assertNotEqual(Object...objects)
-    {
-        for(int i = 0; i < objects.length; i++) {
-            for(int j = 0; j < objects.length; j++) {
-                if(i == j) continue;
-                if(objects[i].equals(objects[j])) fail(String.format("Object %d and %d are equal", i, j));
-            }
-        }
-    }
-
-    private boolean branchExistsRemote(WorkingArea workArea, String branchName) throws GitException, InterruptedException
-    {
-        Set<Branch> branches = workArea.git.getRemoteBranches();
-        String[] remoteNames = workArea.git.getRemoteNames();
-        for(Branch b : branches) {
-            for(String remote : remoteNames) {
-                //remote names can contain slashes but let's ignore this here
-                if(b.getName().equals(remote + "/" + branchName)) return true;
-            }
-        }
-        return false;
-    }
-
-
-
-    private void check_getHeadRev(String remote, String branchSpec, String expectedHeadSpec) throws Exception
-    {
-        Map<String, ObjectId> heads = w.git.getHeadRev(remote);
-        ObjectId expectedObjectId = heads.get(expectedHeadSpec);
-        assertNotNull(String.format("ObjectId is null for expectedHeadSpec '%s'. Heads is %s", expectedHeadSpec, heads),
-                    expectedObjectId);
-        check_getHeadRev(remote, branchSpec, expectedObjectId);
-    }
-    
     private void check_getHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception
     {
         ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
