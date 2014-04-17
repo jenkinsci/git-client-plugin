@@ -1757,7 +1757,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Relies on the branches in the git-client-plugin repository
      * include at least branches named:
      *   master
-     *   mergeCommand
+     *   MergeCommand
      *   recovery
      *   remote
      *
