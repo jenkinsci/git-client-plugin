@@ -114,11 +114,22 @@
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>
-      <artifactId>powermock-mockito-release-full</artifactId>
+      <artifactId>powermock-api-mockito</artifactId>
       <version>1.5.4</version>
-      <classifier>full</classifier>
       <scope>test</scope>
-    </dependency>      
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-core</artifactId>
+      <version>1.5.4</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.powermock</groupId>
+      <artifactId>powermock-module-junit4</artifactId>
+      <version>1.5.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <scm>
