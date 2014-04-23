@@ -579,7 +579,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
 
-        String fileName = "\u5c4f\u5e55\u622a\u56fe.xml";
+        /* String starts with a surrogate character, mathematical
+         * double struck small t as the first character of the file
+         * name. */
+        String fileName = "\uD835\uDD65\u5c4f\u5e55\u622a\u56fe.xml";
         w.touch(fileName, "content " + fileName);
         w.git.add(fileName);
         w.git.commit(fileName);
