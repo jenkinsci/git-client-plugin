@@ -651,7 +651,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException {
-        launchCommand("submodule", "add", remoteURL, subdir);
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add("submodule", "add", remoteURL, subdir);
+        StandardCredentials cred = credentials.get(remoteURL);
+        if (cred == null) cred = defaultCredentials;
+        launchCommandWithCredentials(args, workspace, cred, remoteURL);
     }
 
     /**
@@ -710,8 +714,29 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     else
                         args.add("--reference", ref);
                 }
+                // We may need different credentials for each submodule.
 
-                launchCommand(args);
+                List<IndexEntry> submodules;
+                try {
+                    submodules = getSubmodules("HEAD");
+                } catch (GitException e) {
+                    // *shrug* oh well, we tried. Run the command for all sub-
+                    // modules simultaneously with no credentials (there probably
+                    // aren't any remotes, if there's no HEAD) and hope it works.
+                    launchCommand(args);
+                    return;
+                }
+
+                args.add("--");
+                for (IndexEntry submodule : submodules) {
+                    ArgumentListBuilder submoduleArgs = args.clone();
+                    String submoduleName = submodule.getFile();
+                    String submoduleUrl = getSubmoduleUrl(submoduleName);
+                    submoduleArgs.add(submoduleName);
+                    StandardCredentials cred = credentials.get(submoduleUrl);
+                    if (cred == null) cred = defaultCredentials;
+                    launchCommandWithCredentials(submoduleArgs, workspace, cred, submoduleUrl);
+                }
             }
         };
     }
