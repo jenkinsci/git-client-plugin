@@ -737,11 +737,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     return;
                 }
 
-                args.add("--");
                 for (IndexEntry submodule : submodules) {
                     ArgumentListBuilder submoduleArgs = args.clone();
                     String submoduleName = submodule.getFile();
-                    String submoduleUrl = getSubmoduleUrl(submoduleName);
+                    String submoduleUrl;
+                    try {
+                        submoduleUrl = getSubmoduleUrl(submoduleName);
+                    } catch (GitException e) {
+                        // This is another case like above. Most likely the submodules
+                        // have not been initialized. We could call fixSubmoduleUrls
+                        // but that seems invasive here. Cop out like above.
+                        launchCommand(args);
+                        return;
+                    }
+                    submoduleArgs.add("--");
                     submoduleArgs.add(submoduleName);
                     StandardCredentials cred = credentials.get(submoduleUrl);
                     if (cred == null) cred = defaultCredentials;
