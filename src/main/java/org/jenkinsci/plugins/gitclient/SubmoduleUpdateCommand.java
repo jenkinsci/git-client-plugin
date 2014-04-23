@@ -19,4 +19,6 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand remoteTracking(boolean remoteTracking);
 
     SubmoduleUpdateCommand ref(String ref);
+
+    SubmoduleUpdateCommand useBranch(String submodule, String branchname);
 }

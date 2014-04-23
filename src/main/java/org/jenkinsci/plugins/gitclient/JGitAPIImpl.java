@@ -1415,6 +1415,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
 

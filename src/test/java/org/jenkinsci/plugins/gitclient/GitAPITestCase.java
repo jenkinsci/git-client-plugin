@@ -1,14 +1,19 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.apache.commons.lang.StringUtils.isBlank;
+
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.StringUtils;
 
+import com.gargoylesoftware.htmlunit.ProxyConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+
 import hudson.Launcher;
 import hudson.Util;
+import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -16,6 +21,8 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
+import hudson.util.IOException2;
+import hudson.util.ReflectionUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
@@ -32,8 +39,12 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.objenesis.Objenesis;
+import org.objenesis.ObjenesisBase;
+import org.objenesis.ObjenesisStd;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+
+import jenkins.model.Jenkins;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -74,6 +87,44 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea(File repo) throws Exception {
             this.repo = repo;
             git = setupGitAPI(repo);
+            setupProxy(git);
+        }
+
+        private void setupProxy(GitClient gitClient)
+              throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException
+        {
+          final String proxyHost = getSystemProperty("proxyHost", "http.proxyHost", "https.proxyHost");
+          final String proxyPort = getSystemProperty("proxyPort", "http.proxyPort", "https.proxyPort");
+          final String proxyUser = getSystemProperty("proxyUser", "http.proxyUser", "https.proxyUser");
+          //final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword", "https.proxyPassword");
+          final String noProxyHosts = getSystemProperty("noProxyHosts", "http.noProxyHosts", "https.noProxyHosts");
+          if(isBlank(proxyHost) || isBlank(proxyPort)) return;
+          ProxyConfiguration proxyConfig = new ObjenesisStd().newInstance(ProxyConfiguration.class);
+          setField(ProxyConfiguration.class, "name", proxyConfig, proxyHost);
+          setField(ProxyConfiguration.class, "port", proxyConfig, Integer.parseInt(proxyPort));
+          setField(ProxyConfiguration.class, "userName", proxyConfig, proxyUser);
+          setField(ProxyConfiguration.class, "noProxyHost", proxyConfig, noProxyHosts);
+          //Password does not work since a set password results in a "Secret" call which expects a running Jenkins
+          setField(ProxyConfiguration.class, "password", proxyConfig, null);
+          setField(ProxyConfiguration.class, "secretPassword", proxyConfig, null);
+          gitClient.setProxy(proxyConfig);
+        }
+
+        private void setField(Class<?> clazz, String fieldName, Object object, Object value) 
+              throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException
+        {
+          Field declaredField = clazz.getDeclaredField(fieldName);
+          declaredField.setAccessible(true);
+          declaredField.set(object, value);
+        }
+
+        private String getSystemProperty(String ... keyVariants)
+        {
+          for(String key : keyVariants) {
+            String value = System.getProperty(key);
+            if(value != null) return value;
+          }
+          return null;
         }
 
         String cmd(String args) throws IOException, InterruptedException {
@@ -147,7 +198,7 @@ public abstract class GitAPITestCase extends TestCase {
          */
         File touch(String path, String content) throws IOException {
             File f = file(path);
-            FileUtils.writeStringToFile(f, content);
+            FileUtils.writeStringToFile(f, content, "UTF-8");
             return f;
         }
 
@@ -156,7 +207,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         public String contentOf(String path) throws IOException {
-            return FileUtils.readFileToString(file(path));
+            return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
         /**
@@ -270,7 +321,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     @Override
     protected void tearDown() throws Exception {
+      try {
         temporaryDirectoryAllocator.dispose();
+      } catch (IOException2 e) {
+        e.printStackTrace(System.err);
+      }
     }
 
     private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
@@ -519,26 +574,33 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
     }
 
+    @Bug(20410)
     public void test_clean() throws Exception {
         w.init();
         w.commitEmpty("init");
 
-        w.touch("file", "content");
-        w.git.add("file");
-        w.git.commit("file");
+        /* String starts with a surrogate character, mathematical
+         * double struck small t as the first character of the file
+         * name. */
+        String fileName = "\uD835\uDD65\u5c4f\u5e55\u622a\u56fe.xml";
+        w.touch(fileName, "content " + fileName);
+        w.git.add(fileName);
+        w.git.commit(fileName);
 
         w.touch(".gitignore", ".test");
         w.git.add(".gitignore");
         w.git.commit("ignore");
 
-        w.touch("file1");
-        w.touch(".test");
-        w.touch("file", "new content");
+        String fileName1 = "\u5c4f\u5e55\u622a\u56fe-not-added.xml";
+        String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-not-added";
+        w.touch(fileName1);
+        w.touch(fileName2);
+        w.touch(fileName, "new content");
 
         w.git.clean();
-        assertFalse(w.exists("file1"));
-        assertFalse(w.exists(".test"));
-        assertEquals("content", w.contentOf("file"));
+        assertFalse(w.exists(fileName1));
+        assertFalse(w.exists(fileName2));
+        assertEquals("content " + fileName, w.contentOf(fileName));
         String status = w.cmd("git status");
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
     }
@@ -1266,6 +1328,44 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
     }
 
+    /**
+     * Confirm that JENKINS-8122 is fixed in the current
+     * implementation.  That bug reported that the tags from a
+     * submodule were being included in the set of tags associated
+     * with the parent repository.  This test clones a repository with
+     * submodules, updates those submodules, and compares the tags
+     * available in the repository before the submodule branch
+     * checkout, after the submodule branch checkout, and within one
+     * of the submodules.
+     */
+    @Bug(8122)
+    public void test_submodule_tags_not_fetched_into_parent() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        w.adaptCliGitClone("origin");
+
+        String tagsBefore = w.cmd("git tag");
+        Set<String> tagNamesBefore = w.git.getTagNames(null);
+        for (String tag : tagNamesBefore) {
+            assertTrue(tag + " not in " + tagsBefore, tagsBefore.contains(tag));
+        }
+
+        w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").execute();
+        w.git.submoduleUpdate().recursive(true).execute();
+
+        String tagsAfter = w.cmd("git tag");
+        Set<String> tagNamesAfter = w.git.getTagNames(null);
+        for (String tag : tagNamesAfter) {
+            assertTrue(tag + " not in " + tagsAfter, tagsAfter.contains(tag));
+        }
+
+        assertEquals("tags before != after", tagsBefore, tagsAfter);
+
+        GitClient gitNtp = w.git.subGit("modules/ntp");
+        Set<String> tagNamesSubmodule = gitNtp.getTagNames(null);
+        for (String tag : tagNamesSubmodule) {
+            assertFalse("Submodule tag " + tag + " in parent " + tagsAfter, tagsAfter.matches("^" + tag + "$"));
+        }
+    }
 
     public void test_getSubmodules() throws Exception {
         w.init();
@@ -1277,6 +1377,67 @@ public abstract class GitAPITestCase extends TestCase {
                         "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
                 r.toString()
         );
+    }
+
+    @NotImplementedInJGit
+    public void test_trackingSubmoduleBranches() throws Exception {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+            return;
+        }
+        w.init(); // empty repository
+
+        // create a new GIT repo.
+        //    master  -- <file1>C
+        //    branch1 -- <file1>C <file2>C
+        //    branch2 -- <file1>C <file3>C
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.touch("file1", "content1");
+        r.git.add("file1");
+        r.git.commit("submod-commit1");
+
+        r.git.branch("branch1");
+        r.git.checkout("branch1");
+        r.touch("file2", "content2");
+        r.git.add("file2");
+        r.git.commit("submod-commit2");
+        r.git.checkout("master");
+
+        r.git.branch("branch2");
+        r.git.checkout("branch2");
+        r.touch("file3", "content3");
+        r.git.add("file3");
+        r.git.commit("submod-commit3");
+        r.git.checkout("master");
+
+        // Setup variables for use in tests
+        String submodDir = "submod1" + java.util.UUID.randomUUID().toString();
+        String subFile1 = submodDir + File.separator + "file1";
+        String subFile2 = submodDir + File.separator + "file2";
+        String subFile3 = submodDir + File.separator + "file3";
+
+        // Add new GIT repo to w, at the master branch
+        w.git.addSubmodule(r.repoPath(), submodDir);
+        w.git.submoduleInit();
+        assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Switch to branch1
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch1").execute();
+        assertTrue("file2 does not exist and should because on branch1", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Switch to branch2
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch2").execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertTrue("file3 does not exist and should because on branch2", w.exists(subFile3));
+
+        // Switch to master
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "master").execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
     @NotImplementedInJGit
@@ -1902,7 +2063,7 @@ public abstract class GitAPITestCase extends TestCase {
          * reference to localMirror will help performance of the C git
          * implementation, since that will avoid copying content which
          * is already local. */
-        String gitUrl = "git://github.com/jenkinsci/git-client-plugin.git";
+        String gitUrl = "https://github.com/jenkinsci/git-client-plugin.git";
         if (SystemUtils.IS_OS_WINDOWS) {
             // Does not leak an open file
             w = clone(gitUrl);
