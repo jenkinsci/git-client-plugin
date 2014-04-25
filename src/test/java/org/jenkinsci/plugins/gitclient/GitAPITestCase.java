@@ -581,8 +581,12 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* String starts with a surrogate character, mathematical
          * double struck small t as the first character of the file
-         * name. */
-        String fileName = "\uD835\uDD65\u5c4f\u5e55\u622a\u56fe.xml";
+         * name. The last three characters of the file name are three
+         * different forms of the a-with-ring character. Refer to
+         * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
+         * for the source of those example characters.
+         */
+        String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b.xml";
         w.touch(fileName, "content " + fileName);
         w.git.add(fileName);
         w.git.commit(fileName);
