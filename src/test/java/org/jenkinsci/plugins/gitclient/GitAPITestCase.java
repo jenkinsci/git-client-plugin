@@ -11,6 +11,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.ProxyConfiguration;
@@ -46,6 +47,7 @@ import org.objenesis.ObjenesisStd;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -586,7 +588,7 @@ public abstract class GitAPITestCase extends TestCase {
          * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
          * for the source of those example characters.
          */
-        String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b.xml";
+        String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
         w.touch(fileName, "content " + fileName);
         w.git.add(fileName);
         w.git.commit(fileName);
@@ -595,18 +597,48 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add(".gitignore");
         w.git.commit("ignore");
 
-        String fileName1 = "\u5c4f\u5e55\u622a\u56fe-not-added.xml";
-        String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-not-added";
+        String dirName1 = "\u5c4f\u5e55\u622a\u56fe-dir-not-added";
+        String fileName1 = dirName1 + File.separator + "\u5c4f\u5e55\u622a\u56fe-fileName1-not-added.xml";
+        String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-fileName2-not-added";
+        assertTrue("Did not create dir " + dirName1, w.file(dirName1).mkdir());
         w.touch(fileName1);
         w.touch(fileName2);
         w.touch(fileName, "new content");
 
         w.git.clean();
+        assertFalse(w.exists(dirName1));
         assertFalse(w.exists(fileName1));
         assertFalse(w.exists(fileName2));
         assertEquals("content " + fileName, w.contentOf(fileName));
         String status = w.cmd("git status");
         assertTrue("unexpected status " + status, status.contains("working directory clean"));
+
+        /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
+        FilePath fp = new FilePath(w.file(fileName));
+        assertTrue(fp + " missing", fp.exists());
+
+        assertTrue("mkdir " + dirName1 + " failed", w.file(dirName1).mkdir());
+        assertTrue("dir " + dirName1 + " missing", w.file(dirName1).isDirectory());
+        FilePath dir1 = new FilePath(w.file(dirName1));
+        w.touch(fileName1);
+        assertTrue("Did not create file " + fileName1, w.file(fileName1).exists());
+
+        assertTrue(dir1 + " missing", dir1.exists());
+        dir1.deleteRecursive(); /* Fails on Linux JDK 7 with LANG=C, ok with LANG=en_US.UTF-8 */
+                                /* Java reports "Malformed input or input contains unmappable chacraters" */
+        assertFalse("Did not delete file " + fileName1, w.file(fileName1).exists());
+        assertFalse(dir1 + " not deleted", dir1.exists());
+
+        w.touch(fileName2);
+        FilePath fp2 = new FilePath(w.file(fileName2));
+
+        assertTrue(fp2 + " missing", fp2.exists());
+        fp2.delete();
+        assertFalse(fp2 + " not deleted", fp2.exists());
+
+        String dirContents = Arrays.toString((new File(w.repoPath())).listFiles());
+        String finalStatus = w.cmd("git status");
+        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean"));
     }
 
     public void test_fetch() throws Exception {
