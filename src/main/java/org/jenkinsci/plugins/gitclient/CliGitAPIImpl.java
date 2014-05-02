@@ -101,6 +101,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
 
+    // AABBCCDD where AA=major, BB=minor, CC=rev, DD=bugfix
     private long gitVersion = 0;
     private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
         return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
@@ -236,7 +237,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         "Fetching upstream changes from " + url);
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
-                args.add("fetch", "--tags", "--progress");
+                args.add("fetch", "--tags");
+                if (isAtLeastVersion(1,7,1,0))
+                    args.add("--progress");
 
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) cred = defaultCredentials;
