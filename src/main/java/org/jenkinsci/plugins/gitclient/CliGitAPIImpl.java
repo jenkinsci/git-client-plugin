@@ -1137,6 +1137,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
+                    if (!isAtLeastVersion(1,7,9,0))
+                        listener.getLogger().println("[WARNING] Installed git version too old for credentials support");
 
                     String urlWithCredentials = getGitCredentialsURL(url, credentials);
                     store = createGitCredentialsStore(urlWithCredentials);
