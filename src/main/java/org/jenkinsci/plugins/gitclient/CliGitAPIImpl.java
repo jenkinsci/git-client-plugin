@@ -1113,6 +1113,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File pass = null;
         File store = null;
         EnvVars env = environment;
+        boolean deleteWorkDir = false;
         try {
             if (credentials != null && credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
@@ -1149,7 +1150,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // form validation.
                     // See https://issues.jenkins-ci.org/browse/JENKINS-21016
                     if (workDir == null) {
-                        workDir = store.getParentFile();
+                        workDir = Util.createTempDir();
+                        deleteWorkDir = true;
                         init_().workspace(workDir.getAbsolutePath()).execute();
                     }
 
@@ -1171,6 +1173,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
                 } catch (GitException e) {
                     listener.getLogger().println("Could not remove the credential section from the git configuration");
+                }
+                if (deleteWorkDir) {
+                    try {
+                        Util.deleteContentsRecursive(workDir);
+                    } catch (IOException ioe) {
+                        listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
+                    }
                 }
             }
         }
