@@ -1278,9 +1278,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // GIT_ASKPASS supersed SSH_ASKPASS when set, so don't mask SSH passphrase when set
             environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo ");
         }
-        String command = "git " + StringUtils.join(args.toCommandArray(), " ");
+        String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
+            listener.getLogger().println(" > " + command);
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
