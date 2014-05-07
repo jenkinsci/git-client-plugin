@@ -1415,6 +1415,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public SubmoduleUpdateCommand timeout(Integer timeout) {
+                throw new UnsupportedOperationException("not implemented");
+            }
+
             public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 return this;
             }

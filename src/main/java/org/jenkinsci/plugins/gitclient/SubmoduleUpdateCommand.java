@@ -21,4 +21,6 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand ref(String ref);
 
     SubmoduleUpdateCommand useBranch(String submodule, String branchname);
+
+    SubmoduleUpdateCommand timeout(Integer timeout);
 }

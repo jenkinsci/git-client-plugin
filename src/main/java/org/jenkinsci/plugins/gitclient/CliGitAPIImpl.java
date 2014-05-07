@@ -676,6 +676,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean remoteTracking                 = false;
             String  ref                            = null;
             HashMap<String, String> submodBranch   = new HashMap<String, String>();
+            public Integer timeout;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -694,6 +695,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 this.submodBranch.put(submodule, branchname);
+                return this;
+            }
+
+            public SubmoduleUpdateCommand timeout(Integer timeout) {
+                this.timeout = timeout;
                 return this;
             }
 
@@ -724,7 +730,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("--reference", ref);
                 }
 
-                launchCommand(args);
+                launchCommandIn(args, workspace, environment, timeout);
             }
         };
     }
