@@ -57,6 +57,10 @@ public class RevisionTest {
         assertEquals(rev.getSha1(), objectId);
         rev.setSha1(newObjectId);
         assertEquals(rev.getSha1(), newObjectId);
+        assertEquals(rev.getSha1String(), newSHA1);
+        rev.setSha1(null);
+        assertEquals(rev.getSha1(), null);
+        assertEquals(rev.getSha1String(), "");
     }
 
     @Test
@@ -91,8 +95,25 @@ public class RevisionTest {
     @Test
     public void testContainsBranchName() {
         assertFalse(revision1.containsBranchName(branchName));
+
         assertFalse(revision2.containsBranchName(branchName));
+
         assertTrue(revisionWithBranches.containsBranchName(branchName));
+        String myBranchName = "working-branch-name";
+        assertFalse(revisionWithBranches.containsBranchName(myBranchName));
+
+        String mySHA1 = "aaaaaaaa72a6433fe503d294ebb7d5691b590269";
+        Branch myBranch = new Branch(myBranchName, ObjectId.fromString(mySHA1));
+        Collection<Branch> branches = new ArrayList();
+        Revision rev = new Revision(ObjectId.fromString(this.SHA1a), branches);
+        assertFalse(rev.containsBranchName(myBranchName));
+        branches.add(myBranch);
+        rev.setBranches(branches);
+        assertTrue(rev.containsBranchName(myBranchName));
+        assertFalse(rev.containsBranchName(branchName));
+        branches.add(branch);
+        rev.setBranches(branches);
+        assertTrue(rev.containsBranchName(branchName));
     }
 
     @Test
