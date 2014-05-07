@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.io.File;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
