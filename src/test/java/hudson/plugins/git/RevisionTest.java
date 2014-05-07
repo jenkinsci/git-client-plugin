@@ -36,7 +36,7 @@ public class RevisionTest {
         this.branchCollection.add(this.branch);
         this.revisionWithBranches = new Revision(ObjectId.fromString(this.SHA1a), branchCollection);
     }
-    
+
     @Test
     public void testGetSha1() {
         assertEquals(revision1.getSha1(), objectId);
