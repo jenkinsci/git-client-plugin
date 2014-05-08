@@ -872,7 +872,25 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Repository repo = getRepository();
             ObjectReader or = repo.newObjectReader();
             TreeWalk tw = new TreeWalk(or);
-            tw.reset(parent!=null ? parent.getTree() : commit.getParent(0).getTree(), commit.getTree());
+            RevTree revTree = null;
+            if (parent != null) {
+                /* Caller provided a parent commit, use it */
+                tw.reset(parent.getTree(), commit.getTree());
+            } else {
+                if (commit.getParentCount() > 0) {
+                    /* Caller failed to provide parent, but a parent
+                     * is available, so use the parent in the walk
+                     */
+                    tw.reset(commit.getParent(0).getTree(), commit.getTree());
+                } else {
+                    /* First commit in repo has 0 parent count, but
+                     * the TreeWalk requires exactly two nodes for its
+                     * walk.  Use the same node twice to satisfy
+                     * TreeWalk. See JENKINS-22343 for details.
+                     */
+                    tw.reset(commit.getTree(), commit.getTree());
+                }
+            }
             tw.setRecursive(true);
             tw.setFilter(TreeFilter.ANY_DIFF);
 
@@ -1347,7 +1365,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             PrintWriter pw = new PrintWriter(sw);
             RawFormatter f = new RawFormatter();
             for (RevCommit c : w) {
-                if (c.getParentCount()==1) {
+                if (c.getParentCount()<=1) {
                     f.format(c,null,pw);
                 } else {
                     // the effect of the -m option, which makes the diff produce for each parent of a merge commit

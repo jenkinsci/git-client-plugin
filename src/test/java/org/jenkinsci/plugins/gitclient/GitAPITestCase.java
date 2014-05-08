@@ -2055,12 +2055,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
 
-    /* Is implemented in JGit, but returns no results.  Temporarily
-     * marking this test as not implemented in JGit so that its
-     * failure does not distract from other development.
-     */
     @Bug(22343)
-    @NotImplementedInJGit
     public void test_show_revision_for_first_commit() throws Exception {
         w.init();
         w.touch("a");
