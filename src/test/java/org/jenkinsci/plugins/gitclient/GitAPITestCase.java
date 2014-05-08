@@ -325,7 +325,7 @@ public abstract class GitAPITestCase extends TestCase {
     protected void tearDown() throws Exception {
       try {
         temporaryDirectoryAllocator.dispose();
-      } catch (IOException2 e) {
+      } catch (IOException e) {
         e.printStackTrace(System.err);
       }
     }
