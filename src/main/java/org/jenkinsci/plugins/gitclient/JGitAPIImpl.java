@@ -872,7 +872,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Repository repo = getRepository();
             ObjectReader or = repo.newObjectReader();
             TreeWalk tw = new TreeWalk(or);
-            RevTree revTree = null;
             if (parent != null) {
                 /* Caller provided a parent commit, use it */
                 tw.reset(parent.getTree(), commit.getTree());
