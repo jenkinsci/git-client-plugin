@@ -349,27 +349,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public Set<Branch> getBranches() throws GitException {
-        Repository repo = null;
-        try {
-            repo = getRepository();
-            List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
-            Set<Branch> branches = new HashSet<Branch>(refs.size());
-            for (Ref ref : refs) {
-                branches.add(new Branch(ref));
-            }
-            return branches;
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
-        }
+        return getBranches(ListBranchCommand.ListMode.ALL);
     }
 
     public Set<Branch> getRemoteBranches() throws GitException {
+        return getBranches(ListBranchCommand.ListMode.REMOTE);
+    }
+
+    public Set<Branch> getLocalBranches() throws GitException {
+        return getBranches(null);
+    }
+
+    private Set<Branch> getBranches(ListBranchCommand.ListMode mode) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
-            List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+            List<Ref> refs = git(repo).branchList().setListMode(mode).call();
             Set<Branch> branches = new HashSet<Branch>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
@@ -381,7 +376,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (repo != null) repo.close();
         }
     }
-
+    
     public void tag(String name, String message) throws GitException {
         Repository repo = null;
         try {
@@ -527,11 +522,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
-        out.append("^.*/");
+        if(glob.startsWith("refs/") || glob.startsWith("*")) {
+            out.append("^");
+        } else {
+            out.append("^.*");
+        }
 
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
             switch(c) {
+            case '^': //needs to be escaped e.g. for refs/tags/v1.0^{}
+                out.append("\\^");
+                break;
+            case '{': //needs to be escaped e.g. for refs/tags/v1.0^{}
+                out.append("\\{");
+                break;
             case '*':
                 out.append(".*");
                 break;
@@ -553,20 +558,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.toString();
     }
 
-    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException, InterruptedException {
         try {
-            final String branchName = extractBranchNameFromBranchSpec(branchSpec);
-            String regexBranch = createRefRegexFromGlob(branchName);
+            final String[] branchSpecs = normalizeBranchSpec(branchSpec);
 
             Repository repo = openDummyRepository();
             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl));
             tn.setCredentialsProvider(getProvider());
             final FetchConnection c = tn.openFetch();
             try {
-                for (final Ref r : c.getRefs()) {
-                    if (r.getName().matches(regexBranch)) {
-                        return r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                for(String branch : branchSpecs) {
+                    String regexBranch = createRefRegexFromGlob(branch);
+                    List<ObjectId> matches = new ArrayList<ObjectId>();
+                    for (final Ref r : c.getRefs()) {
+                        if (r.getName().matches(regexBranch)) {
+                            matches.add(r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
+                        }
                     }
+                    if(matches.size() > 2) throw new AmbiguousResultException(
+                                "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s",
+                                branchSpec, c.getRefs());
+                    else if(matches.size() == 1) return matches.get(0); 
                 }
             } finally {
                 c.close();
@@ -600,6 +612,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    public String[] getRemoteNames() throws GitException {
+        final Repository repo = getRepository();
+        StoredConfig config = repo.getConfig();
+        Set<String> remotes = config.getSubsections("remote");
+        return remotes.toArray(new String[0]);
+    }
+    
     public String getRemoteUrl(String name) throws GitException {
         final Repository repo = getRepository();
         final String url = repo.getConfig().getString("remote",name,"url");

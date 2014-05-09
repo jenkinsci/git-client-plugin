@@ -126,6 +126,14 @@ public interface GitClient {
     boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException;
 
     /**
+     * From a given repository, get the names of all remotes
+     * @return names of remotes
+     * @throws GitException
+     * @throws InterruptedException
+     */
+    String[] getRemoteNames() throws GitException, InterruptedException;
+    
+    /**
      * From a given repository, get a remote's URL
      * @param name The name of the remote (e.g. origin)
      * @throws GitException if executing the git command fails
@@ -273,6 +281,8 @@ public interface GitClient {
     Set<Branch> getBranches() throws GitException, InterruptedException;
 
     Set<Branch> getRemoteBranches() throws GitException, InterruptedException;
+
+    Set<Branch> getLocalBranches() throws GitException, InterruptedException;
 
 
     // --- manage tags

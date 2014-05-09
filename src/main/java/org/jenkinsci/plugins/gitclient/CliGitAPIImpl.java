@@ -11,13 +11,16 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
+
 import com.google.common.collect.Lists;
+
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -797,6 +800,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         launchCommand( "config", "submodule."+name+".url", url );
     }
 
+    public String[] getRemoteNames() throws GitException, InterruptedException {
+        String result = launchCommand("remote");
+        return result.split("[\\r\\n]+");
+    }
+
     public @CheckForNull String getRemoteUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "remote."+name+".url" );
         return StringUtils.trim(firstLine(result));
@@ -1395,6 +1403,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return parseBranches(launchCommand("branch", "-a"));
     }
 
+    public Set<Branch> getLocalBranches() throws GitException, InterruptedException {
+      return parseBranches(launchCommand("branch"));
+    }
+    
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         Repository db = getRepository();
         try {
@@ -1757,21 +1769,86 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return heads;
     }
 
-    public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
-        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+    public ObjectId getHeadRev(final String url, final String branchSpec) throws GitException, InterruptedException {
+        final String[] branchSpecs = normalizeBranchSpec(branchSpec);
+        List<AmbiguousResultException> issues = new ArrayList<AmbiguousResultException>();
+        for(int i = 0; i < branchSpecs.length; i++) {
+            try {
+                String branch = branchSpecs[i];
+                ObjectId rev = getExactHeadRev(url, branch);
+                if(rev != null) return rev;
+            }
+            catch (AmbiguousResultException e) {
+                //Collect issues and try next possible branchSpec
+                issues.add(e);
+            }
+        }
+        if(!issues.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for(AmbiguousResultException e : issues) sb.append(e.getMessage()).append("\n");
+            throw new AmbiguousResultException(sb.toString(), issues.get(0));
+        }
+        return null;
+    }
+    
+    /**
+     * Returns the head rev for the specified branchSpec.<br/>
+     * If more than one branch matches the branchSpec it is checked if one of the results matches 100%.<br/>
+     * If the results are ambiguous an AmbiguousResultException is thrown.<br/>
+     * If nothing was found null is returned.
+     * 
+     * @param url
+     * @param exactbranchSpec
+     * @return the one ObjectId, null if nothing found or AmbiguousResultException in case the result is ambiguous
+     * @throws AmbiguousResultException in case the result is ambiguous
+     * @throws GitException
+     * @throws InterruptedException
+     */
+    private ObjectId getExactHeadRev(String url, String exactbranchSpec) throws GitException, InterruptedException
+    {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
-        args.add("-h");
+        //args.add("-h"); TODO: allow refs/tags, etc.?
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(branchName);
+        args.add(exactbranchSpec);
         String result = launchCommandWithCredentials(args, null, cred, url);
-        return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
+        List<GitObject> revs = parseObjectIds(result);
+
+        if(revs.size() < 1) {
+            return null;
+        } else if(revs.size() == 1) {
+            return revs.get(0).getSHA1();
+        } else {
+            for(GitObject rev : revs) {
+                if(rev.getName().equals(exactbranchSpec)) return rev.getSHA1();
+            }
+            throw new AmbiguousResultException(
+                        "More than one rev matches branchSpec ('%s') but none of them matches exactly: %s",
+                        exactbranchSpec, revs);
+        }
     }
-
-
+    
+    /**
+     * Parses the "git ls-remote" results and returns a list of RefObjectIds containing the ObjectId and the ref.
+     */
+    private List<GitObject> parseObjectIds(String result)
+    {
+        if(result == null || result.length() < 40) return Collections.<GitObject>emptyList();
+        List<GitObject> list = new ArrayList<GitObject>();
+        String[] lines = result.split("\n");
+        for(String line : lines) {
+          if(line.length() >= 40) {
+              String id = line.substring(0, 40);
+              String ref = line.substring(40).trim();
+              list.add(new GitObject(ref, ObjectId.fromString(id)));
+          }
+        }
+        return list;
+    }
+    
     //
     //
     // Legacy Implementation of IGitAPI
