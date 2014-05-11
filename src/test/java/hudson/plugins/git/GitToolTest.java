@@ -18,24 +18,24 @@ public class GitToolTest {
     @Rule public JenkinsRule j = new JenkinsRule();
 
     private GitTool gitTool;
-    
+
     @Before
     public void setUp() throws IOException {
         GitTool.onLoaded();
         gitTool = GitTool.getDefaultInstallation();
     }
-    
+
     @Test
     public void testGetGitExe() {
         assertEquals(SystemUtils.IS_OS_WINDOWS ? "git.exe" : "git", gitTool.getGitExe());
     }
 
-    /* @Test - Need to find a way to create a Node in a unit test */
+    @Test
     public void testForNode() throws Exception {
-        DumbSlave s = j.createSlave();
-        Node node = null;
+        DumbSlave slave = j.createSlave();
+        slave.setMode(Node.Mode.EXCLUSIVE);
         TaskListener log = StreamTaskListener.fromStdout();
-        GitTool newTool = gitTool.forNode(node, log);
+        GitTool newTool = gitTool.forNode(slave, log);
         assertEquals(gitTool.getGitExe(), newTool.getGitExe());
     }
 
@@ -51,5 +51,5 @@ public class GitToolTest {
         GitTool.DescriptorImpl descriptor = gitTool.getDescriptor();
         assertEquals("Git", descriptor.getDisplayName());
     }
-    
+
 }
