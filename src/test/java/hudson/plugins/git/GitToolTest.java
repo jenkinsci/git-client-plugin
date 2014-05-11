@@ -4,9 +4,12 @@ import hudson.EnvVars;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.DumbSlave;
+import hudson.tools.ToolDescriptor;
 import hudson.util.StreamTaskListener;
 import java.io.IOException;
+import java.util.List;
 import org.apache.commons.lang.SystemUtils;
+import org.jenkinsci.plugins.gitclient.JGitTool;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,6 +60,16 @@ public class GitToolTest {
         GitTool.DescriptorImpl descriptor = gitTool.getDescriptor();
         assertEquals(null, descriptor.getInstallation(""));
         assertEquals(null, descriptor.getInstallation("not-a-valid-git-install"));
+    }
+
+    @Test
+    public void testGetApplicableFromDescriptor() {
+        GitTool.DescriptorImpl gitDescriptor = gitTool.getDescriptor();
+        GitTool.DescriptorImpl jgitDescriptor = (new JGitTool()).getDescriptor();
+        List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDesccriptors();
+        assertTrue("git tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(gitDescriptor));
+        assertTrue("jgit tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitDescriptor));
+        assertEquals("Wrong tool descriptor count in " + toolDescriptors, 2, toolDescriptors.size());
     }
 
 }
