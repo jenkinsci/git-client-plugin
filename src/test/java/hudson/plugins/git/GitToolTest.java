@@ -52,4 +52,11 @@ public class GitToolTest {
         assertEquals("Git", descriptor.getDisplayName());
     }
 
+    @Test
+    public void testGetInstallationFromDescriptor() {
+        GitTool.DescriptorImpl descriptor = gitTool.getDescriptor();
+        assertEquals(null, descriptor.getInstallation(""));
+        assertEquals(null, descriptor.getInstallation("not-a-valid-git-install"));
+    }
+
 }
