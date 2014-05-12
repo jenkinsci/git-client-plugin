@@ -262,7 +262,7 @@ public abstract class GitAPITestCase extends TestCase {
                     String[] version = cmd("git --version").split(" ");
                     assertEquals("Wrong output value " + version, "git", version[0]);
                     assertEquals("Wrong output value " + version, "version", version[1]);
-                    assertTrue("Wrong version value " + version[2], version[2].startsWith("1"));
+                    assertTrue("Wrong version value " + version[2], version[2].startsWith("1") || version[2].startsWith("2"));
                     gitVersion = version[2].trim();
                 } else {
                     gitVersion = "";

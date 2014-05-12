@@ -75,7 +75,14 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.7.10.4", versions);
     }
 
-    public void test_git_version_debian_jessie() {
+    public void test_git_version_debian_testing() {
+        VersionTest[] versions = { new VersionTest(true,  2, 0,  0,  0),
+                                   new VersionTest(true,  1, 9, 99, 99),
+                                   new VersionTest(false, 2, 0,  1,  0) };
+        doTest("git version 2.0.0.rc0", versions);
+    }
+
+    public void test_git_version_debian_testing_old() {
         VersionTest[] versions = { new VersionTest(true,  1, 9,  0,  0),
                                    new VersionTest(true,  1, 8, 99, 99),
                                    new VersionTest(false, 1, 9,  1,  0) };
