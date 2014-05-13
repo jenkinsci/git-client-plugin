@@ -127,14 +127,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return true;
         }
 
-        public FormValidation doCheckHome(@QueryParameter File value)
-            throws IOException, ServletException {
-
+        public FormValidation doCheckHome(@QueryParameter File value) {
             Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
             String path = value.getPath();
 
             return FormValidation.validateExecutable(path);
-
         }
 
         public GitTool getInstallation(String name) {
