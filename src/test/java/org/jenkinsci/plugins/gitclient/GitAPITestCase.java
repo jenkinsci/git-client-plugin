@@ -253,23 +253,6 @@ public abstract class GitAPITestCase extends TestCase {
                 git.checkout(repoName + "/master", "master");
             }
         }
-
-        private String gitVersion = null;
-
-        String getGitVersion() throws IOException, InterruptedException {
-            if (gitVersion == null) {
-                if (git instanceof CliGitAPIImpl) {
-                    String[] version = cmd("git --version").split(" ");
-                    assertEquals("Wrong output value " + version, "git", version[0]);
-                    assertEquals("Wrong output value " + version, "version", version[1]);
-                    assertTrue("Wrong version value " + version[2], version[2].startsWith("1") || version[2].startsWith("2"));
-                    gitVersion = version[2].trim();
-                } else {
-                    gitVersion = "";
-                }
-            }
-            return gitVersion;
-        }
     }
     
     private WorkingArea w;
@@ -751,11 +734,11 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId expectedHead = bareCommit4;
         try {
             /* Assert that change did not arrive in repo if git
-             * command line 1.7 or 1.8.  Assert that change arrives in
+             * command line less than 1.9.  Assert that change arrives in
              * repo if git command line 1.9 or later. */
             newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
             assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
-            assertFalse("Wrong git version: " + newArea.getGitVersion(), newArea.getGitVersion().startsWith("1.7") || newArea.getGitVersion().startsWith("1.8"));
+            assertTrue("Wrong git version", w.cgit().isAtLeastVersion(1, 9, 0, 0));
             expectedHead = bareCommit5;
         } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
             String expectedSubString = "Missing commit " + bareCommit5.name();
@@ -2491,7 +2474,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private static final int MAX_PATH = 256;
 
-    private void commitFile(String dirName, String fileName, boolean longpathsEnabled) throws IOException, InterruptedException {
+    private void commitFile(String dirName, String fileName, boolean longpathsEnabled) throws Exception {
         assertTrue("Didn't mkdir " + dirName, w.file(dirName).mkdir());
 
         String fullName = dirName + File.separator + fileName;
@@ -2500,7 +2483,7 @@ public abstract class GitAPITestCase extends TestCase {
         boolean shouldThrow = !longpathsEnabled &&
             SystemUtils.IS_OS_WINDOWS &&
             w.git instanceof CliGitAPIImpl &&
-            w.getGitVersion().startsWith("1.9") &&
+            w.cgit().isAtLeastVersion(1, 9, 0, 0) &&
             (new File(fullName)).getAbsolutePath().length() > MAX_PATH;
 
         try {
