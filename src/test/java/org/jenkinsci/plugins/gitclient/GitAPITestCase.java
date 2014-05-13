@@ -2496,7 +2496,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file " + fullName + " missing at commit", w.file(fullName).exists());
     }
 
-    private void commitFile(String dirName, String fileName) throws IOException, InterruptedException {
+    private void commitFile(String dirName, String fileName) throws Exception {
         commitFile(dirName, fileName, false);
     }
 
