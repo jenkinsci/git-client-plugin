@@ -1174,10 +1174,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                     if(shouldProxy) {
+                        env = new EnvVars(env);
                         String http_proxy = "http://" + proxy.name + ":" + proxy.port + "/";
                         listener.getLogger().println("Setting http proxy: " + http_proxy);
-                        environment.put("http_proxy", http_proxy);
-                        environment.put("https_proxy", http_proxy);
+                        env.put("http_proxy", http_proxy);
+                        env.put("https_proxy", http_proxy);
                     }
                 }
             }
