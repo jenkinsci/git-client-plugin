@@ -1164,6 +1164,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
+
+                if (proxy != null) {
+                    boolean shouldProxy = true;
+                    for(Pattern p : proxy.getNoProxyHostPatterns()) {
+                        if(p.matcher(url.getHost()).matches()) {
+                            shouldProxy = false;
+                            break;
+                        }
+                    }
+                    if(shouldProxy) {
+                        String http_proxy = "http://" + proxy.name + ":" + proxy.port + "/";
+                        listener.getLogger().println("Setting http proxy: " + http_proxy);
+                        environment.put("http_proxy", http_proxy);
+                        environment.put("https_proxy", http_proxy);
+                    }
+                }
             }
 
             return launchCommandIn(args, workDir, env, timeout);
