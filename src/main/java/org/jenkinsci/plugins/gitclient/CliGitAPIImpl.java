@@ -1183,6 +1183,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (deleteWorkDir) {
                     try {
                         Util.deleteContentsRecursive(workDir);
+                        FileUtils.deleteDirectory( workDir );
                     } catch (IOException ioe) {
                         listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
                     }
