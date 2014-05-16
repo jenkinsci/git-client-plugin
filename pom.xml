@@ -5,14 +5,6 @@
     <artifactId>plugin</artifactId>
     <version>1.509</version>
   </parent>
-  
-  <licenses>
-    <license>
-      <name>The MIT License (MIT)</name>
-      <url>http://opensource.org/licenses/MIT</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
@@ -22,17 +14,13 @@
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
 
-  <repositories>
-    <repository>
-      <id>jgit-repository</id>
-      <name>Eclipse JGit Repository</name>
-      <url>https://repo.eclipse.org/content/groups/releases/</url>
-    </repository>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
+  <licenses>
+    <license>
+      <name>The MIT License (MIT)</name>
+      <url>http://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
 	<developers>
 		<developer>
@@ -47,6 +35,12 @@
 		</developer>
 	</developers>
 
+  <scm>
+    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
+    <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
+  </scm>
+
   <properties>
     <findbugs-maven-plugin.version>2.5.3</findbugs-maven-plugin.version>
     <jacoco-maven-plugin.version>0.7.0.201403182114</jacoco-maven-plugin.version>
@@ -54,7 +48,6 @@
   </properties>
 
   <dependencies>
-
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
@@ -89,7 +82,6 @@
       <artifactId>ssh-credentials</artifactId>
       <version>1.6.1</version>
     </dependency>
-
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
@@ -115,11 +107,17 @@
     </dependency>
   </dependencies>
 
-  <scm>
-    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-  </scm>
+  <repositories>
+    <repository>
+      <id>jgit-repository</id>
+      <name>Eclipse JGit Repository</name>
+      <url>https://repo.eclipse.org/content/groups/releases/</url>
+    </repository>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
 
     <pluginRepositories>
         <pluginRepository>
@@ -129,6 +127,27 @@
     </pluginRepositories>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>findbugs-maven-plugin</artifactId>
+                    <version>${findbugs-maven-plugin.version}</version>
+                    <configuration>
+                        <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
+                        <failOnError>${maven.findbugs.failure.strict}</failOnError>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -176,27 +195,6 @@
                 </executions>
             </plugin>
         </plugins>         
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>${findbugs-maven-plugin.version}</version>
-                    <configuration>
-                        <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
-                        <failOnError>${maven.findbugs.failure.strict}</failOnError>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
-    
-</project>  
+
+</project>
