@@ -137,14 +137,6 @@
             <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
             <failOnError>${maven.findbugs.failure.strict}</failOnError>
           </configuration>
-          <executions>
-            <execution>
-              <phase>verify</phase>
-              <goals>
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
