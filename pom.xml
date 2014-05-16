@@ -21,11 +21,6 @@
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-  </properties>
-
   <repositories>
     <repository>
       <id>jgit-repository</id>
