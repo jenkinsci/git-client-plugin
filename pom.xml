@@ -47,6 +47,11 @@
 		</developer>
 	</developers>
 
+  <properties>
+    <findbugs-maven-plugin.version>2.5.3</findbugs-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.7.0.201403182114</jacoco-maven-plugin.version>
+    <maven-surefire-plugin.version>2.17</maven-surefire-plugin.version>
+  </properties>
 
   <dependencies>
 
@@ -128,7 +133,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <!-- Sets the VM argument line used when unit tests are run. -->
                     <argLine>${surefireArgLine}</argLine>
@@ -137,7 +142,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.7.0.201403182114</version>
+                <version>${jacoco-maven-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>pre-unit-test</id>
@@ -176,7 +181,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>${findbugs-maven-plugin.version}</version>
                     <configuration>
                         <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
                         <failOnError>${maven.findbugs.failure.strict}</failOnError>
