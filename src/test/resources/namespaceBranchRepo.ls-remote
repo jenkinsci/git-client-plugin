@@ -1,0 +1,6 @@
+95d4d4afd66016f68c8c3e8534a2bd33a562a77a	HEAD
+1ec52ae49ca9de4a2c2ec3d84642fb179c987197	refs/heads/a_tests/b_namespace1/master
+183a4e24afd7ce3191728fb847976c0ded95f6bc	refs/heads/a_tests/b_namespace2/master
+1d97e5a1f64e77f2192fb899f91cd4eac3c0ccc6	refs/heads/a_tests/b_namespace3/master
+d258d8f12477b9724dbde59c992217e555cdb2ba	refs/heads/b_namespace3/master
+95d4d4afd66016f68c8c3e8534a2bd33a562a77a	refs/heads/master
