@@ -213,7 +213,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         String[] branchExploded = branchSpec.split("/");
         if (branchSpec.startsWith("remotes/")) {
             branch = "refs/heads/" + join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
-        } else if (branchSpec.startsWith("refs/")) {
+        } else if (branchSpec.startsWith("refs/remotes/")) {
+            branch = "refs/heads/" + join(copyOfRange(branchExploded, 3, branchExploded.length), "/");
+        } else if (branchSpec.startsWith("refs/heads/")) {
+            branch = branchSpec;
+        } else if (branchSpec.startsWith("refs/tags/")) {
+            //TODO: Discuss if tags shall be allowed.
+            //hudson.plugins.git.util.DefaultBuildChooser.getCandidateRevisions() in git plugin 2.0.1 explicitly allowed it.
             branch = branchSpec;
         } else {
             /* Old behaviour. 
