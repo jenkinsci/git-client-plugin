@@ -1759,8 +1759,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
         final String branchName = normalizeBranchSpec(branchSpec);
+
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
-        args.add("-h");
+        if(!branchName.startsWith("refs/tags/")) {
+            args.add("-h");
+        }
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
