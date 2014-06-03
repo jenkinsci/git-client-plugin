@@ -527,7 +527,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
-        out.append("^.*/");
+        if(glob.startsWith("refs/")) {
+            out.append("^");
+        } else {
+            out.append("^.*/");
+        }
 
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
@@ -555,7 +559,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try {
-            final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+            final String branchName = normalizeBranchSpec(branchSpec);
             String regexBranch = createRefRegexFromGlob(branchName);
 
             Repository repo = openDummyRepository();

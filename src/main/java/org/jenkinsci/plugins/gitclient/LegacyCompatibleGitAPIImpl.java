@@ -182,35 +182,50 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
     
     /**
-     * This method takes a branch spcecification and extracts the branch name.<br/>
+     * This method takes a branch specification and normalizes it get unambiguous results.
+     * This is the case when using "refs/heads/"<br/>
+     * <br/>
+     * TODO: Currently only for specs starting with "refs/heads/" the implementation is correct.
+     * All others branch specs should also be normalized to "refs/heads/" in order to get unambiguous results.
+     * To achieve this it is necessary to identify remote names in the branch spec and to discuss how
+     * to handle clashes (e.g. "remoteName/master" for branch "master" (refs/heads/master) in remote "remoteName" and branch "remoteName/master" (refs/heads/remoteName/master)). 
+     * <br/><br/>  
      * E.g.
      * <table>
-     * <tr><th align="left">branch spec</th><th align="left">branch name</th></tr>
-     * <tr><td><tt>master</tt></th><td><tt>master</td></tr>
-     * <tr><td><tt>feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td><tt>origin/master</tt></th><td><tt>master</td></tr>
-     * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>feature1</td></tr>
-     * <tr><td valign="top"><div style="color:red"><strike><tt>origin/namespaceA/fix15</tt></strike></div></th>
-     *     <td><div style="color:red"><strike><tt>namespaceA/fix15</tt></strike> *)</div></td><td></td></tr>
-     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</tt></td></tr>
-     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>namespaceA/fix15</td></tr>
+     * <tr><th align="left">branch spec</th><th align="left">normalized</th></tr>
+     * <tr><td><tt>master</tt></th><td><tt>master*</td></tr>
+     * <tr><td><tt>feature1</tt></th><td><tt>feature1*</td></tr>
+     * <tr><td><tt>feature1/master</tt></th><td><div style="color:red">master <strike><tt>feature1/master</tt></strike>*</div></td></tr>
+     * <tr><td><tt>origin/master</tt></th><td><tt>master*</td></tr>
+     * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1*</td></tr>
+     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>refs/heads/feature1</td></tr>
+     * <tr><td valign="top">origin/namespaceA/fix15</th>
+     *     <td><div style="color:red">fix15 <strike><tt>namespaceA/fix15</tt></strike>*</div></td><td></td></tr>
+     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>refs/heads/namespaceA/fix15</td></tr>
+     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
      * </table><br/>
-     * *) If hierarchical branch names with namespaces are used the branch specification has to start
-     *    with "<tt>remotes/&lt;repoId/</tt>". Otherwise it is hard to identify if the branch spec contains the remote repo id or not.<br/>
-     *    E.g. in <tt>repo2/feature1</tt> the <tt>repo2</tt> could be the repo id or it could belong to a hierarchical
-     *    branch name.
+     * *) TODO: Normalize to "refs/heads/"
      * @param branchSpec
-     * @return branch name
+     * @return normalized branchSpec
      */
-    protected String extractBranchNameFromBranchSpec(String branchSpec) {
+    protected String normalizeBranchSpec(String branchSpec) {
         String branch = branchSpec;
         String[] branchExploded = branchSpec.split("/");
         if (branchSpec.startsWith("remotes/")) {
-            branch = join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+            branch = "refs/heads/" + join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
+        } else if (branchSpec.startsWith("refs/remotes/")) {
+            branch = "refs/heads/" + join(copyOfRange(branchExploded, 3, branchExploded.length), "/");
         } else if (branchSpec.startsWith("refs/heads/")) {
-            branch = branchSpec.substring("refs/heads/".length());
+            branch = branchSpec;
+        } else if (branchSpec.startsWith("refs/tags/")) {
+            //TODO: Discuss if tags shall be allowed.
+            //hudson.plugins.git.util.DefaultBuildChooser.getCandidateRevisions() in git plugin 2.0.1 explicitly allowed it.
+            branch = branchSpec;
         } else {
+            /* Old behaviour. 
+             * TODO: Taking last element is not enough! Should be normalized to "refs/heads/..." as well.
+             * Assume branch "feature1/master". ls-remote will return multiple results. CliGitAPIImpl takes first one. 
+             */
             branch = branchExploded[branchExploded.length-1];
         }
         return branch;
