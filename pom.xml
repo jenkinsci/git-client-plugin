@@ -44,7 +44,7 @@
 
   <properties>
     <findbugs-maven-plugin.version>2.5.4</findbugs-maven-plugin.version>
-    <jacoco-maven-plugin.version>0.7.0.201403182114</jacoco-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.7.1.201405082137</jacoco-maven-plugin.version>
     <maven-surefire-plugin.version>2.17</maven-surefire-plugin.version>
   </properties>
 
