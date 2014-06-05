@@ -386,6 +386,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.getTagNames(tagPattern);
     }
 
+    public Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException {
+        return proxy.getTagNames(tagPattern);
+    }
+
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return proxy.getHeadRev(url);
     }
