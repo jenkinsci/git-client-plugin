@@ -5,7 +5,6 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.StringUtils;
 
-import com.gargoylesoftware.htmlunit.ProxyConfig;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
@@ -22,8 +21,6 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
-import hudson.util.IOException2;
-import hudson.util.ReflectionUtils;
 import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
@@ -40,8 +37,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.jvnet.hudson.test.Bug;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
-import org.objenesis.Objenesis;
-import org.objenesis.ObjenesisBase;
 import org.objenesis.ObjenesisStd;
 
 import java.io.*;
@@ -55,8 +50,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-
-import jenkins.model.Jenkins;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -1345,6 +1338,63 @@ public abstract class GitAPITestCase extends TestCase {
         // Run submodule update with remote tracking
         w.git.submoduleUpdate(true, true);
         assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
+    }
+
+    /* Check JENKINS-23424 - inconsistent handling of modified tracked
+     * files when performing a checkout in an existing directory.
+     * CliGitAPIImpl reverts tracked files, while JGitAPIImpl does
+     * not.
+     */
+    private void base_checkout_replaces_tracked_changes(boolean defineBranch) throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("JENKINS-23424").execute();
+        w.adaptCliGitClone("JENKINS-23424");
+        if (defineBranch) {
+            w.git.checkout().branch("master").ref("JENKINS-23424/master").deleteBranchIfExist(true).execute();
+        } else {
+            w.git.checkout().ref("JENKINS-23424/master").deleteBranchIfExist(true).execute();
+        }
+
+        /* Confirm first checkout */
+        String pomContent = w.contentOf("pom.xml");
+        assertTrue("Missing jacoco ref in master pom : " + pomContent, pomContent.contains("jacoco"));
+        assertFalse("Found untracked file", w.file("untracked-file").exists());
+
+        /* Modify the pom file by adding a comment */
+        String comment = " <!-- JENKINS-23424 comment -->";
+        if (w.git instanceof CliGitAPIImpl) {
+            /* JGit implementation does not reset modified tracked files */
+            w.touch("pom.xml", pomContent + comment);
+            assertTrue(w.contentOf("pom.xml").contains(comment));
+        }
+
+        /* Create an untracked file.  Both implementations retain
+         * untracked files across checkout.
+         */
+        w.touch("untracked-file", comment);
+        assertTrue("Missing untracked file", w.file("untracked-file").exists());
+
+        /* Checkout should erase local modification */
+        if (defineBranch) {
+            w.git.checkout().branch("1.4.x").ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true).execute();
+        } else {
+            w.git.checkout().ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true).execute();
+        }
+
+        /* Tracked file should not contain added comment, nor the jacoco reference */
+        pomContent = w.contentOf("pom.xml");
+        assertFalse("Found jacoco ref in 1.4.x pom : " + pomContent, pomContent.contains("jacoco"));
+        assertFalse("Found comment in 1.4.x pom", pomContent.contains(comment));
+        assertTrue("Missing untracked file", w.file("untracked-file").exists());
+    }
+
+    @Bug(23424)
+    public void test_checkout_replaces_tracked_changes() throws Exception {
+        base_checkout_replaces_tracked_changes(false);
+    }
+
+    @Bug(23424)
+    public void test_checkout_replaces_tracked_changes_with_branch() throws Exception {
+        base_checkout_replaces_tracked_changes(true);
     }
 
     /**
