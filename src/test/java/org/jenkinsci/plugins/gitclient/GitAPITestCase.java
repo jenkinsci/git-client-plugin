@@ -1385,11 +1385,9 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Modify the pom file by adding a comment */
         String comment = " <!-- JENKINS-23424 comment -->";
-        if (w.git instanceof CliGitAPIImpl) {
-            /* JGit implementation does not reset modified tracked files */
-            w.touch("pom.xml", pomContent + comment);
-            assertTrue(w.contentOf("pom.xml").contains(comment));
-        }
+        /* JGit implementation prior to 3.4.1 did not reset modified tracked files */
+        w.touch("pom.xml", pomContent + comment);
+        assertTrue(w.contentOf("pom.xml").contains(comment));
 
         /* Create an untracked file.  Both implementations retain
          * untracked files across checkout.
@@ -1398,11 +1396,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Missing untracked file", w.file("untracked-file").exists());
 
         /* Checkout should erase local modification */
+        CheckoutCommand cmd = w.git.checkout().ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true);
         if (defineBranch) {
-            w.git.checkout().branch("1.4.x").ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true).execute();
-        } else {
-            w.git.checkout().ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true).execute();
+            cmd.branch("1.4.x");
         }
+        cmd.execute();
 
         /* Tracked file should not contain added comment, nor the jacoco reference */
         pomContent = w.contentOf("pom.xml");
