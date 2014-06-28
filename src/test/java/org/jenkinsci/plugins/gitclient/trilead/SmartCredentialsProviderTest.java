@@ -204,6 +204,18 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
+    public void testClearCredentialsItem() {
+        String expectedUsername = "expected-add-credentials-username";
+        String secretValue = "secret-value";
+        Secret secret = Secret.fromString(secretValue);
+        StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        maskedUsername.setValue(credentials);
+        assertEquals(credentials, maskedUsername.getValue());
+        maskedUsername.clear();
+        assertNull(maskedUsername.getValue());
+    }
+
+    @Test
     public void testGetThrowsException() {
         String expectedUsername = "expected-add-credentials-username";
         Secret secret = Secret.fromString("password-secret");
