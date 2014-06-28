@@ -9,3 +9,5 @@ work/
 .project
 .classpath
 .settings/
+
+/nb-configuration.xml
