@@ -1163,6 +1163,30 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (repo != null) repo.close();
         }
     }
+    public Set<String> getRemoteTagNames(String tagPattern) throws GitException {
+        if (tagPattern == null) tagPattern = "*";
+
+        Repository repo = null;
+        try {
+            Set<String> tags = new HashSet<String>();
+            FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
+            repo = getRepository();
+            Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
+            for (Ref ref : refList.values()) {
+                String name = ref.getName().substring(R_TAGS.length());
+                matcher.reset();
+                matcher.append(name);
+                if (matcher.isMatch()) tags.add(name);
+            }
+            return tags;
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (InvalidPatternException e) {
+            throw new GitException(e);
+        } finally {
+            if (repo != null) repo.close();
+        }
+    }
 
     public boolean hasGitRepo() throws GitException {
         Repository repo = null;

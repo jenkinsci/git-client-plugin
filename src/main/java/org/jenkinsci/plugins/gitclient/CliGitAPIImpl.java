@@ -1729,6 +1729,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new FilePath(workspace);
     }
 
+    public Set<String> getRemoteTagNames(String tagPattern) throws GitException {
+        try {
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            args.add("ls-remote", "--tags");
+            args.add(getRemoteUrl("origin"));
+            if (tagPattern != null)
+                args.add(tagPattern);
+            String result = launchCommandIn(args, workspace);
+            Set<String> tags = new HashSet<String>();
+            BufferedReader rdr = new BufferedReader(new StringReader(result));
+            String tag;
+            while ((tag = rdr.readLine()) != null) {
+                // Add the tag name without the SHA1
+                tags.add(tag.replaceFirst(".*refs/tags/", ""));
+            }
+            return tags;
+        } catch (Exception e) {
+            throw new GitException("Error retrieving remote tag names", e);
+        }
+    }
+
     public Set<String> getTagNames(String tagPattern) throws GitException {
         try {
             ArgumentListBuilder args = new ArgumentListBuilder();
