@@ -1123,6 +1123,58 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("test 123!\n* multi-line tag message\n padded", w.git.getTagMessage("test"));
     }
 
+    public void test_create_ref() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.ref("refs/testing/testref");
+        assertTrue("test ref not created", w.cmd("git show-ref").contains("refs/testing/testref"));
+    }
+
+    public void test_delete_ref() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.ref("refs/testing/testref");
+        w.git.ref("refs/testing/anotherref");
+        w.git.deleteRef("refs/testing/testref");
+        String refs = w.cmd("git show-ref");
+        assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
+        assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
+        w.git.deleteRef("refs/testing/testref");  // Double-deletes do nothing.
+    }
+
+    public void test_list_refs_with_prefix() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.ref("refs/testing/testref");
+        w.git.ref("refs/testing/nested/anotherref");
+        w.git.ref("refs/testing/nested/yetanotherref");
+        Set<String> refs = w.git.getRefNames("refs/testing/nested/");
+        assertFalse("ref testref listed", refs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", refs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
+    }
+
+    public void test_list_refs_without_prefix() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.ref("refs/testing/testref");
+        w.git.ref("refs/testing/nested/anotherref");
+        w.git.ref("refs/testing/nested/yetanotherref");
+        Set<String> allRefs = w.git.getRefNames("");
+        assertTrue("ref testref not listed", allRefs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", allRefs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", allRefs.contains("refs/testing/nested/yetanotherref"));
+    }
+
+    public void test_ref_exists() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.ref("refs/testing/testref");
+        assertTrue(w.git.refExists("refs/testing/testref"));
+        assertFalse(w.git.refExists("refs/testing/testref_notfound"));
+        assertFalse(w.git.refExists("refs/testing2/yetanother"));
+    }
+
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
         w.init();
         w.commitEmpty("init");
