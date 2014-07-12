@@ -157,6 +157,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.2.msysgit.0", versions);
     }
 
+    public void test_git_version_windows_1940() {
+        VersionTest[] versions = {
+            new VersionTest(true,  1, 9, 4,  0),
+            new VersionTest(true,  1, 9, 3, 99),
+            new VersionTest(false, 1, 9, 4,  1)
+        };
+        doTest("git version 1.9.4.msysgit.0", versions);
+    }
+
     public void test_git_version_redhat_5() {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 2, 1),
@@ -191,5 +200,29 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(false, 1, 8, 3, 3)
         };
         doTest("git version 1.8.3.2", versions);
+    }
+    
+    private boolean isOneOfThese(String[] pathList, String actualPath) {
+    	boolean result = false;
+    	
+    	for (String path:pathList) {
+    		result = result || path.equalsIgnoreCase(actualPath);
+    	}
+    	
+		return result;
+    }
+    
+    public void test_git_ssh_executable_found() {
+    	//given
+    	CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
+    	String[] expected = {
+    			"C:\\git\\bin\\ssh.exe", 
+    			"C:\\Program Files\\git\\bin\\ssh.exe", 
+    			"C:\\Program Files (x86)\\git\\bin\\ssh.exe"};
+    	//when
+    	File actual = git.getSSHExecutable();
+    	
+    	//then
+    	assertTrue("Git SSH not found!", isOneOfThese(expected, actual.getAbsolutePath()));
     }
 }
