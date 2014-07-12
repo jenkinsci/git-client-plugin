@@ -127,7 +127,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         int gitBugfixVersion = 0;
 
         try {
-            String[] fields = version.split(" ")[2].split("\\.");
+			/*
+			 * msysgit adds one more term to the version number. So instead of
+			 * Major.Minor.Rev.Bugfix, it displays something like
+			 * Major.Minor.Rev.msysgit.BugFix. This approach makes git-plugin
+			 * not to recognize msysgit as an official version. We must remove
+			 * the inserted term from the sentence before set the variables.
+			 */
+
+			String[] fields = version.split(" ")[2].replaceAll("msysgit.", "")
+					.split("\\.");
 
             gitMajorVersion  = Integer.parseInt(fields[0]);
             gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
@@ -1251,33 +1260,88 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
 
-    private File createWindowsGitSSH(File key) throws IOException {
-        File ssh = File.createTempFile("ssh", ".bat");
-        // windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
+	/* package */File getSSHExecutable() {
+		// windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
+		// if the user chooses the default path. Otherwise we have to attempt to
+		// retrieve the path from the GIT_SSH environment variable.
 
-        String progFiles = System.getenv("ProgramFiles");
-        String sshPath = "/Git/bin/ssh.exe";
-        File sshexe = new File(progFiles + sshPath);
-        if (!sshexe.exists()) {
-          // try the (x86) version for 64-bit Windows builds
-          sshexe = new File(progFiles + " (x86)" + sshPath);
-        }
-        if (!sshexe.exists()) {
-		  // try the ssh.exe next to known git.exe
-		  sshexe = new File(new File(gitExe).getParentFile(), "ssh.exe");
-        }
+		// sshexe will return the ssh executable used by git.
+		File sshexe;
+		String envssh = "";
 
-        if (!sshexe.exists()) {
-            throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
-        }
-        PrintWriter w = new PrintWriter(ssh);
-        w .println("@echo off");
-        w .println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
-        w.flush();
-        w.close();
-        ssh.setExecutable(true);
-        return ssh;
-    }
+		try {
+			// trying to get the value from the env var GIT_SSH, which is
+			// recommended to be set.
+
+			// StringBuilder throws an exception if a null value is set.
+			envssh = System.getenv("GIT_SSH") == null ? "" : System
+					.getenv("GIT_SSH");
+
+		} catch (Exception e) {
+			envssh = "";
+		}
+
+		StringBuilder gitSSH = new StringBuilder(envssh);
+
+		if (gitSSH.toString().isEmpty()) {
+			// if GIT_SSH is not set, try to get the value from the default
+			// installer path.
+			gitSSH.setLength(0);
+			gitSSH.append(System.getenv("ProgramFiles"));
+			gitSSH.append("/Git/bin/ssh.exe");
+
+			sshexe = new File(gitSSH.toString());
+		} else {
+			sshexe = new File(gitSSH.toString());
+		}
+
+		if (!sshexe.exists()) {
+			// try the (x86) version for 64-bit Windows builds
+			gitSSH.setLength(0);
+			gitSSH.append(System.getenv("ProgramFiles"));
+			gitSSH.append(" (x86)");
+			gitSSH.append("/Git/bin/ssh.exe");
+			sshexe = new File(gitSSH.toString());
+		}
+
+		if (!sshexe.exists()) {
+			// try the ssh.exe next to known git.exe
+			// but if we are using the git from cmd folder instead of bin
+			// the file will not be found anyway.
+			String tmpPath = new File(gitExe).getParent();
+			tmpPath = tmpPath.replace("/cmd/", "/bin/");
+
+			gitSSH.setLength(0);
+			gitSSH.append(tmpPath);
+			gitSSH.append("ssh.exe");
+
+			sshexe = new File(gitSSH.toString());
+		}
+
+		if (!sshexe.exists()) {
+			throw new RuntimeException(
+					"git plugin only support official git client http://git-scm.com/download/win");
+		} else {
+			return sshexe;
+		}
+
+	}
+
+	private File createWindowsGitSSH(File key) throws IOException {
+		File ssh = File.createTempFile("ssh", ".bat");
+
+		File sshexe = getSSHExecutable();
+
+		PrintWriter w = new PrintWriter(ssh);
+		w.println("@echo off");
+		w.println("\"" + sshexe.getAbsolutePath() + "\" -i \""
+				+ key.getAbsolutePath() + "\" -o StrictHostKeyChecking=no %* ");
+		w.flush();
+		w.close();
+		ssh.setExecutable(true);
+
+		return ssh;
+	}
 
     private File createUnixGitSSH(File key) throws IOException {
         File ssh = File.createTempFile("ssh", ".sh");
