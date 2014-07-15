@@ -1258,26 +1258,99 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
+    private String getPathToExe(String userGitExe) {
+        userGitExe = userGitExe.toLowerCase();
+
+        String cmd;
+        String exe;
+        if (userGitExe.endsWith(".exe")) {
+            cmd = userGitExe.replace(".exe", ".cmd");
+            exe = userGitExe;
+        } else if (userGitExe.endsWith(".cmd")) {
+            cmd = userGitExe;
+            exe = userGitExe.replace(".cmd", ".exe");
+        } else {
+            cmd = userGitExe + ".cmd";
+            exe = userGitExe + ".exe";
+        }
+
+        String[] pathDirs = System.getenv("PATH").split(File.pathSeparator);
+
+        for (String pathDir : pathDirs) {
+            File exeFile = new File(pathDir, exe);
+            if (exeFile.exists()) {
+                return exeFile.getAbsolutePath();
+            }
+            File cmdFile = new File(pathDir, cmd);
+            if (cmdFile.exists()) {
+                return cmdFile.getAbsolutePath();
+            }
+        }
+
+        return null;
+    }
+
+    private File getFileFromEnv(String envVar, String suffix) {
+        String envValue = System.getenv(envVar);
+        if (envValue == null) {
+            return null;
+        }
+        return new File(envValue + suffix);       
+    }
+
+    private File getSSHExeFromGitExeParentDir(String userGitExe) {
+        String parentPath = new File(userGitExe).getParent();
+        if (parentPath == null) {
+            return null;
+        }
+        return new File(parentPath + "\\ssh.exe");
+    }
+
+    /* package */ File getSSHExecutable() {
+        // First check the GIT_SSH environment variable
+        File sshexe = getFileFromEnv("GIT_SSH", "");
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
+
+        // Check Program Files
+        sshexe = getFileFromEnv("ProgramFiles", "\\Git\\bin\\ssh.exe");
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
+
+        // Check Program Files(x86) for 64 bit computer
+        sshexe = getFileFromEnv("ProgramFiles(x86)", "\\Git\\bin\\ssh.exe");
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
+
+        // Search for an ssh.exe near the git executable.
+        sshexe = getSSHExeFromGitExeParentDir(gitExe);
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
+
+        // Search for git on the PATH, then look near it
+        String gitPath = getPathToExe(gitExe);
+        if (gitPath != null) {
+            // In case we are using msysgit from the cmd directory
+            // instead of the bin directory, replace cmd with bin in
+            // the path while trying to find ssh.exe.
+            sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/cmd/", "/bin/").replace("\\cmd\\", "\\bin\\"));
+            if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
+        }
+
+        throw new RuntimeException("ssh executable not found. The git plugin only supports official git client http://git-scm.com/download/win");
+    }
 
     private File createWindowsGitSSH(File key) throws IOException {
         File ssh = File.createTempFile("ssh", ".bat");
-        // windows git installer place C:\Program Files\Git\cmd\git.exe in PATH
 
-        String progFiles = System.getenv("ProgramFiles");
-        String sshPath = "/Git/bin/ssh.exe";
-        File sshexe = new File(progFiles + sshPath);
-        if (!sshexe.exists()) {
-          // try the (x86) version for 64-bit Windows builds
-          sshexe = new File(progFiles + " (x86)" + sshPath);
-        }
-        if (!sshexe.exists()) {
-		  // try the ssh.exe next to known git.exe
-		  sshexe = new File(new File(gitExe).getParentFile(), "ssh.exe");
-        }
+        File sshexe = getSSHExecutable();
 
-        if (!sshexe.exists()) {
-            throw new RuntimeException("git plugin only support official git client http://git-scm.com/download/win");
-        }
         PrintWriter w = new PrintWriter(ssh);
         w .println("@echo off");
         w .println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");

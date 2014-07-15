@@ -2619,4 +2619,14 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git config --add core.longpaths false");
         check_longpaths(false);
     }
+
+    @NotImplementedInJGit
+    /* Not implemented in JGit because it is not needed there */
+    public void test_git_ssh_executable_found_on_windows() throws Exception {
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            return;
+        }
+
+        assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
+    }
 }
