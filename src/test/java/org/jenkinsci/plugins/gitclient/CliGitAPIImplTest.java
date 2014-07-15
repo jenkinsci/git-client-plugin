@@ -157,6 +157,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.2.msysgit.0", versions);
     }
 
+    public void test_git_version_windows_1940() {
+        VersionTest[] versions = {
+            new VersionTest(true,  1, 9, 4,  0),
+            new VersionTest(true,  1, 9, 3, 99),
+            new VersionTest(false, 1, 9, 4,  1)
+        };
+        doTest("git version 1.9.4.msysgit.0", versions);
+    }
+
     public void test_git_version_redhat_5() {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 2, 1),

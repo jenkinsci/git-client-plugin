@@ -127,7 +127,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         int gitBugfixVersion = 0;
 
         try {
-            String[] fields = version.split(" ")[2].split("\\.");
+            /*
+             * msysgit adds one more term to the version number. So
+             * instead of Major.Minor.Rev.Bugfix, it displays
+             * something like Major.Minor.Rev.msysgit.BugFix. This
+             * removes the inserted term from the version string
+             * before parsing.
+             */
+
+            String[] fields = version.split(" ")[2].replaceAll("msysgit.", "").split("\\.");
 
             gitMajorVersion  = Integer.parseInt(fields[0]);
             gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
