@@ -188,7 +188,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * TODO: Currently only for specs starting with "refs/heads/" the implementation is correct.
      * All others branch specs should also be normalized to "refs/heads/" in order to get unambiguous results.
      * To achieve this it is necessary to identify remote names in the branch spec and to discuss how
-     * to handle clashes (e.g. "remoteName/master" for branch "master" (refs/heads/master) in remote "remoteName" and branch "remoteName/master" (refs/heads/remoteName/master)). 
+     * to handle clashes (e.g. "remoteName/master" for branch "master" (refs/heads/master) in remote "remoteName" and branch "remoteName/master" (refs/heads/remoteName/master)).
+     * <br/><br/>
+     * Existing behavior is intentionally being retained so that
+     * current use cases are not disrupted by a behavioral change.
      * <br/><br/>  
      * E.g.
      * <table>
@@ -206,7 +209,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * </table><br/>
      * *) TODO: Normalize to "refs/heads/"
      * @param branchSpec
-     * @return normalized branchSpec
+     * @return normalized branch name
      */
     protected String extractBranchNameFromBranchSpec(String branchSpec) {
         String branch = branchSpec;
@@ -222,9 +225,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             //hudson.plugins.git.util.DefaultBuildChooser.getCandidateRevisions() in git plugin 2.0.1 explicitly allowed it.
             branch = branchSpec;
         } else {
-            /* Old behaviour. 
-             * TODO: Taking last element is not enough! Should be normalized to "refs/heads/..." as well.
-             * Assume branch "feature1/master". ls-remote will return multiple results. CliGitAPIImpl takes first one. 
+            /* Old behaviour - retained for compatibility.
+             *
+             * Takes last element, though taking last element is not
+             * enough. Should be normalized to "refs/heads/..." as
+             * well, but would break compatibility with some existing
+             * jobs.
              */
             branch = branchExploded[branchExploded.length-1];
         }
