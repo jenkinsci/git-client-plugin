@@ -208,7 +208,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @param branchSpec
      * @return normalized branchSpec
      */
-    protected String normalizeBranchSpec(String branchSpec) {
+    protected String extractBranchNameFromBranchSpec(String branchSpec) {
         String branch = branchSpec;
         String[] branchExploded = branchSpec.split("/");
         if (branchSpec.startsWith("remotes/")) {

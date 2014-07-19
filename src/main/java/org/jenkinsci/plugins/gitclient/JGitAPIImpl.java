@@ -559,7 +559,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try {
-            final String branchName = normalizeBranchSpec(branchSpec);
+            final String branchName = extractBranchNameFromBranchSpec(branchSpec);
             String regexBranch = createRefRegexFromGlob(branchName);
 
             Repository repo = openDummyRepository();
