@@ -1858,7 +1858,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
         final String branchName = extractBranchNameFromBranchSpec(branchSpec);
-
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         if(!branchName.startsWith("refs/tags/")) {
             args.add("-h");
