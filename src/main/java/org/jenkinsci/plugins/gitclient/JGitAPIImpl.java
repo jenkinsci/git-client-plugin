@@ -499,6 +499,91 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         fetch(remoteName, new RefSpec[] {refspec});
     }
 
+    public void ref(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	Repository repo = null;
+	try {
+	    repo = getRepository();
+	    RefUpdate refUpdate = repo.updateRef(refName);
+	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    switch (refUpdate.forceUpdate()) {
+	    case NOT_ATTEMPTED:
+	    case LOCK_FAILURE:
+	    case REJECTED:
+	    case REJECTED_CURRENT_BRANCH:
+	    case IO_FAILURE:
+	    case RENAMED:
+		throw new GitException("Could not update " + refName + " to HEAD");
+	    }
+	} catch (IOException e) {
+	    throw new GitException("Could not update " + refName + " to HEAD", e);
+	} finally {
+	    if (repo != null) repo.close();
+	}
+    }
+
+    public boolean refExists(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	Repository repo = null;
+	try {
+	    repo = getRepository();
+	    Ref ref = repo.getRefDatabase().getRef(refName);
+	    return ref != null;
+	} catch (IOException e) {
+	    throw new GitException("Error checking ref " + refName, e);
+	} finally {
+	    if (repo != null) repo.close();
+	}
+    }
+
+    public void deleteRef(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	Repository repo = null;
+	try {
+	    repo = getRepository();
+	    RefUpdate refUpdate = repo.updateRef(refName);
+	    // Required, even though this is a forced delete.
+	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setForceUpdate(true);
+	    switch (refUpdate.delete()) {
+	    case NOT_ATTEMPTED:
+	    case LOCK_FAILURE:
+	    case REJECTED:
+	    case REJECTED_CURRENT_BRANCH:
+	    case IO_FAILURE:
+	    case RENAMED:
+		throw new GitException("Could not delete " + refName);
+	    }
+	} catch (IOException e) {
+	    throw new GitException("Could not delete " + refName, e);
+	} finally {
+	    if (repo != null) repo.close();
+	}
+    }
+
+    public Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException {
+	if (refPrefix.isEmpty()) {
+	    refPrefix = RefDatabase.ALL;
+	} else {
+	    refPrefix = refPrefix.replace(' ', '_');
+	}
+	Repository repo = null;
+	try {
+	    repo = getRepository();
+	    Map<String, Ref> refList = repo.getRefDatabase().getRefs(refPrefix);
+	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
+	    Set<String> refs = new HashSet<String>(refList.size());
+	    for (Ref ref : refList.values()) {
+		refs.add(ref.getName());
+	    }
+	    return refs;
+	} catch (IOException e) {
+	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
+	} finally {
+	    if (repo != null) repo.close();
+	}
+    }
+
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
         try {

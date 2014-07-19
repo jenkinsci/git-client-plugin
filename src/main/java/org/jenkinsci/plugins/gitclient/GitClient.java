@@ -291,6 +291,35 @@ public interface GitClient {
     Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException;
 
 
+    // --- manage refs
+
+    /**
+     * Create (or update) a ref. The ref will reference HEAD (equivalent to <tt>git update-ref ... HEAD</tt>).
+     * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
+     */
+    void ref(String refName) throws GitException, InterruptedException;
+
+    /**
+     * Check if a ref exists. Equivalent to comparing the return code of <tt>git show-ref</tt> to zero.
+     * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
+     * @return True if the ref exists, false otherwse.
+     */
+    boolean refExists(String refName) throws GitException, InterruptedException;
+
+    /**
+     * Deletes a ref. Has no effect if the ref does not exist, equivalent to <tt>git update-ref -d</tt>.
+     * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
+     */
+    void deleteRef(String refName) throws GitException, InterruptedException;
+
+    /**
+     * List refs with the given prefix. Equivalent to <tt>git for-each-ref --format="%(refname)"</tt>.
+     * @param refPrefix the literal prefix any ref returned will have. The empty string implies all.
+     * @return a set of refs, each beginning with the given prefix. Empty if none.
+     */
+    Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException;
+    
+
     // --- lookup revision
 
     Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException;

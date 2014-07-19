@@ -1837,6 +1837,56 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
 
+    public void ref(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	try {
+	    launchCommand("update-ref", refName, "HEAD");
+	} catch (GitException e) {
+	    throw new GitException("Could not apply ref " + refName, e);
+	}
+    }
+
+    public boolean refExists(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	try {
+	    launchCommand("show-ref", refName);
+	    return true; // If show-ref returned zero, ref exists.
+	} catch (GitException e) {
+	    return false; // If show-ref returned non-zero, ref doesn't exist.
+	}
+    }
+
+    public void deleteRef(String refName) throws GitException, InterruptedException {
+	refName = refName.replace(' ', '_');
+	try {
+	    launchCommand("update-ref", "-d", refName);
+	} catch (GitException e) {
+	    throw new GitException("Could not delete ref " + refName, e);
+	}
+    }
+
+    public Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException {
+	if (refPrefix.isEmpty()) {
+	    refPrefix = "refs/";
+	} else {
+	    refPrefix = refPrefix.replace(' ', '_');
+	}
+	try {
+	    String result = launchCommand("for-each-ref", "--format=%(refname)", refPrefix);
+	    Set<String> refs = new HashSet<String>();
+	    BufferedReader rdr = new BufferedReader(new StringReader(result));
+	    String ref;
+	    while ((ref = rdr.readLine()) != null) {
+		refs.add(ref);
+	    }
+	    return refs;
+	} catch (GitException e) { // Should be a multi-catch statement in the future.
+	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
+	} catch (IOException e) {
+	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
+	}
+    }
+
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
