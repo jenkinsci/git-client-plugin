@@ -65,7 +65,7 @@ import java.util.zip.ZipFile;
 public abstract class GitAPITestCase extends TestCase {
 
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
-
+    
     protected hudson.EnvVars env = new hudson.EnvVars();
     protected TaskListener listener = StreamTaskListener.fromStdout();
 
@@ -74,7 +74,7 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * One local workspace of a Git repository on a temporary directory
      * that gets automatically cleaned up in the end.
-     *
+     * 
      * Every test case automatically gets one in {@link #w} but additional ones can be created if multi-repository
      * interactions need to be tested.
      */
@@ -159,7 +159,7 @@ public abstract class GitAPITestCase extends TestCase {
         String repoPath() {
             return repo.getAbsolutePath();
         }
-
+        
         WorkingArea init() throws IOException, InterruptedException {
             git.init();
             return this;
@@ -255,7 +255,7 @@ public abstract class GitAPITestCase extends TestCase {
             }
         }
     }
-
+    
     private WorkingArea w;
 
     WorkingArea clone(String src) throws Exception {
@@ -274,7 +274,7 @@ public abstract class GitAPITestCase extends TestCase {
     /* HEAD ref of local mirror - all read access should use getMirrorHead */
     private static ObjectId mirrorHead = null;
 
-    private ObjectId getMirrorHead() throws IOException, InterruptedException
+    private ObjectId getMirrorHead() throws IOException, InterruptedException 
     {
         if (mirrorHead == null) {
             final String mirrorPath = new File(localMirror()).getAbsolutePath();
@@ -511,7 +511,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
-
+    
     @Deprecated
     public void test_getRemoteURL_two_args() throws Exception {
         w.init();
@@ -777,7 +777,7 @@ public abstract class GitAPITestCase extends TestCase {
          * and later, it should be bareCommit5. */
         assertEquals("null refSpec fetch modified local repo", expectedHead, newArea.head());
 
-        try {
+        try { 
             /* Fetch into newArea repo with invalid repo name and no RefSpec */
             newArea.git.fetch("invalid-remote-name");
             fail("Should have thrown an exception");
@@ -1780,7 +1780,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(all,out.toString());
     }
 
-        public void test_revList_() throws Exception {
+    public void test_revList_() throws Exception {
         List<ObjectId> oidList = new ArrayList<ObjectId>();
         w.init();
         w.cmd("git pull " + localMirror());
