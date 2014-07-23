@@ -318,7 +318,6 @@ public interface GitClient {
      * @return a set of refs, each beginning with the given prefix. Empty if none.
      */
     Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException;
-    
 
     // --- lookup revision
 

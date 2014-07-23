@@ -192,7 +192,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * <br/><br/>
      * Existing behavior is intentionally being retained so that
      * current use cases are not disrupted by a behavioral change.
-     * <br/><br/>  
+     * <br/><br/>
      * E.g.
      * <table>
      * <tr><th align="left">branch spec</th><th align="left">normalized</th></tr>
