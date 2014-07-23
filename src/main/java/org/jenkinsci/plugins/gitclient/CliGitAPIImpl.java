@@ -1715,7 +1715,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                List<ObjectId> entries = new ArrayList<ObjectId>();
                 ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
 
                 if (firstParent) {
