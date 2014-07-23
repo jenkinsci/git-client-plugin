@@ -1944,7 +1944,7 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * Test getHeadRev with namespaces in the branch name
      * and branch specs containing only the simple branch name.
-     * 
+     *
      * TODO: This does not work yet! Fix behaviour and enable test!
      */
     public void test_getHeadRev_namespaces_withSimpleBranchNames() throws Exception {
@@ -1953,7 +1953,7 @@ public abstract class GitAPITestCase extends TestCase {
         Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
         w = clone(tempRemoteDir.getAbsolutePath());
         final String remote = tempRemoteDir.getAbsolutePath();
-        
+
         final String[][] checkBranchSpecs = {};
 //TODO: Fix and enable test
 //                {
@@ -1963,7 +1963,7 @@ public abstract class GitAPITestCase extends TestCase {
 //                {"a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
 //                {"b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")}
 //                };
-        
+
         for(String[] branch : checkBranchSpecs) {
             final ObjectId objectId = ObjectId.fromString(branch[1]);
             final String branchName = branch[0];
@@ -1983,7 +1983,7 @@ public abstract class GitAPITestCase extends TestCase {
         Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
         w = clone(tempRemoteDir.getAbsolutePath());
         final String remote = tempRemoteDir.getAbsolutePath();
-        
+
         final String[][] checkBranchSpecs = {
                 {"refs/heads/master", commits.getProperty("refs/heads/master")},
                 {"refs/heads/a_tests/b_namespace1/master", commits.getProperty("refs/heads/a_tests/b_namespace1/master")},
@@ -1991,14 +1991,14 @@ public abstract class GitAPITestCase extends TestCase {
                 {"refs/heads/a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
                 {"refs/heads/b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")}
                 };
-        
+
         for(String[] branch : checkBranchSpecs) {
             final ObjectId objectId = ObjectId.fromString(branch[1]);
             final String branchName = branch[0];
             check_getHeadRev(remote, branchName, objectId);
         }
     }
-    
+
     /**
      * Test getHeadRev with branch names which SHOULD BE reserved by Git, but ARE NOT.<br/>
      * E.g. it is possible to create the following LOCAL (!) branches:<br/>
@@ -2008,7 +2008,7 @@ public abstract class GitAPITestCase extends TestCase {
      *   <li> refs/heads/master
      *   <li> refs/remotes/origin/master
      * </ul>
-     * 
+     *
      * TODO: This does not work yet! Fix behaviour and enable test!
      */
     public void test_getHeadRev_reservedBranchNames() throws Exception {
@@ -2016,27 +2016,27 @@ public abstract class GitAPITestCase extends TestCase {
          *   e.g. origin/master means the branch is called "origin/master", it does NOT mean master branch in remote "origin".
          *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
          */
-        
+
         File tempRemoteDir = temporaryDirectoryAllocator.allocate();
         extract(new ZipFile("src/test/resources/specialBranchRepo.zip"), tempRemoteDir);
         Properties commits = parseLsRemote(new File("src/test/resources/specialBranchRepo.ls-remote"));
         w = clone(tempRemoteDir.getAbsolutePath());
-        
+
         /*
          * The first entry in the String[2] is the branch name (as specified in the job config).
-         * The second entry is the expected commit.   
+         * The second entry is the expected commit.
          */
         final String[][] checkBranchSpecs = {};
 //TODO: Fix and enable test
 //                {
 //                {"master", commits.getProperty("refs/heads/master")},
-//                {"origin/master", commits.getProperty("refs/heads/master")}, 
+//                {"origin/master", commits.getProperty("refs/heads/master")},
 //                {"remotes/origin/master", commits.getProperty("refs/heads/master")},
-//                {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")}, 
+//                {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")},
 //                {"refs/heads/origin/master", commits.getProperty("refs/heads/origin/master")},
 //                {"refs/heads/master", commits.getProperty("refs/heads/master")},
 //                {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
-//                {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")}, 
+//                {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")},
 //                {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}
 //                };
         for(String[] branch : checkBranchSpecs) {
@@ -2086,13 +2086,13 @@ public abstract class GitAPITestCase extends TestCase {
                     expectedObjectId, remote, branchSpec), expectedObjectId);
         assertNotNull(String.format("Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'.",
                     expectedObjectId, remote, branchSpec), actualObjectId);
-        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n" + 
-                "Actual %s,\nExpected %s\n", branchSpec, remote, 
+        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n" +
+                "Actual %s,\nExpected %s\n", branchSpec, remote,
                 StringUtils.join(getBranches(actualObjectId), ", "),
                 StringUtils.join(getBranches(expectedObjectId), ", ")),
                 expectedObjectId, actualObjectId);
     }
-    
+
     private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException
     {
         List<Branch> matches = new ArrayList<Branch>();
@@ -2102,8 +2102,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
         return unmodifiableList(matches);
     }
-
-
 
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
         final ObjectId originMaster = w.git.getHeadRev(repoURL, "origin/master");
