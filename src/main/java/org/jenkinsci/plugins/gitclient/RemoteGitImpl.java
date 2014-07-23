@@ -414,6 +414,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.revParse(revName);
     }
 
+    public RevListCommand revList_() {
+        return proxy.revList_();
+    }
+
     public List<ObjectId> revListAll() throws GitException, InterruptedException {
         return proxy.revListAll();
     }

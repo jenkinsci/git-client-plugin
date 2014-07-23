@@ -1687,12 +1687,83 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return entries;
     }
 
+    public RevListCommand revList_() {
+        return new RevListCommand() {
+            public boolean all;
+            public boolean firstParent;
+            public String refspec;
+            public List<ObjectId> out;
+
+            public RevListCommand all() {
+                this.all = true;
+                return this;
+            }
+
+            public RevListCommand firstParent() {
+                this.firstParent = true;
+                return this;
+            }
+
+            public RevListCommand to(List<ObjectId> revs){
+                this.out = revs;
+                return this;
+            }
+
+            public RevListCommand reference(String reference){
+                this.refspec = reference;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                List<ObjectId> entries = new ArrayList<ObjectId>();
+                ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
+
+                if (firstParent) {
+                   args.add("--first-parent");
+                }
+
+                if (all) {
+                   args.add("--all");
+                }
+
+                if (refspec != null) {
+                   args.add(refspec);
+                }
+
+                String result = launchCommand(args);
+                BufferedReader rdr = new BufferedReader(new StringReader(result));
+                String line;
+
+                try {
+                    while ((line = rdr.readLine()) != null) {
+                        // Add the SHA1
+                        out.add(ObjectId.fromString(line));
+                    }
+                } catch (IOException e) {
+                    throw new GitException("Error parsing rev list", e);
+                }
+            }
+        };
+    }
+
+
+
     public List<ObjectId> revListAll() throws GitException, InterruptedException {
-        return doRevList("--all");
+        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        RevListCommand revListCommand = revList_();
+        revListCommand.all();
+        revListCommand.to(oidList);
+        revListCommand.execute();
+        return oidList;
     }
 
     public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
-        return doRevList(ref);
+        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        RevListCommand revListCommand = revList_();
+        revListCommand.reference(ref);
+        revListCommand.to(oidList);
+        revListCommand.execute();
+        return oidList;
     }
 
     private List<ObjectId> doRevList(String... extraArgs) throws GitException, InterruptedException {
@@ -2055,7 +2126,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
             if(shouldProxy) {
-                final HttpHost proxyHost = new HttpHost(proxy.name, proxy.port); 
+                final HttpHost proxyHost = new HttpHost(proxy.name, proxy.port);
                 final HttpRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxyHost);
                 clientBuilder.setRoutePlanner(routePlanner);
                 if (proxy.getUserName() != null && proxy.getPassword() != null)
@@ -2096,7 +2167,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             for (String candidate : candidates) {
                 HttpGet get = new HttpGet(candidate);
-                
+
                 final CloseableHttpResponse response = client.execute(get);
                 try{
                     status = response.getStatusLine().getStatusCode();
