@@ -269,10 +269,33 @@ public abstract class GitAPITestCase extends TestCase {
         return new WorkingArea(x.repo);
     }
 
+    private boolean timeoutVisibleInCurrentTest;
 
+    /**
+     * Returns true if the current test is expected to have a timeout
+     * value visible written to the listener log.  Used to assert
+     * timeout values are passed correctly through the layers without
+     * requiring that the timeout actually expire.
+     * @see #setTimeoutVisibleInCurrentTest(boolean)
+     */
+    protected boolean getTimeoutVisibleInCurrentTest() {
+        return timeoutVisibleInCurrentTest;
+    }
+
+    /**
+     * Pass visible = true to cause the current test to assert that a
+     * timeout value should be reported in at least one of the log
+     * entries.
+     * @param visible set to false if current test performs no operation which should report a timeout value
+     * @see #getTimeoutVisibleInCurrentTest()
+     */
+    protected void setTimeoutVisibleInCurrentTest(boolean visible) {
+        timeoutVisibleInCurrentTest = visible;
+    }
 
     @Override
     protected void setUp() throws Exception {
+        setTimeoutVisibleInCurrentTest(true);
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -328,7 +351,9 @@ public abstract class GitAPITestCase extends TestCase {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
-            // assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring("timeout="));
+            if (getTimeoutVisibleInCurrentTest()) {
+                assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring(" # timeout="));
+            }
         } finally {
             handler.close();
         }
@@ -1230,6 +1255,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_hasGitRepo_without_git_directory() throws Exception
     {
+        setTimeoutVisibleInCurrentTest(false);
         assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
     }
 
@@ -2009,6 +2035,7 @@ public abstract class GitAPITestCase extends TestCase {
      * TODO: This does not work yet! Fix behaviour and enable test!
      */
     public void test_getHeadRev_namespaces_withSimpleBranchNames() throws Exception {
+        setTimeoutVisibleInCurrentTest(false);
         File tempRemoteDir = temporaryDirectoryAllocator.allocate();
         extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
         Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
@@ -2078,6 +2105,7 @@ public abstract class GitAPITestCase extends TestCase {
          *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
          */
 
+        setTimeoutVisibleInCurrentTest(false);
         File tempRemoteDir = temporaryDirectoryAllocator.allocate();
         extract(new ZipFile("src/test/resources/specialBranchRepo.zip"), tempRemoteDir);
         Properties commits = parseLsRemote(new File("src/test/resources/specialBranchRepo.ls-remote"));
@@ -2862,6 +2890,7 @@ public abstract class GitAPITestCase extends TestCase {
     @NotImplementedInJGit
     /* Not implemented in JGit because it is not needed there */
     public void test_git_ssh_executable_found_on_windows() throws Exception {
+        setTimeoutVisibleInCurrentTest(false);
         if (!SystemUtils.IS_OS_WINDOWS) {
             return;
         }

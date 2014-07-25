@@ -23,6 +23,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         Method m = getClass().getMethod(getName());
 
         if (m.getAnnotation(NotImplementedInCliGit.class) != null) {
+            setTimeoutVisibleInCurrentTest(false); /* No timeout if not implemented in CliGitAPIImpl */
             return; // skip this test case
         }
         try {
@@ -54,6 +55,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
     }
 
     private void doTest(String versionOutput, VersionTest[] versions) {
+        setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
         for (int i = 0; i < versions.length; ++i) {

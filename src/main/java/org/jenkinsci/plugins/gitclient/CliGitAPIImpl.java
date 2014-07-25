@@ -1395,7 +1395,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
-            listener.getLogger().println(" > " + command);
+            listener.getLogger().println(" > " + command + (timeout != null ? " # timeout=" + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);

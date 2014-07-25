@@ -14,6 +14,14 @@ public class JGitAPIImplTest extends GitAPITestCase {
     }
 
     /**
+     * timeout is not implemented in JGitAPIImpl.
+     */
+    @Override
+    protected boolean getTimeoutVisibleInCurrentTest() {
+        return false;
+    }
+
+    /**
      * Override to run the test and assert its state.
      *
      * @throws Throwable if any exception is thrown
