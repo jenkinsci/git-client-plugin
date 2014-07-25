@@ -38,14 +38,14 @@ public class CliGitAPIImplTest extends GitAPITestCase {
 
     class VersionTest {
 
-        public boolean assertTrueOrFalse;
+        public boolean expectedIsAtLeastVersion;
         public int major;
         public int minor;
         public int rev;
         public int bugfix;
 
         public VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
-            this.assertTrueOrFalse = assertTrueOrFalse;
+            this.expectedIsAtLeastVersion = assertTrueOrFalse;
             this.major = major;
             this.minor = minor;
             this.rev = rev;
@@ -57,7 +57,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
         for (int i = 0; i < versions.length; ++i) {
-            if (versions[i].assertTrueOrFalse) {
+            if (versions[i].expectedIsAtLeastVersion) {
                 assertTrue("Failed " + versionOutput, git.isAtLeastVersion(
                         versions[i].major,
                         versions[i].minor,
