@@ -1,0 +1,44 @@
+package org.jenkinsci.plugins.gitclient;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+
+/**
+ * Recording log handler to allow assertions on logging.
+ *
+ * @author <a href="mailto:mark.earl.waite@gmail.com">Mark Waite</a>
+ */
+public class LogHandler extends Handler {
+
+    private List<String> messages = new ArrayList<String>();
+
+    @Override
+    public void publish(LogRecord lr) {
+        messages.add(lr.getMessage());
+    }
+
+    @Override
+    public void flush() {
+    }
+
+    @Override
+    public void close() throws SecurityException {
+        messages = new ArrayList<String>();
+    }
+    
+    /* package */ List<String> getMessages() {
+        return messages;
+    }
+
+    /* package */ boolean containsMessageSubstring(String messageSubstring) {
+        for (String message : messages) {
+            if (message.indexOf(messageSubstring) >= 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+}

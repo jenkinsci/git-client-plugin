@@ -23,7 +23,6 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOUtils;
-import hudson.util.StreamTaskListener;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.FileUtils;
@@ -54,6 +53,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -67,7 +68,11 @@ public abstract class GitAPITestCase extends TestCase {
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
     
     protected hudson.EnvVars env = new hudson.EnvVars();
-    protected TaskListener listener = StreamTaskListener.fromStdout();
+    protected TaskListener listener;
+
+    protected LogHandler handler = null;
+    private int logCount = 0;
+    private static final String LOGGING_STARTED = "Logging started";
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
 
@@ -268,6 +273,14 @@ public abstract class GitAPITestCase extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
+        Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
+        handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+        listener.getLogger().println(LOGGING_STARTED);
         w = new WorkingArea();
     }
 
@@ -307,11 +320,18 @@ public abstract class GitAPITestCase extends TestCase {
 
     @Override
     protected void tearDown() throws Exception {
-      try {
-        temporaryDirectoryAllocator.dispose();
-      } catch (IOException e) {
-        e.printStackTrace(System.err);
-      }
+        try {
+            temporaryDirectoryAllocator.dispose();
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+        }
+        try {
+            String messages = StringUtils.join(handler.getMessages(), ";");
+            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            // assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring("timeout="));
+        } finally {
+            handler.close();
+        }
     }
 
     private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
