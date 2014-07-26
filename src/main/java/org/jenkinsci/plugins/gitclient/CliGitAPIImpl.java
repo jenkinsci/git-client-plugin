@@ -94,6 +94,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private static final long serialVersionUID = 1;
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
+    static final String TIMEOUT_LOG_PREFIX = " # timeout=";
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
@@ -1395,7 +1396,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
-            listener.getLogger().println(" > " + command + (timeout != null ? " # timeout=" + timeout : ""));
+            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);

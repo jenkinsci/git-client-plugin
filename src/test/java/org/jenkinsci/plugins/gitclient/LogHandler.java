@@ -41,4 +41,15 @@ public class LogHandler extends Handler {
         return false;
     }
 
+    /* package */ List<Integer> getTimeouts() {
+        List<Integer> timeouts = new ArrayList<Integer>();
+        for (String message : getMessages()) {
+            int start = message.indexOf(CliGitAPIImpl.TIMEOUT_LOG_PREFIX);
+            if (start >= 0) {
+                String timeoutStr = message.substring(start + CliGitAPIImpl.TIMEOUT_LOG_PREFIX.length());
+                timeouts.add(Integer.parseInt(timeoutStr));
+            }
+        }
+        return timeouts;
+    }
 }
