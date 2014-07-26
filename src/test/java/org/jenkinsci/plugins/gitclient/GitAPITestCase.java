@@ -356,7 +356,7 @@ public abstract class GitAPITestCase extends TestCase {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             if (getTimeoutVisibleInCurrentTest()) {
-                assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring(" # timeout="));
+                assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring(CliGitAPIImpl.TIMEOUT_PREFIX));
             }
         } finally {
             handler.close();
