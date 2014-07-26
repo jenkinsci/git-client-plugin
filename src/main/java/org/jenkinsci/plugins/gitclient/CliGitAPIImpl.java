@@ -326,7 +326,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String origin = "origin";
             String reference;
             boolean shallow,shared;
-			Integer timeout;
+            Integer timeout;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -1530,6 +1530,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public String branch;
             public boolean deleteBranch;
             public List<String> sparseCheckoutPaths = Collections.emptyList();
+            public Integer timeout;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -1551,6 +1552,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CheckoutCommand timeout(Integer timeout) {
+                this.timeout = timeout;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 try {
 
@@ -1568,10 +1574,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             }
                         }
                     }
-                    if (branch != null)
-                        launchCommand("checkout", "-b", branch, ref);
-                    else
-                        launchCommand("checkout", "-f", ref);
+                    ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("checkout");
+                    if (branch != null) {
+                        args.add("-b");
+                        args.add(branch);
+                    } else {
+                        args.add("-f");
+                    }
+                    args.add(ref);
+                    launchCommandIn(args, workspace, environment, timeout);
                 } catch (GitException e) {
                     if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
                         throw new GitLockFailedException("Could not lock repository. Please try again", e);

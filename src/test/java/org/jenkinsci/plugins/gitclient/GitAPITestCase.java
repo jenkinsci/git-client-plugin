@@ -427,6 +427,24 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Wrong committer in " + revision, revision.get(3).startsWith("committer " + committerName + " <" + committerEmail + "> "));
     }
 
+    private void setExpectedTimeoutWithAdjustedEnd(final int newTimeout) {
+        setExpectedTimeoutWithAdjustedEnd(newTimeout, 1);
+    }
+
+    private void setExpectedTimeoutWithAdjustedEnd(final int newTimeout, int adjustmentCount) {
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+            for (int i = 0; i < adjustmentCount; i++) {
+                expected.set(size - i - 1, newTimeout);
+            }
+            setExpectedTimeouts(expected);
+        }
+    }
+
     /** Clone arguments include:
      *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
      *   shallow() - no relevant assertion of success or failure of this argument
@@ -448,15 +466,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
 
-        if (getTimeoutVisibleInCurrentTest()) {
-            int size = handler.getTimeouts().size();
-            List<Integer> expected = new ArrayList<Integer>(size);
-            for (int i = 0; i < size; i++) {
-                expected.add(i, CliGitAPIImpl.TIMEOUT);
-            }
-            expected.set(0, newTimeout);
-            setExpectedTimeouts(expected);
-        }
+        setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
 
     public void test_clone_repositoryName() throws IOException, InterruptedException
@@ -975,15 +985,7 @@ public abstract class GitAPITestCase extends TestCase {
         final int newTimeout = 3;
         newArea.git.fetch_().timeout(newTimeout).from(new URIish(bare.repo.toString()), refSpecs).execute();
 
-        if (getTimeoutVisibleInCurrentTest()) {
-            int size = handler.getTimeouts().size();
-            List<Integer> expected = new ArrayList<Integer>(size);
-            for (int i = 0; i < size; i++) {
-                expected.add(i, CliGitAPIImpl.TIMEOUT);
-            }
-            expected.set(size - 1, newTimeout);
-            setExpectedTimeouts(expected);
-        }
+        setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
 
     /**
@@ -1688,16 +1690,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
 
-        if (getTimeoutVisibleInCurrentTest()) {
-            int size = handler.getTimeouts().size();
-            List<Integer> expected = new ArrayList<Integer>(size);
-            for (int i = 0; i < size; i++) {
-                expected.add(i, CliGitAPIImpl.TIMEOUT);
-            }
-            expected.set(size - 2, newTimeout);
-            expected.set(size - 1, newTimeout);
-            setExpectedTimeouts(expected);
-        }
+        setExpectedTimeoutWithAdjustedEnd(newTimeout, 2);
     }
 
     @NotImplementedInJGit
@@ -1740,10 +1733,15 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(null).execute();
+        int newTimeout = 3; /* Check that checkout timeout is honored */
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(null)
+            .timeout(newTimeout)
+            .execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
+
+        setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
 
     public void test_clone_no_checkout() throws Exception {

@@ -15,4 +15,6 @@ public interface CheckoutCommand extends GitCommand {
     CheckoutCommand deleteBranchIfExist(boolean deleteBranch);
 
     CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths);
+
+    CheckoutCommand timeout(Integer timeout);
 }

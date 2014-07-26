@@ -189,6 +189,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CheckoutCommand timeout(Integer timeout) {
+                // noop in jgit
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
 
                 if(! sparseCheckoutPaths.isEmpty()) {
@@ -432,8 +437,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand timeout(Integer timeout) {
-            	// noop in jgit
-            	return this;
+                // noop in jgit
+                return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -1325,8 +1330,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public URIish remote;
             public String refspec;
             public boolean force;
-            // timeout is not yet implemented for push
-            // public Integer timeout;
 
             public PushCommand to(URIish remote) {
                 this.remote = remote;
@@ -1344,7 +1347,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public PushCommand timeout(Integer timeout) {
-                throw new UnsupportedOperationException("Not implemented yet");
+            	// noop in jgit
+                return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -1568,7 +1572,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public SubmoduleUpdateCommand timeout(Integer timeout) {
-                throw new UnsupportedOperationException("not implemented");
+            	// noop in jgit
+                return this;
             }
 
             public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
