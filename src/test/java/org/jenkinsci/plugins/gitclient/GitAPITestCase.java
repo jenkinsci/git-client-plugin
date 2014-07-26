@@ -349,6 +349,10 @@ public abstract class GitAPITestCase extends TestCase {
             e.printStackTrace(System.err);
         }
         try {
+            List<Integer> timeouts = handler.getTimeouts();
+            for (Integer timeout : timeouts) {
+                assertEquals("Wrong timeout value from " + timeouts, CliGitAPIImpl.TIMEOUT, timeout.intValue());
+            }
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             if (getTimeoutVisibleInCurrentTest()) {
