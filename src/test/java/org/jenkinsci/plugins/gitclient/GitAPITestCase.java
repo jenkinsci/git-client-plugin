@@ -1629,6 +1629,7 @@ public abstract class GitAPITestCase extends TestCase {
     @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            setTimeoutVisibleInCurrentTest(false);
             System.err.println("git must be at least 1.8.2 to do tracking submodules.");
             return;
         }
@@ -1682,9 +1683,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file3 does not exist and should because on branch2", w.exists(subFile3));
 
         // Switch to master
-        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "master").execute();
+        int newTimeout = 6;
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "master").timeout(newTimeout).execute();
         assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+            expected.set(size - 2, newTimeout);
+            expected.set(size - 1, newTimeout);
+            setExpectedTimeouts(expected);
+        }
     }
 
     @NotImplementedInJGit
