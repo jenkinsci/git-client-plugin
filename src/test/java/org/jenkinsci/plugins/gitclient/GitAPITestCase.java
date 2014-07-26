@@ -964,13 +964,15 @@ public abstract class GitAPITestCase extends TestCase {
         final int newTimeout = 3;
         newArea.git.fetch_().timeout(newTimeout).from(new URIish(bare.repo.toString()), refSpecs).execute();
 
-        int size = handler.getTimeouts().size();
-        List<Integer> expected = new ArrayList<Integer>(size);
-        for (int i = 0; i < size; i++) {
-            expected.add(i, CliGitAPIImpl.TIMEOUT);
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+            expected.set(size - 1, newTimeout);
+            setExpectedTimeouts(expected);
         }
-        expected.set(size - 1, newTimeout);
-        setExpectedTimeouts(expected);
     }
 
     /**
