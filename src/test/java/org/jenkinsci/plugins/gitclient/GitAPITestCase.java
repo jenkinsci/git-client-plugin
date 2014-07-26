@@ -293,9 +293,23 @@ public abstract class GitAPITestCase extends TestCase {
         timeoutVisibleInCurrentTest = visible;
     }
 
+    /**
+     * Array of integer values of the timeouts expected to be passed
+     * to launchCommandIn() during a single test.  Simplest to use if
+     * the first or the last call in a test is the only call which
+     * uses a timeout, then the expectedTimeouts array can be
+     * initialized with default values in all the other entries.
+     */
+    private List<Integer> expectedTimeouts = null;
+
+    protected void setExpectedTimeouts(List<Integer> timeouts) {
+        expectedTimeouts = timeouts;
+    }
+
     @Override
     protected void setUp() throws Exception {
         setTimeoutVisibleInCurrentTest(true);
+        expectedTimeouts = null;
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -338,6 +352,19 @@ public abstract class GitAPITestCase extends TestCase {
         throw new IllegalStateException();
     }
 
+    private void checkTimeout() {
+        List<Integer> timeouts = handler.getTimeouts();
+        if (expectedTimeouts == null) {
+            expectedTimeouts = new ArrayList<Integer>();
+            for (int i = 0; i < timeouts.size(); i++) {
+                expectedTimeouts.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+        } else {
+            assertEquals("Wrong timeout count", expectedTimeouts.size(), timeouts.size());
+            timeouts = expectedTimeouts;
+        }
+        assertEquals("Wrong timeout", expectedTimeouts, timeouts);
+    }
 
     protected abstract GitClient setupGitAPI(File ws) throws Exception;
 
@@ -349,14 +376,10 @@ public abstract class GitAPITestCase extends TestCase {
             e.printStackTrace(System.err);
         }
         try {
-            List<Integer> timeouts = handler.getTimeouts();
-            for (Integer timeout : timeouts) {
-                assertEquals("Wrong timeout value from " + timeouts, CliGitAPIImpl.TIMEOUT, timeout.intValue());
-            }
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             if (getTimeoutVisibleInCurrentTest()) {
-                assertTrue("Timeout not in log: " + messages, handler.containsMessageSubstring(CliGitAPIImpl.TIMEOUT_PREFIX));
+                checkTimeout();
             }
         } finally {
             handler.close();
@@ -937,7 +960,17 @@ public abstract class GitAPITestCase extends TestCase {
         newArea.git.prune(new RemoteConfig(new Config(), "origin"));
 
         /* Fetch should succeed */
-        newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
+        /* Adjusted timeout will be logged, should not change test results */
+        final int newTimeout = 3;
+        newArea.git.fetch_().timeout(newTimeout).from(new URIish(bare.repo.toString()), refSpecs).execute();
+
+        int size = handler.getTimeouts().size();
+        List<Integer> expected = new ArrayList<Integer>(size);
+        for (int i = 0; i < size; i++) {
+            expected.add(i, CliGitAPIImpl.TIMEOUT);
+        }
+        expected.set(size - 1, newTimeout);
+        setExpectedTimeouts(expected);
     }
 
     /**
