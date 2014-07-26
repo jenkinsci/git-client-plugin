@@ -440,12 +440,23 @@ public abstract class GitAPITestCase extends TestCase {
      */
     public void test_clone() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        int newTimeout = 7;
+        w.git.clone_().timeout(newTimeout).url(localMirror()).repositoryName("origin").execute();
         w.adaptCliGitClone("origin");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+            expected.set(0, newTimeout);
+            setExpectedTimeouts(expected);
+        }
     }
 
     public void test_clone_repositoryName() throws IOException, InterruptedException
