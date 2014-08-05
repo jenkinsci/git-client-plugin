@@ -1184,10 +1184,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if(shouldProxy) {
                         env = new EnvVars(env);
-                        String http_proxy = "http://" + proxy.name + ":" + proxy.port + "/";
-                        listener.getLogger().println("Setting http proxy: " + http_proxy);
-                        env.put("http_proxy", http_proxy);
-                        env.put("https_proxy", http_proxy);
+                        listener.getLogger().println("Setting http proxy: " + proxy.name + ":" + proxy.port);
+                        String userInfo = null;
+                        if (proxy.getUserName() != null) {
+                            userInfo = proxy.getUserName();
+                            if (proxy.getPassword() != null) {
+                                userInfo += ":" + proxy.getPassword();
+                            }
+                        }
+                        try {
+                            URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
+                            env.put("http_proxy", http_proxy.toString());
+                            env.put("https_proxy", http_proxy.toString());
+                        } catch (URISyntaxException ex) {
+                            throw new GitException("Failed to create http proxy uri", ex);
+                        }
                     }
                 }
             }
