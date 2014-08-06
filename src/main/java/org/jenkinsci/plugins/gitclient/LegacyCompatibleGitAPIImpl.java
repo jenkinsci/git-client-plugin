@@ -142,9 +142,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             final List<Tag> ret = new ArrayList<Tag>();
 
             for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-                final ObjectId tagId = tag.getValue().getObjectId();
-                if (commit.equals(tagId))
-                    ret.add(new Tag(tag.getKey(), tagId));
+                Ref value = tag.getValue();
+                if (value != null) {
+                    final ObjectId tagId = value.getObjectId();
+                    if (commit != null && commit.equals(tagId))
+                        ret.add(new Tag(tag.getKey(), tagId));
+                }
             }
             return ret;
         } finally {
