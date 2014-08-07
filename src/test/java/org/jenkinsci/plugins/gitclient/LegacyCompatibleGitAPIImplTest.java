@@ -10,16 +10,22 @@ import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -101,6 +107,25 @@ public class LegacyCompatibleGitAPIImplTest {
 
     private String contentOf(File file) throws IOException {
         return FileUtils.readFileToString(file, "UTF-8");
+    }
+
+    @Test
+    @Deprecated
+    public void testCloneRemoteConfig() throws URISyntaxException, InterruptedException, IOException, ConfigInvalidException {
+        Config config = new Config();
+        /* Use local git-client-plugin repository as source for clone test */
+        String remoteName = "localCopy";
+        String localRepoPath = (new File(".")).getCanonicalPath().replace("\\", "/");
+        String configText = "[remote \"" + remoteName + "\"]\n"
+                + "url = " + localRepoPath + "\n"
+                + "fetch = +refs/heads/*:refs/remotes/" + remoteName + "/*\n";
+        config.fromText(configText);
+        RemoteConfig remoteConfig = new RemoteConfig(config, remoteName);
+        List<URIish> list = remoteConfig.getURIs();
+        git.clone(remoteConfig);
+        File[] files = git.workspace.listFiles();
+        assertEquals("Wrong file name", ".git", files[0].getName());
+        assertEquals("Too many files in " + Arrays.toString(files), 1, files.length);
     }
 
     @Test
