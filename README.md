@@ -10,7 +10,7 @@ to make it easier for other plugins to use and contribute new features.
 Contributing to the Plugin
 ==========================
 
-Refer to [contributing to the plugin](https://github.com/jenkinsci/git-client-plugin/blob/master/README.md)
+Refer to [contributing to the plugin](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.md)
 for suggestions to speed the acceptance of your contributions to the
 git client plugin.
 
