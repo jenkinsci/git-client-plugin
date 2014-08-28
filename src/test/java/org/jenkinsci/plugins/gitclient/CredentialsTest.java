@@ -147,15 +147,6 @@ public class CredentialsTest {
         return fileList.toString();
     }
 
-    private boolean isRemoteURL(String repoURL) {
-        return repoURL.startsWith("ftp:")
-                || repoURL.startsWith("git:")
-                || repoURL.startsWith("http:")
-                || repoURL.startsWith("https:")
-                || repoURL.startsWith("rsync:")
-                || repoURL.startsWith("ssh:");
-    }
-
     @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File readme = new File(repo, "README.md");
@@ -165,11 +156,7 @@ public class CredentialsTest {
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("readme in " + repo + ", has " + listDir(repo), readme.exists());
         git.addDefaultCredentials(newCredential(privateKey, username));
-        FetchCommand cmd = git.fetch_().from(new URIish(gitRepoURL), refSpecs);
-        if (isRemoteURL(gitRepoURL) && gitImpl.equals("git")) {
-            cmd.shallow(true).prune().timeout(1);
-        }
-        cmd.execute();
+        git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master);
@@ -193,8 +180,10 @@ public class CredentialsTest {
         String origin = "origin";
         git.addCredentials(gitRepoURL, newCredential(privateKey, username));
         CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin);
-        if (isRemoteURL(gitRepoURL) && gitImpl.equals("git")) {
-            cmd.reference(currDir.getAbsolutePath()); // JGit does not support reference repositories
+        if (gitImpl.equals("git")) {
+            // Reduce network transfer by using a local reference repository
+            // JGit does not support reference repositories
+            cmd.reference(currDir.getAbsolutePath());
         }
         cmd.execute();
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
