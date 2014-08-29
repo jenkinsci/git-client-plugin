@@ -1217,13 +1217,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (GitException e) {
                     listener.getLogger().println("Could not remove the credential section from the git configuration");
                 }
-                if (deleteWorkDir) {
-                    try {
-                        Util.deleteContentsRecursive(workDir);
-                        FileUtils.deleteDirectory( workDir );
-                    } catch (IOException ioe) {
-                        listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
-                    }
+            }
+            if (deleteWorkDir) {
+                try {
+                    Util.deleteContentsRecursive(workDir);
+                    FileUtils.deleteDirectory( workDir );
+                } catch (IOException ioe) {
+                    listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
                 }
             }
         }
@@ -1984,7 +1984,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
+        url = environment.expand(url);
         args.add(url);
+
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
@@ -2001,7 +2003,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
-        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+        url = environment.expand(url);
+        final String branchName = environment.expand(extractBranchNameFromBranchSpec(branchSpec));
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         if(!branchName.startsWith("refs/tags/")) {
             args.add("-h");
