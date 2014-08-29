@@ -1217,13 +1217,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (GitException e) {
                     listener.getLogger().println("Could not remove the credential section from the git configuration");
                 }
-                if (deleteWorkDir) {
-                    try {
-                        Util.deleteContentsRecursive(workDir);
-                        FileUtils.deleteDirectory( workDir );
-                    } catch (IOException ioe) {
-                        listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
-                    }
+            }
+            if (deleteWorkDir) {
+                try {
+                    Util.deleteContentsRecursive(workDir);
+                    FileUtils.deleteDirectory( workDir );
+                } catch (IOException ioe) {
+                    listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
                 }
             }
         }
