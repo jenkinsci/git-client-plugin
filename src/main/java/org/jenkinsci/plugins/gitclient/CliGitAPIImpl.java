@@ -1984,7 +1984,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
+        url = environment.expand(url);
         args.add(url);
+
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
@@ -2001,7 +2003,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public ObjectId getHeadRev(String url, String branchSpec) throws GitException, InterruptedException {
-        final String branchName = extractBranchNameFromBranchSpec(branchSpec);
+        url = environment.expand(url);
+        final String branchName = environment.expand(extractBranchNameFromBranchSpec(branchSpec));
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         if(!branchName.startsWith("refs/tags/")) {
             args.add("-h");
