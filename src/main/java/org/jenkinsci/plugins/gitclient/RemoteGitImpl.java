@@ -402,6 +402,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 	return proxy.getRefNames(refPrefix);
     }
 
+    public Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException {
+        return proxy.getTagNames(tagPattern);
+    }
+
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return proxy.getHeadRev(url);
     }
@@ -609,7 +613,6 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     public void setProxy(ProxyConfiguration proxyConfiguration) {
         proxy.setProxy(proxyConfiguration);
     }
-
 
     private static final long serialVersionUID = 1L;
 }

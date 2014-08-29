@@ -289,6 +289,7 @@ public interface GitClient {
     void deleteTag(String tagName) throws GitException, InterruptedException;
 
     Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException;
+    Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException;
 
 
     // --- manage refs

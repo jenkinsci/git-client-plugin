@@ -1127,6 +1127,41 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(3, branches.size());
     }
 
+    public void test_remote_list_tags_with_filter() throws Exception {
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("init");
+        r.tag("test");
+        r.tag("another_test");
+        r.tag("yet_another");
+
+        w.init();
+        w.cmd("git remote add origin " + r.repoPath());
+        w.cmd("git fetch origin");
+        Set<String> local_tags = w.git.getTagNames("*test");
+        Set<String> tags = w.git.getRemoteTagNames("*test");
+        assertTrue("expected tag test not listed", tags.contains("test"));
+        assertTrue("expected tag another_test not listed", tags.contains("another_test"));
+        assertFalse("unexpected yet_another tag listed", tags.contains("yet_another"));
+    }
+
+    public void test_remote_list_tags_without_filter() throws Exception {
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("init");
+        r.tag("test");
+        r.tag("another_test");
+        r.tag("yet_another");
+
+        w.init();
+        w.cmd("git remote add origin " + r.repoPath());
+        w.cmd("git fetch origin");
+        Set<String> allTags = w.git.getRemoteTagNames(null);
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
     public void test_list_branches_containing_ref() throws Exception {
         w.init();
         w.commitEmpty("init");
