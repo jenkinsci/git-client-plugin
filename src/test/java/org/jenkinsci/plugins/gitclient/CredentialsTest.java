@@ -5,6 +5,7 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.google.common.io.Files;
 import hudson.plugins.git.GitException;
+import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -17,6 +18,10 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import static junit.framework.TestCase.assertTrue;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
@@ -51,7 +56,14 @@ public class CredentialsTest {
 
     protected String gitImpl; /* either "git" or "jgit" */
 
+    private String expectedLogSubstring = null;
+
     private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+
+    private int logCount;
+    private LogHandler handler;
+    private LogTaskListener listener;
+    private static final String LOGGING_STARTED = "*** Logging started ***";
 
     private final static File homeDir = new File(System.getProperty("user.home"));
     private final static File sshDir = new File(homeDir, ".ssh");
@@ -80,12 +92,39 @@ public class CredentialsTest {
     @Before
     public void setUp() throws IOException, InterruptedException {
         repo = temporaryDirectoryAllocator.allocate();
-        git = Git.with(StreamTaskListener.fromStdout(), new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
+        Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
+        handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+        listener.getLogger().println(LOGGING_STARTED);
+        git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
+        setExpectedLogSubstring("> git fetch ");
     }
 
     @After
     public void tearDown() {
         temporaryDirectoryAllocator.disposeAsync();
+        try {
+            String messages = StringUtils.join(handler.getMessages(), ";");
+            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            if (expectedLogSubstring != null) {
+                assertTrue("No '" + expectedLogSubstring + "' in " + messages,
+                        handler.containsMessageSubstring(expectedLogSubstring));
+            }
+            for (String message : handler.getMessages()) {
+                System.out.println("Logged: " + message);
+            }
+        } finally {
+            setExpectedLogSubstring(null);
+            handler.close();
+        }
+    }
+
+    protected void setExpectedLogSubstring(String expectedLogSubstring) {
+        this.expectedLogSubstring = expectedLogSubstring;
     }
 
     private BasicSSHUserPrivateKey newCredential(File privateKey, String username) throws IOException {
