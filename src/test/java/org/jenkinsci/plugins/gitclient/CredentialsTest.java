@@ -114,9 +114,6 @@ public class CredentialsTest {
                 assertTrue("No '" + expectedLogSubstring + "' in " + messages,
                         handler.containsMessageSubstring(expectedLogSubstring));
             }
-            for (String message : handler.getMessages()) {
-                System.out.println("Logged: " + message);
-            }
         } finally {
             setExpectedLogSubstring(null);
             handler.close();
