@@ -112,6 +112,9 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testCloneRemoteConfig() throws URISyntaxException, InterruptedException, IOException, ConfigInvalidException {
+        if (gitImpl.equals("jgit")) {
+            return;
+        }
         Config config = new Config();
         /* Use local git-client-plugin repository as source for clone test */
         String remoteName = "localCopy";
@@ -124,15 +127,8 @@ public class LegacyCompatibleGitAPIImplTest {
         List<URIish> list = remoteConfig.getURIs();
         git.clone(remoteConfig);
         File[] files = git.workspace.listFiles();
-        if (gitImpl.equals("jgit")) {
-            /* jgit clone with RemoteConfig also performs a checkout */
-            /* Incompatible with the deprecated legacy implementation */
-            assertEquals(files.length + " files in " + Arrays.toString(files), 6, files.length);
-        } else {
-            /* cli clone with RemoteConfig does not perform a checkout */
-            assertEquals(files.length + "files in " + Arrays.toString(files), 1, files.length);
-            assertEquals("Wrong file name", ".git", files[0].getName());
-        }
+        assertEquals(files.length + "files in " + Arrays.toString(files), 1, files.length);
+        assertEquals("Wrong file name", ".git", files[0].getName());
     }
 
     @Test
