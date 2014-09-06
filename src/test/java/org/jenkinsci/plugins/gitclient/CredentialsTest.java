@@ -195,7 +195,7 @@ public class CredentialsTest {
         git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master);
+        log().println("Checking out " + master + " from " + gitRepoURL);
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
@@ -223,7 +223,7 @@ public class CredentialsTest {
         }
         cmd.execute();
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master);
+        log().println("Checking out " + master + " from " + gitRepoURL);
         git.checkout().branch("master").ref(origin + "/master").deleteBranchIfExist(true).execute();
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
