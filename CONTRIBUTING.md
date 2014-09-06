@@ -26,3 +26,10 @@ when you submit.
 
 Before submitting your change, please review the findbugs output to
 assure that you haven't introduced new findbugs warnings.
+
+Code formatting in the git client plugin varies between files.  Recent
+additions have generally used the Netbeans "Format" right-click action
+to maintain consistency for new additions.  Try to maintain reasonable
+consistency with the existing files where feasible.  Please don't
+perform wholesale reformatting of a file without discussing with the
+current maintainers.
