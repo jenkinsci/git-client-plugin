@@ -102,6 +102,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
 
+    private void warnIfWindowsTemporaryDirNameHasSpaces() {
+        if (!Functions.isWindows()) {
+            return;
+        }
+        String[] varsToCheck = {"TEMP", "TMP"};
+        for (String envVar : varsToCheck) {
+            String value = environment.get(envVar, "C:\\Temp");
+            if (value.contains(" ")) {
+                listener.getLogger().println("env " + envVar + "='" + value + "' contains an embedded space."
+                        + " Some msysgit versions may fail credential related operations.");
+            }
+        }
+    }
+
     // AABBCCDD where AA=major, BB=minor, CC=rev, DD=bugfix
     private long gitVersion = 0;
     private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
@@ -262,6 +276,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (prune) args.add("--prune");
 
                 if (shallow) args.add("--depth=1");
+
+                warnIfWindowsTemporaryDirNameHasSpaces();
 
                 launchCommandWithCredentials(args, workspace, cred, url, timeout);
             }
@@ -479,6 +495,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.add("init", workspace);
 
                 if(bare) args.add("--bare");
+
+                warnIfWindowsTemporaryDirNameHasSpaces();
+
                 try {
                     launchCommand(args);
                 } catch (GitException e) {
