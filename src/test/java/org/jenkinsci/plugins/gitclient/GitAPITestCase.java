@@ -24,6 +24,7 @@ import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOUtils;
 import junit.framework.TestCase;
+import static org.junit.Assert.assertNotEquals;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -1187,13 +1188,43 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(23299)
     public void test_create_tag() throws Exception {
         w.init();
+        String gitDir = w.repoPath() + File.separator + ".git";
         w.commitEmpty("init");
+        ObjectId init = w.git.revParse("HEAD"); // Remember SHA1 of init commit
         w.git.tag("test", "this is a tag");
+
+        /* JGit seems to have the better behavior in this case, always
+         * returning the SHA1 of the commit. Most users are using
+         * command line git, so the difference is retained in command
+         * line git for compatibility with any legacy command line git
+         * use cases which depend on returning the SHA-1 of the
+         * annotated tag rather than the SHA-1 of the commit to which
+         * the annotated tag points.
+         */
+        ObjectId testTag = w.git.getHeadRev(gitDir, "test"); // Remember SHA1 of annotated test tag
+        if (w.git instanceof JGitAPIImpl) {
+            assertEquals("Annotated tag does not match SHA1", init, testTag);
+        } else {
+            assertNotEquals("Annotated tag unexpectedly equals SHA1", init, testTag);
+        }
+
+        /* Because refs/tags/test syntax is more specific than "test",
+         * and because the more specific syntax was only introduced in
+         * more recent git client plugin versions (like 1.10.0 and
+         * later), the CliGit and JGit behavior are kept the same here
+         * in order to fix JENKINS-23299.
+         */
+        ObjectId testTagCommit = w.git.getHeadRev(gitDir, "refs/tags/test"); // SHA1 of commit identified by test tag
+        assertEquals("Annotated tag doesn't match queried commit SHA1", init, testTagCommit);
+        assertEquals(init, w.git.revParse("test")); // SHA1 of commit identified by test tag
+        assertEquals(init, w.git.revParse("refs/tags/test")); // SHA1 of commit identified by test tag
         assertTrue("test tag not created", w.cmd("git tag").contains("test"));
         String message = w.cmd("git tag -l -n1");
         assertTrue("unexpected test tag message : " + message, message.contains("this is a tag"));
+        assertNull(w.git.getHeadRev(gitDir, "not-a-valid-tag")); // Confirm invalid tag returns null
     }
 
     public void test_delete_tag() throws Exception {
@@ -2088,10 +2119,16 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
     }
 
+    @Bug(23299)
     public void test_getHeadRev() throws Exception {
         Map<String, ObjectId> heads = w.git.getHeadRev(remoteMirrorURL);
         ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
+
+        /* Test with a specific tag reference - JENKINS-23299 */
+        ObjectId knownTag = w.git.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
+        ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
+        assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
     }
 
     /**

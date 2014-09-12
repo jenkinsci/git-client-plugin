@@ -2051,7 +2051,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (cred == null) cred = defaultCredentials;
 
         args.add(url);
-        args.add(branchName);
+        if (branchName.startsWith("refs/tags/")) {
+            args.add(branchName+"^{}"); // JENKINS-23299 - tag SHA1 needs to be converted to commit SHA1
+        } else {
+            args.add(branchName);
+        }
         String result = launchCommandWithCredentials(args, null, cred, url);
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
