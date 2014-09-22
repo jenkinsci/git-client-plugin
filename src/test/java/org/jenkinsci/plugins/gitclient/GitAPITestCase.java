@@ -2435,6 +2435,29 @@ public abstract class GitAPITestCase extends TestCase {
         check_changelog_sha1(sha1, "master");
     }
 
+
+    private Collection<String> selectCommitsFromRevisionDetails(List<String> revisionDetails) {
+        return Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith("commit ");
+            }
+        });
+    }
+
+    private Collection<String> selectModifiedPathsFromRevisionDetails(List<String> revisionDetails) {
+        Collection<String> diff = Collections2.filter(revisionDetails, new Predicate<String>() {
+            public boolean apply(String detail) {
+                return detail.startsWith(":");
+            }
+        });
+
+        return Collections2.transform(diff, new Function<String, String>() {
+            public String apply(String diffLine) {
+                return diffLine.substring(diffLine.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
+            }
+        });
+    }
+
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());
         ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
@@ -2442,30 +2465,18 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
-        assertEquals(3, commits.size());
+        Collection<String> commits = selectCommitsFromRevisionDetails(revisionDetails);
+        assertEquals(2, commits.size());
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         // Merge commit is duplicated as have to capture changes that may have been made as part of merge
-        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
-        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
+        // (not anymore the case with the --first-parent option
+        assertFalse(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
+        assertFalse(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith(":");
-            }
-        });
-        Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
-            public String apply(String diff) {
-                return diff.substring(diff.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
-            }
-        });
+        Collection<String> paths = selectModifiedPathsFromRevisionDetails(revisionDetails);
 
         assertTrue(paths.contains(".gitignore"));
-        // Some irrelevant changes will be listed due to merge commit
         assertTrue(paths.contains("pom.xml"));
         assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
         assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/CliGitAPIImpl.java"));
@@ -2477,6 +2488,213 @@ public abstract class GitAPITestCase extends TestCase {
         // Previous implementation included other commits, and listed irrelevant changes
         assertFalse(paths.contains("README.md"));
     }
+
+    /*
+    Implemented but does not work exactly as CliGit version
+    JGitApi will still list commits from the merged branch as opposed as CliGitVersion with the --first-parent option
+     */
+    @NotImplementedInJGit
+    public void test_show_revision_for_merge_bis() throws Exception {
+
+        // Init repository
+
+        w.init();
+        w.touch("init");
+        w.git.add("init");
+        w.git.commit("Init");
+        ObjectId initialCommit = w.git.revParse("HEAD");
+
+        // Creating release branch from master
+        w.git.checkout().branch("release").ref("master").execute();
+        w.touch("file1");
+        w.git.add("file1");
+        w.git.commit("Added file1");
+        ObjectId file1Added = w.git.revParse("HEAD");
+
+        // From this commit, we create a feature branch
+        w.git.branch("feature");
+
+        // We create another commit on the release branch that modify the file "file1"
+        FileOutputStream file1 = new FileOutputStream(w.file("file1"));
+        IOUtils.write("firstModif", file1);
+        IOUtils.closeQuietly(file1);
+        w.git.add("file1");
+        w.git.commit("Modified file1");
+        ObjectId file1Modified = w.git.revParse("HEAD");
+
+        // We get the difference between commit file1Added and file1Modified
+        List<String> revisionDetails = w.git.showRevision(file1Added, file1Modified);
+
+
+        Collection<String> commits = selectCommitsFromRevisionDetails(revisionDetails);
+        assertEquals(1, commits.size());
+        assertTrue(commits.contains("commit " + file1Modified.getName()));
+        assertFalse(commits.contains("commit " + initialCommit.getName()));
+        assertFalse(commits.contains("commit " + file1Added.getName()));
+
+        Collection<String> paths = selectModifiedPathsFromRevisionDetails(revisionDetails);
+
+        // Of course the file1 is a modified path
+        assertTrue(paths.contains("file1"));
+        assertFalse(paths.contains("init"));
+
+        // We create another file
+        w.touch("file2");
+        w.git.add("file2");
+        w.git.commit("Added file2");
+        ObjectId file2Added = w.git.revParse("HEAD");
+
+        // We get the difference between commit file1Modified and file2Added
+        revisionDetails = w.git.showRevision(file1Modified, file2Added);
+
+
+        commits = selectCommitsFromRevisionDetails(revisionDetails);
+        assertEquals(1, commits.size());
+        assertTrue(commits.contains("commit " + file2Added.getName()));
+        assertFalse(commits.contains("commit " + file1Modified.getName()));
+        assertFalse(commits.contains("commit " + initialCommit.getName()));
+        assertFalse(commits.contains("commit " + file1Added.getName()));
+
+        paths = selectModifiedPathsFromRevisionDetails(revisionDetails);
+
+        // Of course file1 is not a modified path
+        assertTrue(paths.contains("file2"));
+        assertFalse(paths.contains("init"));
+        assertFalse(paths.contains("file1"));
+
+        // On the branch feature, we add a file "file3"
+        w.git.checkout().ref("feature").execute();
+        w.touch("file3");
+        w.git.add("file3");
+        w.git.commit("Added file3");
+        ObjectId file3Added = w.git.revParse("HEAD");
+
+        // We merge the feature branch on the release branch
+        w.git.checkout().ref("release").execute();
+        w.git.merge().setRevisionToMerge(file3Added).execute();
+        ObjectId mergeCommit = w.git.revParse("HEAD");
+
+
+        // We get the difference between commit file1Modified and mergeCommit
+        revisionDetails = w.git.showRevision(file1Modified, mergeCommit);
+
+        // Should only contains commits done on release branch since file1Modified
+        commits = selectCommitsFromRevisionDetails(revisionDetails);
+        assertEquals(2, commits.size());
+        assertTrue(commits.contains("commit " + mergeCommit.getName()));
+        assertTrue(commits.contains("commit " + file2Added.getName()));
+
+        assertFalse(commits.contains("commit " + file3Added.getName()));
+        assertFalse(commits.contains("commit " + mergeCommit.getName() + " (from " + file2Added.getName() + ")"));
+        assertFalse(commits.contains("commit " + mergeCommit.getName() + " (from " + file3Added.getName() + ")"));
+        assertFalse(commits.contains("commit " + file1Modified.getName()));
+        assertFalse(commits.contains("commit " + initialCommit.getName()));
+        assertFalse(commits.contains("commit " + file1Added.getName()));
+
+        paths = selectModifiedPathsFromRevisionDetails(revisionDetails);
+
+        // Of course file2 and file3 are modified paths but file1 has not been modified !!!!!
+        assertTrue(paths.contains("file2"));
+        assertTrue(paths.contains("file3"));
+
+        assertFalse(paths.contains("init"));
+        assertFalse(paths.contains("file1"));
+
+
+    }
+
+    /*
+    Implemented but does not work exactly as CliGit version
+    JGitApi will still list commits from the merged branch as opposed as CliGitVersion with the --first-parent option
+    Furthermore, jgit merge implementation reset changes on conflict as opposed as the cli version so the test is not working with JGit
+     */
+    @NotImplementedInJGit
+    public void test_show_revision_for_merge_conflict() throws Exception {
+
+        // Init repository
+
+        w.init();
+        w.touch("init");
+        w.git.add("init");
+        w.git.commit("Init");
+        ObjectId initialCommit = w.git.revParse("HEAD");
+
+        // Creating release branch from master
+        w.git.checkout().branch("release").ref("master").execute();
+        w.touch("file1");
+        w.git.add("file1");
+        w.git.commit("Added file1");
+        ObjectId file1Added = w.git.revParse("HEAD");
+
+        // From this commit, we create a feature branch
+        w.git.branch("feature");
+
+        // We create another commit on the release branch that modify the file "file1"
+        FileOutputStream file1 = new FileOutputStream(w.file("file1"));
+        IOUtils.write("firstModif", file1);
+        IOUtils.closeQuietly(file1);
+        w.git.add("file1");
+        w.git.commit("Modified file1");
+        ObjectId file1Modified = w.git.revParse("HEAD");
+
+        // We create another file
+        w.touch("file2");
+        w.git.add("file2");
+        w.git.commit("Added file2");
+        ObjectId file2Added = w.git.revParse("HEAD");
+
+        // On the branch feature, we add a file "file3" and we modify file1
+        w.git.checkout().ref("feature").execute();
+        w.touch("file3");
+        w.git.add("file3");
+        file1 = new FileOutputStream(w.file("file1"));
+        IOUtils.write("secondModif", file1);
+        IOUtils.closeQuietly(file1);
+        w.git.add("file1");
+        w.git.commit("Added file3 and modified file1");
+        ObjectId file3AddedAndFile1Modified = w.git.revParse("HEAD");
+
+        // We merge the feature branch on the release branch
+        w.git.checkout().ref("release").execute();
+        try {
+            w.git.merge().setRevisionToMerge(file3AddedAndFile1Modified).execute();
+        } catch (hudson.plugins.git.GitException ge) {
+
+        }
+        w.cmd("git checkout --theirs file1");
+        w.git.add("file1");
+        w.git.commit("Merge");
+        ObjectId mergeCommit = w.git.revParse("HEAD");
+
+
+        // We get the difference between commit file1Modified and mergeCommit
+        List<String> revisionDetails = w.git.showRevision(file1Added, mergeCommit);
+
+        // Should only contains commits done on release branch since file1Added
+        Collection<String> commits = selectCommitsFromRevisionDetails(revisionDetails);
+        assertEquals(3, commits.size());
+        assertTrue(commits.contains("commit " + mergeCommit.getName()));
+        assertTrue(commits.contains("commit " + file2Added.getName()));
+        assertTrue(commits.contains("commit " + file1Modified.getName()));
+
+        assertFalse(commits.contains("commit " + file3AddedAndFile1Modified.getName()));
+        assertFalse(commits.contains("commit " + mergeCommit.getName() + " (from " + file2Added.getName() + ")"));
+        assertFalse(commits.contains("commit " + mergeCommit.getName() + " (from " + file3AddedAndFile1Modified.getName() + ")"));
+        assertFalse(commits.contains("commit " + initialCommit.getName()));
+        assertFalse(commits.contains("commit " + file1Added.getName()));
+
+        Collection<String> paths = selectModifiedPathsFromRevisionDetails(revisionDetails);
+
+        // Of course file2 and file3 are modified and even file1 which was conflicting !!!!!
+        assertTrue(paths.contains("file2"));
+        assertTrue(paths.contains("file3"));
+        assertTrue(paths.contains("file1"));
+
+        assertFalse(paths.contains("init"));
+
+
+    }
+
 
     private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException
     {
