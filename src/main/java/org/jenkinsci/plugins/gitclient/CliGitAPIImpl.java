@@ -665,7 +665,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--raw");
+        ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m", "--first-parent", "--raw");
     	if (from != null){
             args.add(from.name() + ".." + to.name());
         } else {

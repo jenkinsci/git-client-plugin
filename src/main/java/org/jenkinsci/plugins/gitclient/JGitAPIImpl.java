@@ -1528,15 +1528,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             PrintWriter pw = new PrintWriter(sw);
             RawFormatter f = new RawFormatter();
             for (RevCommit c : w) {
-                if (c.getParentCount()<=1) {
-                    f.format(c,null,pw);
-                } else {
-                    // the effect of the -m option, which makes the diff produce for each parent of a merge commit
-                    for (RevCommit p : c.getParents()) {
-                        f.format(c,p,pw);
-                    }
-                }
-
+                f.format(c,null,pw);
                 pw.flush();
                 r.addAll(Arrays.asList(sw.toString().split("\n")));
                 sw.getBuffer().setLength(0);
