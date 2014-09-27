@@ -134,7 +134,7 @@ public class CredentialsTest {
         return new BasicSSHUserPrivateKey(scope, id, username, privateKeySource, passphrase, description);
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{1}-{0}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException {
         List<Object[]> repos = new ArrayList<Object[]>();
         /* Add master repository as authentication test with private

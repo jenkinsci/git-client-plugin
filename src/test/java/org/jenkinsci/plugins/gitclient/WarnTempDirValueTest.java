@@ -75,7 +75,7 @@ public class WarnTempDirValueTest {
         assertTrue(handler.containsMessageSubstring(LOGGING_STARTED));
     }
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name="{0}")
     public static Collection envVarsToCheck() {
         List<Object[]> envVarNames = new ArrayList<Object[]>();
         Object[] tmp = {"TMP"};
