@@ -17,6 +17,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -134,7 +135,7 @@ public class CredentialsTest {
         return new BasicSSHUserPrivateKey(scope, id, username, privateKeySource, passphrase, description);
     }
 
-    @Parameterized.Parameters(name="{1}-{0}")
+    @Parameterized.Parameters(name = "{1}-{0}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException {
         List<Object[]> repos = new ArrayList<Object[]>();
         /* Add master repository as authentication test with private
@@ -169,7 +170,9 @@ public class CredentialsTest {
                 }
             }
         }
-        return repos;
+        Collections.shuffle(repos); // randomize test order
+        int toIndex = repos.size() < 3 ? repos.size() : 3;
+        return repos.subList(0, toIndex);
     }
 
     private String listDir(File dir) {
