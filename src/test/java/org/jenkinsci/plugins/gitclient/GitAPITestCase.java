@@ -2076,8 +2076,30 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file1 exists before merge", w.exists("file1"));
         assertEquals("Wrong merge-base branch1 branch2", base, w.igit().mergeBase(branch1, branch2));
 
+        String badSHA1 = "15c80fb1567f0e88ca855c69e3f17425d515a188";
+        ObjectId badBase = ObjectId.fromString(badSHA1);
+        try {
+            assertNull("Base unexpected for bad SHA1", w.igit().mergeBase(branch1, badBase));
+            assertTrue("Exception not thrown by CliGit", w.git instanceof CliGitAPIImpl);
+        } catch (GitException moa) {
+            assertFalse("Exception thrown by CliGit", w.git instanceof CliGitAPIImpl);
+            assertTrue("Exception message didn't mention " + badBase.toString(), moa.getMessage().contains(badSHA1));
+        }
+        try {
+            assertNull("Base unexpected for bad SHA1", w.igit().mergeBase(badBase, branch1));
+            assertTrue("Exception not thrown by CliGit", w.git instanceof CliGitAPIImpl);
+        } catch (GitException moa) {
+            assertFalse("Exception thrown by CliGit", w.git instanceof CliGitAPIImpl);
+            assertTrue("Exception message didn't mention " + badBase.toString(), moa.getMessage().contains(badSHA1));
+        }
+
         w.igit().merge("branch1");
         assertTrue("file1 does not exist after merge", w.exists("file1"));
+
+        w.cmd("git checkout --orphan newroot"); // Create an indepedent root
+        w.commitEmpty("init-on-newroot");
+        final ObjectId newRootCommit = w.head();
+        assertNull("Common root not expected", w.igit().mergeBase(newRootCommit, branch1));
 
         final String remoteUrl = "ssh://mwaite.example.com//var/lib/git/mwaite/jenkins/git-client-plugin.git";
         w.git.setRemoteUrl("origin", remoteUrl);
