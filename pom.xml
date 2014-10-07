@@ -47,7 +47,7 @@
     <jacoco-maven-plugin.version>0.7.2.201409121644</jacoco-maven-plugin.version>
     <!-- Maven plugin versions provided by parent are outdated. -->
     <!-- Generating site report with "mvn site" fails without these updated versions. -->
-    <maven-dependency-plugin.version>2.8</maven-dependency-plugin.version>
+    <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
     <maven-enforcer-plugin.version>1.3.1</maven-enforcer-plugin.version>
     <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
     <maven-site-plugin.version>3.3</maven-site-plugin.version>
