@@ -2111,12 +2111,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Checks that the ChangelogCommand abort() API does not write
      * output to the destination.  Does not check that the abort() API
      * releases resources.
-     *
-     * Annotated as @NotImplementedInJGit because the test fails in
-     * the JGit implementation.  There is an implementation in JGit,
-     * but it does not seem to provide any data when executed.
      */
-    @NotImplementedInJGit
     public void test_changelog_abort() throws InterruptedException, IOException
     {
         final String logMessage = "changelog-abort-test-commit";
@@ -2442,11 +2437,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
     }
 
-    /* Is implemented in JGit, but returns no results.  Temporarily
-     * marking this test as not implemented in JGit so that its
-     * failure does not distract from other development.
-     */
-    @NotImplementedInJGit
     public void test_changelog() throws Exception {
         w = clone(localMirror());
         String sha1Prev = w.git.revParse("HEAD").name();
