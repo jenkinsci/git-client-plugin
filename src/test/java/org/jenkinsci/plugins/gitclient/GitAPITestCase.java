@@ -2857,7 +2857,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
-    @NotImplementedInJGit
     public void test_isBareRepository_bare_dot_git() throws IOException, InterruptedException {
         w.init(true);
         /* Bare repository does not have a .git directory.  This is
@@ -2865,9 +2864,17 @@ public abstract class GitAPITestCase extends TestCase {
          * consistency.
          */
         try {
-            assertFalse(".git is a bare repository", w.igit().isBareRepository(".git"));
-            fail("Did not throw expected exception");
+            /* JGit knows that w.igit() has a workspace, and asks the workspace
+             * if it is bare.  That seems more correct than relying on testing
+             * a specific file that the repository is bare.  JGit behaves better
+             * than CliGit in this case.
+             */
+            assertTrue("non-existent .git is in a bare repository", w.igit().isBareRepository(".git"));
+            /* JGit will not throw an exception - it knows the repo is bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
+            /* Only enters this path for CliGit */
             assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
         }
     }
@@ -2878,23 +2885,25 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("Not-a-bare-repository-working-no-such-location");
         try {
             assertFalse("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
-            if (w.git instanceof CliGitAPIImpl) {
-                /* Exception not expected with JGit */
-                fail("Did not throw expected exception");
-            }
+            /* JGit will not throw an exception - it knows the repo is not bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
+            /* Only enters this path for CliGit */
             assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
         }
     }
 
     @Deprecated
-    @NotImplementedInJGit
     public void test_isBareRepository_bare_no_such_location() throws IOException, InterruptedException {
         w.init(true);
         try {
-            assertFalse("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
-            fail("Did not throw expected exception");
+            assertTrue("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
+            /* JGit will not throw an exception - it knows the repo is not bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
+            /* Only enters this path for CliGit */
             assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
         }
     }
