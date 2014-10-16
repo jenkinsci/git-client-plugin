@@ -21,8 +21,6 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
-import hudson.remoting.Callable;
-import hudson.slaves.SlaveComputer;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 
@@ -1260,7 +1258,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         key = File.createTempFile("ssh", "key");
         PrintWriter w = new PrintWriter(key);
-        List<String> privateKeys = SlaveComputer.getChannelToMaster().call(new CliGitAPIImpl.GetPrivateKeys(sshUser));
+        List<String> privateKeys = sshUser.getPrivateKeys();
         for (String s : privateKeys) {
             w.println(s);
         }
@@ -2264,18 +2262,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             } catch (IOException e) {
                 throw new GitException(e.getLocalizedMessage());
             }
-        }
-    }
-
-    private static class GetPrivateKeys implements Callable<List<String>, RuntimeException> {
-        private final SSHUserPrivateKey sshUser;
-
-        public GetPrivateKeys(SSHUserPrivateKey sshUser) {
-            this.sshUser = sshUser;
-        }
-
-        public List<String> call() throws RuntimeException {
-            return sshUser.getPrivateKeys();
         }
     }
 
