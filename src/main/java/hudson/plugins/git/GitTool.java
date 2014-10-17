@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static hudson.init.InitMilestone.PLUGINS_STARTED;
+import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
 import java.util.logging.Level;
 
 /**
@@ -88,7 +88,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         return (DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(getClass());
     }
 
-    @Initializer(after=PLUGINS_STARTED)
+    @Initializer(after=EXTENSIONS_AUGMENTED)
     public static void onLoaded() {
         //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
 
