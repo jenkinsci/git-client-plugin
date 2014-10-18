@@ -53,13 +53,23 @@
     <maven-site-plugin.version>3.3</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
     <maven-surefire-plugin.version>2.17</maven-surefire-plugin.version>
+    <jgit.version>3.5.1.201410131835-r</jgit.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>3.5.1.201410131835-r</version>
+      <version>${jgit.version}</version>
+    </dependency>
+    <dependency>
+      <!-- Include jgit http server so that git-userContent and other
+           plugins can depend on git-client-plugin rather than
+           including their own JGit http server version. Avoid class
+           loader mismatches and bugs like JENKINS-21756 -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.http.server</artifactId>
+      <version>${jgit.version}</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
