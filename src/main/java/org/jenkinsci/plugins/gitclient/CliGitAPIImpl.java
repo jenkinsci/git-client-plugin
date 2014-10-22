@@ -1451,6 +1451,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public URIish remote;
             public String refspec;
             public boolean force;
+            public boolean tags;
             public Integer timeout;
 
             public PushCommand to(URIish remote) {
@@ -1465,6 +1466,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public PushCommand force() {
                 this.force = true;
+                return this;
+            }
+
+            public PushCommand tags() {
+                this.tags = true;
                 return this;
             }
 
@@ -1483,6 +1489,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (force) {
                     args.add("-f");
+                }
+
+                if (tags) {
+                    args.add("--tags");
                 }
 
                 StandardCredentials cred = credentials.get(remote.toPrivateString());

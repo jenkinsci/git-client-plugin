@@ -1366,6 +1366,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public URIish remote;
             public String refspec;
             public boolean force;
+            public boolean tags;
 
             public PushCommand to(URIish remote) {
                 this.remote = remote;
@@ -1382,6 +1383,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public PushCommand tags() {
+                this.tags = true;
+                return this;
+            }
+
             public PushCommand timeout(Integer timeout) {
             	// noop in jgit
                 return this;
@@ -1395,11 +1401,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
-                    g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
+                    org.eclipse.jgit.api.PushCommand pc = g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setCredentialsProvider(getProvider())
-                            .setForce(force)
-                            .call();
+                            .setForce(force);
+                    if(tags) {
+                        pc.setPushTags();
+                    }
+                    pc.call();
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
                 } catch (GitAPIException e) {
                     throw new GitException(e);
