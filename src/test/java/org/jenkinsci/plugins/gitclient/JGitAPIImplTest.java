@@ -42,4 +42,9 @@ public class JGitAPIImplTest extends GitAPITestCase {
             throw e;
         }
     }
+
+    @Override
+    protected String getRemoteBranchPrefix() {
+        return "";
+    }
 }

@@ -23,7 +23,6 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -615,4 +614,9 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     private static final long serialVersionUID = 1L;
+
+    public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
+            throws GitException, InterruptedException {
+        return getGitAPI().getBranchesContaining(revspec, allBranches);
+    }
 }

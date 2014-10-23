@@ -475,4 +475,14 @@ public interface GitClient {
     void setCredentials(StandardUsernameCredentials cred);
 
     void setProxy(ProxyConfiguration proxy);
+
+    /**
+     * Find all the branches that include the given commit.
+     * @param revspec commit id to query for
+     * @param allBranches whether remote branches should be also queried (<code>true</code>) or not (<code>false</code>)
+     * @return list of branches the specified commit belongs to
+     * @throws GitException on Git exceptions
+     * @throws InterruptedException on thread interruption
+     */
+    List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
 }

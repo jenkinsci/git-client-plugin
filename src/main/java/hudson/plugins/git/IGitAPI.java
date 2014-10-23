@@ -46,6 +46,9 @@ public interface IGitAPI extends GitClient {
 
     /**
      * Find all the branches that include the given commit.
+     * @deprecated Use {@link GitClient#getBranchesContaining(String, boolean)}
+     *             instead. This method does work only with local branches on
+     *             one implementation and with all the branches - in the other
      */
     List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException;
 

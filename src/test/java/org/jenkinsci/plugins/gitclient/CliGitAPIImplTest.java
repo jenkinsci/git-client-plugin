@@ -203,4 +203,9 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         };
         doTest("git version 1.8.3.2", versions);
     }
+
+    @Override
+    protected String getRemoteBranchPrefix() {
+        return "remotes/";
+    }
 }
