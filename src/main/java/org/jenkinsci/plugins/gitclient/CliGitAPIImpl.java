@@ -2096,8 +2096,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Deprecated
-    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
-        return new ArrayList<Branch>(parseBranches(launchCommand("branch", "-a", "--contains", revspec)));
+    public List<Branch> getBranchesContaining(String revspec) throws GitException,
+            InterruptedException {
+        // For backward compatibility we do query remote branches here
+        return getBranchesContaining(revspec, true);
+    }
+
+    public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
+            throws GitException, InterruptedException {
+        final String commandOutput;
+        if (allBranches) {
+            commandOutput = launchCommand("branch", "-a", "--contains", revspec);
+        } else {
+            commandOutput = launchCommand("branch", "--contains", revspec);
+        }
+        return new ArrayList<Branch>(parseBranches(commandOutput));
     }
 
     @Deprecated

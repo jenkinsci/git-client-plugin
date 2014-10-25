@@ -1675,6 +1675,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         push(repository.getName(),refspec);
     }
 
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+        // For the reasons of backward compatibility - we do not query remote branches here.
+        return getBranchesContaining(revspec, false);
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -1698,7 +1703,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Since we reuse {@link RevWalk}, it'd be nice to flag commits reachable from 't' as uninteresting
      * and keep them across resets, but I'm not sure how to do it.
      */
-    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+    public List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException {
         Repository repo = null;
         ObjectReader or = null;
         RevWalk walk = null;
@@ -1721,7 +1726,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             List<Branch> result = new ArrayList<Branch>();  // we'll built up the return value in here
 
-            List<Ref> branches = getAllBranchRefs();
+            List<Ref> branches = getAllBranchRefs(allBranches);
             while (!branches.isEmpty()) {
                 List<Ref> batch = branches.subList(0,Math.min(flags.size(),branches.size()));
                 branches = branches.subList(batch.size(),branches.size());  // remaining
@@ -1765,11 +1770,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private List<Ref> getAllBranchRefs() {
+    private List<Ref> getAllBranchRefs(boolean originBranches) {
         List<Ref> branches = new ArrayList<Ref>();
         final Repository repo = getRepository();
         for (Ref r : repo.getAllRefs().values()) {
-            if (r.getName().startsWith(R_HEADS)) {
+            final String branchName = r.getName();
+            if (branchName.startsWith(R_HEADS)
+                    || (originBranches && branchName.startsWith(R_REMOTES))) {
                 branches.add(r);
             }
         }

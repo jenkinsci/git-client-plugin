@@ -2615,6 +2615,39 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
     }
 
+    /**
+     * UT for {@link GitClient#getBranchesContaining(String, boolean)}. The main
+     * testing case is retrieving remote branches.
+     * @throws Exception on exceptions occur
+     */
+    public void test_branchContainingRemote() throws Exception {
+        final WorkingArea r = new WorkingArea();
+        r.init();
+
+        r.commitEmpty("c1");
+        ObjectId c1 = r.head();
+
+        w.git.clone_().url("file://" + r.repoPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/"
+                + Constants.MASTER;
+        final String bothBranches = Constants.MASTER + "," + remoteBranch;
+        w.git.fetch_().from(remote, refspecs).execute();
+        w.git.checkout().ref(Constants.MASTER).execute();
+
+        assertEquals(Constants.MASTER,
+                formatBranches(w.git.getBranchesContaining(c1.name(), false)));
+        assertEquals(bothBranches, formatBranches(w.git.getBranchesContaining(c1.name(), true)));
+
+        r.commitEmpty("c2");
+        ObjectId c2 = r.head();
+        w.git.fetch_().from(remote, refspecs).execute();
+        assertEquals("", formatBranches(w.git.getBranchesContaining(c2.name(), false)));
+        assertEquals(remoteBranch, formatBranches(w.git.getBranchesContaining(c2.name(), true)));
+    }
+
     public void test_checkout_null_ref() throws Exception {
         w = clone(localMirror());
         String branches = w.cmd("git branch -l");
@@ -3051,4 +3084,11 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
     }
+
+    /**
+     * Returns the prefix for the remote branches while querying them.
+     * @return remote branch pregix, for example, "remotes/"
+     */
+    protected abstract String getRemoteBranchPrefix();
+
 }
