@@ -170,8 +170,23 @@ public class CredentialsTest {
                 }
             }
         }
-        Collections.shuffle(repos); // randomize test order
-        int toIndex = repos.size() < 3 ? repos.size() : 3;
+
+        /* Limit number of values returned based on approximate system
+         * performance.  Makes faster systems execute more tests,
+         * slower fewer tests. Only approximate system performance if
+         * there is more than one test to execute.
+         */
+        long loopCount = 0;
+        if (repos.size() > 1) {
+            long startTime = System.currentTimeMillis() + 500L;
+            while (System.currentTimeMillis() < startTime) {
+                Collections.shuffle(repos); // randomize test order
+                loopCount++;
+            }
+        }
+        int upperBound = 1 + (int) (loopCount / 500000);
+        System.out.println("After " + loopCount + " loops, returned " + upperBound + " values");
+        int toIndex = repos.size() < upperBound ? repos.size() : upperBound;
         return repos.subList(0, toIndex);
     }
 
