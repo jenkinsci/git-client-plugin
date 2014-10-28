@@ -16,7 +16,7 @@ public interface PushCommand extends GitCommand {
 
     PushCommand force();
 
-    PushCommand tags();
+    PushCommand tags(boolean tags);
 
     PushCommand timeout(Integer timeout);
 }

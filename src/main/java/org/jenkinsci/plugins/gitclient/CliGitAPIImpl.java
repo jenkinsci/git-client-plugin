@@ -1469,8 +1469,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            public PushCommand tags() {
-                this.tags = true;
+            public PushCommand tags(boolean tags) {
+                this.tags = tags;
                 return this;
             }
 
