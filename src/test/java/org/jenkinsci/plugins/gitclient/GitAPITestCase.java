@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -2281,6 +2282,52 @@ public abstract class GitAPITestCase extends TestCase {
         for(String[] branch : checkBranchSpecs) {
           check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));
         }
+    }
+
+    /**
+     * Test getRemoteReferences with listing all references
+     */
+    public void test_getRemoteReferences() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, false, false);
+        assertTrue(references.containsKey("refs/heads/master"));
+        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
+    }
+
+    /**
+     * Test getRemoteReferences with listing references limit to refs/heads or refs/tags
+     */
+    public void test_getRemoteReferences_withLimitReferences() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
+        assertTrue(references.containsKey("refs/heads/master"));
+        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
+        assertTrue(!references.containsKey("refs/heads/master"));
+        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
+        for (String key : references.keySet()) {
+            assertTrue(!key.endsWith("^{}"));
+        }
+    }
+
+    /**
+     * Test getRemoteReferences with matching pattern
+     */
+    public void test_getRemoteReferences_withMatchingPattern() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/master", true, false);
+        assertTrue(references.containsKey("refs/heads/master"));
+        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
+        assertTrue(!references.containsKey("refs/heads/master"));
+        for (String key : references.keySet()) {
+            assertTrue(key.startsWith("refs/tags/git-client"));
+        }
+
+        references = new HashMap<String, ObjectId>();
+        try {
+            references = w.git.getRemoteReferences(remoteMirrorURL, "notexists-*", false, false);
+        } catch (GitException ge) {
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("unexpected ls-remote output"));
+        }
+        assertTrue(references.isEmpty());
     }
 
     private Properties parseLsRemote(File file) throws IOException

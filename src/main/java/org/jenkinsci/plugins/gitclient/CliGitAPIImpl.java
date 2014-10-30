@@ -2058,6 +2058,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return result.length()>=40 ? ObjectId.fromString(result.substring(0, 40)) : null;
     }
 
+    public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
+            throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
+        if (headsOnly) {
+            args.add("-h");
+        }
+        if (tagsOnly) {
+            args.add("-t");
+        }
+        args.add(url);
+        if (pattern != null) {
+            args.add(pattern);
+        }
+
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) cred = defaultCredentials;
+
+        String result = launchCommandWithCredentials(args, null, cred, url);
+
+        Map<String, ObjectId> references = new HashMap<String, ObjectId>();
+        String[] lines = result.split("\n");
+        for (String line : lines) {
+            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
+            String refName = line.substring(41);
+            ObjectId refObjectId = ObjectId.fromString(line.substring(0, 40));
+            if (refName.startsWith("refs/tags") && refName.endsWith("^{}")) {
+                // get peeled object id for annotated tag
+                String tagName = refName.replace("^{}", "");
+                // Replace with the peeled object id if the entry with tagName exists
+                references.put(tagName, refObjectId);
+            } else {
+                if (!references.containsKey(refName)) {
+                    references.put(refName, refObjectId);
+                }
+            }
+
+        }
+        return references;
+    }
 
     //
     //
