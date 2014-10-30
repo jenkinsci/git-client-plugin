@@ -327,6 +327,23 @@ public interface GitClient {
     ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException;
 
     /**
+     * List references in a remote repository. Equivalent to <tt>git ls-remote [--heads] [--tags] <repository> [<refs>]</tt>.
+     *
+     * @param remoteRepoUrl
+     *      Remote repository URL.
+     * @param pattern
+     *      Only references matching the given pattern are displayed.
+     * @param headsOnly
+     *      Limit to only refs/heads.
+     * @param tagsOnly
+     *      Limit to only refs/tags.
+     *      headsOnly and tagsOnly are not mutually exclusive;
+     *      when both are true, references stored in refs/heads and refs/tags are displayed.
+     * @return a map of references name and its commit hash. Empty if none.
+     */
+    Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
+
+    /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
      * @param revName a commit sha1 or tag/branch refname
      * @throws GitException when no such commit / revName is found in repository.
