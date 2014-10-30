@@ -15,6 +15,8 @@ public interface PushCommand extends GitCommand {
     PushCommand ref(String refspec);
 
     PushCommand force();
-    
+
+    PushCommand tags(boolean tags);
+
     PushCommand timeout(Integer timeout);
 }
