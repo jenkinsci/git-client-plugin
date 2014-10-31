@@ -25,11 +25,16 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheCheckout;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
@@ -50,6 +55,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
+import org.eclipse.jgit.transport.FetchResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -1044,9 +1050,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         return new CloneCommand() {
             String url;
-            String remote;
+            String remote = Constants.DEFAULT_REMOTE_NAME;
             String reference;
-            boolean noCheckout;
             Integer timeout;
 
             public CloneCommand url(String url) {
@@ -1065,8 +1070,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand shared() {
-                listener.getLogger().println("[WARNING] JGit doesn't support shared flag. This flag is ignored");
-                return this;
+                // to be consistent with CliGitImpl
+                throw new UnsupportedOperationException("shared is unsupported, and considered dangerous");
             }
 
             public CloneCommand reference(String reference) {
@@ -1080,12 +1085,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand noCheckout() {
-                this.noCheckout = true;
+                // this.noCheckout = true; ignored
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
                 Repository repository = null;
+
                 try {
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists())
@@ -1101,18 +1107,54 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         builder.addAlternateObjectDirectory(new File(reference));
 
                     repository = builder.build();
+                    repository.create();
 
+                    // the repository builder does not create the alternates file
+                    if (reference != null && !reference.isEmpty()) {
+                        File referencePath = new File(reference);
+                        if (!referencePath.exists())
+                            listener.error("Reference path does not exist: " + reference);
+                        else if (!referencePath.isDirectory())
+                            listener.error("Reference path is not a directory: " + reference);
+                        else {
+                            // reference path can either be a normal or a base repository
+                            File objectsPath = new File(referencePath, ".git/objects");
+                            if (!objectsPath.isDirectory()) {
+                                // reference path is bare repo
+                                objectsPath = new File(referencePath, "objects");
+                            }
+                            if (!objectsPath.isDirectory())
+                                listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                            else {
+                                try {
+                                    File alternates = new File(workspace, ".git/objects/info/alternates");
+                                    PrintWriter w = new PrintWriter(alternates);
+                                    // git implementations on windows also use
+                                    w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                    w.close();
+                                } catch (FileNotFoundException e) {
+                                    listener.error("Failed to setup reference");
+                                }
+                            }
+                        }
+                    }
+
+                    RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*");
                     FetchCommand fetch = new Git(repository).fetch()
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setRemote(url)
                             .setCredentialsProvider(getProvider())
-                            .setRefSpecs(new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*"));
+                            .setRefSpecs(refSpec);
                     if (timeout != null) fetch.setTimeout(timeout);
+                    fetch.call();
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
+                    config.setString("remote", remote, "fetch", refSpec.toString());
                     config.save();
 
+                } catch (GitAPIException e) {
+                    throw new GitException(e);
                 } catch (IOException e) {
                     throw new GitException(e);
                 } finally {

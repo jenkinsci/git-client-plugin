@@ -254,11 +254,18 @@ public abstract class GitAPITestCase extends TestCase {
          * This convenience method adapts the CliGitAPIImpl clone
          * results to be more consistent with the JGitAPIImpl clone
          * results.
+         *
+         * TODO
+         * Since now Jgit does checkout using "init" and fetch as well
+         * Jgit behaviour actually is similar to CLI, not the other way
+         * around, i.e. right now, both implementations do not check out
+         * at the end, making this method obsolet (but test cases still
+         * rely on that behaviour).
          */
         void adaptCliGitClone(String repoName) throws IOException, InterruptedException {
-            if (git instanceof CliGitAPIImpl) {
+//            if (git instanceof CliGitAPIImpl) {
                 git.checkout(repoName + "/master", "master");
-            }
+//            }
         }
     }
 
@@ -492,6 +499,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     /** shared is not implemented in CliGitAPIImpl. */
     @NotImplementedInCliGit
+    @NotImplementedInJGit
     public void test_clone_shared() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
@@ -2611,6 +2619,7 @@ public abstract class GitAPITestCase extends TestCase {
      * testing case is retrieving remote branches.
      * @throws Exception on exceptions occur
      */
+    @NotImplementedInJGit
     public void test_branchContainingRemote() throws Exception {
         final WorkingArea r = new WorkingArea();
         r.init();
