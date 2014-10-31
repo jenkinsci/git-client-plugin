@@ -20,6 +20,7 @@ import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
@@ -79,6 +80,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -619,6 +621,49 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         }
         return heads;
+    }
+
+    public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
+            throws GitException, InterruptedException {
+        Map<String, ObjectId> references = new HashMap<String, ObjectId>();
+        String regexPattern = null;
+        if (pattern != null) {
+            regexPattern = createRefRegexFromGlob(pattern);
+        }
+        try {
+            Repository repo = openDummyRepository();
+            LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
+            if (headsOnly) {
+                lsRemote.setHeads(headsOnly);
+            }
+            if (tagsOnly) {
+                lsRemote.setTags(tagsOnly);
+            }
+            lsRemote.setRemote(url);
+            lsRemote.setCredentialsProvider(getProvider());
+            Collection<Ref> refs = lsRemote.call();
+            try {
+                for (final Ref r : refs) {
+                    final String refName = r.getName();
+                    final ObjectId refObjectId =
+                            r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                    if (regexPattern != null) {
+                        if (refName.matches(regexPattern)) {
+                            references.put(refName, refObjectId);
+                        }
+                    } else {
+                        references.put(refName, refObjectId);
+                    }
+                }
+            } finally {
+                repo.close();
+            }
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+        return references;
     }
 
     /* Adapted from http://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
