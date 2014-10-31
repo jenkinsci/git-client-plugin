@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
@@ -63,6 +64,7 @@ import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 import javax.annotation.Nullable;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -1039,20 +1041,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public CloneCommand clone_() {
-        final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
-        base.setDirectory(workspace);
-        base.setProgressMonitor(new JGitProgressMonitor(listener));
-        base.setCredentialsProvider(getProvider());
 
         return new CloneCommand() {
+            String url;
+            String remote;
+            String reference;
+            boolean noCheckout;
+            Integer timeout;
 
             public CloneCommand url(String url) {
-                base.setURI(url);
+                this.url = url;
                 return this;
             }
 
             public CloneCommand repositoryName(String name) {
-                base.setRemote(name);
+                this.remote = name;
                 return this;
             }
 
@@ -1067,33 +1070,53 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand reference(String reference) {
-                listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
+                this.reference = reference;
                 return this;
             }
 
             public CloneCommand timeout(Integer timeout) {
-            	// noop in jgit
+            	this.timeout = timeout;
             	return this;
             }
 
             public CloneCommand noCheckout() {
-                base.setNoCheckout(true);
+                this.noCheckout = true;
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
+                Repository repository = null;
                 try {
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists())
                         Util.deleteContentsRecursive(workspace);
 
-                    base.call();
-                } catch (GitAPIException e) {
-                    throw new GitException(e);
+                    // since jgit clone/init commands do not support object references (e.g. alternates),
+                    // we build the repository directly using the RepositoryBuilder
+
+                    RepositoryBuilder builder = new RepositoryBuilder();
+                    builder.readEnvironment().setGitDir(new File(workspace, Constants.DOT_GIT));
+
+                    if (reference != null && !reference.isEmpty())
+                        builder.addAlternateObjectDirectory(new File(reference));
+
+                    repository = builder.build();
+
+                    FetchCommand fetch = new Git(repository).fetch()
+                            .setProgressMonitor(new JGitProgressMonitor(listener))
+                            .setRemote(url)
+                            .setCredentialsProvider(getProvider())
+                            .setRefSpecs(new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*"));
+                    if (timeout != null) fetch.setTimeout(timeout);
+
+                    StoredConfig config = repository.getConfig();
+                    config.setString("remote", remote, "url", url);
+                    config.save();
+
                 } catch (IOException e) {
                     throw new GitException(e);
                 } finally {
-                    if (base.getRepository() != null) base.getRepository().close();
+                    if (repository != null) repository.close();
                 }
             }
         };
@@ -1627,7 +1650,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
-                    
+
                 try {
                     repo = getRepository();
                     git(repo).submoduleUpdate().call();
