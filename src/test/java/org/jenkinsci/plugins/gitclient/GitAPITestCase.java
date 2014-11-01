@@ -2,15 +2,9 @@ package org.jenkinsci.plugins.gitclient;
 
 import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
-
-import org.apache.commons.lang.SystemUtils;
-import org.apache.commons.lang.StringUtils;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertNotEquals;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
@@ -23,25 +17,14 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOUtils;
-import junit.framework.TestCase;
-import static org.junit.Assert.assertNotEquals;
 
-import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.URIish;
-import org.jvnet.hudson.test.Bug;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
-import org.objenesis.ObjenesisStd;
-
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,6 +44,31 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import junit.framework.TestCase;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.SystemUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
+import org.jvnet.hudson.test.Bug;
+import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.objenesis.ObjenesisStd;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -2713,6 +2721,63 @@ public abstract class GitAPITestCase extends TestCase {
         Ref head = w.repo().getRef("HEAD");
         assertTrue(head.isSymbolic());
         assertEquals("refs/heads/foo",head.getTarget().getName());
+    }
+
+    /**
+     * Test case for auto local branch creation behviour.
+     * This is essentially a stripped down version of {@link #test_branchContainingRemote()}
+     * @throws Exception on exceptions occur
+     */
+    public void test_checkout_remote_autocreates_local() throws Exception {
+        final WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("c1");
+
+        w.git.clone_().url("file://" + r.repoPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        w.git.fetch_().from(remote, refspecs).execute();
+        w.git.checkout().ref(Constants.MASTER).execute();
+
+        Set<String> refNames = w.git.getRefNames("refs/heads/");
+        assertThat(refNames, contains("refs/heads/master"));
+    }
+
+    public void test_autocreate_fails_on_multiple_matching_origins() throws Exception {
+        final WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("c1");
+
+        w.git.clone_().url("file://" + r.repoPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+
+        // add second remote
+        FileRepository repo = null;
+        try {
+            repo = w.repo();
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", "upstream", "url", "file://" + r.repoPath());
+            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
+            config.save();
+        } finally {
+            if (repo != null) repo.close();
+        }
+
+        // fill both remote branches
+        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        w.git.fetch_().from(remote, refspecs).execute();
+        refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/upstream/*"));
+        w.git.fetch_().from(remote, refspecs).execute();
+
+        try {
+            w.git.checkout().ref(Constants.MASTER).execute();
+            fail("GitException expected");
+        } catch (GitException e) {
+            // expected
+        }
     }
 
     public void test_revList_remote_branch() throws Exception {

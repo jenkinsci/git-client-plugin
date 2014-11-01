@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import antlr.StringUtils;
+
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -15,11 +17,14 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
 
+import org.apache.bcel.classfile.Constant;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.ListBranchCommand.ListMode;
 import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.ResetCommand;
@@ -227,7 +232,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         while (true) {
             try {
                 repo = getRepository();
-                git(repo).checkout().setName(ref).setForce(true).call();
+
+                if (repo.getRef(ref) != null) {
+                    // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/
+                    git(repo).checkout().setName(ref).setForce(true).call();
+                    return;
+                }
+
+                List<String> remoteTrackingBranches = new ArrayList<String>();
+                for (String remote : repo.getRemoteNames()) {
+                    // look for exactly ONE remote tracking branch
+                    String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
+                    if (repo.getRef(matchingRemoteBranch) != null) {
+                        remoteTrackingBranches.add(matchingRemoteBranch);
+                    }
+                }
+
+                if (remoteTrackingBranches.isEmpty()) {
+                    throw new GitException("No matching revision for " + ref + " found.");
+                }
+                if (remoteTrackingBranches.size() > 1) {
+                    throw new GitException("Found more than one matching remote tracking branches for  " + ref + " : " + remoteTrackingBranches);
+                }
+
+                String matchingRemoteBranch = remoteTrackingBranches.get(0);
+                listener.getLogger().format("[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'", ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
+
+                git(repo).checkout()
+                    .setCreateBranch(true)
+                    .setName(ref)
+                    .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+                    .setStartPoint(matchingRemoteBranch).call();
                 return;
             } catch (CheckoutConflictException e) {
                 if (repo != null) {
@@ -250,6 +285,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 }
+            } catch (IOException e) {
+                throw new GitException("Could not checkout " + ref, e);
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
             } catch (JGitInternalException e) {

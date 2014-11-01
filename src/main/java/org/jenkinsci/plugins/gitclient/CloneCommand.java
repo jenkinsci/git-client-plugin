@@ -1,6 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
 /**
+ * Command to clone a repository. This command behaves differently from CLI clone command, it never actually checks out
+ * into the workspace.
+ *
  * @author Kohsuke Kawaguchi
  */
 public interface CloneCommand extends GitCommand {
@@ -20,11 +23,13 @@ public interface CloneCommand extends GitCommand {
     CloneCommand shared();
 
     CloneCommand reference(String reference);
-    
+
     CloneCommand timeout(Integer timeout);
 
     /**
-     * When we just need to clone repository without populating the workspace (for instance when sparse checkouts are used)
+     * When we just need to clone repository without populating the workspace (for instance when sparse checkouts are used).
+     * This parameter does not do anything, a checkout will never be performed.
      */
+    @Deprecated
     CloneCommand noCheckout();
 }
