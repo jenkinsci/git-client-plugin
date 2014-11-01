@@ -400,6 +400,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
                 init_().workspace(workspace.getAbsolutePath()).execute();
+
+                if (shared) {
+                    if (reference == null || reference.isEmpty()) {
+                        // we use origin as reference
+                        reference = url;
+                    } else {
+                        listener.getLogger().println("[WARNING] Both shared and reference is used, shared is ignored.");
+                    }
+                }
+
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
@@ -428,9 +438,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 }
-
-                if (shared)
-                    throw new UnsupportedOperationException("shared is unsupported, and considered dangerous");
 
                 RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+origin+"/*");
                 fetch_().from(urIish, Collections.singletonList(refSpec))
@@ -1324,7 +1331,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (envValue == null) {
             return null;
         }
-        return new File(envValue + suffix);       
+        return new File(envValue + suffix);
     }
 
     private File getSSHExeFromGitExeParentDir(String userGitExe) {

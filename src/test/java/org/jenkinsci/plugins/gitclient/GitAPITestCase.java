@@ -486,12 +486,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_shared() throws IOException, InterruptedException
     {
-        try {
-            w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
-            fail("Should have thrown an exception");
-        } catch (UnsupportedOperationException ue) {
-            assertEquals("shared is unsupported, and considered dangerous", ue.getMessage());
-        }
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        w.git.checkout("origin/master", "master");
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getBranches(), "master");
+        assertAlternateFilePointsToLocalMirror();
     }
 
     public void test_clone_reference() throws IOException, InterruptedException
@@ -500,6 +499,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
+        assertAlternateFilePointsToLocalMirror();
+    }
+
+    private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
 
         assertTrue("Alternates file not found: " + alternates, w.exists(alternates));

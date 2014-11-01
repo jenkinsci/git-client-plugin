@@ -1,12 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
-import antlr.StringUtils;
-
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.removeStart;
+import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
+import static org.eclipse.jgit.api.ResetCommand.ResetType.MIXED;
+import static org.eclipse.jgit.lib.Constants.CHARSET;
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
+import static org.eclipse.jgit.lib.Constants.R_REMOTES;
+import static org.eclipse.jgit.lib.Constants.R_TAGS;
+import static org.eclipse.jgit.lib.Constants.typeString;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -16,64 +19,6 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
-
-import org.apache.bcel.classfile.Constant;
-import org.eclipse.jgit.api.AddNoteCommand;
-import org.eclipse.jgit.api.CommitCommand;
-import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
-import org.eclipse.jgit.api.FetchCommand;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ListBranchCommand;
-import org.eclipse.jgit.api.ListBranchCommand.ListMode;
-import org.eclipse.jgit.api.LsRemoteCommand;
-import org.eclipse.jgit.api.MergeResult;
-import org.eclipse.jgit.api.ResetCommand;
-import org.eclipse.jgit.api.ShowNoteCommand;
-import org.eclipse.jgit.api.errors.CheckoutConflictException;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
-import org.eclipse.jgit.api.errors.JGitInternalException;
-import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.diff.DiffEntry.ChangeType;
-import org.eclipse.jgit.diff.RenameDetector;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheCheckout;
-import org.eclipse.jgit.errors.IncorrectObjectTypeException;
-import org.eclipse.jgit.errors.InvalidPatternException;
-import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.errors.NotSupportedException;
-import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.fnmatch.FileNameMatcher;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.*;
-import org.eclipse.jgit.lib.RefUpdate.Result;
-import org.eclipse.jgit.merge.MergeStrategy;
-import org.eclipse.jgit.notes.Note;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevFlag;
-import org.eclipse.jgit.revwalk.RevFlagSet;
-import org.eclipse.jgit.revwalk.RevObject;
-import org.eclipse.jgit.revwalk.RevSort;
-import org.eclipse.jgit.revwalk.RevTree;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
-import org.eclipse.jgit.revwalk.filter.RevFilter;
-import org.eclipse.jgit.submodule.SubmoduleWalk;
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.FetchConnection;
-import org.eclipse.jgit.transport.FetchResult;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.SshSessionFactory;
-import org.eclipse.jgit.transport.TagOpt;
-import org.eclipse.jgit.transport.Transport;
-import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
-import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
-
-import javax.annotation.Nullable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -96,9 +41,72 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static org.apache.commons.lang.StringUtils.*;
-import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
-import static org.eclipse.jgit.lib.Constants.*;
+import javax.annotation.Nullable;
+
+import org.eclipse.jgit.api.AddNoteCommand;
+import org.eclipse.jgit.api.CommitCommand;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
+import org.eclipse.jgit.api.FetchCommand;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.LsRemoteCommand;
+import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.jgit.api.ShowNoteCommand;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffEntry.ChangeType;
+import org.eclipse.jgit.diff.RenameDetector;
+import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.errors.NotSupportedException;
+import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.fnmatch.FileNameMatcher;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
+import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.notes.Note;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevFlag;
+import org.eclipse.jgit.revwalk.RevFlagSet;
+import org.eclipse.jgit.revwalk.RevObject;
+import org.eclipse.jgit.revwalk.RevSort;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
+import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.FetchConnection;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.TagOpt;
+import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
+import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
+
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -233,7 +241,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try {
                 repo = getRepository();
 
-                if (repo.getRef(ref) != null) {
+                if (repo.resolve(ref) != null) {
                     // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/
                     git(repo).checkout().setName(ref).setForce(true).call();
                     return;
@@ -1135,6 +1143,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String remote = Constants.DEFAULT_REMOTE_NAME;
             String reference;
             Integer timeout;
+            boolean shared;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -1152,8 +1161,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand shared() {
-                // to be consistent with CliGitImpl
-                throw new UnsupportedOperationException("shared is unsupported, and considered dangerous");
+                this.shared = true;
+                return this;
             }
 
             public CloneCommand reference(String reference) {
@@ -1167,7 +1176,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand noCheckout() {
-                // this.noCheckout = true; ignored
+                // this.noCheckout = true; ignored, we never do a checkout
                 return this;
             }
 
@@ -1184,6 +1193,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     RepositoryBuilder builder = new RepositoryBuilder();
                     builder.readEnvironment().setGitDir(new File(workspace, Constants.DOT_GIT));
+
+                    if (shared) {
+                        if (reference == null || reference.isEmpty()) {
+                            // we use origin as reference
+                            reference = url;
+                        } else {
+                            listener.getLogger().println("[WARNING] Both 'shared' and 'reference' is used, shared is ignored.");
+                        }
+                    }
 
                     if (reference != null && !reference.isEmpty())
                         builder.addAlternateObjectDirectory(new File(reference));
