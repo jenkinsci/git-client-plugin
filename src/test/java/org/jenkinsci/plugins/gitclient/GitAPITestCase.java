@@ -491,6 +491,7 @@ public abstract class GitAPITestCase extends TestCase {
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
+        assertNoObjectsInRepository();
     }
 
     public void test_clone_reference() throws IOException, InterruptedException
@@ -500,6 +501,20 @@ public abstract class GitAPITestCase extends TestCase {
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
+        assertNoObjectsInRepository();
+    }
+
+    private void assertNoObjectsInRepository() {
+        List<String> objectsDir = new ArrayList<String>(Arrays.asList(w.file(".git/objects").list()));
+        objectsDir.remove("info");
+        objectsDir.remove("pack");
+        assertTrue("Objects directory must not contain anything but 'info' and 'pack' folders", objectsDir.isEmpty());
+
+        File packDir = w.file(".git/objects/pack");
+        if (packDir.isDirectory()) {
+            assertEquals("Pack dir must noct contain anything", 0, packDir.list().length);
+        }
+
     }
 
     private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {

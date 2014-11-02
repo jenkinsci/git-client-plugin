@@ -1239,6 +1239,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
 
+                    // Jgit repository has alternates directory set, but seems to ignore them
+                    // Workaround: close this repo and create a new one
+                    repository.close();
+                    repository = getRepository();
+
                     RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*");
                     FetchCommand fetch = new Git(repository).fetch()
                             .setProgressMonitor(new JGitProgressMonitor(listener))
