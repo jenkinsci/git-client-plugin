@@ -906,6 +906,15 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push().to(new URIish(bare.repoPath())).tags(false).execute();
         assertFalse("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
 
+        /* Add tag to working repo without pushing it to the bare
+         * repo, tests the default behavior when tags() is not added
+         * to PushCommand.
+         */
+        w.tag("tag3");
+        assertTrue("tag3 wasn't created", w.git.tagExists("tag3"));
+        w.git.push().to(new URIish(bare.repoPath())).execute();
+        assertFalse("tag3 was pushed", bare.cmd("git tag").contains("tag3"));
+
         /* Add another tag to working repo and push tags to the bare repo */
         w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file2");
@@ -915,32 +924,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push().to(new URIish(bare.repoPath())).tags(true).execute();
         assertTrue("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
         assertTrue("tag2 wasn't pushed", bare.cmd("git tag").contains("tag2"));
-    }
-
-    public void test_push_tags_default_behaviour() throws Exception {
-        /* Create a working repo containing a commit */
-        w.init();
-        w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
-        w.git.add("file1");
-        w.git.commit("commit1");
-        ObjectId commit1 = w.head();
-
-        /* Clone working repo into a bare repo */
-        WorkingArea bare = new WorkingArea();
-        bare.init(true);
-        w.git.setRemoteUrl("origin", bare.repoPath());
-        Set<Branch> remoteBranchesEmpty = w.git.getRemoteBranches();
-        assertEquals("Unexpected branch count", 0, remoteBranchesEmpty.size());
-        w.git.push("origin", "master");
-        ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
-        assertEquals("bare != working", commit1, bareCommit1);
-        assertEquals(commit1, bare.git.getHeadRev(bare.repoPath(), "refs/heads/master"));
-
-        /* Add tag to working repo and without pushing it to the bare repo */
-        w.tag("tag1");
-        assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
-        w.git.push().to(new URIish(bare.repoPath())).execute();
-        assertFalse("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
+        assertTrue("tag3 wasn't pushed", bare.cmd("git tag").contains("tag3"));
     }
 
     @Bug(19591)
