@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.Util;
@@ -14,6 +15,7 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
 
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.FetchCommand;
@@ -30,6 +32,7 @@ import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.RenameDetector;
 import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
@@ -224,9 +227,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // but forces recreation of the branch.
                     // we need to take back all open changes to get the equivalent
                     // of git checkout -f
-                    new Git(repo).reset().setMode(HARD).call();
+                    git(repo).reset().setMode(HARD).call();
                 } catch (GitAPIException e) {
                     throw new GitException("Could not reset the workspace before checkout of " + ref, e);
+                } catch (JGitInternalException e) {
+                    if (e.getCause() instanceof LockFailedException){
+                        throw new GitLockFailedException("Could not lock repository. Please try again", e);
+                    } else {
+                        throw e;
+                    }
                 }
 
                 git(repo).checkout().setName(ref).call();

@@ -2203,7 +2203,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
         w.touch("file1", "new");
-        w.git.checkout().branch("other").ref(Constants.HEAD).deleteBranchIfExist(true).execute();;
+        w.git.checkout().branch("other").ref(Constants.HEAD).deleteBranchIfExist(true).execute();
 
         Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
 
