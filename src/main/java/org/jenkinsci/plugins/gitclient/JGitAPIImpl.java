@@ -206,7 +206,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (branch == null)
                     doCheckout(ref);
                 else if (deleteBranch)
-                    doCheckoutBranch(branch, ref);
+                    doCheckoutCleanBranch(branch, ref);
                 else
                     doCheckout(ref, branch);
             }
@@ -219,7 +219,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         while (true) {
             try {
                 repo = getRepository();
-                git(repo).checkout().setName(ref).setForce(true).call();
+                try {
+                    // force in Jgit is "-B" in Git CLI, meaning no forced switch,
+                    // but forces recreation of the branch.
+                    // we need to take back all open changes to get the equivalent
+                    // of git checkout -f
+                    new Git(repo).reset().setMode(HARD).call();
+                } catch (GitAPIException e) {
+                    throw new GitException("Could not reset the workspace before checkout of " + ref, e);
+                }
+
+                git(repo).checkout().setName(ref).call();
                 return;
             } catch (CheckoutConflictException e) {
                 if (repo != null) {
@@ -271,13 +281,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private void doCheckoutBranch(String branch, String ref) throws GitException {
+    private void doCheckoutCleanBranch(String branch, String ref) throws GitException {
         Repository repo = null;
         try {
             repo = getRepository();
-            RefUpdate refUpdate =
-                branch == null ? repo.updateRef(Constants.HEAD, true)
-                               : repo.updateRef(R_HEADS + branch);
+            RefUpdate refUpdate = repo.updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(repo.resolve(ref));
             switch (refUpdate.forceUpdate()) {
             case NOT_ATTEMPTED:
@@ -286,12 +294,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             case REJECTED_CURRENT_BRANCH:
             case IO_FAILURE:
             case RENAMED:
-                throw new GitException("Could not update " + (branch!= null ? branch : "") + " to " + ref);
+                throw new GitException("Could not update " + branch + " to " + ref);
             }
 
-            if (branch != null) doCheckout(branch);
+            doCheckout(branch);
         } catch (IOException e) {
-            throw new GitException("Could not checkout " + (branch!= null ? branch : "") + " with start point " + ref, e);
+            throw new GitException("Could not checkout " + branch +  " with start point " + ref, e);
         } finally {
             if (repo != null) repo.close();
         }
@@ -1681,7 +1689,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
-                    
+
                 try {
                     repo = getRepository();
                     git(repo).submoduleUpdate().call();

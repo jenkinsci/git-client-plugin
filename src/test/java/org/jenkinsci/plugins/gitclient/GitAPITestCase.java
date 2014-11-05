@@ -27,6 +27,7 @@ import junit.framework.TestCase;
 import static org.junit.Assert.assertNotEquals;
 
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -68,7 +69,7 @@ import java.util.zip.ZipFile;
 public abstract class GitAPITestCase extends TestCase {
 
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
-    
+
     protected hudson.EnvVars env = new hudson.EnvVars();
     protected TaskListener listener;
 
@@ -81,7 +82,7 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * One local workspace of a Git repository on a temporary directory
      * that gets automatically cleaned up in the end.
-     * 
+     *
      * Every test case automatically gets one in {@link #w} but additional ones can be created if multi-repository
      * interactions need to be tested.
      */
@@ -89,7 +90,7 @@ public abstract class GitAPITestCase extends TestCase {
         final File repo;
         final GitClient git;
         boolean bare = false;
-        
+
         WorkingArea() throws Exception {
             this(temporaryDirectoryAllocator.allocate());
         }
@@ -120,7 +121,7 @@ public abstract class GitAPITestCase extends TestCase {
           gitClient.setProxy(proxyConfig);
         }
 
-        private void setField(Class<?> clazz, String fieldName, Object object, Object value) 
+        private void setField(Class<?> clazz, String fieldName, Object object, Object value)
               throws SecurityException, NoSuchFieldException, IllegalArgumentException, IllegalAccessException
         {
           Field declaredField = clazz.getDeclaredField(fieldName);
@@ -140,11 +141,11 @@ public abstract class GitAPITestCase extends TestCase {
         String cmd(String args) throws IOException, InterruptedException {
             return launchCommand(args.split(" "));
         }
-    
+
         String cmd(boolean ignoreError, String args) throws IOException, InterruptedException {
             return launchCommand(ignoreError, args.split(" "));
         }
-    
+
         String launchCommand(String... args) throws IOException, InterruptedException {
             return launchCommand(false, args);
         }
@@ -166,7 +167,7 @@ public abstract class GitAPITestCase extends TestCase {
         String repoPath() {
             return repo.getAbsolutePath();
         }
-        
+
         WorkingArea init() throws IOException, InterruptedException {
             git.init();
             return this;
@@ -262,7 +263,7 @@ public abstract class GitAPITestCase extends TestCase {
             }
         }
     }
-    
+
     private WorkingArea w;
 
     WorkingArea clone(String src) throws Exception {
@@ -326,7 +327,7 @@ public abstract class GitAPITestCase extends TestCase {
     /* HEAD ref of local mirror - all read access should use getMirrorHead */
     private static ObjectId mirrorHead = null;
 
-    private ObjectId getMirrorHead() throws IOException, InterruptedException 
+    private ObjectId getMirrorHead() throws IOException, InterruptedException
     {
         if (mirrorHead == null) {
             final String mirrorPath = new File(localMirror()).getAbsolutePath();
@@ -606,7 +607,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
-    
+
     @Deprecated
     public void test_getRemoteURL_two_args() throws Exception {
         w.init();
@@ -872,7 +873,7 @@ public abstract class GitAPITestCase extends TestCase {
          * and later, it should be bareCommit5. */
         assertEquals("null refSpec fetch modified local repo", expectedHead, newArea.head());
 
-        try { 
+        try {
             /* Fetch into newArea repo with invalid repo name and no RefSpec */
             newArea.git.fetch("invalid-remote-name");
             fail("Should have thrown an exception");
@@ -1614,7 +1615,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.touch("file1", "content1");
         r.git.add("file1");
         r.git.commit("submod-commit1");
-      
+
         // Add new GIT repo to w
         String subModDir = "submod1-" + java.util.UUID.randomUUID().toString();
         w.git.addSubmodule(r.repoPath(), subModDir);
@@ -1898,7 +1899,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
         assertEquals(expected, symlinkValue);
     }
- 
+
     public void test_init() throws Exception {
         assertFalse(w.file(".git").exists());
         w.git.init();
@@ -2193,6 +2194,20 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId knownTag = w.git.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
         ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
         assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
+    }
+
+    @Bug(25444)
+    public void test_fetch_delete_cleans() throws Exception {
+        w.init();
+        w.touch("file1", "old");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        w.touch("file1", "new");
+        w.git.checkout().branch("other").ref(Constants.HEAD).deleteBranchIfExist(true).execute();;
+
+        Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
+
+        assertTrue("Workspace must be clean", status.isClean());
     }
 
     /**
