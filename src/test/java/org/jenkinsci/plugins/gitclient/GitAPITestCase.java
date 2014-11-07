@@ -50,6 +50,7 @@ import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -2195,6 +2196,20 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId knownTag = w.git.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
         ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
         assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
+    }
+
+    @Bug(25444)
+    public void test_fetch_delete_cleans() throws Exception {
+        w.init();
+        w.touch("file1", "old");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        w.touch("file1", "new");
+        w.git.checkout().branch("other").ref(Constants.HEAD).deleteBranchIfExist(true).execute();
+
+        Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
+
+        assertTrue("Workspace must be clean", status.isClean());
     }
 
     /**
