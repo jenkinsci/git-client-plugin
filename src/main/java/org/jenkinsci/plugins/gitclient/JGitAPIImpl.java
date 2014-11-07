@@ -1228,7 +1228,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             else {
                                 try {
                                     File alternates = new File(workspace, ".git/objects/info/alternates");
-                                    PrintWriter w = new PrintWriter(alternates);
+                                    PrintWriter w = new PrintWriter(alternates, "UTF-8");
                                     // git implementations on windows also use
                                     w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
                                     w.close();
