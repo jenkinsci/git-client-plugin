@@ -1,10 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang.StringUtils.removeStart;
+import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
+import static org.eclipse.jgit.api.ResetCommand.ResetType.MIXED;
+import static org.eclipse.jgit.lib.Constants.CHARSET;
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.eclipse.jgit.lib.Constants.R_HEADS;
+import static org.eclipse.jgit.lib.Constants.R_REMOTES;
+import static org.eclipse.jgit.lib.Constants.R_TAGS;
+import static org.eclipse.jgit.lib.Constants.typeString;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -15,9 +20,32 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.IOUtils;
 
-import org.apache.commons.lang.StringUtils;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
+
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
+import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
@@ -37,8 +65,19 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefDatabase;
+import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.RefUpdate.Result;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -64,31 +103,11 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
-import javax.annotation.Nullable;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import static org.apache.commons.lang.StringUtils.*;
-import static org.eclipse.jgit.api.ResetCommand.ResetType.*;
-import static org.eclipse.jgit.lib.Constants.*;
+import edu.umd.cs.findbugs.annotations.NonNull;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -238,7 +257,36 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
 
-                git(repo).checkout().setName(ref).call();
+                if (repo.resolve(ref) != null) {
+                    // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/)
+                    git(repo).checkout().setName(ref).setForce(true).call();
+                    return;
+                }
+
+                List<String> remoteTrackingBranches = new ArrayList<String>();
+                for (String remote : repo.getRemoteNames()) {
+                    // look for exactly ONE remote tracking branch
+                    String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
+                    if (repo.getRef(matchingRemoteBranch) != null) {
+                        remoteTrackingBranches.add(matchingRemoteBranch);
+                    }
+                }
+
+                if (remoteTrackingBranches.isEmpty()) {
+                    throw new GitException("No matching revision for " + ref + " found.");
+                }
+                if (remoteTrackingBranches.size() > 1) {
+                    throw new GitException("Found more than one matching remote tracking branches for  " + ref + " : " + remoteTrackingBranches);
+                }
+
+                String matchingRemoteBranch = remoteTrackingBranches.get(0);
+                listener.getLogger().format("[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'", ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
+
+                git(repo).checkout()
+                    .setCreateBranch(true)
+                    .setName(ref)
+                    .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+                    .setStartPoint(matchingRemoteBranch).call();
                 return;
             } catch (CheckoutConflictException e) {
                 if (repo != null) {
@@ -261,6 +309,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 }
+            } catch (IOException e) {
+                throw new GitException("Could not checkout " + ref, e);
             } catch (GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
             } catch (JGitInternalException e) {
@@ -1101,20 +1151,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public CloneCommand clone_() {
-        final org.eclipse.jgit.api.CloneCommand base = new org.eclipse.jgit.api.CloneCommand();
-        base.setDirectory(workspace);
-        base.setProgressMonitor(new JGitProgressMonitor(listener));
-        base.setCredentialsProvider(getProvider());
 
         return new CloneCommand() {
+            String url;
+            String remote = Constants.DEFAULT_REMOTE_NAME;
+            String reference;
+            Integer timeout;
+            boolean shared;
 
             public CloneCommand url(String url) {
-                base.setURI(url);
+                this.url = url;
                 return this;
             }
 
             public CloneCommand repositoryName(String name) {
-                base.setRemote(name);
+                this.remote = name;
                 return this;
             }
 
@@ -1124,38 +1175,109 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand shared() {
-                listener.getLogger().println("[WARNING] JGit doesn't support shared flag. This flag is ignored");
+                this.shared = true;
                 return this;
             }
 
             public CloneCommand reference(String reference) {
-                listener.getLogger().println("[WARNING] JGit doesn't support reference repository. This flag is ignored.");
+                this.reference = reference;
                 return this;
             }
 
             public CloneCommand timeout(Integer timeout) {
-            	// noop in jgit
+            	this.timeout = timeout;
             	return this;
             }
 
             public CloneCommand noCheckout() {
-                base.setNoCheckout(true);
+                // this.noCheckout = true; ignored, we never do a checkout
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
+                Repository repository = null;
+
                 try {
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists())
                         Util.deleteContentsRecursive(workspace);
 
-                    base.call();
+                    // since jgit clone/init commands do not support object references (e.g. alternates),
+                    // we build the repository directly using the RepositoryBuilder
+
+                    RepositoryBuilder builder = new RepositoryBuilder();
+                    builder.readEnvironment().setGitDir(new File(workspace, Constants.DOT_GIT));
+
+                    if (shared) {
+                        if (reference == null || reference.isEmpty()) {
+                            // we use origin as reference
+                            reference = url;
+                        } else {
+                            listener.getLogger().println("[WARNING] Both 'shared' and 'reference' is used, shared is ignored.");
+                        }
+                    }
+
+                    if (reference != null && !reference.isEmpty())
+                        builder.addAlternateObjectDirectory(new File(reference));
+
+                    repository = builder.build();
+                    repository.create();
+
+                    // the repository builder does not create the alternates file
+                    if (reference != null && !reference.isEmpty()) {
+                        File referencePath = new File(reference);
+                        if (!referencePath.exists())
+                            listener.error("Reference path does not exist: " + reference);
+                        else if (!referencePath.isDirectory())
+                            listener.error("Reference path is not a directory: " + reference);
+                        else {
+                            // reference path can either be a normal or a base repository
+                            File objectsPath = new File(referencePath, ".git/objects");
+                            if (!objectsPath.isDirectory()) {
+                                // reference path is bare repo
+                                objectsPath = new File(referencePath, "objects");
+                            }
+                            if (!objectsPath.isDirectory())
+                                listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                            else {
+                                try {
+                                    File alternates = new File(workspace, ".git/objects/info/alternates");
+                                    PrintWriter w = new PrintWriter(alternates, "UTF-8");
+                                    // git implementations on windows also use
+                                    w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                    w.close();
+                                } catch (FileNotFoundException e) {
+                                    listener.error("Failed to setup reference");
+                                }
+                            }
+                        }
+                    }
+
+                    // Jgit repository has alternates directory set, but seems to ignore them
+                    // Workaround: close this repo and create a new one
+                    repository.close();
+                    repository = getRepository();
+
+                    RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*");
+                    FetchCommand fetch = new Git(repository).fetch()
+                            .setProgressMonitor(new JGitProgressMonitor(listener))
+                            .setRemote(url)
+                            .setCredentialsProvider(getProvider())
+                            .setRefSpecs(refSpec);
+                    if (timeout != null) fetch.setTimeout(timeout);
+                    fetch.call();
+
+                    StoredConfig config = repository.getConfig();
+                    config.setString("remote", remote, "url", url);
+                    config.setString("remote", remote, "fetch", refSpec.toString());
+                    config.save();
+
                 } catch (GitAPIException e) {
                     throw new GitException(e);
                 } catch (IOException e) {
                     throw new GitException(e);
                 } finally {
-                    if (base.getRepository() != null) base.getRepository().close();
+                    if (repository != null) repository.close();
                 }
             }
         };
