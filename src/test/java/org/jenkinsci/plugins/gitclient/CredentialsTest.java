@@ -166,7 +166,8 @@ public class CredentialsTest {
                     Object[] repo = {repoURL, username, privateKey};
                     repos.add(repo);
                 } else {
-                    log().println(privateKey + " file not found");
+                    Object[] repo = {repoURL, username, null};
+                    repos.add(repo);
                 }
             }
         }
