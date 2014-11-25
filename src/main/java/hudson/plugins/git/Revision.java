@@ -92,4 +92,25 @@ public class Revision implements java.io.Serializable, Cloneable {
         return clone;
     }
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + sha1.hashCode();
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Revision other = (Revision) obj;
+		if (!sha1.equals(other.sha1))
+			return false;
+		return true;
+	}
 }
