@@ -38,6 +38,19 @@ public class RevisionTest {
     }
 
     @Test
+    public void testEquals() {
+    	assertEquals(revision1, revision1);
+    	assertNotEquals(revision1, null);
+    	assertNotEquals(revision1, objectId);
+    	assertEquals(revision1, revision2);
+    	
+    	revision2.setBranches(branchCollection);
+    	assertEquals(revision1, revision2);    	
+    	assertNotEquals(revision1, revisionWithBranches);
+    	assertNotEquals(revision2, revisionWithBranches);
+    }
+
+    @Test
     public void testGetSha1() {
         assertEquals(revision1.getSha1(), objectId);
         assertEquals(revision2.getSha1(), objectId);
