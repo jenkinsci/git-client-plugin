@@ -149,4 +149,10 @@ public class RevisionTest {
         Collection<Branch> branchesCloned = revisionWithBranchesClone.getBranches();
         assertTrue(revisionWithBranchesClone.containsBranchName(branchName));
     }
+
+    @Test
+    public void testHashCode() {
+        assertEquals(revision1, revision2);
+        assertEquals(revision1.hashCode(), revision2.hashCode());
+    }
 }
