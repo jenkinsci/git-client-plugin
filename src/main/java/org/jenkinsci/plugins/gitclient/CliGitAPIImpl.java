@@ -187,8 +187,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     public boolean hasGitRepo() throws GitException, InterruptedException {
         if (hasGitRepo(".git")) {
-            // Check if this is actually a valid git repo by checking ls-files. If it's duff, this will
-            // fail. HEAD is not guaranteed to be valid (e.g. new repo).
+            // Check if this is a valid git repo with --is-inside-work-tree
             try {
                 launchCommand("rev-parse", "--is-inside-work-tree");
             } catch (Exception ex) {
