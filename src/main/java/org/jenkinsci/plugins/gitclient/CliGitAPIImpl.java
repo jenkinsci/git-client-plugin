@@ -117,7 +117,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     // AABBCCDD where AA=major, BB=minor, CC=rev, DD=bugfix
     private long gitVersion = 0;
     private long computeVersionFromBits(int major, int minor, int rev, int bugfix) {
-        return (major*1000000) + (minor*10000) + (rev*100) + bugfix;
+        return (major*1000000L) + (minor*10000L) + (rev*100L) + bugfix;
     }
     private void getGitVersion() {
         if (gitVersion != 0) {
