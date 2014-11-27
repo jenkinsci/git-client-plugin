@@ -148,7 +148,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * before parsing.
              */
 
-            String[] fields = version.split(" ")[2].replaceAll("msysgit.", "").split("\\.");
+            String[] fields = version.split(" ")[2].replace("msysgit.", "").split("\\.");
 
             gitMajorVersion  = Integer.parseInt(fields[0]);
             gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
