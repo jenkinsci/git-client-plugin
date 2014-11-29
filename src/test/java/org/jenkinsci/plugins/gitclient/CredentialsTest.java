@@ -173,6 +173,9 @@ public class CredentialsTest {
         }
         Collections.shuffle(repos); // randomize test order
         int toIndex = repos.size() < 3 ? repos.size() : 3;
+        if (TEST_ALL_CREDENTIALS) {
+            toIndex = repos.size();
+        }
         return repos.subList(0, toIndex);
     }
 
@@ -235,4 +238,6 @@ public class CredentialsTest {
         assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
         git.clearCredentials();
     }
+
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
 }
