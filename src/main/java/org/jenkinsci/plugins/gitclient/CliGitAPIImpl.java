@@ -93,6 +93,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     static final String TIMEOUT_LOG_PREFIX = " # timeout=";
+    private static final String INDEX_LOCK_FILE_PATH = ".git" + File.separator + "index.lock";
     transient Launcher launcher;
     TaskListener listener;
     String gitExe;
@@ -1446,6 +1447,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw e;
         } catch (IOException e) {
             throw new GitException("Error performing command: " + command, e);
+        } catch (InterruptedException e) {
+            throw e;
         } catch (Throwable t) {
             throw new GitException("Error performing git command", t);
         }
@@ -1602,6 +1605,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
+                final long startTime = System.currentTimeMillis();
                 try {
 
                     // Will activate or deactivate sparse checkout depending on the given paths
@@ -1634,8 +1638,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } else {
                         throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
                     }
+                } catch (InterruptedException e) {
+                    final File indexFile = new File(workspace.getPath() + File.separator
+                            + INDEX_LOCK_FILE_PATH);
+                    if (indexFile.exists() && indexFile.lastModified() > startTime) {
+                        // If lock file is created before checkout command
+                        // started, it is not created by this checkout command
+                        // and we should leave it in place
+                        try {
+                            FileUtils.forceDelete(indexFile);
+                        } catch (IOException ioe) {
+                            throw new GitException(
+                                    "Could not remove index lock file on interrupting thread", ioe);
+                        }
+                    }
+                    throw e;
                 }
-
             }
 
             private void sparseCheckout(@NonNull List<String> paths) throws GitException, InterruptedException {
