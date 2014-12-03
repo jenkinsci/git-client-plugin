@@ -119,6 +119,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
  * @author Kohsuke Kawaguchi
  */
 public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
+    private static final long serialVersionUID = 1L;
 
     private final TaskListener listener;
     private PersonIdent author, committer;

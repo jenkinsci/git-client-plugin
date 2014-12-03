@@ -14,6 +14,7 @@ import java.util.List;
  * @author Kohsuke Kawaguchi
  */
 public class JGitTool extends GitTool {
+    private static final long serialVersionUID = 1L;
     @DataBoundConstructor
     public JGitTool(List<? extends ToolProperty<?>> properties) {
         super("jgit", MAGIC_EXENAME, properties);

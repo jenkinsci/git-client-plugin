@@ -26,6 +26,7 @@ import java.util.Set;
  * @deprecated
  */
 public class GitAPI extends CliGitAPIImpl {
+    private static final long serialVersionUID = 1L;
     private final GitClient jgit;
 
     @Deprecated
