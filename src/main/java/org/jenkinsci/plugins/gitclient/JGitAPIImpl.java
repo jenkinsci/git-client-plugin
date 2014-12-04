@@ -124,7 +124,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
-    private CredentialsProvider provider;
+    private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         super(workspace);
