@@ -1570,6 +1570,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /* For testability - interrupt the next checkout() */
+    private boolean interruptNextCheckout = false;
+    private String interruptMessage = "";
+
+    /* Allow test of interrupted lock removal after checkout */
+    /* package */ void interruptNextCheckoutWithMessage(String msg) {
+        interruptNextCheckout = true;
+        interruptMessage = msg;
+    }
+
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
 
@@ -1604,9 +1614,32 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            public void execute() throws GitException, InterruptedException {
-                final long startTime = System.currentTimeMillis();
+            /* Allow test of index.lock cleanup when checkout is interrupted */
+            private void interruptThisCheckout() throws InterruptedException {
+                final File indexFile = new File(workspace.getPath() + File.separator
+                        + INDEX_LOCK_FILE_PATH);
                 try {
+                    indexFile.createNewFile();
+                } catch (IOException ex) {
+                    throw new InterruptedException(ex.getMessage());
+                }
+                throw new InterruptedException(interruptMessage);
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                /* File.lastModified() limited by file system time, several
+                 * popular Linux file systems only have 1 second granularity.
+                 * None of the common file systems (Windows or Linux) have
+                 * millisecond granularity.
+                 */
+                final long startTimeSeconds = (System.currentTimeMillis() / 1000) * 1000 ;
+                try {
+
+                    /* Testing only - simulate command line git leaving a lock file */
+                    if (interruptNextCheckout) {
+                        interruptNextCheckout = false;
+                        interruptThisCheckout();
+                    }
 
                     // Will activate or deactivate sparse checkout depending on the given paths
                     sparseCheckout(sparseCheckoutPaths);
@@ -1641,7 +1674,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (InterruptedException e) {
                     final File indexFile = new File(workspace.getPath() + File.separator
                             + INDEX_LOCK_FILE_PATH);
-                    if (indexFile.exists() && indexFile.lastModified() > startTime) {
+                    if (indexFile.exists() && indexFile.lastModified() >= startTimeSeconds) {
                         // If lock file is created before checkout command
                         // started, it is not created by this checkout command
                         // and we should leave it in place

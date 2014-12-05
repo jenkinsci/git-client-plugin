@@ -2798,6 +2798,46 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
     }
 
+    @Bug(25353)
+    @NotImplementedInJGit /* JGit lock file management ignored for now */
+    public void test_checkout_interrupted() throws Exception {
+        w = clone(localMirror());
+        File lockFile = new File(w.repo().getDirectory(), "index.lock");
+        assertFalse("lock file already exists", lockFile.exists());
+        String exceptionMsg = "test checkout intentionally interrupted";
+        CliGitAPIImpl cli = (CliGitAPIImpl) w.git;
+        CheckoutCommand cmd = cli.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea"); // git-client-1.6.0
+        cli.interruptNextCheckoutWithMessage(exceptionMsg);
+        try {
+            cmd.execute();
+            fail("Did not throw InterruptedException");
+        } catch (InterruptedException ie) {
+            assertEquals(exceptionMsg, ie.getMessage());
+        }
+        assertFalse("lock file '" + lockFile.getCanonicalPath() + " not removed by cleanup", lockFile.exists());
+    }
+
+    @Bug(25353)
+    @NotImplementedInJGit /* JGit lock file management ignored for now */
+    public void test_checkout_interrupted_with_existing_lock() throws Exception {
+        w = clone(localMirror());
+        File lockFile = new File(w.repo().getDirectory(), "index.lock");
+        lockFile.createNewFile();
+        Thread.sleep(1500); // Wait 1.5 seconds to "age" existing lock file
+        assertTrue("lock file does not exist", lockFile.exists());
+        String exceptionMsg = "test checkout intentionally interrupted";
+        CliGitAPIImpl cli = (CliGitAPIImpl) w.git;
+        CheckoutCommand cmd = cli.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").timeout(1); // git-client-1.6.0
+        cli.interruptNextCheckoutWithMessage(exceptionMsg);
+        try {
+            cmd.execute();
+            fail("Did not throw InterruptedException");
+        } catch (InterruptedException ie) {
+            assertEquals(exceptionMsg, ie.getMessage());
+        }
+        assertTrue("lock file '" + lockFile.getCanonicalPath() + " removed by cleanup", lockFile.exists());
+    }
+
     @Bug(19108)
     public void test_checkoutBranch() throws Exception {
         w.init();
