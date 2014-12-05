@@ -262,7 +262,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
-        x.cmd("git clone " + src + " " + x.repoPath());
+        x.launchCommand("git", "clone", src, x.repoPath());
         return new WorkingArea(x.repo);
     }
 
@@ -325,7 +325,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         if (mirrorHead == null) {
             final String mirrorPath = new File(localMirror()).getAbsolutePath();
-            mirrorHead = ObjectId.fromString(w.cmd("git --git-dir=" + mirrorPath + " rev-parse HEAD").substring(0,40));
+            mirrorHead = ObjectId.fromString(w.launchCommand("git", "--git-dir=" + mirrorPath, "rev-parse", "HEAD").substring(0,40));
         }
         return mirrorHead;
     }
@@ -341,8 +341,9 @@ public abstract class GitAPITestCase extends TestCase {
         for (File f=base; f!=null; f=f.getParentFile()) {
             if (new File(f,"target").exists()) {
                 File clone = new File(f, "target/clone.git");
-                if (!clone.exists())    // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    w.cmd("git clone --mirror https://github.com/jenkinsci/git-client-plugin.git " + clone.getAbsolutePath());
+                if (!clone.exists()) {  // TODO: perhaps some kind of quick timestamp-based up-to-date check?
+                    w.launchCommand("git", "clone", "--mirror", "https://github.com/jenkinsci/git-client-plugin.git", clone.getAbsolutePath());
+                }
                 return clone.getPath();
             }
         }
@@ -548,7 +549,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_refspec() throws Exception {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         final WorkingArea w2 = new WorkingArea();
-        w2.cmd("git clone " + localMirror() + " ./");
+        w2.launchCommand("git", "clone", localMirror(), "./");
         w2.git.withRepository(new RepositoryCallback<Void>() {
             public Void invoke(final Repository realRepo, VirtualChannel channel) throws IOException, InterruptedException {
                 return w.git.withRepository(new RepositoryCallback<Void>() {
@@ -2005,7 +2006,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revListAll() throws Exception {
         w.init();
-        w.cmd("git pull " + localMirror());
+        w.launchCommand("git", "pull", localMirror());
 
         StringBuilder out = new StringBuilder();
         for (ObjectId id : w.git.revListAll()) {
@@ -2018,7 +2019,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_revList_() throws Exception {
         List<ObjectId> oidList = new ArrayList<ObjectId>();
         w.init();
-        w.cmd("git pull " + localMirror());
+        w.launchCommand("git", "pull", localMirror());
 
         RevListCommand revListCommand = w.git.revList_();
         revListCommand.all();
@@ -2035,7 +2036,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revListFirstParent() throws Exception {
         w.init();
-        w.cmd("git pull " + localMirror());
+        w.launchCommand("git", "pull", localMirror());
 
         for (Branch b : w.git.getRemoteBranches()) {
             StringBuilder out = new StringBuilder();
@@ -2058,7 +2059,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_revList() throws Exception {
         w.init();
-        w.cmd("git pull " + localMirror());
+        w.launchCommand("git", "pull", localMirror());
 
         for (Branch b : w.git.getRemoteBranches()) {
             StringBuilder out = new StringBuilder();
