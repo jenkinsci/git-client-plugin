@@ -127,7 +127,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
-        super(workspace);
+        /* If workspace is null, then default to current directory to match 
+         * CliGitAPIImpl behavior */
+        super(workspace == null ? new File(".") : workspace);
         this.listener = listener;
 
         // to avoid rogue plugins from clobbering what we use, always
