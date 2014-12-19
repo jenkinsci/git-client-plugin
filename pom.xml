@@ -53,7 +53,7 @@
     <maven-site-plugin.version>3.3</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
     <maven-surefire-plugin.version>2.18</maven-surefire-plugin.version>
-    <jgit.version>3.5.2.201411120430-r</jgit.version>
+    <jgit.version>3.5.3.201412180710-r</jgit.version>
   </properties>
 
   <dependencies>
