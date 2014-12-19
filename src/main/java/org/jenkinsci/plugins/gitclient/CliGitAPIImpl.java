@@ -1173,7 +1173,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
-                checkCredentials(url, credentials);
+                //checkCredentials(url, credentials);
 
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
@@ -1227,6 +1227,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
+            List<String> aa = args.toList();
+            aa.add(0, "-c");
+            aa.add(1, "core.askpass=true");
+            args = new ArgumentListBuilder(aa.toArray(new String[0]));
             return launchCommandIn(args, workDir, env, timeout);
         } catch (IOException e) {
             throw new GitException("Failed to setup credentials", e);
