@@ -102,7 +102,7 @@ public class CredentialsTest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
-        addExpectedLogSubstring("> git fetch ");
+        addExpectedLogSubstring("> git -c core.askpass=true fetch ");
         addExpectedLogSubstring("> git checkout -b master ");
     }
 
