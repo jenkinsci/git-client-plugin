@@ -15,9 +15,10 @@ public class CredentialsJGitTest extends CredentialsTest {
     @Override
     public void setUp() throws IOException, InterruptedException {
         super.setUp();
-        // setExpectedLogSubstring("remote: Counting objects");
-        setExpectedLogSubstring(null); /* FetchWithCredentials does not log expected message */
+        clearExpectedLogSubstring();
 
+        /* FetchWithCredentials does not log expected message */
+        // addExpectedLogSubstring("remote: Counting objects");
     }
 
 }
