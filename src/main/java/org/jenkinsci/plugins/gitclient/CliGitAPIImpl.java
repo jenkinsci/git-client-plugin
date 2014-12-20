@@ -1173,8 +1173,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
-                //checkCredentials(url, credentials);
-
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
                     if (!isAtLeastVersion(1,7,9,0))
@@ -2277,115 +2275,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // use toPrivateString to include the password too
         return uri.toPrivateString();
-    }
-
-    /**
-     * Check credentials are valid to access the remote repository (avoids git to interactively request username/password.)
-     */
-    private void checkCredentials(URIish u, StandardCredentials cred) {
-        String url = u.toPrivateString();
-        final HttpClientBuilder clientBuilder = HttpClients.custom();
-        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-        Credentials defaultcreds;
-        if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
-            StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
-            defaultcreds = new UsernamePasswordCredentials(up.getUsername(), Secret.toString(up.getPassword()));
-        } else if (u.getUser() != null && u.getPass() != null) {
-            defaultcreds = new UsernamePasswordCredentials(u.getUser(), u.getPass());
-        } else {
-            defaultcreds = Netrc.getInstance().getCredentials(u.getHost());
-        }
-        if (defaultcreds != null) {
-            final AuthScope ntlmSchemeScope = new AuthScope(u.getHost(), u.getPort(), AuthScope.ANY_REALM, AuthSchemes.NTLM);
-            final UsernamePasswordCredentials up = (UsernamePasswordCredentials) defaultcreds;
-            final NTCredentials ntCredentials = new NTCredentials(up.getUserName(), up.getPassword(), u.getHost(), "");
-            credentialsProvider.setCredentials(ntlmSchemeScope, ntCredentials);
-
-            credentialsProvider.setCredentials(AuthScope.ANY, defaultcreds);
-        }
-
-        if (proxy != null) {
-        	boolean shouldProxy = true;
-            for(Pattern p : proxy.getNoProxyHostPatterns()) {
-                if(p.matcher(u.getHost()).matches()) {
-                    shouldProxy = false;
-                    break;
-                }
-            }
-            if(shouldProxy) {
-                final HttpHost proxyHost = new HttpHost(proxy.name, proxy.port);
-                final HttpRoutePlanner routePlanner = new DefaultProxyRoutePlanner(proxyHost);
-                clientBuilder.setRoutePlanner(routePlanner);
-                if (proxy.getUserName() != null && proxy.getPassword() != null)
-                    credentialsProvider.setCredentials(new AuthScope(proxyHost), new UsernamePasswordCredentials(proxy.getUserName(), proxy.getPassword()));
-            }
-        }
-
-        List<String> candidates = new ArrayList<String>();
-        candidates.add(url + "/info/refs"); // dump-http
-        candidates.add(url + "/info/refs?service=git-upload-pack"); // smart-http
-        if (!url.endsWith(".git")) {
-            candidates.add(url + ".git/info/refs"); // dump-http
-            candidates.add(url + ".git/info/refs?service=git-upload-pack"); // smart-http
-        }
-
-        clientBuilder.setUserAgent("git/1.7.0");
-        if(acceptSelfSignedCertificates && "https".equalsIgnoreCase(u.getScheme())) {
-            final SSLContextBuilder contextBuilder = SSLContexts.custom();
-            try {
-                contextBuilder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-            } catch (NoSuchAlgorithmException e) {
-                throw new GitException(e.getLocalizedMessage(), e);
-            } catch (KeyStoreException e) {
-                throw new GitException(e.getLocalizedMessage(), e);
-            }
-            SSLContext sslContext = null;
-            try {
-                sslContext = contextBuilder.build();
-            } catch (KeyManagementException e) {
-                throw new GitException(e.getLocalizedMessage(), e);
-            } catch (NoSuchAlgorithmException e) {
-                throw new GitException(e.getLocalizedMessage(), e);
-            }
-            clientBuilder.setSslcontext(sslContext);
-        }
-        final CloseableHttpClient client = clientBuilder.build();
-        int status = 0;
-        try {
-            for (String candidate : candidates) {
-                HttpGet get = new HttpGet(candidate);
-
-                final CloseableHttpResponse response = client.execute(get);
-                try{
-                    status = response.getStatusLine().getStatusCode();
-                    if (status == 200) break;
-                }
-                finally {
-                    response.close();
-                }
-            }
-
-            if (status != 200)
-                throw new GitException("Failed to connect to " + u.toString()
-                    + (cred != null ? " using credentials " + cred.getDescription() : "" )
-                    + " (status = "+status+")");
-        } catch (SSLException e) {
-            throw new GitException(e.getLocalizedMessage());
-        } catch (IOException e) {
-            throw new GitException("Failed to connect to " + u.toString()
-                    + (cred != null ? " using credentials " + cred.getDescription() : "" )
-                    + " (exception: " + e + ")" );
-        } catch (IllegalArgumentException e) {
-            throw new GitException("Invalid URL " + u.toString());
-        }
-        finally {
-            try {
-                client.close();
-            } catch (IOException e) {
-                throw new GitException(e.getLocalizedMessage());
-            }
-        }
     }
 
     /**
