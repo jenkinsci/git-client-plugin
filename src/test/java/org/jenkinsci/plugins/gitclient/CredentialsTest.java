@@ -164,6 +164,10 @@ public class CredentialsTest {
             CSVReader reader = new CSVReader(new FileReader(authDataDefinitions));
             List<String[]> myEntries = reader.readAll();
             for (String[] entry : myEntries) {
+                if (entry.length < 3) {
+                    System.out.println("Too few fields(" + entry.length + ") in " + entry[0]);
+                    continue;
+                }
                 String repoURL = entry[0];
                 String username = entry[1];
                 File privateKey = new File(authDataDir, entry[2]);
