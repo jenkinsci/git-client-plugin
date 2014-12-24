@@ -1041,7 +1041,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * JGit 3.3.0 thru 3.5.2 prune during fetch prunes more remote
+     * JGit 3.3.0 thru 3.6.0 "prune during fetch" prunes more remote
      * branches than command line git prunes during fetch.  This test
      * should be used to evaluate future versions of JGit to see if
      * pruning behavior more closely emulates command line git.

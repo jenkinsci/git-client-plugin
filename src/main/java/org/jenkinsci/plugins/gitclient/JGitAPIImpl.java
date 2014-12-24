@@ -488,7 +488,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
             public URIish url;
             public List<RefSpec> refspecs;
-            // JGit 3.3.0 thru 3.5.2 prune more branches than expected
+            // JGit 3.3.0 thru 3.6.0 prune more branches than expected
             // Refer to GitAPITestCase.test_fetch_with_prune()
             // private boolean shouldPrune = false;
 
