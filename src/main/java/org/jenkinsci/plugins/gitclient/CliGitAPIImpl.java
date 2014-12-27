@@ -1226,8 +1226,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             List<String> aa = args.toList();
-            aa.add(0, "-c");
-            aa.add(1, "core.askpass=true");
+            /* Git versions prior to 1.7.9 are not tested with the git
+             * client plugin, but are used in the community. Red Hat 6
+             * and Red Hat 5 both ship with versions prior to 1.7.9.
+             *
+             * This conditional attempts to avoid calling command line
+             * git with an argument not implemented until git
+             * 1.7.9. Git versions prior to 1.7.9 also do not support
+             * credentials, so there are other significant portions of
+             * the plugin which will not work with those older
+             * versions of git.
+             */
+            if (isAtLeastVersion(1, 7, 9, 0)) {
+                aa.add(0, "-c");
+                aa.add(1, "core.askpass=true");
+            }
             args = new ArgumentListBuilder(aa.toArray(new String[0]));
             return launchCommandIn(args, workDir, env, timeout);
         } catch (IOException e) {
