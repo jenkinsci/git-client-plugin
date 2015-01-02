@@ -47,6 +47,7 @@ public class CredentialsTest {
     @Rule
     public JenkinsRule j = new JenkinsRule();
 
+    private final String gitImpl;
     private final String gitRepoURL;
     private final String username;
     private final File privateKey;
@@ -54,8 +55,6 @@ public class CredentialsTest {
     private GitClient git;
     private File repo;
     private BasicSSHUserPrivateKey credential;
-
-    protected String gitImpl; /* either "git" or "jgit" */
 
     private List<String> expectedLogSubstrings = new ArrayList<String>();
 
@@ -79,8 +78,8 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitRepoUrl, String username, File privateKey) {
-        gitImpl = "git";
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, File privateKey) {
+        this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         if (privateKey == null && defaultPrivateKey.exists()) {
             privateKey = defaultPrivateKey;
@@ -102,8 +101,16 @@ public class CredentialsTest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
-        addExpectedLogSubstring("> git -c core.askpass=true fetch ");
-        addExpectedLogSubstring("> git checkout -b master ");
+        if (gitImpl.equals("git")) {
+            addExpectedLogSubstring("> git -c core.askpass=true fetch ");
+            addExpectedLogSubstring("> git checkout -b master ");
+        }
+        /* FetchWithCredentials does not log expected message */
+        /*
+         if (gitImpl.equals("jgit")) {
+         addExpectedLogSubstring("remote: Counting objects");
+         }
+         */
     }
 
     @After
@@ -140,43 +147,51 @@ public class CredentialsTest {
         return new BasicSSHUserPrivateKey(scope, id, username, privateKeySource, passphrase, description);
     }
 
-    @Parameterized.Parameters(name = "{1}-{0}")
-    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException {
-        List<Object[]> repos = new ArrayList<Object[]>();
-        /* Add master repository as authentication test with private
-         * key of current user.  Try to test at least one
-         * authentication case, even if there is no repos.csv file in
-         * the external directory.
-         */
-        if (defaultPrivateKey.exists()) {
-            String username = System.getProperty("user.name");
-            String url = "https://github.com/jenkinsci/git-client-plugin.git";
-            Object[] masterRepo = {url, username, defaultPrivateKey};
-            repos.add(masterRepo);
-        }
+    private static boolean isCredentialsSupported() throws IOException, InterruptedException {
+        CliGitAPIImpl cli = (CliGitAPIImpl) Git.with(null, new hudson.EnvVars()).in(currDir).using("git").getClient();
+        return cli.isAtLeastVersion(1, 7, 9, 0);
+    }
 
-        /* Add additional repositories if the ~/.ssh/auth-data directory
-         * contains a repos.csv file defining the repositories to test and the
-         * private key files to use for those tests.
-         */
-        File authDataDefinitions = new File(authDataDir, "repos.csv");
-        if (authDataDefinitions.exists()) {
-            CSVReader reader = new CSVReader(new FileReader(authDataDefinitions));
-            List<String[]> myEntries = reader.readAll();
-            for (String[] entry : myEntries) {
-                if (entry.length < 3) {
-                    System.out.println("Too few fields(" + entry.length + ") in " + entry[0]);
-                    continue;
-                }
-                String repoURL = entry[0];
-                String username = entry[1];
-                File privateKey = new File(authDataDir, entry[2]);
-                if (privateKey.exists()) {
-                    Object[] repo = {repoURL, username, privateKey};
-                    repos.add(repo);
-                } else {
-                    Object[] repo = {repoURL, username, null};
-                    repos.add(repo);
+    @Parameterized.Parameters(name = "{2}-{1}-{0}")
+    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException {
+        List<Object[]> repos = new ArrayList<Object[]>();
+        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit"} : new String[]{"jgit"};
+        for (String implementation : implementations) {
+            /* Add master repository as authentication test with private
+             * key of current user.  Try to test at least one
+             * authentication case, even if there is no repos.csv file in
+             * the external directory.
+             */
+            if (defaultPrivateKey.exists()) {
+                String username = System.getProperty("user.name");
+                String url = "https://github.com/jenkinsci/git-client-plugin.git";
+                Object[] masterRepo = {implementation, url, username, defaultPrivateKey};
+                repos.add(masterRepo);
+            }
+
+            /* Add additional repositories if the ~/.ssh/auth-data directory
+             * contains a repos.csv file defining the repositories to test and the
+             * private key files to use for those tests.
+             */
+            File authDataDefinitions = new File(authDataDir, "repos.csv");
+            if (authDataDefinitions.exists()) {
+                CSVReader reader = new CSVReader(new FileReader(authDataDefinitions));
+                List<String[]> myEntries = reader.readAll();
+                for (String[] entry : myEntries) {
+                    if (entry.length < 3) {
+                        System.out.println("Too few fields(" + entry.length + ") in " + entry[0]);
+                        continue;
+                    }
+                    String repoURL = entry[0];
+                    String username = entry[1];
+                    File privateKey = new File(authDataDir, entry[2]);
+                    if (privateKey.exists()) {
+                        Object[] repo = {implementation, repoURL, username, privateKey};
+                        repos.add(repo);
+                    } else {
+                        Object[] repo = {implementation, repoURL, username, null};
+                        repos.add(repo);
+                    }
                 }
             }
         }
