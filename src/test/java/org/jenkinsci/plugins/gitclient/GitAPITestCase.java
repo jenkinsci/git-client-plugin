@@ -1824,6 +1824,12 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_sparse_checkout() throws Exception {
+        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax 
+         * required by the plugin implementation does not work in git 1.7.1.
+         */
+        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+            return;
+        }
         // Create a repo for cloning purpose
         w.init();
         w.commitEmpty("init");
