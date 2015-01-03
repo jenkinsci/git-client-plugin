@@ -2165,7 +2165,13 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().merge("branch1");
         assertTrue("file1 does not exist after merge", w.exists("file1"));
 
-        w.cmd("git checkout --orphan newroot"); // Create an indepedent root
+        /* Git 1.7.1 does not understand the --orphan argument to checkout.
+         * Stop the test here on older git versions 
+         */
+        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+            return;
+        }
+        w.cmd("git checkout --orphan newroot"); // Create an independent root
         w.commitEmpty("init-on-newroot");
         final ObjectId newRootCommit = w.head();
         assertNull("Common root not expected", w.igit().mergeBase(newRootCommit, branch1));
