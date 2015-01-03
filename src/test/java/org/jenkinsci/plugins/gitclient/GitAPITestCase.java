@@ -1106,7 +1106,15 @@ public abstract class GitAPITestCase extends TestCase {
         newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).prune().execute();
         remoteBranches = newArea.git.getRemoteBranches();
         assertBranchesExist(remoteBranches, "origin/master", "origin/branch2", "origin/HEAD");
-        assertEquals("Wrong count in " + remoteBranches, 3, remoteBranches.size());
+
+        /* Git 1.7.1 on Red Hat 6 does not prune branch1, don't fail the test
+         * on that old git version.
+         */
+        int expectedBranchCount = 3;
+        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+            expectedBranchCount = 4;
+        }
+        assertEquals("Wrong count in " + remoteBranches, expectedBranchCount, remoteBranches.size());
     }
 
     public void test_fetch_from_url() throws Exception {
