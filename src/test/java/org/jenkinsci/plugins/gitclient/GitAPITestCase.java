@@ -2250,9 +2250,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Relies on the branches in the git-client-plugin repository
      * include at least branches named:
      *   master
-     *   mergeCommand
-     *   recovery
-     *   remote
+     *   tests/getSubmodules
      *
      * Also relies on a specific return ordering of the values in the
      * pattern matching performed by getHeadRev, and relies on not
@@ -2265,12 +2263,10 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
-        ObjectId recovery = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*cov*"); // matches recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery);
-        ObjectId mergeCommand = w.git.getHeadRev(localMirror(), "yyzzy*/*er*"); // matches master, MergeCommand, and recovery
-        assertEquals("heads is " + heads, heads.get("refs/heads/MergeCommand"), mergeCommand);
-        ObjectId recovery1 = w.git.getHeadRev(localMirror(), "X/re[mc]*o*e*"); // matches recovery and remote
-        assertEquals("heads is " + heads, heads.get("refs/heads/recovery"), recovery1);
+        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*ast*"); // matches master
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
+        ObjectId getSubmodules1 = w.git.getHeadRev(localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
         ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
