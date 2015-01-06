@@ -8,7 +8,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>1.15.0</version>
+  <version>1.15.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
@@ -39,7 +39,7 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>git-client-1.15.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
