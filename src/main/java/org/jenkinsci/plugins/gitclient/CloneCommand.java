@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.util.List;
+
+import org.eclipse.jgit.transport.RefSpec;
+
 /**
  * Command to clone a repository. This command behaves differently from CLI clone command, it never actually checks out
  * into the workspace.
@@ -32,4 +36,8 @@ public interface CloneCommand extends GitCommand {
      */
     @Deprecated
     CloneCommand noCheckout();
+
+    CloneCommand tags(boolean tags);
+
+    CloneCommand refspecs(List<RefSpec> refspecs);
 }

@@ -1152,6 +1152,28 @@ public abstract class GitAPITestCase extends TestCase {
 
     }
 
+    @NotImplementedInJGit
+    public void test_fetch_shallow() throws Exception {
+        w.init();
+        w.git.setRemoteUrl("origin", localMirror());
+        w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getBranches(), "origin/master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        final String shallow = ".git" + File.separator + "shallow";
+        assertTrue("Shallow file not found: " + shallow, w.exists(shallow));
+    }
+
+    public void test_fetch_noTags() throws Exception {
+        w.init();
+        w.git.setRemoteUrl("origin", localMirror());
+        w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).tags(false).execute();
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getBranches(), "origin/master");
+        Set<String> tags = w.git.getTagNames("");
+        assertTrue("Tags have been found : " + tags, tags.isEmpty());
+    }
 
     public void test_create_branch() throws Exception {
         w.init();
