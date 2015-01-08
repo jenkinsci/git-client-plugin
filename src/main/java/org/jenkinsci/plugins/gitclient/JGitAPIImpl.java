@@ -491,6 +491,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // JGit 3.3.0 thru 3.6.0 prune more branches than expected
             // Refer to GitAPITestCase.test_fetch_with_prune()
             // private boolean shouldPrune = false;
+            public boolean tags = true;
 
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -513,22 +514,30 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public org.jenkinsci.plugins.gitclient.FetchCommand tags(boolean tags) {
+                this.tags = tags;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 FetchCommand fetch = null;
                 try {
                     repo = getRepository();
-                    fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
+                    fetch = git(repo).fetch();
+                    fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
 
-                    // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
                     List<RefSpec> refSpecs = new ArrayList<RefSpec>();
-                    refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+                    if (tags) {
+                        // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
+                        refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+                    }
                     if (refspecs != null)
-                        for (RefSpec rs: refspecs)
-                            if (rs != null)
-                                refSpecs.add(rs);
+                      for (RefSpec rs: refspecs)
+                        if (rs != null)
+                          refSpecs.add(rs);
                     fetch.setRefSpecs(refSpecs);
                     // fetch.setRemoveDeletedRefs(shouldPrune);
 
@@ -1161,6 +1170,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String reference;
             Integer timeout;
             boolean shared;
+            boolean tags = true;
+            List<RefSpec> refspecs;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -1187,9 +1198,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand refspecs(List<RefSpec> refspecs) {
+                this.refspecs = new ArrayList<RefSpec>(refspecs); 
+                return this;
+            }
+
             public CloneCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
+            }
+
+            public CloneCommand tags(boolean tags) {
+                this.tags = tags;
+                return this;
             }
 
             public CloneCommand noCheckout() {
@@ -1261,18 +1282,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     repository.close();
                     repository = getRepository();
 
-                    RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*");
+                    if (refspecs == null) {
+                        refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*"));
+                    }
                     FetchCommand fetch = new Git(repository).fetch()
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setRemote(url)
                             .setCredentialsProvider(getProvider())
-                            .setRefSpecs(refSpec);
+                            .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
+                            .setRefSpecs(refspecs);
                     if (timeout != null) fetch.setTimeout(timeout);
                     fetch.call();
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    config.setString("remote", remote, "fetch", refSpec.toString());
+                    for (RefSpec refSpec : refspecs) {
+                      config.setString("remote", remote, "fetch", refSpec.toString());
+                    }
                     config.save();
 
                 } catch (GitAPIException e) {

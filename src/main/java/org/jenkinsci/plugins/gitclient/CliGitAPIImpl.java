@@ -12,6 +12,7 @@ import hudson.FilePath;
 import hudson.Functions;
 import hudson.Launcher;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -231,10 +232,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean prune;
             public boolean shallow;
             public Integer timeout;
+            public boolean tags = true;
 
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
                 this.refspecs = refspecs;
+                return this;
+            }
+
+            public FetchCommand tags(boolean tags) {
+                this.tags = tags;
                 return this;
             }
 
@@ -258,7 +265,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         "Fetching upstream changes from " + url);
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
-                args.add("fetch", "--tags");
+                args.add("fetch");
+                args.add(tags ? "--tags" : "--no-tags");
                 if (isAtLeastVersion(1,7,1,0))
                     args.add("--progress");
 
@@ -341,6 +349,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String reference;
             boolean shallow,shared;
             Integer timeout;
+            boolean tags = true;
+            List<RefSpec> refspecs;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -367,6 +377,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand tags(boolean tags) {
+                this.tags = tags;
+                return this;
+            }
+
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
@@ -375,6 +390,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public CloneCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
+            }
+
+            public CloneCommand refspecs(List<RefSpec> refspecs) {
+                this.refspecs = new ArrayList<RefSpec>(refspecs);
+                return this;
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -439,13 +459,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
 
-                RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/"+origin+"/*");
-                fetch_().from(urIish, Collections.singletonList(refSpec))
+                if (refspecs == null) {
+                  refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/"+origin+"/*"));
+                }
+                fetch_().from(urIish, refspecs)
                         .shallow(shallow)
                         .timeout(timeout)
-                        .execute();
+                        .tags(tags)
+                        .execute();;
                 setRemoteUrl(origin, url);
-                launchCommand("config", "remote." + origin + ".fetch", refSpec.toString());
+                for (RefSpec refSpec : refspecs) {
+                  launchCommand("config", "remote." + origin + ".fetch", refSpec.toString());
+                }
             }
 
         };
@@ -1554,7 +1579,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public Set<Branch> getBranches() throws GitException, InterruptedException {
-        return parseBranches(launchCommand("branch", "-a"));
+        // git branch -a will return remote branches prefixed by remotes/,
+        // while git branch -r will return them with the correct name
+        return Sets.union(parseBranches(launchCommand("branch")),
+                          parseBranches(launchCommand("branch", "-r")));
     }
 
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {

@@ -17,4 +17,6 @@ public interface FetchCommand extends GitCommand {
     FetchCommand shallow(boolean shallow);
     
     FetchCommand timeout(Integer timeout);
+
+    FetchCommand tags(boolean tags);
 }
