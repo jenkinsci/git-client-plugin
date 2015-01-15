@@ -564,6 +564,23 @@ public abstract class GitAPITestCase extends TestCase {
         });
     }
 
+    @NotImplementedInJGit
+    public void test_clone_refspecs() throws Exception {
+      List<RefSpec> refspecs = Lists.newArrayList(
+          new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
+          new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
+      );
+      w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
+      w.git.withRepository(new RepositoryCallback<Void>() {
+        public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+          String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+          assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
+          assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
+          assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
+          return null;
+        }});
+    }
+
     public void test_detect_commit_in_repo() throws Exception {
         w.init();
         w.touch("file1");
@@ -1158,7 +1175,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.setRemoteUrl("origin", localMirror());
         w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
         check_remote_url("origin");
-        assertBranchesExist(w.git.getBranches(), "origin/master");
+        assertBranchesExist(w.git.getRemoteBranches(), "origin/master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         final String shallow = ".git" + File.separator + "shallow";
@@ -1170,7 +1187,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.setRemoteUrl("origin", localMirror());
         w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).tags(false).execute();
         check_remote_url("origin");
-        assertBranchesExist(w.git.getBranches(), "origin/master");
+        assertBranchesExist(w.git.getRemoteBranches(), "origin/master");
         Set<String> tags = w.git.getTagNames("");
         assertTrue("Tags have been found : " + tags, tags.isEmpty());
     }
