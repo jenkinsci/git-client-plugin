@@ -469,7 +469,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .execute();;
                 setRemoteUrl(origin, url);
                 for (RefSpec refSpec : refspecs) {
-                  launchCommand("config", "remote." + origin + ".fetch", refSpec.toString());
+                  launchCommand("config", "--add", "remote." + origin + ".fetch", refSpec.toString());
                 }
             }
 
@@ -1579,10 +1579,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public Set<Branch> getBranches() throws GitException, InterruptedException {
-        // git branch -a will return remote branches prefixed by remotes/,
-        // while git branch -r will return them with the correct name
-        return Sets.union(parseBranches(launchCommand("branch")),
-                          parseBranches(launchCommand("branch", "-r")));
+        return parseBranches(launchCommand("branch", "-a"));
     }
 
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
