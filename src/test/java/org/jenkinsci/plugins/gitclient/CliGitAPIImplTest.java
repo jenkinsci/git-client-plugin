@@ -181,7 +181,8 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         VersionTest[] versions = {
             new VersionTest(true,  1, 7, 1,  0),
             new VersionTest(true,  1, 7, 0, 99),
-            new VersionTest(false, 1, 7, 1,  1)
+            new VersionTest(false, 1, 7, 1,  1),
+            new VersionTest(false, 1, 7, 2,  0)
         };
         doTest("git version 1.7.1", versions);
     }
@@ -202,6 +203,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(false, 1, 8, 3, 3)
         };
         doTest("git version 1.8.3.2", versions);
+    }
+
+    public void test_git_version_ubuntu_14_04_ppa() {
+        VersionTest[] versions = {
+            new VersionTest(true,  2, 2, 2, 0),
+            new VersionTest(true,  2, 2, 1, 0),
+            new VersionTest(false, 2, 2, 3, 0)
+        };
+        doTest("git version 2.2.2", versions);
     }
 
     @Override
