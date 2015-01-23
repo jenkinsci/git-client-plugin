@@ -564,7 +564,6 @@ public abstract class GitAPITestCase extends TestCase {
         });
     }
 
-    @NotImplementedInJGit
     public void test_clone_refspecs() throws Exception {
       List<RefSpec> refspecs = Lists.newArrayList(
           new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
@@ -579,6 +578,10 @@ public abstract class GitAPITestCase extends TestCase {
           assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
           return null;
         }});
+      Set<Branch> remoteBranches = w.git.getRemoteBranches();
+      assertBranchesExist(remoteBranches, "origin/master");
+      assertBranchesExist(remoteBranches, "origin/1.4.x");
+      assertEquals(2, remoteBranches.size());
     }
 
     public void test_detect_commit_in_repo() throws Exception {

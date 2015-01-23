@@ -104,8 +104,11 @@ import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.google.common.base.Functions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
@@ -1296,9 +1299,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    for (RefSpec refSpec : refspecs) {
-                      config.setString("remote", remote, "fetch", refSpec.toString());
-                    }
+                    config.setStringList("remote", remote, "fetch", Lists.newArrayList(Iterables.transform(refspecs, Functions.toStringFunction())));
                     config.save();
 
                 } catch (GitAPIException e) {
