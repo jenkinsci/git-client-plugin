@@ -298,7 +298,7 @@ public class GitURIRequirementsBuilder {
      * Replace any hostname or hostname:port requirements with the supplied hostname and port.
      *
      * @param hostname the hostname to use as a requirement or (@code null} to not add any requirement
-     * @param port     the port or {@code -1} to not add {@link HostnamePortRequirement}s
+     * @param port     the port or {@code -1} to not add {@link com.cloudbees.plugins.credentials.domains.HostnamePortRequirement}s
      * @return {@code this}.
      */
     @NonNull

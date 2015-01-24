@@ -30,21 +30,35 @@ import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
 import java.util.logging.Level;
 
 /**
- * Information about Git installation.
+ * Information about Git installation. A GitTool is used to select
+ * between different installations of git, as in "git" or "jgit".
  *
  * @author Jyrki Puttonen
  */
 public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, EnvironmentSpecific<GitTool> {
 
+    /**
+     * Constructor for GitTool.
+     *
+     * @param name Tool name (for example, "git" or "jgit")
+     * @param home Tool location (usually "git")
+     * @param properties {@link java.util.List} of properties for this tool
+     */
     @DataBoundConstructor
     public GitTool(String name, String home, List<? extends ToolProperty<?>> properties) {
         super(name, home, properties);
     }
 
+    /** Constant <code>DEFAULT="Default"</code> */
     public static transient final String DEFAULT = "Default";
 
     private static final long serialVersionUID = 1;
 
+    /**
+     * getGitExe.
+     *
+     * @return {@link java.lang.String} that will be used to execute git (e.g. "git" or "/usr/bin/git")
+     */
     public String getGitExe() {
         return getHome();
     }
@@ -59,6 +73,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         return installations;
     }
 
+    /**
+     * Returns the default installation.
+     *
+     * @return default installation
+     */
     public static GitTool getDefaultInstallation() {
         DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
         GitTool tool = gitTools.getInstallation(GitTool.DEFAULT);

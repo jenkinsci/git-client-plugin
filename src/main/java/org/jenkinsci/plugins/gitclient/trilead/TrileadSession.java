@@ -11,15 +11,23 @@ import java.io.OutputStream;
 import static com.trilead.ssh2.ChannelCondition.*;
 
 /**
+ * TrileadSession class.
+ *
  * @author Kohsuke Kawaguchi
  */
 public class TrileadSession implements RemoteSession {
     protected final Connection con;
 
+    /**
+     * Constructor for TrileadSession.
+     *
+     * @param con a {@link com.trilead.ssh2.Connection} object for this session's connection.
+     */
     public TrileadSession(Connection con) {
         this.con = con;
     }
 
+    /** {@inheritDoc} */
     public Process exec(String commandName, final int timeout) throws IOException {
         final Session s = con.openSession();
         s.execCommand(commandName);

@@ -6,16 +6,42 @@ import org.eclipse.jgit.transport.URIish;
 import java.util.List;
 
 /**
+ * FetchCommand interface.
+ *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public interface FetchCommand extends GitCommand {
 
+    /**
+     * from.
+     *
+     * @param remote a {@link org.eclipse.jgit.transport.URIish} object.
+     * @param refspecs a {@link java.util.List} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     */
     FetchCommand from(URIish remote, List<RefSpec> refspecs);
 
+    /**
+     * prune.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     */
     FetchCommand prune();
 
+    /**
+     * shallow.
+     *
+     * @param shallow a boolean.
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     */
     FetchCommand shallow(boolean shallow);
     
+    /**
+     * timeout.
+     *
+     * @param timeout a {@link java.lang.Integer} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     */
     FetchCommand timeout(Integer timeout);
 
     FetchCommand tags(boolean tags);

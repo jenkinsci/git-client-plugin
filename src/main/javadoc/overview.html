@@ -1,0 +1,35 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<title>Jenkins Git Client Plugin API Overview</title>
+</head>
+<body>
+
+The Jenkins git client plugin provides an API to execute
+general-purpose git operations on a local or remote repository. Its
+primary use is from the
+<a href="https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin" target="_blank" unselectable="on">git-plugin</a>;
+as such, it is also used by
+<a href="https://wiki.jenkins-ci.org/display/JENKINS/Gerrit+Plugin" target="_blank" unselectable="on">gerrit-plugin</a>,
+<a href="https://wiki.jenkins-ci.org/display/JENKINS/Git+Parameter+Plugin" target="_blank" unselectable="on">git-parameter-plugin</a>,
+workflow and cloudbees validated merge plugins.
+
+<p>Plugin developers are encouraged to use
+<a href="org/jenkinsci/plugins/gitclient/GitClient.html">GitClient API</a> in
+replacement for the legacy IGitAPI.
+
+<p>The plugin isolates this low-level git stuff from git-plugin, allowing
+alternate git implementations
+(like <a href="http://wiki.eclipse.org/JGit/User_Guide"  target="_blank" unselectable="on">JGit</a>).</p>
+
+<p>For backwards compatibility, this plugin uses API classes from the
+hudson.plugins.git package.</p>
+
+<p>The git client plugin also bundles JGit and JGit http server so
+that callers can rely on JGit and the JGit http server being available
+without including it in their own plugin packaging. This is used to
+reduce the size of the packaging of the git-server plugin, and may be
+useful in other plugins.</p>
+
+</body>
+</html>

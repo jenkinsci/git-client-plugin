@@ -12,10 +12,10 @@ import org.eclipse.jgit.transport.URIish;
  * Provides the credential to authenticate Git connection.
  *
  * <p>
- * For HTTP transport we work through {@link CredentialsProvider},
- * in which case this must be supplied with a {@link StandardUsernamePasswordCredentials}.
- * For SSH transport, {@link TrileadSessionFactory}
- * downcasts {@link CredentialsProvider} to this class.
+ * For HTTP transport we work through {@link org.eclipse.jgit.transport.CredentialsProvider},
+ * in which case this must be supplied with a {@link com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials}.
+ * For SSH transport, {@link org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory}
+ * downcasts {@link org.eclipse.jgit.transport.CredentialsProvider} to this class.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -26,17 +26,26 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     public final StandardUsernameCredentials cred;
 
+    /**
+     * Constructor for CredentialsProviderImpl.
+     *
+     * @param listener a {@link hudson.model.TaskListener} object.
+     * @param cred a {@link com.cloudbees.plugins.credentials.common.StandardUsernameCredentials} object.
+     */
     public CredentialsProviderImpl(TaskListener listener, StandardUsernameCredentials cred) {
         this.listener = listener;
         this.cred = cred;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isInteractive() {
         return false;
     }
 
     /**
+     * {@inheritDoc}
+     *
      * If username/password is given, use it for HTTP auth.
      */
     @Override
@@ -58,6 +67,8 @@ public class CredentialsProviderImpl extends CredentialsProvider {
     }
 
     /**
+     * {@inheritDoc}
+     *
      * If username/password is given, use it for HTTP auth.
      */
     @Override

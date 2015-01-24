@@ -5,6 +5,7 @@ import org.eclipse.jgit.transport.CredentialItem;
 
 /**
  * Represents credentials suitable for use over SSH.
+ *
  * @author Stephen Connolly
  */
 public class StandardUsernameCredentialsCredentialItem extends CredentialItem {
@@ -24,6 +25,7 @@ public class StandardUsernameCredentialsCredentialItem extends CredentialItem {
         super(promptText, maskValue);
     }
 
+    /** {@inheritDoc} */
     @Override
     public void clear() {
         value = null;

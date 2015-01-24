@@ -3,12 +3,26 @@ package org.jenkinsci.plugins.gitclient;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
+ * MergeCommand interface.
+ *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public interface MergeCommand extends GitCommand {
 
+    /**
+     * setRevisionToMerge.
+     *
+     * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
     MergeCommand setRevisionToMerge(ObjectId rev);
 
+    /**
+     * setStrategy.
+     *
+     * @param strategy a {@link org.jenkinsci.plugins.gitclient.MergeCommand.Strategy} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
     MergeCommand setStrategy(Strategy strategy);
 
     public enum Strategy {
@@ -24,6 +38,9 @@ public interface MergeCommand extends GitCommand {
      * Select the fast forward mode.
      * The name FastForwardMode collides with org.eclipse.jgit.api.MergeCommand.FastForwardMode
      * so we have to choose a different name.
+     *
+     * @param fastForwardMode mode to be used in this merge
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setGitPluginFastForwardMode(GitPluginFastForwardMode fastForwardMode);
 

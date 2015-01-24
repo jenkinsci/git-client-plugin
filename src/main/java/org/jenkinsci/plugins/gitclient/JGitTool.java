@@ -9,22 +9,32 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * JGit as {@link GitTool}
+ * JGit as {@link hudson.plugins.git.GitTool}
  *
  * @author Kohsuke Kawaguchi
  */
 public class JGitTool extends GitTool {
     private static final long serialVersionUID = 1L;
+
+    /**
+     * Constructor for JGitTool.
+     *
+     * @param properties a {@link java.util.List} object.
+     */
     @DataBoundConstructor
     public JGitTool(List<? extends ToolProperty<?>> properties) {
         super("jgit", MAGIC_EXENAME, properties);
     }
 
+    /**
+     * Constructor for JGitTool.
+     */
     public JGitTool() {
         this(Collections.<ToolProperty<?>>emptyList());
     }
 
 
+    /** {@inheritDoc} */
     @Override
     public GitTool.DescriptorImpl getDescriptor() {
         return super.getDescriptor();

@@ -35,6 +35,13 @@ import java.util.Map;
  */
 abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements IGitAPI {
 
+    /**
+     * isBareRepository.
+     *
+     * @return true if this repository is a bare repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
     public boolean isBareRepository() throws GitException, InterruptedException {
         return isBareRepository("");
     }
@@ -42,10 +49,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     // --- legacy methods, kept for backward compatibility
     protected final File workspace;
 
+    /**
+     * Constructor for LegacyCompatibleGitAPIImpl.
+     *
+     * @param workspace a {@link java.io.File} object.
+     */
     protected LegacyCompatibleGitAPIImpl(File workspace) {
         this.workspace = workspace;
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public boolean hasGitModules(String treeIsh) throws GitException {
         try {
@@ -60,6 +73,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
         // This is to make sure that we don't miss any new submodules or
@@ -71,33 +85,49 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         fixSubmoduleUrls( remote, listener );
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void fetch(String repository, String refspec) throws GitException, InterruptedException {
         fetch(repository, new RefSpec(refspec));
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
         // Assume there is only 1 URL for simplicity
         fetch(remoteRepository.getURIs().get(0), remoteRepository.getFetchRefSpecs());
     }
 
+    /**
+     * fetch.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
     @Deprecated
     public void fetch() throws GitException, InterruptedException {
         fetch(null, (RefSpec) null);
     }
 
+    /**
+     * reset.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
     @Deprecated
     public void reset() throws GitException, InterruptedException {
         reset(false);
     }
 
 
+    /** {@inheritDoc} */
     @Deprecated
     public void push(URIish url, String refspec) throws GitException, InterruptedException {
         push().ref(refspec).to(url).execute();
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
         String url = getRemoteUrl(remoteName);
@@ -112,11 +142,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void clone(RemoteConfig source) throws GitException, InterruptedException {
         clone(source, false);
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
         // Assume only 1 URL for this repository
@@ -124,16 +156,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         clone(source, rc.getName(), useShallowClone, null);
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
         return revList(branchId);
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public List<String> showRevision(Revision r) throws GitException, InterruptedException {
         return showRevision(null, r.getSha1());
     }
 
+    /** {@inheritDoc} */
     @Deprecated
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
         final Repository db = getRepository();
@@ -155,15 +190,23 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
     }
 
+    /** {@inheritDoc} */
     public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
         return lsTree(treeIsh,false);
     }
 
+    /** {@inheritDoc} */
     @Override
     protected Object writeReplace() {
         return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
     }
 
+    /**
+     * hasGitModules.
+     *
+     * @return true if this repositor has one or more submodules
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
     public boolean hasGitModules() throws GitException {
         try {
 
@@ -180,38 +223,40 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
     }
 
+    /** {@inheritDoc} */
     public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
         return showRevision(null, r);
     }
     
     /**
      * This method takes a branch specification and normalizes it get unambiguous results.
-     * This is the case when using "refs/heads/"<br/>
-     * <br/>
+     * This is the case when using "refs/heads/"<br>
+     * <br>
      * TODO: Currently only for specs starting with "refs/heads/" the implementation is correct.
      * All others branch specs should also be normalized to "refs/heads/" in order to get unambiguous results.
      * To achieve this it is necessary to identify remote names in the branch spec and to discuss how
      * to handle clashes (e.g. "remoteName/master" for branch "master" (refs/heads/master) in remote "remoteName" and branch "remoteName/master" (refs/heads/remoteName/master)).
-     * <br/><br/>
+     * <br><br>
      * Existing behavior is intentionally being retained so that
      * current use cases are not disrupted by a behavioral change.
-     * <br/><br/>
+     * <br><br>
      * E.g.
-     * <table>
+     * <table summary="Branch Spec Normalization Examples">
      * <tr><th align="left">branch spec</th><th align="left">normalized</th></tr>
-     * <tr><td><tt>master</tt></th><td><tt>master*</td></tr>
-     * <tr><td><tt>feature1</tt></th><td><tt>feature1*</td></tr>
-     * <tr><td><tt>feature1/master</tt></th><td><div style="color:red">master <strike><tt>feature1/master</tt></strike>*</div></td></tr>
-     * <tr><td><tt>origin/master</tt></th><td><tt>master*</td></tr>
-     * <tr><td><tt>repo2/feature1</tt></th><td><tt>feature1*</td></tr>
-     * <tr><td><tt>refs/heads/feature1</tt></th><td><tt>refs/heads/feature1</td></tr>
-     * <tr><td valign="top">origin/namespaceA/fix15</th>
-     *     <td><div style="color:red">fix15 <strike><tt>namespaceA/fix15</tt></strike>*</div></td><td></td></tr>
-     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></th><td><tt>refs/heads/namespaceA/fix15</td></tr>
-     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></th><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
-     * </table><br/>
+     * <tr><td><tt>master</tt></td><td><tt>master*</tt></td></tr>
+     * <tr><td><tt>feature1</tt></td><td><tt>feature1*</tt></td></tr>
+     * <tr><td><tt>feature1/master</tt></td><td><div style="color:red">master <tt>feature1/master</tt>*</div></td></tr>
+     * <tr><td><tt>origin/master</tt></td><td><tt>master*</tt></td></tr>
+     * <tr><td><tt>repo2/feature1</tt></td><td><tt>feature1*</tt></td></tr>
+     * <tr><td><tt>refs/heads/feature1</tt></td><td><tt>refs/heads/feature1</tt></td></tr>
+     * <tr><td valign="top">origin/namespaceA/fix15</td>
+     *     <td><div style="color:red">fix15 <tt>namespaceA/fix15</tt>*</div></td><td></td></tr>
+     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
+     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
+     * </table><br>
      * *) TODO: Normalize to "refs/heads/"
-     * @param branchSpec
+     *
+     * @param branchSpec a {@link java.lang.String} object.
      * @return normalized branch name
      */
     protected String extractBranchNameFromBranchSpec(String branchSpec) {

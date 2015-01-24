@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * SmartCredentialsProvider class.
+ *
  * @author stephenc
  */
 public class SmartCredentialsProvider extends CredentialsProvider {
@@ -26,6 +28,11 @@ public class SmartCredentialsProvider extends CredentialsProvider {
             new HashMap<String, StandardCredentials>();
 
 
+    /**
+     * Constructor for SmartCredentialsProvider.
+     *
+     * @param listener a {@link hudson.model.TaskListener} object.
+     */
     public SmartCredentialsProvider(TaskListener listener) {
         this.listener = listener;
     }
@@ -62,11 +69,13 @@ public class SmartCredentialsProvider extends CredentialsProvider {
         defaultCredentials = credentials;
     }
 
+    /** {@inheritDoc} */
     @Override
     public boolean isInteractive() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public synchronized boolean supports(CredentialItem... credentialItems) {
         items:
@@ -100,6 +109,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public synchronized boolean get(URIish uri, CredentialItem... credentialItems) throws UnsupportedCredentialItem {
         StandardCredentials c = specificCredentials.get(uri == null ? null : uri.toString());

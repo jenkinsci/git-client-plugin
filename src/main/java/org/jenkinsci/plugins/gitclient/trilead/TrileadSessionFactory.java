@@ -18,6 +18,7 @@ import java.io.IOException;
  * @author Kohsuke Kawaguchi
  */
 public class TrileadSessionFactory extends SshSessionFactory {
+    /** {@inheritDoc} */
     @Override
     public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws TransportException {
         try {
@@ -56,6 +57,12 @@ public class TrileadSessionFactory extends SshSessionFactory {
         }
     }
 
+    /**
+     * wrap.
+     *
+     * @param con a {@link com.trilead.ssh2.Connection} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.trilead.TrileadSession} object.
+     */
     protected TrileadSession wrap(Connection con) {
         return new TrileadSession(con);
     }

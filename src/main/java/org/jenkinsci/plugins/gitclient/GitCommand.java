@@ -10,6 +10,9 @@ import hudson.plugins.git.GitException;
 public interface GitCommand {
     /**
      * Executes the command.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
      */
     void execute() throws GitException, InterruptedException;
 }

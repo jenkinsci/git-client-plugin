@@ -54,6 +54,7 @@
     <maven-release-plugin.version>2.5.1</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
+    <maven-javadoc-plugin.version>2.10.1</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
     <jgit.version>3.6.2.201501210735-r</jgit.version>
   </properties>
@@ -179,6 +180,22 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <excludePackageNames>org.apache.commons.httpclient.contrib.ssl</excludePackageNames>
+          <fixTags>param,return,throws,link</fixTags>
+          <author>false</author>
+          <!-- <detectLinks>true</detectLinks> -->
+          <force>true</force>
+          <failOnError>false</failOnError>
+          <links>
+            <link>http://docs.oracle.com/javase/7/docs/api/</link>
+            <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
+          </links>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jenkins-ci.tools</groupId>

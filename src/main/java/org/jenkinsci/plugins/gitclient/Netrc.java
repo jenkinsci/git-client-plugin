@@ -30,16 +30,33 @@ class Netrc {
 
 
 
+    /**
+     * getInstance.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
+     */
     public static Netrc getInstance() {
         File netrc = getDefaultFile();
         return getInstance(netrc);
     }
 
+    /**
+     * getInstance.
+     *
+     * @param netrcPath a {@link java.lang.String} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
+     */
     public static Netrc getInstance(@NonNull String netrcPath) {
         File netrc = new File(netrcPath);
         return netrc.exists() ? getInstance(new File(netrcPath)) : null;
     }
 
+    /**
+     * getInstance.
+     *
+     * @param netrc a {@link java.io.File} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
+     */
     public static Netrc getInstance(File netrc) {
         return new Netrc(netrc).parse();
     }
@@ -52,6 +69,12 @@ class Netrc {
     }
 
 
+    /**
+     * getCredentials.
+     *
+     * @param host a {@link java.lang.String} object.
+     * @return a {@link org.apache.http.auth.Credentials} object.
+     */
     public Credentials getCredentials(String host) {
         if (!this.netrc.exists()) return null;
         if (this.lastModified != this.netrc.lastModified()) parse();

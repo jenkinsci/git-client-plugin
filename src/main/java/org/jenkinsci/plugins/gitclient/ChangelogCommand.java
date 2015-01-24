@@ -15,8 +15,8 @@ import java.io.Writer;
  * commit dadaf808d99c4c23c53476b0c48e25a181016300
  * tree 1f5d7a5576bb74962aa6674a01ecf89f4a9da8af
  * parent 05970c030621c23e54aa3ae66bbcf5bb495455cd
- * author Kohsuke Kawaguchi <kk@kohsuke.org> 1371370465 +0200
- * committer Kohsuke Kawaguchi <kk@kohsuke.org> 1371370465 +0200
+ * author Kohsuke Kawaguchi &lt;kk@kohsuke.org&gt; 1371370465 +0200
+ * committer Kohsuke Kawaguchi &lt;kk@kohsuke.org&gt; 1371370465 +0200
  *
  *     Fixed compilation problems
  *
@@ -27,8 +27,8 @@ import java.io.Writer;
  * commit 05970c030621c23e54aa3ae66bbcf5bb495455cd
  * tree cdbd88f2b8d729101a7b9b12bd518bd7fdfa976c
  * parent a1a30140beb3b9d30767863e901fa5424932ccfc
- * author Kohsuke Kawaguchi <kk@kohsuke.org> 1371369131 +0200
- * committer Kohsuke Kawaguchi <kk@kohsuke.org> 1371369131 +0200
+ * author Kohsuke Kawaguchi &lt;kk@kohsuke.org&gt; 1371369131 +0200
+ * committer Kohsuke Kawaguchi &lt;kk@kohsuke.org&gt; 1371369131 +0200
  *
  *     Take author/committer separately
  *
@@ -53,35 +53,59 @@ public interface ChangelogCommand extends GitCommand {
      * Equivalent of {@code ^rev} on the command line.
      *
      * This method can be invoked multiple times.
+     *
+     * @param rev a {@link java.lang.String} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand excludes(String rev);
 
+    /**
+     * excludes.
+     *
+     * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
     ChangelogCommand excludes(ObjectId rev);
 
     /**
      * Adds the revision to include in the log.
      *
      * This method can be invoked multiple times.
+     *
+     * @param rev a {@link java.lang.String} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand includes(String rev);
 
+    /**
+     * includes.
+     *
+     * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
     ChangelogCommand includes(ObjectId rev);
 
     /**
-     * Stes the {@link OutputStream} that receives the changelog.
+     * Sets the {@link java.io.OutputStream} that receives the changelog.
      *
-     * This takes {@link Writer} and not {@link OutputStream} because the chanlog is a textual format,
+     * This takes {@link java.io.Writer} and not {@link java.io.OutputStream} because the changelog is a textual format,
      * and therefore it is a stream of chars, not bytes. (If the latter, then we'd be unable to handle
-     * multiple encodings correctly.)
+     * multiple encodings correctly)
      *
      * According to man git-commit, the "encoding" header specifies the encoding of the commit message,
      * and git CLIs will try to translate encoding back to UTF-8. In any case, it is the implementation's
      * responsibility to correctly handle the encoding
+     *
+     * @param w a {@link java.io.Writer} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand to(Writer w);
 
     /**
-     * Limit the number of changelog entry up to N.
+     * Limit the number of changelog entries up to n.
+     *
+     * @param n a int.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand max(int n);
 

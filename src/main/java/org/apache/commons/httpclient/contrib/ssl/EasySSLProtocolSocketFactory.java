@@ -50,13 +50,13 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * <p>
- * EasySSLProtocolSocketFactory can be used to creats SSL {@link Socket}s 
- * that accept self-signed certificates. 
+ * EasySSLProtocolSocketFactory can be used to create SSL {@link java.net.Socket}s
+ * that accept self-signed certificates.
  * </p>
  * <p>
- * This socket factory SHOULD NOT be used for productive systems 
- * due to security reasons, unless it is a concious decision and 
- * you are perfectly aware of security implications of accepting 
+ * This socket factory SHOULD NOT be used for productive systems
+ * due to security reasons, unless it is a concious decision and
+ * you are perfectly aware of security implications of accepting
  * self-signed certificates
  * </p>
  *
@@ -73,7 +73,6 @@ import org.apache.commons.logging.LogFactory;
  *     HttpClient client = new HttpClient();
  *     client.executeMethod(hc, httpget);
  *     </pre>
- * </p>
  * <p>
  * Example of using custom protocol socket factory per default instead of the standard one:
  *     <pre>
@@ -84,9 +83,8 @@ import org.apache.commons.logging.LogFactory;
  *     GetMethod httpget = new GetMethod("https://localhost/");
  *     client.executeMethod(httpget);
  *     </pre>
- * </p>
  *
- * @author <a href="mailto:oleg -at- ural.ru">Oleg Kalnichevski</a>
+ * @author <a href="mailto:oleg@ural.ru">Oleg Kalnichevski</a>
  *
  * <p>
  * DISCLAIMER: HttpClient developers DO NOT actively support this component.
@@ -94,7 +92,6 @@ import org.apache.commons.logging.LogFactory;
  * for use without additional customization.
  * </p>
  */
-
 public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory {
 
     /** Log object for this class. */
@@ -130,9 +127,7 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
         return this.sslcontext;
     }
 
-    /**
-     * @see SecureProtocolSocketFactory#createSocket(java.lang.String,int,java.net.InetAddress,int)
-     */
+    /** {@inheritDoc} */
     public Socket createSocket(
             String host,
             int port,
@@ -149,25 +144,15 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
     }
 
     /**
+     * {@inheritDoc}
+     *
      * Attempts to get a new socket connection to the given host within the given time limit.
      * <p>
-     * To circumvent the limitations of older JREs that do not support connect timeout a 
-     * controller thread is executed. The controller thread attempts to create a new socket 
-     * within the given limit of time. If socket constructor does not return until the 
+     * To circumvent the limitations of older JREs that do not support connect timeout a
+     * controller thread is executed. The controller thread attempts to create a new socket
+     * within the given limit of time. If socket constructor does not return until the
      * timeout expires, the controller terminates and throws an {@link ConnectTimeoutException}
      * </p>
-     *
-     * @param host the host name/IP
-     * @param port the port on the host
-     * @param localAddress the local address to bind the socket to
-     * @param localPort the port on the local machine
-     * @param params {@link HttpConnectionParams Http connection parameters}
-     *
-     * @return Socket a new socket
-     *
-     * @throws IOException if an I/O error occurs while creating the socket
-     * @throws UnknownHostException if the IP address of the host cannot be
-     * determined
      */
     public Socket createSocket(
             final String host,
@@ -193,9 +178,7 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
         }
     }
 
-    /**
-     * @see SecureProtocolSocketFactory#createSocket(java.lang.String,int)
-     */
+    /** {@inheritDoc} */
     public Socket createSocket(String host, int port)
             throws IOException, UnknownHostException {
         return getSSLContext().getSocketFactory().createSocket(
@@ -204,9 +187,7 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
         );
     }
 
-    /**
-     * @see SecureProtocolSocketFactory#createSocket(java.net.Socket,java.lang.String,int,boolean)
-     */
+    /** {@inheritDoc} */
     public Socket createSocket(
             Socket socket,
             String host,
@@ -221,10 +202,16 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
         );
     }
 
+    /** {@inheritDoc} */
     public boolean equals(Object obj) {
         return ((obj != null) && obj.getClass().equals(EasySSLProtocolSocketFactory.class));
     }
 
+    /**
+     * hashCode.
+     *
+     * @return a int.
+     */
     public int hashCode() {
         return EasySSLProtocolSocketFactory.class.hashCode();
     }
