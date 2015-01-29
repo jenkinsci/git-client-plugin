@@ -2168,6 +2168,103 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(12402)
+    public void test_merge_fast_forward_mode_ff() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+        final ObjectId master = w.head();
+
+        // The first merge is a fast-forward, master moves to branch2
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertTrue("Fast-forward merge failed. master and branch1 should be the same.",w.head().equals(branch1));
+
+        // The second merge calls for fast-forward (FF), but a merge commit will result
+        // This tests that calling for FF gracefully falls back to a commit merge
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+        assertTrue("Merge commit failed. master and branch1 should be different.",!w.head().equals(branch1));
+        assertTrue("Merge commit failed. master and branch2 should be different.",!w.head().equals(branch2));
+    }
+
+    public void test_merge_fast_forward_mode_ff_only() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+        final ObjectId master = w.head();
+
+        // The first merge is a fast-forward, master moves to branch2
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertTrue("Fast-forward merge failed. master and branch1 should be the same.",w.head().equals(branch1));
+
+        // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
+        try {
+          w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+        } catch (GitException e) {
+          // expected
+        }
+    }
+
+    public void test_merge_fast_forward_mode_no_ff() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+        final ObjectId master = w.head();
+
+        // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertTrue("Merge commit failed. master and branch1 should be different.",!w.head().equals(branch1));
+
+        // Calling for NO_FF when required is expected to work
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+        assertTrue("Merge commit failed. master and branch1 should be different.",!w.head().equals(branch1));
+        assertTrue("Merge commit failed. master and branch2 should be different.",!w.head().equals(branch2));
+    }
+
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();

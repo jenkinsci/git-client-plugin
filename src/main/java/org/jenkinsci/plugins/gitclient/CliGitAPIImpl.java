@@ -480,6 +480,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new MergeCommand() {
             public ObjectId rev;
             public String strategy;
+            public String fastForwardMode;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -491,12 +492,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode fastForwardMode) {
+                this.fastForwardMode = fastForwardMode.toString();
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("merge");
                 try {
                     if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
-                        launchCommand("merge", "-s", strategy, rev.name()); }
-                    else {
-                        launchCommand("merge", rev.name()); }
+                        args.add("-s");
+                        args.add(strategy);
+                    }
+                    args.add(fastForwardMode);
+                    args.add(rev.name());
+                    launchCommand(args);
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);
                 }
