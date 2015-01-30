@@ -23,7 +23,7 @@ public interface MergeCommand extends GitCommand {
     /**
      * Select the fast forward mode.
      * The name FastForwardMode collides with org.eclipse.jgit.api.MergeCommand.FastForwardMode
-     * so we have to chose a different name.
+     * so we have to choose a different name.
      */
     MergeCommand setGitPluginFastForwardMode(GitPluginFastForwardMode fastForwardMode);
 
