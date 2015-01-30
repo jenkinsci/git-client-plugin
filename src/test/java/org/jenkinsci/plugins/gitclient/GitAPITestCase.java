@@ -2235,8 +2235,8 @@ public abstract class GitAPITestCase extends TestCase {
             w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
             fail("Exception not thrown: the fast-forward only mode should have failed");
         } catch (GitException e) {
-          // expected
-          assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",w.head(),branch1);
+            // expected
+            assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",w.head(),branch1);
         }
     }
 
