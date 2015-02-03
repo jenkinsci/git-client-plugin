@@ -11,3 +11,10 @@ work/
 .settings/
 
 /nb-configuration.xml
+
+# Vim
+*.swp
+Session.vim
+
+# Exhuberant ctags
+tags

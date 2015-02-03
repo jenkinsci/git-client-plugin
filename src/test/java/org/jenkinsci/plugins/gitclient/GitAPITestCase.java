@@ -2168,6 +2168,122 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(12402)
+    public void test_merge_fast_forward_mode_ff() throws Exception {
+        w.init();
+
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+
+        // The first merge is a fast-forward, master moves to branch1
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertEquals("Fast-forward merge failed. master and branch1 should be the same.",w.head(),branch1);
+
+        // The second merge calls for fast-forward (FF), but a merge commit will result
+        // This tests that calling for FF gracefully falls back to a commit merge
+        // master moves to a new commit ahead of branch1 and branch2
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+        // The merge commit (head) should have branch2 and branch1 as parents
+        List<ObjectId> revList = w.git.revList("HEAD^1");
+        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
+        revList = w.git.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
+    }
+
+    public void test_merge_fast_forward_mode_ff_only() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+        final ObjectId master = w.head();
+
+        // The first merge is a fast-forward, master moves to branch1
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        assertEquals("Fast-forward merge failed. master and branch1 should be the same but aren't.",w.head(),branch1);
+
+        // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
+        try {
+            w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+            fail("Exception not thrown: the fast-forward only mode should have failed");
+        } catch (GitException e) {
+            // expected
+            assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",w.head(),branch1);
+        }
+    }
+
+    public void test_merge_fast_forward_mode_no_ff() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+        final ObjectId base = w.head();
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        final ObjectId branch1 = w.head();
+
+        w.git.checkout("master");
+        w.git.branch("branch2");
+        w.git.checkout("branch2");
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        final ObjectId branch2 = w.head();
+
+        w.git.checkout("master");
+        final ObjectId master = w.head();
+
+        // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+
+        // The first merge will have base and branch1 as parents
+        List<ObjectId> revList = null;
+        revList = w.git.revList("HEAD^1");
+        assertEquals("Merge commit failed. base should be a parent of HEAD but it isn't.",revList.get(0).name(), base.name());
+        revList = w.git.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
+
+        final ObjectId base2 = w.head();
+
+        // Calling for NO_FF when required is expected to work
+        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
+
+        // The second merge will have base2 and branch2 as parents
+        revList = w.git.revList("HEAD^1");
+        assertEquals("Merge commit failed. base2 should be a parent of HEAD but it isn't.",revList.get(0).name(), base2.name());
+        revList = w.git.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
+    }
+
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();

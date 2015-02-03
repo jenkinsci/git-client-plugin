@@ -51,6 +51,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
@@ -1318,6 +1319,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             ObjectId rev;
             MergeStrategy strategy;
+            FastForwardMode fastForwardMode;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -1343,6 +1345,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode fastForwardMode) {
+                if (fastForwardMode == MergeCommand.GitPluginFastForwardMode.FF) {
+                    this.fastForwardMode = FastForwardMode.FF;
+                } else if (fastForwardMode == MergeCommand.GitPluginFastForwardMode.FF_ONLY) {
+                    this.fastForwardMode = FastForwardMode.FF_ONLY;
+                } else if (fastForwardMode == MergeCommand.GitPluginFastForwardMode.NO_FF) {
+                    this.fastForwardMode = FastForwardMode.NO_FF;
+                }
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 try {
@@ -1350,9 +1363,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
                     MergeResult mergeResult;
                     if (strategy != null)
-                        mergeResult = git.merge().setStrategy(strategy).include(rev).call();
+                        mergeResult = git.merge().setStrategy(strategy).setFastForward(fastForwardMode).include(rev).call();
                     else
-                        mergeResult = git.merge().include(rev).call();
+                        mergeResult = git.merge().setFastForward(fastForwardMode).include(rev).call();
                     if (!mergeResult.getMergeStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
