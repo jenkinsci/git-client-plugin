@@ -214,6 +214,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.2.2", versions);
     }
 
+    public void test_git_version_ubuntu_14_04_ppa_2_3_0() {
+        VersionTest[] versions = {
+            new VersionTest(true,  2, 3, 0, 0),
+            new VersionTest(true,  2, 3, 1, 0),
+            new VersionTest(false, 2, 2, 9, 0)
+        };
+        doTest("git version 2.3.0", versions);
+    }
+
     @Override
     protected String getRemoteBranchPrefix() {
         return "remotes/";
