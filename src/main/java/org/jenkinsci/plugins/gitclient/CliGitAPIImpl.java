@@ -1569,13 +1569,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return result;
         } catch (GitException e) {
+            listener.getLogger().println(" >> GitException message: " + e.getMessage());
             throw e;
         } catch (IOException e) {
+            listener.getLogger().println(" >> IOException message: " + e.getMessage());
             throw new GitException("Error performing command: " + command, e);
         } catch (InterruptedException e) {
+            listener.getLogger().println(" >> InterruptedException message: " + e.getMessage());
             throw e;
         } catch (Throwable t) {
+            listener.getLogger().println(" >> Throwable message: " + t.getMessage());
             throw new GitException("Error performing git command", t);
+        } finally {
+            if (!fos.toString().isEmpty()) {
+                listener.getLogger().println(" >> stdout: " + fos.toString());
+            }
+            if (!err.toString().isEmpty()) {
+                listener.getLogger().println(" >> stderr: " + err.toString());
+            }
         }
 
     }
