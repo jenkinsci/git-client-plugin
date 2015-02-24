@@ -699,7 +699,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
+
+            /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
+            public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
             final List<String> revs = new ArrayList<String>();
+
             Integer n = null;
             Writer out = null;
 
@@ -736,7 +740,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty=raw");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
+                args.add("--format="+RAW);
                 if (n!=null)
                     args.add("-n").add(n);
                 for (String rev : this.revs)

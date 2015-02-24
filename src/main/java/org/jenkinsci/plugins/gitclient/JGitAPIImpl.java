@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -1158,6 +1159,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
+        public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ssZ";
+
         /**
          * Formats a commit into the raw format.
          *
@@ -1176,8 +1179,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             pw.printf("tree %s\n", commit.getTree().name());
             for (RevCommit p : commit.getParents())
                 pw.printf("parent %s\n",p.name());
-            pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
-            pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
+            FastDateFormat iso = FastDateFormat.getInstance(ISO_8601);
+            PersonIdent a = commit.getAuthorIdent();
+            pw.printf("author %s <%s> %s\n", a.getName(), a.getEmailAddress(), iso.format(a.getWhen()));
+            PersonIdent c = commit.getCommitterIdent();
+            pw.printf("committer %s <%s> %s\n", c.getName(), c.getEmailAddress(), iso.format(c.getWhen()));
 
             // indent commit messages by 4 chars
             String msg = commit.getFullMessage();
