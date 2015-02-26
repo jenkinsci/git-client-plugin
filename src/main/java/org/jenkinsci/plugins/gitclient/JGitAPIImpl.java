@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -543,7 +544,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public List<RefSpec> refspecs;
             // JGit 3.3.0 thru 3.6.0 prune more branches than expected
             // Refer to GitAPITestCase.test_fetch_with_prune()
-            // private boolean shouldPrune = false;
+            private boolean shouldPrune = false;
             public boolean tags = true;
 
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -553,9 +554,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
-                throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
-                // shouldPrune = true;
-                // return this;
+                //throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
+                shouldPrune = true;
+                return this;
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
@@ -577,20 +578,46 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 FetchCommand fetch = null;
                 try {
                     repo = getRepository();
-                    fetch = git(repo).fetch();
-                    fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
-                    fetch.setRemote(url.toString());
-                    fetch.setCredentialsProvider(getProvider());
-
+                    Git git = git(repo);
+                    
                     List<RefSpec> refSpecs = new ArrayList<RefSpec>();
                     if (tags) {
                         // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
                         refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
                     }
                     if (refspecs != null)
-                      for (RefSpec rs: refspecs)
-                        if (rs != null)
-                          refSpecs.add(rs);
+                        for (RefSpec rs: refspecs)
+                            if (rs != null)
+                                refSpecs.add(rs);
+
+                    if (shouldPrune) {
+                        // since prune is broken in JGit, we go the trivial way:
+                        // delete all refs matching the right side of the refspecs
+                        // then fetch and let the git recreate them.
+                        List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+                        
+                        List<String> toDelete = new ArrayList<String>(refs.size());
+                        
+                        for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
+                            Ref branchRef = it.next();
+                            for (RefSpec rs : refSpecs) {
+                                if (rs.matchDestination(branchRef)) {
+                                    toDelete.add(branchRef.getName());
+                                    break;
+                                }
+                            }
+                        }
+                        if (!toDelete.isEmpty()) {
+                            // we need force = true because usually not all remote branches will be merged into the current branch.
+                            git.branchDelete().setForce(true).setBranchNames(toDelete.toArray(new String[toDelete.size()])).call();
+                        }
+                    }
+
+                    fetch = git.fetch();
+                    fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
+                    fetch.setRemote(url.toString());
+                    fetch.setCredentialsProvider(getProvider());
+
                     fetch.setRefSpecs(refSpecs);
                     // fetch.setRemoveDeletedRefs(shouldPrune);
 
