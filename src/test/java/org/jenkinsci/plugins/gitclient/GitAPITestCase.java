@@ -1132,7 +1132,7 @@ public abstract class GitAPITestCase extends TestCase {
          * on that old git version.
          */
         int expectedBranchCount = 3;
-        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+        if (newArea.git instanceof CliGitAPIImpl && !w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             expectedBranchCount = 4;
         }
         assertEquals("Wrong count in " + remoteBranches, expectedBranchCount, remoteBranches.size());
