@@ -1559,14 +1559,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo ");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
-        int status = -1;
         try {
             args.prepend(gitExe);
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
-            status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
+            int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
             String result = fos.toString();
             if (status != 0) {
@@ -1576,25 +1575,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return result;
         } catch (GitException e) {
             listener.getLogger().println(" >> GitException message: " + e.getMessage());
-            status = -2;
             throw e;
         } catch (IOException e) {
             listener.getLogger().println(" >> IOException message: " + e.getMessage());
-            status = -3;
             throw new GitException("Error performing command: " + command, e);
         } catch (InterruptedException e) {
             listener.getLogger().println(" >> InterruptedException message: " + e.getMessage());
-            status = -4;
             throw e;
         } catch (Throwable t) {
             listener.getLogger().println(" >> Throwable message: " + t.getMessage());
-            status = -5;
             throw new GitException("Error performing git command", t);
         } finally {
-            if (status != 0 && !fos.toString().isEmpty()) {
+            if (!fos.toString().isEmpty()) {
                 listener.getLogger().println(" >> stdout: " + fos.toString());
             }
-            if (status != 0 && !err.toString().isEmpty()) {
+            if (!err.toString().isEmpty()) {
                 listener.getLogger().println(" >> stderr: " + err.toString());
             }
         }
