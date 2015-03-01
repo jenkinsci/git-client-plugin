@@ -55,6 +55,6 @@ public class GitObject implements Serializable {
      */
     @Exported(name="SHA1")
     public String getSHA1String() {
-        return sha1.name();
+        return sha1 != null ? sha1.name() : null;
     }
 }
