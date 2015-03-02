@@ -2076,6 +2076,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
+        if (commit == null) {
+            return false;
+        }
         try {
             List<ObjectId> revs = revList(commit.name());
 
