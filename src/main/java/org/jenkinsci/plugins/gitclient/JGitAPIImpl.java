@@ -1686,6 +1686,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
+        if (commit == null) {
+            return false;
+        }
         final Repository repo = getRepository();
         final boolean found = repo.hasObject(commit);
         repo.close();

@@ -586,12 +586,14 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_detect_commit_in_repo() throws Exception {
         w.init();
+        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
         w.touch("file1");
         w.git.add("file1");
         w.git.commit("commit1");
         assertTrue("HEAD commit not found", w.git.isCommitInRepo(w.head()));
         // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
         assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
+        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
     }
 
     @Deprecated
