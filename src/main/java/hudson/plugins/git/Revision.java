@@ -114,14 +114,17 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @return a {@link java.lang.String} object.
      */
     public String toString() {
-        StringBuilder s = new StringBuilder("Revision " + sha1.name() + " (");
-        Joiner.on(", ").appendTo(s,
-                Iterables.transform(branches, new Function<Branch, String>() {
+        final String revisionName = sha1 != null ? sha1.name() : "null";
+        StringBuilder s = new StringBuilder("Revision " + revisionName + " (");
+        if (branches != null) {
+            Joiner.on(", ").appendTo(s,
+                    Iterables.transform(branches, new Function<Branch, String>() {
 
-                    public String apply(Branch from) {
-                        return Util.fixNull(from.getName());
-                    }
-                }));
+                        public String apply(Branch from) {
+                            return Util.fixNull(from.getName());
+                        }
+                    }));
+        }
         s.append(')');
         return s.toString();
     }
@@ -130,7 +133,7 @@ public class Revision implements java.io.Serializable, Cloneable {
     @Override
     public Revision clone() {
         Revision clone;
-	try {
+        try {
             clone = (Revision) super.clone();
         }
         catch (CloneNotSupportedException e) {
@@ -143,28 +146,16 @@ public class Revision implements java.io.Serializable, Cloneable {
     /** {@inheritDoc} */
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + sha1.hashCode();
-        return result;
+        return sha1 != null ? 31 + sha1.hashCode() : 1;
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (!(obj instanceof Revision)) {
             return false;
         }
         Revision other = (Revision) obj;
-        if (!sha1.equals(other.sha1)) {
-            return false;
-        }
-        return true;
+        return java.util.Objects.equals(sha1, other.sha1);
     }
 }

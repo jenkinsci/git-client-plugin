@@ -137,12 +137,28 @@ public class RevisionTest {
     }
 
     @Test
+    public void testToStringNullOneArgument() {
+        Revision nullRevision = new Revision(null);
+        assertEquals("Revision null ()", nullRevision.toString());
+    }
+
+    @Test
+    public void testToStringNullTwoArguments() {
+        Revision nullRevision = new Revision(null, null);
+        assertEquals("Revision null ()", nullRevision.toString());
+    }
+
+    @Test
     public void testClone() {
         Revision revision1Clone = revision1.clone();
         assertEquals(revision1Clone.getSha1(), objectId);
 
         Revision revision2Clone = revision2.clone();
         assertEquals(revision2Clone.getSha1String(), SHA1);
+
+        Revision nullRevision = new Revision(null);
+        Revision clonedRevision = nullRevision.clone();
+        assertEquals(clonedRevision, nullRevision);
 
         Collection<Branch> branches = revisionWithBranches.getBranches();
         Revision revisionWithBranchesClone = revisionWithBranches.clone();
@@ -154,5 +170,9 @@ public class RevisionTest {
     public void testHashCode() {
         assertEquals(revision1, revision2);
         assertEquals(revision1.hashCode(), revision2.hashCode());
+
+        Revision nullRevision1 = new Revision(null);
+        Revision nullRevision2 = new Revision(null);
+        assertEquals(nullRevision1.hashCode(), nullRevision2.hashCode());
     }
 }
