@@ -865,6 +865,28 @@ public interface GitClient {
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
+     * Given a Revision, show all files changes similar to git diff --name-only, so that it
+     * can be used to accurately identify changed paths for include/exclude regions.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range, For merge commit, only actual path changes
+     * are included rather than changes from all parents. This makes this method report
+     * more accurately on path changes from {@link #showRevision()}.
+     *
+     * <p>
+     * If {@code from} is null, this prints paths from just one commit that {@code to} represents.
+     * If {@code from} is null and the {@code to} commit is a merge commit, it will report all path
+     * changes from each parent.
+     *
+     * @return The git show output, in <tt>raw</tt> format.
+     * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException, InterruptedException;
+
+    /**
      * Equivalent of "git-describe --tags".
      *
      * Find a nearby tag (including unannotated ones) and come up with a short identifier to describe the tag.

@@ -2787,6 +2787,54 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(paths.contains("README.md"));
     }
 
+    public void test_show_paths_for_single_commit() throws Exception {
+        w = clone(localMirror());
+        ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
+        List<String> paths = w.git.showChangedPaths(null, to);
+
+        assertEquals(1, paths.size());
+        assertTrue(paths.contains("pom.xml"));
+    }
+
+    public void test_show_paths_for_single_merge_commit() throws Exception {
+        w = clone(localMirror());
+        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
+        List<String> paths = w.git.showChangedPaths(null, to);
+
+        assertEquals(9, paths.size());
+        assertTrue(paths.contains("pom.xml"));
+        assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/CliGitAPIImpl.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/Git.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/GitClient.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/JGitAPIImpl.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
+        assertTrue(paths.contains(".gitignore"));
+    }
+
+    public void test_show_paths_for_merge() throws Exception {
+        w = clone(localMirror());
+        ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
+        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
+
+        List<String> paths = w.git.showChangedPaths(from, to);
+
+        assertEquals(1, paths.size());
+        assertTrue(paths.contains(".gitignore"));
+        // Irrelevant changes will NOT be listed due to merge commit
+        assertFalse(paths.contains("pom.xml"));
+        assertFalse(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
+        assertFalse(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/CliGitAPIImpl.java"));
+        assertFalse(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/Git.java"));
+        assertFalse(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/GitClient.java"));
+        assertFalse(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/JGitAPIImpl.java"));
+        assertFalse(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
+        assertFalse(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
+        // Previous implementation included other commits, and listed irrelevant changes
+        assertFalse(paths.contains("README.md"));
+    }
+
     private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException
     {
         StringWriter writer = new StringWriter();

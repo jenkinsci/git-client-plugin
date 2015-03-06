@@ -64,6 +64,8 @@ import org.eclipse.jgit.errors.InvalidPatternException;
 import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.errors.IncorrectObjectTypeException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
@@ -101,6 +103,7 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
@@ -1935,6 +1938,85 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (or != null) or.release();
             if (repo != null) repo.close();
         }
+    }
+
+    /** {@inheritDoc} */
+    public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException {
+        Repository repo = null;
+        try {
+            repo = getRepository();
+
+            List<RevCommit> oldRevCommits = new ArrayList<RevCommit>();
+            RevWalk walk = new RevWalk(repo);
+            if (from!=null) {
+                RevCommit fromCommit = walk.parseCommit(from);
+                oldRevCommits.add(fromCommit);
+            } else {
+                // the effect of the -m option, which makes the diff produce for each parent of a merge commit
+                RevCommit toCommit = walk.parseCommit(to);
+                for(RevCommit fromCommit: toCommit.getParents()) {
+                    oldRevCommits.add(fromCommit);
+                }
+            }
+
+            // the diff works on TreeIterators, convert revisions to TreeIterators
+            List<CanonicalTreeParser> oldTreeIters = new ArrayList<CanonicalTreeParser>();
+            for(RevCommit oldRevCommit: oldRevCommits) {
+                CanonicalTreeParser iter = prepareTreeParser(repo, oldRevCommit);
+                oldTreeIters.add(iter);
+            }
+
+            // Run diff
+            Set<String> r = new HashSet<String>();
+            for(CanonicalTreeParser oldTreeIter: oldTreeIters) {
+                CanonicalTreeParser newTreeIter = prepareTreeParser(repo, to);
+                List<DiffEntry> diffs = git(repo).diff()
+                    .setNewTree(newTreeIter)
+                    .setOldTree(oldTreeIter)
+                    .call();
+
+                for(DiffEntry diff: diffs) {
+                    if (diff.getOldPath() != "/dev/null")
+                        r.add(diff.getOldPath());
+                    if (diff.getNewPath() != "/dev/null")
+                        r.add(diff.getNewPath());
+                }
+            }
+            return new ArrayList(r);
+        } catch (IOException e) {
+            throw new GitException(e);
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        } finally {
+            if (repo != null) repo.close();
+        }
+    }
+
+    private static CanonicalTreeParser prepareTreeParser(Repository repo, ObjectId objectId) throws GitException {
+        ObjectReader or = null;
+        RevWalk walk = null;
+        CanonicalTreeParser treeIter = new CanonicalTreeParser();
+
+        try {
+            // from the commit we can build the tree which allows us to construct the TreeParser
+            or = repo.newObjectReader();
+            walk = new RevWalk(repo);
+            RevCommit commit = walk.parseCommit(objectId);
+            RevTree tree = walk.parseTree(commit.getTree().getId());
+
+            treeIter.reset(or, tree.getId());
+        } catch (MissingObjectException e) {
+            throw new GitException(e);
+        } catch (IncorrectObjectTypeException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
+            throw new GitException(e);
+        } finally {
+            if (walk != null) walk.dispose();
+            if (or != null) or.release();
+        }
+
+        return treeIter;
     }
 
     private Iterable<JGitAPIImpl> submodules() throws IOException {
