@@ -778,6 +778,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
     }
 
+    /** {@inheritDoc} */
+    public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        if (from != null){
+            args.add("diff", "--name-only", from.name() + "..." + to.name());
+        } else {
+            args.add("diff-tree", "-m", "--no-commit-id", "--name-only", "-r", to.name());
+        }
+
+        StringWriter writer = new StringWriter();
+        writer.write(launchCommand(args));
+        return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
+    }
+
     /**
      * submoduleInit.
      *
