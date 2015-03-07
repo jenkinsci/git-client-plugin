@@ -865,6 +865,16 @@ public interface GitClient {
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
+     * showChangedPaths.
+     *
+     * @param r a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return a {@link java.util.List} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public List<String> showChangedPaths(ObjectId r) throws GitException, InterruptedException;
+
+    /**
      * Given a Revision, show all files changes similar to git diff --name-only, so that it
      * can be used to accurately identify changed paths for include/exclude regions.
      *
