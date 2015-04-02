@@ -929,7 +929,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* Add tag to working repo and without pushing it to the bare repo */
         w.tag("tag1");
         assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
-        w.git.push().to(new URIish(bare.repoPath())).tags(false).execute();
+        w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(false).execute();
         assertFalse("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
 
         /* Add tag to working repo without pushing it to the bare
@@ -938,7 +938,7 @@ public abstract class GitAPITestCase extends TestCase {
          */
         w.tag("tag3");
         assertTrue("tag3 wasn't created", w.git.tagExists("tag3"));
-        w.git.push().to(new URIish(bare.repoPath())).execute();
+        w.git.push().ref("master").to(new URIish(bare.repoPath())).execute();
         assertFalse("tag3 was pushed", bare.cmd("git tag").contains("tag3"));
 
         /* Add another tag to working repo and push tags to the bare repo */
@@ -947,7 +947,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit2");
         w.tag("tag2");
         assertTrue("tag2 wasn't created", w.git.tagExists("tag2"));
-        w.git.push().to(new URIish(bare.repoPath())).tags(true).execute();
+        w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).execute();
         assertTrue("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
         assertTrue("tag2 wasn't pushed", bare.cmd("git tag").contains("tag2"));
         assertTrue("tag3 wasn't pushed", bare.cmd("git tag").contains("tag3"));
