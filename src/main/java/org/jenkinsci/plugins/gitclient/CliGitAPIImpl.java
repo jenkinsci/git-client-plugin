@@ -857,8 +857,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
                     args.add("--remote");
 
-                    for (String key : submodBranch.keySet()) {
-                        launchCommand("config", "-f", ".gitmodules", "submodule."+key+".branch", submodBranch.get(key));
+                    for (Map.Entry<String, String> entry : submodBranch.entrySet()) {
+                        launchCommand("config", "-f", ".gitmodules", "submodule."+entry.getKey()+".branch", entry.getValue());
                     }
                 }
                 if ((ref != null) && !ref.isEmpty()) {
