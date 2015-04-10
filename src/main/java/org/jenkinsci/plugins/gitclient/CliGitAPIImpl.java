@@ -505,11 +505,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public MergeCommand merge() {
         return new MergeCommand() {
             public ObjectId rev;
+            public List<ObjectId> moreRevs = new ArrayList<ObjectId>();
             public String strategy;
             public String fastForwardMode;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
+                return this;
+            }
+
+            public MergeCommand addRevisionToMerge(ObjectId rev) {
+                this.moreRevs.add(rev);
                 return this;
             }
 
@@ -533,6 +539,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add(fastForwardMode);
                     args.add(rev.name());
+                    for (ObjectId extraRev : moreRevs) {
+                        args.add(extraRev.name());
+                    }
                     launchCommand(args);
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);

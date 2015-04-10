@@ -3584,6 +3584,194 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
+     * Confirm a merge which combines more than two branches in a single commit
+     * (an "octopus" merge) is correctly processed by the inclusion filtering.
+     *
+     * Creates a structure like:
+     *
+     * base -> branch a -> branch a-b 
+     *      -> branch c 
+     *      -> branch d -> branch d-e -> branch d-e-f
+     *
+     * confirming inclusion filtering behaviors along the way. Performs a
+     * merge of all three branches and checks the inclusion filtering behaves
+     * as expected.
+     *
+     * @throws Exception
+     */
+    public void test_octopus_merge_honors_exclusions() throws Exception {
+        w.init();
+        assertEquals("Wrong branch count at init", 0, w.git.getBranches().size());
+
+        final String baseContent = "base file content " + UUID.randomUUID().toString();
+        w.touch("base", baseContent);
+        w.git.add("base");
+        w.git.commit("base message - " + baseContent);
+        ObjectId firstCommit = w.head();
+        assertNotNull(firstCommit);
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertEquals("Wrong branch count at base", 1, w.git.getBranches().size());
+
+        // Create branch a
+        w.git.branch("a");
+        w.git.checkout("a");
+        assertEquals("Wrong branch count at branch 'a'", 2, w.git.getBranches().size());
+        final String aContent = "a file content " + UUID.randomUUID().toString();
+        w.touch("a", aContent);
+        w.git.add("a");
+        w.git.commit("a message - " + aContent);
+        ObjectId aCommit = w.head();
+        assertNotNull(aCommit);
+        assertTrue("a file missing", w.exists("a"));
+        assertEquals("a file content mismatch", aContent, w.contentOf("a"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+
+        // Create branch a-b
+        w.git.branch("a-b");
+        w.git.checkout("a-b");
+        assertEquals("Wrong branch count at branch 'a-b'", 3, w.git.getBranches().size());
+        final String bContent = "b file content " + UUID.randomUUID().toString();
+        w.touch("b", bContent);
+        w.git.add("b");
+        w.git.commit("b message - " + bContent);
+        ObjectId bCommit = w.head();
+        assertNotNull(bCommit);
+        assertTrue("b file missing", w.exists("b"));
+        assertEquals("b file content mismatch", bContent, w.contentOf("b"));
+        assertTrue("a file missing", w.exists("a"));
+        assertEquals("a file content mismatch", aContent, w.contentOf("a"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+
+        // Create branch c
+        w.git.checkout("master");
+        w.git.branch("c");
+        w.git.checkout("c");
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertEquals("Wrong branch count at branch 'c'", 4, w.git.getBranches().size());
+        final String cContent = "c file content " + UUID.randomUUID().toString();
+        w.touch("c", cContent);
+        w.git.add("c");
+        w.git.commit("c message - " + cContent);
+        ObjectId cCommit = w.head();
+        assertNotNull(cCommit);
+        assertTrue("c file missing", w.exists("c"));
+        assertEquals("c file content mismatch", cContent, w.contentOf("c"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertFalse("a file found", w.exists("a"));
+        assertFalse("b file found", w.exists("b"));
+
+        // Create branch d
+        w.git.checkout("master");
+        w.git.branch("d");
+        w.git.checkout("d");
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertEquals("Wrong branch count at branch 'd'", 5, w.git.getBranches().size());
+        final String dContent = "d file content " + UUID.randomUUID().toString();
+        w.touch("d", dContent);
+        w.git.add("d");
+        w.git.commit("d message - " + dContent);
+        ObjectId dCommit = w.head();
+        assertNotNull(dCommit);
+        assertTrue("d file missing", w.exists("d"));
+        assertEquals("d file content mismatch", dContent, w.contentOf("d"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertFalse("a file found", w.exists("a"));
+        assertFalse("b file found", w.exists("b"));
+        assertFalse("c file found", w.exists("c"));
+        assertTrue("d file missing", w.exists("d"));
+        assertEquals("d file content mismatch", dContent, w.contentOf("d"));
+
+        // Create branch d-e
+        w.git.branch("d-e");
+        w.git.checkout("d-e");
+        assertEquals("Wrong branch count at branch 'd-e'", 6, w.git.getBranches().size());
+        final String eContent = "e file content " + UUID.randomUUID().toString();
+        w.touch("e", eContent);
+        w.git.add("e");
+        w.git.commit("e message - " + eContent);
+        ObjectId eCommit = w.head();
+        assertNotNull(eCommit);
+        assertTrue("e file missing", w.exists("e"));
+        assertEquals("e file content mismatch", eContent, w.contentOf("e"));
+        assertTrue("d file missing", w.exists("d"));
+        assertEquals("d file content mismatch", dContent, w.contentOf("d"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertFalse("a file found", w.exists("a"));
+        assertFalse("b file found", w.exists("b"));
+        assertFalse("c file found", w.exists("c"));
+
+        // Create branch d-e-f
+        w.git.branch("d-e-f");
+        w.git.checkout("d-e-f");
+        assertEquals("Wrong branch count at branch 'd-e-f'", 7, w.git.getBranches().size());
+        final String fContent = "f file content " + UUID.randomUUID().toString();
+        w.touch("f", fContent);
+        w.git.add("f");
+        w.git.commit("f message - " + fContent);
+        ObjectId fCommit = w.head();
+        assertNotNull(fCommit);
+        assertTrue("f file missing", w.exists("f"));
+        assertEquals("f file content mismatch", fContent, w.contentOf("f"));
+        assertTrue("e file missing", w.exists("e"));
+        assertEquals("e file content mismatch", eContent, w.contentOf("e"));
+        assertTrue("d file missing", w.exists("d"));
+        assertEquals("d file content mismatch", dContent, w.contentOf("d"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertFalse("a file found", w.exists("a"));
+        assertFalse("b file found", w.exists("b"));
+        assertFalse("c file found", w.exists("c"));
+
+        // Create branch g
+        w.git.checkout("master");
+        w.git.branch("g");
+        w.git.checkout("g");
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertEquals("Wrong branch count at branch 'g'", 8, w.git.getBranches().size());
+        final String gContent = "g file content " + UUID.randomUUID().toString();
+        w.touch("g", gContent);
+        w.git.add("g");
+        w.git.commit("g message - " + gContent);
+        ObjectId gCommit = w.head();
+        assertNotNull(gCommit);
+        assertTrue("g file missing", w.exists("g"));
+        assertEquals("g file content mismatch", gContent, w.contentOf("g"));
+        assertTrue("base file missing", w.exists("base"));
+        assertEquals("base file content mismatch", baseContent, w.contentOf("base"));
+        assertFalse("a file found", w.exists("a"));
+        assertFalse("b file found", w.exists("b"));
+        assertFalse("c file found", w.exists("c"));
+        assertFalse("d file found", w.exists("d"));
+        assertFalse("e file found", w.exists("e"));
+        assertFalse("f file found", w.exists("f"));
+
+        /** API does not support Octopus merge
+         *  w.cmd("git merge a-b c d-e-f");
+         */
+        w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
+                .setRevisionToMerge(bCommit)
+                .setRevisionToMerge(dCommit)
+                .setRevisionToMerge(fCommit)
+                .execute();
+
+        assertTrue("a file missing", w.exists("a"));
+        assertTrue("b file missing", w.exists("b"));
+        assertTrue("c file missing", w.exists("c"));
+        assertTrue("d file missing", w.exists("d"));
+        assertTrue("e file missing", w.exists("e"));
+        assertTrue("f file missing", w.exists("f"));
+    }
+
+    /**
      * Returns the prefix for the remote branches while querying them.
      * @return remote branch pregix, for example, "remotes/"
      */
