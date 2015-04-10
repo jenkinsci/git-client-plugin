@@ -3764,7 +3764,6 @@ public abstract class GitAPITestCase extends TestCase {
             /* JGit does not implement octopus merge */
             w.cmd("git merge a-b c d-e-f");
         }
-        System.out.println("git log --graph:\n" + w.cmd("git log --graph"));
 
         assertTrue("a file missing", w.exists("a"));
         assertTrue("b file missing", w.exists("b"));
