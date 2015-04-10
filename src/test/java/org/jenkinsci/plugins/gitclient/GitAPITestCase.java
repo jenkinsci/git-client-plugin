@@ -3584,8 +3584,9 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * Confirm a merge which combines more than two branches in a single commit
-     * (an "octopus" merge) is correctly processed by the inclusion filtering.
+     * A merge which combines more than two branches in a single
+     * commit (an "octopus" merge) should by correctly processed by
+     * inclusion filtering.
      *
      * Creates a structure like:
      *
@@ -3593,9 +3594,8 @@ public abstract class GitAPITestCase extends TestCase {
      *      -> branch c 
      *      -> branch d -> branch d-e -> branch d-e-f
      *
-     * confirming inclusion filtering behaviors along the way. Performs a
-     * merge of all three branches and checks the inclusion filtering behaves
-     * as expected.
+     * Performs a merge of all three branches and checks the inclusion
+     * filtering behaves as expected.
      *
      * @throws Exception
      */
@@ -3754,14 +3754,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("e file found", w.exists("e"));
         assertFalse("f file found", w.exists("f"));
 
-        /** API does not support Octopus merge
-         *  w.cmd("git merge a-b c d-e-f");
-         */
-        w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
+        if (w.git instanceof CliGitAPIImpl) {
+            w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
                 .setRevisionToMerge(bCommit)
-                .setRevisionToMerge(dCommit)
-                .setRevisionToMerge(fCommit)
+                .addRevisionToMerge(cCommit)
+                .addRevisionToMerge(fCommit)
                 .execute();
+        } else {
+            /* JGit does not implement octopus merge */
+            w.cmd("git merge a-b c d-e-f");
+        }
+        System.out.println("git log --graph:\n" + w.cmd("git log --graph"));
 
         assertTrue("a file missing", w.exists("a"));
         assertTrue("b file missing", w.exists("b"));
@@ -3773,7 +3776,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     /**
      * Returns the prefix for the remote branches while querying them.
-     * @return remote branch pregix, for example, "remotes/"
+     * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
 
