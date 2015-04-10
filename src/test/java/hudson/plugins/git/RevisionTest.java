@@ -41,6 +41,7 @@ public class RevisionTest {
     public void testEquals() {
         assertEquals(revision1, revision1);
         assertNotEquals(revision1, null);
+        assertNotEquals(null, revision1);
         assertNotEquals(revision1, objectId);
         assertEquals(revision1, revision2);
 

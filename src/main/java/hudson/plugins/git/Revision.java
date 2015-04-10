@@ -156,6 +156,9 @@ public class Revision implements java.io.Serializable, Cloneable {
             return false;
         }
         Revision other = (Revision) obj;
-        return java.util.Objects.equals(sha1, other.sha1);
+        if (other.sha1 != null) {
+            return other.sha1.equals(sha1);
+        }
+        return sha1 == null;
     }
 }
