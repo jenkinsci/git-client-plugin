@@ -59,14 +59,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
         for (int i = 0; i < versions.length; ++i) {
+            String msg = versionOutput + " for " + versions[i].major + versions[i].minor + versions[i].rev + versions[i].bugfix;
             if (versions[i].expectedIsAtLeastVersion) {
-                assertTrue("Failed " + versionOutput, git.isAtLeastVersion(
+                assertTrue("Failed " + msg, git.isAtLeastVersion(
                         versions[i].major,
                         versions[i].minor,
                         versions[i].rev,
                         versions[i].bugfix));
             } else {
-                assertFalse("Passed " + versionOutput, git.isAtLeastVersion(
+                assertFalse("Passed " + msg, git.isAtLeastVersion(
                         versions[i].major,
                         versions[i].minor,
                         versions[i].rev,
@@ -103,6 +104,8 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.0.0.rc0", versions);
         doTest("git version 2.0.0.rc2", versions);
         doTest("git version 2.0.0", versions);
+        doTest("git version 2.0", versions); // mythical version
+        doTest("git version 2", versions);   // mythical version
     }
 
     public void test_git_version_debian_testing_older() {
@@ -221,6 +224,17 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(false, 2, 3, 1, 0)
         };
         doTest("git version 2.3.0", versions);
+    }
+
+    public void test_git_version_ubuntu_14_04_ppa_2_3_5() {
+        VersionTest[] versions = {
+            new VersionTest(true,  2, 3, 5, 0),
+            new VersionTest(true,  2, 2, 9, 9),
+            new VersionTest(false, 2, 3, 5, 1),
+            new VersionTest(false, 2, 4, 0, 0),
+            new VersionTest(false, 3, 0, 0, 0) 
+       };
+        doTest("git version 2.3.5", versions);
     }
 
     @Override
