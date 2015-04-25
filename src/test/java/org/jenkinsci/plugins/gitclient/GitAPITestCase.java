@@ -3613,9 +3613,9 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * A merge which combines more than two branches in a single
-     * commit (an "octopus" merge) should by correctly processed by
-     * inclusion filtering.
+     * A merge which combines more than two branches in a single commit (an
+     * "octopus" merge) should by correctly processed by showChangePaths for
+     * with command line git and JGit implementations.
      *
      * Creates a structure like:
      *
@@ -3623,17 +3623,60 @@ public abstract class GitAPITestCase extends TestCase {
      *      -> branch c 
      *      -> branch d -> branch d-e -> branch d-e-f
      *
-     * Performs a merge of all three branches and checks the inclusion
-     * filtering behaves as expected.
+     * Performs a merge of all three branches and checks
+     * showChangePaths behaves as expected.
      *
      * @throws Exception
      */
-    public void test_octopus_merge_honors_exclusions() throws Exception {
+    public void test_octopus_merge_showChangedPaths() throws Exception {
         w.init();
+        assertEquals("Wrong branch count before commit", 0, w.git.getBranches().size());
+        /* What should showChangePaths return for an empty repo? */
 
         ObjectId firstCommit = commitOneFile("base");
         assertEquals("Wrong branch count at base", 1, w.git.getBranches().size());
         assertFilesDoNotExist("a", "b", "c", "d", "e", "f", "g");
+
+        /* First commit in the repository behaves differently than second and later */
+        List<String> changedPathsOneArg = w.git.showChangedPaths(firstCommit);
+        if (w.git instanceof CliGitAPIImpl) {
+            /* A 1 element list with an empty string as element 1 is unexpected */
+            assertEquals("First change not an empty string: '" + changedPathsOneArg.get(0) + "'", "", changedPathsOneArg.get(0));
+            assertEquals("Wrong length on first change: ", 1, changedPathsOneArg.size());
+        } else {
+            /* JGit implementation returned an empty list as expected */
+            assertTrue("First change not empty: " + changedPathsOneArg, changedPathsOneArg.isEmpty());
+        }
+
+        List<String> changedPathsTwoArgs = w.git.showChangedPaths(null, firstCommit);
+        if (w.git instanceof CliGitAPIImpl) {
+            /* A 1 element list with an empty string as element 1 is unexpected */
+            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
+            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
+        } else {
+            /* JGit implementation returned an empty list as expected */
+            assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
+        }
+
+        /* Javadoc of showChangedPaths allows the second argument to be null
+         * and assigns semantics to the null seecond argument, but this throws
+         * a null pointer exception for both JGit and command line git.
+         */
+        try {
+            changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, null);
+            assertNotNull("Result is null", changedPathsTwoArgs); // unreached
+        } catch (NullPointerException npe) {
+        }
+
+        changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, firstCommit);
+        if (w.git instanceof CliGitAPIImpl) {
+            /* A 1 element list with an empty string as element 1 is unexpected */
+            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
+            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
+        } else {
+            /* JGit implementation returned an empty list as expected */
+            assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
+        }
 
         // Create branch a
         branchAndCheckout("a");
@@ -3641,11 +3684,47 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "a");
         assertFilesDoNotExist("b", "c", "d", "e", "f", "g");
 
+        changedPathsOneArg = w.git.showChangedPaths(aCommit);
+        assertEquals("Wrong one arg changed path", "a", changedPathsOneArg.get(0));
+        assertEquals("Wrong one arg changed path count", 1, changedPathsOneArg.size());
+
+        /* Inverted argument expected to return empty list since aCommit is not
+         * a parent of firstCommit.
+         */
+        changedPathsTwoArgs = w.git.showChangedPaths(aCommit, firstCommit);
+        if (w.git instanceof CliGitAPIImpl) {
+            assertFalse("empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
+            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
+            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
+        } else {
+            /* Unexpected non-empty list with inverted argument order */
+            assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
+            assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
+        }
+
+        changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, aCommit);
+        assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
+        assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
+
+        changedPathsTwoArgs = w.git.showChangedPaths(null, aCommit);
+        assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
+        assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
+
+        try {
+            changedPathsTwoArgs = w.git.showChangedPaths(aCommit, null);
+            assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
+            assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
+        } catch (NullPointerException npe) {
+        }
+
         // Create branch a-b
         branchAndCheckout("a-b");
         ObjectId bCommit = commitOneFile("b");
         assertFilesExist("base", "a", "b");
         assertFilesDoNotExist("c", "d", "e", "f", "g");
+        changedPathsOneArg = w.git.showChangedPaths(bCommit);
+        assertEquals("'b' not first changed path", "b", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         // Create branch c
         w.git.checkout("master");
@@ -3653,6 +3732,9 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId cCommit = commitOneFile("c");
         assertFilesExist("base", "c");
         assertFilesDoNotExist("a", "b", "d", "e", "f", "g");
+        changedPathsOneArg = w.git.showChangedPaths(cCommit);
+        assertEquals("'c' not first changed path", "c", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         // Create branch d
         w.git.checkout("master");
@@ -3660,18 +3742,27 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId dCommit = commitOneFile("d");
         assertFilesExist("base", "d");
         assertFilesDoNotExist("a", "b", "c", "e", "f", "g");
+        changedPathsOneArg = w.git.showChangedPaths(dCommit);
+        assertEquals("'d' not first changed path", "d", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         // Create branch d-e
         branchAndCheckout("d-e");
         ObjectId eCommit = commitOneFile("e");
         assertFilesExist("base", "d", "e");
         assertFilesDoNotExist("a", "b", "c", "f", "g");
+        changedPathsOneArg = w.git.showChangedPaths(eCommit);
+        assertEquals("'e' not first changed path", "e", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         // Create branch d-e-f
         branchAndCheckout("d-e-f");
         ObjectId fCommit = commitOneFile("f");
         assertFilesExist("base", "d", "e", "f");
         assertFilesDoNotExist("a", "b", "c", "g");
+        changedPathsOneArg = w.git.showChangedPaths(fCommit);
+        assertEquals("'f' not first changed path", "f", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         // Create branch g
         w.git.checkout("master");
@@ -3679,6 +3770,9 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId gCommit = commitOneFile("g");
         assertFilesExist("base", "g");
         assertFilesDoNotExist("a", "b", "c", "d", "e", "f");
+        changedPathsOneArg = w.git.showChangedPaths(gCommit);
+        assertEquals("'g' not first changed path", "g", changedPathsOneArg.get(0));
+        assertEquals("Wrong count of changed paths", 1, changedPathsOneArg.size());
 
         if (w.git instanceof CliGitAPIImpl) {
             w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
