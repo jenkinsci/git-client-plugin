@@ -3608,7 +3608,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    private void assertShowChangedPathsOneArg(List<String> changedPaths, String... expectedFileNames) {
+    private void assertShowChangedPaths(List<String> changedPaths, String... expectedFileNames) {
         for (String expectedFileName : expectedFileNames) {
             assertTrue("Missing '" + expectedFileName + "' in " + changedPaths, changedPaths.contains(expectedFileName));
         }
@@ -3703,7 +3703,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "a");
         assertFilesDoNotExist("b", "c", "d", "e", "f", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(aCommit), "a");
+        assertShowChangedPaths(w.git.showChangedPaths(aCommit), "a");
+        assertShowChangedPaths(w.git.showChangedPaths(null, aCommit), "a");
 
         /* Inverted argument expected to return empty list since aCommit is not
          * a parent of firstCommit.
@@ -3719,11 +3720,11 @@ public abstract class GitAPITestCase extends TestCase {
             assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
         }
 
-        changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, aCommit);
+        changedPathsTwoArgs = w.git.showChangedPaths(null, aCommit);
         assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
         assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
 
-        changedPathsTwoArgs = w.git.showChangedPaths(null, aCommit);
+        changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, aCommit);
         assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
         assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
 
@@ -3740,7 +3741,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "a", "b");
         assertFilesDoNotExist("c", "d", "e", "f", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(bCommit), "b");
+        assertShowChangedPaths(w.git.showChangedPaths(bCommit), "b");
+        assertShowChangedPaths(w.git.showChangedPaths(null, bCommit), "b");
 
         // Create branch c
         w.git.checkout("master");
@@ -3749,7 +3751,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "c");
         assertFilesDoNotExist("a", "b", "d", "e", "f", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(cCommit), "c");
+        assertShowChangedPaths(w.git.showChangedPaths(cCommit), "c");
+        assertShowChangedPaths(w.git.showChangedPaths(null, cCommit), "c");
 
         // Create branch d
         w.git.checkout("master");
@@ -3758,7 +3761,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "d");
         assertFilesDoNotExist("a", "b", "c", "e", "f", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(dCommit), "d");
+        assertShowChangedPaths(w.git.showChangedPaths(dCommit), "d");
+        assertShowChangedPaths(w.git.showChangedPaths(null, dCommit), "d");
 
         // Create branch d-e
         branchAndCheckout("d-e");
@@ -3766,7 +3770,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "d", "e");
         assertFilesDoNotExist("a", "b", "c", "f", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(eCommit), "e");
+        assertShowChangedPaths(w.git.showChangedPaths(eCommit), "e");
+        assertShowChangedPaths(w.git.showChangedPaths(null, eCommit), "e");
 
         // Create branch d-e-f
         branchAndCheckout("d-e-f");
@@ -3774,7 +3779,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "d", "e", "f");
         assertFilesDoNotExist("a", "b", "c", "g");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(fCommit), "f");
+        assertShowChangedPaths(w.git.showChangedPaths(fCommit), "f");
+        assertShowChangedPaths(w.git.showChangedPaths(null, fCommit), "f");
 
         // Create branch g
         w.git.checkout("master");
@@ -3783,7 +3789,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFilesExist("base", "g");
         assertFilesDoNotExist("a", "b", "c", "d", "e", "f");
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(gCommit), "g");
+        assertShowChangedPaths(w.git.showChangedPaths(gCommit), "g");
+        assertShowChangedPaths(w.git.showChangedPaths(null, gCommit), "g");
 
         if (w.git instanceof CliGitAPIImpl) {
             w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
@@ -3797,16 +3804,17 @@ public abstract class GitAPITestCase extends TestCase {
         }
         ObjectId mergeCommit = w.head();
 
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(mergeCommit), addedFileNames);
+        assertShowChangedPaths(w.git.showChangedPaths(mergeCommit), addedFileNames);
+        assertShowChangedPaths(w.git.showChangedPaths(null, mergeCommit), addedFileNames);
 
         /* Assure that prior results are still valid */
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(aCommit), "a");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(bCommit), "b");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(cCommit), "c");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(dCommit), "d");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(eCommit), "e");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(fCommit), "f");
-        assertShowChangedPathsOneArg(w.git.showChangedPaths(gCommit), "g");
+        assertShowChangedPaths(w.git.showChangedPaths(aCommit), "a");
+        assertShowChangedPaths(w.git.showChangedPaths(bCommit), "b");
+        assertShowChangedPaths(w.git.showChangedPaths(cCommit), "c");
+        assertShowChangedPaths(w.git.showChangedPaths(dCommit), "d");
+        assertShowChangedPaths(w.git.showChangedPaths(eCommit), "e");
+        assertShowChangedPaths(w.git.showChangedPaths(fCommit), "f");
+        assertShowChangedPaths(w.git.showChangedPaths(gCommit), "g");
     }
 
     /**
