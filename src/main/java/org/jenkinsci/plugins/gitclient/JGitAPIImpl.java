@@ -579,7 +579,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     repo = getRepository();
                     Git git = git(repo);
-                    
+
                     List<RefSpec> refSpecs = new ArrayList<RefSpec>();
                     if (tags) {
                         // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
@@ -595,9 +595,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         // delete all refs matching the right side of the refspecs
                         // then fetch and let the git recreate them.
                         List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
-                        
+
                         List<String> toDelete = new ArrayList<String>(refs.size());
-                        
+
                         for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
                             Ref branchRef = it.next();
                             for (RefSpec rs : refSpecs) {

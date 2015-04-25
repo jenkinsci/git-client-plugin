@@ -232,7 +232,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(true,  2, 2, 9, 9),
             new VersionTest(false, 2, 3, 5, 1),
             new VersionTest(false, 2, 4, 0, 0),
-            new VersionTest(false, 3, 0, 0, 0) 
+            new VersionTest(false, 3, 0, 0, 0)
        };
         doTest("git version 2.3.5", versions);
     }

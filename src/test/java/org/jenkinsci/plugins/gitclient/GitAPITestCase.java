@@ -1082,7 +1082,7 @@ public abstract class GitAPITestCase extends TestCase {
      * branches than command line git prunes during fetch.  This test
      * should be used to evaluate future versions of JGit to see if
      * pruning behavior more closely emulates command line git.
-     * 
+     *
      * This has been fixed using a workaround.
      */
     public void test_fetch_with_prune() throws Exception {
