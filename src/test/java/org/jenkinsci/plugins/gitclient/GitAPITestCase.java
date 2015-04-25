@@ -3612,6 +3612,13 @@ public abstract class GitAPITestCase extends TestCase {
         for (String expectedFileName : expectedFileNames) {
             assertTrue("Missing '" + expectedFileName + "' in " + changedPaths, changedPaths.contains(expectedFileName));
         }
+
+        List<String> expectedFileNameList = Arrays.asList(expectedFileNames);
+        List<String> testPaths = new ArrayList<String>(changedPaths);
+        boolean changedList = testPaths.removeAll(expectedFileNameList);
+        assertTrue("Extra file names found " + testPaths + " in " + changedPaths + ", expected " + Arrays.toString(expectedFileNames), testPaths.isEmpty());
+        assertTrue("None of the expected file names [" + expectedFileNames + "] were removed from " + changedPaths, changedList);
+
         /* command line git implementation duplicates paths in the returned
          * list.  That seems ok if it is intentional, since the list does
          * contain the expected elements, even though it contains extra
@@ -3632,7 +3639,7 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * A merge which combines more than two branches in a single commit (an
      * "octopus" merge) should by correctly processed by showChangePaths for
-     * with command line git and JGit implementations.
+     * command line git and JGit implementations.
      *
      * Creates a structure like:
      *
@@ -3705,6 +3712,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(aCommit), "a");
         assertShowChangedPaths(w.git.showChangedPaths(null, aCommit), "a");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, aCommit), "a");
 
         /* Inverted argument expected to return empty list since aCommit is not
          * a parent of firstCommit.
@@ -3719,14 +3727,6 @@ public abstract class GitAPITestCase extends TestCase {
             assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
             assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
         }
-
-        changedPathsTwoArgs = w.git.showChangedPaths(null, aCommit);
-        assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
-        assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
-
-        changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, aCommit);
-        assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
-        assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
 
         try {
             changedPathsTwoArgs = w.git.showChangedPaths(aCommit, null);
@@ -3743,6 +3743,8 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(bCommit), "b");
         assertShowChangedPaths(w.git.showChangedPaths(null, bCommit), "b");
+        assertShowChangedPaths(w.git.showChangedPaths(aCommit, bCommit), "b");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, bCommit), "a", "b");
 
         // Create branch c
         w.git.checkout("master");
@@ -3753,6 +3755,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(cCommit), "c");
         assertShowChangedPaths(w.git.showChangedPaths(null, cCommit), "c");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, cCommit), "c");
 
         // Create branch d
         w.git.checkout("master");
@@ -3763,6 +3766,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(dCommit), "d");
         assertShowChangedPaths(w.git.showChangedPaths(null, dCommit), "d");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, dCommit), "d");
 
         // Create branch d-e
         branchAndCheckout("d-e");
@@ -3772,6 +3776,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(eCommit), "e");
         assertShowChangedPaths(w.git.showChangedPaths(null, eCommit), "e");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, eCommit), "d", "e");
 
         // Create branch d-e-f
         branchAndCheckout("d-e-f");
@@ -3781,6 +3786,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(fCommit), "f");
         assertShowChangedPaths(w.git.showChangedPaths(null, fCommit), "f");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, fCommit), "d", "e", "f");
 
         // Create branch g
         w.git.checkout("master");
@@ -3791,6 +3797,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertShowChangedPaths(w.git.showChangedPaths(gCommit), "g");
         assertShowChangedPaths(w.git.showChangedPaths(null, gCommit), "g");
+        assertShowChangedPaths(w.git.showChangedPaths(firstCommit, gCommit), "g");
 
         if (w.git instanceof CliGitAPIImpl) {
             w.git.merge().setStrategy(MergeCommand.Strategy.OCTOPUS)
