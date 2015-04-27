@@ -56,7 +56,7 @@
     <!-- End of updated versions required for "mvn site" -->
     <maven-javadoc-plugin.version>2.10.1</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
-    <jgit.version>3.7.0.201502260915-r</jgit.version>
+    <jgit.version>3.7.1.201504261725-r</jgit.version>
   </properties>
 
   <dependencies>
