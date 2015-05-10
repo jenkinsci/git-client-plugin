@@ -1819,8 +1819,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("t");
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
-                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=63264ca1dcf198545b90bb6361b4575ef220dcfa], " +
-                        "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=c5408ae4b17bc3b395b13d10c9473e15661d2d38]]",
+                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], " +
+                        "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609]]",
                 r.toString()
         );
     }
