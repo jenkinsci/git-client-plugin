@@ -1530,6 +1530,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("ssh", ".sh");
         PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
+        // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
+        w.println("[ -z \"${DISPLAY}\" ] && export DISPLAY=:123.456");
         w.println("ssh -i \"" + key.getAbsolutePath() + "\" -o StrictHostKeyChecking=no \"$@\"");
         w.close();
         ssh.setExecutable(true);
