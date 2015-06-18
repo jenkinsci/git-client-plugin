@@ -543,7 +543,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add(fastForwardMode);
                     args.add(rev.name());
-
                     launchCommand(args);
                 } catch (GitException e) {
                     throw new GitException("Could not merge " + rev, e);
