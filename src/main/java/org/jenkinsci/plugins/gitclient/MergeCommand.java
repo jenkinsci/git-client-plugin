@@ -54,4 +54,12 @@ public interface MergeCommand extends GitCommand {
             return "--"+name().toLowerCase().replace("_","-");
         }
     }
+
+    /**
+     * setSquash
+     *
+     * @param squash - whether to squash commits or not
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
+    MergeCommand setSquash(boolean squash);
 }

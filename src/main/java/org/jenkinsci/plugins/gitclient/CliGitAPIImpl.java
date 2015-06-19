@@ -507,6 +507,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public ObjectId rev;
             public String strategy;
             public String fastForwardMode;
+            public boolean squash;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -523,10 +524,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setSquash(boolean squash) {
+                this.squash = squash;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("merge");
                 try {
+                    if(squash) {
+                        args.add("--squash");
+                    }
+
                     if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
                         args.add("-s");
                         args.add(strategy);

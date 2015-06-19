@@ -2302,6 +2302,60 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
     }
 
+    public void test_merge_squash() throws Exception{
+        w.init();
+        w.commitEmpty("init");
+        w.git.branch("branch1");
+
+        //First commit to branch1
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+
+        //Second commit to branch1
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+
+        //Merge branch1 with master, squashing both commits
+        w.git.checkout("master");
+        w.git.merge().setSquash(true).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+
+        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
+        final int commitCountBefore = w.git.revList("HEAD").size();
+        w.git.commit("commitMerge");
+        final int commitCountAfter = w.git.revList("HEAD").size();
+
+        assertEquals("Squash merge failed. Should have merged only one commit.", 1, commitCountAfter - commitCountBefore);
+    }
+
+    public void test_merge_no_squash() throws Exception{
+        w.init();
+        w.commitEmpty("init");
+
+        //First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+
+        //Second commit to branch1
+        w.touch("file2", "content2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+
+        //Merge branch1 with master, without squashing commits.
+        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
+        w.git.checkout("master");
+        final int commitCountBefore = w.git.revList("HEAD").size();
+        w.git.merge().setSquash(false).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        final int commitCountAfter = w.git.revList("HEAD").size();
+
+        assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
+    }
+
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
