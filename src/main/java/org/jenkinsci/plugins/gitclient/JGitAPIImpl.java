@@ -1458,6 +1458,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             List<ObjectId> moreRevs = new ArrayList<ObjectId>();
             MergeStrategy strategy;
             FastForwardMode fastForwardMode;
+            boolean squash;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -1499,6 +1500,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setSquash(boolean squash){
+                this.squash = squash;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 try {
@@ -1506,9 +1512,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
                     MergeResult mergeResult;
                     if (strategy != null)
-                        mergeResult = git.merge().setStrategy(strategy).setFastForward(fastForwardMode).include(rev).call();
+                        mergeResult = git.merge().setStrategy(strategy).setFastForward(fastForwardMode).setSquash(squash).include(rev).call();
                     else
-                        mergeResult = git.merge().setFastForward(fastForwardMode).include(rev).call();
+                        mergeResult = git.merge().setFastForward(fastForwardMode).setSquash(squash).include(rev).call();
                     if (!mergeResult.getMergeStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
