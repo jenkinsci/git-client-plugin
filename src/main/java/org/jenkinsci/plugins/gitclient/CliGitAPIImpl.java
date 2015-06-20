@@ -1463,6 +1463,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
+        File userGitFile = new File(userGitExe);
+        if (userGitFile.exists()) {
+            return userGitFile.getAbsolutePath();
+        }
+
         return null;
     }
 
