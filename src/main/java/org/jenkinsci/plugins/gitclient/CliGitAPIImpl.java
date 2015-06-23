@@ -1395,10 +1395,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createGitCredentialsStore(String urlWithCredentials) throws IOException {
         File store = File.createTempFile("git", ".credentials");
-        PrintWriter w = new PrintWriter(store);
-        w.print(urlWithCredentials);
-        w.flush();
-        w.close();
+        PrintWriter w = null;
+        try {
+            w = new PrintWriter(store);
+            w.print(urlWithCredentials);
+            w.flush();
+        } finally {
+            if (w != null) {
+                w.close();
+            }
+        }
         return store;
     }
 
@@ -1416,10 +1422,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".bat");
-        PrintWriter w = new PrintWriter(ssh);
-        w .println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
-        w.flush();
-        w.close();
+        PrintWriter w = null;
+        try {
+            w = new PrintWriter(ssh);
+            w.println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+            w.flush();
+        } finally {
+            if (w != null) {
+                w.close();
+            }
+        }
         ssh.setExecutable(true);
         return ssh;
     }
@@ -1532,11 +1544,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         File sshexe = getSSHExecutable();
 
-        PrintWriter w = new PrintWriter(ssh);
-        w .println("@echo off");
-        w .println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
-        w.flush();
-        w.close();
+        PrintWriter w = null;
+        try {
+            w = new PrintWriter(ssh);
+            w.println("@echo off");
+            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
+            w.flush();
+        } finally {
+            if (w != null) {
+                w.close();
+            }
+        }
         ssh.setExecutable(true);
         return ssh;
     }
