@@ -192,6 +192,18 @@ public interface GitClient {
     boolean hasGitRepo() throws GitException, InterruptedException;
 
     /**
+     * hasGitRepo(String)
+     *
+     * Returns true if the parameter GIT_DIR is a directory which
+     * contains a git repository.
+     *
+     * @param GIT_DIR a {@link java.lang.String} object.
+     * @return true if GIT_DIR has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    boolean hasGitRepo( String GIT_DIR ) throws GitException, InterruptedException;
+
+    /**
      * isCommitInRepo.
      *
      * @param commit a {@link org.eclipse.jgit.lib.ObjectId} object.

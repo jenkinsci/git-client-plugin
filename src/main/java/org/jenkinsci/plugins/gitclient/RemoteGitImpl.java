@@ -284,6 +284,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public boolean hasGitRepo(String GIT_DIR) throws GitException, InterruptedException {
+        return proxy.hasGitRepo(GIT_DIR);
+    }
+
+    /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
         return proxy.isCommitInRepo(commit);
     }

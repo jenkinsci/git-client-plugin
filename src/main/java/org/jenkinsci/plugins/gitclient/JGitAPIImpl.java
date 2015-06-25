@@ -941,6 +941,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+
+    /**
+     * getRepository.
+     *
+     * @return a {@link org.eclipse.jgit.lib.Repository} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    @NonNull
+    public Repository getRepository(String GIT_DIR) throws GitException {
+        File subgitdir = null;
+        try {
+            subgitdir = new File(workspace, GIT_DIR);
+            return new RepositoryBuilder().setWorkTree(subgitdir).build();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
     /**
      * getWorkTree.
      *
@@ -1690,6 +1708,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /**
+     * hasGitRepo(String)
+     *
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    public boolean hasGitRepo(String GIT_DIR) throws GitException {
+        Repository repo = null;
+        try {
+            repo = getRepository(GIT_DIR);
+            return repo.getObjectDatabase().exists();
+        } catch (GitException e) {
+            return false;
+        } finally {
+            if (repo != null) repo.close();
+        }
+    }
+
     /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
         if (commit == null) {
@@ -2361,32 +2397,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } finally {
             if (repo != null) repo.close();
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * I don't think anyone is using this method, and I don't think we ever need to implement this.
-     *
-     * This kind of logic doesn't belong here, as it lacks generality. It should be
-     * whoever manipulating Git.
-     */
-    @Deprecated
-    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
-        throw new UnsupportedOperationException("not implemented yet");
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * I don't think anyone is using this method, and I don't think we ever need to implement this.
-     *
-     * This kind of logic doesn't belong here, as it lacks generality. It should be
-     * whoever manipulating Git.
-     */
-    @Deprecated
-    public void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
-        throw new UnsupportedOperationException();
     }
 
     /**
