@@ -1273,7 +1273,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars env = environment;
         boolean deleteWorkDir = false;
         try {
-            if (credentials != null && credentials instanceof SSHUserPrivateKey) {
+            if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
@@ -2513,7 +2513,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             .setHost(u.getHost())
             .setPort(u.getPort());
 
-        if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
+        if (cred instanceof StandardUsernamePasswordCredentials) {
             StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
             uri = uri.setUser(up.getUsername())
                      .setPass(Secret.toString(up.getPassword()));
