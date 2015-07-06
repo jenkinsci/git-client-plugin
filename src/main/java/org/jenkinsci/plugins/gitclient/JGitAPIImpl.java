@@ -340,10 +340,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 repo = getRepository(); /* Reusing repo declared and assigned earlier */
                 for (String path : e.getConflictingPaths()) {
                     File conflict = new File(repo.getWorkTree(), path);
-                    if (!conflict.delete()) {
-                        if (conflict.exists()) {
-                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
-                        }
+                    if (!conflict.delete() && conflict.exists()) {
+                        listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
                     }
                 }
             } catch (IOException e) {

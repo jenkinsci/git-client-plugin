@@ -143,10 +143,8 @@ class Netrc {
                         break;
 
                     case MACHINE:
-                        if (machine != null) {
-                            if (login != null && password != null) {
-                                this.hosts.put(machine, new UsernamePasswordCredentials(login, password));
-                            }
+                        if (machine != null && login != null && password != null) {
+                            this.hosts.put(machine, new UsernamePasswordCredentials(login, password));
                         }
                         machine = match;
                         login = null;
