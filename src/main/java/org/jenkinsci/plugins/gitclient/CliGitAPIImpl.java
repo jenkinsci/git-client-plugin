@@ -1115,10 +1115,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     /* it is possible that the submodule does not exist yet
                      * since we wait until after checkout to do 'submodule
                      * udpate' */
-                    if ( hasGitRepo( subGitDir ) ) {
-                        if (! "".equals( getRemoteUrl("origin", subGitDir) )) {
-                            setRemoteUrl("origin", sUrl, subGitDir);
-                        }
+                    if (hasGitRepo(subGitDir) && !"".equals(getRemoteUrl("origin", subGitDir))) {
+                        setRemoteUrl("origin", sUrl, subGitDir);
                     }
                 }
             } catch (GitException e) {
@@ -1204,12 +1202,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private void deleteTempFile(File tempFile) {
-        if (tempFile != null) {
-            if (!tempFile.delete()) {
-                if (tempFile.exists()) {
-                    listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
-                }
-            }
+        if (tempFile != null && !tempFile.delete() && tempFile.exists()) {
+            listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
         }
     }
 
@@ -1911,10 +1905,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutDir = new File(workspace, SPARSE_CHECKOUT_FILE_DIR);
-                if(! sparseCheckoutDir.exists()) {
-                    if(! sparseCheckoutDir.mkdir()) {
-                        throw new GitException("Impossible to create sparse checkout dir " + sparseCheckoutDir.getAbsolutePath());
-                    }
+                if (!sparseCheckoutDir.exists() && !sparseCheckoutDir.mkdir()) {
+                    throw new GitException("Impossible to create sparse checkout dir " + sparseCheckoutDir.getAbsolutePath());
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
@@ -2120,11 +2112,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             List<ObjectId> revs = revList(commit.name());
 
-            if (revs.size() == 0) {
-                return false;
-            } else {
-                return true;
-            }
+            return revs.size() != 0;
         } catch (GitException e) {
             return false;
         }
