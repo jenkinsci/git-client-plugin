@@ -826,7 +826,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean recursive                      = false;
             boolean remoteTracking                 = false;
             String  ref                            = null;
-            HashMap<String, String> submodBranch   = new HashMap<String, String>();
+            Map<String, String> submodBranch   = new HashMap<String, String>();
             public Integer timeout;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
