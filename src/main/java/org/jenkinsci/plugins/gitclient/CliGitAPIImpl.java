@@ -1252,7 +1252,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             return launchCommandWithCredentials(args, workDir, credentials, new URIish(url));
         } catch (URISyntaxException e) {
-            throw new GitException("Invalid URL " + url);
+            throw new GitException("Invalid URL " + url, e);
         }
     }
 
@@ -1914,7 +1914,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
                 } catch (IOException ex){
-                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
                 }
 
                 for(String path : paths) {
@@ -1924,7 +1924,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     writer.close();
                 } catch (Exception ex) {
-                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath());
+                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
                 }
 
 
