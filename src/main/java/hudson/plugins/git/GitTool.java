@@ -2,7 +2,6 @@ package hudson.plugins.git;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.Functions;
 import hudson.init.Initializer;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
@@ -131,7 +130,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return;
         }
 
-        String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
+        String defaultGitExe = isWindows() ? "git.exe" : "git";
         GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
@@ -192,5 +191,10 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     private static final Logger LOGGER = Logger.getLogger(GitTool.class.getName());
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar==';';
+    }
 }
 
