@@ -48,9 +48,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 
 /**
@@ -859,30 +861,124 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * @throws InterruptedException if called methods throw same exception
              */
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder();
-                args.add("submodule", "update");
-                if (recursive) {
-                    args.add("--init", "--recursive");
-                }
-                if (remoteTracking && isAtLeastVersion(1,8,2,0)) {
-                    args.add("--remote");
+                Map<String, String> rewrittenSubmodulesUrls = null;
+                try {
+                    rewrittenSubmodulesUrls = rewriteSubmoduleLocation();
+                    ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("submodule", "update");
+                    if (recursive) {
+                        args.add("--init", "--recursive");
+                    }
+                    if (remoteTracking && isAtLeastVersion(1, 8, 2, 0)) {
+                        args.add("--remote");
 
-                    for (Map.Entry<String, String> entry : submodBranch.entrySet()) {
-                        launchCommand("config", "-f", ".gitmodules", "submodule."+entry.getKey()+".branch", entry.getValue());
+                        for (Map.Entry<String, String> entry : submodBranch.entrySet()) {
+                            launchCommand("config", "-f", ".gitmodules", "submodule." + entry.getKey() + ".branch", entry.getValue());
+                        }
+                    }
+                    if ((ref != null) && !ref.isEmpty()) {
+                        File referencePath = new File(ref);
+                        if (!referencePath.exists())
+                            listener.error("Reference path does not exist: " + ref);
+                        else if (!referencePath.isDirectory())
+                            listener.error("Reference path is not a directory: " + ref);
+                        else
+                            args.add("--reference", ref);
+                    }
+
+                    launchCommandIn(args, workspace, environment, timeout);
+                } finally {
+                    if (rewrittenSubmodulesUrls != null && !rewrittenSubmodulesUrls.isEmpty()) {
+                        // restore submodules url's ...
+                        for (Entry<String, String> entry : rewrittenSubmodulesUrls.entrySet()) {
+                            launchCommand("config", "-f", ".gitmodules", "--unset", entry.getKey());
+                            launchCommand("config", "-f", ".gitmodules", entry.getKey(), entry.getValue());
+                        }
+                        // sync again
+                        launchCommand("submodule", "sync");
+                    }
+
+                }
+            }
+
+            /**
+             * Rewrites http submodule urls with username, passwords because 'git submodule update' doesn't use credential-helper
+             * @return Map with changed submodule locations
+             * @throws InterruptedException
+             */
+            private Map<String, String> rewriteSubmoduleLocation() throws InterruptedException {
+                String submodules = null;
+                try {
+                    submodules = launchCommand("config", "--local", "--get-regexp", "^submodule.+");
+                } catch (GitException e) {
+                    // no submodules available
+                    return null;
+                }
+                BufferedReader reader = new BufferedReader(new StringReader(submodules));
+                String line = null;
+                Map<String, String> submoduleUrls = new HashMap<String, String>();
+                try {
+                    while ((line = reader.readLine()) != null) {
+                        String[] splitted = line.split(" ");
+                        submoduleUrls.put(splitted[0], splitted[1]);
+                    }
+                } catch (IOException e) {
+                    listener.getLogger().println(String.format("Reading %s : %s", submodules, e.getMessage()));
+                }
+                if (submoduleUrls.isEmpty()) {
+                    return submoduleUrls;
+                }
+                Set<Entry<String, String>> entrySet = submoduleUrls.entrySet();
+                for (Entry<String, String> entry : entrySet) {
+                    String remote = entry.getValue();
+                    if (!remote.startsWith("http")) {
+                        entrySet.remove(entry);
+                        continue;
+                    }
+                    StandardUsernamePasswordCredentials cred = findCredential(remote);
+                    if (cred == null) {
+                        entrySet.remove(entry);
+                        continue;
+                    }
+                    String key = entry.getKey();
+                    try {
+                        URIish urish = new URIish(remote).setUser(cred.getUsername()).setPass(Secret.toString(cred.getPassword()));
+                        launchCommand("config", "-f", ".gitmodules", "--unset", key);
+                        launchCommand("config", "-f", ".gitmodules", "--add", key, urish.toPrivateString());
+                    } catch (URISyntaxException e) {
+                        listener.getLogger().println(String.format("invalid URI %s", remote));
                     }
                 }
-                if ((ref != null) && !ref.isEmpty()) {
-                    File referencePath = new File(ref);
-                    if (!referencePath.exists())
-                        listener.error("Reference path does not exist: " + ref);
-                    else if (!referencePath.isDirectory())
-                        listener.error("Reference path is not a directory: " + ref);
-                    else
-                        args.add("--reference", ref);
+                if (!submoduleUrls.isEmpty()) {
+                    // we have again sync the .git/config/
+                    launchCommand("submodule", "sync");
                 }
-
-                launchCommandIn(args, workspace, environment, timeout);
+                return submoduleUrls;
             }
+
+            /**
+             * Tries to find credentials for a submodule location
+             * If there no credentials defined, we use other credentials for the same host
+             */
+            private StandardUsernamePasswordCredentials findCredential(String remote) {
+                StandardCredentials cred = credentials.get(remote);
+                if (cred != null && cred instanceof StandardUsernamePasswordCredentials) {
+                    return StandardUsernamePasswordCredentials.class.cast(cred);
+                }
+                try {
+                    String host = new URI(remote).getHost();
+                    for (Entry<String, StandardCredentials> entry : credentials.entrySet()) {
+                        String credentialHost = new URI(entry.getKey()).getHost();
+                        if (host.equals(credentialHost) && entry.getValue() instanceof StandardUsernamePasswordCredentials) {
+                            return StandardUsernamePasswordCredentials.class.cast(entry.getValue());
+                        }
+                    }
+                } catch (Exception e) {
+                    // ignore ...
+                }
+                return null;
+            }
+
         };
     }
 
@@ -1590,7 +1686,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            listener.getLogger().println(" > " + mask(command) + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
@@ -2530,4 +2626,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * best to avoid git interactively asking for credentials, there are many of other cases where git may hang.
      */
     public static final int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
+
+    /**
+     * Mask passwords during config changes
+     */
+    private String mask(String command) {
+        if (!command.contains("config")) {
+            return command;
+        }
+        Pattern pattern = Pattern.compile("(^.+)(http[s]?:\\/\\/)(.+):(.+)@(.+$)");
+        Matcher matcher = pattern.matcher(command);
+        if (!matcher.matches()) {
+            return command;
+        }
+
+        StringBuilder sb = new StringBuilder(matcher.group(1))
+                .append(matcher.group(2))
+                .append(matcher.group(3)).append(':')
+                .append(matcher.group(4).replaceAll(".", "x")).append('@')
+                .append(matcher.group(5));
+        return sb.toString();
+    }
+
 }
