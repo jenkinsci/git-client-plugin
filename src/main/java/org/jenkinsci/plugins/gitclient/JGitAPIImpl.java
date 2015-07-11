@@ -1791,7 +1791,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
+                RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec()) : Transport.REFSPEC_PUSH_ALL;
+                listener.getLogger().println("RefSpec is \""+ref+"\".");
                 Repository repo = null;
                 try {
                     repo = getRepository();
@@ -1817,6 +1818,34 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+            
+            /**
+             * currently JGit does not support to parse refspecs as Git CLI does.
+             * See discussion from Shawn Pearce (one of the JGit authors) describing
+             * why JGit does not accept (e.g.) HEAD:master at:
+             * http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html
+             *
+             * This method tries to fix the refspec as a workaround until JGit
+             * implements parsing arbitrary refspecs (see JENKINS-20393).
+             *
+             * @return a (hopefully) fixed refspec string.
+             */
+            private String fixRefSpec() {
+                int colon = refspec.indexOf(':');
+                String[] specs = new String[]{(colon!=-1?refspec.substring(0,colon):refspec).trim(),refspec.substring(colon+1).trim()};
+                for(int spec=0;spec<specs.length;spec++)
+                	if(spec==0&&specs[spec].isEmpty())
+                		continue; //empty for the first spec. if fine (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                	else if(!specs[spec].startsWith("refs/")&&!specs[spec].startsWith("+refs/")) {
+                		if(specs[spec].isEmpty() //generally means to push "matching" branches, hard to implement the right way, simple-fix here
+                		|| specs[spec].equals("HEAD")) //should read <git-dir>/HEAD file, which is also quite hard, simple-fix here aswell
+                			specs[spec] = "refs/heads/master";
+                		else if(specs[spec].contains("/")) //assume spec. already contains subfolder, just prepend refs/
+                			specs[spec] = "refs"+(specs[spec].startsWith("/")?"":"/")+specs[spec];
+                		else specs[spec] = "refs/heads"+(specs[spec].startsWith("/")?"":"/")+specs[spec];
+                	}
+                return specs[0]+":"+specs[1];
             }
         };
     }
