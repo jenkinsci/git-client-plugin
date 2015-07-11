@@ -10,6 +10,9 @@ import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.jgit.lib.Constants.typeString;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
+
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -101,6 +104,8 @@ import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -1800,7 +1805,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if(tags) {
                         pc.setPushTags();
                     }
-                    pc.call();
+                    Iterable<PushResult> results = pc.call();
+                    for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
+                        RemoteRefUpdate.Status status = update.getStatus();
+                        if(!OK.equals(status)&&!UP_TO_DATE.equals(status))
+                            throw new GitException(update.getMessage());
+                    }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
                 } catch (GitAPIException e) {
                     throw new GitException(e);
