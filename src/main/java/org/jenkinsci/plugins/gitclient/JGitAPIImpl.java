@@ -1837,15 +1837,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if("HEAD".equals(specs[0])) //special case for HEAD, if e.g. HEAD:branch, HEAD should be pushed to branch, we can't parse head, so assume to push branch:branch
                 	specs[0] = specs[1];
                 for(int spec=0;spec<specs.length;spec++)
-                	if(spec==0&&specs[spec].isEmpty())
-                		continue; //empty for the first spec. if fine (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
-                	else if(!specs[spec].startsWith("refs/")&&!specs[spec].startsWith("+refs/")) {
-                		if(specs[spec].isEmpty() //generally means to push "matching" branches, hard to implement the right way, simple-fix here
-                		|| specs[spec].equals("HEAD")) //should read <git-dir>/HEAD file, which is also quite hard, simple-fix here aswell
+                	if(specs[spec].isEmpty()) { //generally means to push "matching" branches, hard to implement the right way, simple-fix here
+                		if(spec!=0) //empty for the first spec. if fine (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
                 			specs[spec] = "refs/heads/master";
-                		else if(specs[spec].contains("/")) //assume spec. already contains subfolder, just prepend refs/
-                			specs[spec] = "refs"+(specs[spec].startsWith("/")?"":"/")+specs[spec];
-                		else specs[spec] = "refs/heads"+(specs[spec].startsWith("/")?"":"/")+specs[spec];
+                	} else if(!specs[spec].startsWith("refs/")&&!specs[spec].startsWith("+refs/")) {
+                		if("HEAD".equalsIgnoreCase(specs[spec])) //should read <git-dir>/HEAD file, which is also quite hard, simple-fix here aswell
+                			specs[spec] = "refs/heads/master";
+                		else {
+                			if(!specs[spec].startsWith("/"))
+                				specs[spec] = "/"+specs[spec];
+                			if(!specs[spec].startsWith("/heads/")&&!specs[spec].startsWith("/remotes/")&&!specs[spec].startsWith("/tags/"))
+                				specs[spec] = "/heads"+specs[spec];
+                			specs[spec] = "refs"+specs[spec];
+                		}
                 	}
                 return specs[0]+":"+specs[1];
             }
