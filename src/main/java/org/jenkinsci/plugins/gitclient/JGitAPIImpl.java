@@ -1834,6 +1834,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String fixRefSpec() {
                 int colon = refspec.indexOf(':');
                 String[] specs = new String[]{(colon!=-1?refspec.substring(0,colon):refspec).trim(),refspec.substring(colon+1).trim()};
+                if("HEAD".equals(specs[0])) //special case for HEAD, if e.g. HEAD:branch, HEAD should be pushed to branch, we can't parse head, so assume to push branch:branch
+                	specs[0] = specs[1];
                 for(int spec=0;spec<specs.length;spec++)
                 	if(spec==0&&specs[spec].isEmpty())
                 		continue; //empty for the first spec. if fine (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
