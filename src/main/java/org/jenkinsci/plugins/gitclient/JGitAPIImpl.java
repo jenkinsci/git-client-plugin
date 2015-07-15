@@ -1791,11 +1791,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec()) : Transport.REFSPEC_PUSH_ALL;
-                listener.getLogger().println("RefSpec is \""+ref+"\".");
                 Repository repo = null;
                 try {
                     repo = getRepository();
+                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(repo)) : Transport.REFSPEC_PUSH_ALL;
+                    listener.getLogger().println("RefSpec is \""+ref+"\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
@@ -1813,6 +1813,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             throw new GitException(update.getMessage());
                     }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
+                } catch (IOException e) {
+                    throw new GitException(e);
                 } catch (GitAPIException e) {
                     throw new GitException(e);
                 } finally {
@@ -1821,34 +1823,35 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             
             /**
-             * currently JGit does not support to parse refspecs as Git CLI does.
-             * See discussion from Shawn Pearce (one of the JGit authors) describing
-             * why JGit does not accept (e.g.) HEAD:master at:
-             * http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html
-             *
-             * This method tries to fix the refspec as a workaround until JGit
+             * Currently JGit does not support to parse refspecs as Git CLI does.
+             * This method attempts to fix the refspec as a workaround until JGit
              * implements parsing arbitrary refspecs (see JENKINS-20393).
              *
              * @return a (hopefully) fixed refspec string.
              */
-            private String fixRefSpec() {
+            private String fixRefSpec(Repository repository) throws IOException {
                 int colon = refspec.indexOf(':');
                 String[] specs = new String[]{(colon!=-1?refspec.substring(0,colon):refspec).trim(),refspec.substring(colon+1).trim()};
-                if("HEAD".equals(specs[0])) //special case for HEAD, if e.g. HEAD:branch, HEAD should be pushed to branch, we can't parse head, so assume to push branch:branch
-                	specs[0] = specs[1];
                 for(int spec=0;spec<specs.length;spec++)
-                	if(specs[spec].isEmpty()) { //generally means to push "matching" branches, hard to implement the right way, simple-fix here
-                		if(spec!=0) //empty for the first spec. if fine (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
-                			specs[spec] = "refs/heads/master";
+                	if(specs[spec].isEmpty()||"HEAD".equalsIgnoreCase(specs[spec])) {
+                		switch(spec) {
+                		case 0: break; //empty / HEAD for the first ref. if fine for JGit (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                		case 1: //empty second ref. generally means to push "matching" branches, hard to implement the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
+                			specs[spec] = repository.getFullBranch(); break; }
                 	} else if(!specs[spec].startsWith("refs/")&&!specs[spec].startsWith("+refs/")) {
-                		if("HEAD".equalsIgnoreCase(specs[spec])) //should read <git-dir>/HEAD file, which is also quite hard, simple-fix here aswell
-                			specs[spec] = "refs/heads/master";
-                		else {
+                		switch(spec) {
+                		case 0: //for the source ref. we use the repository to determine what should be pushed
+                  		Ref ref = repository.getRef(specs[spec]);
+                  		if(ref==null) throw new IOException(String.format("Ref %s not found.", specs[spec]));
+                  		specs[spec] = ref.getTarget().getName();
+                  		break;
+                		case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref. (see http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html)
                 			if(!specs[spec].startsWith("/"))
                 				specs[spec] = "/"+specs[spec];
                 			if(!specs[spec].startsWith("/heads/")&&!specs[spec].startsWith("/remotes/")&&!specs[spec].startsWith("/tags/"))
                 				specs[spec] = "/heads"+specs[spec];
                 			specs[spec] = "refs"+specs[spec];
+                			break;
                 		}
                 	}
                 return specs[0]+":"+specs[1];
