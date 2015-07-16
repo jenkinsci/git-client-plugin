@@ -126,6 +126,12 @@
       <version>2.3</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+      <version>3.0.0</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -157,7 +163,18 @@
           <configuration>
             <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
             <failOnError>${maven.findbugs.failure.strict}</failOnError>
+            <xmlOutput>true</xmlOutput>
+            <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
           </configuration>
+          <executions>
+            <execution>
+              <id>run-findbugs</id>
+              <phase>verify</phase> 
+              <goals>
+                <goal>check</goal> 
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
