@@ -10,6 +10,9 @@ import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.jgit.lib.Constants.typeString;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
+
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -101,6 +104,8 @@ import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -1786,10 +1791,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
                 Repository repo = null;
                 try {
                     repo = getRepository();
+                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(repo)) : Transport.REFSPEC_PUSH_ALL;
+                    listener.getLogger().println("RefSpec is \""+ref+"\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
@@ -1800,13 +1806,69 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if(tags) {
                         pc.setPushTags();
                     }
-                    pc.call();
+                    Iterable<PushResult> results = pc.call();
+                    for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
+                        RemoteRefUpdate.Status status = update.getStatus();
+                        if(!OK.equals(status)&&!UP_TO_DATE.equals(status)) {
+                            throw new GitException(update.getMessage() + " " + status + " for '" + ref + 
+                                "' refspec '" + refspec + "' to " + remote.toPrivateASCIIString());
+                        }
+                    }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } catch (JGitInternalException je) {
+                    throw new GitException(je);
                 } catch (GitAPIException e) {
                     throw new GitException(e);
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+
+            /**
+             * Currently JGit does not parse refspecs as well as Git CLI.
+             * This method attempts to fix the refspec as a workaround until JGit
+             * implements parsing arbitrary refspecs (see JENKINS-20393).
+             *
+             * @return a (hopefully) fixed refspec string.
+             */
+            private String fixRefSpec(Repository repository) throws IOException {
+                int colon = refspec.indexOf(':');
+                String[] specs = new String[]{(colon != -1 ? refspec.substring(0, colon) : refspec).trim(), refspec.substring(colon + 1).trim()};
+                for (int spec = 0; spec < specs.length; spec++) {
+                    if (specs[spec].isEmpty() || "HEAD".equalsIgnoreCase(specs[spec])) {
+                        switch (spec) {
+                            default:
+                            case 0:
+                                break; //empty / HEAD for the first ref. if fine for JGit (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                            case 1: //empty second ref. generally means to push "matching" branches, hard to implement the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
+                                specs[spec] = repository.getFullBranch();
+                                break;
+                        }
+                    } else if (!specs[spec].startsWith("refs/") && !specs[spec].startsWith("+refs/")) {
+                        switch (spec) {
+                            default:
+                            case 0: //for the source ref. we use the repository to determine what should be pushed
+                                Ref ref = repository.getRef(specs[spec]);
+                                if (ref == null) {
+                                    throw new IOException(String.format("Ref %s not found.", specs[spec]));
+                                }
+                                specs[spec] = ref.getTarget().getName();
+                                break;
+                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref. (see http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html)
+                                if (!specs[spec].startsWith("/")) {
+                                    specs[spec] = "/" + specs[spec];
+                                }
+                                if (!specs[spec].startsWith("/heads/") && !specs[spec].startsWith("/remotes/") && !specs[spec].startsWith("/tags/")) {
+                                    specs[spec] = "/heads" + specs[spec];
+                                }
+                                specs[spec] = "refs" + specs[spec];
+                                break;
+                        }
+                    }
+                }
+                return specs[0] + ":" + specs[1];
             }
         };
     }
