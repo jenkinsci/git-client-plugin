@@ -9,7 +9,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Functions;
 import hudson.Launcher;
 import com.google.common.collect.Lists;
 import hudson.Launcher.LocalLauncher;
@@ -79,7 +78,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials defaultCredentials;
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
-        if (!Functions.isWindows()) {
+        if (!isWindows()) {
             return;
         }
         String[] varsToCheck = {"TEMP", "TMP"};
@@ -644,7 +643,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * See https://github.com/msysgit/msysgit/issues/36 where I filed this as a bug to msysgit.
      **/
     private String sanitize(String arg) {
-        if (Functions.isWindows())
+        if (isWindows())
             arg = '"'+arg+'"';
         return arg;
     }
@@ -2530,4 +2529,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * best to avoid git interactively asking for credentials, there are many of other cases where git may hang.
      */
     public static final int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
+    }
+
+
 }
