@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -1311,6 +1312,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
 
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
+                    if (credentials instanceof UsernameCredentials) {
+                            UsernameCredentials userCredentials = (UsernameCredentials) credentials;
+                            launchCommandIn(workDir, "config", "--local", "credential.username", userCredentials.getUsername());
+                    }
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
 
