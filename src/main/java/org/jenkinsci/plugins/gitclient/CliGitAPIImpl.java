@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 
 /**
@@ -922,7 +923,47 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("--reference", ref);
                 }
 
-                launchCommandIn(args, workspace, environment, timeout);
+
+                // We need to call submodule update for each configured
+                // submodule. Note that we can't reliably depend on the
+                // getSubmodules() since it is possible "HEAD" doesn't exist,
+                // and we don't really want to recursively find all possible
+                // submodules, just the ones for this super project. Thus,
+                // loop through the config output and parse it for configured
+                // modules.
+                String cfgOutput = null;
+                try {
+                    // We might fail if we have no modules, so catch this
+                    // exception and just return.
+                    cfgOutput = launchCommand("config", "--get-regexp", "^submodule");
+                } catch (GitException e) {
+                    listener.error("No submodules found.");
+                    return;
+                }
+
+                // Use a matcher to find each configured submodule name, and
+                // then run the submodule update command with the provided
+                // path.
+                Pattern pattern = Pattern.compile("^submodule\\.(.*)\\.url", Pattern.MULTILINE);
+                Matcher matcher = pattern.matcher(cfgOutput);
+                while (matcher.find()) {
+                    ArgumentListBuilder perModuleArgs = args.clone();
+                    String sUrl = matcher.group(1);
+
+                    URIish urIish = null;
+                    try {
+                        urIish = new URIish(getSubmoduleUrl(sUrl));
+                    } catch (URISyntaxException e) {
+                        listener.error("Invalid repository for " + sUrl);
+                        throw new GitException("Invalid repository for " + sUrl);
+                    }
+
+                    StandardCredentials cred = credentials.get(urIish.toPrivateString());
+                    if (cred == null) cred = defaultCredentials;
+
+                    perModuleArgs.add(sUrl);
+                    launchCommandWithCredentials(perModuleArgs, workspace, cred, urIish, timeout);
+                }
             }
         };
     }
