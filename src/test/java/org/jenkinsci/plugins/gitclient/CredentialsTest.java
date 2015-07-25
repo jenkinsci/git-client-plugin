@@ -115,6 +115,7 @@ public class CredentialsTest {
 
     @After
     public void tearDown() {
+        git.clearCredentials();
         temporaryDirectoryAllocator.disposeAsync();
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
@@ -260,7 +261,6 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
-        git.clearCredentials();
     }
 
     private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
