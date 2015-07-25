@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -1278,10 +1279,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 key = createSshKeyFile(key, sshUser);
                 if (launcher.isUnix()) {
-                    ssh =  createUnixGitSSH(key);
+                    ssh =  createUnixGitSSH(key, sshUser.getUsername());
                     pass =  createUnixSshAskpass(sshUser);
                 } else {
-                    ssh =  createWindowsGitSSH(key);
+                    ssh =  createWindowsGitSSH(key, sshUser.getUsername());
                     pass =  createWindowsSshAskpass(sshUser);
                 }
 
@@ -1311,6 +1312,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
 
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
+                    if (credentials instanceof UsernameCredentials) {
+                            UsernameCredentials userCredentials = (UsernameCredentials) credentials;
+                            launchCommandIn(workDir, "config", "--local", "credential.username", userCredentials.getUsername());
+                    }
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
 
@@ -1532,7 +1537,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         throw new RuntimeException("ssh executable not found. The git plugin only supports official git client http://git-scm.com/download/win");
     }
 
-    private File createWindowsGitSSH(File key) throws IOException {
+    private File createWindowsGitSSH(File key, String user) throws IOException {
         File ssh = File.createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
@@ -1541,7 +1546,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             w = new PrintWriter(ssh);
             w.println("@echo off");
-            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -o StrictHostKeyChecking=no %* ");
+            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
             w.flush();
         } finally {
             if (w != null) {
@@ -1552,13 +1557,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
-    private File createUnixGitSSH(File key) throws IOException {
+    private File createUnixGitSSH(File key, String user) throws IOException {
         File ssh = File.createTempFile("ssh", ".sh");
         PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
         // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
         w.println("[ -z \"${DISPLAY}\" ] && export DISPLAY=:123.456");
-        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -o StrictHostKeyChecking=no \"$@\"");
+        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         w.close();
         ssh.setExecutable(true);
         return ssh;
