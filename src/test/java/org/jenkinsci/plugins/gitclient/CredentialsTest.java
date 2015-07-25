@@ -232,14 +232,7 @@ public class CredentialsTest {
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        if (gitImpl.equals("git")) {
-            /* The checkout command for JGit fails to checkout the files in this
-             * test.  I am still working to understand why it fails, since it
-             * works in the typical use case with the plugin, and it works with
-             * the other unit tests in GitAPITestCase.
-             */
-            assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
-        }
+        assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
     }
 
     @Test
