@@ -17,9 +17,9 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Test
-    public void pushNoRefSpec() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushCurrent() throws IOException, GitException, InterruptedException, URISyntaxException {
         checkoutBranchAndCommitFile();
-        workingGitClient.push().to(bareURI).execute(); // no ref() argument
+        workingGitClient.push().to(bareURI).ref("HEAD").execute(); // push what is currently checked out
     }
 
     @Test
