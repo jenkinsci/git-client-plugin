@@ -1825,6 +1825,18 @@ public abstract class GitAPITestCase extends TestCase {
         );
     }
 
+    public void test_submodule_update() throws Exception {
+        w.init();
+        // Re-use the same submodule test branch
+        w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
+        w.git.checkout("t");
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().execute();
+
+        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
+        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+    }
+
     @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
