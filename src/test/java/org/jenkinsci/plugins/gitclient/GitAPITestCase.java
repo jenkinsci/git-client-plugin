@@ -4,7 +4,6 @@ import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.startsWith;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertNotEquals;
 import hudson.FilePath;
@@ -1817,21 +1816,25 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getSubmodules() throws Exception {
         w.init();
-        w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
-        w.git.checkout("t");
+        w.git.clone_().url(localMirror()).repositoryName("sub_origin").execute();
+        w.git.checkout("sub_origin/tests/getSubmodules", "tests/getSubmodules");
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
                 "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], " +
                         "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609]]",
                 r.toString()
         );
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().execute();
+
+        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
+        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
     }
 
     public void test_submodule_update() throws Exception {
         w.init();
-        // Re-use the same submodule test branch
-        w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
-        w.git.checkout("t");
+        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
+        w.git.checkout().branch("tests/getSubmodules").ref("sub2_origin/tests/getSubmodules").deleteBranchIfExist(true).execute();
         w.git.submoduleInit();
         w.git.submoduleUpdate().execute();
 
