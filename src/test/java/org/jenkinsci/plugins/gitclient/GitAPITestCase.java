@@ -4,6 +4,8 @@ import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.startsWith;
+import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertNotEquals;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -1825,6 +1827,18 @@ public abstract class GitAPITestCase extends TestCase {
         );
     }
 
+    public void test_submodule_update() throws Exception {
+        w.init();
+        // Re-use the same submodule test branch
+        w.launchCommand("git","fetch",localMirror(),"tests/getSubmodules:t");
+        w.git.checkout("t");
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().execute();
+
+        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
+        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+    }
+
     @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
@@ -2915,10 +2929,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("a");
         w.git.add("a");
         w.git.commit("second");
-        assertEquals(w.cmd("git describe").trim(), w.git.describe("HEAD"));
+        assertThat(w.cmd("git describe").trim(), sharesPrefix(w.git.describe("HEAD")));
 
         w.tag("-m test2 t2");
-        assertEquals(w.cmd("git describe").trim(), w.git.describe("HEAD"));
+        assertThat(w.cmd("git describe").trim(), sharesPrefix(w.git.describe("HEAD")));
     }
 
     public void test_getAllLogEntries() throws Exception {
