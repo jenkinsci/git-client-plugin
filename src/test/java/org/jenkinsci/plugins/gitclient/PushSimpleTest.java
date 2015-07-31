@@ -17,12 +17,6 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Test
-    public void pushCurrent() throws IOException, GitException, InterruptedException, URISyntaxException {
-        checkoutBranchAndCommitFile();
-        workingGitClient.push().to(bareURI).ref("HEAD").execute(); // push what is currently checked out
-    }
-
-    @Test
     public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException, URISyntaxException {
         checkoutOldBranchAndCommitFile(); // Old branch can't be pushed without force()
         thrown.expect(GitException.class);

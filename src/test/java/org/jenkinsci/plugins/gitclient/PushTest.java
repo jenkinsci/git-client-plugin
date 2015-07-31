@@ -204,6 +204,10 @@ public class PushTest {
             FileUtils.writeStringToFile(added, addedContent, "UTF-8");
             cloneGitClient.add(added.getName());
             cloneGitClient.commit("Initial commit to " + branchName + " file " + added.getName() + " with " + randomContent);
+            // checkoutOldBranchAndCommitFile needs at least two commits to the branch
+            FileUtils.writeStringToFile(added, "Another revision " + randomContent, "UTF-8");
+            cloneGitClient.add(added.getName());
+            cloneGitClient.commit("Second commit to " + branchName);
 
             /* Push HEAD of current branch to branchName on the bare repository */
             cloneGitClient.push().to(bareURI).ref("HEAD:" + branchName).execute();
