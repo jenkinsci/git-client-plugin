@@ -244,6 +244,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean shallow;
             public Integer timeout;
             public boolean tags = true;
+            public Integer depth = 1;
 
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -271,6 +272,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             	return this;
             }
 
+            public FetchCommand depth(Integer depth) {
+                this.depth = depth;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 listener.getLogger().println(
                         "Fetching upstream changes from " + url);
@@ -292,7 +298,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (prune) args.add("--prune");
 
-                if (shallow) args.add("--depth=1");
+                if (shallow) {
+                    if (depth == null){
+                        depth = 1;
+                    }
+                    args.add("--depth=" + depth);
+                }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
 
@@ -371,6 +382,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Integer timeout;
             boolean tags = true;
             List<RefSpec> refspecs;
+            Integer depth = 1;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -410,6 +422,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public CloneCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
+            }
+
+            public CloneCommand depth(Integer depth) {
+                this.depth = depth;
+                return this;
             }
 
             public CloneCommand refspecs(List<RefSpec> refspecs) {
@@ -484,6 +501,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 fetch_().from(urIish, refspecs)
                         .shallow(shallow)
+                        .depth(depth)
                         .timeout(timeout)
                         .tags(tags)
                         .execute();
