@@ -2333,6 +2333,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
+        args.add("-t");
         args.add(url);
 
         StandardCredentials cred = credentials.get(url);
