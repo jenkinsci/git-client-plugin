@@ -1227,6 +1227,19 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Shallow file not found: " + shallow, w.exists(shallow));
     }
 
+    @NotImplementedInJGit
+    public void test_fetch_shallow_depth() throws Exception {
+        w.init();
+        w.git.setRemoteUrl("origin", localMirror());
+        w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getRemoteBranches(), "origin/master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        final String shallow = ".git" + File.separator + "shallow";
+        assertTrue("Shallow file not found: " + shallow, w.exists(shallow));
+    }
+
     public void test_fetch_noTags() throws Exception {
         w.init();
         w.git.setRemoteUrl("origin", localMirror());
