@@ -170,9 +170,6 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
                     return i;
                 }
             }
-            if (name.length() > 0) {
-                LOGGER.log(Level.WARNING, "invalid gitTool selection {0}", name);
-            }
             return null;
         }
 
