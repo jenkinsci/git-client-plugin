@@ -45,4 +45,12 @@ public interface FetchCommand extends GitCommand {
     FetchCommand timeout(Integer timeout);
 
     FetchCommand tags(boolean tags);
+
+    /**
+     * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
+     * Has no effect if shallow is set to false (default)
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
+    FetchCommand depth(Integer depth);
 }

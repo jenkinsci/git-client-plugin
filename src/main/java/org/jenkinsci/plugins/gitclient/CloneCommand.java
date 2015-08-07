@@ -70,4 +70,12 @@ public interface CloneCommand extends GitCommand {
     CloneCommand tags(boolean tags);
 
     CloneCommand refspecs(List<RefSpec> refspecs);
+
+    /**
+     * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
+     * Has no effect if shallow is set to false (default)
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
+    CloneCommand depth(Integer depth);
 }

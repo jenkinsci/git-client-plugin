@@ -487,6 +487,16 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
+    public void test_clone_shallow_with_depth() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").shallow().depth(2).execute();
+        w.git.checkout("origin/master", "master");
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getBranches(), "master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+    }
+
     public void test_clone_shared() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
@@ -1196,6 +1206,19 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.git.setRemoteUrl("origin", localMirror());
         w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getRemoteBranches(), "origin/master");
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        final String shallow = ".git" + File.separator + "shallow";
+        assertTrue("Shallow file not found: " + shallow, w.exists(shallow));
+    }
+
+    @NotImplementedInJGit
+    public void test_fetch_shallow_depth() throws Exception {
+        w.init();
+        w.git.setRemoteUrl("origin", localMirror());
+        w.git.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getRemoteBranches(), "origin/master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
