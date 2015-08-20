@@ -124,9 +124,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * something like Major.Minor.Rev.msysgit.BugFix. This
              * removes the inserted term from the version string
              * before parsing.
+             * git 2.5.0 for windows adds a similar component with
+             * the string "windows".  Remove it as well
              */
 
-            String[] fields = version.split(" ")[2].replace("msysgit.", "").split("\\.");
+            String[] fields = version.split(" ")[2].replace("msysgit.", "").replace("windows.", "").split("\\.");
 
             gitMajorVersion  = Integer.parseInt(fields[0]);
             gitMinorVersion  = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
