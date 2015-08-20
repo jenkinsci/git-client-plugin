@@ -1529,9 +1529,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (sshexe != null && sshexe.exists()) {
             return sshexe;
         }
+        sshexe = getFileFromEnv("ProgramFiles", "\\Git\\usr\\bin\\ssh.exe");
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
 
         // Check Program Files(x86) for 64 bit computer
         sshexe = getFileFromEnv("ProgramFiles(x86)", "\\Git\\bin\\ssh.exe");
+        if (sshexe != null && sshexe.exists()) {
+            return sshexe;
+        }
+        sshexe = getFileFromEnv("ProgramFiles(x86)", "\\Git\\usr\\bin\\ssh.exe");
         if (sshexe != null && sshexe.exists()) {
             return sshexe;
         }
@@ -1549,6 +1557,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // instead of the bin directory, replace cmd with bin in
             // the path while trying to find ssh.exe.
             sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/cmd/", "/bin/").replace("\\cmd\\", "\\bin\\"));
+            if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
+            sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/cmd/", "/usr/bin/").replace("\\cmd\\", "\\usr\\bin\\"));
             if (sshexe != null && sshexe.exists()) {
                 return sshexe;
             }
