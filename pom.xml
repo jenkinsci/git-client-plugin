@@ -43,7 +43,7 @@
   </scm>
 
   <properties>
-    <findbugs-maven-plugin.version>3.0.1</findbugs-maven-plugin.version>
+    <findbugs-maven-plugin.version>3.0.2</findbugs-maven-plugin.version>
     <jacoco-maven-plugin.version>0.7.4.201502262128</jacoco-maven-plugin.version>
     <!-- Maven plugin versions provided by parent are outdated. -->
     <!-- Generating site report with "mvn site" fails without these updated versions. -->
