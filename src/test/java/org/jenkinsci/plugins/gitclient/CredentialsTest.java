@@ -111,7 +111,7 @@ public class CredentialsTest {
         listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
         if (gitImpl.equals("git")) {
-            addExpectedLogSubstring("> git -c core.askpass=true fetch ");
+            addExpectedLogSubstring("> git fetch ");
             addExpectedLogSubstring("> git checkout -b master ");
         }
         /* FetchWithCredentials does not log expected message */
