@@ -1351,9 +1351,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File key = null;
         File ssh = null;
         File pass = null;
-        File store = null;
+        File askpass = null;
         EnvVars env = environment;
-        boolean deleteWorkDir = false;
         try {
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
@@ -1371,36 +1370,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
+
+            } else if (credentials instanceof StandardUsernamePasswordCredentials) {
+                StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
+                listener.getLogger().println("using GIT_ASKPASS to set credentials " + userPass.getDescription());
+
+                if (launcher.isUnix()) {
+                    askpass = createUnixStandardAskpass(userPass);
+                } else {
+                    askpass = createWindowsStandardAskpass(userPass);
+                }
+
+                env = new EnvVars(env);
+                env.put("GIT_ASKPASS", askpass.getAbsolutePath());
+                // SSH binary does not recognize GIT_ASKPASS, so set SSH_ASKPASS also, in the case we have an ssh:// URL
+                env.put("SSH_ASKPASS", askpass.getAbsolutePath());
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
-                if (credentials != null) {
-                    listener.getLogger().println("using .gitcredentials to set credentials");
-                    if (!isAtLeastVersion(1,7,9,0))
-                        listener.getLogger().println("[WARNING] Installed git version too old for credentials support");
-
-                    String urlWithCredentials = getGitCredentialsURL(url, credentials);
-                    store = createGitCredentialsStore(urlWithCredentials);
-
-                    // Create a temporary workspace directory in the event that no
-                    // workspace has been created.  Call git init to allow for
-                    // credentials to be stored here during execution for HTTP-based
-                    // form validation.
-                    // See https://issues.jenkins-ci.org/browse/JENKINS-21016
-                    if (workDir == null) {
-                        workDir = Util.createTempDir();
-                        deleteWorkDir = true;
-                        init_().workspace(workDir.getAbsolutePath()).execute();
-                    }
-
-                    String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
-                    if (credentials instanceof UsernameCredentials) {
-                            UsernameCredentials userCredentials = (UsernameCredentials) credentials;
-                            launchCommandIn(workDir, "config", "--local", "credential.username", userCredentials.getUsername());
-                    }
-                    launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
-                }
-
                 if (proxy != null) {
                     boolean shouldProxy = true;
                     for(Pattern p : proxy.getNoProxyHostPatterns()) {
@@ -1430,23 +1417,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
-            List<String> aa = args.toList();
-            /* Git versions prior to 1.7.9 are not tested with the git
-             * client plugin, but are used in the community. Red Hat 6
-             * and Red Hat 5 both ship with versions prior to 1.7.9.
-             *
-             * This conditional attempts to avoid calling command line
-             * git with an argument not implemented until git
-             * 1.7.9. Git versions prior to 1.7.9 also do not support
-             * credentials, so there are other significant portions of
-             * the plugin which will not work with those older
-             * versions of git.
-             */
-            if (isAtLeastVersion(1, 7, 9, 0)) {
-                aa.add(0, "-c");
-                aa.add(1, "core.askpass=true");
-            }
-            args = new ArgumentListBuilder(aa.toArray(new String[0]));
             return launchCommandIn(args, workDir, env, timeout);
         } catch (IOException e) {
             throw new GitException("Failed to setup credentials", e);
@@ -1454,38 +1424,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             deleteTempFile(pass);
             deleteTempFile(key);
             deleteTempFile(ssh);
-            deleteTempFile(store);
-            if (store != null) {
-                try {
-                    launchCommandIn(workDir, "config", "--local", "--remove-section", "credential");
-                } catch (GitException e) {
-                    listener.getLogger().println("Could not remove the credential section from the git configuration");
-                }
-                if (deleteWorkDir) {
-                    try {
-                        Util.deleteContentsRecursive(workDir);
-                        FileUtils.deleteDirectory( workDir );
-                    } catch (IOException ioe) {
-                        listener.getLogger().println("Couldn't delete dir " + workDir.getAbsolutePath() + " : " + ioe);
-                    }
-                }
-            }
+            deleteTempFile(askpass);
         }
-    }
-
-    private File createGitCredentialsStore(String urlWithCredentials) throws IOException {
-        File store = File.createTempFile("git", ".credentials");
-        PrintWriter w = null;
-        try {
-            w = new PrintWriter(store);
-            w.print(urlWithCredentials);
-            w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
-        }
-        return store;
     }
 
     private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
@@ -1500,12 +1440,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return key;
     }
 
+    private String quoteWindowsCredentials(String str) {
+        // Assumes the only meaningful character is %, this may be
+        // insufficient.
+        return str.replace("%", "%%");
+    }
+
+    private String quoteUnixCredentials(String str) {
+        // Assumes string will be used inside of single quotes, as it will
+        // only replace "'" substrings.
+        return str.replace("'", "'\\''");
+    }
+
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".bat");
         PrintWriter w = null;
         try {
             w = new PrintWriter(ssh);
-            w.println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+            w.println("echo \"" + quoteWindowsCredentials(Secret.toString(sshUser.getPassphrase())) + "\"");
             w.flush();
         } finally {
             if (w != null) {
@@ -1520,10 +1472,48 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("pass", ".sh");
         PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
-        w.println("/bin/echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+        w.println("/bin/echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         w.close();
         ssh.setExecutable(true);
         return ssh;
+    }
+
+    private File createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
+        File askpass = File.createTempFile("pass", ".bat");
+        PrintWriter w = null;
+        try {
+            w = new PrintWriter(askpass);
+            w.println("@set arg=%~1");
+            w.println("@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()));
+            w.println("@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())));
+            w.flush();
+        } finally {
+            if (w != null) {
+                w.close();
+            }
+        }
+        askpass.setExecutable(true);
+        return askpass;
+    }
+
+    private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
+        File askpass = File.createTempFile("pass", ".sh");
+        PrintWriter w = null;
+        try {
+            w = new PrintWriter(askpass);
+            w.println("#!/bin/sh");
+            w.println("case \"$1\" in");
+            w.println("Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;");
+            w.println("Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;");
+            w.println("esac");
+            w.flush();
+        } finally {
+            if (w != null) {
+                w.close();
+            }
+        }
+        askpass.setExecutable(true);
+        return askpass;
     }
 
     private String getPathToExe(String userGitExe) {
@@ -1666,10 +1656,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
-    private String launchCommandIn(File workDir, String... args) throws GitException, InterruptedException {
-        return launchCommandIn(new ArgumentListBuilder(args), workDir);
-    }
-
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
     }
@@ -1684,8 +1670,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
         EnvVars environment = new EnvVars(env);
-        if (!env.containsKey("SSH_ASKPASS")) {
-            // GIT_ASKPASS supersed SSH_ASKPASS when set, so don't mask SSH passphrase when set
+        // If we don't have credentials, but the requested URL requires them,
+        // it is possible for Git to hang forever waiting for interactive
+        // credential input. Prevent this by setting GIT_ASKPASS to "echo"
+        // if we haven't already set it.
+        if (!env.containsKey("GIT_ASKPASS")) {
             environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo ");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
@@ -2599,29 +2588,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public String getAllLogEntries(String branch) throws InterruptedException {
         // BROKEN: --all and branch are conflicting.
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
-    }
-
-    /**
-     * Compute the URL to be used by <a href="https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html">git-credentials-store</a>
-     */
-    private String getGitCredentialsURL(URIish u, StandardCredentials cred) {
-        String scheme = u.getScheme();
-        // gitcredentials format is sheme://user:password@hostname
-        URIish uri = new URIish()
-            .setScheme(scheme)
-            .setUser(u.getUser())
-            .setPass(u.getPass())
-            .setHost(u.getHost())
-            .setPort(u.getPort());
-
-        if (cred instanceof StandardUsernamePasswordCredentials) {
-            StandardUsernamePasswordCredentials up = (StandardUsernamePasswordCredentials) cred;
-            uri = uri.setUser(up.getUsername())
-                     .setPass(Secret.toString(up.getPassword()));
-        }
-
-        // use toPrivateString to include the password too
-        return uri.toPrivateString();
     }
 
     /**
