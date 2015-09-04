@@ -59,6 +59,7 @@ public class CredentialsTest {
     private final String password;
     private final File privateKey;
     private final String fileToCheck;
+    private final Boolean submodules;
 
     private GitClient git;
     private File repo;
@@ -86,7 +87,7 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         if (privateKey == null && defaultPrivateKey.exists()) {
@@ -96,6 +97,7 @@ public class CredentialsTest {
         this.username = username;
         this.password = password;
         this.fileToCheck = fileToCheck;
+        this.submodules = submodules;
         log().println("Repo: " + gitRepoUrl);
     }
 
@@ -207,6 +209,10 @@ public class CredentialsTest {
                     if (fileToCheck == null)
                         fileToCheck = "README.md";
 
+                    Boolean submodules = (Boolean) entry.get("submodules");
+                    if (submodules == null)
+                        submodules = false;
+
                     String keyfile = (String) entry.get("keyfile");
                     File privateKey = null;
 
@@ -231,7 +237,7 @@ public class CredentialsTest {
                         continue;
                     }
 
-                    Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck};
+                    Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
                     repos.add(repo);
                 }
             }
@@ -298,6 +304,12 @@ public class CredentialsTest {
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master + " from " + gitRepoURL);
         git.checkout().branch("master").ref(origin + "/master").deleteBranchIfExist(true).execute();
+        if (submodules) {
+            log().println("Initializing submodules from " + gitRepoURL);
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
+            subcmd.execute();
+        }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
