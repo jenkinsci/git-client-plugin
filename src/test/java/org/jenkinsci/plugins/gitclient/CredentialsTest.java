@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import au.com.bytecode.opencsv.CSVReader;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -37,6 +36,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -165,13 +168,13 @@ public class CredentialsTest {
     }
 
     @Parameterized.Parameters(name = "{2}-{1}-{0}")
-    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException {
+    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<Object[]>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit"} : new String[]{"jgit"};
         for (String implementation : implementations) {
             /* Add master repository as authentication test with private
              * key of current user.  Try to test at least one
-             * authentication case, even if there is no repos.csv file in
+             * authentication case, even if there is no repos.json file in
              * the external directory.
              */
             if (defaultPrivateKey.exists()) {
@@ -182,28 +185,36 @@ public class CredentialsTest {
             }
 
             /* Add additional repositories if the ~/.ssh/auth-data directory
-             * contains a repos.csv file defining the repositories to test and the
-             * private key files to use for those tests.
+             * contains a repos.json file defining the repositories to test and the
+             * authentication data to use for those tests.
              */
-            File authDataDefinitions = new File(authDataDir, "repos.csv");
+            File authDataDefinitions = new File(authDataDir, "repos.json");
             if (authDataDefinitions.exists()) {
-                CSVReader reader = new CSVReader(new FileReader(authDataDefinitions));
-                List<String[]> myEntries = reader.readAll();
-                for (String[] entry : myEntries) {
-                    if (entry.length < 3) {
-                        System.out.println("Too few fields(" + entry.length + ") in " + entry[0]);
+                JSONParser parser = new JSONParser();
+                Object obj = parser.parse(new FileReader(authDataDefinitions));
+
+                JSONArray authEntries = (JSONArray) obj;
+
+                for (Object entryObj : authEntries) {
+                    JSONObject entry = (JSONObject) entryObj;
+                    String repoURL = (String) entry.get("url");
+                    String username = (String) entry.get("username");
+                    String password = (String) entry.get("password");
+                    String keyfile = (String) entry.get("keyfile");
+                    File privateKey = null;
+
+                    if (keyfile != null) {
+                        privateKey = new File(authDataDir, keyfile);
+                        if (!privateKey.exists()) {
+                            privateKey = null;
+                        }
+                    }
+
+                    if (repoURL == null) {
+                        System.out.println("No repository URL provided.");
                         continue;
                     }
-                    String repoURL = entry[0];
-                    String username = entry[1];
-                    File privateKey = new File(authDataDir, entry[2]);
-                    if (!privateKey.exists()) {
-                        privateKey = null;
-                    }
-                    String password = null;
-                    if (entry.length > 3) {
-                        password = entry[3];
-                    }
+
                     Object[] repo = {implementation, repoURL, username, password, privateKey};
                     repos.add(repo);
                 }
