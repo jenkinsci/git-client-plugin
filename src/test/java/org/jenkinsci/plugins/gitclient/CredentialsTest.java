@@ -57,6 +57,7 @@ public class CredentialsTest {
     private final String username;
     private final String password;
     private final File privateKey;
+    private final String fileToCheck;
 
     private GitClient git;
     private File repo;
@@ -84,7 +85,7 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         if (privateKey == null && defaultPrivateKey.exists()) {
@@ -93,6 +94,7 @@ public class CredentialsTest {
         this.privateKey = privateKey;
         this.username = username;
         this.password = password;
+        this.fileToCheck = fileToCheck;
         log().println("Repo: " + gitRepoUrl);
     }
 
@@ -180,7 +182,7 @@ public class CredentialsTest {
             if (defaultPrivateKey.exists()) {
                 String username = System.getProperty("user.name");
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
-                Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey};
+                Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md"};
                 repos.add(masterRepo);
             }
 
@@ -200,6 +202,11 @@ public class CredentialsTest {
                     String repoURL = (String) entry.get("url");
                     String username = (String) entry.get("username");
                     String password = (String) entry.get("password");
+                    String fileToCheck = (String) entry.get("file");
+                    if (fileToCheck == null) {
+                        fileToCheck = "README.md";
+                    }
+
                     String keyfile = (String) entry.get("keyfile");
                     File privateKey = null;
 
@@ -215,7 +222,7 @@ public class CredentialsTest {
                         continue;
                     }
 
-                    Object[] repo = {implementation, repoURL, username, password, privateKey};
+                    Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck};
                     repos.add(repo);
                 }
             }
@@ -241,12 +248,12 @@ public class CredentialsTest {
 
     @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File readme = new File(repo, "README.md");
+        File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
         List<RefSpec> refSpecs = new ArrayList<RefSpec>();
         refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
         git.init_().workspace(repo.getAbsolutePath()).execute();
-        assertFalse("readme in " + repo + ", has " + listDir(repo), readme.exists());
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         if (password != null) {
             git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
         } else {
@@ -260,12 +267,12 @@ public class CredentialsTest {
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
     }
 
     @Test
     public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File readme = new File(repo, "README.md");
+        File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
         if (password != null) {
             git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
@@ -285,7 +292,7 @@ public class CredentialsTest {
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
+        assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
     }
 
     private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
