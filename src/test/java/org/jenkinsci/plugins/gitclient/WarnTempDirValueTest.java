@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
-import hudson.Functions;
 import hudson.util.LogTaskListener;
 import java.io.File;
 import java.io.IOException;
@@ -103,6 +102,11 @@ public class WarnTempDirValueTest {
         assertTrue(env.get(envVarName, "/tmp").contains(" "));
         GitClient git = Git.with(listener, env).in(repo).using("git").getClient();
         git.init();
-        assertEquals(Functions.isWindows(), handler.containsMessageSubstring(" contains an embedded space"));
+        assertEquals(isWindows(), handler.containsMessageSubstring(" contains an embedded space"));
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
     }
 }

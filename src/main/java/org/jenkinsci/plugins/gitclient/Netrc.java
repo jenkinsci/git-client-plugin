@@ -75,7 +75,7 @@ class Netrc {
      * @param host a {@link java.lang.String} object.
      * @return a {@link org.apache.http.auth.Credentials} object.
      */
-    public Credentials getCredentials(String host) {
+    public synchronized Credentials getCredentials(String host) {
         if (!this.netrc.exists()) return null;
         if (this.lastModified != this.netrc.lastModified()) parse();
         return this.hosts.get(host);
