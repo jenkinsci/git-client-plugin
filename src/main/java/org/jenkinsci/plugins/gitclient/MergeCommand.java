@@ -18,6 +18,14 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setRevisionToMerge(ObjectId rev);
 
     /**
+     * setMessage.
+     *
+     * @param message the desired comment for the merge command.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
+    MergeCommand setMessage(String message);
+
+    /**
      * setStrategy.
      *
      * @param strategy a {@link org.jenkinsci.plugins.gitclient.MergeCommand.Strategy} object.
