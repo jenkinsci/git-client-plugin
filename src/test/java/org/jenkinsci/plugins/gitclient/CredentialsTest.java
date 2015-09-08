@@ -297,6 +297,12 @@ public class CredentialsTest {
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master + " from " + gitRepoURL);
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
+        if (submodules) {
+            log().println("Initializing submodules from " + gitRepoURL);
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
+            subcmd.execute();
+        }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
