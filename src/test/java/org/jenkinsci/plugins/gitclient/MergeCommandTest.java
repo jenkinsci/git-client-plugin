@@ -104,6 +104,9 @@ public class MergeCommandTest {
         assertFalse("README 1 on master branch unexpectedly", readmeOne.exists());
 
         mergeCmd = git.merge();
+
+        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
+        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
     }
 
     @After
@@ -124,8 +127,6 @@ public class MergeCommandTest {
 
     @Test
     public void testSetRevisionToMergeCommit1() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setRevisionToMerge(commit1Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
@@ -134,8 +135,6 @@ public class MergeCommandTest {
 
     @Test
     public void testSetRevisionToMergeCommit2() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -168,9 +167,14 @@ public class MergeCommandTest {
     }
 
     @Test
+    public void testEmptyMergeMessage() throws GitException, InterruptedException {
+        String emptyMessage = "";
+        mergeCmd.setMessage(emptyMessage).setRevisionToMerge(commit2Branch).execute();
+        /* Asserting an empty string in the merge message is too hard, only check for exceptions thrown */
+    }
+
+    @Test
     public void testDefaultStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.DEFAULT).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -179,8 +183,6 @@ public class MergeCommandTest {
 
     @Test
     public void testResolveStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -189,8 +191,6 @@ public class MergeCommandTest {
 
     @Test
     public void testRecursiveStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -200,8 +200,6 @@ public class MergeCommandTest {
     /* Octopus merge strategy is not implemented in JGit, not exposed in CliGitAPIImpl */
     @Test
     public void testOctopusStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.OCTOPUS).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -210,8 +208,6 @@ public class MergeCommandTest {
 
     @Test
     public void testOursStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -222,8 +218,6 @@ public class MergeCommandTest {
 
     @Test
     public void testSubtreeStrategy() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setStrategy(MergeCommand.Strategy.SUBTREE).setRevisionToMerge(commit2Branch).execute();
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
@@ -232,8 +226,6 @@ public class MergeCommandTest {
 
     @Test
     public void testSquash() throws GitException, InterruptedException {
-        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
-        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
         mergeCmd.setSquash(true).setRevisionToMerge(commit2Branch).execute();
         assertFalse("branch commit 1 on master branch after squash merge", git.revList("master").contains(commit1Branch));
         assertFalse("branch commit 2 on master branch after squash merge", git.revList("master").contains(commit2Branch));
