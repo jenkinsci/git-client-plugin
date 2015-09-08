@@ -1223,7 +1223,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String msg = commit.getFullMessage();
             if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
             msg = msg.replace("\n","\n    ");
-            msg="    "+msg+"\n";
+            msg="\n    "+msg+"\n";
 
             pw.println(msg);
 
