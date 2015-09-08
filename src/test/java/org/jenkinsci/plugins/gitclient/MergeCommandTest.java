@@ -229,4 +229,14 @@ public class MergeCommandTest {
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing on master branch", readmeOne.exists());
     }
+
+    @Test
+    public void testSquash() throws GitException, InterruptedException {
+        assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
+        assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
+        mergeCmd.setSquash(true).setRevisionToMerge(commit2Branch).execute();
+        assertFalse("branch commit 1 on master branch after squash merge", git.revList("master").contains(commit1Branch));
+        assertFalse("branch commit 2 on master branch after squash merge", git.revList("master").contains(commit2Branch));
+        assertTrue("README 1 missing on master branch", readmeOne.exists());
+    }
 }
