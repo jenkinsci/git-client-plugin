@@ -2396,6 +2396,27 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
     }
 
+    public void test_merge_with_message() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        // Obtain last commit message
+        String resultMessage = w.git.showRevision(w.head()).get(7).trim();
+
+        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
+    }
+
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
