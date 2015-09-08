@@ -582,13 +582,14 @@ public abstract class GitAPITestCase extends TestCase {
       );
       w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
       w.git.withRepository(new RepositoryCallback<Void>() {
-        public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
-          String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-          assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
-          assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
-          assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
-          return null;
-        }});
+          public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+              String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+              assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
+              assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
+              assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
+              return null;
+          }
+      });
       Set<Branch> remoteBranches = w.git.getRemoteBranches();
       assertBranchesExist(remoteBranches, "origin/master");
       assertBranchesExist(remoteBranches, "origin/1.4.x");
@@ -2394,6 +2395,33 @@ public abstract class GitAPITestCase extends TestCase {
         final int commitCountAfter = w.git.revList("HEAD").size();
 
         assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
+    }
+
+    public void test_merge_with_message() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+
+        // Additional commit on master branch to force merge message to appear
+        w.git.checkout("master");
+        w.touch("file2", "contentMaster");
+        w.git.add("file2");
+        w.git.commit("commit2");
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        // Obtain last commit message
+        String resultMessage = w.git.showRevision(w.head()).get(7).trim();
+
+        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
     }
 
     @Deprecated
