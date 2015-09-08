@@ -2408,16 +2408,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
 
-        // Additional commit on master branch to force merge message to appear
-        w.git.checkout("master");
-        w.touch("file2", "contentMaster");
-        w.git.add("file2");
-        w.git.commit("commit2");
-
         // Merge branch1 into master
         w.git.checkout("master");
         String mergeMessage = "Merge message to be tested.";
-        w.git.merge().setMessage(mergeMessage).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         // Obtain last commit message
         String resultMessage = w.git.showRevision(w.head()).get(7).trim();
 
