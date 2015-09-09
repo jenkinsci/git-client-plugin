@@ -582,13 +582,14 @@ public abstract class GitAPITestCase extends TestCase {
       );
       w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
       w.git.withRepository(new RepositoryCallback<Void>() {
-        public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
-          String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-          assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
-          assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
-          assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
-          return null;
-        }});
+          public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+              String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+              assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
+              assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
+              assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
+              return null;
+          }
+      });
       Set<Branch> remoteBranches = w.git.getRemoteBranches();
       assertBranchesExist(remoteBranches, "origin/master");
       assertBranchesExist(remoteBranches, "origin/1.4.x");
