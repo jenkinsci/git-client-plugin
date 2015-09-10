@@ -128,6 +128,9 @@ public class CredentialsTest {
     public void tearDown() {
         git.clearCredentials();
         temporaryDirectoryAllocator.disposeAsync();
+    }
+
+    private void checkExpectedLogSubstring() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
@@ -275,6 +278,7 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
     @Test
@@ -306,6 +310,7 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
     /* If not in a Jenkins job, then default to run all credentials tests.
