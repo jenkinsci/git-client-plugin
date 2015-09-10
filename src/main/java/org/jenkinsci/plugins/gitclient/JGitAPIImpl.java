@@ -52,6 +52,7 @@ import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.FetchCommand;
+import org.eclipse.jgit.api.SubmoduleUpdateCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.LsRemoteCommand;
@@ -2090,38 +2091,39 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
-    public SubmoduleUpdateCommand submoduleUpdate() {
-        return new SubmoduleUpdateCommand() {
+    public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand submoduleUpdate() {
+        return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
             boolean recursive      = false;
             boolean remoteTracking = false;
             String  ref            = null;
 
-            public SubmoduleUpdateCommand recursive(boolean recursive) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
                 return this;
             }
 
-            public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
                 this.remoteTracking = remoteTracking;
                 return this;
             }
 
-            public SubmoduleUpdateCommand ref(String ref) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand ref(String ref) {
                 this.ref = ref;
                 return this;
             }
 
-            public SubmoduleUpdateCommand timeout(Integer timeout) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand timeout(Integer timeout) {
             	// noop in jgit
                 return this;
             }
 
-            public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
+                SubmoduleUpdateCommand update = null;
 
                 if (remoteTracking) {
                     listener.getLogger().println("[ERROR] JGit doesn't support remoteTracking submodules yet.");
@@ -2134,7 +2136,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 try {
                     repo = getRepository();
-                    git(repo).submoduleUpdate().call();
+                    update = git(repo).submoduleUpdate();
+                    update.setCredentialsProvider(getProvider());
+                    update.call();
                     if (recursive) {
                         for (JGitAPIImpl sub : submodules()) {
                             sub.submoduleUpdate(recursive);
