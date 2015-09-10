@@ -308,5 +308,13 @@ public class CredentialsTest {
         assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
     }
 
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
+    /* If not in a Jenkins job, then default to run all credentials tests.
+     *
+     * Developers without ~/.ssh/auth-data/repos.json will see no difference
+     * since minimal credentials tests are used for them.
+     *
+     * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
+     */
+    private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
 }
