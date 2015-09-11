@@ -128,6 +128,9 @@ public class CredentialsTest {
     public void tearDown() {
         git.clearCredentials();
         temporaryDirectoryAllocator.disposeAsync();
+    }
+
+    private void checkExpectedLogSubstring() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
@@ -201,10 +204,17 @@ public class CredentialsTest {
 
                 for (Object entryObj : authEntries) {
                     JSONObject entry = (JSONObject) entryObj;
+                    String skipIf = (String) entry.get("skipif");
                     String repoURL = (String) entry.get("url");
                     String username = (String) entry.get("username");
                     String password = (String) entry.get("password");
                     String fileToCheck = (String) entry.get("file");
+                    if (skipIf != null) {
+                        if (skipIf.equals(implementation)) {
+                             continue;
+                        }
+                    }
+
                     if (fileToCheck == null) {
                         fileToCheck = "README.md";
                     }
@@ -275,6 +285,7 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
     @Test
@@ -306,7 +317,16 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
+    /* If not in a Jenkins job, then default to run all credentials tests.
+     *
+     * Developers without ~/.ssh/auth-data/repos.json will see no difference
+     * since minimal credentials tests are used for them.
+     *
+     * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
+     */
+    private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
 }

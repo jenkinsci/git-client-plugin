@@ -526,6 +526,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new MergeCommand() {
             public ObjectId rev;
             public List<ObjectId> moreRevs = new ArrayList<ObjectId>();
+            public String comment;
             public String strategy;
             public String fastForwardMode;
             public boolean squash;
@@ -555,12 +556,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setMessage(String comment) {
+                this.comment = comment;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("merge");
                 try {
                     if(squash) {
                         args.add("--squash");
+                    }
+
+                    if (comment != null && !comment.isEmpty()) {
+                        args.add("-m");
+                        args.add(comment);
                     }
 
                     if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
