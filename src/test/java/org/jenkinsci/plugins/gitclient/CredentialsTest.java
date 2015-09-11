@@ -204,10 +204,17 @@ public class CredentialsTest {
 
                 for (Object entryObj : authEntries) {
                     JSONObject entry = (JSONObject) entryObj;
+                    String skipIf = (String) entry.get("skipif");
                     String repoURL = (String) entry.get("url");
                     String username = (String) entry.get("username");
                     String password = (String) entry.get("password");
                     String fileToCheck = (String) entry.get("file");
+                    if (skipIf != null) {
+                        if (skipIf.equals(implementation)) {
+                             continue;
+                        }
+                    }
+
                     if (fileToCheck == null) {
                         fileToCheck = "README.md";
                     }
