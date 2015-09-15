@@ -2419,6 +2419,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
             throws GitException, InterruptedException {
+        return getRemoteReferences(url, pattern != null ? Collections.singletonList(pattern) : Collections.EMPTY_LIST,
+                headsOnly, tagsOnly);
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, ObjectId> getRemoteReferences(String url, List<String> patterns, boolean headsOnly, boolean tagsOnly)
+            throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         if (headsOnly) {
             args.add("-h");
@@ -2427,7 +2434,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             args.add("-t");
         }
         args.add(url);
-        if (pattern != null) {
+        for (String pattern : patterns) {
             args.add(pattern);
         }
 
