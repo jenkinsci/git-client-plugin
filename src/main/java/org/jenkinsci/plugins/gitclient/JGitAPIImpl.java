@@ -799,10 +799,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
             throws GitException, InterruptedException {
+        return getRemoteReferences(url, pattern != null ? Collections.singletonList(pattern) : Collections.EMPTY_LIST,
+                                   headsOnly, tagsOnly);
+    }
+
+    public Map<String, ObjectId> getRemoteReferences(String url, List<String> patterns, boolean headsOnly, boolean tagsOnly)
+            throws GitException, InterruptedException {
         Map<String, ObjectId> references = new HashMap<String, ObjectId>();
-        String regexPattern = null;
-        if (pattern != null) {
-            regexPattern = createRefRegexFromGlob(pattern);
+        List<String> regexPatterns = new ArrayList<String>();
+
+        for (String pattern : patterns) {
+            regexPatterns.add(createRefRegexFromGlob(pattern));
         }
         try {
             Repository repo = openDummyRepository();
@@ -821,13 +828,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     final String refName = r.getName();
                     final ObjectId refObjectId =
                             r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
-                    if (regexPattern != null) {
+                    for (String regexPattern : regexPatterns) {
                         if (refName.matches(regexPattern)) {
                             references.put(refName, refObjectId);
+                            break;
                         }
-                    } else {
+                    }
+                    if (regexPatterns.isEmpty()) {
                         references.put(refName, refObjectId);
                     }
+
                 }
             } finally {
                 repo.close();

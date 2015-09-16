@@ -2671,7 +2671,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getRemoteReferences with listing all references
      */
     public void test_getRemoteReferences() throws Exception {
-        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, false, false);
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, (String) null, false, false);
         assertTrue(references.containsKey("refs/heads/master"));
         assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
     }
@@ -2680,10 +2680,10 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getRemoteReferences with listing references limit to refs/heads or refs/tags
      */
     public void test_getRemoteReferences_withLimitReferences() throws Exception {
-        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, (String) null, true, false);
         assertTrue(references.containsKey("refs/heads/master"));
         assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
-        references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
+        references = w.git.getRemoteReferences(remoteMirrorURL, (String) null, false, true);
         assertTrue(!references.containsKey("refs/heads/master"));
         assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
         for (String key : references.keySet()) {

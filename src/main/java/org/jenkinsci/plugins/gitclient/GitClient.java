@@ -18,6 +18,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.OutputStream;
@@ -612,6 +613,8 @@ public interface GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      */
     Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
+
+    Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, @Nonnull List<String> patterns, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
 
     /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.

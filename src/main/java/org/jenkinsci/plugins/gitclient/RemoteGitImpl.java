@@ -541,6 +541,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.getRemoteReferences(remoteRepoUrl, pattern, headsOnly, tagsOnly);
     }
 
+    public Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, List<String> patterns, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException {
+        return proxy.getRemoteReferences(remoteRepoUrl, patterns, headsOnly, tagsOnly);
+    }
+
     /** {@inheritDoc} */
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
         return proxy.revParse(revName);
