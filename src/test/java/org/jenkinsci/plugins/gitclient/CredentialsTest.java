@@ -273,7 +273,7 @@ public class CredentialsTest {
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         if (password != null) {
             git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
-        } else {
+        } else if (privateKey != null) {
             git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
         }
         git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
