@@ -299,6 +299,11 @@ public class CredentialsTest {
             // JGit does not support shallow clone
             cmd.shallow(true);
         }
+        if (password != null) {
+            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
+        } else if (privateKey != null) {
+            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
+        }
         cmd.execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
