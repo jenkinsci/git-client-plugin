@@ -89,9 +89,6 @@ public class CredentialsTest {
     public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
-        if (privateKey == null && defaultPrivateKey.exists()) {
-            privateKey = defaultPrivateKey;
-        }
         this.privateKey = privateKey;
         this.username = username;
         this.password = password;
@@ -211,7 +208,7 @@ public class CredentialsTest {
                     String fileToCheck = (String) entry.get("file");
                     if (skipIf != null) {
                         if (skipIf.equals(implementation)) {
-                             continue;
+                            continue;
                         }
                     }
 
@@ -263,6 +260,15 @@ public class CredentialsTest {
         return fileList.toString();
     }
 
+    private void addCredential(String username, String password, File privateKey) throws IOException {
+        if (password != null) {
+            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
+        } else if (privateKey != null) {
+            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
+        }
+
+    }
+
     @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
@@ -271,11 +277,7 @@ public class CredentialsTest {
         refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        if (password != null) {
-            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
-        } else if (privateKey != null) {
-            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
-        }
+        addCredential(username, password, privateKey);
         git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
@@ -292,11 +294,7 @@ public class CredentialsTest {
     public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
-        if (password != null) {
-            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
-        } else {
-            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
-        }
+        addCredential(username, password, privateKey);
         CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin);
         if (gitImpl.equals("git")) {
             // Reduce network transfer by using a local reference repository
