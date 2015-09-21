@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import static junit.framework.TestCase.assertTrue;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
@@ -184,8 +185,11 @@ public class CredentialsTest {
             if (defaultPrivateKey.exists()) {
                 String username = System.getProperty("user.name");
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
-                Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false};
-                repos.add(masterRepo);
+                /* Add URL if it matches the pattern */
+                if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
+                    Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false};
+                    repos.add(masterRepo);
+                }
             }
 
             /* Add additional repositories if the ~/.ssh/auth-data directory
@@ -236,8 +240,11 @@ public class CredentialsTest {
                         continue;
                     }
 
-                    Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
-                    repos.add(repo);
+                    /* Add URL if it matches the pattern */
+                    if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
+                        repos.add(repo);
+                    }
                 }
             }
         }
@@ -327,4 +334,5 @@ public class CredentialsTest {
      */
     private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
     private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
+    private static final Pattern URL_MUST_MATCH_PATTERN = Pattern.compile(System.getProperty("URL_MUST_MATCH_PATTERN", ".*"));
 }
