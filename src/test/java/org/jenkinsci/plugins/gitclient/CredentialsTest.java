@@ -285,7 +285,14 @@ public class CredentialsTest {
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         addCredential(username, password, privateKey);
-        git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
+        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
+        FetchCommand cmd = git.fetch_().from(new URIish(gitRepoURL), refSpecs);
+        if (gitImpl.equals("git")) {
+            // Reduce network transfer by using shallow clone
+            // JGit does not support shallow clone
+            cmd.shallow(true);
+        }
+        cmd.execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master + " from " + gitRepoURL);
