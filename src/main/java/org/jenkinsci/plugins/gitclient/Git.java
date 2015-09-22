@@ -3,11 +3,16 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
+import hudson.Launcher;
+import hudson.model.Computer;
+import hudson.model.Executor;
+import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -116,23 +121,46 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        FileCallable<GitClient> callable = new FileCallable<GitClient>() {
-            public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                if (listener == null) listener = TaskListener.NULL;
-                if (env == null) env = new EnvVars();
+        if (listener == null) listener = TaskListener.NULL;
+        if (env == null) env = new EnvVars();
 
-                if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                    return new JGitAPIImpl(f, listener);
-                }
-                // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
-                return new GitAPI(exe, f, listener, env);
-            }
-        };
-        GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
+        File f = repository != null ? new File(repository.getRemote()) : null;
+
+        GitClient git;
+        if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
+            git = new  JGitAPIImpl(f, listener);
+        } else {
+            // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
+            git = new GitAPI(exe, f, listener, env, getLauncher());
+        }
+
         Jenkins jenkinsInstance = Jenkins.getInstance();
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;
+    }
+
+    /**
+     * Retrieve the {@link Launcher} to be used to run git cli.
+     */
+    private @CheckForNull Launcher getLauncher() {
+        final Executor e = Executor.currentExecutor();
+        final Jenkins jenkins = Jenkins.getInstance();
+        Computer computer = null;
+        if (e != null) {
+            computer = e.getOwner();
+        } else if (jenkins != null ) {
+            // on master
+            computer = jenkins.toComputer();
+        }
+
+        if (computer != null) {
+            final Node node = computer.getNode();
+            if (node != null) {
+                return  node.createLauncher(listener);
+            }
+        }
+        return null;
     }
 
     /**
@@ -144,5 +172,5 @@ public class Git implements Serializable {
      */
     public static final boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
-    private static final long serialVersionUID = 1L;
+        private static final long serialVersionUID = 1L;
 }
