@@ -172,7 +172,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public GitClient subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment, null);
+        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment, launcher);
     }
 
     /**
