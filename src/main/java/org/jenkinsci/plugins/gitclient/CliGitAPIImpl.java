@@ -641,6 +641,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public void clean() throws GitException, InterruptedException {
         reset(true);
+        if (isWindows()) {
+            try {
+                launchCommand("clean", "-fdx");
+                return;
+            } catch (GitException ge) {
+                /* Try again - windows often reports busy files */
+                Thread.sleep(513); // Wait 0.5 seconds in hopes Windows will release files
+            }
+        }
         launchCommand("clean", "-fdx");
     }
 
