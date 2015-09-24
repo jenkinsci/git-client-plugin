@@ -144,14 +144,18 @@ public class Git implements Serializable {
      * Retrieve the {@link Launcher} to be used to run git cli.
      */
     private @CheckForNull Launcher getLauncher() {
-        final Executor e = Executor.currentExecutor();
-        final Jenkins jenkins = Jenkins.getInstance();
         Computer computer = null;
-        if (e != null) {
-            computer = e.getOwner();
-        } else if (jenkins != null ) {
-            // on master
-            computer = jenkins.toComputer();
+        if (repository != null) {
+            computer = repository.toComputer();
+        } else {
+            final Executor e = Executor.currentExecutor();
+            final Jenkins jenkins = Jenkins.getInstance();
+            if (e != null) {
+                computer = e.getOwner();
+            } else if (jenkins != null) {
+                // on master
+                computer = jenkins.toComputer();
+            }
         }
 
         if (computer != null) {
