@@ -34,3 +34,4 @@ assure that you haven't introduced new findbugs warnings.
 ## Maven POM file layout
 
 * The `pom.xml` file shall use the sequencing of elements as defined by the `mvn tidy:pom` command (after any indenting fix-up).
+* All `<plugin>` entries shall have an explicit version defined unless inherited from the parent.
