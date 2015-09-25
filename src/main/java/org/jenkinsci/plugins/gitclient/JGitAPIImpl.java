@@ -2064,19 +2064,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
-    public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException {
+    public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException, InterruptedException {
         Repository repo = null;
         try {
             repo = getRepository();
 
             List<RevCommit> oldRevCommits = new ArrayList<RevCommit>();
             RevWalk walk = new RevWalk(repo);
+            RevCommit toCommit = walk.parseCommit(to);
             if (from!=null) {
                 RevCommit fromCommit = walk.parseCommit(from);
                 oldRevCommits.add(fromCommit);
             } else {
                 // the effect of the -m option, which makes the diff produce for each parent of a merge commit
-                RevCommit toCommit = walk.parseCommit(to);
                 for(RevCommit fromCommit: toCommit.getParents()) {
                     oldRevCommits.add(fromCommit);
                 }
@@ -2085,7 +2085,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // the diff works on TreeIterators, convert revisions to TreeIterators
             List<CanonicalTreeParser> oldTreeIters = new ArrayList<CanonicalTreeParser>();
             for(RevCommit oldRevCommit: oldRevCommits) {
-                CanonicalTreeParser iter = prepareTreeParser(repo, oldRevCommit);
+                RevCommit base = walk.parseCommit(mergeBase(oldRevCommit, toCommit));
+                CanonicalTreeParser iter = prepareTreeParser(repo, base);
                 oldTreeIters.add(iter);
             }
 

@@ -3734,16 +3734,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Extra file names found " + testPaths + " in " + changedPaths + ", expected " + Arrays.toString(expectedFileNames), testPaths.isEmpty());
         assertTrue("None of the expected file names [" + expectedFileNames + "] were removed from " + changedPaths, changedList);
 
-        /* command line git implementation duplicates paths in the returned
-         * list.  That seems ok if it is intentional, since the list does
-         * contain the expected elements, even though it contains extra
-         * copies of the expected elements.
-         */
         Set<String> uniqueChangedPaths = new HashSet<String>(changedPaths);
         assertEquals("Wrong unique changed path count in " + changedPaths, expectedFileNames.length, uniqueChangedPaths.size());
-        if (w.git instanceof JGitAPIImpl) {
-            assertEquals("Wrong changed path count in " + changedPaths, expectedFileNames.length, changedPaths.size());
-        }
+        assertEquals("Wrong changed path count in " + changedPaths, expectedFileNames.length, changedPaths.size());
     }
 
     private void branchAndCheckout(String branchName) throws GitException, InterruptedException {
@@ -3778,26 +3771,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong branch count at base", 1, w.git.getBranches().size());
         assertFilesDoNotExist(addedFileNames);
 
-        /* First commit in the repository behaves differently than second and later */
         List<String> changedPathsOneArg = w.git.showChangedPaths(firstCommit);
-        if (w.git instanceof CliGitAPIImpl) {
-            /* A 1 element list with an empty string as element 1 is unexpected */
-            assertEquals("First change not an empty string: '" + changedPathsOneArg.get(0) + "'", "", changedPathsOneArg.get(0));
-            assertEquals("Wrong length on first change: ", 1, changedPathsOneArg.size());
-        } else {
-            /* JGit implementation returned an empty list as expected */
-            assertTrue("First change not empty: " + changedPathsOneArg, changedPathsOneArg.isEmpty());
-        }
+        assertTrue("First change not empty: " + changedPathsOneArg, changedPathsOneArg.isEmpty());
 
         List<String> changedPathsTwoArgs = w.git.showChangedPaths(null, firstCommit);
-        if (w.git instanceof CliGitAPIImpl) {
-            /* A 1 element list with an empty string as element 1 is unexpected */
-            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
-            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
-        } else {
-            /* JGit implementation returned an empty list as expected */
-            assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
-        }
+        assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
 
         /* Javadoc of showChangedPaths allows the second argument to be null
          * and assigns semantics to the null seecond argument, but this throws
@@ -3810,14 +3788,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         changedPathsTwoArgs = w.git.showChangedPaths(firstCommit, firstCommit);
-        if (w.git instanceof CliGitAPIImpl) {
-            /* A 1 element list with an empty string as element 1 is unexpected */
-            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
-            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
-        } else {
-            /* JGit implementation returned an empty list as expected */
-            assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
-        }
+        assertTrue("First two arg change not empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
 
         // Create branch a
         branchAndCheckout("a");
@@ -3829,19 +3800,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertShowChangedPaths(w.git.showChangedPaths(null, aCommit), "a");
         assertShowChangedPaths(w.git.showChangedPaths(firstCommit, aCommit), "a");
 
-        /* Inverted argument expected to return empty list since aCommit is not
-         * a parent of firstCommit.
-         */
         changedPathsTwoArgs = w.git.showChangedPaths(aCommit, firstCommit);
-        if (w.git instanceof CliGitAPIImpl) {
-            assertFalse("empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
-            assertEquals("First two arg change not an empty string: '" + changedPathsTwoArgs.get(0) + "'", "", changedPathsTwoArgs.get(0));
-            assertEquals("Wrong length on first two arg change: ", 1, changedPathsTwoArgs.size());
-        } else {
-            /* Unexpected non-empty list with inverted argument order */
-            assertEquals("Wrong two arg changed path 1", "a", changedPathsTwoArgs.get(0));
-            assertEquals("Wrong two arg changed path count", 1, changedPathsTwoArgs.size());
-        }
+        assertTrue("empty: " + changedPathsTwoArgs, changedPathsTwoArgs.isEmpty());
 
         try {
             changedPathsTwoArgs = w.git.showChangedPaths(aCommit, null);

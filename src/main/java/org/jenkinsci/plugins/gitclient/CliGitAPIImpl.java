@@ -41,6 +41,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -839,7 +840,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         StringWriter writer = new StringWriter();
         writer.write(launchCommand(args));
-        return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
+        String output = writer.toString();
+        // handle empty return
+        List<String> al = new ArrayList<String>();
+        if (output.isEmpty()) {
+            return al;
+        }
+
+        al.addAll(Arrays.asList(output.split("\\n")));
+
+        // Remove duplicates
+        LinkedHashSet<String> s = new LinkedHashSet<String>();
+        s.addAll(al);
+        al.clear();
+        al.addAll(s);
+
+        return al;
     }
 
     /**
