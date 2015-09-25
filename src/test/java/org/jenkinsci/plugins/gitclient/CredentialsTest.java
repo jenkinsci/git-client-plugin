@@ -1,8 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
-import au.com.bytecode.opencsv.CSVReader;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
@@ -35,6 +36,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -50,7 +55,10 @@ public class CredentialsTest {
     private final String gitImpl;
     private final String gitRepoURL;
     private final String username;
+    private final String password;
     private final File privateKey;
+    private final String fileToCheck;
+    private final Boolean submodules;
 
     private GitClient git;
     private File repo;
@@ -78,7 +86,7 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, File privateKey) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         if (privateKey == null && defaultPrivateKey.exists()) {
@@ -86,6 +94,9 @@ public class CredentialsTest {
         }
         this.privateKey = privateKey;
         this.username = username;
+        this.password = password;
+        this.fileToCheck = fileToCheck;
+        this.submodules = submodules;
         log().println("Repo: " + gitRepoUrl);
     }
 
@@ -115,7 +126,11 @@ public class CredentialsTest {
 
     @After
     public void tearDown() {
+        git.clearCredentials();
         temporaryDirectoryAllocator.disposeAsync();
+    }
+
+    private void checkExpectedLogSubstring() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
@@ -137,7 +152,7 @@ public class CredentialsTest {
         this.expectedLogSubstrings = new ArrayList<String>();
     }
 
-    private BasicSSHUserPrivateKey newCredential(File privateKey, String username) throws IOException {
+    private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath();
         String privateKeyData = Files.toString(privateKey, Charset.forName("UTF-8"));
@@ -147,51 +162,85 @@ public class CredentialsTest {
         return new BasicSSHUserPrivateKey(scope, id, username, privateKeySource, passphrase, description);
     }
 
+    private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
+        CredentialsScope scope = CredentialsScope.GLOBAL;
+        String id = "username-" + username + "-password-" + password;
+        StandardUsernamePasswordCredentials usernamePasswordCredential = new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
+        return usernamePasswordCredential;
+    }
+
     private static boolean isCredentialsSupported() throws IOException, InterruptedException {
         CliGitAPIImpl cli = (CliGitAPIImpl) Git.with(null, new hudson.EnvVars()).in(currDir).using("git").getClient();
         return cli.isAtLeastVersion(1, 7, 9, 0);
     }
 
     @Parameterized.Parameters(name = "{2}-{1}-{0}")
-    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException {
+    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<Object[]>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit"} : new String[]{"jgit"};
         for (String implementation : implementations) {
             /* Add master repository as authentication test with private
              * key of current user.  Try to test at least one
-             * authentication case, even if there is no repos.csv file in
+             * authentication case, even if there is no repos.json file in
              * the external directory.
              */
             if (defaultPrivateKey.exists()) {
                 String username = System.getProperty("user.name");
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
-                Object[] masterRepo = {implementation, url, username, defaultPrivateKey};
+                Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false};
                 repos.add(masterRepo);
             }
 
             /* Add additional repositories if the ~/.ssh/auth-data directory
-             * contains a repos.csv file defining the repositories to test and the
-             * private key files to use for those tests.
+             * contains a repos.json file defining the repositories to test and the
+             * authentication data to use for those tests.
              */
-            File authDataDefinitions = new File(authDataDir, "repos.csv");
+            File authDataDefinitions = new File(authDataDir, "repos.json");
             if (authDataDefinitions.exists()) {
-                CSVReader reader = new CSVReader(new FileReader(authDataDefinitions));
-                List<String[]> myEntries = reader.readAll();
-                for (String[] entry : myEntries) {
-                    if (entry.length < 3) {
-                        System.out.println("Too few fields(" + entry.length + ") in " + entry[0]);
+                JSONParser parser = new JSONParser();
+                Object obj = parser.parse(new FileReader(authDataDefinitions));
+
+                JSONArray authEntries = (JSONArray) obj;
+
+                for (Object entryObj : authEntries) {
+                    JSONObject entry = (JSONObject) entryObj;
+                    String skipIf = (String) entry.get("skipif");
+                    String repoURL = (String) entry.get("url");
+                    String username = (String) entry.get("username");
+                    String password = (String) entry.get("password");
+                    String fileToCheck = (String) entry.get("file");
+                    if (skipIf != null) {
+                        if (skipIf.equals(implementation)) {
+                             continue;
+                        }
+                    }
+
+                    if (fileToCheck == null) {
+                        fileToCheck = "README.md";
+                    }
+
+                    Boolean submodules = (Boolean) entry.get("submodules");
+                    if (submodules == null) {
+                        submodules = false;
+                    }
+
+                    String keyfile = (String) entry.get("keyfile");
+                    File privateKey = null;
+
+                    if (keyfile != null) {
+                        privateKey = new File(authDataDir, keyfile);
+                        if (!privateKey.exists()) {
+                            privateKey = null;
+                        }
+                    }
+
+                    if (repoURL == null) {
+                        System.out.println("No repository URL provided.");
                         continue;
                     }
-                    String repoURL = entry[0];
-                    String username = entry[1];
-                    File privateKey = new File(authDataDir, entry[2]);
-                    if (privateKey.exists()) {
-                        Object[] repo = {implementation, repoURL, username, privateKey};
-                        repos.add(repo);
-                    } else {
-                        Object[] repo = {implementation, repoURL, username, null};
-                        repos.add(repo);
-                    }
+
+                    Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
+                    repos.add(repo);
                 }
             }
         }
@@ -216,13 +265,17 @@ public class CredentialsTest {
 
     @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File readme = new File(repo, "README.md");
+        File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
         List<RefSpec> refSpecs = new ArrayList<RefSpec>();
         refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
         git.init_().workspace(repo.getAbsolutePath()).execute();
-        assertFalse("readme in " + repo + ", has " + listDir(repo), readme.exists());
-        git.addDefaultCredentials(newCredential(privateKey, username));
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        if (password != null) {
+            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
+        } else {
+            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
+        }
         git.fetch_().from(new URIish(gitRepoURL), refSpecs).execute();
         git.setRemoteUrl(origin, gitRepoURL);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
@@ -231,21 +284,19 @@ public class CredentialsTest {
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        if (gitImpl.equals("git")) {
-            /* The checkout command for JGit fails to checkout the files in this
-             * test.  I am still working to understand why it fails, since it
-             * works in the typical use case with the plugin, and it works with
-             * the other unit tests in GitAPITestCase.
-             */
-            assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
-        }
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
     @Test
     public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File readme = new File(repo, "README.md");
+        File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
-        git.addCredentials(gitRepoURL, newCredential(privateKey, username));
+        if (password != null) {
+            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
+        } else {
+            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
+        }
         CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin);
         if (gitImpl.equals("git")) {
             // Reduce network transfer by using a local reference repository
@@ -256,12 +307,26 @@ public class CredentialsTest {
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master + " from " + gitRepoURL);
         git.checkout().branch("master").ref(origin + "/master").deleteBranchIfExist(true).execute();
+        if (submodules) {
+            log().println("Initializing submodules from " + gitRepoURL);
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
+            subcmd.execute();
+        }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No readme in " + repo + ", has " + listDir(repo), readme.exists());
-        git.clearCredentials();
+        assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        checkExpectedLogSubstring();
     }
 
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", "false"));
+    /* If not in a Jenkins job, then default to run all credentials tests.
+     *
+     * Developers without ~/.ssh/auth-data/repos.json will see no difference
+     * since minimal credentials tests are used for them.
+     *
+     * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
+     */
+    private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
 }

@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.509</version>
+    <version>1.532.2</version>
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>1.16.1</version>
+  <version>1.19.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
@@ -39,24 +39,24 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>git-client-1.16.1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
-    <findbugs-maven-plugin.version>3.0.0</findbugs-maven-plugin.version>
-    <jacoco-maven-plugin.version>0.7.2.201409121644</jacoco-maven-plugin.version>
+    <findbugs-maven-plugin.version>3.0.2</findbugs-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.7.4.201502262128</jacoco-maven-plugin.version>
     <!-- Maven plugin versions provided by parent are outdated. -->
     <!-- Generating site report with "mvn site" fails without these updated versions. -->
     <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
-    <maven-enforcer-plugin.version>1.3.1</maven-enforcer-plugin.version>
-    <maven-hpi-plugin.version>1.112</maven-hpi-plugin.version>
+    <maven-enforcer-plugin.version>1.4</maven-enforcer-plugin.version>
+    <maven-hpi-plugin.version>1.113</maven-hpi-plugin.version>
     <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
-    <maven-release-plugin.version>2.5.1</maven-release-plugin.version>
+    <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
     <maven-javadoc-plugin.version>2.10.1</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
-    <jgit.version>3.6.2.201501210735-r</jgit.version>
+    <jgit.version>3.7.1.201504261725-r</jgit.version>
   </properties>
 
   <dependencies>
@@ -87,6 +87,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jenkins-ci.modules</groupId>
       <artifactId>sshd</artifactId>
       <version>1.6</version>
@@ -101,12 +107,12 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>ssh-credentials</artifactId>
-      <version>1.10</version>
+      <version>1.11</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.4</version>
+      <version>4.4.1</version>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -117,7 +123,7 @@
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
-      <version>2.1</version>
+      <version>2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -125,6 +131,12 @@
       <artifactId>opencsv</artifactId>
       <version>2.3</version>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+      <version>3.0.0</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
@@ -148,19 +160,6 @@
   </pluginRepositories>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>findbugs-maven-plugin</artifactId>
-          <version>${findbugs-maven-plugin.version}</version>
-          <configuration>
-            <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
-            <failOnError>${maven.findbugs.failure.strict}</failOnError>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.jacoco</groupId>
@@ -202,6 +201,26 @@
         <artifactId>maven-hpi-plugin</artifactId>
         <version>${maven-hpi-plugin.version}</version>
         <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>${findbugs-maven-plugin.version}</version>
+        <configuration>
+          <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
+          <failOnError>${maven.findbugs.failure.strict}</failOnError>
+          <xmlOutput>true</xmlOutput>
+          <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
+        </configuration>
+        <executions>
+          <execution>
+            <id>run-findbugs</id>
+            <phase>verify</phase> 
+            <goals>
+              <goal>check</goal> 
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -10,6 +10,9 @@ import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
 import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.jgit.lib.Constants.typeString;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK;
+import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
+
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -37,12 +40,14 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -101,6 +106,8 @@ import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
@@ -338,10 +345,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 repo = getRepository(); /* Reusing repo declared and assigned earlier */
                 for (String path : e.getConflictingPaths()) {
                     File conflict = new File(repo.getWorkTree(), path);
-                    if (!conflict.delete()) {
-                        if (conflict.exists()) {
-                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
-                        }
+                    if (!conflict.delete() && conflict.exists()) {
+                        listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
                     }
                 }
             } catch (IOException e) {
@@ -545,7 +550,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public List<RefSpec> refspecs;
             // JGit 3.3.0 thru 3.6.0 prune more branches than expected
             // Refer to GitAPITestCase.test_fetch_with_prune()
-            // private boolean shouldPrune = false;
+            private boolean shouldPrune = false;
             public boolean tags = true;
 
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -555,9 +560,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
-                throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
-                // shouldPrune = true;
-                // return this;
+                //throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
+                shouldPrune = true;
+                return this;
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
@@ -574,15 +579,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public org.jenkinsci.plugins.gitclient.FetchCommand depth(Integer depth) {
+                throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 FetchCommand fetch = null;
                 try {
                     repo = getRepository();
-                    fetch = git(repo).fetch();
-                    fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
-                    fetch.setRemote(url.toString());
-                    fetch.setCredentialsProvider(getProvider());
+                    Git git = git(repo);
 
                     List<RefSpec> refSpecs = new ArrayList<RefSpec>();
                     if (tags) {
@@ -590,9 +596,38 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
                     }
                     if (refspecs != null)
-                      for (RefSpec rs: refspecs)
-                        if (rs != null)
-                          refSpecs.add(rs);
+                        for (RefSpec rs: refspecs)
+                            if (rs != null)
+                                refSpecs.add(rs);
+
+                    if (shouldPrune) {
+                        // since prune is broken in JGit, we go the trivial way:
+                        // delete all refs matching the right side of the refspecs
+                        // then fetch and let the git recreate them.
+                        List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+
+                        List<String> toDelete = new ArrayList<String>(refs.size());
+
+                        for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
+                            Ref branchRef = it.next();
+                            for (RefSpec rs : refSpecs) {
+                                if (rs.matchDestination(branchRef)) {
+                                    toDelete.add(branchRef.getName());
+                                    break;
+                                }
+                            }
+                        }
+                        if (!toDelete.isEmpty()) {
+                            // we need force = true because usually not all remote branches will be merged into the current branch.
+                            git.branchDelete().setForce(true).setBranchNames(toDelete.toArray(new String[toDelete.size()])).call();
+                        }
+                    }
+
+                    fetch = git.fetch();
+                    fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
+                    fetch.setRemote(url.toString());
+                    fetch.setCredentialsProvider(getProvider());
+
                     fetch.setRefSpecs(refSpecs);
                     // fetch.setRemoveDeletedRefs(shouldPrune);
 
@@ -1161,6 +1196,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
+        public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ssZ";
+
         /**
          * Formats a commit into the raw format.
          *
@@ -1179,14 +1216,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             pw.printf("tree %s\n", commit.getTree().name());
             for (RevCommit p : commit.getParents())
                 pw.printf("parent %s\n",p.name());
-            pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
-            pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
+            FastDateFormat iso = FastDateFormat.getInstance(ISO_8601);
+            PersonIdent a = commit.getAuthorIdent();
+            pw.printf("author %s <%s> %s\n", a.getName(), a.getEmailAddress(), iso.format(a.getWhen()));
+            PersonIdent c = commit.getCommitterIdent();
+            pw.printf("committer %s <%s> %s\n", c.getName(), c.getEmailAddress(), iso.format(c.getWhen()));
 
             // indent commit messages by 4 chars
             String msg = commit.getFullMessage();
             if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
             msg = msg.replace("\n","\n    ");
-            msg="    "+msg+"\n";
+            msg="\n    "+msg+"\n";
 
             pw.println(msg);
 
@@ -1321,6 +1361,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public CloneCommand depth(Integer depth) {
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repository = null;
 
@@ -1422,11 +1467,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new MergeCommand() {
 
             ObjectId rev;
+            List<ObjectId> moreRevs = new ArrayList<ObjectId>();
             MergeStrategy strategy;
             FastForwardMode fastForwardMode;
+            boolean squash;
+            String comment;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
+                return this;
+            }
+
+            public MergeCommand addRevisionToMerge(ObjectId rev) {
+                this.moreRevs.add(rev);
                 return this;
             }
 
@@ -1460,6 +1513,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setSquash(boolean squash){
+                this.squash = squash;
+                return this;
+            }
+
+            public MergeCommand setMessage(String comment) {
+                this.comment = comment;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 try {
@@ -1467,9 +1530,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
                     MergeResult mergeResult;
                     if (strategy != null)
-                        mergeResult = git.merge().setStrategy(strategy).setFastForward(fastForwardMode).include(rev).call();
+                        mergeResult = git.merge().setMessage(comment).setStrategy(strategy).setFastForward(fastForwardMode).setSquash(squash).include(rev).call();
                     else
-                        mergeResult = git.merge().setFastForward(fastForwardMode).include(rev).call();
+                        mergeResult = git.merge().setMessage(comment).setFastForward(fastForwardMode).setSquash(squash).include(rev).call();
                     if (!mergeResult.getMergeStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
@@ -1656,6 +1719,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws GitException {
+        if (commit == null) {
+            return false;
+        }
         final Repository repo = getRepository();
         final boolean found = repo.hasObject(commit);
         repo.close();
@@ -1749,10 +1815,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                RefSpec ref = (refspec != null) ? new RefSpec(refspec) : Transport.REFSPEC_PUSH_ALL;
                 Repository repo = null;
                 try {
                     repo = getRepository();
+                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(repo)) : Transport.REFSPEC_PUSH_ALL;
+                    listener.getLogger().println("RefSpec is \""+ref+"\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
@@ -1763,13 +1830,69 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if(tags) {
                         pc.setPushTags();
                     }
-                    pc.call();
+                    Iterable<PushResult> results = pc.call();
+                    for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
+                        RemoteRefUpdate.Status status = update.getStatus();
+                        if(!OK.equals(status)&&!UP_TO_DATE.equals(status)) {
+                            throw new GitException(update.getMessage() + " " + status + " for '" + ref + 
+                                "' refspec '" + refspec + "' to " + remote.toPrivateASCIIString());
+                        }
+                    }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
+                } catch (IOException e) {
+                    throw new GitException(e);
+                } catch (JGitInternalException je) {
+                    throw new GitException(je);
                 } catch (GitAPIException e) {
                     throw new GitException(e);
                 } finally {
                     if (repo != null) repo.close();
                 }
+            }
+
+            /**
+             * Currently JGit does not parse refspecs as well as Git CLI.
+             * This method attempts to fix the refspec as a workaround until JGit
+             * implements parsing arbitrary refspecs (see JENKINS-20393).
+             *
+             * @return a (hopefully) fixed refspec string.
+             */
+            private String fixRefSpec(Repository repository) throws IOException {
+                int colon = refspec.indexOf(':');
+                String[] specs = new String[]{(colon != -1 ? refspec.substring(0, colon) : refspec).trim(), refspec.substring(colon + 1).trim()};
+                for (int spec = 0; spec < specs.length; spec++) {
+                    if (specs[spec].isEmpty() || "HEAD".equalsIgnoreCase(specs[spec])) {
+                        switch (spec) {
+                            default:
+                            case 0:
+                                break; //empty / HEAD for the first ref. if fine for JGit (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                            case 1: //empty second ref. generally means to push "matching" branches, hard to implement the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
+                                specs[spec] = repository.getFullBranch();
+                                break;
+                        }
+                    } else if (!specs[spec].startsWith("refs/") && !specs[spec].startsWith("+refs/")) {
+                        switch (spec) {
+                            default:
+                            case 0: //for the source ref. we use the repository to determine what should be pushed
+                                Ref ref = repository.getRef(specs[spec]);
+                                if (ref == null) {
+                                    throw new IOException(String.format("Ref %s not found.", specs[spec]));
+                                }
+                                specs[spec] = ref.getTarget().getName();
+                                break;
+                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref. (see http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html)
+                                if (!specs[spec].startsWith("/")) {
+                                    specs[spec] = "/" + specs[spec];
+                                }
+                                if (!specs[spec].startsWith("/heads/") && !specs[spec].startsWith("/remotes/") && !specs[spec].startsWith("/tags/")) {
+                                    specs[spec] = "/heads" + specs[spec];
+                                }
+                                specs[spec] = "refs" + specs[spec];
+                                break;
+                        }
+                    }
+                }
+                return specs[0] + ":" + specs[1];
             }
         };
     }

@@ -129,8 +129,9 @@ public class Git implements Serializable {
             }
         };
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
-        if (Jenkins.getInstance() != null)
-            git.setProxy(Jenkins.getInstance().proxy);
+        Jenkins jenkinsInstance = Jenkins.getInstance();
+        if (jenkinsInstance != null && git != null)
+            git.setProxy(jenkinsInstance.proxy);
         return git;
     }
 

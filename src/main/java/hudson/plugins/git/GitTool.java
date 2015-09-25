@@ -2,7 +2,6 @@ package hudson.plugins.git;
 
 import hudson.EnvVars;
 import hudson.Extension;
-import hudson.Functions;
 import hudson.init.Initializer;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
@@ -18,7 +17,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,7 +77,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
      * @return default installation
      */
     public static GitTool getDefaultInstallation() {
-        DescriptorImpl gitTools = Jenkins.getInstance().getDescriptorByType(GitTool.DescriptorImpl.class);
+        Jenkins jenkinsInstance = Jenkins.getInstance();
+        if (jenkinsInstance == null) {
+            return null;
+        }
+        DescriptorImpl gitTools = jenkinsInstance.getDescriptorByType(GitTool.DescriptorImpl.class);
         GitTool tool = gitTools.getInstallation(GitTool.DEFAULT);
         if (tool != null) {
             return tool;
@@ -104,14 +106,23 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl) Jenkins.getInstance().getDescriptorOrDie(getClass());
+        Jenkins jenkinsInstance = Jenkins.getInstance();
+        if (jenkinsInstance == null) {
+            /* Throw AssertionError exception to match behavior of Jenkins.getDescriptorOrDie */
+            throw new AssertionError("No Jenkins instance");
+        }
+        return (DescriptorImpl) jenkinsInstance.getDescriptorOrDie(getClass());
     }
 
     @Initializer(after=EXTENSIONS_AUGMENTED)
     public static void onLoaded() {
         //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
 
-        DescriptorImpl descriptor = (DescriptorImpl) Jenkins.getInstance().getDescriptor(GitTool.class);
+        Jenkins jenkinsInstance = Jenkins.getInstance();
+        if (jenkinsInstance == null) {
+            return;
+        }
+        DescriptorImpl descriptor = (DescriptorImpl) jenkinsInstance.getDescriptor(GitTool.class);
         GitTool[] installations = getInstallations(descriptor);
 
         if (installations != null && installations.length > 0) {
@@ -119,7 +130,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return;
         }
 
-        String defaultGitExe = Functions.isWindows() ? "git.exe" : "git";
+        String defaultGitExe = isWindows() ? "git.exe" : "git";
         GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
@@ -159,15 +170,16 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
                     return i;
                 }
             }
-            if (name.length() > 0) {
-                LOGGER.log(Level.WARNING, "invalid gitTool selection {0}", name);
-            }
             return null;
         }
 
         public List<ToolDescriptor<? extends GitTool>> getApplicableDesccriptors() {
             List<ToolDescriptor<? extends GitTool>> r = new ArrayList<ToolDescriptor<? extends GitTool>>();
-            for (ToolDescriptor td : Jenkins.getInstance().<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
+            Jenkins jenkinsInstance = Jenkins.getInstance();
+            if (jenkinsInstance == null) {
+                return r;
+            }
+            for (ToolDescriptor td : jenkinsInstance.<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
                 if (GitTool.class.isAssignableFrom(td.clazz))
                     r.add(td);
             }
@@ -176,5 +188,10 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     private static final Logger LOGGER = Logger.getLogger(GitTool.class.getName());
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar==';';
+    }
 }
 
