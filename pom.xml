@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
@@ -10,10 +12,10 @@
   <artifactId>git-client</artifactId>
   <version>1.19.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
+
   <name>Jenkins GIT client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
-
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -54,10 +56,28 @@
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
-    <maven-javadoc-plugin.version>2.10.1</maven-javadoc-plugin.version>
+    <maven-javadoc-plugin.version>2.10.3</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
     <jgit.version>3.7.1.201504261725-r</jgit.version>
   </properties>
+
+  <repositories>
+    <repository>
+      <id>jgit-repository</id>
+      <name>Eclipse JGit Repository</name>
+      <url>https://repo.eclipse.org/content/groups/releases/</url>
+    </repository>
+    <repository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>repo.jenkins-ci.org</id>
+      <url>http://repo.jenkins-ci.org/public/</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <dependencies>
     <dependency>
@@ -140,25 +160,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>jgit-repository</id>
-      <name>Eclipse JGit Repository</name>
-      <url>https://repo.eclipse.org/content/groups/releases/</url>
-    </repository>
-    <repository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </repository>
-  </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>repo.jenkins-ci.org</id>
-      <url>http://repo.jenkins-ci.org/public/</url>
-    </pluginRepository>
-  </pluginRepositories>
-
   <build>
     <plugins>
       <plugin>
@@ -183,6 +184,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
+        <version>${maven-javadoc-plugin.version}</version>
         <configuration>
           <excludePackageNames>org.apache.commons.httpclient.contrib.ssl</excludePackageNames>
           <fixTags>param,return,throws,link</fixTags>
@@ -224,5 +226,4 @@
       </plugin>
     </plugins>
   </build>
-
 </project>

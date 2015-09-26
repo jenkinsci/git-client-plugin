@@ -7,11 +7,9 @@ New feature proposals and bug fix proposals should be submitted as
 or can be submitted directly if you have commit permission to the
 git-client-plugin repository.
 
-If you're using a pull request, fork the repository on GitHub, prepare
-your change on your forked copy, and submit a pull request.  Your pull
-request will be evaluated by the
-[Cloudbees Jenkins job](https://jenkins.ci.cloudbees.com/job/plugins/job/git-client-plugin/)
-and you should receive e-mail with the results of the evaluation.
+Pull requests are evaluated by the
+[Cloudbees Jenkins job](https://jenkins.ci.cloudbees.com/job/plugins/job/git-client-plugin/).
+You should receive e-mail with the results of the evaluation.
 
 Before submitting your change, please assure that you've added a test
 which verifies your change.  There have been many developers involved
@@ -27,9 +25,14 @@ when you submit.
 Before submitting your change, please review the findbugs output to
 assure that you haven't introduced new findbugs warnings.
 
-Code formatting in the git client plugin varies between files.  Recent
-additions have generally used the Netbeans "Format" right-click action
-to maintain consistency for new additions.  Try to maintain reasonable
-consistency with the existing files where feasible.  Please don't
-perform wholesale reformatting of a file without discussing with the
-current maintainers.
+# Code Style Guidelines
+
+## Indentation
+
+* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency for new additions.  Try to maintain reasonable consistency with the existing files.
+* Please don't perform wholesale reformatting of a file without discussing with the current maintainers.
+
+## Maven POM file layout
+
+* The `pom.xml` file shall use the sequencing of elements as defined by the `mvn tidy:pom` command (after any indenting fix-up).
+* All `<plugin>` entries shall have an explicit version defined unless inherited from the parent.
