@@ -13,7 +13,7 @@
   <version>1.19.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
-  <name>Jenkins GIT client plugin</name>
+  <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
   <licenses>
