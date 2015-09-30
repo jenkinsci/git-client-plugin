@@ -16,6 +16,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
@@ -38,8 +40,12 @@ public class MergeCommandTest {
     private ObjectId commit1Branch;
     private ObjectId commit2Master;
     private ObjectId commit2Branch;
+    private ObjectId commitConflict;
 
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void createMergeTestRepo() throws IOException, InterruptedException {
@@ -67,7 +73,7 @@ public class MergeCommandTest {
         writer = new PrintWriter(readmeOne, "UTF-8");
         writer.println("# Branch 1 README " + randomChar);
         writer.close();
-        git.add("README-branch-1.md");
+        git.add(readmeOne.getName());
         git.commit("Commit README on branch 1");
         commit1Branch = git.revParse("HEAD");
         assertFalse("branch commit 1 on master branch", git.revList("master").contains(commit1Branch));
@@ -81,7 +87,7 @@ public class MergeCommandTest {
         writer.println("");
         writer.println("Second change to branch 1 README");
         writer.close();
-        git.add("README-branch-1.md");
+        git.add(readmeOne.getName());
         git.commit("Commit 2nd README change on branch 1");
         commit2Branch = git.revParse("HEAD");
         assertFalse("branch commit 2 on master branch", git.revList("master").contains(commit2Branch));
@@ -107,6 +113,24 @@ public class MergeCommandTest {
 
         assertFalse("branch commit 1 on master branch prematurely", git.revList("master").contains(commit1Branch));
         assertFalse("branch commit 2 on master branch prematurely", git.revList("master").contains(commit2Branch));
+    }
+
+    private void createConflictingCommit() throws Exception {
+        assertNotNull(git);
+        // Create branch-conflict
+        git.checkout("master");
+        git.branch("branch-conflict");
+        git.checkout("branch-conflict");
+        PrintWriter writer = new PrintWriter(readmeOne, "UTF-8");
+        writer.println("# branch-conflict README with conflicting change");
+        writer.close();
+        git.add(readmeOne.getName());
+        git.commit("Commit conflicting README on branch branch-conflict");
+        commitConflict = git.revParse("HEAD");
+        assertFalse("branch branch-conflict on master branch", git.revList("master").contains(commitConflict));
+        assertTrue("commit commitConflict missing on branch branch-conflict", git.revList("branch-conflict").contains(commitConflict));
+        assertTrue("Conflicting README missing on branch branch-conflict", readmeOne.exists());
+        git.checkout("master");
     }
 
     @After
@@ -230,5 +254,45 @@ public class MergeCommandTest {
         assertFalse("branch commit 1 on master branch after squash merge", git.revList("master").contains(commit1Branch));
         assertFalse("branch commit 2 on master branch after squash merge", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing on master branch", readmeOne.exists());
+    }
+
+    @Test
+    public void testCommitOnMerge() throws GitException, InterruptedException {
+        mergeCmd.setCommit(true).setRevisionToMerge(commit2Branch).execute();
+        assertTrue("branch commit 1 not on master branch after merge with commit", git.revList("master").contains(commit1Branch));
+        assertTrue("branch commit 2 not on master branch after merge with commit", git.revList("master").contains(commit2Branch));
+        assertTrue("README 1 missing in working directory", readmeOne.exists());
+    }
+
+    @Test
+    public void testNoCommitOnMerge() throws GitException, InterruptedException {
+        mergeCmd.setCommit(false).setRevisionToMerge(commit2Branch).execute();
+        assertFalse("branch commit 1 on master branch after merge without commit", git.revList("master").contains(commit1Branch));
+        assertFalse("branch commit 2 on master branch after merge without commit", git.revList("master").contains(commit2Branch));
+        assertTrue("README 1 missing in working directory", readmeOne.exists());
+    }
+
+    @Test
+    public void testConflictOnMerge() throws Exception {
+        createConflictingCommit();
+        mergeCmd.setRevisionToMerge(commit2Branch).execute();
+        assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
+        assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
+        assertTrue("README 1 missing in working directory", readmeOne.exists());
+        thrown.expect(GitException.class);
+        thrown.expectMessage(commitConflict.getName());
+        mergeCmd.setRevisionToMerge(commitConflict).execute();
+    }
+
+    @Test
+    public void testConflictNoCommitOnMerge() throws Exception {
+        createConflictingCommit();
+        mergeCmd.setCommit(false).setRevisionToMerge(commit2Branch).execute();
+        assertFalse("branch commit 1 on master branch after merge without commit", git.revList("master").contains(commit1Branch));
+        assertFalse("branch commit 2 on master branch after merge without commit", git.revList("master").contains(commit2Branch));
+        assertTrue("README 1 missing in working directory", readmeOne.exists());
+        thrown.expect(GitException.class);
+        thrown.expectMessage(commitConflict.getName());
+        mergeCmd.setRevisionToMerge(commitConflict).execute();
     }
 }
