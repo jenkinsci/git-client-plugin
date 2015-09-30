@@ -2414,7 +2414,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.merge().setCommit(false).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         final int commitCountAfter = w.git.revList("HEAD").size();
 
-        assertEquals("No Commit merge failed. Shouldn't have committed any changes.", 0, commitCountAfter - commitCountBefore);
+        assertEquals("No Commit merge failed. Shouldn't have committed any changes.", commitCountBefore, commitCountAfter);
     }
 
     public void test_merge_commit() throws Exception{
