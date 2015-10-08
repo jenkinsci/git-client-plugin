@@ -2523,6 +2523,68 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
 
+    public void test_rebase_passes_without_conflict() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to master
+        w.touch("master_file", "master1");
+        w.git.add("master_file");
+        w.git.commit("commit-master1");
+
+        // Create a feature branch and make a commit
+        w.git.branch("feature1");
+        w.git.checkout("feature1");
+        w.touch("feature_file", "feature1");
+        w.git.add("feature_file");
+        w.git.commit("commit-feature1");
+
+        // Second commit to master
+        w.git.checkout("master");
+        w.touch("master_file", "master2");
+        w.git.add("master_file");
+        w.git.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        w.git.checkout("feature1");
+        w.git.rebase().setUpstream("master").execute();
+
+        assertThat("Should've rebased feature1 onto master", w.git.revList("feature1").contains(w.git.revParse("master")));
+    }
+
+    public void test_rebase_fails_with_conflict() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to master
+        w.touch("file", "master1");
+        w.git.add("file");
+        w.git.commit("commit-master1");
+
+        // Create a feature branch and make a commit
+        w.git.branch("feature1");
+        w.git.checkout("feature1");
+        w.touch("file", "feature1");
+        w.git.add("file");
+        w.git.commit("commit-feature1");
+
+        // Second commit to master
+        w.git.checkout("master");
+        w.touch("file", "master2");
+        w.git.add("file");
+        w.git.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        w.git.checkout("feature1");
+        try {
+            w.git.rebase().setUpstream("master").execute();
+            fail();
+        }
+        catch (GitException e) {
+            // expected
+        }
+    }
+
     /**
      * Checks that the ChangelogCommand abort() API does not write
      * output to the destination.  Does not check that the abort() API

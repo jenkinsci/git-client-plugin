@@ -19,7 +19,6 @@ import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
-import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.List;
@@ -401,6 +400,13 @@ public interface GitClient {
      * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
      */
     MergeCommand merge();
+
+    /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    RebaseCommand rebase();
 
     /**
      * init_.

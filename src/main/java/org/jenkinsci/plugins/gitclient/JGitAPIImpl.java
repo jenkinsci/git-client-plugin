@@ -119,6 +119,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.eclipse.jgit.api.RebaseResult;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -1566,6 +1567,38 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public void execute() throws GitException, InterruptedException {
                 doInit(workspace, bare);
+            }
+        };
+    }
+
+    public RebaseCommand rebase() {
+        return new RebaseCommand() {
+            private String upstream;
+
+            public RebaseCommand setUpstream(String upstream) {
+                this.upstream = upstream;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                Repository repo = null;
+                try {
+                    repo = getRepository();
+                    Git git = git(repo);
+                    String head = repo.resolve("HEAD").name();
+                    RebaseResult rebaseResult = git.rebase().setUpstream(upstream).call();
+                    if (!rebaseResult.getStatus().isSuccessful()) {
+                        git.reset().setMode(HARD).call();
+                        git.checkout().setName(head);
+                        throw new GitException("Failed to rebase " + upstream);
+                    }
+                } catch (IOException e){
+                    throw new GitException("Failed to rebase " + upstream, e);
+                } catch (GitAPIException e) {
+                    throw new GitException("Failed to rebase " + upstream, e);
+                } finally {
+                    if (repo != null) repo.close();
+                }
             }
         };
     }

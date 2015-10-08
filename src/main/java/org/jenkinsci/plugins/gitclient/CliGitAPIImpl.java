@@ -593,6 +593,33 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    public RebaseCommand rebase() {
+        return new RebaseCommand() {
+            private String upstream;
+
+            public RebaseCommand setUpstream(String upstream) {
+                this.upstream = upstream;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("rebase");
+                    args.add(upstream);
+                    launchCommand(args);
+                } catch (GitException e) {
+                    throw new GitException("Could not rebase " + upstream, e);
+                }
+            }
+        };
+    }
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
