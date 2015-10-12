@@ -119,6 +119,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
 
 /**
@@ -1585,15 +1586,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     repo = getRepository();
                     Git git = git(repo);
-                    String head = repo.resolve("HEAD").name();
                     RebaseResult rebaseResult = git.rebase().setUpstream(upstream).call();
                     if (!rebaseResult.getStatus().isSuccessful()) {
-                        git.reset().setMode(HARD).call();
-                        git.checkout().setName(head).call();
+                        git.rebase().setOperation(Operation.ABORT).call();
                         throw new GitException("Failed to rebase " + upstream);
                     }
-                } catch (IOException e){
-                    throw new GitException("Failed to rebase " + upstream, e);
                 } catch (GitAPIException e) {
                     throw new GitException("Failed to rebase " + upstream, e);
                 } finally {
