@@ -1589,7 +1589,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     RebaseResult rebaseResult = git.rebase().setUpstream(upstream).call();
                     if (!rebaseResult.getStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
-                        git.checkout().setName(head);
+                        git.checkout().setName(head).call();
                         throw new GitException("Failed to rebase " + upstream);
                     }
                 } catch (IOException e){

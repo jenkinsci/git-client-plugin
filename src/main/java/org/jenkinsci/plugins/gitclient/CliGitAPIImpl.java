@@ -613,6 +613,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add(upstream);
                     launchCommand(args);
                 } catch (GitException e) {
+                    launchCommand("rebase", "--abort");
                     throw new GitException("Could not rebase " + upstream, e);
                 }
             }

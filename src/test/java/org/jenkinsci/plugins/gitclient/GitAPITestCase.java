@@ -2550,6 +2550,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.rebase().setUpstream("master").execute();
 
         assertThat("Should've rebased feature1 onto master", w.git.revList("feature1").contains(w.git.revParse("master")));
+        assertEquals("HEAD should be on the rebased branch", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
+        assertThat("Rebased file should be present in the worktree",w.git.getWorkTree().child("feature_file").exists());
     }
 
     public void test_rebase_fails_with_conflict() throws Exception {
@@ -2581,6 +2583,7 @@ public abstract class GitAPITestCase extends TestCase {
             fail();
         }
         catch (GitException e) {
+            assertEquals("HEAD should've been reset to the feature branch.", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
             // expected
         }
     }
