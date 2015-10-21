@@ -867,6 +867,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new SubmoduleUpdateCommand() {
             boolean recursive                      = false;
             boolean remoteTracking                 = false;
+            boolean parentCredentials              = false;
             String  ref                            = null;
             Map<String, String> submodBranch   = new HashMap<String, String>();
             public Integer timeout;
@@ -878,6 +879,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
                 this.remoteTracking = remoteTracking;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand parentCredentials(boolean parentCredentials) {
+                this.parentCredentials = parentCredentials;
                 return this;
             }
 
@@ -959,6 +965,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
 
                     StandardCredentials cred = credentials.get(urIish.toPrivateString());
+                    if (parentCredentials) {
+                        String parentUrl = getRemoteUrl(getDefaultRemote());
+                        URIish parentUri = null;
+                        try {
+                            parentUri = new URIish(parentUrl);
+                        } catch (URISyntaxException e) {
+                            listener.error("Invalid URI for " + parentUrl);
+                            throw new GitException("Invalid URI for " + parentUrl);
+                        }
+                        cred = credentials.get(parentUri.toPrivateString());
+
+                    }
                     if (cred == null) cred = defaultCredentials;
 
                     perModuleArgs.add(sUrl);

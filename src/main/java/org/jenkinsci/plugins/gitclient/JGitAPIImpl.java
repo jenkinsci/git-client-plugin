@@ -2107,6 +2107,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand parentCredentials(boolean parentCredentials) {
+                // No-op for JGit implementation
+                return this;
+            }
+
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand ref(String ref) {
                 this.ref = ref;
                 return this;
