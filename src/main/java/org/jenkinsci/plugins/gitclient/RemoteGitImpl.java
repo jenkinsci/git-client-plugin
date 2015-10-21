@@ -214,6 +214,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public void submodulesUseParentCreds(boolean useParentCreds) {
+        proxy.submodulesUseParentCreds(useParentCreds);
+    }
+
+    /** {@inheritDoc} */
     public void setAuthor(String name, String email) throws GitException {
         proxy.setAuthor(name, email);
     }

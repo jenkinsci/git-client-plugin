@@ -78,6 +78,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
+    private boolean useParentCreds = false;
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -959,6 +960,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
 
                     StandardCredentials cred = credentials.get(urIish.toPrivateString());
+                    if (useParentCreds) {
+                        String parentUrl = getRemoteUrl(getDefaultRemote());
+                        URIish parentUri = null;
+                        try {
+                            parentUri = new URIish(parentUrl);
+                        } catch (URISyntaxException e) {
+                            listener.error("Invalid URI for " + parentUrl);
+                            throw new GitException("Invalid URI for " + parentUrl);
+                        }
+                        cred = credentials.get(parentUri.toPrivateString());
+
+                    }
                     if (cred == null) cred = defaultCredentials;
 
                     perModuleArgs.add(sUrl);
@@ -2267,6 +2280,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     public void addDefaultCredentials(StandardCredentials credentials) {
         this.defaultCredentials = credentials;
+    }
+
+    /** {@inheritDoc} */
+    public void submodulesUseParentCreds(boolean useParentCreds) {
+        this.useParentCreds = useParentCreds;
     }
 
     /** {@inheritDoc} */

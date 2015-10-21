@@ -60,6 +60,7 @@ public class CredentialsTest {
     private final File privateKey;
     private final String fileToCheck;
     private final Boolean submodules;
+    private final Boolean useParentCreds;
 
     private GitClient git;
     private File repo;
@@ -87,7 +88,7 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules, Boolean useParentCreds) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -95,6 +96,7 @@ public class CredentialsTest {
         this.password = password;
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
+        this.useParentCreds = useParentCreds;
         log().println("Repo: " + gitRepoUrl);
     }
 
@@ -225,6 +227,11 @@ public class CredentialsTest {
                         submodules = false;
                     }
 
+                    Boolean useParentCreds = (Boolean) entry.get("parentcreds");
+                    if (useParentCreds == null) {
+                        useParentCreds = false;
+                    }
+
                     String keyfile = (String) entry.get("keyfile");
                     File privateKey = null;
 
@@ -242,7 +249,7 @@ public class CredentialsTest {
 
                     /* Add URL if it matches the pattern */
                     if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
-                        Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules, useParentCreds};
                         repos.add(repo);
                     }
                 }
@@ -299,6 +306,7 @@ public class CredentialsTest {
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         if (submodules) {
             log().println("Initializing submodules from " + gitRepoURL);
+            git.submodulesUseParentCreds(useParentCreds);
             git.submoduleInit();
             SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
             subcmd.execute();

@@ -167,6 +167,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         asSmartCredentialsProvider().addDefaultCredentials(credentials);
     }
 
+    /** {@inheritDoc} */
+    public void submodulesUseParentCreds(boolean useParentCreds) {
+        /* no-op since JGit implementation already tries available
+         * credentials. */
+    }
+
     private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
         if (!(provider instanceof SmartCredentialsProvider)) {
             provider = new SmartCredentialsProvider(listener);

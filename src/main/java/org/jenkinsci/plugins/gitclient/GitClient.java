@@ -79,6 +79,15 @@ public interface GitClient {
     void addDefaultCredentials(StandardCredentials credentials);
 
     /**
+     * Tells submodules (if any) to attempt using parent repository
+     * credentials.
+     *
+     * @param useParentCreds whether to use parent credentials or not
+     * @since 1.20.0
+     */
+    void submodulesUseParentCreds(boolean useParentCreds);
+
+    /**
      * Sets the identity of the author for future commits and merge operations.
      *
      * @param name a {@link java.lang.String} object.
