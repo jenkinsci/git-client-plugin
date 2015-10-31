@@ -1161,7 +1161,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         // git whatachanged doesn't show the merge commits unless -m is given
                         if (commit.getParentCount()>1)  continue;
 
-                        formatter.format(commit, null, pw);
+                        formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
                     throw new GitException(e);
@@ -1204,7 +1204,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Optional parent commit to produce the diff against. This only matters
          *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
          */
-        void format(RevCommit commit, @Nullable RevCommit parent, PrintWriter pw) throws IOException {
+        void format(RevCommit commit, @Nullable RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
             if (parent!=null)
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
             else
@@ -1260,20 +1260,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             tw.release();
             or.release();
             repo.close();
-            for (DiffEntry diff : diffs) {
-                pw.printf(":%06o %06o %s %s %s\t%s",
-                        diff.getOldMode().getBits(),
-                        diff.getNewMode().getBits(),
-                        diff.getOldId().name(),
-                        diff.getNewId().name(),
-                        statusOf(diff),
-                        diff.getChangeType()==ChangeType.ADD ? diff.getNewPath() : diff.getOldPath());
+            if (useRawOutput) {
+	            for (DiffEntry diff : diffs) {
+	                pw.printf(":%06o %06o %s %s %s\t%s",
+	                        diff.getOldMode().getBits(),
+	                        diff.getNewMode().getBits(),
+	                        diff.getOldId().name(),
+	                        diff.getNewId().name(),
+	                        statusOf(diff),
+	                        diff.getChangeType()==ChangeType.ADD ? diff.getNewPath() : diff.getOldPath());
 
-                if (hasNewPath(diff)) {
-                    pw.printf(" %s",diff.getNewPath()); // copied to
-                }
-                pw.println();
-                pw.println();
+	                if (hasNewPath(diff)) {
+	                    pw.printf(" %s",diff.getNewPath()); // copied to
+	                }
+	                pw.println();
+	                pw.println();
+	            }
             }
         }
     }
@@ -2007,6 +2009,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException {
+        return showRevision(from, to, true);
+    }
+
+    /** {@inheritDoc} */
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException {
         Repository repo = null;
         ObjectReader or = null;
         RevWalk w = null;
@@ -2025,12 +2032,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             PrintWriter pw = new PrintWriter(sw);
             RawFormatter f = new RawFormatter();
             for (RevCommit c : w) {
-                if (c.getParentCount()<=1) {
-                    f.format(c,null,pw);
+                // do not duplicate merge commits unless using raw output
+                if (c.getParentCount()<=1 || !useRawOutput) {
+                    f.format(c,null,pw,useRawOutput);
                 } else {
                     // the effect of the -m option, which makes the diff produce for each parent of a merge commit
                     for (RevCommit p : c.getParents()) {
-                        f.format(c,p,pw);
+                        f.format(c,p,pw,useRawOutput);
                     }
                 }
 
