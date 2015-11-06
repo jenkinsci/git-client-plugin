@@ -189,7 +189,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false};
+                    Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false, false};
                     repos.add(masterRepo);
                 }
             }
