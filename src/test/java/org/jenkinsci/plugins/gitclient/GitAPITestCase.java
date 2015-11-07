@@ -1601,6 +1601,37 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
     }
 
+    @NotImplementedInJGit
+    public void test_push_from_shallow_clone() throws Exception {
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("init");
+        r.touch("file1");
+        r.git.add("file1");
+        r.git.commit("commit1");
+        r.cmd("git checkout -b other");
+
+        w.init();
+        w.cmd("git remote add origin " + r.repoPath());
+        w.cmd("git pull --depth=1 origin master");
+
+        w.touch("file2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        ObjectId sha1 = w.head();
+
+        try {
+            w.git.push("origin", "master");
+            assertTrue("git < 1.9.0 can push from shallow repository", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
+            assertEquals(sha1.name(), remoteSha1);
+        } catch (GitException e) {
+            // expected for git cli < 1.9.0
+            assertTrue("Wrong exception message: " + e, e.getMessage().contains("push from shallow repository"));
+            assertFalse("git >= 1.9.0 can't push from shallow repository", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+        }
+    }
+
     public void test_notes_add() throws Exception {
         w.init();
         w.touch("file1");
