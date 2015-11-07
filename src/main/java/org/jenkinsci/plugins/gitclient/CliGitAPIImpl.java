@@ -1075,6 +1075,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return !"false".equals(line.trim());
     }
 
+    public boolean isShallowRepository() {
+        return new File(workspace, pathJoin(".git", "shallow")).exists();
+    }
+
     private String pathJoin( String a, String b ) {
         return new File(a, b).toString();
     }
@@ -1726,6 +1730,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (tags) {
                     args.add("--tags");
+                }
+
+                if (!isAtLeastVersion(1,9,0,0) && isShallowRepository()) {
+                    throw new GitException("Can't push from shallow repository using git client older than 1.9.0");
                 }
 
                 StandardCredentials cred = credentials.get(remote.toPrivateString());
