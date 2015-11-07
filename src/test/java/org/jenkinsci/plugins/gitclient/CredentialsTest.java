@@ -1,3 +1,4 @@
+
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
@@ -60,6 +61,7 @@ public class CredentialsTest {
     private final File privateKey;
     private final String fileToCheck;
     private final Boolean submodules;
+    private final Boolean useParentCreds;
 
     private GitClient git;
     private File repo;
@@ -87,7 +89,7 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String fileToCheck, Boolean submodules, Boolean useParentCreds) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -95,6 +97,7 @@ public class CredentialsTest {
         this.password = password;
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
+        this.useParentCreds = useParentCreds;
         log().println("Repo: " + gitRepoUrl);
     }
 
@@ -187,7 +190,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false};
+                    Object[] masterRepo = {implementation, url, username, null, defaultPrivateKey, "README.md", false, false};
                     repos.add(masterRepo);
                 }
             }
@@ -225,6 +228,18 @@ public class CredentialsTest {
                         submodules = false;
                     }
 
+                    Boolean useParentCreds = (Boolean) entry.get("parentcreds");
+                    if (useParentCreds == null) {
+                        useParentCreds = false;
+                    }
+
+                    /* useParentCreds is not yet implemented, so don't
+                     * execute submodule tests which require parent
+                     * credentials */
+                    if (submodules && useParentCreds) {
+                        continue;
+                    }
+
                     String keyfile = (String) entry.get("keyfile");
                     File privateKey = null;
 
@@ -242,7 +257,7 @@ public class CredentialsTest {
 
                     /* Add URL if it matches the pattern */
                     if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
-                        Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules};
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, fileToCheck, submodules, useParentCreds};
                         repos.add(repo);
                     }
                 }
