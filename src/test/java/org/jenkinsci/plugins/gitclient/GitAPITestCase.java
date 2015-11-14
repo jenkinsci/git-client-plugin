@@ -2611,11 +2611,17 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("feature1");
         try {
             w.git.rebase().setUpstream("master").execute();
-            fail();
-        }
-        catch (GitException e) {
-            assertEquals("HEAD should've been reset to the feature branch.", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
-            // expected
+            fail("Rebase did not throw expected GitException");
+        } catch (GitException e) {
+            assertEquals("HEAD not reset to the feature branch.", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
+            Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
+            assertTrue("Workspace is not clean", status.isClean());
+            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+            assertTrue("Workspace has modified files", status.getModified().isEmpty());
+            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
         }
     }
 
