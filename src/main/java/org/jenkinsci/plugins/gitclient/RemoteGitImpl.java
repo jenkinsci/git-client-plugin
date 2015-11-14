@@ -366,6 +366,15 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    public RebaseCommand rebase() {
+       return command(RebaseCommand.class);
+    }
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.

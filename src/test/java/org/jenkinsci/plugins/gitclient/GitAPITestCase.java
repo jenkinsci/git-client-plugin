@@ -1601,6 +1601,37 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
     }
 
+    @NotImplementedInJGit
+    public void test_push_from_shallow_clone() throws Exception {
+        WorkingArea r = new WorkingArea();
+        r.init();
+        r.commitEmpty("init");
+        r.touch("file1");
+        r.git.add("file1");
+        r.git.commit("commit1");
+        r.cmd("git checkout -b other");
+
+        w.init();
+        w.cmd("git remote add origin " + r.repoPath());
+        w.cmd("git pull --depth=1 origin master");
+
+        w.touch("file2");
+        w.git.add("file2");
+        w.git.commit("commit2");
+        ObjectId sha1 = w.head();
+
+        try {
+            w.git.push("origin", "master");
+            assertTrue("git < 1.9.0 can push from shallow repository", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
+            assertEquals(sha1.name(), remoteSha1);
+        } catch (GitException e) {
+            // expected for git cli < 1.9.0
+            assertTrue("Wrong exception message: " + e, e.getMessage().contains("push from shallow repository"));
+            assertFalse("git >= 1.9.0 can't push from shallow repository", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+        }
+    }
+
     public void test_notes_add() throws Exception {
         w.init();
         w.touch("file1");
@@ -2521,6 +2552,77 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.setRemoteUrl("origin", remoteUrl);
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
+    }
+
+    public void test_rebase_passes_without_conflict() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to master
+        w.touch("master_file", "master1");
+        w.git.add("master_file");
+        w.git.commit("commit-master1");
+
+        // Create a feature branch and make a commit
+        w.git.branch("feature1");
+        w.git.checkout("feature1");
+        w.touch("feature_file", "feature1");
+        w.git.add("feature_file");
+        w.git.commit("commit-feature1");
+
+        // Second commit to master
+        w.git.checkout("master");
+        w.touch("master_file", "master2");
+        w.git.add("master_file");
+        w.git.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        w.git.checkout("feature1");
+        w.git.rebase().setUpstream("master").execute();
+
+        assertThat("Should've rebased feature1 onto master", w.git.revList("feature1").contains(w.git.revParse("master")));
+        assertEquals("HEAD should be on the rebased branch", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
+        assertThat("Rebased file should be present in the worktree",w.git.getWorkTree().child("feature_file").exists());
+    }
+
+    public void test_rebase_fails_with_conflict() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to master
+        w.touch("file", "master1");
+        w.git.add("file");
+        w.git.commit("commit-master1");
+
+        // Create a feature branch and make a commit
+        w.git.branch("feature1");
+        w.git.checkout("feature1");
+        w.touch("file", "feature1");
+        w.git.add("file");
+        w.git.commit("commit-feature1");
+
+        // Second commit to master
+        w.git.checkout("master");
+        w.touch("file", "master2");
+        w.git.add("file");
+        w.git.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        w.git.checkout("feature1");
+        try {
+            w.git.rebase().setUpstream("master").execute();
+            fail("Rebase did not throw expected GitException");
+        } catch (GitException e) {
+            assertEquals("HEAD not reset to the feature branch.", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
+            Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
+            assertTrue("Workspace is not clean", status.isClean());
+            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+            assertTrue("Workspace has modified files", status.getModified().isEmpty());
+            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
+        }
     }
 
     /**

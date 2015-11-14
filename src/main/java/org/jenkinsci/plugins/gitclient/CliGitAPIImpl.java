@@ -594,6 +594,34 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    public RebaseCommand rebase() {
+        return new RebaseCommand() {
+            private String upstream;
+
+            public RebaseCommand setUpstream(String upstream) {
+                this.upstream = upstream;
+                return this;
+            }
+
+            public void execute() throws GitException, InterruptedException {
+                try {
+                    ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("rebase");
+                    args.add(upstream);
+                    launchCommand(args);
+                } catch (GitException e) {
+                    launchCommand("rebase", "--abort");
+                    throw new GitException("Could not rebase " + upstream, e);
+                }
+            }
+        };
+    }
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
@@ -1132,6 +1160,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException("No output from bare repository check for " + GIT_DIR);
 
         return !"false".equals(line.trim());
+    }
+
+    public boolean isShallowRepository() {
+        return new File(workspace, pathJoin(".git", "shallow")).exists();
     }
 
     private String pathJoin( String a, String b ) {
@@ -1774,6 +1806,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (tags) {
                     args.add("--tags");
+                }
+
+                if (!isAtLeastVersion(1,9,0,0) && isShallowRepository()) {
+                    throw new GitException("Can't push from shallow repository using git client older than 1.9.0");
                 }
 
                 StandardCredentials cred = credentials.get(remote.toPrivateString());

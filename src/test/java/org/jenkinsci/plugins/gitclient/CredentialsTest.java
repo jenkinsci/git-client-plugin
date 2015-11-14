@@ -1,3 +1,4 @@
+
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
