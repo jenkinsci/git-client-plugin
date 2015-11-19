@@ -95,6 +95,14 @@
       <version>${jgit.version}</version>
     </dependency>
     <dependency>
+      <!-- Include jgit java7 component so that jgit can support
+           symbolic links when running on Java 7 with a file system
+           which supports symbolic links. See JENKINS-30371 -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.java7</artifactId>
+      <version>${jgit.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
