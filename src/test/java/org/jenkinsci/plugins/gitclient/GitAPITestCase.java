@@ -2044,13 +2044,20 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.hasGitModules());
     }
 
+    private boolean isJava6() {
+        if (System.getProperty("java.version").startsWith("1.6")) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * core.symlinks is set to false by msysgit on Windows and by JGit
      * 3.3.0 on all platforms.  It is not set on Linux.  Refer to
      * JENKINS-21168, JENKINS-22376, and JENKINS-22391 for details.
      */
     private void checkSymlinkSetting(WorkingArea area) throws IOException {
-        String expected = SystemUtils.IS_OS_WINDOWS || area.git instanceof JGitAPIImpl ? "false" : "";
+        String expected = SystemUtils.IS_OS_WINDOWS || (area.git instanceof JGitAPIImpl && isJava6()) ? "false" : "";
         String symlinkValue = null;
         try {
             symlinkValue = w.cmd(true, "git config core.symlinks").trim();

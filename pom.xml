@@ -95,6 +95,14 @@
       <version>${jgit.version}</version>
     </dependency>
     <dependency>
+      <!-- Include jgit java7 component so that jgit can support
+           symbolic links when running on Java 7 with a file system
+           which supports symbolic links. See JENKINS-30371 -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.java7</artifactId>
+      <version>${jgit.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
@@ -209,6 +217,7 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <version>${findbugs-maven-plugin.version}</version>
         <configuration>
+          <skip>${skipFindbugs}</skip>
           <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
           <failOnError>${maven.findbugs.failure.strict}</failOnError>
           <xmlOutput>true</xmlOutput>
@@ -226,4 +235,17 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>java-6</id>
+      <activation>
+        <jdk>1.6</jdk>
+      </activation>
+      <properties>
+        <!-- Findbugs requires Java 7. This allows default run
+             of findbugs on every compile, unless running Java 6 -->
+        <skipFindbugs>true</skipFindbugs>
+      </properties>
+    </profile>
+  </profiles>
 </project>
