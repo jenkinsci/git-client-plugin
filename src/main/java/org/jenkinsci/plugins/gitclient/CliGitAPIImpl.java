@@ -39,6 +39,7 @@ import org.kohsuke.stapler.framework.io.WriterOutputStream;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -829,7 +830,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (out==null)  throw new IllegalStateException();
 
                 try {
-                    WriterOutputStream w = new WriterOutputStream(out);
+                    // "git whatchanged" std output gives us byte stream of data
+                    // Commit messages in that byte stream are UTF-8 encoded.
+                    // We want to decode bytestream to strings using UTF-8 encoding.
+
+                    WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"));
                     try {
                         if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
                             throw new GitException("Error launching git whatchanged");
