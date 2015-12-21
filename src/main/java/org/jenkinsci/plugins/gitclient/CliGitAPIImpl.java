@@ -1340,31 +1340,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                                 Integer timeout) throws GitException, InterruptedException {
 
         File key = null;
+        String user = null;
         File ssh = null;
         File pass = null;
         File store = null;
         EnvVars env = environment;
         boolean deleteWorkDir = false;
         try {
+            env = new EnvVars(env);
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
-
                 key = createSshKeyFile(key, sshUser);
+                user = sshUser.getUsername();
                 if (launcher.isUnix()) {
-                    ssh =  createUnixGitSSH(key, sshUser.getUsername());
                     pass =  createUnixSshAskpass(sshUser);
                 } else {
-                    ssh =  createWindowsGitSSH(key, sshUser.getUsername());
                     pass =  createWindowsSshAskpass(sshUser);
                 }
-
-                env = new EnvVars(env);
-                env.put("GIT_SSH", ssh.getAbsolutePath());
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
             }
 
-            if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
+            if ("".equals(url.getScheme()) || "ssh".equals(url.getScheme())) {
+                if (launcher.isUnix()) {
+                    ssh = createUnixGitSSH(key, user);
+                } else {
+                    ssh = createWindowsGitSSH(key, user);
+                }
+                env.put("GIT_SSH", ssh.getAbsolutePath());
+            } else if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
                 if (credentials != null) {
                     listener.getLogger().println("using .gitcredentials to set credentials");
                     if (!isAtLeastVersion(1,7,9,0))
@@ -1631,7 +1635,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             w = new PrintWriter(ssh);
             w.println("@echo off");
-            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
+            w.print("\"" + sshexe.getAbsolutePath() + "\"");
+            if (key != null) {
+                w.print(" -i \"" + key.getAbsolutePath() + "\"");
+            }
+            if (user != null) {
+                w.print(" -l \"" + user + "\"");
+            }
+            w.print(" -o StrictHostKeyChecking=no");
+            w.println(" %* ");
             w.flush();
         } finally {
             if (w != null) {
@@ -1651,7 +1663,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         w.println("  DISPLAY=:123.456");
         w.println("  export DISPLAY");
         w.println("fi");
-        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+        w.print("ssh");
+        if (key != null) {
+            w.print(" -i \"" + key.getAbsolutePath() + "\"");
+        }
+        if (user != null) {
+            w.print(" -l \"" + user + "\"");
+        }
+        w.print(" -o StrictHostKeyChecking=no");
+        w.println(" \"$@\" ");
         w.close();
         ssh.setExecutable(true);
         return ssh;
