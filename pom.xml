@@ -10,7 +10,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>1.20.0-beta3-SNAPSHOT</version>
+  <version>1.19.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
@@ -51,7 +51,7 @@
     <!-- Generating site report with "mvn site" fails without these updated versions. -->
     <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
     <maven-enforcer-plugin.version>1.4</maven-enforcer-plugin.version>
-    <maven-hpi-plugin.version>1.113</maven-hpi-plugin.version>
+    <maven-hpi-plugin.version>1.115</maven-hpi-plugin.version>
     <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
@@ -95,6 +95,14 @@
       <version>${jgit.version}</version>
     </dependency>
     <dependency>
+      <!-- Include jgit java7 component so that jgit can support
+           symbolic links when running on Java 7 with a file system
+           which supports symbolic links. See JENKINS-30371 -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.java7</artifactId>
+      <version>${jgit.version}</version>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
@@ -121,7 +129,7 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>jsr305</artifactId>
-      <version>3.0.0</version>
+      <version>3.0.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -155,7 +163,7 @@
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
       <artifactId>annotations</artifactId>
-      <version>3.0.0</version>
+      <version>3.0.1u2</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -209,6 +217,7 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <version>${findbugs-maven-plugin.version}</version>
         <configuration>
+          <skip>${skipFindbugs}</skip>
           <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
           <failOnError>${maven.findbugs.failure.strict}</failOnError>
           <xmlOutput>true</xmlOutput>
@@ -217,13 +226,26 @@
         <executions>
           <execution>
             <id>run-findbugs</id>
-            <phase>verify</phase> 
+            <phase>verify</phase>
             <goals>
-              <goal>check</goal> 
+              <goal>check</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>java-6</id>
+      <activation>
+        <jdk>1.6</jdk>
+      </activation>
+      <properties>
+        <!-- Findbugs requires Java 7. This allows default run
+             of findbugs on every compile, unless running Java 6 -->
+        <skipFindbugs>true</skipFindbugs>
+      </properties>
+    </profile>
+  </profiles>
 </project>
