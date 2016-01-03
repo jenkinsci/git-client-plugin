@@ -1774,29 +1774,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * parseBranches.
+     * Parse branch name and SHA1 from "fos" argument string.
      *
-     * @param fos a {@link java.lang.String} object.
+     * Argument content must match "git branch -v --no-abbrev".
+     *
+     * One branch per line, two leading characters ignored on each
+     * line, the branch name (not allowed to contain spaces), one or
+     * more spaces, and the 40 character SHA1 of the commit that is
+     * the head of that branch. Text after the SHA1 is ignored.
+     *
+     * @param fos output of "git branch -v --no-abbrev"
      * @return a {@link java.util.Set} object.
-     * @throws hudson.plugins.git.GitException if underlying git operation fails.
-     * @throws java.lang.InterruptedException if interrupted.
      */
-    protected Set<Branch> parseBranches(String fos) throws GitException, InterruptedException {
-        // TODO: git branch -a -v --abbrev=0 would do this in one shot..
-
+    private Set<Branch> parseBranches(String fos) {
         Set<Branch> branches = new HashSet<Branch>();
-
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
         String line;
         try {
             while ((line = rdr.readLine()) != null) {
-                // Ignore the 1st
-                line = line.substring(2);
-                // Ignore '(no branch)' or anything with " -> ", since I think
-                // that's just noise
-                if ((!line.startsWith("("))
-                    && (line.indexOf(" -> ") == -1)) {
-                    branches.add(new Branch(line, revParse(line)));
+                // Ignore leading 2 characters (marker for current branch)
+                // Ignore line if second field is not SHA1 length (40 characters)
+                // Split fields into branch name, SHA1, and rest of line
+                // Fields are separated by one or more spaces
+                String[] branchVerboseOutput = line.substring(2).split(" +", 3);
+                if (branchVerboseOutput[1].length() == 40) {
+                    branches.add(new Branch(branchVerboseOutput[0], ObjectId.fromString(branchVerboseOutput[1])));
                 }
             }
         } catch (IOException e) {
@@ -1816,7 +1818,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public Set<Branch> getBranches() throws GitException, InterruptedException {
-        return parseBranches(launchCommand("branch", "-a"));
+        return parseBranches(launchCommand("branch", "-a", "-v", "--no-abbrev"));
     }
 
     /**
@@ -2554,9 +2556,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throws GitException, InterruptedException {
         final String commandOutput;
         if (allBranches) {
-            commandOutput = launchCommand("branch", "-a", "--contains", revspec);
+            commandOutput = launchCommand("branch", "-a", "-v", "--no-abbrev", "--contains", revspec);
         } else {
-            commandOutput = launchCommand("branch", "--contains", revspec);
+            commandOutput = launchCommand("branch", "-v", "--no-abbrev", "--contains", revspec);
         }
         return new ArrayList<Branch>(parseBranches(commandOutput));
     }
