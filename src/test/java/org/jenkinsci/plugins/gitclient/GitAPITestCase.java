@@ -87,6 +87,12 @@ public abstract class GitAPITestCase extends TestCase {
     private static final String LOGGING_STARTED = "Logging started";
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
+    private String revParseBranchName = null;
+
+    private void createRevParseBranch() throws GitException, InterruptedException {
+        revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
+        w.git.checkout("origin/master", revParseBranchName);
+    }
 
     /**
      * One local workspace of a Git repository on a temporary directory
@@ -306,6 +312,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
+        revParseBranchName = null;
         setTimeoutVisibleInCurrentTest(true);
         expectedTimeouts = null;
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
@@ -351,6 +358,20 @@ public abstract class GitAPITestCase extends TestCase {
         throw new IllegalStateException();
     }
 
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The createRevParseBranch call
+     * creates a branch whose name is unknown to the tests. This
+     * checks that the branch name is not mentioned in a call to
+     * git rev-parse.
+     */
+    private void checkRevParseCalls(String branchName) {
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        // Linux uses rev-parse without quotes
+        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
+        // Windows quotes the rev-parse argument
+        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
+    }
+
     private void checkTimeout() {
         List<Integer> timeouts = handler.getTimeouts();
         if (expectedTimeouts == null) {
@@ -379,6 +400,9 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             if (getTimeoutVisibleInCurrentTest()) {
                 checkTimeout();
+            }
+            if (revParseBranchName != null) {
+                checkRevParseCalls(revParseBranchName);
             }
         } finally {
             handler.close();
@@ -458,6 +482,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         int newTimeout = 7;
         w.git.clone_().timeout(newTimeout).url(localMirror()).repositoryName("origin").execute();
+        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
@@ -480,6 +505,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_shallow() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
+        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
@@ -500,6 +526,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_shared() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
@@ -510,6 +537,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_reference() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(localMirror()).execute();
+        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
