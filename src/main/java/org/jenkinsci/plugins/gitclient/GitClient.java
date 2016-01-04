@@ -815,6 +815,13 @@ public interface GitClient {
     ChangelogCommand changelog();
 
     /**
+    * Returns a {@link org.jenkinsci.plugins.gitclient.LogCommand} to build up the git-log invocation.
+    *
+    * @return a {@link org.jenkinsci.plugins.gitclient.LogCommand} object.
+    */
+    LogCommand log();
+
+    /**
      * Appends to an existing git-note on the current HEAD commit.
      *
      * If a note doesn't exist, it works just like {@link #addNote(String, String)}
@@ -932,4 +939,7 @@ public interface GitClient {
      * @throws java.lang.InterruptedException on thread interruption
      */
     List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
+
+    CherryPickCommand cherryPick();
+
 }

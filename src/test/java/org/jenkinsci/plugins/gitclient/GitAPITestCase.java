@@ -3102,6 +3102,66 @@ public abstract class GitAPITestCase extends TestCase {
         check_changelog_sha1(sha1, "master");
     }
 
+    @NotImplementedInJGit
+    public void test_log() throws Exception {
+        w = clone(localMirror());
+        String sha1Prev = w.git.revParse("HEAD").name();
+        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
+        w.git.add("changelog-file");
+        w.git.commit("changelog-commit-message");
+        String sha1 = w.git.revParse("HEAD").name();
+        check_log_sha1(sha1, "master");
+    }
+
+    @NotImplementedInJGit
+    public void test_log_exclude_cherry_pick() throws Exception {
+        w = clone(localMirror());
+
+        //create empty branch
+        w.git.branch("branch1");
+
+        w.touch("changelog-file", "changelog-file-content-1");
+        w.git.add("changelog-file");
+        w.git.commit("changelog-commit-message");
+        String shaCommit1 = w.git.revParse("HEAD").name();
+
+        w.touch("changelog-file-2", "changelog-file-content-2");
+        w.git.add("changelog-file-2");
+        w.git.commit("changelog-commit-message-2");
+        String shaCommit2 = w.git.revParse("HEAD").name();
+
+        w.git.branch("branch2");
+
+        w.git.checkout().ref("branch1").execute();
+        //execute cherry pick command
+        w.git.cherryPick().commit(shaCommit2).execute();
+
+        LogCommand logCommand = w.git.log();
+        logCommand.revisionRange("branch1", "branch2", true);
+        check_log_sha1(shaCommit1, logCommand);
+    }
+
+    private void check_log_sha1(final String sha1, final String branchName) throws InterruptedException
+    {
+        LogCommand changelogCommand = w.git.log();
+        changelogCommand.max(1);
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
+        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
+    }
+
+    private void check_log_sha1(final String sha1, LogCommand changelogCommand) throws InterruptedException
+    {
+        changelogCommand.max(5);
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
+        assertEquals("Wrong changelog line 1 using command " + changelogCommand + ", chagelog:\n"+writer.toString(), "commit " + sha1, splitLog[0]);
+    }
+
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());
         ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");

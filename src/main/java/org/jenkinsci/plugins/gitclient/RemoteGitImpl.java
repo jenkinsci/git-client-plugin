@@ -374,6 +374,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
        return command(RebaseCommand.class);
     }
 
+    @Override
+    public CherryPickCommand cherryPick() {
+        return command(CherryPickCommand.class);
+    }
+
     /**
      * init_.
      *
@@ -679,6 +684,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return command(ChangelogCommand.class);
     }
 
+    public LogCommand log() {
+        return command(LogCommand.class);
+    }
+
     /** {@inheritDoc} */
     public void appendNote(String note, String namespace) throws GitException, InterruptedException {
         proxy.appendNote(note, namespace);
@@ -877,4 +886,5 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
             throws GitException, InterruptedException {
         return getGitAPI().getBranchesContaining(revspec, allBranches);
     }
+
 }
