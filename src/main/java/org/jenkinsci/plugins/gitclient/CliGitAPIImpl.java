@@ -621,6 +621,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * cherry-pick.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CherryPickCommand} object.
+     */
+    @Override
+    public CherryPickCommand cherryPick() {
+    	 return new CherryPickCommand() {
+             private String commit;
+
+             @Override
+            public CherryPickCommand commit(String sha1) {
+            	this.commit = sha1;
+            	return this;
+            }
+            
+            public void execute() throws GitException, InterruptedException {
+                 try {
+                     ArgumentListBuilder args = new ArgumentListBuilder();
+                     args.add("cherry-pick");
+                     args.add(commit);
+                     launchCommand(args);
+                 } catch (GitException e) {
+                     launchCommand("cherry-pick", "--abort");
+                     throw new GitException("Could not cherry-pick " + commit, e);
+                 }
+             }
+         };
+    }
+    
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
@@ -842,6 +872,77 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         };
     }
+    
+    /** {@inheritDoc} */
+	public LogCommand log() {
+        return new LogCommand() {
+
+            /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
+            public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
+            
+            Integer n = null;
+            Writer out = null;
+            String revisionRange = null;
+            boolean cherryPick = false;
+            
+            public LogCommand to(Writer w) {
+                this.out = w;
+                return this;
+            }
+
+            public LogCommand max(int n) {
+                this.n = n;
+                return this;
+            }
+            
+			public LogCommand revisionRange(String fromRevision, String toRevision, boolean cherryPick) {
+				if(cherryPick)
+				{
+					revisionRange = fromRevision + "..." + toRevision;
+					this.cherryPick = true;					
+				} else {
+					revisionRange = fromRevision + ".." + toRevision;
+					this.cherryPick = false;
+				}
+				return this;
+			}
+            
+            public void abort() {
+                /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
+            }
+            
+            public void execute() throws GitException, InterruptedException {
+            	ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--no-merges", "--no-abbrev", "-M");
+            	if(cherryPick)
+            		args.add("--right-only", "--cherry-pick");
+                args.add("--format="+RAW);
+                if (n!=null)
+                    args.add("-n").add(n);                
+                args.add(revisionRange);                
+                if (out==null)  throw new IllegalStateException();
+                
+                try {
+                    WriterOutputStream w = new WriterOutputStream(out);
+                    try {
+                        if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
+                            throw new GitException("Error launching git whatchanged");
+                    } finally {
+                        w.flush();
+                    }
+                } catch (IOException e) {
+                    throw new GitException("Error launching git whatchanged",e);
+                }
+            }
+            
+            @Override
+            public String toString() {
+            	return "Cli LogCommand[n: "+n + "," +
+                "revisionRange: "+
+                "cherryPick: "+cherryPick+"]";
+            }
+
+        };
+	}
 
     /** {@inheritDoc} */
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
@@ -2631,6 +2732,5 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
     }
-
 
 }

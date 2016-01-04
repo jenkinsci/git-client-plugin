@@ -21,6 +21,7 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.IOUtils;
 
 import java.io.File;
@@ -49,6 +50,8 @@ import javax.annotation.Nullable;
 
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
+import org.eclipse.jgit.api.CherryPickResult;
+import org.eclipse.jgit.api.CherryPickResult.CherryPickStatus;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.FetchCommand;
@@ -1174,7 +1177,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         };
     }
-
+    
+	public LogCommand log() {
+		throw new UnsupportedOperationException("Not implemented using JGIT, use cli git instead");		
+	}
+    
     /**
      * Formats {@link RevCommit}.
      */
@@ -1599,7 +1606,44 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         };
     }
+    
+    /**
+     * cherry-pick.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CherryPickCommand} object.
+     */
+    @Override
+    public CherryPickCommand cherryPick() {
+    	 return new CherryPickCommand() {
+             private String commit;
 
+             @Override
+            public CherryPickCommand commit(String sha1) {
+            	this.commit = sha1;
+            	return this;
+            }
+            
+            public void execute() throws GitException, InterruptedException {
+            	 Repository repo = null;
+                 try {
+                     repo = getRepository();
+                     Git git = git(repo);
+                     CherryPickResult cherryPickResult = git.cherryPick().include(repo.resolve(commit)).call();
+                     if (cherryPickResult.getStatus()!=CherryPickStatus.OK) {
+                    	 //TODO: how abort cherry pick in jgit??
+                         throw new GitException("Failed to cherry-pick " + commit);
+                     }
+                 } catch (GitAPIException e) {
+                     throw new GitException("Failed to cherry-pick " + commit, e);
+                 } catch(IOException e) {
+                	 throw new GitException("Failed to cherry-pick " + commit, e);
+                 } finally {
+                     if (repo != null) repo.close();
+                 }
+             }
+         };
+    }
+    
     /** {@inheritDoc} */
     public void deleteTag(String tagName) throws GitException {
         Repository repo = null;
@@ -2777,4 +2821,5 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         repo.close();
         return config;
     }
+
 }
