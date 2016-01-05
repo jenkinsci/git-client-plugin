@@ -919,7 +919,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (n!=null)
                     args.add("-n").add(n);                
                 args.add(revisionRange);                
-                if (out==null)  throw new IllegalStateException();
+                if (out==null)  throw new IllegalStateException("Output writer is null! Set with method LogCommand.to(Writer w)");
 
                 try {
                     WriterOutputStream w = new WriterOutputStream(out);
