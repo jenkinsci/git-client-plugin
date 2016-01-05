@@ -806,21 +806,21 @@ public interface GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      */
     void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException;
-    
+
     /**
      * Returns a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} to build up the git-log invocation.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand changelog();
-    
+
     /**
     * Returns a {@link org.jenkinsci.plugins.gitclient.LogCommand} to build up the git-log invocation.
     *
     * @return a {@link org.jenkinsci.plugins.gitclient.LogCommand} object.
     */
     LogCommand log();
-    
+
     /**
      * Appends to an existing git-note on the current HEAD commit.
      *
