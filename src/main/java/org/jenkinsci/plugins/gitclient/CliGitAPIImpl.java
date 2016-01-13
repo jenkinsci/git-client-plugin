@@ -1392,7 +1392,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     String fileStore = launcher.isUnix() ? store.getAbsolutePath() : "\\\"" + store.getAbsolutePath() + "\\\"";
                     if (credentials instanceof UsernameCredentials) {
                             UsernameCredentials userCredentials = (UsernameCredentials) credentials;
-                            launchCommandIn(workDir, "config", "--local", "credential.username", userCredentials.getUsername());
+                            String username = userCredentials.getUsername();
+                            if (username.trim().isEmpty()) {
+                                String configOutput = launchCommandIn(workDir, "config", "--local", "--list");
+                                if (configOutput.contains("credential.username=")) {
+                                    launchCommandIn(workDir, "config", "--local", "--unset-all", "credential.username");
+                                }
+                            } else {
+                                launchCommandIn(workDir, "config", "--local", "credential.username", userCredentials.getUsername());
+                            }
                     }
                     launchCommandIn(workDir, "config", "--local", "credential.helper", "store --file=" + fileStore);
                 }
