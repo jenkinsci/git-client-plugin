@@ -3835,4 +3835,32 @@ public abstract class GitAPITestCase extends TestCase {
      */
     protected abstract String getRemoteBranchPrefix();
 
+    /**
+     * Test parsing of changelog with unicode characters in commit messages.
+     */
+    public void test_unicodeCharsInChangelog() throws Exception {
+
+        // Test for
+        //   https://issues.jenkins-ci.org/browse/JENKINS-6203
+        //   https://issues.jenkins-ci.org/browse/JENKINS-14798
+        //   https://issues.jenkins-ci.org/browse/JENKINS-23091
+
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/unicodeCharsInChangelogRepo.zip"), tempRemoteDir);
+        File pathToTempRepo = new File(tempRemoteDir, "unicodeCharsInChangelogRepo");
+        w = clone(pathToTempRepo.getAbsolutePath());
+
+        // w.git.changelog gives us strings
+        // We want to collect all the strings and check that unicode characters are still there.
+
+        StringWriter sw = new StringWriter();
+        w.git.changelog("v0", "vLast", sw);
+        String content = sw.toString();
+
+        assertTrue(content.contains("hello in English: hello"));
+        assertTrue(content.contains("hello in Russian: \u043F\u0440\u0438\u0432\u0435\u0442 (priv\u00E9t)"));
+        assertTrue(content.contains("hello in Chinese: \u4F60\u597D (n\u01D0 h\u01CEo)"));
+        assertTrue(content.contains("hello in French: \u00C7a va ?"));
+        assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
+    }
 }
