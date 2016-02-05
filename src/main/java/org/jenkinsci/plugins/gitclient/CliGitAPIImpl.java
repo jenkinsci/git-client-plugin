@@ -1619,6 +1619,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // Search for git on the PATH, then look near it
         String gitPath = getPathToExe(gitExe);
         if (gitPath != null) {
+            sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/bin/", "/usr/bin/").replace("\\bin\\", "\\usr\\bin\\"));
+            if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
             // In case we are using msysgit from the cmd directory
             // instead of the bin directory, replace cmd with bin in
             // the path while trying to find ssh.exe.
