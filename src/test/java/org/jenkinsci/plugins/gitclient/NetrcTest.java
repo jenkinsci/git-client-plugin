@@ -6,16 +6,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import org.apache.commons.io.IOUtils;
 
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class NetrcTest
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     private static final String TEST_NETRC_FILE_1 = "netrc_1";
     private static final String TEST_NETRC_FILE_1a = "netrc_1a";
     private static final String TEST_NETRC_FILE_2 = "netrc_2";
@@ -75,52 +80,28 @@ public class NetrcTest
         }
     }
 
-
-    private void copyFileContents(String _source, String _destination) throws IOException
+    private void copyFileContents(InputStream sourceStream, FileOutputStream destinationStream) throws IOException
     {
-        FileChannel inputChannel = null;
-        FileChannel outputChannel = null;
-        try {
-            inputChannel = new FileInputStream(_source).getChannel();
-            outputChannel = new FileOutputStream(_destination).getChannel();
-            outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-        } finally {
-            if (inputChannel != null) inputChannel.close();
-            if (outputChannel != null) outputChannel.close();
-        }
+        IOUtils.copy(sourceStream, destinationStream);
+        IOUtils.closeQuietly(sourceStream);
+        IOUtils.closeQuietly(destinationStream);
     }
 
 
     @Before
     public void setup() throws IOException
     {
-        URL testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_1 + ".in");
-        if (testNetrc == null) {
-            testFilePath_1 = null;
-        }
-        else {
-            String path = testNetrc.getPath();
-            testFilePath_1 = path.substring(0, path.length()-3);
-            copyFileContents(path, testFilePath_1);
-        }
+        testFilePath_1 = folder.newFile(TEST_NETRC_FILE_1).getAbsolutePath();
+        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_1 + ".in"),
+                new FileOutputStream(testFilePath_1));
 
-        testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_1a + ".in");
-        if (testNetrc == null) {
-            testFilePath_1a = null;
-        }
-        else {
-            testFilePath_1a = testNetrc.getPath();
-        }
+        testFilePath_1a = folder.newFile(TEST_NETRC_FILE_1a).getAbsolutePath();
+        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_1a + ".in"),
+                new FileOutputStream(testFilePath_1a));
 
-        testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_2 + ".in");
-        if (testNetrc == null) {
-            testFilePath_2 = null;
-        }
-        else {
-            String path = testNetrc.getPath();
-            testFilePath_2 = path.substring(0, path.length()-3);
-            copyFileContents(path, testFilePath_2);
-        }
+        testFilePath_2 = folder.newFile(TEST_NETRC_FILE_2).getAbsolutePath();
+        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_2 + ".in"),
+                new FileOutputStream(testFilePath_2));
     }
 
 
@@ -196,7 +177,7 @@ public class NetrcTest
     {
         String testFilePath = testFilePath_1 + "_m";
 
-        copyFileContents(testFilePath_1, testFilePath);
+        copyFileContents(new FileInputStream(testFilePath_1), new FileOutputStream(testFilePath));
 
         Netrc netrc = Netrc.getInstance(testFilePath);
         assertNotNull(netrc);
@@ -218,7 +199,7 @@ public class NetrcTest
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) { /* ignored */ }
-        copyFileContents(testFilePath_1a, testFilePath);
+        copyFileContents(new FileInputStream(testFilePath_1a), new FileOutputStream(testFilePath));
 
 
         assertCredentials(TestHost.H1_01, netrc.getCredentials(TestHost.H1_01.machine));
