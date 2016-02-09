@@ -1648,7 +1648,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             w = new PrintWriter(ssh);
             w.println("@echo off");
-            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no -o BatchMode=yes %* ");
+            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
             w.flush();
         } finally {
             if (w != null) {
@@ -1668,7 +1668,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         w.println("  DISPLAY=:123.456");
         w.println("  export DISPLAY");
         w.println("fi");
-        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no -o BatchMode=yes \"$@\"");
+        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         w.close();
         ssh.setExecutable(true);
         return ssh;
