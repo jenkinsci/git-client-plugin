@@ -62,9 +62,9 @@ import java.util.regex.Pattern;
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
-    private static final boolean acceptSelfSignedCertificates;
+    private static final boolean ACCEPT_SELF_SIGNED_CERTIFICATES;
     static {
-        acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
+        ACCEPT_SELF_SIGNED_CERTIFICATES = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
     }
 
     private static final long serialVersionUID = 1;
@@ -163,7 +163,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.gitExe = gitExe;
         this.environment = environment;
 
-        launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+        launcher = new LocalLauncher(IGitAPI.VERBOSE ?listener:TaskListener.NULL);
     }
 
     /** {@inheritDoc} */
@@ -1074,7 +1074,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         if (remotes.contains(_default_)) {
             return _default_;
-        } else if ( remotes.size() >= 1 ) {
+        } else if ( !remotes.isEmpty() ) {
             return remotes.get(0);
         } else {
             throw new GitException("No remotes found!");
@@ -1850,7 +1850,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             for(Ref candidate : refs.values()) {
                 if(candidate.getName().startsWith(Constants.R_REMOTES)) {
                     Branch buildBranch = new Branch(candidate);
-                    if (!GitClient.quietRemoteBranches) {
+                    if (!GitClient.QUIET_REMOTE_BRANCHES) {
                         listener.getLogger().println("Seen branch in repository " + buildBranch.getName());
                     }
                     branches.add(buildBranch);
@@ -2223,7 +2223,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             List<ObjectId> revs = revList(commit.name());
 
-            return revs.size() != 0;
+            return !revs.isEmpty();
         } catch (GitException e) {
             return false;
         }
