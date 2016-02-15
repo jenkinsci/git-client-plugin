@@ -676,10 +676,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String arg = sanitize(revName + "^{commit}");
         String result = launchCommand("rev-parse", arg);
-        String line = firstLine(result);
+        String line = StringUtils.trimToNull(result);
         if (line == null)
             throw new GitException("rev-parse no content returned for " + revName);
-        return ObjectId.fromString(line.trim());
+        return ObjectId.fromString(line);
     }
 
     /**
@@ -729,10 +729,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
         String result = launchCommand("rev-parse", "--verify", revName);
-        String line = firstLine(result);
+        String line = StringUtils.trimToNull(result);
         if (line == null)
-            throw new GitException("null first line from rev-parse(" + revName +")");
-        return ObjectId.fromString(line.trim());
+            throw new GitException("null result from rev-parse(" + revName +")");
+        return ObjectId.fromString(line);
     }
 
     /** {@inheritDoc} */
@@ -1101,11 +1101,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String gitDir = "--git-dir=" + GIT_DIR;
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
-        String line = firstLine(ret);
+        String line = StringUtils.trimToNull(ret);
         if (line == null)
             throw new GitException("No output from bare repository check for " + GIT_DIR);
 
-        return !"false".equals(line.trim());
+        return !"false".equals(line);
     }
 
     public boolean isShallowRepository() {
