@@ -731,9 +731,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
         String result = launchCommand("rev-parse", "--verify", revName);
-        String line = firstLine(result);
+        String line = firstNonBlankLine(result);
         if (line == null)
-            throw new GitException("null first line from rev-parse(" + revName +")");
+            throw new GitException("null result from rev-parse(" + revName +")");
         return ObjectId.fromString(line.trim());
     }
 
@@ -1103,7 +1103,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String gitDir = "--git-dir=" + GIT_DIR;
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
-        String line = firstLine(ret);
+        String line = firstNonBlankLine(ret);
         if (line == null)
             throw new GitException("No output from bare repository check for " + GIT_DIR);
 

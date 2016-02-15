@@ -17,6 +17,17 @@ public class GitOutputUtilsTest {
     }
 
     @Test
+    public void testFirstNonBlankLine_TwoResults() throws Exception {
+        String expected = "58c8401641511340b7d919a4e6b805d9f3416d3f";
+        String second = "61c8401641511340b7d919a4e6b805d9f3416d1c";
+
+        String result = GitOutputUtils.firstNonBlankLine("\n" + expected + "\n" + second);
+
+        assertNotNull(result);
+        assertEquals(expected, result);
+    }
+
+    @Test
     public void testFirstNonBlankLine_EmptyLine() throws Exception {
         String result = GitOutputUtils.firstNonBlankLine("\n");
 
