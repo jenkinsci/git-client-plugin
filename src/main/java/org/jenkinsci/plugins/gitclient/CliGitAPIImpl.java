@@ -53,6 +53,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import static org.jenkinsci.plugins.gitclient.utils.GitOutputUtils.firstNonBlankLine;
+
 
 /**
  * Implementation class using command line CLI ran as external command.
@@ -676,7 +678,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String arg = sanitize(revName + "^{commit}");
         String result = launchCommand("rev-parse", arg);
-        String line = firstLine(result);
+        String line = firstNonBlankLine(result);
         if (line == null)
             throw new GitException("rev-parse no content returned for " + revName);
         return ObjectId.fromString(line.trim());
