@@ -161,13 +161,25 @@ public abstract class GitAPITestCase extends TestCase {
             return launchCommand(ignoreError, args.split(" "));
         }
 
+        String cmdIn(File path, String args) throws IOException, InterruptedException {
+            return launchCommandIn(path, args.split(" "));
+        }
+
         String launchCommand(String... args) throws IOException, InterruptedException {
             return launchCommand(false, args);
         }
 
         String launchCommand(boolean ignoreError, String... args) throws IOException, InterruptedException {
+            return launchCommandIn(repo, ignoreError, args);
+        }
+
+        String launchCommandIn(File path, String... args) throws IOException, InterruptedException {
+            return launchCommandIn(path, false, args);
+        }
+
+        String launchCommandIn(File path, boolean ignoreError, String... args) throws IOException, InterruptedException {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
+            int st = new Launcher.LocalLauncher(listener).launch().pwd(path).cmds(args).
                     envs(env).stdout(out).join();
             String s = out.toString();
             if (!ignoreError) {
@@ -1967,6 +1979,31 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
         assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
         assertFixSubmoduleUrlsThrows();
+    }
+
+    @NotImplementedInJGit
+    public void test_submodule_update_force() throws Exception {
+        w.init();
+        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
+        w.git.checkout().branch("tests/getSubmodules").ref("sub2_origin/tests/getSubmodules").deleteBranchIfExist(true).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().execute();
+
+        // Check to make sure we have a CHANGELOG file
+        assertTrue("modules/ntp/CHANGELOG does not exist", w.exists("modules/ntp/CHANGELOG"));
+
+        // delete the CHANGELOG file from the submodule
+        w.cmdIn(w.file("modules/ntp"), "git rm CHANGELOG");
+
+        // perform a submodule update without force, and ensure that it does
+        // not add the file back
+        w.git.submoduleUpdate().execute();
+        assertFalse("modules/ntp/CHANGELOG exists", w.exists("modules/ntp/CHANGELOG"));
+
+        // perform a forced submodule update and ensure that everything is
+        // rechecked out correctly
+        w.git.submoduleUpdate().force(true).execute();
+        assertTrue("modules/ntp/CHANGELOG does not exist", w.exists("modules/ntp/CHANGELOG"));
     }
 
     @NotImplementedInJGit

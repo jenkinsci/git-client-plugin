@@ -2135,11 +2135,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
             boolean recursive      = false;
+            boolean force          = false;
             boolean remoteTracking = false;
             String  ref            = null;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand force(boolean force){
+                this.force = force;
                 return this;
             }
 
@@ -2167,6 +2173,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (remoteTracking) {
                     listener.getLogger().println("[ERROR] JGit doesn't support remoteTracking submodules yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if (force) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support force updating submodules yet.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
                 if ((ref != null) && !ref.isEmpty()) {
