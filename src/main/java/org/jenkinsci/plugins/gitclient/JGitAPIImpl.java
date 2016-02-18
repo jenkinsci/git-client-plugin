@@ -566,7 +566,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
-                throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
+                if (shallow) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                }
+                return this;
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand timeout(Integer timeout) {
@@ -580,7 +583,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand depth(Integer depth) {
-                throw new UnsupportedOperationException("JGit don't (yet) support fetch --depth");
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                return this;
             }
 
             public void execute() throws GitException, InterruptedException {
