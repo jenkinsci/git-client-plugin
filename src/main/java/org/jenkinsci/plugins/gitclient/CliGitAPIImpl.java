@@ -53,8 +53,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import static org.jenkinsci.plugins.gitclient.utils.GitOutputUtils.firstNonBlankLine;
-
 
 /**
  * Implementation class using command line CLI ran as external command.
@@ -678,7 +676,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String arg = sanitize(revName + "^{commit}");
         String result = launchCommand("rev-parse", arg);
-        String line = firstNonBlankLine(result);
+        String line = StringUtils.trim(result);
         if (line == null)
             throw new GitException("rev-parse no content returned for " + revName);
         return ObjectId.fromString(line.trim());
@@ -731,7 +729,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public ObjectId validateRevision(String revName) throws GitException, InterruptedException {
         String result = launchCommand("rev-parse", "--verify", revName);
-        String line = firstNonBlankLine(result);
+        String line = StringUtils.trim(result);
         if (line == null)
             throw new GitException("null result from rev-parse(" + revName +")");
         return ObjectId.fromString(line.trim());
@@ -1103,7 +1101,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String gitDir = "--git-dir=" + GIT_DIR;
             ret = launchCommand(gitDir, "rev-parse", "--is-bare-repository");
         }
-        String line = firstNonBlankLine(ret);
+        String line = StringUtils.trim(ret);
         if (line == null)
             throw new GitException("No output from bare repository check for " + GIT_DIR);
 
