@@ -478,7 +478,7 @@ public abstract class GitAPITestCase extends TestCase {
      * otherwise no branch is checked out. That is different than the
      * command line git program, but consistent within the git API.
      */
-    public void test_clone() throws IOException, InterruptedException
+    public void test_clone() throws Exception
     {
         int newTimeout = 7;
         w.git.clone_().timeout(newTimeout).url(localMirror()).repositoryName("origin").execute();
@@ -488,6 +488,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        assertFalse("Unexpected shallow clone", w.cgit().isShallowRepository());
 
         setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
@@ -502,7 +503,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
-    public void test_clone_shallow() throws IOException, InterruptedException
+    public void test_clone_shallow() throws Exception
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
@@ -512,6 +513,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         /* JGit does not support shallow clone */
+        assertEquals("isShallow?", w.igit() instanceof CliGitAPIImpl, w.cgit().isShallowRepository());
         final String shallow = ".git" + File.separator + "shallow";
         assertEquals("Shallow file existence: " + shallow, w.igit() instanceof CliGitAPIImpl, w.exists(shallow));
     }
