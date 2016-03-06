@@ -493,6 +493,19 @@ public abstract class GitAPITestCase extends TestCase {
         setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
 
+    public void test_checkout_exception() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        createRevParseBranch();
+        w.git.checkout("origin/master", "master");
+        final String SHA1 = "feedbeefbeaded";
+        try {
+            w.git.checkout(SHA1, "master");
+            fail("Excepted checkout exception not thrown");
+        } catch (GitException ge) {
+            assertEquals("Could not checkout master with start point " + SHA1, ge.getMessage());
+        }
+    }
+
     public void test_clone_repositoryName() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("upstream").execute();
