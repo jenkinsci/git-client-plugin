@@ -2248,26 +2248,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return oidList;
     }
 
-    private List<ObjectId> doRevList(String... extraArgs) throws GitException, InterruptedException {
-        List<ObjectId> entries = new ArrayList<ObjectId>();
-        ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
-        args.add(extraArgs);
-        String result = launchCommand(args);
-        BufferedReader rdr = new BufferedReader(new StringReader(result));
-        String line;
-
-        try {
-            while ((line = rdr.readLine()) != null) {
-                // Add the SHA1
-                entries.add(ObjectId.fromString(line));
-            }
-        } catch (IOException e) {
-            throw new GitException("Error parsing rev list", e);
-        }
-
-        return entries;
-    }
-
     /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
         if (commit == null) {

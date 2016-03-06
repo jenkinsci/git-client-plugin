@@ -478,7 +478,7 @@ public abstract class GitAPITestCase extends TestCase {
      * otherwise no branch is checked out. That is different than the
      * command line git program, but consistent within the git API.
      */
-    public void test_clone() throws IOException, InterruptedException
+    public void test_clone() throws Exception
     {
         int newTimeout = 7;
         w.git.clone_().timeout(newTimeout).url(localMirror()).repositoryName("origin").execute();
@@ -488,8 +488,22 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        assertFalse("Unexpected shallow clone", w.cgit().isShallowRepository());
 
         setExpectedTimeoutWithAdjustedEnd(newTimeout);
+    }
+
+    public void test_checkout_exception() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        createRevParseBranch();
+        w.git.checkout("origin/master", "master");
+        final String SHA1 = "feedbeefbeaded";
+        try {
+            w.git.checkout(SHA1, "master");
+            fail("Excepted checkout exception not thrown");
+        } catch (GitException ge) {
+            assertEquals("Could not checkout master with start point " + SHA1, ge.getMessage());
+        }
     }
 
     public void test_clone_repositoryName() throws IOException, InterruptedException
@@ -502,7 +516,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
-    public void test_clone_shallow() throws IOException, InterruptedException
+    public void test_clone_shallow() throws Exception
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
@@ -512,6 +526,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         /* JGit does not support shallow clone */
+        assertEquals("isShallow?", w.igit() instanceof CliGitAPIImpl, w.cgit().isShallowRepository());
         final String shallow = ".git" + File.separator + "shallow";
         assertEquals("Shallow file existence: " + shallow, w.igit() instanceof CliGitAPIImpl, w.exists(shallow));
     }
