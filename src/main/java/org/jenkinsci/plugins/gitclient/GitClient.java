@@ -871,6 +871,32 @@ public interface GitClient {
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
+     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * can be parsed by GitChangeLogParser.
+     *
+     * <p>
+     * If useRawOutput is true, the '--raw' option will include commit file information to be passed to the
+     * GitChangeLogParser.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * For merge commit, this method reports one diff per each parent. This makes this method
+     * behave differently from {@link #changelog()}.
+     *
+     * @return The git show output, in <tt>raw</tt> format.
+     * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param useRawOutput a {java.lang.Boolean} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException;
+
+
+    /**
      * Equivalent of "git-describe --tags".
      *
      * Find a nearby tag (including unannotated ones) and come up with a short identifier to describe the tag.
