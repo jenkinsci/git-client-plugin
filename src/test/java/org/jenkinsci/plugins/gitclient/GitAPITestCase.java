@@ -500,7 +500,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String SHA1 = "feedbeefbeaded";
         try {
             w.git.checkout(SHA1, "master");
-            fail("Excepted checkout exception not thrown");
+            fail("Expected checkout exception not thrown");
         } catch (GitException ge) {
             assertEquals("Could not checkout master with start point " + SHA1, ge.getMessage());
         }
