@@ -113,7 +113,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     private static class CommandInvocationHandler implements InvocationHandler, GitCommand, Serializable {
         private final Class<? extends GitCommand> command;
-        private final List<Invocation> invocations = new ArrayList<Invocation>();
+        private final List<Invocation> invocations = new ArrayList<>();
         private transient final Channel channel;
         private final GitClient proxy;
 

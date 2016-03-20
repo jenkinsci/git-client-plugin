@@ -77,7 +77,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     TaskListener listener;
     String gitExe;
     EnvVars environment;
-    private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
+    private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
@@ -435,7 +435,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<RefSpec>(refspecs);
+                this.refspecs = new ArrayList<>(refspecs);
                 return this;
             }
 
@@ -783,7 +783,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
             public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
-            final List<String> revs = new ArrayList<String>();
+            final List<String> revs = new ArrayList<>();
 
             Integer n = null;
             Writer out = null;
@@ -869,7 +869,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         StringWriter writer = new StringWriter();
         writer.write(launchCommand(args));
-        return new ArrayList<String>(Arrays.asList(writer.toString().split("\\n")));
+        return new ArrayList<>(Arrays.asList(writer.toString().split("\\n")));
     }
 
     /**
@@ -911,7 +911,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean remoteTracking                 = false;
             boolean parentCredentials              = false;
             String  ref                            = null;
-            Map<String, String> submodBranch   = new HashMap<String, String>();
+            Map<String, String> submodBranch   = new HashMap<>();
             public Integer timeout;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
@@ -1129,7 +1129,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 new StringReader( launchCommand( "remote" ) )
             );
 
-        List<String> remotes = new ArrayList<String>();
+        List<String> remotes = new ArrayList<>();
 
         String line;
         try {
@@ -1233,7 +1233,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
            ) {
             // The uri is a local path, so we will test to see if it is a bare
             // repository...
-            List<String> paths = new ArrayList<String>();
+            List<String> paths = new ArrayList<>();
             paths.add( origin.getPath() );
             paths.add( pathJoin( origin.getPath(), ".git" ) );
 
@@ -1823,7 +1823,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link java.util.Set} object.
      */
     private Set<Branch> parseBranches(String fos) {
-        Set<Branch> branches = new HashSet<Branch>();
+        Set<Branch> branches = new HashSet<>();
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
         String line;
         try {
@@ -1867,7 +1867,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         try (Repository db = getRepository()) {
             Map<String, Ref> refs = db.getAllRefs();
-            Set<Branch> branches = new HashSet<Branch>();
+            Set<Branch> branches = new HashSet<>();
 
             for(Ref candidate : refs.values()) {
                 if(candidate.getName().startsWith(Constants.R_REMOTES)) {
@@ -2096,7 +2096,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
-        List<IndexEntry> entries = new ArrayList<IndexEntry>();
+        List<IndexEntry> entries = new ArrayList<>();
         String result = launchCommand("ls-tree", recursive?"-r":null, treeIsh);
 
         BufferedReader rdr = new BufferedReader(new StringReader(result));
@@ -2187,7 +2187,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public List<ObjectId> revListAll() throws GitException, InterruptedException {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.all();
         revListCommand.to(oidList);
@@ -2197,7 +2197,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.reference(ref);
         revListCommand.to(oidList);
@@ -2325,7 +2325,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (tagPattern != null)
                 args.add(tagPattern);
             String result = launchCommandIn(args, workspace);
-            Set<String> tags = new HashSet<String>();
+            Set<String> tags = new HashSet<>();
             BufferedReader rdr = new BufferedReader(new StringReader(result));
             String tag;
             while ((tag = rdr.readLine()) != null) {
@@ -2346,7 +2346,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             String result = launchCommandIn(args, workspace);
 
-            Set<String> tags = new HashSet<String>();
+            Set<String> tags = new HashSet<>();
             BufferedReader rdr = new BufferedReader(new StringReader(result));
             String tag;
             while ((tag = rdr.readLine()) != null) {
@@ -2407,7 +2407,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	}
 	try {
 	    String result = launchCommand("for-each-ref", "--format=%(refname)", refPrefix);
-	    Set<String> refs = new HashSet<String>();
+	    Set<String> refs = new HashSet<>();
 	    BufferedReader rdr = new BufferedReader(new StringReader(result));
 	    String ref;
 	    while ((ref = rdr.readLine()) != null) {
@@ -2430,7 +2430,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String result = launchCommandWithCredentials(args, null, cred, url);
 
-        Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
+        Map<String, ObjectId> heads = new HashMap<>();
         String[] lines = result.split("\n");
         for (String line : lines) {
             if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
@@ -2480,7 +2480,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         String result = launchCommandWithCredentials(args, null, cred, url);
 
-        Map<String, ObjectId> references = new HashMap<String, ObjectId>();
+        Map<String, ObjectId> references = new HashMap<>();
         String[] lines = result.split("\n");
         for (String line : lines) {
             if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
@@ -2556,7 +2556,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } else {
             commandOutput = launchCommand("branch", "-v", "--no-abbrev", "--contains", revspec);
         }
-        return new ArrayList<Branch>(parseBranches(commandOutput));
+        return new ArrayList<>(parseBranches(commandOutput));
     }
 
     /** {@inheritDoc} */

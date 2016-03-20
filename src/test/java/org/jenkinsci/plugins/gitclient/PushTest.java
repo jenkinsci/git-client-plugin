@@ -98,7 +98,7 @@ public class PushTest {
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
     public static Collection pushParameters() {
-        List<Object[]> parameters = new ArrayList<Object[]>();
+        List<Object[]> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
             "{0}",
@@ -141,7 +141,7 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = Files.createTempDir();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()

@@ -305,7 +305,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     return;
                 }
 
-                List<String> remoteTrackingBranches = new ArrayList<String>();
+                List<String> remoteTrackingBranches = new ArrayList<>();
                 for (String remote : repo.getRemoteNames()) {
                     // look for exactly ONE remote tracking branch
                     String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
@@ -447,7 +447,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Set<Branch> getBranches() throws GitException {
         try (Repository repo = getRepository()) {
             List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
-            Set<Branch> branches = new HashSet<Branch>(refs.size());
+            Set<Branch> branches = new HashSet<>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
@@ -466,7 +466,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Set<Branch> getRemoteBranches() throws GitException {
         try (Repository repo = getRepository()) {
             List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
-            Set<Branch> branches = new HashSet<Branch>(refs.size());
+            Set<Branch> branches = new HashSet<>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
             }
@@ -548,7 +548,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
 
-                    List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+                    List<RefSpec> refSpecs = new ArrayList<>();
                     if (tags) {
                         // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
                         refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
@@ -564,7 +564,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         // then fetch and let the git recreate them.
                         List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
 
-                        List<String> toDelete = new ArrayList<String>(refs.size());
+                        List<String> toDelete = new ArrayList<>(refs.size());
 
                         for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
                             Ref branchRef = it.next();
@@ -619,7 +619,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             fetch.setCredentialsProvider(getProvider());
 
             // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
-            List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+            List<RefSpec> refSpecs = new ArrayList<>();
             refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
             if (refspec != null && refspec.length > 0)
                 for (RefSpec rs: refspec)
@@ -701,7 +701,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	try (Repository repo = getRepository()) {
 	    Map<String, Ref> refList = repo.getRefDatabase().getRefs(refPrefix);
 	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
-	    Set<String> refs = new HashSet<String>(refList.size());
+	    Set<String> refs = new HashSet<>(refList.size());
 	    for (Ref ref : refList.values()) {
 		refs.add(ref.getName());
 	    }
@@ -713,7 +713,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
-        Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
+        Map<String, ObjectId> heads = new HashMap<>();
         try (Repository repo = openDummyRepository();
              final Transport tn = Transport.open(repo, new URIish(url))) {
             tn.setCredentialsProvider(getProvider());
@@ -731,7 +731,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
             throws GitException, InterruptedException {
-        Map<String, ObjectId> references = new HashMap<String, ObjectId>();
+        Map<String, ObjectId> references = new HashMap<>();
         String regexPattern = null;
         if (pattern != null) {
             regexPattern = createRefRegexFromGlob(pattern);
@@ -886,7 +886,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
 
-            List<String> urls = new ArrayList<String>();
+            List<String> urls = new ArrayList<>();
             urls.addAll(Arrays.asList(config.getStringList("remote", name, "url")));
             urls.add(url);
 
@@ -1220,7 +1220,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<RefSpec>(refspecs);
+                this.refspecs = new ArrayList<>(refspecs);
                 return this;
             }
 
@@ -1495,7 +1495,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository();
              ObjectReader or = repo.newObjectReader();
              RevWalk w = new RevWalk(or)) {
-            List<IndexEntry> r = new ArrayList<IndexEntry>();
+            List<IndexEntry> r = new ArrayList<>();
 
             RevTree t = w.parseTree(repo.resolve(treeIsh));
             SubmoduleWalk walk = new SubmoduleWalk(repo);
@@ -1525,7 +1525,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (tagPattern == null) tagPattern = "*";
 
         try (Repository repo = getRepository()) {
-            Set<String> tags = new HashSet<String>();
+            Set<String> tags = new HashSet<>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
             Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
             for (Ref ref : refList.values()) {
@@ -1545,7 +1545,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (tagPattern == null) tagPattern = "*";
 
         try (Repository repo = getRepository()) {
-            Set<String> tags = new HashSet<String>();
+            Set<String> tags = new HashSet<>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
             Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
             for (Ref ref : refList.values()) {
@@ -1594,7 +1594,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Set<String> branches = listRemoteBranches(remote);
 
-            for (Ref r : new ArrayList<Ref>(gitRepo.getAllRefs().values())) {
+            for (Ref r : new ArrayList<>(gitRepo.getAllRefs().values())) {
                 if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
                     // delete this ref
                     RefUpdate update = gitRepo.updateRef(r.getName());
@@ -1609,7 +1609,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
-        Set<String> branches = new HashSet<String>();
+        Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote",remote,"url")))) {
@@ -1808,7 +1808,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
     public List<ObjectId> revListAll() throws GitException {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.all();
         revListCommand.to(oidList);
@@ -1822,7 +1822,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<ObjectId> revList(String ref) throws GitException {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.reference(ref);
         revListCommand.to(oidList);
@@ -1862,7 +1862,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             else
                 w.setRevFilter(MaxCountRevFilter.create(1));
 
-            List<String> r = new ArrayList<String>();
+            List<String> r = new ArrayList<>();
             StringWriter sw = new StringWriter();
             RawFormatter f = new RawFormatter();
             try (PrintWriter pw = new PrintWriter(sw)) {
@@ -1888,7 +1888,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private Iterable<JGitAPIImpl> submodules() throws IOException {
-        List<JGitAPIImpl> submodules = new ArrayList<JGitAPIImpl>();
+        List<JGitAPIImpl> submodules = new ArrayList<>();
         try (Repository repo = getRepository()) {
             SubmoduleWalk generator = SubmoduleWalk.forIndex(repo);
             while (generator.next()) {
@@ -2045,12 +2045,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             RevCommit target = walk.parseCommit(id);
 
             // we can track up to 24 flags at a time in JGit, so that's how many branches we will traverse in every iteration
-            List<RevFlag> flags = new ArrayList<RevFlag>(24);
+            List<RevFlag> flags = new ArrayList<>(24);
             for (int i=0; i<24; i++)
                 flags.add(walk.newFlag("branch" + i));
             walk.carry(flags);
 
-            List<Branch> result = new ArrayList<Branch>();  // we'll built up the return value in here
+            List<Branch> result = new ArrayList<>();  // we'll built up the return value in here
 
             List<Ref> branches = getAllBranchRefs(allBranches);
             while (!branches.isEmpty()) {
@@ -2093,7 +2093,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private List<Ref> getAllBranchRefs(boolean originBranches) {
-        List<Ref> branches = new ArrayList<Ref>();
+        List<Ref> branches = new ArrayList<>();
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
                 final String branchName = r.getName();
@@ -2280,7 +2280,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final RevWalk w = new RevWalk(or); // How to dispose of this ?
             w.setRetainBody(false);
 
-            Map<ObjectId,Ref> tags = new HashMap<ObjectId, Ref>();
+            Map<ObjectId,Ref> tags = new HashMap<>();
             for (Ref r : repo.getTags().values()) {
                 ObjectId key = repo.peel(r).getPeeledObjectId();
                 if (key==null)  key = r.getObjectId();
@@ -2326,7 +2326,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             depth, or.abbreviate(tip).name());
                 }
             }
-            List<Candidate> candidates = new ArrayList<Candidate>();    // all the candidates we find
+            List<Candidate> candidates = new ArrayList<>();    // all the candidates we find
 
             ObjectId tipId = repo.resolve(tip);
 
@@ -2416,7 +2416,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             tree.addTree(w.parseTree(repo.resolve(treeIsh)));
             tree.setRecursive(recursive);
 
-            List<IndexEntry> r = new ArrayList<IndexEntry>();
+            List<IndexEntry> r = new ArrayList<>();
             while (tree.next()) {
                 RevObject rev = w.parseAny(tree.getObjectId(0));
                 r.add(new IndexEntry(

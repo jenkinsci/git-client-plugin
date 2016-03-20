@@ -67,7 +67,7 @@ public class CredentialsTest {
     private File repo;
     private BasicSSHUserPrivateKey credential;
 
-    private List<String> expectedLogSubstrings = new ArrayList<String>();
+    private List<String> expectedLogSubstrings = new ArrayList<>();
 
     private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
@@ -150,7 +150,7 @@ public class CredentialsTest {
     }
 
     protected void clearExpectedLogSubstring() {
-        this.expectedLogSubstrings = new ArrayList<String>();
+        this.expectedLogSubstrings = new ArrayList<>();
     }
 
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
@@ -177,7 +177,7 @@ public class CredentialsTest {
 
     @Parameterized.Parameters(name = "{2}-{1}-{0}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
-        List<Object[]> repos = new ArrayList<Object[]>();
+        List<Object[]> repos = new ArrayList<>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit"} : new String[]{"jgit"};
         for (String implementation : implementations) {
             /* Add master repository as authentication test with private
@@ -288,7 +288,7 @@ public class CredentialsTest {
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());

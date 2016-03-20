@@ -140,7 +140,7 @@ public class MergeCommandTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitImplementations() {
-        List<Object[]> args = new ArrayList<Object[]>();
+        List<Object[]> args = new ArrayList<>();
         String[] implementations = new String[]{"git", "jgit"};
         for (String implementation : implementations) {
             Object[] gitImpl = {implementation};

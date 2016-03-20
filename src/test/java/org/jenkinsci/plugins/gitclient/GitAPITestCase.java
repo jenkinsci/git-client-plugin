@@ -375,7 +375,7 @@ public abstract class GitAPITestCase extends TestCase {
     private void checkTimeout() {
         List<Integer> timeouts = handler.getTimeouts();
         if (expectedTimeouts == null) {
-            expectedTimeouts = new ArrayList<Integer>();
+            expectedTimeouts = new ArrayList<>();
             for (int i = 0; i < timeouts.size(); i++) {
                 expectedTimeouts.add(i, CliGitAPIImpl.TIMEOUT);
             }
@@ -457,7 +457,7 @@ public abstract class GitAPITestCase extends TestCase {
     private void setExpectedTimeoutWithAdjustedEnd(final int newTimeout, int adjustmentCount) {
         if (getTimeoutVisibleInCurrentTest()) {
             int size = handler.getTimeouts().size();
-            List<Integer> expected = new ArrayList<Integer>(size);
+            List<Integer> expected = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 expected.add(i, CliGitAPIImpl.TIMEOUT);
             }
@@ -567,7 +567,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private void assertNoObjectsInRepository() {
-        List<String> objectsDir = new ArrayList<String>(Arrays.asList(w.file(".git/objects").list()));
+        List<String> objectsDir = new ArrayList<>(Arrays.asList(w.file(".git/objects").list()));
         objectsDir.remove("info");
         objectsDir.remove("pack");
         assertTrue("Objects directory must not contain anything but 'info' and 'pack' folders", objectsDir.isEmpty());
@@ -887,7 +887,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Fetch new change into newArea repo */
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
         newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
 
@@ -1114,7 +1114,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong count in " + remoteBranches, 0, remoteBranches.size());
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
         try {
             /* Fetch parent/a into newArea repo - fails for
@@ -1191,7 +1191,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git push " + bare.repoPath() + " :branch1");
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
 
         /* Fetch without prune should leave branch1 in newArea */
@@ -2243,7 +2243,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_revList_() throws Exception {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         w.init();
         w.launchCommand("git", "pull", localMirror());
 
@@ -2266,7 +2266,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         for (Branch b : w.git.getRemoteBranches()) {
             StringBuilder out = new StringBuilder();
-            List<ObjectId> oidList = new ArrayList<ObjectId>();
+            List<ObjectId> oidList = new ArrayList<>();
 
             RevListCommand revListCommand = w.git.revList_();
             revListCommand.firstParent();
@@ -2929,7 +2929,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue(key.startsWith("refs/tags/git-client"));
         }
 
-        references = new HashMap<String, ObjectId>();
+        references = new HashMap<>();
         try {
             references = w.git.getRemoteReferences(remoteMirrorURL, "notexists-*", false, false);
         } catch (GitException ge) {
@@ -2989,7 +2989,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException
     {
-        List<Branch> matches = new ArrayList<Branch>();
+        List<Branch> matches = new ArrayList<>();
         Set<Branch> branches = w.git.getBranches();
         for(Branch branch : branches) {
             if(branch.getSHA1().equals(objectId)) matches.add(branch);
@@ -3514,7 +3514,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private String formatBranches(List<Branch> branches) {
-        Set<String> names = new TreeSet<String>();
+        Set<String> names = new TreeSet<>();
         for (Branch b : branches) {
             names.add(b.getName());
         }

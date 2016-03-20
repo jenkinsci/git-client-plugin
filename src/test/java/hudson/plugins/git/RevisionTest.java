@@ -26,13 +26,13 @@ public class RevisionTest {
         this.objectId = ObjectId.fromString(SHA1);
         this.revision1 = new Revision(objectId);
 
-        this.emptyCollection = new ArrayList<Branch>();
+        this.emptyCollection = new ArrayList<>();
         this.revision2 = new Revision(objectId, emptyCollection);
 
         this.branchName = "origin/tests/getSubmodules";
         this.SHA1a = "9ac446c472a6433fe503d294ebb7d5691b590269";
         this.branch = new Branch(branchName, ObjectId.fromString(this.SHA1a));
-        this.branchCollection = new ArrayList<Branch>();
+        this.branchCollection = new ArrayList<>();
         this.branchCollection.add(this.branch);
         this.revisionWithBranches = new Revision(ObjectId.fromString(this.SHA1a), branchCollection);
     }
