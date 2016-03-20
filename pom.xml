@@ -230,17 +230,4 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>java-6</id>
-      <activation>
-        <jdk>1.6</jdk>
-      </activation>
-      <properties>
-        <!-- Findbugs requires Java 7. This allows default run
-             of findbugs on every compile, unless running Java 6 -->
-        <skipFindbugs>true</skipFindbugs>
-      </properties>
-    </profile>
-  </profiles>
 </project>
