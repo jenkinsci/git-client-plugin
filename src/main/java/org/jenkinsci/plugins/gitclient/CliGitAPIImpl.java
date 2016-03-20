@@ -490,10 +490,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         else {
                             try {
                                 File alternates = new File(workspace, ".git/objects/info/alternates");
-                                PrintWriter w = new PrintWriter(alternates);
-                                // git implementations on windows also use
-                                w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
-                                w.close();
+                                try (PrintWriter w = new PrintWriter(alternates)) {
+                                    // git implementations on windows also use
+                                    w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                }
                             } catch (FileNotFoundException e) {
                                 listener.error("Failed to setup reference");
                             }
@@ -1494,12 +1494,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         key = File.createTempFile("ssh", "key");
-        PrintWriter w = new PrintWriter(key);
-        List<String> privateKeys = sshUser.getPrivateKeys();
-        for (String s : privateKeys) {
-            w.println(s);
+        try (PrintWriter w = new PrintWriter(key)) {
+            List<String> privateKeys = sshUser.getPrivateKeys();
+            for (String s : privateKeys) {
+                w.println(s);
+            }
         }
-        w.close();
         new FilePath(key).chmod(0400);
         return key;
     }
@@ -1518,15 +1518,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".bat");
-        PrintWriter w = null;
-        try {
-            w = new PrintWriter(ssh);
+        try (PrintWriter w = new PrintWriter(ssh)) {
             w.println("echo \"" + quoteWindowsCredentials(Secret.toString(sshUser.getPassphrase())) + "\"");
             w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
         }
         ssh.setExecutable(true);
         return ssh;
@@ -1534,27 +1528,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".sh");
-        PrintWriter w = new PrintWriter(ssh);
-        w.println("#!/bin/sh");
-        w.println("/bin/echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
-        w.close();
+        try (PrintWriter w = new PrintWriter(ssh)) {
+            w.println("#!/bin/sh");
+            w.println("/bin/echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
+        }
         ssh.setExecutable(true);
         return ssh;
     }
 
     private File createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
         File askpass = File.createTempFile("pass", ".bat");
-        PrintWriter w = null;
-        try {
-            w = new PrintWriter(askpass);
+        try (PrintWriter w = new PrintWriter(askpass)) {
             w.println("@set arg=%~1");
             w.println("@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()));
             w.println("@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())));
-            w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
         }
         askpass.setExecutable(true);
         return askpass;
@@ -1562,19 +1549,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
         File askpass = File.createTempFile("pass", ".sh");
-        PrintWriter w = null;
-        try {
-            w = new PrintWriter(askpass);
+        try (PrintWriter w = new PrintWriter(askpass)) {
             w.println("#!/bin/sh");
             w.println("case \"$1\" in");
             w.println("Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;");
             w.println("Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;");
             w.println("esac");
-            w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
         }
         askpass.setExecutable(true);
         return askpass;
@@ -1694,16 +1674,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         File sshexe = getSSHExecutable();
 
-        PrintWriter w = null;
-        try {
-            w = new PrintWriter(ssh);
+        try (PrintWriter w = new PrintWriter(ssh)) {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
             w.flush();
-        } finally {
-            if (w != null) {
-                w.close();
-            }
         }
         ssh.setExecutable(true);
         return ssh;
@@ -1711,15 +1685,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixGitSSH(File key, String user) throws IOException {
         File ssh = File.createTempFile("ssh", ".sh");
-        PrintWriter w = new PrintWriter(ssh);
-        w.println("#!/bin/sh");
-        // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
-        w.println("if [ -z \"${DISPLAY}\" ]; then");
-        w.println("  DISPLAY=:123.456");
-        w.println("  export DISPLAY");
-        w.println("fi");
-        w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
-        w.close();
+        try (PrintWriter w = new PrintWriter(ssh)) {
+            w.println("#!/bin/sh");
+            // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
+            w.println("if [ -z \"${DISPLAY}\" ]; then");
+            w.println("  DISPLAY=:123.456");
+            w.println("  export DISPLAY");
+            w.println("fi");
+            w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+        }
         ssh.setExecutable(true);
         return ssh;
     }
@@ -1895,8 +1869,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted
      */
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
-        Repository db = getRepository();
-        try {
+        try (Repository db = getRepository()) {
             Map<String, Ref> refs = db.getAllRefs();
             Set<Branch> branches = new HashSet<Branch>();
 
@@ -1917,8 +1890,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             return branches;
-        } finally {
-            db.close();
         }
     }
 
@@ -2074,23 +2045,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-                PrintWriter writer;
-                try {
-                    writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"));
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"))) {
+		    for(String path : paths) {
+			writer.println(path);
+		    }
                 } catch (IOException ex){
-                    throw new GitException("Impossible to open sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
+                    throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
                 }
-
-                for(String path : paths) {
-                    writer.println(path);
-                }
-
-                try {
-                    writer.close();
-                } catch (Exception ex) {
-                    throw new GitException("Impossible to close sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
-                }
-
 
                 try {
                     launchCommand( "read-tree", "-mu", "HEAD" );
@@ -2285,13 +2246,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File f = null;
         try {
             f = File.createTempFile("gitcommit", ".txt");
-            FileOutputStream fos = null;
-            try {
-                fos = new FileOutputStream(f);
+            try (FileOutputStream fos = new FileOutputStream(f)) {
                 fos.write(message.getBytes());
-            } finally {
-                if (fos != null)
-                    fos.close();
             }
             launchCommand("commit", "-F", f.getAbsolutePath());
 

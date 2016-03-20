@@ -3442,16 +3442,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.clone_().url("file://" + r.repoPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
 
-        // add second remote
-        FileRepository repo = null;
-        try {
-            repo = w.repo();
+        try ( // add second remote
+                FileRepository repo = w.repo()) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", "upstream", "url", "file://" + r.repoPath());
             config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
             config.save();
-        } finally {
-            if (repo != null) repo.close();
         }
 
         // fill both remote branches
