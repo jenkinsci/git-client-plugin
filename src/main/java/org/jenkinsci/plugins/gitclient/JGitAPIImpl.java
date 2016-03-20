@@ -1021,7 +1021,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (walk != null) walk.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -1074,7 +1074,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (walk != null) walk.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -1141,7 +1141,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             private void closeResources() {
                 walk.dispose();
-                or.release();
+                or.close();
                 repo.close();
             }
 
@@ -1264,8 +1264,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             rd.reset();
             rd.addAll(DiffEntry.scan(tw));
             List<DiffEntry> diffs = rd.compute(or, null);
-            tw.release();
-            or.release();
+            tw.close();
+            or.close();
             repo.close();
             if (useRawOutput) {
 	            for (DiffEntry diff : diffs) {
@@ -1634,7 +1634,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
              if (walk != null) walk.dispose();
-             if (or != null) or.release();
+             if (or != null) or.close();
              if (repo != null) repo.close();
         }
     }
@@ -1663,7 +1663,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (w != null) w.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -1998,7 +1998,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException(e);
                 } finally {
                     if (walk != null) walk.dispose();
-                    if (or != null) or.release();
+                    if (or != null) or.close();
                     if (repo != null) repo.close();
                 }
             }
@@ -2098,7 +2098,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (w != null) w.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -2323,7 +2323,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (walk != null) walk.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -2365,7 +2365,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (walk != null) walk.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -2393,7 +2393,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (walk != null) walk.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
@@ -2703,7 +2703,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } finally {
             if (w != null) w.dispose();
-            if (or != null) or.release();
+            if (or != null) or.close();
             if (repo != null) repo.close();
         }
     }
