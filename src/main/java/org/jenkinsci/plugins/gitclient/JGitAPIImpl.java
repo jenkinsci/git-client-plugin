@@ -349,9 +349,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
                     }
                 }
-            } catch (IOException e) {
-                throw new GitException("Could not checkout " + ref, e);
-            } catch (GitAPIException e) {
+            } catch (IOException | GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
             } catch (JGitInternalException e) {
                 if (Pattern.matches("Cannot lock.+", e.getMessage())){
@@ -369,9 +367,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             if (ref == null) ref = repo.resolve(HEAD).name();
             git(repo).checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
-        } catch (IOException e) {
-            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
-        } catch (GitAPIException e) {
+        } catch (IOException | GitAPIException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }
     }
@@ -726,9 +722,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     heads.put(r.getName(), r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
                 }
             }
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (URISyntaxException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new GitException(e);
         }
         return heads;
@@ -765,9 +759,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         references.put(refName, refObjectId);
                     }
                 }
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } catch (IOException e) {
+        } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }
         return references;
@@ -822,12 +814,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
             }
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (URISyntaxException e) {
-            throw new GitException(e);
-        } catch (IllegalStateException e) {
-            // "Cannot open session, connection is not authenticated." from com.trilead.ssh2.Connection.openSession
+        } catch (IOException | URISyntaxException | IllegalStateException e) {
             throw new GitException(e);
         }
         return null;
@@ -923,9 +910,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 cmd.setObjectId(walk.parseAny(head));
                 cmd.call();
             }
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } catch (IOException e) {
+        } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }
     }
@@ -969,9 +954,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     addNote(sw.toString() + normalizeNote(note), namespace);
                 }
             }
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        } catch (IOException e) {
+        } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }
     }
@@ -1343,9 +1326,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     config.setStringList("remote", remote, "fetch", Lists.newArrayList(Iterables.transform(refspecs, Functions.toStringFunction())));
                     config.save();
 
-                } catch (GitAPIException e) {
-                    throw new GitException(e);
-                } catch (IOException e) {
+                } catch (GitAPIException | IOException e) {
                     throw new GitException(e);
                 } finally {
                     if (repository != null) repository.close();
@@ -1554,9 +1535,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (matcher.isMatch()) tags.add(name);
             }
             return tags;
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (InvalidPatternException e) {
+        } catch (IOException | InvalidPatternException e) {
             throw new GitException(e);
         }
     }
@@ -1576,9 +1555,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (matcher.isMatch()) tags.add(name);
             }
             return tags;
-        } catch (IOException e) {
-            throw new GitException(e);
-        } catch (InvalidPatternException e) {
+        } catch (IOException | InvalidPatternException e) {
             throw new GitException(e);
         }
     }
@@ -1626,9 +1603,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Result res = update.delete();
                 }
             }
-        } catch (URISyntaxException e) {
-            throw new GitException(e);
-        } catch (IOException e) {
+        } catch (URISyntaxException | IOException e) {
             throw new GitException(e);
         }
     }
@@ -1710,11 +1685,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
-                } catch (IOException e) {
-                    throw new GitException(e);
-                } catch (JGitInternalException je) {
-                    throw new GitException(je);
-                } catch (GitAPIException e) {
+                } catch (IOException | JGitInternalException | GitAPIException e) {
                     throw new GitException(e);
                 }
             }
@@ -2000,9 +1971,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             sub.submoduleUpdate(recursive);
                         }
                     }
-                } catch (IOException e) {
-                    throw new GitException(e);
-                } catch (GitAPIException e) {
+                } catch (IOException | GitAPIException e) {
                     throw new GitException(e);
                 }
             }

@@ -1359,9 +1359,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             msg = File.createTempFile("git-note", "txt", workspace);
             FileUtils.writeStringToFile(msg,note);
             launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
-        } catch (IOException e) {
-            throw new GitException("Could not apply note " + note, e);
-        } catch (GitException e) {
+        } catch (IOException | GitException e) {
             throw new GitException("Could not apply note " + note, e);
         } finally {
             deleteTempFile(msg);
@@ -1734,12 +1732,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             return result;
-        } catch (GitException e) {
+        } catch (GitException | InterruptedException e) {
             throw e;
         } catch (IOException e) {
             throw new GitException("Error performing command: " + command, e);
-        } catch (InterruptedException e) {
-            throw e;
         } catch (Throwable t) {
             throw new GitException("Error performing git command", t);
         }
@@ -2418,9 +2414,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 		refs.add(ref);
 	    }
 	    return refs;
-	} catch (GitException e) { // Should be a multi-catch statement in the future.
-	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
-	} catch (IOException e) {
+	} catch (GitException | IOException e) {
 	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
 	}
     }
@@ -2584,9 +2578,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
-        } catch (IOException e) {
-            throw new GitException("Error parsing merge base", e);
-        } catch (GitException e) {
+        } catch (IOException | GitException e) {
             throw new GitException("Error parsing merge base", e);
         }
 

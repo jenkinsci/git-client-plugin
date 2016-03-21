@@ -48,11 +48,7 @@ public class TrileadSessionFactory extends SshSessionFactory {
                 throw new TransportException("Authentication failure");
 
             return wrap(con);
-        } catch (UnsupportedCredentialItem e) {
-            throw new TransportException(uri,"Failed to connect",e);
-        } catch (IOException e) {
-            throw new TransportException(uri,"Failed to connect",e);
-        } catch (InterruptedException e) {
+        } catch (UnsupportedCredentialItem | IOException | InterruptedException e) {
             throw new TransportException(uri,"Failed to connect",e);
         }
     }

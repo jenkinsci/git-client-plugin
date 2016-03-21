@@ -151,11 +151,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
                             }
                             cmd.execute();
                             return null;
-                        } catch (InvocationTargetException e) {
-                            throw new GitException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new GitException(e);
-                        } catch (InterruptedException e) {
+                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
                             throw new GitException(e);
                         }
                     }
