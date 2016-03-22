@@ -1764,6 +1764,19 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
     }
 
+    public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
+        try {
+            w.igit().fixSubmoduleUrls("origin", listener);
+            fail("Expected exception not thrown");
+        } catch (UnsupportedOperationException uoe) {
+            assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            assertTrue("GitException not on CliGit", w.igit() instanceof CliGitAPIImpl);
+            assertTrue("Wrong message in " + ge.getMessage(), ge.getMessage().startsWith("Could not determine remote"));
+            assertTrue("Wrong remote in " + ge.getMessage(), ge.getMessage().contains("origin"));
+        }
+    }
+
     public void test_addSubmodule() throws Exception {
         String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
         String readme1 = sub1 + File.separator + "README.md";
@@ -1784,6 +1797,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
 
         w.igit().submoduleSync();
+        assertFixSubmoduleUrlsThrows();
     }
 
 
@@ -1821,6 +1835,7 @@ public abstract class GitAPITestCase extends TestCase {
         // Run submodule update with remote tracking
         w.git.submoduleUpdate(true, true);
         assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
+        assertFixSubmoduleUrlsThrows();
     }
 
     /* Check JENKINS-23424 - inconsistent handling of modified tracked
@@ -1915,6 +1930,13 @@ public abstract class GitAPITestCase extends TestCase {
         for (String tag : tagNamesSubmodule) {
             assertFalse("Submodule tag " + tag + " in parent " + tagsAfter, tagsAfter.matches("^" + tag + "$"));
         }
+
+        try {
+            w.igit().fixSubmoduleUrls("origin", listener);
+            assertTrue("not CliGit", w.igit() instanceof CliGitAPIImpl);
+        } catch (UnsupportedOperationException uoe) {
+            assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+        }
     }
 
     public void test_getSubmodules() throws Exception {
@@ -1932,6 +1954,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
         assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+        assertFixSubmoduleUrlsThrows();
     }
 
     public void test_submodule_update() throws Exception {
@@ -1943,6 +1966,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
         assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+        assertFixSubmoduleUrlsThrows();
     }
 
     @NotImplementedInJGit
@@ -2091,6 +2115,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.launchCommand("git", "fetch", localMirror(), "master:t2");
         w.git.checkout("t2");
         assertFalse(w.git.hasGitModules());
+        assertFixSubmoduleUrlsThrows();
     }
 
     private boolean isJava6() {
