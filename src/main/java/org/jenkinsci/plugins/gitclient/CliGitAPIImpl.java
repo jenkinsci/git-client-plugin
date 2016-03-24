@@ -1434,7 +1434,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         try {
                             URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
                             // First check that the http proxy environmental variable is not already set.
-                            if( env.get("http_proxy", "") == "" ) {
+                            if( env.get("http_proxy", "").equals("") ) {
                                 listener.getLogger().println("Setting http_proxy to be " + http_proxy.toString());
                                 env.put("http_proxy", http_proxy.toString());
                             } else {
@@ -1442,7 +1442,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             }
 
                             // First check that the https proxy environmental variable is not already set.
-                            if( env.get("https_proxy", "") == "" ) {
+                            if( env.get("https_proxy", "").equals("") ) {
                                 listener.getLogger().println("Setting https_proxy to be " + http_proxy.toString());
                                 env.put("https_proxy", http_proxy.toString());
                             } else {
