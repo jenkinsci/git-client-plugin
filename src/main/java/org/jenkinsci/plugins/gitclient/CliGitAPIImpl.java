@@ -1424,7 +1424,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if(shouldProxy) {
                         env = new EnvVars(env);
-                        listener.getLogger().println("Setting http proxy: " + proxy.name + ":" + proxy.port);
                         String userInfo = null;
                         if (proxy.getUserName() != null) {
                             userInfo = proxy.getUserName();
@@ -1434,8 +1433,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                         try {
                             URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
-                            env.put("http_proxy", http_proxy.toString());
-                            env.put("https_proxy", http_proxy.toString());
+                            // First check that the http proxy environmental variable is not already set.
+                            if( env.get("http_proxy", "") == "" ) {
+                                listener.getLogger().println("Setting http_proxy to be " + http_proxy.toString());
+                                env.put("http_proxy", http_proxy.toString());
+                            } else {
+                                listener.getLogger().println("Leaving http_proxy set to " + env.get("http_proxy", ""));
+                            }
+
+                            // First check that the https proxy environmental variable is not already set.
+                            if( env.get("https_proxy", "") == "" ) {
+                                listener.getLogger().println("Setting https_proxy to be " + http_proxy.toString());
+                                env.put("https_proxy", http_proxy.toString());
+                            } else {
+                                listener.getLogger().println("Leaving https_proxy set to " + env.get("https_proxy", ""));
+                            }
+
+                            // If we don't need the logging then the next two lines is equivalent to the above.
+                            //env.put("http_proxy", env.get("http_proxy", http_proxy.toString()));
+                            //env.put("https_proxy", env.get("https_proxy", http_proxy.toString()));
                         } catch (URISyntaxException ex) {
                             throw new GitException("Failed to create http proxy uri", ex);
                         }
