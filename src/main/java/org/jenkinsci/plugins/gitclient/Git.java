@@ -116,7 +116,7 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        FileCallable<GitClient> callable = new FileCallable<GitClient>() {
+        jenkins.MasterToSlaveFileCallable<GitClient> callable = new jenkins.MasterToSlaveFileCallable<GitClient>() {
             public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
                 if (listener == null) listener = TaskListener.NULL;
                 if (env == null) env = new EnvVars();

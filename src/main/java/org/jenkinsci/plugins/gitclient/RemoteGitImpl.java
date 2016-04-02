@@ -142,7 +142,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
         public void execute() throws GitException, InterruptedException {
             try {
-                channel.call(new Callable<Void, GitException>() {
+                channel.call(new jenkins.security.MasterToSlaveCallable<Void, GitException>() {
                     public Void call() throws GitException {
                         try {
                             GitCommand cmd = createCommand();
