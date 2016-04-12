@@ -1848,6 +1848,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public PushCommand recurseSubmodules(String recurseOption) {
+                // TODO
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 try {

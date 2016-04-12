@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -1784,6 +1783,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean force;
             public boolean tags;
             public Integer timeout;
+            public String recurseOption;
 
             public PushCommand to(URIish remote) {
                 this.remote = remote;
@@ -1810,6 +1810,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public PushCommand recurseSubmodules(String recurseOption) {
+                this.recurseOption = recurseOption;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("push", remote.toPrivateASCIIString());
@@ -1824,6 +1829,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (tags) {
                     args.add("--tags");
+                }
+
+                if (recurseOption != null){
+                    args.add(String.format("--recurse-submodules=%s", recurseOption));
                 }
 
                 if (!isAtLeastVersion(1,9,0,0) && isShallowRepository()) {

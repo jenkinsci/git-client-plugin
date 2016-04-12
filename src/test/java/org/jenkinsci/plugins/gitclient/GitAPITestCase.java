@@ -1610,6 +1610,69 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(sha1.name(), remoteSha1);
     }
 
+    @NotImplementedInJGit
+    public void test_push_recursive_on_demand() throws Exception {
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/recurse-submodules.zip"), tempRemoteDir);
+
+        File repo = new File(tempRemoteDir, "workarea");
+        File subRemote = new File(tempRemoteDir, "subRemote");
+
+        GitClient git = setupGitAPI(repo);
+        GitClient subGit = git.subGit("sub");
+        GitClient remSubGit = setupGitAPI(subRemote);
+
+        git.push().ref("master").to(new URIish("origin")).recurseSubmodules("on-demand").execute();
+
+        ObjectId subHead = subGit.revParse("HEAD");
+        ObjectId remSubHead = remSubGit.revParse("HEAD");
+        assertEquals("Submodule commit wasn't pushed.", remSubHead, subHead);
+    }
+
+    @NotImplementedInJGit
+    public void test_push_recursive_no() throws Exception {
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/recurse-submodules.zip"), tempRemoteDir);
+
+        File repo = new File(tempRemoteDir, "workarea");
+        File subRemote = new File(tempRemoteDir, "subRemote");
+
+        GitClient git = setupGitAPI(repo);
+        GitClient subGit = git.subGit("sub");
+        GitClient remSubGit = setupGitAPI(subRemote);
+
+        git.push().ref("master").to(new URIish("origin")).recurseSubmodules("no").execute();
+
+        ObjectId subHead = subGit.revParse("HEAD");
+        ObjectId remSubHead = remSubGit.revParse("HEAD");
+        assertNotSame("Submodule commit was pushed.", remSubHead, subHead);
+    }
+
+    @NotImplementedInJGit
+    public void test_push_recursive_check() throws Exception {
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/recurse-submodules.zip"), tempRemoteDir);
+
+        File repo = new File(tempRemoteDir, "workarea");
+        File subRemote = new File(tempRemoteDir, "subRemote");
+
+        GitClient git = setupGitAPI(repo);
+        GitClient subGit = git.subGit("sub");
+        GitClient remSubGit = setupGitAPI(subRemote);
+
+        try {
+            git.push().ref("master").to(new URIish("origin")).recurseSubmodules("check").execute();
+            fail();
+        } catch (GitException e) {
+            assert e.getMessage().contains("The following submodule paths contain changes");
+            assert e.getMessage().contains("sub");
+
+            ObjectId subHead = subGit.revParse("HEAD");
+            ObjectId remSubHead = remSubGit.revParse("HEAD");
+            assertNotSame("Submodule commit was pushed.", remSubHead, subHead);
+        }
+    }
+
     @Deprecated
     public void test_push_deprecated_signature() throws Exception {
         /* Make working repo a remote of the bare repo */
