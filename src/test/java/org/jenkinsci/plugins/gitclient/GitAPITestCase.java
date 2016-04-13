@@ -1631,6 +1631,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_push_recursive_no() throws Exception {
+        if (!w.cgit().isAtLeastVersion(2,7,0,0)) {
+            System.err.println("git < 2.7.0 doesn't accept 'no' for 'push --recurse-submodules'.");
+            return;
+        }
+
         File tempRemoteDir = temporaryDirectoryAllocator.allocate();
         extract(new ZipFile("src/test/resources/recurse-submodules.zip"), tempRemoteDir);
 
