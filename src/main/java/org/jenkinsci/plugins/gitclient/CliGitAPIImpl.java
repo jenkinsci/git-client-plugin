@@ -1643,6 +1643,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (sshexe != null && sshexe.exists()) {
                 return sshexe;
             }
+            sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/mingw64/", "/").replace("\\mingw64\\", "\\"));
+            if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
+            sshexe = getSSHExeFromGitExeParentDir(gitPath.replace("/mingw64/bin/", "/usr/bin/").replace("\\mingw64\\bin\\", "\\usr\\bin\\"));
+            if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
         }
 
         throw new RuntimeException("ssh executable not found. The git plugin only supports official git client http://git-scm.com/download/win");
