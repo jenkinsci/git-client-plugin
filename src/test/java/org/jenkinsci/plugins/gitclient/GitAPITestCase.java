@@ -3899,7 +3899,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     /**
      * Returns the prefix for the remote branches while querying them.
-     * @return remote branch pregix, for example, "remotes/"
+     * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
 
