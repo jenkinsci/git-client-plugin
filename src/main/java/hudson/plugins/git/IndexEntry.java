@@ -10,7 +10,7 @@ import java.io.Serializable;
  * @author nigelmagnay
  */
 public class IndexEntry implements Serializable {
-    String mode, type, object, file;
+    private String mode, type, object, file;
 
     /**
      * Returns the mode of this entry as a String.

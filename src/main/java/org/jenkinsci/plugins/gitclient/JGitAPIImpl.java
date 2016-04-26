@@ -1085,11 +1085,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
-            Repository repo = getRepository();
-            ObjectReader or = repo.newObjectReader();
-            RevWalk walk = new RevWalk(or);
-            Writer out;
-            boolean hasIncludedRev = false;
+            private Repository repo = getRepository();
+            private ObjectReader or = repo.newObjectReader();
+            private RevWalk walk = new RevWalk(or);
+            private Writer out;
+            private boolean hasIncludedRev = false;
 
             public ChangelogCommand excludes(String rev) {
                 try {
@@ -1313,13 +1313,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
 
         return new CloneCommand() {
-            String url;
-            String remote = Constants.DEFAULT_REMOTE_NAME;
-            String reference;
-            Integer timeout;
-            boolean shared;
-            boolean tags = true;
-            List<RefSpec> refspecs;
+            private String url;
+            private String remote = Constants.DEFAULT_REMOTE_NAME;
+            private String reference;
+            private Integer timeout;
+            private boolean shared;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -1471,12 +1471,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public MergeCommand merge() {
         return new MergeCommand() {
 
-            ObjectId rev;
-            MergeStrategy strategy;
-            FastForwardMode fastForwardMode;
-            boolean squash;
-            boolean commit = true;
-            String comment;
+            private ObjectId rev;
+            private MergeStrategy strategy;
+            private FastForwardMode fastForwardMode;
+            private boolean squash;
+            private boolean commit = true;
+            private String comment;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -2134,9 +2134,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
-            boolean recursive      = false;
-            boolean remoteTracking = false;
-            String  ref            = null;
+            private boolean recursive      = false;
+            private boolean remoteTracking = false;
+            private String  ref            = null;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -2550,15 +2550,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * Tracks the depth of each tag as we find them.
              */
             class Candidate {
-                final RevCommit commit;
-                final Ref tag;
-                final RevFlag flag;
+                private final RevCommit commit;
+                private final Ref tag;
+                private final RevFlag flag;
 
                 /**
                  * This field number of commits that are reachable from the tip but
                  * not reachable from the tag.
                  */
-                int depth;
+                private int depth;
 
                 Candidate(RevCommit commit, Ref tag) {
                     this.commit = commit;

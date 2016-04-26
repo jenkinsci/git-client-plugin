@@ -22,8 +22,8 @@ import java.util.Collection;
 public class Revision implements java.io.Serializable, Cloneable {
     private static final long serialVersionUID = -7203898556389073882L;
 
-    ObjectId           sha1;
-    Collection<Branch> branches;
+    private ObjectId           sha1;
+    private Collection<Branch> branches;
 
     /**
      * Constructor for Revision.
