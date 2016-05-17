@@ -11,7 +11,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+
 import com.google.common.collect.Lists;
+
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -1705,7 +1707,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // GIT_ASKPASS supersed SSH_ASKPASS when set, so don't mask SSH passphrase when set
             environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
         }
-        String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
+        String command = createCommand(args);
         try {
             args.prepend(gitExe);
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
@@ -2174,7 +2176,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         out.add(ObjectId.fromString(line));
                     }
                 } catch (IOException e) {
-                    throw new GitException("Error parsing rev list", e);
+                    throw new GitException("Error parsing rev list " + createCommand(args), e);
                 }
             }
         };
@@ -2640,5 +2642,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return File.pathSeparatorChar==';';
     }
 
-
+    private String createCommand(ArgumentListBuilder args) {
+     return gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
+    }
 }
