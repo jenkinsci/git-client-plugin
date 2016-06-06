@@ -3,6 +3,8 @@ package org.jenkinsci.plugins.gitclient;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import static junit.framework.TestCase.assertTrue;
+import org.apache.commons.lang.SystemUtils;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -244,6 +246,16 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(false, 3, 0, 0, 0)
        };
         doTest("git version 2.3.5", versions);
+    }
+
+    /* Not implemented in JGit because it is not needed there */
+    public void test_git_ssh_executable_found_on_windows() throws Exception {
+        setTimeoutVisibleInCurrentTest(false);
+        if (!SystemUtils.IS_OS_WINDOWS) {
+            return;
+        }
+
+        assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
     }
 
     @Override

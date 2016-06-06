@@ -265,7 +265,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    private WorkingArea w;
+    protected WorkingArea w;
 
     WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
@@ -3948,17 +3948,6 @@ public abstract class GitAPITestCase extends TestCase {
         assert_longpaths(w, false);
         check_longpaths(false);
         assert_longpaths(w, false);
-    }
-
-    @NotImplementedInJGit
-    /* Not implemented in JGit because it is not needed there */
-    public void test_git_ssh_executable_found_on_windows() throws Exception {
-        setTimeoutVisibleInCurrentTest(false);
-        if (!SystemUtils.IS_OS_WINDOWS) {
-            return;
-        }
-
-        assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
     }
 
     /**
