@@ -141,7 +141,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
-        /* If workspace is null, then default to current directory to match 
+        /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
         this.listener = listener;
@@ -583,6 +583,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public org.jenkinsci.plugins.gitclient.FetchCommand depth(Integer depth) {
                 listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                return this;
+            }
+
+            public org.jenkinsci.plugins.gitclient.FetchCommand withLFS() {
+                listener.getLogger().println("[WARNING] JGit doesn't support LFS fetch. This flag is ignored");
                 return this;
             }
 
@@ -1347,7 +1352,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<RefSpec>(refspecs); 
+                this.refspecs = new ArrayList<RefSpec>(refspecs);
                 return this;
             }
 
@@ -1867,7 +1872,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
                         RemoteRefUpdate.Status status = update.getStatus();
                         if(!OK.equals(status)&&!UP_TO_DATE.equals(status)) {
-                            throw new GitException(update.getMessage() + " " + status + " for '" + ref + 
+                            throw new GitException(update.getMessage() + " " + status + " for '" + ref +
                                 "' refspec '" + refspec + "' to " + remote.toPrivateASCIIString());
                         }
                     }
