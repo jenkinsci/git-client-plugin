@@ -1464,6 +1464,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 env.put("GIT_SSH", ssh.getAbsolutePath());
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
 
+                // supply a dummy value for DISPLAY if not already present
+                // or else ssh will not invoke SSH_ASKPASS
+                if (!env.containsKey("DISPLAY")) {
+                    env.put("DISPLAY", ":");
+                }
+
             } else if (credentials instanceof StandardUsernamePasswordCredentials) {
                 StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
                 listener.getLogger().println("using GIT_ASKPASS to set credentials " + userPass.getDescription());
@@ -1558,7 +1564,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".bat");
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
-            w.println("echo \"" + quoteWindowsCredentials(Secret.toString(sshUser.getPassphrase())) + "\"");
+            // avoid echoing command as part of the password
+            w.println("@echo off");
+            // no need for quotes on windows echo -- they will get echoed too
+            w.println("echo " + Secret.toString(sshUser.getPassphrase()));
             w.flush();
         }
         ssh.setExecutable(true);
