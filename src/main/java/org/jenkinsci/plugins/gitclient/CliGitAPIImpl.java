@@ -565,30 +565,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("merge");
-                try {
-                    if(squash) {
-                        args.add("--squash");
-                    }
-
-                    if(!commit){
-                        args.add("--no-commit");
-                    }
-
-                    if (comment != null && !comment.isEmpty()) {
-                        args.add("-m");
-                        args.add(comment);
-                    }
-
-                    if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
-                        args.add("-s");
-                        args.add(strategy);
-                    }
-                    args.add(fastForwardMode);
-                    args.add(rev.name());
-                    launchCommand(args);
-                } catch (GitException e) {
-                    throw new GitException("Could not merge " + rev, e);
+                if(squash) {
+                    args.add("--squash");
                 }
+
+                if(!commit){
+                    args.add("--no-commit");
+                }
+
+                if (comment != null && !comment.isEmpty()) {
+                    args.add("-m");
+                    args.add(comment);
+                }
+
+                if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
+                    args.add("-s");
+                    args.add(strategy);
+                }
+                args.add(fastForwardMode);
+                args.add(rev.name());
+                launchCommand(args);
             }
         };
     }
