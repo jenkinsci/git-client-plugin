@@ -34,12 +34,14 @@ import java.io.Serializable;
  *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class Git implements Serializable {
+public class Git {
     @Nullable
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
     private String exe;
+    @Nullable
+    private Launcher launcher;
 
     /**
      * Constructor for a Git object. Either <code>Git.with(listener, env)</code>
@@ -112,6 +114,11 @@ public class Git implements Serializable {
         return this;
     }
 
+    public Git withLauncher(Launcher launcher) {
+        this.launcher = launcher;
+        return this;
+    }
+
     /**
      * {@link org.jenkinsci.plugins.gitclient.GitClient} implementation. The {@link org.jenkinsci.plugins.gitclient.GitClient} interface
      * provides the key operations which can be performed on a git repository.
@@ -144,6 +151,11 @@ public class Git implements Serializable {
      * Retrieve the {@link Launcher} to be used to run git cli.
      */
     private @CheckForNull Launcher getLauncher() {
+        if (this.launcher != null) {
+            return launcher;
+        }
+
+        // Backward compatibility mode : let's try to retrieve the current Launcher
         Computer computer = null;
         if (repository != null) {
             computer = repository.toComputer();
