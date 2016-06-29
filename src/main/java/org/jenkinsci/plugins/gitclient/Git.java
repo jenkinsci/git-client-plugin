@@ -150,7 +150,7 @@ public class Git {
     /**
      * Retrieve the {@link Launcher} to be used to run git cli.
      */
-    private @CheckForNull Launcher getLauncher() {
+    private @CheckForNull Launcher getLauncher() throws IOException, InterruptedException {
         if (this.launcher != null) {
             return launcher;
         }
@@ -173,7 +173,7 @@ public class Git {
         if (computer != null) {
             final Node node = computer.getNode();
             if (node != null) {
-                return  node.createLauncher(listener);
+                return  node.createLauncher(listener).decorateByEnv(computer.buildEnvironment(listener));
             }
         }
         return null;
