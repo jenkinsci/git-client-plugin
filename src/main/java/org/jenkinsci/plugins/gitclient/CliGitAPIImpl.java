@@ -36,6 +36,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
+import javax.annotation.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -150,25 +151,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Constructor for CliGitAPIImpl.
-     *
-     * @param gitExe a {@link java.lang.String} object.
-     * @param workspace a {@link java.io.File} object.
-     * @param listener a {@link hudson.model.TaskListener} object.
-     * @param environment a {@link hudson.EnvVars} object.
+     *  @param gitExe a {@link String} object.
+     * @param workspace a {@link File} object.
+     * @param listener a {@link TaskListener} object.
+     * @param environment a {@link EnvVars} object.
+     * @param launcher
      */
     protected CliGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
+                            TaskListener listener, EnvVars environment,
+                            @Nullable Launcher launcher) {
         super(workspace);
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
 
-        launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+        this.launcher = launcher != null ?
+                launcher :
+                new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
     }
 
     /** {@inheritDoc} */
     public GitClient subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment, launcher);
     }
 
     /**

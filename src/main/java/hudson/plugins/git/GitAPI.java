@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
+import hudson.Launcher;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -74,7 +75,12 @@ public class GitAPI extends CliGitAPIImpl {
      */
     @Deprecated
     public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
-        super(gitExe, repository, listener, environment);
+        this(gitExe, repository, listener, environment, null);
+    }
+
+    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment, Launcher launcher) throws IOException, InterruptedException {
+        super(gitExe, repository, listener, environment, launcher);
+
 
         // If USE_CLI is forced, don't delegate to JGit client
         this.jgit = Git.USE_CLI ? null : Git.with(listener, environment).in(repository).using("jgit").getClient();
