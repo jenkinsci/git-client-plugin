@@ -1533,7 +1533,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("pass", ".sh");
         PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
-        w.println("/bin/echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+        w.println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
         w.close();
         ssh.setExecutable(true);
         return ssh;
@@ -1711,7 +1711,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars environment = new EnvVars(env);
         if (!env.containsKey("SSH_ASKPASS")) {
             // GIT_ASKPASS supersed SSH_ASKPASS when set, so don't mask SSH passphrase when set
-            environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
+            environment.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
