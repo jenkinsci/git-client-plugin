@@ -1528,7 +1528,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("pass", ".sh");
         try (PrintWriter w = new PrintWriter(ssh)) {
             w.println("#!/bin/sh");
-            w.println("/bin/echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
+            w.println("echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         }
         ssh.setExecutable(true);
         return ssh;
@@ -1723,7 +1723,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // credential input. Prevent this by setting GIT_ASKPASS to "echo"
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
-            environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
+            environment.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
