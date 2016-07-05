@@ -89,7 +89,7 @@ public abstract class GitAPITestCase extends TestCase {
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
     private String revParseBranchName = null;
 
-    private void createRevParseBranch() throws GitException, InterruptedException {
+    private void createRevParseBranch() throws GitException, InterruptedException, IOException {
         revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
         w.git.checkout("origin/master", revParseBranchName);
     }
@@ -583,8 +583,8 @@ public abstract class GitAPITestCase extends TestCase {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
 
         assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
-        final String expectedContent = localMirror().replace("\\", "/") + "/objects";
-        final String actualContent = w.contentOf(alternates);
+        final String expectedContent = new File(localMirror().replace("\\", "/") + "/objects").getCanonicalPath();
+        final String actualContent = new File(w.contentOf(alternates)).getCanonicalPath();
         assertEquals("Alternates file wrong content", expectedContent, actualContent);
         final File alternatesDir = new File(actualContent);
         assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
@@ -599,8 +599,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
-        final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
-        final String actualContent = w.contentOf(alternates);
+        final String expectedContent = new File(SRC_DIR.replace("\\", "/") + "/.git/objects").getCanonicalPath();
+        final String actualContent = new File(w.contentOf(alternates)).getCanonicalPath();
         assertEquals("Alternates file wrong content", expectedContent, actualContent);
         final File alternatesDir = new File(actualContent);
         assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
@@ -1764,7 +1764,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
     }
 
-    public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
+    public void assertFixSubmoduleUrlsThrows() throws InterruptedException, IOException {
         try {
             w.igit().fixSubmoduleUrls("origin", listener);
             fail("Expected exception not thrown");
@@ -2987,8 +2987,7 @@ public abstract class GitAPITestCase extends TestCase {
                 expectedObjectId, actualObjectId);
     }
 
-    private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException
-    {
+    private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException, IOException {
         List<Branch> matches = new ArrayList<Branch>();
         Set<Branch> branches = w.git.getBranches();
         for(Branch branch : branches) {
@@ -3081,8 +3080,7 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(w.repoPath(), getMirrorHead());
     }
 
-    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
-    {
+    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException, IOException {
         ChangelogCommand changelogCommand = w.git.changelog();
         changelogCommand.max(1);
         StringWriter writer = new StringWriter();
@@ -3171,8 +3169,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(diffs.isEmpty());
     }
 
-    private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException
-    {
+    private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException, IOException {
         StringWriter writer = new StringWriter();
         w.git.changelog(sha1Begin, sha1End, writer);
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog

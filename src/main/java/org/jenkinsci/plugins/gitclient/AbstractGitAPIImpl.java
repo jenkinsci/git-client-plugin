@@ -21,18 +21,9 @@ import java.io.Writer;
  * @author Kohsuke Kawaguchi
  */
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
-    /** {@inheritDoc} */
-    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
-        Repository repo = getRepository();
-        try {
-            return callable.invoke(repo, MasterComputer.localChannel);
-        } finally {
-            repo.close();
-        }
-    }
 
     /** {@inheritDoc} */
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException, IOException {
         setAuthor(author);
         setCommitter(committer);
         commit(message);
@@ -51,39 +42,39 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
-    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException {
+    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException, IOException {
         changelog(revFrom, revTo, new OutputStreamWriter(outputStream));
     }
 
     /** {@inheritDoc} */
-    public void changelog(String revFrom, String revTo, Writer w) throws GitException, InterruptedException {
+    public void changelog(String revFrom, String revTo, Writer w) throws GitException, InterruptedException, IOException {
         changelog().excludes(revFrom).includes(revTo).to(w).execute();
     }
 
     /** {@inheritDoc} */
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException, IOException {
         CloneCommand c = clone_().url(url).repositoryName(origin).reference(reference);
         if (useShallowClone)    c.shallow();
         c.execute();
     }
 
     /** {@inheritDoc} */
-    public void checkout(String commit) throws GitException, InterruptedException {
+    public void checkout(String commit) throws GitException, InterruptedException, IOException {
         checkout().ref(commit).execute();
     }
 
     /** {@inheritDoc} */
-    public void checkout(String ref, String branch) throws GitException, InterruptedException {
+    public void checkout(String ref, String branch) throws GitException, InterruptedException, IOException {
         checkout().ref(ref).branch(branch).execute();
     }
 
     /** {@inheritDoc} */
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
+    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException, IOException {
         checkout().ref(ref).branch(branch).deleteBranchIfExist(true).execute();
     }
 
     /** {@inheritDoc} */
-    public void merge(ObjectId rev) throws GitException, InterruptedException {
+    public void merge(ObjectId rev) throws GitException, InterruptedException, IOException {
         merge().setRevisionToMerge(rev).execute();
     }
 
@@ -121,19 +112,19 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
 
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException, IOException {
         submoduleUpdate().recursive(recursive).execute();
     }
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException, IOException {
         submoduleUpdate().recursive(recursive).ref(reference).execute();
     }
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException, IOException {
         submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
     }
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException, IOException {
         submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
     }
 }

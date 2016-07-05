@@ -235,7 +235,7 @@ public class PushTest {
         workingCommit = commitFileToCurrentBranch();
     }
 
-    private ObjectId checkoutBranch(boolean useOldCommit) throws GitException, InterruptedException {
+    private ObjectId checkoutBranch(boolean useOldCommit) throws GitException, InterruptedException, IOException {
         /* Checkout branchName */
         workingGitClient.checkoutBranch(branchName, "origin/" + branchName + (useOldCommit ? "^" : ""));
         List<Branch> branches = workingGitClient.getBranchesContaining(branchName, false);
