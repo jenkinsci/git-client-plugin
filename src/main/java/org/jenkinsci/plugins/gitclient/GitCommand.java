@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.plugins.git.GitException;
 
+import java.io.IOException;
+
 /**
  * Base type for the builder style command object for various git commands.
  *
@@ -14,5 +16,5 @@ public interface GitCommand {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void execute() throws GitException, InterruptedException;
+    void execute() throws GitException, InterruptedException, IOException;
 }
