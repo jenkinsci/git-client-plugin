@@ -27,7 +27,7 @@ public interface IGitAPI extends GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      * @see GitClient#hasGitModules
      */
-    boolean hasGitModules( String treeIsh ) throws GitException, InterruptedException;
+    boolean hasGitModules( String treeIsh ) throws GitException, InterruptedException, IOException;
 
     /**
      * Returns URL of remote name in repository GIT_DIR.
@@ -38,7 +38,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException;
+    String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException, IOException;
 
     /**
      * Set remote repository name and URL.
@@ -49,7 +49,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException;
+    void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException, IOException;
 
     /**
      * Returns name of default remote.
@@ -59,7 +59,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getDefaultRemote( String _default_ ) throws GitException, InterruptedException;
+    String getDefaultRemote( String _default_ ) throws GitException, InterruptedException, IOException;
 
     /**
      * Returns true if this repositry is bare.
@@ -68,7 +68,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean isBareRepository() throws GitException, InterruptedException;
+    boolean isBareRepository() throws GitException, InterruptedException, IOException;
 
     /**
      * Detect whether a repository at the given path is bare or not.
@@ -78,7 +78,7 @@ public interface IGitAPI extends GitClient {
      * @throws java.lang.InterruptedException if interrupted
      * @return true if this repository is bare
      */
-    boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException;
+    boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException, IOException;
 
     /**
      * Synchronizes submodules' remote URL configuration setting to
@@ -88,7 +88,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleSync() throws GitException, InterruptedException;
+    void submoduleSync() throws GitException, InterruptedException, IOException;
 
     /**
      * Returns URL of the named submodule.
@@ -98,7 +98,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getSubmoduleUrl(String name) throws GitException, InterruptedException;
+    String getSubmoduleUrl(String name) throws GitException, InterruptedException, IOException;
 
     /**
      * Sets URL of the named submodule.
@@ -108,7 +108,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException;
+    void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException, IOException;
 
     /**
      * fixSubmoduleUrls.
@@ -118,9 +118,9 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fixSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException;
+    void fixSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException, IOException;
 
-    void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException;
+    void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException, IOException;
 
     /**
      * Retrieve commits based on refspec from repository.
@@ -130,7 +130,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException;
+    public void fetch(String repository, String refspec) throws GitException, InterruptedException, IOException;
 
     /**
      * Retrieve commits from RemoteConfig.
@@ -138,7 +138,7 @@ public interface IGitAPI extends GitClient {
      * @param remoteRepository remote configuration from which refs will be retrieved
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(RemoteConfig remoteRepository) throws InterruptedException;
+    void fetch(RemoteConfig remoteRepository) throws InterruptedException, IOException;
 
     /**
      * Retrieve commits from default remote.
@@ -146,7 +146,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch() throws GitException, InterruptedException;
+    void fetch() throws GitException, InterruptedException, IOException;
 
     /**
      * Reset the contents of the working directory of this
@@ -156,7 +156,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void reset(boolean hard) throws GitException, InterruptedException;
+    void reset(boolean hard) throws GitException, InterruptedException, IOException;
 
     /**
      * Reset the contents of the working directory of this
@@ -165,9 +165,9 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void reset() throws GitException, InterruptedException;
+    void reset() throws GitException, InterruptedException, IOException;
 
-    void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException;
+    void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException, IOException;
 
     /**
      * Merge commits from revspec into the current branch.
@@ -176,7 +176,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void merge(String revSpec) throws GitException, InterruptedException;
+    void merge(String revSpec) throws GitException, InterruptedException, IOException;
 
     /**
      * Clone repository from source to this repository.
@@ -185,7 +185,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void clone(RemoteConfig source) throws GitException, InterruptedException;
+    void clone(RemoteConfig source) throws GitException, InterruptedException, IOException;
 
     /**
      * Clone repository from {@link org.eclipse.jgit.transport.RemoteConfig} rc to this repository.
@@ -195,7 +195,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException;
+    void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException, IOException;
 
     /**
      * Find all the branches that include the given commit.
@@ -209,7 +209,7 @@ public interface IGitAPI extends GitClient {
      *             instead. This method does work only with local branches on
      *             one implementation and with all the branches - in the other
      */
-    List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException;
+    List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException, IOException;
 
     /**
      * This method has been implemented as non-recursive historically, but
@@ -223,7 +223,7 @@ public interface IGitAPI extends GitClient {
      * @deprecated
      *  Use {@link #lsTree(String, boolean)} to be explicit about the recursion behaviour.
      */
-    List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException;
+    List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException, IOException;
 
     /**
      * lsTree.
@@ -234,7 +234,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException;
+    List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException, IOException;
 
     /**
      * revListBranch.
@@ -244,7 +244,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException;
+    List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException, IOException;
 
     /**
      * getTagsOnCommit.
@@ -258,10 +258,10 @@ public interface IGitAPI extends GitClient {
     List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException;
 
     /** {@inheritDoc} */
-    void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException;
+    void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException, IOException;
 
     /** {@inheritDoc} */
-    void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException;
+    void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException, IOException;
 
     /**
      * mergeBase.
@@ -271,7 +271,7 @@ public interface IGitAPI extends GitClient {
      * @return a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws InterruptedException;
+    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws InterruptedException, IOException;
 
     /**
      * showRevision.
@@ -281,7 +281,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<String> showRevision(Revision r) throws GitException, InterruptedException;
+    List<String> showRevision(Revision r) throws GitException, InterruptedException, IOException;
 
     /**
      * This method makes no sense, in that it lists all log entries across all refs and yet it
@@ -293,5 +293,5 @@ public interface IGitAPI extends GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Restricted(NoExternalUse.class)
-    String getAllLogEntries(String branch) throws InterruptedException;
+    String getAllLogEntries(String branch) throws InterruptedException, IOException;
 }

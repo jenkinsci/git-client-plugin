@@ -126,21 +126,21 @@ public class LegacyCompatibleGitAPIImplTest {
         RemoteConfig remoteConfig = new RemoteConfig(config, remoteName);
         List<URIish> list = remoteConfig.getURIs();
         git.clone(remoteConfig);
-        File[] files = git.workspace.listFiles();
+        File[] files = repo.listFiles();
         assertEquals(files.length + "files in " + Arrays.toString(files), 1, files.length);
         assertEquals("Wrong file name", ".git", files[0].getName());
     }
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_ignored_arg() {
+    public void testHasGitModules_default_ignored_arg() throws IOException, InterruptedException {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules("ignored treeIsh argument 1"));
     }
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_no_arg() {
+    public void testHasGitModules_default_no_arg() throws IOException, InterruptedException {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules());
     }
