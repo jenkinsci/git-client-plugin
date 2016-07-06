@@ -3,6 +3,7 @@ package hudson.plugins.git;
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
+import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
@@ -47,7 +48,7 @@ public class GitAPIBadInitTest {
 
     @Test
     public void testInitExistingDirectory() throws Exception {
-        GitClient git = new GitAPI("git", tempDir, listener, env);
+        GitClient git = Git.with(listener, env).using("git").in(tempDir).getClient();
         git.init();
         File gitDir = new File(tempDir, ".git");
         assertTrue(gitDir + " not created", gitDir.exists());
@@ -57,7 +58,7 @@ public class GitAPIBadInitTest {
     @Test
     public void testInitNoDirectory() throws Exception {
         File nonExistentDirectory = new File(tempDir, "dir-does-not-exist");
-        GitClient git = new GitAPI("git", nonExistentDirectory, listener, env);
+        GitClient git = Git.with(listener, env).using("git").in(nonExistentDirectory).getClient();
         thrown.expect(GitException.class);
         thrown.expectMessage("Could not init " + nonExistentDirectory.getAbsolutePath());
         git.init();
@@ -67,7 +68,7 @@ public class GitAPIBadInitTest {
     public void testInitExistingFile() throws Exception {
         File existingFile = new File(tempDir, "file-exists");
         FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");
-        GitClient git = new GitAPI("git", existingFile, listener, env);
+        GitClient git = Git.with(listener, env).using("git").in(existingFile).getClient();
         thrown.expect(GitException.class);
         thrown.expectMessage("Could not init " + existingFile.getAbsolutePath());
         git.init();

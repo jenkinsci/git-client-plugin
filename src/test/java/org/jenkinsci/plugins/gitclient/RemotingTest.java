@@ -6,6 +6,7 @@ import hudson.model.StreamBuildListener;
 import hudson.remoting.Callable;
 import hudson.remoting.VirtualChannel;
 import hudson.slaves.DumbSlave;
+import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.jvnet.hudson.test.HudsonTestCase;
@@ -33,7 +34,7 @@ public class RemotingTest extends HudsonTestCase {
         channel.close();
     }
 
-    private static class Work implements Callable<Void,IOException> {
+    private static class Work extends MasterToSlaveCallable<Void, IOException> {
         private final GitClient git;
 
         public Work(GitClient git) {

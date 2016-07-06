@@ -10,6 +10,7 @@ import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
 import hudson.remoting.Channel;
 
+import hudson.remoting.VirtualChannel;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -42,40 +43,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public boolean isBareRepository() throws GitException, InterruptedException {
+    public boolean isBareRepository() throws GitException, InterruptedException, IOException {
         return isBareRepository("");
     }
 
     // --- legacy methods, kept for backward compatibility
-    protected final File workspace;
-
-    /**
-     * Constructor for LegacyCompatibleGitAPIImpl.
-     *
-     * @param workspace a {@link java.io.File} object.
-     */
-    protected LegacyCompatibleGitAPIImpl(File workspace) {
-        this.workspace = workspace;
-    }
 
     /** {@inheritDoc} */
     @Deprecated
-    public boolean hasGitModules(String treeIsh) throws GitException {
-        try {
-            return new File(workspace, ".gitmodules").exists();
-        } catch (SecurityException ex) {
-            throw new GitException(
-                    "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
-                    ex);
-        } catch (Exception e) {
-            throw new GitException("Couldn't check for .gitmodules", e);
-        }
-
-    }
-
-    /** {@inheritDoc} */
-    @Deprecated
-    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException, IOException {
         // This is to make sure that we don't miss any new submodules or
         // changes in submodule origin paths...
         submoduleInit();
@@ -87,13 +63,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Deprecated
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException {
+    public void fetch(String repository, String refspec) throws GitException, InterruptedException, IOException {
         fetch(repository, new RefSpec(refspec));
     }
 
     /** {@inheritDoc} */
     @Deprecated
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+    public void fetch(RemoteConfig remoteRepository) throws InterruptedException, IOException {
         // Assume there is only 1 URL for simplicity
         fetch(remoteRepository.getURIs().get(0), remoteRepository.getFetchRefSpecs());
     }
@@ -105,7 +81,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Deprecated
-    public void fetch() throws GitException, InterruptedException {
+    public void fetch() throws GitException, InterruptedException, IOException {
         fetch(null, (RefSpec) null);
     }
 
@@ -116,20 +92,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Deprecated
-    public void reset() throws GitException, InterruptedException {
+    public void reset() throws GitException, InterruptedException, IOException {
         reset(false);
     }
 
 
     /** {@inheritDoc} */
     @Deprecated
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
+    public void push(URIish url, String refspec) throws GitException, InterruptedException, IOException {
         push().ref(refspec).to(url).execute();
     }
 
     /** {@inheritDoc} */
     @Deprecated
-    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException, IOException {
         String url = getRemoteUrl(remoteName);
         if (url == null) {
             throw new GitException("bad remote name, URL not set in working copy");
@@ -144,13 +120,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Deprecated
-    public void clone(RemoteConfig source) throws GitException, InterruptedException {
+    public void clone(RemoteConfig source) throws GitException, InterruptedException, IOException {
         clone(source, false);
     }
 
     /** {@inheritDoc} */
     @Deprecated
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
+    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException, IOException {
         // Assume only 1 URL for this repository
         final String source = rc.getURIs().get(0).toPrivateString();
         clone(source, rc.getName(), useShallowClone, null);
@@ -158,40 +134,44 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Deprecated
-    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
+    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException, IOException {
         return revList(branchId);
     }
 
     /** {@inheritDoc} */
     @Deprecated
-    public List<String> showRevision(Revision r) throws GitException, InterruptedException {
+    public List<String> showRevision(Revision r) throws GitException, InterruptedException, IOException {
         return showRevision(null, r.getSha1());
     }
 
     /** {@inheritDoc} */
     @Deprecated
-    public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
-        final Repository db = getRepository();
-        try {
-            final ObjectId commit = db.resolve(revName);
-            final List<Tag> ret = new ArrayList<Tag>();
+    public List<Tag> getTagsOnCommit(final String revName) throws GitException, IOException, InterruptedException {
+        return withRepository(new RepositoryCallback<List<Tag>>() {
+            @Override
+            public List<Tag> invoke(Repository db, VirtualChannel channel) throws IOException, InterruptedException {
+                try {
+                    final ObjectId commit = db.resolve(revName);
+                    final List<Tag> ret = new ArrayList<Tag>();
 
-            for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-                Ref value = tag.getValue();
-                if (value != null) {
-                    final ObjectId tagId = value.getObjectId();
-                    if (commit != null && commit.equals(tagId))
-                        ret.add(new Tag(tag.getKey(), tagId));
+                    for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
+                        Ref value = tag.getValue();
+                        if (value != null) {
+                            final ObjectId tagId = value.getObjectId();
+                            if (commit != null && commit.equals(tagId))
+                                ret.add(new Tag(tag.getKey(), tagId));
+                        }
+                    }
+                    return ret;
+                } finally {
+                    db.close();
                 }
             }
-            return ret;
-        } finally {
-            db.close();
-        }
+        });
     }
 
     /** {@inheritDoc} */
-    public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+    public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException, IOException {
         return lsTree(treeIsh,false);
     }
 
@@ -201,30 +181,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
     }
 
-    /**
-     * hasGitModules.
-     *
-     * @return true if this repositor has one or more submodules
-     * @throws hudson.plugins.git.GitException if underlying git operation fails.
-     */
-    public boolean hasGitModules() throws GitException {
-        try {
-
-            File dotGit = new File(workspace, ".gitmodules");
-
-            return dotGit.exists();
-
-        } catch (SecurityException ex) {
-            throw new GitException(
-                                   "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
-                                   ex);
-        } catch (Exception e) {
-            throw new GitException("Couldn't check for .gitmodules", e);
-        }
-    }
-
     /** {@inheritDoc} */
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException, IOException {
         return showRevision(null, r);
     }
     
