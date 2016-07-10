@@ -1340,28 +1340,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                                 Integer timeout) throws GitException, InterruptedException {
 
         File key = null;
-        String user = null;
         File ssh = null;
         File pass = null;
         File store = null;
         EnvVars env = environment;
         boolean deleteWorkDir = false;
         try {
-            env = new EnvVars(env);
-            if (credentials instanceof SSHUserPrivateKey) {
-                SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
-                listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
-                key = createSshKeyFile(key, sshUser);
-                user = sshUser.getUsername();
-                if (launcher.isUnix()) {
-                    pass =  createUnixSshAskpass(sshUser);
-                } else {
-                    pass =  createWindowsSshAskpass(sshUser);
-                }
-                env.put("SSH_ASKPASS", pass.getAbsolutePath());
-            }
-
             if ("".equals(url.getScheme()) || "ssh".equals(url.getScheme())) {
+                String user = null;
+                env = new EnvVars(env);
+                if (credentials instanceof SSHUserPrivateKey) {
+                    SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
+                    listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
+                    key = createSshKeyFile(key, sshUser);
+                    user = sshUser.getUsername();
+                    if (launcher.isUnix()) {
+                        pass =  createUnixSshAskpass(sshUser);
+                    } else {
+                        pass =  createWindowsSshAskpass(sshUser);
+                    }
+                    env.put("SSH_ASKPASS", pass.getAbsolutePath());
+                }
                 if (launcher.isUnix()) {
                     ssh = createUnixGitSSH(key, user);
                 } else {
