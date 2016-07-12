@@ -1822,6 +1822,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String line;
         try {
             while ((line = rdr.readLine()) != null) {
+                if (line.length() < 44 || !line.contains(" ")) {
+                    // Line must contain 2 leading characters, branch
+                    // name (at least 1 character), a space, and 40
+                    // character SHA1.
+                    // JENKINS-34309 found cases where a Ctrl-M was
+                    // inserted into the output of
+                    // "git branch -v --no-abbrev"
+                    continue;
+                }
                 // Ignore leading 2 characters (marker for current branch)
                 // Ignore line if second field is not SHA1 length (40 characters)
                 // Split fields into branch name, SHA1, and rest of line
