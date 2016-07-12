@@ -2036,7 +2036,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_sparse_checkout() throws Exception {
-        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax 
+        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
          * required by the plugin implementation does not work in git 1.7.1.
          */
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
@@ -2619,7 +2619,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file1 does not exist after merge", w.exists("file1"));
 
         /* Git 1.7.1 does not understand the --orphan argument to checkout.
-         * Stop the test here on older git versions 
+         * Stop the test here on older git versions
          */
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             return;
@@ -3934,5 +3934,30 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(content.contains("hello in Chinese: \u4F60\u597D (n\u01D0 h\u01CEo)"));
         assertTrue(content.contains("hello in French: \u00C7a va ?"));
         assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
+    }
+
+    @NotImplementedInJGit
+   public void test_submodule_recursive_sync() throws Exception {
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/recursiveSubsRepo.zip"), tempRemoteDir);
+        File pathToTempRepo = new File(tempRemoteDir, "recursiveSubsRepo/repository");
+        w = clone(pathToTempRepo.getAbsolutePath());
+        w.igit().submoduleSync();
+        w.igit().submoduleUpdate(true);
+
+        assertTrue(w.file("i_am_repository").exists());
+
+        // by default we are on use_subsubmodule2 branch, so we should find both submodule/i_am_submodule and submodule/subsubmodule/i_am_subsubmodule2
+        assertTrue(w.file("submodule" + File.separator + "i_am_submodule").exists());
+        assertTrue(w.file("submodule" + File.separator + "subsubmodule" + File.separator + "i_am_subsubmodule2").exists());
+
+        // on use_subsubmodule1 branch, we should find both submodule/i_am_submodule and submodule/subsubmodule/i_am_subsubmodule1
+        w.git.checkout("use_subsubmodule1");
+        // first time we must update submodule url
+        w.igit().submoduleUpdate(false);
+        w.igit().submoduleSync();
+        w.igit().submoduleUpdate(true);
+        assertTrue(w.file("submodule" + File.separator + "i_am_submodule").exists());
+        assertTrue(w.file("submodule" + File.separator + "subsubmodule" + File.separator + "i_am_subsubmodule2").exists());
     }
 }

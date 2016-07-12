@@ -895,7 +895,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void submoduleSync() throws GitException, InterruptedException {
         // Check if git submodule has sync support.
         // Only available in git 1.6.1 and above
-        launchCommand("submodule", "sync");
+        ArgumentListBuilder args = new ArgumentListBuilder();
+        args.add("submodule", "sync");
+        // --recursive option is available only since git 1.8.1
+        if (isAtLeastVersion(1,8,1,0)) {
+            args.add("--recursive");
+        }
+        launchCommand(args);
     }
 
 
