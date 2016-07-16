@@ -822,7 +822,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
         assertEquals("content " + fileNameSwim, w.contentOf(fileNameSwim));
         String status = w.cmd("git status");
-        assertTrue("unexpected status " + status, status.contains("working directory clean"));
+        assertTrue("unexpected status " + status, status.contains("working directory clean") || status.contains("working tree clean"));
 
         /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
         FilePath fp = new FilePath(w.file(fileName));
@@ -849,7 +849,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         String dirContents = Arrays.toString((new File(w.repoPath())).listFiles());
         String finalStatus = w.cmd("git status");
-        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean"));
+        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
     }
 
     public void test_fetch() throws Exception {
