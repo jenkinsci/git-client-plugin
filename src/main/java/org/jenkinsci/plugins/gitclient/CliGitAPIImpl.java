@@ -2446,8 +2446,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Map<String, ObjectId> heads = new HashMap<>();
         String[] lines = result.split("\n");
         for (String line : lines) {
-            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
-            heads.put(line.substring(41), ObjectId.fromString(line.substring(0, 40)));
+            if (line.length() >= 41) {
+                heads.put(line.substring(41), ObjectId.fromString(line.substring(0, 40)));
+            } else {
+                listener.getLogger().println("Unexpected ls-remote output line '" + line + "'");
+            }
         }
         return heads;
     }
