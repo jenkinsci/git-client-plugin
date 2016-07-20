@@ -3817,6 +3817,7 @@ public abstract class GitAPITestCase extends TestCase {
             SystemUtils.IS_OS_WINDOWS &&
             w.git instanceof CliGitAPIImpl &&
             w.cgit().isAtLeastVersion(1, 9, 0, 0) &&
+            !w.cgit().isAtLeastVersion(2, 8, 0, 0) &&
             (new File(fullName)).getAbsolutePath().length() > MAX_PATH;
 
         try {
