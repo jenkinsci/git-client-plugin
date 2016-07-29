@@ -244,6 +244,13 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         /**
+         * Creates a JGit implementation. Sometimes we need this for testing CliGit impl.
+         */
+        protected JGitAPIImpl jgit() throws Exception {
+            return (JGitAPIImpl)Git.with(listener, env).in(repo).using("jgit").getClient();
+        }
+
+        /**
          * Creates a {@link Repository} object out of it.
          */
         protected FileRepository repo() throws IOException {
@@ -815,7 +822,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
         assertEquals("content " + fileNameSwim, w.contentOf(fileNameSwim));
         String status = w.cmd("git status");
-        assertTrue("unexpected status " + status, status.contains("working directory clean"));
+        assertTrue("unexpected status " + status, status.contains("working directory clean") || status.contains("working tree clean"));
 
         /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
         FilePath fp = new FilePath(w.file(fileName));
@@ -842,7 +849,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         String dirContents = Arrays.toString((new File(w.repoPath())).listFiles());
         String finalStatus = w.cmd("git status");
-        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean"));
+        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
     }
 
     public void test_fetch() throws Exception {
@@ -965,7 +972,9 @@ public abstract class GitAPITestCase extends TestCase {
             String expectedSubString = "Missing commit " + bareCommit5.name();
             assertTrue("Wrong message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
         } catch (GitException ge) {
-            assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains("Could not merge"));
+            assertTrue("Wrong message :" + ge.getMessage(),
+                       ge.getMessage().contains("Could not merge") ||
+                       ge.getMessage().contains("not something we can merge"));
             assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains(bareCommit5.name()));
         }
         /* Assert that expected change is in repo after merge.  With
@@ -1295,14 +1304,36 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("test branch not listed", branches.contains("test"));
     }
 
+    @Bug(34309)
     public void test_list_branches() throws Exception {
         w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        w.git.branch("another");
         Set<Branch> branches = w.git.getBranches();
+        assertEquals(0, branches.size()); // empty repo should have 0 branches
+        w.commitEmpty("init");
+
+        w.git.branch("test");
+        w.touch("test-branch.txt");
+        w.git.add("test-branch.txt");
+        // JGit commit doesn't end commit message with Ctrl-M, even when passed
+        final String testBranchCommitMessage = "test branch commit ends in Ctrl-M";
+        w.jgit().commit(testBranchCommitMessage + "\r");
+
+        w.git.branch("another");
+        w.touch("another-branch.txt");
+        w.git.add("another-branch.txt");
+        // CliGit commit doesn't end commit message with Ctrl-M, even when passed
+        final String anotherBranchCommitMessage = "test branch commit ends in Ctrl-M";
+        w.cgit().commit(anotherBranchCommitMessage + "\r");
+
+        branches = w.git.getBranches();
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
+        String output = w.cmd("git branch -v --no-abbrev");
+        assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
+        assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
+        assertFalse("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+        assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
+        assertFalse("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
     }
 
     public void test_list_remote_branches() throws Exception {
@@ -3848,6 +3879,7 @@ public abstract class GitAPITestCase extends TestCase {
             SystemUtils.IS_OS_WINDOWS &&
             w.git instanceof CliGitAPIImpl &&
             w.cgit().isAtLeastVersion(1, 9, 0, 0) &&
+            !w.cgit().isAtLeastVersion(2, 8, 0, 0) &&
             (new File(fullName)).getAbsolutePath().length() > MAX_PATH;
 
         try {

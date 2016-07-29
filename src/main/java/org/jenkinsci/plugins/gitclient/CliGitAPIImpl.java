@@ -565,30 +565,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("merge");
-                try {
-                    if(squash) {
-                        args.add("--squash");
-                    }
-
-                    if(!commit){
-                        args.add("--no-commit");
-                    }
-
-                    if (comment != null && !comment.isEmpty()) {
-                        args.add("-m");
-                        args.add(comment);
-                    }
-
-                    if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
-                        args.add("-s");
-                        args.add(strategy);
-                    }
-                    args.add(fastForwardMode);
-                    args.add(rev.name());
-                    launchCommand(args);
-                } catch (GitException e) {
-                    throw new GitException("Could not merge " + rev, e);
+                if(squash) {
+                    args.add("--squash");
                 }
+
+                if(!commit){
+                    args.add("--no-commit");
+                }
+
+                if (comment != null && !comment.isEmpty()) {
+                    args.add("-m");
+                    args.add(comment);
+                }
+
+                if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
+                    args.add("-s");
+                    args.add(strategy);
+                }
+                args.add(fastForwardMode);
+                args.add(rev.name());
+                launchCommand(args);
             }
         };
     }
@@ -1634,7 +1630,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = File.createTempFile("pass", ".sh");
         PrintWriter w = new PrintWriter(ssh);
         w.println("#!/bin/sh");
-        w.println("/bin/echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
+        w.println("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"");
         w.close();
         ssh.setExecutable(true);
         return ssh;
@@ -1812,7 +1808,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars environment = new EnvVars(env);
         if (!env.containsKey("SSH_ASKPASS")) {
             // GIT_ASKPASS supersed SSH_ASKPASS when set, so don't mask SSH passphrase when set
-            environment.put("GIT_ASKPASS", launcher.isUnix() ? "/bin/echo" : "echo");
+            environment.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -1927,6 +1923,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String line;
         try {
             while ((line = rdr.readLine()) != null) {
+                if (line.length() < 44 || !line.contains(" ")) {
+                    // Line must contain 2 leading characters, branch
+                    // name (at least 1 character), a space, and 40
+                    // character SHA1.
+                    // JENKINS-34309 found cases where a Ctrl-M was
+                    // inserted into the output of
+                    // "git branch -v --no-abbrev"
+                    continue;
+                }
                 // Ignore leading 2 characters (marker for current branch)
                 // Ignore line if second field is not SHA1 length (40 characters)
                 // Split fields into branch name, SHA1, and rest of line
@@ -2552,8 +2557,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Map<String, ObjectId> heads = new HashMap<String, ObjectId>();
         String[] lines = result.split("\n");
         for (String line : lines) {
-            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
-            heads.put(line.substring(41), ObjectId.fromString(line.substring(0, 40)));
+            if (line.length() >= 41) {
+                heads.put(line.substring(41), ObjectId.fromString(line.substring(0, 40)));
+            } else {
+                listener.getLogger().println("Unexpected ls-remote output line '" + line + "'");
+            }
         }
         return heads;
     }
