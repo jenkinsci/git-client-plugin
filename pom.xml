@@ -16,6 +16,7 @@
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
+  <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
