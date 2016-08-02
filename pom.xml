@@ -51,7 +51,7 @@
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
-    <maven-javadoc-plugin.version>2.10.3</maven-javadoc-plugin.version>
+    <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
     <jgit.version>3.7.1.201504261725-r</jgit.version>
   </properties>
