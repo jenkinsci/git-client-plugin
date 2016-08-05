@@ -3409,6 +3409,20 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
     }
 
+    @Bug(37185)
+    @NotImplementedInJGit /* JGit doesn't have timeout */
+    public void test_checkout_honor_timeout() throws Exception {
+        w = clone(localMirror());
+
+        int newTimeout = 7;
+        w.git.checkout().branch("master").ref("origin/master").timeout(newTimeout).deleteBranchIfExist(true).execute();
+
+        Map timeouts = new HashMap<Integer, Integer>();
+        timeouts.put(1, newTimeout);
+        timeouts.put(4, newTimeout);
+        setExpectedTimeoutAtPositions(timeouts);
+    }
+
     @Bug(25353)
     @NotImplementedInJGit /* JGit lock file management ignored for now */
     public void test_checkout_interrupted() throws Exception {
