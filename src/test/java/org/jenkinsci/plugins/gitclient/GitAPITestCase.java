@@ -71,6 +71,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import java.util.Iterator;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -388,7 +389,6 @@ public abstract class GitAPITestCase extends TestCase {
             }
         } else {
             assertEquals("Wrong timeout count", expectedTimeouts.size(), timeouts.size());
-            timeouts = expectedTimeouts;
         }
         assertEquals("Wrong timeout", expectedTimeouts, timeouts);
     }
@@ -474,7 +474,24 @@ public abstract class GitAPITestCase extends TestCase {
             setExpectedTimeouts(expected);
         }
     }
-
+    private void setExpectedTimeoutAtPositions(Map<Integer, Integer> newTimeouts) {
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
+            
+            Iterator<Map.Entry<Integer, Integer>> entries = newTimeouts.entrySet().iterator();
+            while(entries.hasNext()) {
+                Map.Entry<Integer, Integer> entry = entries.next();
+                Integer position = entry.getKey();
+                Integer newTimeout = entry.getValue();
+                expected.set(position, newTimeout);
+            }
+            setExpectedTimeouts(expected);
+        }
+    }
     /** Clone arguments include:
      *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
      *   shallow() - no relevant assertion of success or failure of this argument
@@ -497,7 +514,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         assertFalse("Unexpected shallow clone", w.cgit().isShallowRepository());
 
-        setExpectedTimeoutWithAdjustedEnd(newTimeout);
+        Map timeouts = new HashMap<Integer, Integer>();
+        timeouts.put(2, newTimeout);
+        setExpectedTimeoutAtPositions(timeouts);
     }
 
     public void test_checkout_exception() throws Exception {
@@ -2062,7 +2081,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
 
-        setExpectedTimeoutWithAdjustedEnd(newTimeout, 2);
+        setExpectedTimeoutWithAdjustedEnd(newTimeout, 1);
     }
 
     @NotImplementedInJGit
@@ -2119,7 +2138,10 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
 
-        setExpectedTimeoutWithAdjustedEnd(newTimeout);
+        Map timeouts = new HashMap<Integer, Integer>();
+        timeouts.put(28, newTimeout);
+        timeouts.put(31, newTimeout);
+        setExpectedTimeoutAtPositions(timeouts);
     }
 
     public void test_clone_no_checkout() throws Exception {
