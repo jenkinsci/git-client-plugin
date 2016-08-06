@@ -1976,7 +1976,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
-                        launchCommand("checkout", "-f", ref);
+                        ArgumentListBuilder args = new ArgumentListBuilder();
+                        args.add("checkout", "-f", ref);
+                        launchCommandIn(args, workspace, environment, timeout);
 
                         // Second, check to see if the branch actually exists, and then delete it if it does.
                         for (Branch b : getBranches()) {
