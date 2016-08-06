@@ -71,6 +71,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import java.util.Iterator;
+import java.util.Random;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -88,10 +90,30 @@ public abstract class GitAPITestCase extends TestCase {
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
     private String revParseBranchName = null;
+    private int checkoutTimeout = -1;
+    private final Random random = new Random();
 
     private void createRevParseBranch() throws GitException, InterruptedException {
         revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
         w.git.checkout("origin/master", revParseBranchName);
+    }
+
+    private void assertCheckoutTimeout() {
+        if (checkoutTimeout <= 0) {
+            return;
+        }
+        List<String> messages = handler.getMessages();
+        List<String> checkoutMessages = new ArrayList<String>();
+        List<String> checkoutTimeoutMessages = new ArrayList<String>();
+        for (String message : messages) {
+            if (message.matches(".*\\bgit\\b.*\\bcheckout\\b.*")) {
+                checkoutMessages.add(message);
+            }
+            if (message.matches(".*\\bgit\\b.*\\bcheckout\\b.*\\btimeout\\b=" + checkoutTimeout + ".*")) {
+                checkoutTimeoutMessages.add(message);
+            }
+        }
+        assertEquals(checkoutMessages, checkoutTimeoutMessages);
     }
 
     /**
@@ -322,6 +344,7 @@ public abstract class GitAPITestCase extends TestCase {
         revParseBranchName = null;
         setTimeoutVisibleInCurrentTest(true);
         expectedTimeouts = null;
+        checkoutTimeout = -1;
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -371,7 +394,10 @@ public abstract class GitAPITestCase extends TestCase {
      * checks that the branch name is not mentioned in a call to
      * git rev-parse.
      */
-    private void checkRevParseCalls(String branchName) {
+    private void assertRevParseCalls(String branchName) {
+        if (revParseBranchName == null) {
+            return;
+        }
         String messages = StringUtils.join(handler.getMessages(), ";");
         // Linux uses rev-parse without quotes
         assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
@@ -379,7 +405,15 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
     }
 
-    private void checkTimeout() {
+    private void assertTimeout() {
+        /* Only check timeout values if timeouts are visible in the
+         * test and a checkout timeout has not been set.  The
+         * checkoutTimeout value setting is a more precise assertion
+         * than the expectedTimeouts assertion used in this method.
+         */
+        if (!getTimeoutVisibleInCurrentTest() || checkoutTimeout > 0) {
+            return;
+        }
         List<Integer> timeouts = handler.getTimeouts();
         if (expectedTimeouts == null) {
             expectedTimeouts = new ArrayList<>();
@@ -388,7 +422,6 @@ public abstract class GitAPITestCase extends TestCase {
             }
         } else {
             assertEquals("Wrong timeout count", expectedTimeouts.size(), timeouts.size());
-            timeouts = expectedTimeouts;
         }
         assertEquals("Wrong timeout", expectedTimeouts, timeouts);
     }
@@ -405,12 +438,9 @@ public abstract class GitAPITestCase extends TestCase {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
-            if (getTimeoutVisibleInCurrentTest()) {
-                checkTimeout();
-            }
-            if (revParseBranchName != null) {
-                checkRevParseCalls(revParseBranchName);
-            }
+            assertCheckoutTimeout();
+            assertTimeout();
+            assertRevParseCalls(revParseBranchName);
         } finally {
             handler.close();
         }
@@ -474,7 +504,24 @@ public abstract class GitAPITestCase extends TestCase {
             setExpectedTimeouts(expected);
         }
     }
+    private void setExpectedTimeoutAtPositions(Map<Integer, Integer> newTimeouts) {
+        if (getTimeoutVisibleInCurrentTest()) {
+            int size = handler.getTimeouts().size();
+            List<Integer> expected = new ArrayList<Integer>(size);
+            for (int i = 0; i < size; i++) {
+                expected.add(i, CliGitAPIImpl.TIMEOUT);
+            }
 
+            Iterator<Map.Entry<Integer, Integer>> entries = newTimeouts.entrySet().iterator();
+            while(entries.hasNext()) {
+                Map.Entry<Integer, Integer> entry = entries.next();
+                Integer position = entry.getKey();
+                Integer newTimeout = entry.getValue();
+                expected.set(position, newTimeout);
+            }
+            setExpectedTimeouts(expected);
+        }
+    }
     /** Clone arguments include:
      *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
      *   shallow() - no relevant assertion of success or failure of this argument
@@ -497,7 +544,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
         assertFalse("Unexpected shallow clone", w.cgit().isShallowRepository());
 
-        setExpectedTimeoutWithAdjustedEnd(newTimeout);
+        Map timeouts = new HashMap<Integer, Integer>();
+        timeouts.put(2, newTimeout);
+        setExpectedTimeoutAtPositions(timeouts);
     }
 
     public void test_checkout_exception() throws Exception {
@@ -1937,7 +1986,8 @@ public abstract class GitAPITestCase extends TestCase {
     @Bug(8122)
     public void test_submodule_tags_not_fetched_into_parent() throws Exception {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
-        w.git.checkout("origin/master", "master");
+        checkoutTimeout = 1 + random.nextInt(60 * 60 * 24);
+        w.git.checkout().ref("origin/master").branch("master").timeout(checkoutTimeout).execute();
 
         String tagsBefore = w.cmd("git tag");
         Set<String> tagNamesBefore = w.git.getTagNames(null);
@@ -1945,7 +1995,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue(tag + " not in " + tagsBefore, tagsBefore.contains(tag));
         }
 
-        w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").execute();
+        w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").timeout(checkoutTimeout).execute();
         w.git.submoduleUpdate().recursive(true).execute();
 
         String tagsAfter = w.cmd("git tag");
@@ -2062,7 +2112,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
 
-        setExpectedTimeoutWithAdjustedEnd(newTimeout, 2);
+        setExpectedTimeoutWithAdjustedEnd(newTimeout, 1);
     }
 
     @NotImplementedInJGit
@@ -2091,35 +2141,33 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea workingArea = new WorkingArea();
         workingArea.git.clone_().url(w.repoPath()).execute();
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1")).execute();
+        checkoutTimeout = 1 + random.nextInt(60 * 60 * 24);
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertFalse(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir2")).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir2")).timeout(checkoutTimeout).execute();
         assertFalse(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1", "dir2")).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1", "dir2")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Collections.<String>emptyList()).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Collections.<String>emptyList()).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
 
-        int newTimeout = 3; /* Check that checkout timeout is honored */
         workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(null)
-            .timeout(newTimeout)
+            .timeout(checkoutTimeout)
             .execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
-
-        setExpectedTimeoutWithAdjustedEnd(newTimeout);
     }
 
     public void test_clone_no_checkout() throws Exception {
@@ -2785,7 +2833,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
         w.touch("file1", "new");
-        w.git.checkout().branch("other").ref(Constants.HEAD).deleteBranchIfExist(true).execute();
+        checkoutTimeout = 1 + random.nextInt(60 * 60 * 24);
+        w.git.checkout().branch("other").ref(Constants.HEAD).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
 
         Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
 
@@ -3347,7 +3396,8 @@ public abstract class GitAPITestCase extends TestCase {
                 + Constants.MASTER;
         final String bothBranches = Constants.MASTER + "," + remoteBranch;
         w.git.fetch_().from(remote, refspecs).execute();
-        w.git.checkout().ref(Constants.MASTER).execute();
+        checkoutTimeout = 1 + random.nextInt(60 * 60 * 24);
+        w.git.checkout().ref(Constants.MASTER).timeout(checkoutTimeout).execute();
 
         assertEquals(Constants.MASTER,
                 formatBranches(w.git.getBranchesContaining(c1.name(), false)));
@@ -3385,6 +3435,15 @@ public abstract class GitAPITestCase extends TestCase {
         String sha1 = w.git.revParse("HEAD").name();
         String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
         assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
+    }
+
+    @Bug(37185)
+    @NotImplementedInJGit /* JGit doesn't have timeout */
+    public void test_checkout_honor_timeout() throws Exception {
+        w = clone(localMirror());
+
+        checkoutTimeout = 1 + random.nextInt(60 * 60 * 24);
+        w.git.checkout().branch("master").ref("origin/master").timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
     }
 
     @Bug(25353)
