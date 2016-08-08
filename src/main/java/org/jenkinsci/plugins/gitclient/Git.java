@@ -31,7 +31,7 @@ import java.io.Serializable;
  *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class Git implements Serializable {
+public class Git {
     @Nullable
     private FilePath repository;
     private TaskListener listener;
@@ -146,7 +146,7 @@ public class Git implements Serializable {
                     return new JGitAPIImpl(f, listener);
                 }
             };
-            git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
+            git = repository.act(callable);
         } else {
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
             git = new GitAPI(exe, repository, listener, env, launcher);

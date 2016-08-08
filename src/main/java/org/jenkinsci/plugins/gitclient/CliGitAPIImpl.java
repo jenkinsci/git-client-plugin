@@ -1727,10 +1727,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
-    private String launchCommandIn(FilePath workDir, String... args) throws GitException, InterruptedException {
-        return launchCommandIn(new ArgumentListBuilder(args), workDir);
-    }
-
     private String launchCommandIn(ArgumentListBuilder args, FilePath workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
     }
