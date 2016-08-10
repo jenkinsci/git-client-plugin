@@ -1550,36 +1550,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private FilePath createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        FilePath ssh = workspace.createTempFile("pass", ".bat");
-        ssh.write("echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", null);
-        ssh.chmod(0700);
+        FilePath ssh = workspace.createTextTempFile("pass", ".bat",
+            "echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", false);
         return ssh;
     }
 
     private FilePath createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        FilePath ssh = workspace.createTempFile("pass", ".sh");
-        ssh.write("#!/bin/sh\n"
-                + "echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", null);
+        FilePath ssh = workspace.createTextTempFile("pass", ".sh",
+              "#!/bin/sh\n"
+            + "echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", false);
         ssh.chmod(0700);
         return ssh;
     }
 
     private FilePath createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException, InterruptedException {
-        FilePath askpass = workspace.createTempFile("pass", ".bat");
-        askpass.write("@set arg=%~1\n"
-                    + "@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()) + "\n"
-                    + "@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())), null);
-        askpass.chmod(0700);
+        FilePath askpass = workspace.createTextTempFile("pass", ".bat",
+                  "@set arg=%~1\r\n"
+                + "@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()) + "\n\n"
+                + "@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())),
+                false);
         return askpass;
     }
 
     private FilePath createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException, InterruptedException {
-        FilePath askpass = workspace.createTempFile("pass", ".sh");
-        askpass.write("#!/bin/sh\n"
-                    + "case \"$1\" in\n"
-                    + "Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;\n"
-                    + "Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;\n"
-                    + "esac", null);
+        FilePath askpass = workspace.createTextTempFile("pass", ".sh",
+                  "#!/bin/sh\n"
+                + "case \"$1\" in\n"
+                + "Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;\n"
+                + "Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;\n"
+                + "esac", false);
         askpass.chmod(0700);
         return askpass;
     }
