@@ -1551,14 +1551,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private FilePath createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         FilePath ssh = workspace.createTextTempFile("pass", ".bat",
-            "echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", false);
+            "echo \"" + quoteWindowsCredentials(Secret.toString(sshUser.getPassphrase())) + "\"", false);
         return ssh;
     }
 
     private FilePath createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         FilePath ssh = workspace.createTextTempFile("pass", ".sh",
               "#!/bin/sh\n"
-            + "echo \"" + Secret.toString(sshUser.getPassphrase()) + "\"", false);
+            + "echo \"" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "\"", false);
         ssh.chmod(0700);
         return ssh;
     }
