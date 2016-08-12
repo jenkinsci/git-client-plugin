@@ -1566,7 +1566,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private FilePath createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException, InterruptedException {
         FilePath askpass = workspace.createTextTempFile("pass", ".bat",
                   "@set arg=%~1\r\n"
-                + "@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()) + "\n\n"
+                + "@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()) + "\r\n"
                 + "@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())),
                 false);
         return askpass;
