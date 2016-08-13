@@ -13,6 +13,7 @@ import hudson.tools.ToolProperty;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -137,7 +138,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
 
-    @Extension
+    @Extension @Symbol("git")
     public static class DescriptorImpl extends ToolDescriptor<GitTool> {
 
         public DescriptorImpl() {

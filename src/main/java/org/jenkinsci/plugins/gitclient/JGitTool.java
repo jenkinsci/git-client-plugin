@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.Collections;
@@ -40,7 +41,7 @@ public class JGitTool extends GitTool {
         return super.getDescriptor();
     }
 
-    @Extension
+    @Extension @Symbol("jgit")
     public static class DescriptorImpl extends GitTool.DescriptorImpl {
         @Override
         public String getDisplayName() {
