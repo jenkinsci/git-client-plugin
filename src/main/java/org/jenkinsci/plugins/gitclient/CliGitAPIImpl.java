@@ -639,6 +639,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
+                /* Match JGit - create directory if it does not exist */
+                /* Multi-branch pipeline assumes init() creates directory */
+                File workspaceDir = new File(workspace);
+                if (!workspaceDir.exists()) {
+                    boolean ok = workspaceDir.mkdirs();
+                    if (!ok && !workspaceDir.exists()) {
+                        throw new GitException("Could not create directory '" + workspaceDir.getAbsolutePath() + "'");
+                    }
+                }
+
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("init", workspace);
 

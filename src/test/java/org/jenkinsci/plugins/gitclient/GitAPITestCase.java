@@ -71,7 +71,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
-import java.util.Iterator;
 import java.util.Random;
 
 /**
@@ -3978,5 +3977,31 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(content.contains("hello in Chinese: \u4F60\u597D (n\u01D0 h\u01CEo)"));
         assertTrue(content.contains("hello in French: \u00C7a va ?"));
         assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
+    }
+
+    /**
+     * Multi-branch pipeline plugin and other AbstractGitSCMSource callers were
+     * initially using JGit as their implementation, and developed an unexpected
+     * dependency on JGit behavior. JGit init() (in JGit 3.7 at least) creates
+     * the directory if it does not exist. Rather than change the multi-branch
+     * pipeline when the git client plugin was adapted to allow either git or
+     * jgit, instead the git.init() method was changed to create the target
+     * directory if it does not exist.
+     *
+     * Low risk from that change of behavior, since a non-existent directory
+     * caused the command line git init() method to consistently throw an
+     * exception.
+     *
+     * @throws java.lang.Exception on error
+     */
+    public void test_git_init_creates_directory_if_needed() throws Exception {
+        File nonexistentDir = new File(UUID.randomUUID().toString());
+        assertFalse("Dir unexpectedly exists at start of test", nonexistentDir.exists());
+        try {
+            GitClient git = setupGitAPI(nonexistentDir);
+            git.init();
+        } finally {
+            FileUtils.deleteDirectory(nonexistentDir);
+        }
     }
 }
