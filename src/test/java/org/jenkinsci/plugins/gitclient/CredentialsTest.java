@@ -28,6 +28,7 @@ import static junit.framework.TestCase.assertTrue;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -316,6 +317,7 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
         checkExpectedLogSubstring();
     }
 
@@ -344,6 +346,8 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        /* prune opens a remote connection to list remote branches */
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
         checkExpectedLogSubstring();
     }
 

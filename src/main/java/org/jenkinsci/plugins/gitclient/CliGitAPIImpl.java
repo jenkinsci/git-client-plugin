@@ -758,7 +758,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("remote", "prune", repoName);
 
-            launchCommand(args);
+            StandardCredentials cred = credentials.get(repoUrl);
+            if (cred == null) cred = defaultCredentials;
+
+            try {
+                launchCommandWithCredentials(args, workspace, cred, new URIish(repoUrl));
+            } catch (URISyntaxException ex) {
+                throw new GitException("Invalid URL " + repoUrl, ex);
+            }
         }
     }
 
