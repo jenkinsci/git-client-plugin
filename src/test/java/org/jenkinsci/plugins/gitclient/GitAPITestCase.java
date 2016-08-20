@@ -110,13 +110,13 @@ public abstract class GitAPITestCase extends TestCase {
     private void assertCloneTimeout() {
         if (cloneTimeout > 0) {
             // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git -c core.askpass=true fetch", cloneTimeout);
+            assertSubstringTimeout("git fetch", cloneTimeout);
         }
     }
 
     private void assertFetchTimeout() {
         if (fetchTimeout > 0) {
-            assertSubstringTimeout("git -c core.askpass=true fetch", fetchTimeout);
+            assertSubstringTimeout("git fetch", fetchTimeout);
         }
     }
 
