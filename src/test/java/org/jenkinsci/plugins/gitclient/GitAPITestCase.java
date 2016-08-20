@@ -3,7 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.*;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertNotEquals;
 import hudson.FilePath;
@@ -103,47 +103,51 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
-            assertKeywordTimeout("checkout", checkoutTimeout);
+            assertSubstringTimeout("git checkout", checkoutTimeout);
         }
     }
 
     private void assertCloneTimeout() {
         if (cloneTimeout > 0) {
             // clone_() uses "git fetch" internally, not "git clone"
-            assertKeywordTimeout("fetch", cloneTimeout);
+            assertSubstringTimeout("git -c core.askpass=true fetch", cloneTimeout);
         }
     }
 
     private void assertFetchTimeout() {
         if (fetchTimeout > 0) {
-            assertKeywordTimeout("fetch", fetchTimeout);
+            assertSubstringTimeout("git -c core.askpass=true fetch", fetchTimeout);
         }
     }
 
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
-            assertKeywordTimeout("update", submoduleUpdateTimeout);
+            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
         }
     }
 
-    private void assertKeywordTimeout(final String keyword, int expectedTimeout) {
+    private void assertSubstringTimeout(final String substring, int expectedTimeout) {
+        if (!(w.git instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
+            return;
+        }
         List<String> messages = handler.getMessages();
-        List<String> keywordMessages = new ArrayList<String>();
-        List<String> keywordTimeoutMessages = new ArrayList<String>();
-        final String messageRegEx = ".*\\bgit\\b" // command line git
-                + ".*[^.]" // any string not ending in literal "." (don't match remote.origin.fetch)
-                + "\\b" + keyword + "\\b.*"; // the keyword
+        List<String> substringMessages = new ArrayList<String>();
+        List<String> substringTimeoutMessages = new ArrayList<String>();
+        final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
         final String timeoutRegEx = messageRegEx
-                + "\\btimeout\\b=\\b" + expectedTimeout + "\\b.*"; // timeout=<value>
+                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
         for (String message : messages) {
             if (message.matches(messageRegEx)) {
-                keywordMessages.add(message);
+                substringMessages.add(message);
             }
             if (message.matches(timeoutRegEx)) {
-                keywordTimeoutMessages.add(message);
+                substringTimeoutMessages.add(message);
             }
         }
-        assertEquals(keywordMessages, keywordTimeoutMessages);
+        assertThat(messages, is(not(empty())));
+        assertThat(substringMessages, is(not(empty())));
+        assertThat(substringTimeoutMessages, is(not(empty())));
+        assertEquals(substringMessages, substringTimeoutMessages);
     }
 
     /**
