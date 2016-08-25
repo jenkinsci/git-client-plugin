@@ -1395,8 +1395,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException, IOException {
         FilePath msg = null;
         try {
-            msg = workspace.createTempFile("git-note", "txt");
-            msg.write(note, null);
+            msg = workspace.createTextTempFile("git-note", "txt", note, false);
             launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getRemote());
         } catch (IOException | GitException e) {
             throw new GitException("Could not apply note " + note, e);
@@ -1530,9 +1529,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private FilePath createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        FilePath key = workspace.createTempFile("ssh", "key");
         List<String> privateKeys = sshUser.getPrivateKeys();
-        key.write(StringUtils.join(privateKeys, "\n"), null);
+        FilePath key = workspace.createTextTempFile("ssh", "key", StringUtils.join(privateKeys, "\n"), false);
         key.chmod(0400);
         return key;
     }
@@ -2275,8 +2273,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void commit(String message) throws GitException, InterruptedException, IOException {
         FilePath f = null;
         try {
-            f = workspace.createTempFile("gitcommit", ".txt");
-            f.write(message, null);
+            f = workspace.createTextTempFile("gitcommit", ".txt", message, false);
             launchCommand("commit", "-F", f.getRemote());
 
         } catch (GitException e) {
