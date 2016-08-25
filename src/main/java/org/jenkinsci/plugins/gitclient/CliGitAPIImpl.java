@@ -1703,25 +1703,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private FilePath createWindowsGitSSH(FilePath key, String user) throws IOException, InterruptedException {
-        FilePath ssh = workspace.createTempFile("ssh", ".bat");
-
         FilePath sshexe = getSSHExecutable();
-
-        ssh.write("@echo off\n"
-                + "\"" + sshexe.getRemote() + "\" -i \"" + key.getRemote() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ", null);
-        ssh.chmod(0700);
+        FilePath ssh = workspace.createTextTempFile("ssh", ".bat",
+                "@echo off\r\n"
+                + "\"" + sshexe.getRemote() + "\" -i \"" + key.getRemote() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ",
+                false);
         return ssh;
     }
 
     private FilePath createUnixGitSSH(FilePath key, String user) throws IOException, InterruptedException {
-        FilePath ssh = workspace.createTempFile("ssh", ".sh");
-        ssh.write("#!/bin/sh\n"
+        FilePath ssh = workspace.createTextTempFile("ssh", ".sh",
+                "#!/bin/sh\n"
                   // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
-               + "if [ -z \"${DISPLAY}\" ]; then\n"
-               + "  DISPLAY=:123.456\n"
-               + "  export DISPLAY\n"
-               + "fi\n"
-               + "ssh -i \"" + key.getRemote() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"", null);
+                + "if [ -z \"${DISPLAY}\" ]; then\n"
+                + "  DISPLAY=:123.456\n"
+                + "  export DISPLAY\n"
+                + "fi\n"
+                + "ssh -i \"" + key.getRemote() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"",
+                false);
         ssh.chmod(0700);
         return ssh;
     }
