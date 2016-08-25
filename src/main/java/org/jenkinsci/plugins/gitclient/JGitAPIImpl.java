@@ -882,11 +882,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
-        Repository repo = getRepository();
-        try {
+        try (Repository repo = getRepository()) {
             return callable.invoke(repo, Jenkins.MasterComputer.localChannel);
-        } finally {
-            repo.close();
         }
     }
 
@@ -1843,9 +1840,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         revListCommand.to(oidList);
         try {
             revListCommand.execute();
-        } catch (InterruptedException e) {
-            throw new GitException(e);
-        } catch (IOException e) {
+        } catch (InterruptedException | IOException e) {
             throw new GitException(e);
         }
         return oidList;
