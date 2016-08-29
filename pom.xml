@@ -10,7 +10,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>1.19.8-SNAPSHOT</version>
+  <version>1.21.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
@@ -39,19 +39,30 @@
     <tag>HEAD</tag>
   </scm>
 
+  <distributionManagement>
+    <repository>
+      <id>maven.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>maven.jenkins-ci.org</id>
+      <url>https://repo.jenkins-ci.org/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
   <properties>
     <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
-    <jacoco-maven-plugin.version>0.7.4.201502262128</jacoco-maven-plugin.version>
+    <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
     <!-- Maven plugin versions provided by parent are outdated. -->
     <!-- Generating site report with "mvn site" fails without these updated versions. -->
     <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
     <maven-enforcer-plugin.version>1.4</maven-enforcer-plugin.version>
-    <maven-hpi-plugin.version>1.116</maven-hpi-plugin.version>
+    <maven-hpi-plugin.version>1.119</maven-hpi-plugin.version>
     <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.4</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
-    <maven-javadoc-plugin.version>2.10.3</maven-javadoc-plugin.version>
+    <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
     <jgit.version>3.7.1.201504261725-r</jgit.version>
   </properties>
@@ -96,6 +107,11 @@
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.java7</artifactId>
       <version>${jgit.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>structs</artifactId>
+      <version>1.3</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

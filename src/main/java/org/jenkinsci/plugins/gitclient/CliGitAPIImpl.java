@@ -669,6 +669,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
+                /* Match JGit - create directory if it does not exist */
+                /* Multi-branch pipeline assumes init() creates directory */
+                File workspaceDir = new File(workspace);
+                if (!workspaceDir.exists()) {
+                    boolean ok = workspaceDir.mkdirs();
+                    if (!ok && !workspaceDir.exists()) {
+                        throw new GitException("Could not create directory '" + workspaceDir.getAbsolutePath() + "'");
+                    }
+                }
+
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("init", workspace);
 
@@ -778,7 +788,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("remote", "prune", repoName);
 
-            launchCommand(args);
+            StandardCredentials cred = credentials.get(repoUrl);
+            if (cred == null) cred = defaultCredentials;
+
+            try {
+                launchCommandWithCredentials(args, workspace, cred, new URIish(repoUrl));
+            } catch (URISyntaxException ex) {
+                throw new GitException("Invalid URL " + repoUrl, ex);
+            }
         }
     }
 
@@ -2077,7 +2094,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
-                        launchCommand("checkout", "-f", ref);
+                        ArgumentListBuilder args = new ArgumentListBuilder();
+                        args.add("checkout", "-f", ref);
+                        launchCommandIn(args, workspace, environment, timeout);
 
                         // Second, check to see if the branch actually exists, and then delete it if it does.
                         for (Branch b : getBranches()) {

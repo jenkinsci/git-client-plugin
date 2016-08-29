@@ -55,15 +55,6 @@ public class GitAPIBadInitTest {
     }
 
     @Test
-    public void testInitNoDirectory() throws Exception {
-        File nonExistentDirectory = new File(tempDir, "dir-does-not-exist");
-        GitClient git = new GitAPI("git", nonExistentDirectory, listener, env);
-        thrown.expect(GitException.class);
-        thrown.expectMessage("Could not init " + nonExistentDirectory.getAbsolutePath());
-        git.init();
-    }
-
-    @Test
     public void testInitExistingFile() throws Exception {
         File existingFile = new File(tempDir, "file-exists");
         FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");
