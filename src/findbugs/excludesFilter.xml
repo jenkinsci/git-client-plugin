@@ -19,6 +19,7 @@
   <Match>
     <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
     <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl$RawFormatter"/>
+    <Method name="format"/>
   </Match>
 
   <!-- this readLine intentionally discards its output -->
