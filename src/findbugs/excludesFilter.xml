@@ -33,6 +33,7 @@
   <Match>
     <Bug pattern="EQ_GETCLASS_AND_CLASS_CONSTANT"/>
     <Class name="org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory"/>
+    <Method name="equals"/>
   </Match>
 
 </FindBugsFilter>
