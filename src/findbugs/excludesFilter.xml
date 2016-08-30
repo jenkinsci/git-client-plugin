@@ -25,6 +25,7 @@
   <Match>
     <Bug pattern="RV_DONT_JUST_NULL_CHECK_READLINE"/>
     <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl"/>
+    <Method name="firstLine"/>
   </Match>
 
   <!-- Ignore Apache SSL equals method warning - out of our control -->
