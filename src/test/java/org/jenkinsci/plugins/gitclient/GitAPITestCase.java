@@ -1313,6 +1313,33 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Tags have been found : " + tags, tags.isEmpty());
     }
 
+    @Bug(37794)
+    public void test_getTagNames_supports_slashes_in_tag_names() throws Exception {
+        w.init();
+        w.commitEmpty("init-getTagNames-supports-slashes");
+        w.git.tag("no-slash", "Tag without a /");
+        Set<String> tags = w.git.getTagNames(null);
+        assertThat(tags, hasItem("no-slash"));
+        assertThat(tags, not(hasItem("slashed/sample")));
+        assertThat(tags, not(hasItem("slashed/sample-with-empty-comment")));
+
+        w.git.tag("slashed/sample", "Tag slashed/sample includes a /");
+        w.git.tag("slashed/sample-with-empty-comment", "");
+
+        for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
+            Set<String> latestTags = w.git.getTagNames(matchPattern);
+            assertThat(tags, hasItem("no-slash"));
+            assertThat(latestTags, not(hasItem("slashed/sample")));
+            assertThat(latestTags, not(hasItem("slashed/sample-with-empty-comment")));
+        }
+
+        for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
+            Set<String> latestTags = w.git.getTagNames(matchPattern);
+            assertThat(latestTags, hasItem("slashed/sample"));
+            assertThat(latestTags, hasItem("slashed/sample-with-empty-comment"));
+        }
+    }
+
     public void test_create_branch() throws Exception {
         w.init();
         w.commitEmpty("init");
