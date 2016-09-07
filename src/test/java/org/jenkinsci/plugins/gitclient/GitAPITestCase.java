@@ -1321,22 +1321,32 @@ public abstract class GitAPITestCase extends TestCase {
         Set<String> tags = w.git.getTagNames(null);
         assertThat(tags, hasItem("no-slash"));
         assertThat(tags, not(hasItem("slashed/sample")));
-        assertThat(tags, not(hasItem("slashed/sample-with-empty-comment")));
+        assertThat(tags, not(hasItem("slashed/sample-with-short-comment")));
 
         w.git.tag("slashed/sample", "Tag slashed/sample includes a /");
-        w.git.tag("slashed/sample-with-empty-comment", "");
+        w.git.tag("slashed/sample-with-short-comment", "short comment");
 
         for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
             Set<String> latestTags = w.git.getTagNames(matchPattern);
             assertThat(tags, hasItem("no-slash"));
             assertThat(latestTags, not(hasItem("slashed/sample")));
-            assertThat(latestTags, not(hasItem("slashed/sample-with-empty-comment")));
+            assertThat(latestTags, not(hasItem("slashed/sample-with-short-comment")));
         }
 
         for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
             Set<String> latestTags = w.git.getTagNames(matchPattern);
             assertThat(latestTags, hasItem("slashed/sample"));
-            assertThat(latestTags, hasItem("slashed/sample-with-empty-comment"));
+            assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
+        }
+    }
+
+    public void test_empty_comment() throws Exception {
+        w.init();
+        w.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
+        if (isWindows()) {
+            w.git.tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
+        } else {
+            w.git.tag("empty-comment", "");
         }
     }
 
@@ -4030,5 +4040,10 @@ public abstract class GitAPITestCase extends TestCase {
         } finally {
             FileUtils.deleteDirectory(nonexistentDir);
         }
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
     }
 }
