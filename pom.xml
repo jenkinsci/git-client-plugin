@@ -41,6 +41,7 @@
   </scm>
 
   <properties>
+    <concurrency>1</concurrency>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
