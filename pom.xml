@@ -41,6 +41,7 @@
   </scm>
 
   <properties>
+    <concurrency>1</concurrency>
     <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
     <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
