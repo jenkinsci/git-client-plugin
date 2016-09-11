@@ -14,6 +14,15 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand recursive(boolean recursive);
 
     /**
+     * If set true, submodule update will be forced even if the commit is
+     * alraedy cecked out.  Default is non-forced.
+     *
+     * @param force if true, will force update of submodules (requires git&gt;=1.6.5)
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand force(boolean force);
+
+    /**
      * If set true and if the git version supports it, update the
      * submodules to the tip of the branch rather than to a specific
      * SHA1.  Refer to git documentation for details.  First available
