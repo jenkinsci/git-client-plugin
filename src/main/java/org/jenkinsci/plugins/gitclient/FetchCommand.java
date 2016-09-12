@@ -35,7 +35,7 @@ public interface FetchCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
      */
     FetchCommand shallow(boolean shallow);
-    
+
     /**
      * timeout.
      *
@@ -54,4 +54,11 @@ public interface FetchCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
      */
     FetchCommand depth(Integer depth);
+
+    /**
+     * Enable LFS pull after init/fetch
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
+    FetchCommand withLFS();
 }
