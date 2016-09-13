@@ -67,15 +67,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
     }
 
-    private static final long serialVersionUID = 1;
-    static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
-    static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     static final String TIMEOUT_LOG_PREFIX = " # timeout=";
+    private static final long serialVersionUID = 1;
+    private static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
+    private static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     private static final String INDEX_LOCK_FILE_PATH = ".git" + File.separator + "index.lock";
-    transient Launcher launcher;
-    TaskListener listener;
-    String gitExe;
-    EnvVars environment;
+    private transient Launcher launcher;
+    private TaskListener listener;
+    private String gitExe;
+    private EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<String, StandardCredentials>();
     private StandardCredentials defaultCredentials;
 
@@ -379,14 +379,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public CloneCommand clone_() {
         return new CloneCommand() {
-            String url;
-            String origin = "origin";
-            String reference;
-            boolean shallow,shared;
-            Integer timeout;
-            boolean tags = true;
-            List<RefSpec> refspecs;
-            Integer depth = 1;
+            private String url;
+            private String origin = "origin";
+            private String reference;
+            private boolean shallow,shared;
+            private Integer timeout;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
+            private Integer depth = 1;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -795,10 +795,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
             public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
-            final List<String> revs = new ArrayList<String>();
+            private final List<String> revs = new ArrayList<String>();
 
-            Integer n = null;
-            Writer out = null;
+            private Integer n = null;
+            private Writer out = null;
 
             public ChangelogCommand excludes(String rev) {
                 revs.add(sanitize('^'+rev));
@@ -919,10 +919,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
-            boolean recursive                      = false;
-            boolean remoteTracking                 = false;
-            String  ref                            = null;
-            Map<String, String> submodBranch   = new HashMap<String, String>();
+            private boolean recursive                      = false;
+            private boolean remoteTracking                 = false;
+            private String  ref                            = null;
+            private Map<String, String> submodBranch   = new HashMap<String, String>();
             public Integer timeout;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
