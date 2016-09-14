@@ -1,0 +1,3 @@
+<?jelly escape-by-default='true'?>
+<!-- JGit shows up in a part of Git installation configuration -->
+<j:jelly xmlns:j="jelly:core" />
