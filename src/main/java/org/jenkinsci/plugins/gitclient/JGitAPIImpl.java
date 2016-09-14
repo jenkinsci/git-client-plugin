@@ -98,6 +98,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
+import org.eclipse.jgit.transport.HttpTransport;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -106,6 +107,7 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.http.HttpConnectionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -141,6 +143,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
+        this(workspace, listener, null);
+    }
+
+    JGitAPIImpl(File workspace, TaskListener listener, final HttpConnectionFactory httpConnectionFactory) {
         /* If workspace is null, then default to current directory to match 
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
@@ -149,6 +155,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
         SshSessionFactory.setInstance(new TrileadSessionFactory());
+
+        if (httpConnectionFactory != null) {
+            // allow override of HttpConnectionFactory to avoid JENKINS-37934
+            HttpTransport.setConnectionFactory(httpConnectionFactory);
+        }
     }
 
     /**
