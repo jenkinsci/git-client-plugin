@@ -9,6 +9,7 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;
 import org.eclipse.jgit.transport.http.apache.HttpClientConnectionFactory;
+import org.eclipse.jgit.transport.http.apache.PreemptiveAuthHttpClientConnectionFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -128,7 +129,7 @@ public class Git implements Serializable {
                 }
 
                 if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                    final HttpConnectionFactory factory = new HttpClientConnectionFactory();
+                    final PreemptiveAuthHttpClientConnectionFactory factory = new PreemptiveAuthHttpClientConnectionFactory();
                     return new JGitAPIImpl(f, listener, factory);
                 }
                 // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient

@@ -44,16 +44,24 @@ package org.eclipse.jgit.transport.http.apache;
 
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHost;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.Credentials;
+import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
+import org.eclipse.jgit.transport.CredentialItem;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -62,6 +70,7 @@ import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 
 /**
@@ -101,8 +110,34 @@ public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
     }
 
     private HttpClient getClient() {
-        if (client == null)
-            client = new DefaultHttpClient();
+        if (client == null) {
+            final HttpClientBuilder builder = HttpClientBuilder.create();
+            CredentialItem.Username u = new CredentialItem.Username();
+            CredentialItem.Password p = new CredentialItem.Password();
+            final URIish uri;
+            try {
+                uri = new URIish(urlStr);
+            }
+            catch (final URISyntaxException e) {
+                throw new Error(e);
+            }
+
+            final CredentialsProvider clientCredentialsProvider = new BasicCredentialsProvider();
+            if (credentialsProvider.supports(u, p)
+                    && credentialsProvider.get(uri, u, p)) {
+                final String userName = u.getValue();
+                final String password = new String(p.getValue());
+                p.clear();
+                final Credentials credentials;
+                credentials = new UsernamePasswordCredentials(userName, password);
+                clientCredentialsProvider.setCredentials(AuthScope.ANY, credentials);
+                builder.setDefaultCredentialsProvider(clientCredentialsProvider);
+            }
+            else {
+                // TODO: do I need to set the SystemDefaultCredentialsProvider?
+            }
+            client = builder.build();
+        }
         HttpParams params = client.getParams();
         if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
             isUsingProxy = true;
@@ -126,7 +161,6 @@ public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
             client.getConnectionManager().getSchemeRegistry().register(https);
         }
 
-        // TODO: configure authentication
         return client;
     }
 

@@ -108,6 +108,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;
+import org.eclipse.jgit.transport.http.apache.PreemptiveAuthHttpClientConnectionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -146,7 +147,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this(workspace, listener, null);
     }
 
-    JGitAPIImpl(File workspace, TaskListener listener, final HttpConnectionFactory httpConnectionFactory) {
+    JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
         /* If workspace is null, then default to current directory to match 
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
@@ -157,6 +158,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         SshSessionFactory.setInstance(new TrileadSessionFactory());
 
         if (httpConnectionFactory != null) {
+            httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
             // allow override of HttpConnectionFactory to avoid JENKINS-37934
             HttpTransport.setConnectionFactory(httpConnectionFactory);
         }
