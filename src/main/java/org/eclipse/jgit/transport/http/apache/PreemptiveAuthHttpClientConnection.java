@@ -56,6 +56,7 @@ import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
 import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
+import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -83,16 +84,19 @@ public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
 
     private X509HostnameVerifier hostnameverifier;
 
-    public PreemptiveAuthHttpClientConnection(final String urlStr) {
-        this(urlStr, null);
+    private final SmartCredentialsProvider credentialsProvider;
+
+    public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr) {
+        this(credentialsProvider, urlStr, null);
     }
 
-    public PreemptiveAuthHttpClientConnection(final String urlStr, final Proxy proxy) {
-        this(urlStr, proxy, null);
+    public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy) {
+        this(credentialsProvider, urlStr, proxy, null);
     }
 
-    public PreemptiveAuthHttpClientConnection(final String urlStr, final Proxy proxy, final HttpClient cl) {
+    public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy, final HttpClient cl) {
         super(urlStr, proxy, cl);
+        this.credentialsProvider = credentialsProvider;
         this.proxy = proxy;
     }
 

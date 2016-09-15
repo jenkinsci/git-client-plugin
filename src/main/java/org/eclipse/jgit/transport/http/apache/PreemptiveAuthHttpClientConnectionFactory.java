@@ -34,7 +34,7 @@ public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnection
         if (credentialsProvider == null) {
             throw new IllegalStateException(NEED_CREDENTIALS_PROVIDER);
         }
-        // TODO: implement
-        return null;
+
+        return new PreemptiveAuthHttpClientConnection(credentialsProvider, url.toString(), proxy);
     }
 }
