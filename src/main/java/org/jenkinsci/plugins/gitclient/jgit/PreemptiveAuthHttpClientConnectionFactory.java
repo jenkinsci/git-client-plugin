@@ -1,4 +1,4 @@
-package org.eclipse.jgit.transport.http.apache;
+package org.jenkinsci.plugins.gitclient.jgit;
 
 import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;

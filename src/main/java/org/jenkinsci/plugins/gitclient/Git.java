@@ -7,9 +7,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
-import org.eclipse.jgit.transport.http.HttpConnectionFactory;
-import org.eclipse.jgit.transport.http.apache.HttpClientConnectionFactory;
-import org.eclipse.jgit.transport.http.apache.PreemptiveAuthHttpClientConnectionFactory;
+import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
