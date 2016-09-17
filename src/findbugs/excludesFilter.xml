@@ -19,27 +19,21 @@
   <Match>
     <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
     <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl$RawFormatter"/>
+    <Method name="format"/>
   </Match>
 
   <!-- this readLine intentionally discards its output -->
   <Match>
     <Bug pattern="RV_DONT_JUST_NULL_CHECK_READLINE"/>
     <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl"/>
+    <Method name="firstLine"/>
   </Match>
 
   <!-- Ignore Apache SSL equals method warning - out of our control -->
   <Match>
     <Bug pattern="EQ_GETCLASS_AND_CLASS_CONSTANT"/>
     <Class name="org.apache.commons.httpclient.contrib.ssl.EasySSLProtocolSocketFactory"/>
-  </Match>
-
-  <!-- Findbugs 2.0.1 detector is incorrect in this case -->
-  <!-- If the value is null, then the result of a method call is
-       assigned, which most likely will not leave the value as null
-       -->
-  <Match>
-    <Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/>
-    <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl"/>
+    <Method name="equals"/>
   </Match>
 
 </FindBugsFilter>

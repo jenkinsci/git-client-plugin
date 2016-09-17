@@ -175,7 +175,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         public List<ToolDescriptor<? extends GitTool>> getApplicableDesccriptors() {
-            List<ToolDescriptor<? extends GitTool>> r = new ArrayList<ToolDescriptor<? extends GitTool>>();
+            List<ToolDescriptor<? extends GitTool>> r = new ArrayList<>();
             Jenkins jenkinsInstance = Jenkins.getInstance();
             if (jenkinsInstance == null) {
                 return r;

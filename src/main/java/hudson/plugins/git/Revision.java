@@ -32,7 +32,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      */
     public Revision(ObjectId sha1) {
         this.sha1 = sha1;
-        this.branches = new ArrayList<Branch>();
+        this.branches = new ArrayList<>();
     }
 
     /**
@@ -139,7 +139,7 @@ public class Revision implements java.io.Serializable, Cloneable {
         catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
-        clone.branches = new ArrayList<Branch>(branches);
+        clone.branches = new ArrayList<>(branches);
         return clone;
     }
 

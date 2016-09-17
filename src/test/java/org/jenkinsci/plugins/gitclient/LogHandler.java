@@ -13,7 +13,7 @@ import java.util.logging.LogRecord;
  */
 public class LogHandler extends Handler {
 
-    private List<String> messages = new ArrayList<String>();
+    private List<String> messages = new ArrayList<>();
 
     @Override
     public void publish(LogRecord lr) {
@@ -26,7 +26,7 @@ public class LogHandler extends Handler {
 
     @Override
     public void close() throws SecurityException {
-        messages = new ArrayList<String>();
+        messages = new ArrayList<>();
     }
 
     /* package */ List<String> getMessages() {
@@ -43,7 +43,7 @@ public class LogHandler extends Handler {
     }
 
     /* package */ List<Integer> getTimeouts() {
-        List<Integer> timeouts = new ArrayList<Integer>();
+        List<Integer> timeouts = new ArrayList<>();
         for (String message : getMessages()) {
             int start = message.indexOf(CliGitAPIImpl.TIMEOUT_LOG_PREFIX);
             if (start >= 0) {

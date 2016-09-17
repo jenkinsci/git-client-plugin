@@ -23,11 +23,8 @@ import java.io.Writer;
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     /** {@inheritDoc} */
     public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
-        Repository repo = getRepository();
-        try {
+        try (Repository repo = getRepository()) {
             return callable.invoke(repo, MasterComputer.localChannel);
-        } finally {
-            repo.close();
         }
     }
 

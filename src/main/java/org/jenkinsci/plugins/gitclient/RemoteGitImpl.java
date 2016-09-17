@@ -113,7 +113,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     private static class CommandInvocationHandler implements InvocationHandler, GitCommand, Serializable {
         private final Class<? extends GitCommand> command;
-        private final List<Invocation> invocations = new ArrayList<Invocation>();
+        private final List<Invocation> invocations = new ArrayList<>();
         private transient final Channel channel;
         private final GitClient proxy;
 
@@ -142,7 +142,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
         public void execute() throws GitException, InterruptedException {
             try {
-                channel.call(new Callable<Void, GitException>() {
+                channel.call(new jenkins.security.MasterToSlaveCallable<Void, GitException>() {
                     public Void call() throws GitException {
                         try {
                             GitCommand cmd = createCommand();
@@ -151,11 +151,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
                             }
                             cmd.execute();
                             return null;
-                        } catch (InvocationTargetException e) {
-                            throw new GitException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new GitException(e);
-                        } catch (InterruptedException e) {
+                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
                             throw new GitException(e);
                         }
                     }

@@ -110,13 +110,13 @@ public abstract class GitAPITestCase extends TestCase {
     private void assertCloneTimeout() {
         if (cloneTimeout > 0) {
             // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git -c core.askpass=true fetch", cloneTimeout);
+            assertSubstringTimeout("git fetch", cloneTimeout);
         }
     }
 
     private void assertFetchTimeout() {
         if (fetchTimeout > 0) {
-            assertSubstringTimeout("git -c core.askpass=true fetch", fetchTimeout);
+            assertSubstringTimeout("git fetch", fetchTimeout);
         }
     }
 
@@ -131,8 +131,8 @@ public abstract class GitAPITestCase extends TestCase {
             return;
         }
         List<String> messages = handler.getMessages();
-        List<String> substringMessages = new ArrayList<String>();
-        List<String> substringTimeoutMessages = new ArrayList<String>();
+        List<String> substringMessages = new ArrayList<>();
+        List<String> substringTimeoutMessages = new ArrayList<>();
         final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
         final String timeoutRegEx = messageRegEx
                 + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
@@ -588,7 +588,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private void assertNoObjectsInRepository() {
-        List<String> objectsDir = new ArrayList<String>(Arrays.asList(w.file(".git/objects").list()));
+        List<String> objectsDir = new ArrayList<>(Arrays.asList(w.file(".git/objects").list()));
         objectsDir.remove("info");
         objectsDir.remove("pack");
         assertTrue("Objects directory must not contain anything but 'info' and 'pack' folders", objectsDir.isEmpty());
@@ -908,7 +908,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Fetch new change into newArea repo */
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
         newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
 
@@ -1137,7 +1137,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong count in " + remoteBranches, 0, remoteBranches.size());
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
         try {
             /* Fetch parent/a into newArea repo - fails for
@@ -1218,7 +1218,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.cmd("git push " + bare.repoPath() + " :branch1");
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
 
         /* Fetch without prune should leave branch1 in newArea */
@@ -2289,7 +2289,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_revList_() throws Exception {
-        List<ObjectId> oidList = new ArrayList<ObjectId>();
+        List<ObjectId> oidList = new ArrayList<>();
         w.init();
         w.launchCommand("git", "pull", localMirror());
 
@@ -2312,7 +2312,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         for (Branch b : w.git.getRemoteBranches()) {
             StringBuilder out = new StringBuilder();
-            List<ObjectId> oidList = new ArrayList<ObjectId>();
+            List<ObjectId> oidList = new ArrayList<>();
 
             RevListCommand revListCommand = w.git.revList_();
             revListCommand.firstParent();
@@ -2976,7 +2976,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue(key.startsWith("refs/tags/git-client"));
         }
 
-        references = new HashMap<String, ObjectId>();
+        references = new HashMap<>();
         try {
             references = w.git.getRemoteReferences(remoteMirrorURL, "notexists-*", false, false);
         } catch (GitException ge) {
@@ -3036,7 +3036,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException
     {
-        List<Branch> matches = new ArrayList<Branch>();
+        List<Branch> matches = new ArrayList<>();
         Set<Branch> branches = w.git.getBranches();
         for(Branch branch : branches) {
             if(branch.getSHA1().equals(objectId)) matches.add(branch);
@@ -3499,16 +3499,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.clone_().url("file://" + r.repoPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
 
-        // add second remote
-        FileRepository repo = null;
-        try {
-            repo = w.repo();
+        try ( // add second remote
+                FileRepository repo = w.repo()) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", "upstream", "url", "file://" + r.repoPath());
             config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
             config.save();
-        } finally {
-            if (repo != null) repo.close();
         }
 
         // fill both remote branches
@@ -3575,7 +3571,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private String formatBranches(List<Branch> branches) {
-        Set<String> names = new TreeSet<String>();
+        Set<String> names = new TreeSet<>();
         for (Branch b : branches) {
             names.add(b.getName());
         }
@@ -3950,7 +3946,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     /**
      * Returns the prefix for the remote branches while querying them.
-     * @return remote branch pregix, for example, "remotes/"
+     * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
 

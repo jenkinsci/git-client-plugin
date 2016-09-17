@@ -26,7 +26,7 @@ class Netrc {
 
     private File netrc;
     private long lastModified;
-    private Map<String,UsernamePasswordCredentials> hosts = new HashMap<String,UsernamePasswordCredentials>();
+    private Map<String,UsernamePasswordCredentials> hosts = new HashMap<>();
 
 
 
