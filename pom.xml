@@ -60,7 +60,7 @@
     <maven-hpi-plugin.version>1.119</maven-hpi-plugin.version>
     <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
-    <maven-site-plugin.version>3.4</maven-site-plugin.version>
+    <maven-site-plugin.version>3.5.1</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
     <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
     <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
