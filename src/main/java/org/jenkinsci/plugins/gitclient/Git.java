@@ -129,10 +129,11 @@ public class Git {
 
         if (env == null) env = new EnvVars();
         if (repository == null) {
-            // Assume local directory
             if (launcher != null) {
+                // the launcher "." directory is the directory from which java -jar slave.jar was invoked, not the slave home directory, and not the workspace directory
                 repository = new FilePath(launcher.getChannel(), ".");
             } else {
+                // Assume local directory
                 repository = new FilePath(new File("."));
             }
         }
