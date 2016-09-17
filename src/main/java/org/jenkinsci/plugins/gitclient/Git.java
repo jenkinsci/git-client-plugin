@@ -157,7 +157,6 @@ public class Git {
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;
-
     }
 
     /**
