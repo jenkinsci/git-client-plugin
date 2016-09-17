@@ -2323,13 +2323,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @Override
     public <T> T withRepository(final RepositoryCallback<T> callable) throws IOException, InterruptedException {
-        return workspace.act(new MasterToSlaveFileCallable<T>() {
-            @Override
-            public T invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                final Repository repository = new RepositoryBuilder().setWorkTree(f).build();
-                return callable.invoke(repository, channel);
-            }
-        });
+        return workspace.act(new WithRepository<>(callable));
     }
 
     /**
@@ -2634,4 +2628,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
 
+    private static class WithRepository<T> extends MasterToSlaveFileCallable<T> {
+        private final RepositoryCallback<T> callable;
+
+        public WithRepository(RepositoryCallback<T> callable) {
+            this.callable = callable;
+        }
+
+        @Override
+        public T invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+            final Repository repository = new RepositoryBuilder().setWorkTree(f).build();
+            return callable.invoke(repository, channel);
+        }
+    }
 }
