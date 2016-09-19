@@ -477,7 +477,9 @@ public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
             }
 
             public void verify(String host, SSLSocket ssl) throws IOException {
-                hostnameverifier.verify(host, ssl.getSession());
+                if (!hostnameverifier.verify(host, ssl.getSession())) {
+                    throw new IOException();
+                }
             }
         };
     }
