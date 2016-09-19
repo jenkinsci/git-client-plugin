@@ -50,22 +50,28 @@ import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
+import org.apache.http.auth.NTCredentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.ClientPNames;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.conn.params.ConnRoutePNames;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.SystemDefaultCredentialsProvider;
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.http.params.HttpParams;
 import org.eclipse.jgit.transport.CredentialItem;
@@ -91,6 +97,7 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.Proxy;
+import java.net.SocketAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.KeyManagementException;
@@ -107,6 +114,8 @@ import java.util.Map;
  * authenticate preemptively.
  */
 public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
+    private static final String SLASH = "/";
+
     HttpClient client;
 
     String urlStr;
@@ -151,59 +160,128 @@ public class PreemptiveAuthHttpClientConnection extends HttpClientConnection {
         this.client = cl;
     }
 
+    static URIish goUp(final URIish uri) {
+        final String originalPath = uri.getPath();
+        if (originalPath == null || originalPath.length() == 0 || originalPath.equals(SLASH)) {
+            return null;
+        }
+        final int lastSlash;
+        if (originalPath.endsWith(SLASH)) {
+            lastSlash = originalPath.lastIndexOf(SLASH, originalPath.length() - 2);
+        }
+        else {
+            lastSlash = originalPath.lastIndexOf(SLASH);
+        }
+        final String pathUpOneLevel = originalPath.substring(0, lastSlash);
+        final URIish result;
+        if (pathUpOneLevel.length() == 0) {
+            result = uri.setPath(null);
+        }
+        else {
+            result = uri.setPath(pathUpOneLevel);
+        }
+        return result;
+    }
+
     private HttpClient getClient() {
         if (client == null) {
             final HttpClientBuilder builder = HttpClientBuilder.create();
             CredentialItem.Username u = new CredentialItem.Username();
             CredentialItem.Password p = new CredentialItem.Password();
-            final URIish uri;
+            final URIish serviceUri;
             try {
-                uri = new URIish(urlStr);
+                serviceUri = new URIish(urlStr);
             }
             catch (final URISyntaxException e) {
                 throw new Error(e);
             }
+            final HttpHost targetHost = new HttpHost(serviceUri.getHost(), serviceUri.getPort(), serviceUri.getScheme());
 
-            final CredentialsProvider clientCredentialsProvider = new BasicCredentialsProvider();
-            if (credentialsProvider.supports(u, p)
-                    && credentialsProvider.get(uri, u, p)) {
-                final String userName = u.getValue();
-                final String password = new String(p.getValue());
-                p.clear();
-                final Credentials credentials;
-                credentials = new UsernamePasswordCredentials(userName, password);
-                clientCredentialsProvider.setCredentials(AuthScope.ANY, credentials);
-                builder.setDefaultCredentialsProvider(clientCredentialsProvider);
+            CredentialsProvider clientCredentialsProvider = new SystemDefaultCredentialsProvider();
+            if (credentialsProvider.supports(u, p)) {
+                URIish uri = serviceUri;
+                while(uri != null) {
+                    if (credentialsProvider.get(uri, u, p)) {
+                        final String userName = u.getValue();
+                        final String password = new String(p.getValue());
+                        p.clear();
+                        final Credentials credentials = createNTCredentials(userName, password);
+                        final AuthScope authScope = new AuthScope(targetHost);
+                        clientCredentialsProvider = new BasicCredentialsProvider();
+                        clientCredentialsProvider.setCredentials(authScope, credentials);
+                        break;
+                    }
+                    uri = goUp(uri);
+                }
             }
-            else {
-                // TODO: do I need to set the SystemDefaultCredentialsProvider?
+            builder.setDefaultCredentialsProvider(clientCredentialsProvider);
+
+            if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
+                isUsingProxy = true;
+                configureProxy(builder, proxy);
+            }
+
+            final RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
+            if (readTimeout != null)
+                requestConfigBuilder.setSocketTimeout(readTimeout);
+            if (timeout != null)
+                requestConfigBuilder.setConnectTimeout(timeout);
+            if (followRedirects != null)
+                requestConfigBuilder.setRedirectsEnabled(followRedirects);
+            requestConfigBuilder.setAuthenticationEnabled(true);
+            final RequestConfig requestConfig = requestConfigBuilder.build();
+
+            builder.setDefaultRequestConfig(requestConfig);
+
+            if (hostnameverifier != null) {
+                builder.setSSLHostnameVerifier(hostnameverifier);
             }
             client = builder.build();
         }
-        HttpParams params = client.getParams();
-        if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
-            isUsingProxy = true;
-            InetSocketAddress adr = (InetSocketAddress) proxy.address();
-            params.setParameter(ConnRoutePNames.DEFAULT_PROXY,
-                    new HttpHost(adr.getHostName(), adr.getPort()));
-        }
-        if (timeout != null)
-            params.setIntParameter(CoreConnectionPNames.CONNECTION_TIMEOUT,
-                    timeout.intValue());
-        if (readTimeout != null)
-            params.setIntParameter(CoreConnectionPNames.SO_TIMEOUT,
-                    readTimeout.intValue());
-        if (followRedirects != null)
-            params.setBooleanParameter(ClientPNames.HANDLE_REDIRECTS,
-                    followRedirects.booleanValue());
-        if (hostnameverifier != null) {
-            SSLSocketFactory sf;
-            sf = new SSLSocketFactory(getSSLContext(), hostnameverifier);
-            Scheme https = new Scheme("https", 443, sf); //$NON-NLS-1$
-            client.getConnectionManager().getSchemeRegistry().register(https);
-        }
 
         return client;
+    }
+
+    static NTCredentials createNTCredentials(final String userName, final String password) {
+        final int firstAt = userName.indexOf('@');
+        final int firstSlash = userName.indexOf('/');
+        final int firstBackSlash = userName.indexOf('\\');
+
+        final String user, domain;
+        if (firstAt != -1) {
+            // cnorris@walker.example.com
+            user = userName.substring(0, firstAt);
+            domain = userName.substring(firstAt + 1);
+        }
+        else if (firstSlash != -1) {
+            // WALKER/cnorris
+            domain = userName.substring(0, firstSlash);
+            user = userName.substring(firstSlash + 1);
+        }
+        else if (firstBackSlash != -1) {
+            // WALKER\cnorris
+            domain = userName.substring(0, firstBackSlash);
+            user = userName.substring(firstBackSlash + 1);
+        }
+        else {
+            user = userName;
+            domain = null;
+        }
+
+        return new NTCredentials(user, password, null, domain);
+    }
+
+    private static void configureProxy(final HttpClientBuilder builder, final Proxy proxy) {
+        if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
+            final SocketAddress socketAddress = proxy.address();
+            if (socketAddress instanceof InetSocketAddress) {
+                final InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+                final String proxyHost = inetSocketAddress.getHostName();
+                final int proxyPort = inetSocketAddress.getPort();
+                final HttpHost httpHost = new HttpHost(proxyHost, proxyPort);
+                builder.setProxy(httpHost);
+            }
+        }
     }
 
     private SSLContext getSSLContext() {
