@@ -147,27 +147,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     /** {@inheritDoc} */
     @Deprecated
     public List<Tag> getTagsOnCommit(final String revName) throws GitException, IOException, InterruptedException {
-        return withRepository(new RepositoryCallback<List<Tag>>() {
-            @Override
-            public List<Tag> invoke(Repository db, VirtualChannel channel) throws IOException, InterruptedException {
-                try {
-                    final ObjectId commit = db.resolve(revName);
-                    final List<Tag> ret = new ArrayList<Tag>();
-
-                    for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
-                        Ref value = tag.getValue();
-                        if (value != null) {
-                            final ObjectId tagId = value.getObjectId();
-                            if (commit != null && commit.equals(tagId))
-                                ret.add(new Tag(tag.getKey(), tagId));
-                        }
-                    }
-                    return ret;
-                } finally {
-                    db.close();
-                }
-            }
-        });
+        return withRepository(new ListTags(revName));
     }
 
     /** {@inheritDoc} */
@@ -242,5 +222,32 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
         return branch;
     }
-    
+
+    private static class ListTags implements RepositoryCallback<List<Tag>> {
+        private final String revName;
+
+        public ListTags(String revName) {
+            this.revName = revName;
+        }
+
+        @Override
+        public List<Tag> invoke(Repository db, VirtualChannel channel) throws IOException, InterruptedException {
+            try {
+                final ObjectId commit = db.resolve(revName);
+                final List<Tag> ret = new ArrayList<Tag>();
+
+                for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
+                    Ref value = tag.getValue();
+                    if (value != null) {
+                        final ObjectId tagId = value.getObjectId();
+                        if (commit != null && commit.equals(tagId))
+                            ret.add(new Tag(tag.getKey(), tagId));
+                    }
+                }
+                return ret;
+            } finally {
+                db.close();
+            }
+        }
+    }
 }
