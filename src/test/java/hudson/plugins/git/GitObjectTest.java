@@ -27,7 +27,7 @@ public class GitObjectTest {
 
     @Parameterized.Parameters(name = "{0}-{1}")
     public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<Object[]>();
+        List<Object[]> arguments = new ArrayList<>();
         String tagStr = "git-client-1.16.0";
         String tagSHA1 = "b24875cb995865a9e3a802dc0e9c8041640df0a7";
         String[] names = {tagStr, ObjectId.zeroId().getName(), "", null};

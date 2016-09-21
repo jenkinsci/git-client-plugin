@@ -5,17 +5,18 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.532.2</version>
+    <version>2.14</version>
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>1.21.1-SNAPSHOT</version>
+  <version>2.0.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
   <url>http://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin</url>
+  <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -39,32 +40,13 @@
     <tag>HEAD</tag>
   </scm>
 
-  <distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
   <properties>
     <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
+    <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
-    <!-- Maven plugin versions provided by parent are outdated. -->
-    <!-- Generating site report with "mvn site" fails without these updated versions. -->
-    <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
-    <maven-enforcer-plugin.version>1.4</maven-enforcer-plugin.version>
-    <maven-hpi-plugin.version>1.119</maven-hpi-plugin.version>
-    <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
-    <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
-    <maven-site-plugin.version>3.4</maven-site-plugin.version>
-    <!-- End of updated versions required for "mvn site" -->
-    <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
-    <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
-    <jgit.version>3.7.1.201504261725-r</jgit.version>
+    <jenkins.version>1.625.3</jenkins.version>
+    <java.level>7</java.level>
+    <jgit.version>4.4.1.201607150455-r</jgit.version>
   </properties>
 
   <repositories>
@@ -101,22 +83,13 @@
       <version>${jgit.version}</version>
     </dependency>
     <dependency>
-      <!-- Include jgit java7 component so that jgit can support
-           symbolic links when running on Java 7 with a file system
-           which supports symbolic links. See JENKINS-30371 -->
-      <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit.java7</artifactId>
-      <version>${jgit.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.3</version>
+      <version>1.5</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -134,7 +107,7 @@
     <dependency>
       <groupId>org.jenkins-ci.modules</groupId>
       <artifactId>sshd</artifactId>
-      <version>1.6</version>
+      <version>1.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -151,7 +124,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
-      <version>4.4.1</version>
+      <version>4.5.2</version>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
@@ -180,7 +153,30 @@
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.5.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.19.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.10.4</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.7</source>
+          <target>1.7</target>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -203,7 +199,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
-        <version>${maven-javadoc-plugin.version}</version>
         <configuration>
           <excludePackageNames>org.apache.commons.httpclient.contrib.ssl</excludePackageNames>
           <fixTags>param,return,throws,link</fixTags>
@@ -220,7 +215,6 @@
       <plugin>
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
-        <version>${maven-hpi-plugin.version}</version>
         <extensions>true</extensions>
       </plugin>
       <plugin>
@@ -246,17 +240,13 @@
       </plugin>
     </plugins>
   </build>
-  <profiles>
-    <profile>
-      <id>java-6</id>
-      <activation>
-        <jdk>1.6</jdk>
-      </activation>
-      <properties>
-        <!-- Findbugs requires Java 7. This allows default run
-             of findbugs on every compile, unless running Java 6 -->
-        <skipFindbugs>true</skipFindbugs>
-      </properties>
-    </profile>
-  </profiles>
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>${maven-project-info-reports-plugin.version}</version>
+      </plugin>
+    </plugins>
+  </reporting>
 </project>

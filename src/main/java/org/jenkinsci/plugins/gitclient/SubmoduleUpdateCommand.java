@@ -26,6 +26,15 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand remoteTracking(boolean remoteTracking);
 
     /**
+     * If set true and if the git version supports it, use the parent
+     * repository credentials when performing a submodule update.
+     *
+     * @param parentCredentials if true, will use the credentials of the parent project instead of credentials associated with its own URL
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand parentCredentials(boolean parentCredentials);
+
+    /**
      * ref.
      *
      * @param ref a {@link java.lang.String} object.

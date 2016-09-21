@@ -145,7 +145,7 @@ public class GitURIRequirementsBuilder {
      * @param requirements the list of requirements.
      */
     private GitURIRequirementsBuilder(@NonNull List<DomainRequirement> requirements) {
-        this.requirements = new ArrayList<DomainRequirement>(requirements);
+        this.requirements = new ArrayList<>(requirements);
     }
 
     /**
@@ -321,7 +321,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public List<DomainRequirement> build() {
-        return new ArrayList<DomainRequirement>(requirements);
+        return new ArrayList<>(requirements);
     }
 
 }

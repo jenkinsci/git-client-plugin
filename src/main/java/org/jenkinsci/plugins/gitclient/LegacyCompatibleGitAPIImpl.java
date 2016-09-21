@@ -171,10 +171,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     /** {@inheritDoc} */
     @Deprecated
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
-        final Repository db = getRepository();
-        try {
+        try (Repository db = getRepository()) {
             final ObjectId commit = db.resolve(revName);
-            final List<Tag> ret = new ArrayList<Tag>();
+            final List<Tag> ret = new ArrayList<>();
 
             for (final Map.Entry<String, Ref> tag : db.getTags().entrySet()) {
                 Ref value = tag.getValue();
@@ -185,8 +184,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
             }
             return ret;
-        } finally {
-            db.close();
         }
     }
 

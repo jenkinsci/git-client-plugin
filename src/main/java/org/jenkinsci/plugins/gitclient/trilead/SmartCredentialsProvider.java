@@ -25,7 +25,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     private StandardCredentials defaultCredentials;
 
     private Map<String, StandardCredentials> specificCredentials =
-            new HashMap<String, StandardCredentials>();
+            new HashMap<>();
 
 
     /**
