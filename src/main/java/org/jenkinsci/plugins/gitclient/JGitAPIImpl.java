@@ -516,7 +516,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
-                //throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
                 shouldPrune = true;
                 return this;
             }
@@ -567,10 +566,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                         for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
                             Ref branchRef = it.next();
-                            for (RefSpec rs : refSpecs) {
-                                if (rs.matchDestination(branchRef)) {
-                                    toDelete.add(branchRef.getName());
-                                    break;
+                            if (!branchRef.isSymbolic()) { // Don't delete HEAD and other symbolic refs
+                                for (RefSpec rs : refSpecs) {
+                                    if (rs.matchDestination(branchRef)) {
+                                        toDelete.add(branchRef.getName());
+                                        break;
+                                    }
                                 }
                             }
                         }
