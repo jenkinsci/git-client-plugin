@@ -1521,24 +1521,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Set<String> getTagNames(String tagPattern) throws GitException {
         if (tagPattern == null) tagPattern = "*";
 
+        Set<String> tags = new HashSet<>();
         try (Repository repo = getRepository()) {
-            Set<String> tags = new HashSet<>();
-            FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
-            Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
-            for (Ref ref : refList.values()) {
-                String name = ref.getName().substring(R_TAGS.length());
+            FileNameMatcher matcher = new FileNameMatcher(tagPattern, null);
+            Map<String, Ref> tagList = repo.getTags();
+            for (String name : tagList.keySet()) {
                 matcher.reset();
                 matcher.append(name);
                 if (matcher.isMatch()) tags.add(name);
             }
-            return tags;
-        } catch (IOException | InvalidPatternException e) {
+        } catch (InvalidPatternException e) {
             throw new GitException(e);
         }
+        return tags;
     }
 
     /** {@inheritDoc} */
     public Set<String> getRemoteTagNames(String tagPattern) throws GitException {
+        /* BUG: Lists local tag names, not remote tag names */
         if (tagPattern == null) tagPattern = "*";
 
         try (Repository repo = getRepository()) {
