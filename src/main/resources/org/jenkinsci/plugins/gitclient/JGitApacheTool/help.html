@@ -1,0 +1,15 @@
+<div>
+    Use JGit with the Apache HTTP client (instead of the JVM's HTTP client).
+    This has some additional features (most notably
+    ability to control repository authentication at project level from Jenkins),
+    eliminates the need of installing Git client and is not subject to the forced
+    NTLM automatic authentication using the identity of the process on Windows.
+
+    <p>
+        In other words, if you find the default JGit implementation doesn't appear to use the configured credentials when connecting to a Git repository on a Windows server (such as with Team Foundation Server), try this implementation.
+    </p>
+
+    <p>
+    This is still a work in progress and some features might be incomplete.
+    </p>
+</div>
