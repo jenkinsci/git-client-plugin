@@ -53,13 +53,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ConfigConstants;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -2615,6 +2609,58 @@ public abstract class GitAPITestCase extends TestCase {
         String resultMessage = w.git.showRevision(w.head()).get(7).trim();
 
         assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
+    }
+
+    public void test_merge_with_author() throws Exception {
+        String authorName = "Santa Claus";
+        String authorEmail = "Santa@TheNorthPole.com";
+
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1", new PersonIdent(authorName, authorEmail), new PersonIdent(authorName, authorEmail));
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+
+        w.git.merge().setMergeAsSourceCommitAuthor(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        // Obtain last commit message
+        List<String> revList = w.git.showRevision(w.head());
+
+        assertTrue("Custom message author name failed. Should have set custom merge author name.", revList.get(4).contains(authorName));
+        assertTrue("Custom message author email failed. Should have set custom merge author email.", revList.get(4).contains(authorEmail));
+    }
+
+    public void test_merge_with_author_and_message() throws Exception {
+        String authorName = "Santa Claus";
+        String authorEmail = "Santa@TheNorthPole.com";
+        String mergeMessage = "Are you on Santa's naughty list?";
+
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1", new PersonIdent(authorName, authorEmail), new PersonIdent(authorName, authorEmail));
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+
+        w.git.merge().setMessage(mergeMessage).setMergeAsSourceCommitAuthor(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        // Obtain last commit message
+        List<String> revList = w.git.showRevision(w.head());
+
+        assertTrue("Custom message author name failed. Should have set custom merge author name.", revList.get(4).contains(authorName));
+        assertTrue("Custom message author email failed. Should have set custom merge author email.", revList.get(4).contains(authorEmail));
+        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, revList.get(7).trim());
     }
 
     @Deprecated

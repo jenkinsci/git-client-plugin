@@ -1476,6 +1476,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             FastForwardMode fastForwardMode;
             boolean squash;
             boolean commit = true;
+            boolean mergeAsSourceCommitAuthor = false;
             String comment;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
@@ -1528,6 +1529,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setMergeAsSourceCommitAuthor(boolean mergeAsSourceCommitAuthor) {
+                this.mergeAsSourceCommitAuthor = mergeAsSourceCommitAuthor;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 Repository repo = null;
                 try {
@@ -1542,6 +1548,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
                     }
+                    if (mergeAsSourceCommitAuthor) {
+                        RevCommit mergeCommit = Iterables.getFirst(git.log().setMaxCount(1).call(), null);
+                        RevCommit sourceCommit = Iterables.getFirst(git.log().add(rev).setMaxCount(1).call(), null);
+
+                        if (sourceCommit != null && mergeCommit != null) {
+                            git.commit().setAmend(true).setAuthor(sourceCommit.getAuthorIdent()).setMessage(mergeCommit.getFullMessage()).call();
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new GitException("Failed to merge " + rev, e);
                 } catch (GitAPIException e) {
                     throw new GitException("Failed to merge " + rev, e);
                 } finally {

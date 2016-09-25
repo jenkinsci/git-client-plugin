@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
+import com.google.common.base.Strings;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -531,6 +532,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public String fastForwardMode;
             public boolean squash;
             public boolean commit = true;
+            public boolean mergeAsSourceCommitAuthor = false;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -557,34 +559,65 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public MergeCommand setMergeAsSourceCommitAuthor(boolean mergeAsSourceCommitAuthor) {
+                this.mergeAsSourceCommitAuthor = mergeAsSourceCommitAuthor;
+                return this;
+            }
+
             public MergeCommand setCommit(boolean commit) {
                 this.commit = commit;
                 return this;
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder();
-                args.add("merge");
+                ArgumentListBuilder mergeArgs = new ArgumentListBuilder();
+                mergeArgs.add("merge");
                 if(squash) {
-                    args.add("--squash");
+                    mergeArgs.add("--squash");
                 }
 
                 if(!commit){
-                    args.add("--no-commit");
+                    mergeArgs.add("--no-commit");
                 }
 
                 if (comment != null && !comment.isEmpty()) {
-                    args.add("-m");
-                    args.add(comment);
+                    mergeArgs.add("-m");
+                    mergeArgs.add(comment);
                 }
 
                 if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
-                    args.add("-s");
-                    args.add(strategy);
+                    mergeArgs.add("-s");
+                    mergeArgs.add(strategy);
                 }
-                args.add(fastForwardMode);
-                args.add(rev.name());
-                launchCommand(args);
+                mergeArgs.add(fastForwardMode);
+                mergeArgs.add(rev.name());
+                launchCommand(mergeArgs);
+
+                // The author of the merge commit can be amended to match the author of the source commit.
+                // By default the author is the user the jenkins master/slave is running as.
+                if (mergeAsSourceCommitAuthor) {
+                    // Get the author of the source commit
+                    // -s: suppresses diff output
+                    // --format %an <%ae>: format as "authorName <authorEmail>"
+                    ArgumentListBuilder showCommitAuthorArgs = new ArgumentListBuilder();
+                    showCommitAuthorArgs.add("show");
+                    showCommitAuthorArgs.add("-s");
+                    showCommitAuthorArgs.add("--format='%an <%ae>'");
+                    showCommitAuthorArgs.add(rev.toObjectId().getName());
+                    String author = launchCommand(showCommitAuthorArgs);
+
+                    // Amend the merge commit with the new author
+                    // -C HEAD: amends reusing all meta-data of the merge commit
+                    // --author author: changes the author
+                    ArgumentListBuilder amendCommitArgs = new ArgumentListBuilder();
+                    amendCommitArgs.add("commit");
+                    amendCommitArgs.add("--amend");
+                    amendCommitArgs.add("-C");
+                    amendCommitArgs.add("HEAD");
+                    amendCommitArgs.add("--author");
+                    amendCommitArgs.add(author);
+                    launchCommand(amendCommitArgs);
+                }
             }
         };
     }

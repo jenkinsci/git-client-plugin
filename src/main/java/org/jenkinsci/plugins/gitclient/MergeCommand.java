@@ -26,6 +26,14 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setMessage(String message);
 
     /**
+     * setMergeAsSourceCommitAuthor.
+     *
+     * @param mergeAsSourceCommitAuthor ensure the author of the resultant merge commit is the author of the source commit.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
+    MergeCommand setMergeAsSourceCommitAuthor(boolean mergeAsSourceCommitAuthor);
+
+    /**
      * setStrategy.
      *
      * @param strategy a {@link org.jenkinsci.plugins.gitclient.MergeCommand.Strategy} object.
