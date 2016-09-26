@@ -1,10 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.EnvVars;
+import hudson.plugins.git.GitException;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import static junit.framework.TestCase.assertTrue;
 import org.apache.commons.lang.SystemUtils;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -256,6 +261,16 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
 
         assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
+    }
+
+    public void test_git_init_non_existing_directory() throws IOException, InterruptedException {
+        try {
+            GitClient git = new Git(listener, new EnvVars()).using("git").in(new File("this/does/not/exist")).getClient();
+            git.init();
+            fail("Missing directory exception not thrown");
+        } catch (GitException ge) {
+            assertThat(ge.getMessage(), anyOf(containsString("Could not init"), containsString("Cannot run program")));
+        }
     }
 
     @Override
