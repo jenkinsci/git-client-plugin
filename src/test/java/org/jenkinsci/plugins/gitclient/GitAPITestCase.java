@@ -1146,7 +1146,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("CliGit should have thrown an exception", newArea.git instanceof JGitAPIImpl);
         } catch (GitException ge) {
             final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated"));
+            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated") || msg.contains("error: cannot lock ref "));
         }
 
         /* Use git remote prune origin to remove obsolete branch named "parent" */
