@@ -47,6 +47,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import jenkins.model.Jenkins;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -138,19 +139,41 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private final TaskListener listener;
     private PersonIdent author, committer;
+    private final File workspace;
 
     private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
-        super(workspace == null ? new File(".") : workspace);
+        super();
+        this.workspace = workspace;
         this.listener = listener;
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
         SshSessionFactory.setInstance(new TrileadSessionFactory());
     }
+
+    /** {@inheritDoc} */
+    @Deprecated
+    public boolean hasGitModules(String treeIsh) throws GitException {
+        return hasGitModules();
+    }
+
+    /** {@inheritDoc} */
+    public boolean hasGitModules() throws GitException {
+        try {
+            return new File(workspace, ".gitmodules").exists();
+        } catch (SecurityException ex) {
+            throw new GitException(
+                    "Security error when trying to check for .gitmodules. Are you sure you have correct permissions?",
+                    ex);
+        } catch (Exception e) {
+            throw new GitException("Couldn't check for .gitmodules", e);
+        }
+    }
+
 
     /**
      * clearCredentials.
@@ -210,7 +233,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void init() throws GitException, InterruptedException {
+    public void init() throws GitException, InterruptedException, IOException {
         init_().workspace(workspace.getAbsolutePath()).execute();
     }
 
@@ -604,7 +627,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
      */
-    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException, IOException {
         fetch_().from(url, refspecs).execute();
     }
 
@@ -850,11 +873,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
     @NonNull
-    public Repository getRepository() throws GitException {
+    private Repository getRepository() throws GitException {
         try {
             return new RepositoryBuilder().setWorkTree(workspace).build();
         } catch (IOException e) {
             throw new GitException(e);
+        }
+    }
+
+    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
+        try (Repository repo = getRepository()) {
+            return callable.invoke(repo, Jenkins.MasterComputer.localChannel);
         }
     }
 
@@ -1811,7 +1840,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         revListCommand.to(oidList);
         try {
             revListCommand.execute();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IOException e) {
             throw new GitException(e);
         }
         return oidList;
@@ -1826,6 +1855,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             revListCommand.execute();
         } catch (InterruptedException e) {
+            throw new GitException(e);
+        } catch (IOException e) {
             throw new GitException(e);
         }
         return oidList;
@@ -1997,7 +2028,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Deprecated
-    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
+    public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException, IOException {
         push(repository.getName(),refspec);
     }
 

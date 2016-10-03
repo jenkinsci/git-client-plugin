@@ -6,6 +6,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.plugins.git.GitException;
+import hudson.remoting.VirtualChannel;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
 import java.io.File;
@@ -25,7 +26,9 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import static junit.framework.TestCase.assertTrue;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -311,10 +314,12 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertEquals("Master != HEAD", master, git.withRepository(GetMasterHead));
+        assertEquals("Wrong branch", "master", git.withRepository(GetBranch));
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
+        Config repoConfig = new Config();
+        repoConfig.setString("remote", "origin", "url", gitRepoURL);
+        git.prune(new RemoteConfig(repoConfig, origin));
         checkExpectedLogSubstring();
     }
 
@@ -340,11 +345,13 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertEquals("Master != HEAD", master, git.withRepository(GetMasterHead));
+        assertEquals("Wrong branch", "master", git.withRepository(GetBranch));
         assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
+        Config repoConfig = new Config();
+        repoConfig.setString("remote", "origin", "url", gitRepoURL);
+        git.prune(new RemoteConfig(repoConfig, origin));
         checkExpectedLogSubstring();
     }
 
@@ -358,4 +365,18 @@ public class CredentialsTest {
     private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
     private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
     private static final Pattern URL_MUST_MATCH_PATTERN = Pattern.compile(System.getProperty("URL_MUST_MATCH_PATTERN", ".*"));
+
+    private static RepositoryCallback<ObjectId> GetMasterHead = new RepositoryCallback<ObjectId>() {
+        @Override
+        public ObjectId invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+            return repo.getRef("master").getObjectId();
+        }
+    };
+
+    private static RepositoryCallback<String> GetBranch = new RepositoryCallback<String>() {
+        @Override
+        public String invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+            return repo.getBranch();
+        }
+    };
 }

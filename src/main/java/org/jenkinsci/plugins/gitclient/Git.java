@@ -3,9 +3,11 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
+import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
+import jenkins.MasterToSlaveFileCallable;
 import jenkins.model.Jenkins;
 
 import javax.annotation.Nullable;
@@ -29,12 +31,15 @@ import java.io.Serializable;
  *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class Git implements Serializable {
+public class Git {
     @Nullable
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
     private String exe;
+
+    @Nullable
+    private Launcher launcher;
 
     /**
      * Constructor for a Git object. Either <code>Git.with(listener, env)</code>
@@ -107,6 +112,11 @@ public class Git implements Serializable {
         return this;
     }
 
+    public Git withLauncher(Launcher launcher) {
+        this.launcher = launcher;
+        return this;
+    }
+
     /**
      * {@link org.jenkinsci.plugins.gitclient.GitClient} implementation. The {@link org.jenkinsci.plugins.gitclient.GitClient} interface
      * provides the key operations which can be performed on a git repository.
@@ -116,19 +126,33 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        jenkins.MasterToSlaveFileCallable<GitClient> callable = new jenkins.MasterToSlaveFileCallable<GitClient>() {
-            public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-                if (listener == null) listener = TaskListener.NULL;
-                if (env == null) env = new EnvVars();
 
-                if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
+        if (env == null) env = new EnvVars();
+        if (repository == null) {
+            if (launcher != null) {
+                // the launcher "." directory is the directory from which java -jar slave.jar was invoked, not the slave home directory, and not the workspace directory
+                repository = new FilePath(launcher.getChannel(), ".");
+            } else {
+                // Assume local directory
+                repository = new FilePath(new File("."));
+            }
+        }
+        GitClient git;
+
+        if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
+            FileCallable<GitClient> callable = new MasterToSlaveFileCallable<GitClient>() {
+                @Override
+                public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
+                    if (listener == null) listener = TaskListener.NULL;
                     return new JGitAPIImpl(f, listener);
                 }
-                // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
-                return new GitAPI(exe, f, listener, env);
-            }
-        };
-        GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
+            };
+            git = repository.act(callable);
+        } else {
+            // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
+            git = new GitAPI(exe, repository, listener, env, launcher);
+        }
+
         Jenkins jenkinsInstance = Jenkins.getInstance();
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);

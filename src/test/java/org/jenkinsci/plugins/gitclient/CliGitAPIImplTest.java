@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import static junit.framework.TestCase.assertTrue;
@@ -56,9 +57,9 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    private void doTest(String versionOutput, VersionTest[] versions) {
+    private void doTest(String versionOutput, VersionTest[] versions) throws IOException, InterruptedException, IOException {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
-        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
+        CliGitAPIImpl git = (CliGitAPIImpl) Git.with(listener, env).using("git").in(new File(".")).getClient();
         git.computeGitVersion(versionOutput);
         for (int i = 0; i < versions.length; ++i) {
             String msg = versionOutput + " for " + versions[i].major + versions[i].minor + versions[i].rev + versions[i].bugfix;
@@ -78,7 +79,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public void test_git_version_debian_wheezy() {
+    public void test_git_version_debian_wheezy() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 7, 10, 4),
             new VersionTest(true,  1, 7, 10, 3),
@@ -87,7 +88,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.7.10.4", versions);
     }
 
-    public void test_git_version_debian_testing() {
+    public void test_git_version_debian_testing() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 0, 1, 0),
             new VersionTest(true,  2, 0, 0, 0),
@@ -97,7 +98,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.0.1", versions);
     }
 
-    public void test_git_version_debian_testing_old() {
+    public void test_git_version_debian_testing_old() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 0,  0,  0),
             new VersionTest(true,  1, 9, 99, 99),
@@ -110,7 +111,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2", versions);   // mythical version
     }
 
-    public void test_git_version_debian_testing_older() {
+    public void test_git_version_debian_testing_older() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 9,  0,  0),
             new VersionTest(true,  1, 8, 99, 99),
@@ -119,7 +120,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.0", versions);
     }
 
-    public void test_git_version_windows_1800() {
+    public void test_git_version_windows_1800() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8,  0, 0),
             new VersionTest(true,  1, 7, 99, 0),
@@ -128,7 +129,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.0.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_1840() {
+    public void test_git_version_windows_1840() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 4,  0),
             new VersionTest(true,  1, 8, 3, 99),
@@ -137,7 +138,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.4.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_1852() {
+    public void test_git_version_windows_1852() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 5, 2),
             new VersionTest(true,  1, 8, 5, 1),
@@ -146,7 +147,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.5.2.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_1900() {
+    public void test_git_version_windows_1900() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 9,  0, 0),
             new VersionTest(true,  1, 8, 99, 0),
@@ -155,7 +156,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.0.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_1920() {
+    public void test_git_version_windows_1920() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 9, 2,  0),
             new VersionTest(true,  1, 9, 1, 99),
@@ -164,7 +165,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.2.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_1940() {
+    public void test_git_version_windows_1940() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 9, 4,  0),
             new VersionTest(true,  1, 9, 3, 99),
@@ -173,7 +174,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.9.4.msysgit.0", versions);
     }
 
-    public void test_git_version_windows_2501() {
+    public void test_git_version_windows_2501() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 5, 0, 1),
             new VersionTest(true,  2, 5, 0, 0),
@@ -182,7 +183,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.5.0.windows.1", versions);
     }
 
-    public void test_git_version_redhat_5() {
+    public void test_git_version_redhat_5() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 2, 1),
             new VersionTest(true,  1, 8, 2, 0),
@@ -191,7 +192,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.2.1", versions);
     }
 
-    public void test_git_version_redhat_65() {
+    public void test_git_version_redhat_65() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 7, 1,  0),
             new VersionTest(true,  1, 7, 0, 99),
@@ -201,7 +202,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.7.1", versions);
     }
 
-    public void test_git_version_opensuse_13() {
+    public void test_git_version_opensuse_13() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 4, 5),
             new VersionTest(true,  1, 8, 4, 4),
@@ -210,7 +211,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.4.5", versions);
     }
 
-    public void test_git_version_ubuntu_13() {
+    public void test_git_version_ubuntu_13() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 3, 2),
             new VersionTest(true,  1, 8, 3, 1),
@@ -219,7 +220,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 1.8.3.2", versions);
     }
 
-    public void test_git_version_ubuntu_14_04_ppa() {
+    public void test_git_version_ubuntu_14_04_ppa() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 2, 2, 0),
             new VersionTest(true,  2, 2, 1, 0),
@@ -228,7 +229,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.2.2", versions);
     }
 
-    public void test_git_version_ubuntu_14_04_ppa_2_3_0() {
+    public void test_git_version_ubuntu_14_04_ppa_2_3_0() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 3, 0, 0),
             new VersionTest(true,  2, 2, 9, 0),
@@ -237,7 +238,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.3.0", versions);
     }
 
-    public void test_git_version_ubuntu_14_04_ppa_2_3_5() {
+    public void test_git_version_ubuntu_14_04_ppa_2_3_5() throws IOException, InterruptedException {
         VersionTest[] versions = {
             new VersionTest(true,  2, 3, 5, 0),
             new VersionTest(true,  2, 2, 9, 9),

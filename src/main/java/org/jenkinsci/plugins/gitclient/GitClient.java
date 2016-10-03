@@ -110,20 +110,6 @@ public interface GitClient {
     void setCommitter(PersonIdent p) throws GitException;
 
     /**
-     * Expose the JGit repository this GitClient is using.
-     * Don't forget to call {@link org.eclipse.jgit.lib.Repository#close()}, to avoid JENKINS-12188.
-     *
-     * @deprecated as of 1.1
-     *      This method was deprecated to make {@link org.jenkinsci.plugins.gitclient.GitClient} remotable. When called on
-     *      a proxy object, this method throws {@link java.io.NotSerializableException}.
-     *      Use {@link #withRepository(RepositoryCallback)} to pass in the closure instead.
-     *      This prevents the repository leak (JENKINS-12188), too.
-     * @return a {@link org.eclipse.jgit.lib.Repository} object.
-     * @throws hudson.plugins.git.GitException if underlying git operation fails.
-     */
-    Repository getRepository() throws GitException;
-
-    /**
      * Runs the computation that requires local access to {@link org.eclipse.jgit.lib.Repository}.
      *
      * @param callable the repository callback used as closure to instance
@@ -132,7 +118,7 @@ public interface GitClient {
      * @throws java.io.IOException in case of IO error
      * @throws java.lang.InterruptedException if interrupted
      */
-    <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException;
+    <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException, IOException;
 
     /**
      * The working tree of this repository.
@@ -147,7 +133,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void init() throws GitException, InterruptedException;
+    public void init() throws GitException, InterruptedException, IOException;
 
     /**
      * add.
@@ -156,7 +142,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void add(String filePattern) throws GitException, InterruptedException;
+    void add(String filePattern) throws GitException, InterruptedException, IOException;
 
     /**
      * commit.
@@ -165,7 +151,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void commit(String message) throws GitException, InterruptedException;
+    void commit(String message) throws GitException, InterruptedException, IOException;
 
     /**
      * commit.
@@ -179,7 +165,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
+    void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException, IOException;
 
     /**
      * hasGitRepo.
@@ -188,7 +174,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean hasGitRepo() throws GitException, InterruptedException;
+    boolean hasGitRepo() throws GitException, InterruptedException, IOException;
 
     /**
      * isCommitInRepo.
@@ -198,7 +184,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException;
+    boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException, IOException;
 
     /**
      * From a given repository, get a remote's URL
@@ -208,7 +194,7 @@ public interface GitClient {
      * @return a {@link java.lang.String} object.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getRemoteUrl(String name) throws GitException, InterruptedException;
+    String getRemoteUrl(String name) throws GitException, InterruptedException, IOException;
 
     /**
      * For a given repository, set a remote's URL
@@ -218,7 +204,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if executing the git command fails
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void setRemoteUrl(String name, String url) throws GitException, InterruptedException;
+    void setRemoteUrl(String name, String url) throws GitException, InterruptedException, IOException;
 
     /**
      * addRemoteUrl.
@@ -228,7 +214,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void addRemoteUrl(String name, String url) throws GitException, InterruptedException;
+    void addRemoteUrl(String name, String url) throws GitException, InterruptedException, IOException;
 
     /**
      * Checks out the specified commit/tag/branch into the workspace.
@@ -239,7 +225,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void checkout(String ref) throws GitException, InterruptedException;
+    void checkout(String ref) throws GitException, InterruptedException, IOException;
 
     /**
      * Creates a new branch that points to the specified ref.
@@ -253,7 +239,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void checkout(String ref, String branch) throws GitException, InterruptedException;
+    void checkout(String ref, String branch) throws GitException, InterruptedException, IOException;
 
     /**
      * checkout.
@@ -291,7 +277,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void checkoutBranch(@CheckForNull String branch, String ref) throws GitException, InterruptedException;
+    void checkoutBranch(@CheckForNull String branch, String ref) throws GitException, InterruptedException, IOException;
 
 
     /**
@@ -304,7 +290,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException;
+    void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException, IOException;
 
     /**
      * Returns a {@link org.jenkinsci.plugins.gitclient.CloneCommand} to build up the git-log invocation.
@@ -323,7 +309,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException;
+    void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException, IOException;
 
     /**
      * fetch.
@@ -334,7 +320,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
+    void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException, IOException;
 
     /**
      * fetch.
@@ -345,7 +331,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
+    void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException, IOException;
 
     /**
      * fetch_.
@@ -363,7 +349,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void push(String remoteName, String refspec) throws GitException, InterruptedException;
+    void push(String remoteName, String refspec) throws GitException, InterruptedException, IOException;
 
     /**
      * push.
@@ -374,7 +360,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void push(URIish url, String refspec) throws GitException, InterruptedException;
+    void push(URIish url, String refspec) throws GitException, InterruptedException, IOException;
 
     /**
      * push.
@@ -392,7 +378,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void merge(ObjectId rev) throws GitException, InterruptedException;
+    void merge(ObjectId rev) throws GitException, InterruptedException, IOException;
 
     /**
      * merge.
@@ -422,7 +408,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void prune(RemoteConfig repository) throws GitException, InterruptedException;
+    void prune(RemoteConfig repository) throws GitException, InterruptedException, IOException;
 
     /**
      * Fully revert working copy to a clean state, i.e. run both
@@ -433,7 +419,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void clean() throws GitException, InterruptedException;
+    void clean() throws GitException, InterruptedException, IOException;
 
 
 
@@ -446,7 +432,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void branch(String name) throws GitException, InterruptedException;
+    void branch(String name) throws GitException, InterruptedException, IOException;
 
     /**
      * (force) delete a branch.
@@ -455,7 +441,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void deleteBranch(String name) throws GitException, InterruptedException;
+    void deleteBranch(String name) throws GitException, InterruptedException, IOException;
 
     /**
      * getBranches.
@@ -464,7 +450,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Set<Branch> getBranches() throws GitException, InterruptedException;
+    Set<Branch> getBranches() throws GitException, InterruptedException, IOException;
 
     /**
      * getRemoteBranches.
@@ -473,7 +459,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Set<Branch> getRemoteBranches() throws GitException, InterruptedException;
+    Set<Branch> getRemoteBranches() throws GitException, InterruptedException, IOException;
 
 
     // --- manage tags
@@ -486,7 +472,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void tag(String tagName, String comment) throws GitException, InterruptedException;
+    void tag(String tagName, String comment) throws GitException, InterruptedException, IOException;
 
     /**
      * tagExists.
@@ -496,7 +482,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean tagExists(String tagName) throws GitException, InterruptedException;
+    boolean tagExists(String tagName) throws GitException, InterruptedException, IOException;
 
     /**
      * getTagMessage.
@@ -506,7 +492,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getTagMessage(String tagName) throws GitException, InterruptedException;
+    String getTagMessage(String tagName) throws GitException, InterruptedException, IOException;
 
     /**
      * deleteTag.
@@ -515,7 +501,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void deleteTag(String tagName) throws GitException, InterruptedException;
+    void deleteTag(String tagName) throws GitException, InterruptedException, IOException;
 
     /**
      * getTagNames.
@@ -525,7 +511,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException;
+    Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException, IOException;
     /**
      * getRemoteTagNames.
      *
@@ -534,7 +520,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException;
+    Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException, IOException;
 
 
     // --- manage refs
@@ -546,7 +532,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void ref(String refName) throws GitException, InterruptedException;
+    void ref(String refName) throws GitException, InterruptedException, IOException;
 
     /**
      * Check if a ref exists. Equivalent to comparing the return code of <tt>git show-ref</tt> to zero.
@@ -556,7 +542,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean refExists(String refName) throws GitException, InterruptedException;
+    boolean refExists(String refName) throws GitException, InterruptedException, IOException;
 
     /**
      * Deletes a ref. Has no effect if the ref does not exist, equivalent to <tt>git update-ref -d</tt>.
@@ -565,7 +551,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void deleteRef(String refName) throws GitException, InterruptedException;
+    void deleteRef(String refName) throws GitException, InterruptedException, IOException;
 
     /**
      * List refs with the given prefix. Equivalent to <tt>git for-each-ref --format="%(refname)"</tt>.
@@ -575,7 +561,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException;
+    Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException, IOException;
 
     // --- lookup revision
 
@@ -587,7 +573,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException;
+    Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException, IOException;
 
     /**
      * getHeadRev.
@@ -598,7 +584,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException;
+    ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException, IOException;
 
     /**
      * List references in a remote repository. Equivalent to <tt>git ls-remote [--heads] [--tags] &lt;repository&gt; [&lt;refs&gt;]</tt>.
@@ -617,7 +603,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
+    Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException, IOException;
 
     /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
@@ -627,7 +613,7 @@ public interface GitClient {
      * @return a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    ObjectId revParse(String revName) throws GitException, InterruptedException;
+    ObjectId revParse(String revName) throws GitException, InterruptedException, IOException;
 
     /**
      * revList_.
@@ -643,7 +629,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<ObjectId> revListAll() throws GitException, InterruptedException;
+    List<ObjectId> revListAll() throws GitException, InterruptedException, IOException;
 
     /**
      * revList.
@@ -653,7 +639,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<ObjectId> revList(String ref) throws GitException, InterruptedException;
+    List<ObjectId> revList(String ref) throws GitException, InterruptedException, IOException;
 
 
     // --- submodules
@@ -673,7 +659,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    boolean hasGitModules() throws GitException, InterruptedException;
+    boolean hasGitModules() throws GitException, InterruptedException, IOException;
 
     /**
      * Finds all the submodule references in this repository at the specified tree.
@@ -683,7 +669,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException;
+    List<IndexEntry> getSubmodules( String treeIsh ) throws GitException, InterruptedException, IOException;
 
     /**
      * Create a submodule in subdir child directory for remote repository
@@ -693,7 +679,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException;
+    void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException, IOException;
 
     /**
      * Run submodule update optionally recursively on all submodules
@@ -704,7 +690,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
+    void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException, IOException;
 
     /**
      * Run submodule update optionally recursively on all submodules, with a specific
@@ -717,7 +703,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException;
+    void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException, IOException;
 
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking submodules
@@ -729,7 +715,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException;
+    void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException, IOException;
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking, with a specific
      * reference passed to git clone if needing to --init.
@@ -742,7 +728,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException;
+    void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException, IOException;
 
     /**
      * submoduleUpdate.
@@ -758,7 +744,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
+    void submoduleClean(boolean recursive)  throws GitException, InterruptedException, IOException;
 
     /**
      * submoduleInit.
@@ -766,7 +752,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleInit()  throws GitException, InterruptedException;
+    void submoduleInit()  throws GitException, InterruptedException, IOException;
 
     /**
      * Set up submodule URLs so that they correspond to the remote pertaining to
@@ -777,7 +763,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException, InterruptedException;
+    void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException, InterruptedException, IOException;
 
 
     // --- commit log and notes
@@ -792,7 +778,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException;
+    void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException, IOException;
 
     /**
      * Adds the changelog entries for commits in the range revFrom..revTo.
@@ -805,7 +791,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException;
+    void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException, IOException;
 
     /**
      * Returns a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} to build up the git-log invocation.
@@ -826,7 +812,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void appendNote(String note, String namespace ) throws GitException, InterruptedException;
+    void appendNote(String note, String namespace ) throws GitException, InterruptedException, IOException;
 
     /**
      * Adds a new git-note on the current HEAD commit.
@@ -838,7 +824,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void addNote(String note, String namespace ) throws GitException, InterruptedException;
+    void addNote(String note, String namespace ) throws GitException, InterruptedException, IOException;
 
     /**
      * showRevision.
@@ -848,7 +834,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException, IOException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
@@ -868,7 +854,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
+    List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException, IOException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
@@ -893,7 +879,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException;
+    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException, IOException;
 
 
     /**
@@ -906,7 +892,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String describe(String commitIsh) throws GitException, InterruptedException;
+    String describe(String commitIsh) throws GitException, InterruptedException, IOException;
 
     /**
      * setCredentials.
@@ -931,5 +917,5 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException on Git exceptions
      * @throws java.lang.InterruptedException on thread interruption
      */
-    List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
+    List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException, IOException;
 }

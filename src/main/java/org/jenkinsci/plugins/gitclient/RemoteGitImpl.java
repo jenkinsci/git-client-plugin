@@ -17,6 +17,7 @@ import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
+import jenkins.security.MasterToSlaveCallable;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -140,9 +141,9 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
             throw new IllegalStateException("Unexpected invocation: "+method);
         }
 
-        public void execute() throws GitException, InterruptedException {
+        public void execute() throws GitException, InterruptedException, IOException {
             try {
-                channel.call(new jenkins.security.MasterToSlaveCallable<Void, GitException>() {
+                channel.call(new MasterToSlaveCallable<Void, GitException>() {
                     public Void call() throws GitException {
                         try {
                             GitCommand cmd = createCommand();
@@ -151,7 +152,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
                             }
                             cmd.execute();
                             return null;
-                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
+                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException | IOException e) {
                             throw new GitException(e);
                         }
                     }
@@ -174,17 +175,6 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     private OutputStream wrap(OutputStream os) {
         return new RemoteOutputStream(os);
-    }
-
-    /**
-     * getRepository.
-     *
-     * @return a {@link org.eclipse.jgit.lib.Repository} object.
-     * @throws hudson.plugins.git.GitException if underlying git operation fails.
-     */
-    @NonNull
-    public Repository getRepository() throws GitException {
-        throw new UnsupportedOperationException();
     }
 
     /**
@@ -230,7 +220,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
-    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
+    public <T> T withRepository(RepositoryCallback<T> callable) throws InterruptedException, IOException {
         return proxy.withRepository(callable);
     }
 
@@ -249,22 +239,22 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void init() throws GitException, InterruptedException {
+    public void init() throws GitException, InterruptedException, IOException {
         proxy.init();
     }
 
     /** {@inheritDoc} */
-    public void add(String filePattern) throws GitException, InterruptedException {
+    public void add(String filePattern) throws GitException, InterruptedException, IOException {
         proxy.add(filePattern);
     }
 
     /** {@inheritDoc} */
-    public void commit(String message) throws GitException, InterruptedException {
+    public void commit(String message) throws GitException, InterruptedException, IOException {
         proxy.commit(message);
     }
 
     /** {@inheritDoc} */
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
+    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException, IOException {
         proxy.commit(message, author, committer);
     }
 
@@ -275,37 +265,37 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public boolean hasGitRepo() throws GitException, InterruptedException {
+    public boolean hasGitRepo() throws GitException, InterruptedException, IOException {
         return proxy.hasGitRepo();
     }
 
     /** {@inheritDoc} */
-    public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
+    public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException, IOException {
         return proxy.isCommitInRepo(commit);
     }
 
     /** {@inheritDoc} */
-    public String getRemoteUrl(String name) throws GitException, InterruptedException {
+    public String getRemoteUrl(String name) throws GitException, InterruptedException, IOException {
         return proxy.getRemoteUrl(name);
     }
 
     /** {@inheritDoc} */
-    public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
+    public void setRemoteUrl(String name, String url) throws GitException, InterruptedException, IOException {
         proxy.setRemoteUrl(name, url);
     }
 
     /** {@inheritDoc} */
-    public void addRemoteUrl(String name, String url) throws GitException, InterruptedException {
+    public void addRemoteUrl(String name, String url) throws GitException, InterruptedException, IOException {
         proxy.addRemoteUrl(name, url);
     }
 
     /** {@inheritDoc} */
-    public void checkout(String ref) throws GitException, InterruptedException {
+    public void checkout(String ref) throws GitException, InterruptedException, IOException {
         proxy.checkout(ref);
     }
 
     /** {@inheritDoc} */
-    public void checkout(String ref, String branch) throws GitException, InterruptedException {
+    public void checkout(String ref, String branch) throws GitException, InterruptedException, IOException {
         proxy.checkout(ref, branch);
     }
 
@@ -319,27 +309,27 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
-    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
+    public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException, IOException {
         proxy.checkoutBranch(branch, ref);
     }
 
     /** {@inheritDoc} */
-    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException {
+    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException, IOException {
         return getGitAPI().mergeBase(sha1, sha12);
     }
 
     /** {@inheritDoc} */
-    public String getAllLogEntries(String branch) throws InterruptedException {
+    public String getAllLogEntries(String branch) throws InterruptedException, IOException {
         return getGitAPI().getAllLogEntries(branch);
     }
 
     /** {@inheritDoc} */
-    public List<String> showRevision(Revision r) throws GitException, InterruptedException {
+    public List<String> showRevision(Revision r) throws GitException, InterruptedException, IOException {
         return getGitAPI().showRevision(r);
     }
 
     /** {@inheritDoc} */
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
+    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException, IOException {
         proxy.clone(url, origin, useShallowClone, reference);
     }
 
@@ -405,37 +395,37 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
      */
-    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+    public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException, IOException {
         proxy.fetch(url, refspecs);
     }
 
     /** {@inheritDoc} */
-    public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
+    public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException, IOException {
         proxy.fetch(remoteName, refspec);
     }
 
     /** {@inheritDoc} */
-    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
+    public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException, IOException {
         fetch(remoteName, new RefSpec[]{refspec});
     }
 
     /** {@inheritDoc} */
-    public void push(String remoteName, String refspec) throws GitException, InterruptedException {
+    public void push(String remoteName, String refspec) throws GitException, InterruptedException, IOException {
         proxy.push(remoteName, refspec);
     }
 
     /** {@inheritDoc} */
-    public void push(URIish url, String refspec) throws GitException, InterruptedException {
+    public void push(URIish url, String refspec) throws GitException, InterruptedException, IOException {
         proxy.push(url, refspec);
     }
 
     /** {@inheritDoc} */
-    public void merge(ObjectId rev) throws GitException, InterruptedException {
+    public void merge(ObjectId rev) throws GitException, InterruptedException, IOException {
         proxy.merge(rev);
     }
 
     /** {@inheritDoc} */
-    public void prune(RemoteConfig repository) throws GitException, InterruptedException {
+    public void prune(RemoteConfig repository) throws GitException, InterruptedException, IOException {
         proxy.prune(repository);
     }
 
@@ -445,17 +435,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void clean() throws GitException, InterruptedException {
+    public void clean() throws GitException, InterruptedException, IOException {
         proxy.clean();
     }
 
     /** {@inheritDoc} */
-    public void branch(String name) throws GitException, InterruptedException {
+    public void branch(String name) throws GitException, InterruptedException, IOException {
         proxy.branch(name);
     }
 
     /** {@inheritDoc} */
-    public void deleteBranch(String name) throws GitException, InterruptedException {
+    public void deleteBranch(String name) throws GitException, InterruptedException, IOException {
         proxy.deleteBranch(name);
     }
 
@@ -466,7 +456,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public Set<Branch> getBranches() throws GitException, InterruptedException {
+    public Set<Branch> getBranches() throws GitException, InterruptedException, IOException {
         return proxy.getBranches();
     }
 
@@ -477,77 +467,77 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
+    public Set<Branch> getRemoteBranches() throws GitException, InterruptedException, IOException {
         return proxy.getRemoteBranches();
     }
 
     /** {@inheritDoc} */
-    public void tag(String tagName, String comment) throws GitException, InterruptedException {
+    public void tag(String tagName, String comment) throws GitException, InterruptedException, IOException {
         proxy.tag(tagName, comment);
     }
 
     /** {@inheritDoc} */
-    public boolean tagExists(String tagName) throws GitException, InterruptedException {
+    public boolean tagExists(String tagName) throws GitException, InterruptedException, IOException {
         return proxy.tagExists(tagName);
     }
 
     /** {@inheritDoc} */
-    public String getTagMessage(String tagName) throws GitException, InterruptedException {
+    public String getTagMessage(String tagName) throws GitException, InterruptedException, IOException {
         return proxy.getTagMessage(tagName);
     }
 
     /** {@inheritDoc} */
-    public void deleteTag(String tagName) throws GitException, InterruptedException {
+    public void deleteTag(String tagName) throws GitException, InterruptedException, IOException {
         proxy.deleteTag(tagName);
     }
 
     /** {@inheritDoc} */
-    public Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException {
+    public Set<String> getTagNames(String tagPattern) throws GitException, InterruptedException, IOException {
         return proxy.getTagNames(tagPattern);
     }
 
     /** {@inheritDoc} */
-    public void ref(String refName) throws GitException, InterruptedException {
+    public void ref(String refName) throws GitException, InterruptedException, IOException {
 	proxy.ref(refName);
     }
 
     /** {@inheritDoc} */
-    public boolean refExists(String refName) throws GitException, InterruptedException {
+    public boolean refExists(String refName) throws GitException, InterruptedException, IOException {
 	return proxy.refExists(refName);
     }
 
     /** {@inheritDoc} */
-    public void deleteRef(String refName) throws GitException, InterruptedException {
+    public void deleteRef(String refName) throws GitException, InterruptedException, IOException {
 	proxy.deleteRef(refName);
     }
 
     /** {@inheritDoc} */
-    public Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException {
+    public Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException, IOException {
 	return proxy.getRefNames(refPrefix);
     }
 
     /** {@inheritDoc} */
-    public Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException {
+    public Set<String> getRemoteTagNames(String tagPattern) throws GitException, InterruptedException, IOException {
         return proxy.getTagNames(tagPattern);
     }
 
     /** {@inheritDoc} */
-    public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
+    public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException, IOException {
         return proxy.getHeadRev(url);
     }
 
     /** {@inheritDoc} */
-    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException {
+    public ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException, IOException {
         return proxy.getHeadRev(remoteRepoUrl, branch);
     }
 
     /** {@inheritDoc} */
-    public Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException {
+    public Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException, IOException {
         return proxy.getRemoteReferences(remoteRepoUrl, pattern, headsOnly, tagsOnly);
     }
 
     /** {@inheritDoc} */
-    public ObjectId revParse(String revName) throws GitException, InterruptedException {
+    public ObjectId revParse(String revName) throws GitException, InterruptedException, IOException {
         return proxy.revParse(revName);
     }
 
@@ -567,12 +557,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public List<ObjectId> revListAll() throws GitException, InterruptedException {
+    public List<ObjectId> revListAll() throws GitException, InterruptedException, IOException {
         return proxy.revListAll();
     }
 
     /** {@inheritDoc} */
-    public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
+    public List<ObjectId> revList(String ref) throws GitException, InterruptedException, IOException {
         return proxy.revList(ref);
     }
 
@@ -588,22 +578,22 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public boolean hasGitModules() throws GitException, InterruptedException {
+    public boolean hasGitModules() throws GitException, InterruptedException, IOException {
         return proxy.hasGitModules();
     }
 
     /** {@inheritDoc} */
-    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException, InterruptedException {
+    public List<IndexEntry> getSubmodules(String treeIsh) throws GitException, InterruptedException, IOException {
         return proxy.getSubmodules(treeIsh);
     }
 
     /** {@inheritDoc} */
-    public void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException {
+    public void addSubmodule(String remoteURL, String subdir) throws GitException, InterruptedException, IOException {
         proxy.addSubmodule(remoteURL, subdir);
     }
 
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException, IOException {
         proxy.submoduleUpdate(recursive);
     }
 
@@ -615,17 +605,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
      */
-    public void submoduleUpdate(boolean recursive, String ref) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, String ref) throws GitException, InterruptedException, IOException {
         proxy.submoduleUpdate(recursive, ref);
     }
 
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException, IOException {
         proxy.submoduleUpdate(recursive, remoteTracking);
     }
 
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException, IOException {
         proxy.submoduleUpdate(recursive, remoteTracking, reference);
     }
 
@@ -639,17 +629,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
-    public void submoduleClean(boolean recursive) throws GitException, InterruptedException {
+    public void submoduleClean(boolean recursive) throws GitException, InterruptedException, IOException {
         proxy.submoduleClean(recursive);
     }
 
     /** {@inheritDoc} */
-    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException, InterruptedException {
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException, InterruptedException, IOException {
         proxy.setupSubmoduleUrls(rev, listener);
     }
 
     /** {@inheritDoc} */
-    public void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException {
+    public void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException, IOException {
         proxy.changelog(revFrom, revTo, wrap(os));
     }
 
@@ -662,7 +652,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
      */
-    public void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException {
+    public void changelog(String revFrom, String revTo, Writer os) throws GitException, InterruptedException, IOException {
         proxy.changelog(revFrom, revTo, os); // TODO: wrap
     }
 
@@ -676,47 +666,47 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
-    public void appendNote(String note, String namespace) throws GitException, InterruptedException {
+    public void appendNote(String note, String namespace) throws GitException, InterruptedException, IOException {
         proxy.appendNote(note, namespace);
     }
 
     /** {@inheritDoc} */
-    public void addNote(String note, String namespace) throws GitException, InterruptedException {
+    public void addNote(String note, String namespace) throws GitException, InterruptedException, IOException {
         proxy.addNote(note, namespace);
     }
 
     /** {@inheritDoc} */
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
+    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException, IOException {
         return proxy.showRevision(r);
     }
 
     /** {@inheritDoc} */
-    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
+    public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException, IOException {
         return proxy.showRevision(from, to);
     }
 
     /** {@inheritDoc} */
-    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException {
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException, IOException {
         return proxy.showRevision(from, to, useRawOutput);
     }
 
     /** {@inheritDoc} */
-    public boolean hasGitModules(String treeIsh) throws GitException, InterruptedException {
+    public boolean hasGitModules(String treeIsh) throws GitException, InterruptedException, IOException {
         return getGitAPI().hasGitModules(treeIsh);
     }
 
     /** {@inheritDoc} */
-    public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException {
+    public String getRemoteUrl(String name, String GIT_DIR) throws GitException, InterruptedException, IOException {
         return getGitAPI().getRemoteUrl(name, GIT_DIR);
     }
 
     /** {@inheritDoc} */
-    public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
+    public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException, IOException {
         getGitAPI().setRemoteUrl(name, url, GIT_DIR);
     }
 
     /** {@inheritDoc} */
-    public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
+    public String getDefaultRemote(String _default_) throws GitException, InterruptedException, IOException {
         return getGitAPI().getDefaultRemote(_default_);
     }
 
@@ -727,12 +717,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public boolean isBareRepository() throws GitException, InterruptedException {
+    public boolean isBareRepository() throws GitException, InterruptedException, IOException {
         return getGitAPI().isBareRepository();
     }
 
     /** {@inheritDoc} */
-    public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
+    public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException, IOException {
         return getGitAPI().isBareRepository(GIT_DIR);
     }
 
@@ -742,7 +732,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void submoduleInit() throws GitException, InterruptedException {
+    public void submoduleInit() throws GitException, InterruptedException, IOException {
         getGitAPI().submoduleInit();
     }
 
@@ -752,37 +742,37 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void submoduleSync() throws GitException, InterruptedException {
+    public void submoduleSync() throws GitException, InterruptedException, IOException {
         getGitAPI().submoduleSync();
     }
 
     /** {@inheritDoc} */
-    public String getSubmoduleUrl(String name) throws GitException, InterruptedException {
+    public String getSubmoduleUrl(String name) throws GitException, InterruptedException, IOException {
         return getGitAPI().getSubmoduleUrl(name);
     }
 
     /** {@inheritDoc} */
-    public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
+    public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException, IOException {
         getGitAPI().setSubmoduleUrl(name, url);
     }
 
     /** {@inheritDoc} */
-    public void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+    public void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException, IOException {
         getGitAPI().fixSubmoduleUrls(remote, listener);
     }
 
     /** {@inheritDoc} */
-    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException, IOException {
         getGitAPI().setupSubmoduleUrls(remote, listener);
     }
 
     /** {@inheritDoc} */
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException {
+    public void fetch(String repository, String refspec) throws GitException, InterruptedException, IOException {
         getGitAPI().fetch(repository, refspec);
     }
 
     /** {@inheritDoc} */
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+    public void fetch(RemoteConfig remoteRepository) throws InterruptedException, IOException {
         getGitAPI().fetch(remoteRepository);
     }
 
@@ -792,12 +782,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void fetch() throws GitException, InterruptedException {
+    public void fetch() throws GitException, InterruptedException, IOException {
         getGitAPI().fetch();
     }
 
     /** {@inheritDoc} */
-    public void reset(boolean hard) throws GitException, InterruptedException {
+    public void reset(boolean hard) throws GitException, InterruptedException, IOException {
         getGitAPI().reset(hard);
     }
 
@@ -807,57 +797,57 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void reset() throws GitException, InterruptedException {
+    public void reset() throws GitException, InterruptedException, IOException {
         getGitAPI().reset();
     }
 
     /** {@inheritDoc} */
-    public void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException {
+    public void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException, IOException {
         getGitAPI().push(repository, revspec);
     }
 
     /** {@inheritDoc} */
-    public void merge(String revSpec) throws GitException, InterruptedException {
+    public void merge(String revSpec) throws GitException, InterruptedException, IOException {
         getGitAPI().merge(revSpec);
     }
 
     /** {@inheritDoc} */
-    public void clone(RemoteConfig source) throws GitException, InterruptedException {
+    public void clone(RemoteConfig source) throws GitException, InterruptedException, IOException {
         getGitAPI().clone(source);
     }
 
     /** {@inheritDoc} */
-    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException {
+    public void clone(RemoteConfig rc, boolean useShallowClone) throws GitException, InterruptedException, IOException {
         getGitAPI().clone(rc, useShallowClone);
     }
 
     /** {@inheritDoc} */
-    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
+    public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException, IOException {
         return getGitAPI().getBranchesContaining(revspec);
     }
 
     /** {@inheritDoc} */
-    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
+    public List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException, IOException {
         return getGitAPI().lsTree(treeIsh);
     }
 
     /** {@inheritDoc} */
-    public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
+    public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException, IOException {
         return getGitAPI().lsTree(treeIsh, recursive);
     }
 
     /** {@inheritDoc} */
-    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {
+    public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException, IOException {
         return getGitAPI().revListBranch(branchId);
     }
 
     /** {@inheritDoc} */
-    public String describe(String commitIsh) throws GitException, InterruptedException {
+    public String describe(String commitIsh) throws GitException, InterruptedException, IOException {
         return getGitAPI().describe(commitIsh);
     }
 
     /** {@inheritDoc} */
-    public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException {
+    public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException, IOException {
         return getGitAPI().getTagsOnCommit(revName);
     }
 
@@ -870,7 +860,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
-            throws GitException, InterruptedException {
+            throws GitException, InterruptedException, IOException {
         return getGitAPI().getBranchesContaining(revspec, allBranches);
     }
 }
