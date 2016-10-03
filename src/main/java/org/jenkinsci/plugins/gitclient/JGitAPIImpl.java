@@ -99,6 +99,7 @@ import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
+import org.eclipse.jgit.transport.HttpTransport;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.SshSessionFactory;
@@ -107,6 +108,7 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
@@ -144,12 +146,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
+        this(workspace, listener, null);
+    }
+
+    JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
+        /* If workspace is null, then default to current directory to match 
+         * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
         this.listener = listener;
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
         SshSessionFactory.setInstance(new TrileadSessionFactory());
+
+        if (httpConnectionFactory != null) {
+            httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
+            // allow override of HttpConnectionFactory to avoid JENKINS-37934
+            HttpTransport.setConnectionFactory(httpConnectionFactory);
+        }
     }
 
     /**
@@ -516,7 +530,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
-                //throw new UnsupportedOperationException("JGit don't (yet) support pruning during fetch");
                 shouldPrune = true;
                 return this;
             }
@@ -567,10 +580,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                         for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
                             Ref branchRef = it.next();
-                            for (RefSpec rs : refSpecs) {
-                                if (rs.matchDestination(branchRef)) {
-                                    toDelete.add(branchRef.getName());
-                                    break;
+                            if (!branchRef.isSymbolic()) { // Don't delete HEAD and other symbolic refs
+                                for (RefSpec rs : refSpecs) {
+                                    if (rs.matchDestination(branchRef)) {
+                                        toDelete.add(branchRef.getName());
+                                        break;
+                                    }
                                 }
                             }
                         }

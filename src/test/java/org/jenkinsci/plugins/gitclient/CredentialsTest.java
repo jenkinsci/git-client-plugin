@@ -177,7 +177,7 @@ public class CredentialsTest {
     @Parameterized.Parameters(name = "{2}-{1}-{0}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
-        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit"} : new String[]{"jgit"};
+        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit"};
         for (String implementation : implementations) {
             /* Add master repository as authentication test with private
              * key of current user.  Try to test at least one
@@ -214,6 +214,9 @@ public class CredentialsTest {
                     String fileToCheck = (String) entry.get("file");
                     if (skipIf != null) {
                         if (skipIf.equals(implementation)) {
+                            continue;
+                        }
+                        if (implementation.startsWith("jgit") && skipIf.startsWith("jgit")) { // Treat jgitapache like jgit
                             continue;
                         }
                     }

@@ -7,6 +7,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -123,6 +124,11 @@ public class Git implements Serializable {
 
                 if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
                     return new JGitAPIImpl(f, listener);
+                }
+
+                if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
+                    final PreemptiveAuthHttpClientConnectionFactory factory = new PreemptiveAuthHttpClientConnectionFactory();
+                    return new JGitAPIImpl(f, listener, factory);
                 }
                 // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
                 return new GitAPI(exe, f, listener, env);
