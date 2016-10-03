@@ -1,4 +1,3 @@
-
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
@@ -98,7 +97,7 @@ public class CredentialsTest {
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
-        log().println("Repo: " + gitRepoUrl + " implementation: " + gitImpl);
+        log().println("Repo: " + gitRepoUrl + " implementation: " + gitImpl + " username: " + username + " password: " + password + " key: " + privateKey);
     }
 
     @Before
