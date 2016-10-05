@@ -984,11 +984,12 @@ public abstract class GitAPITestCase extends TestCase {
             expectedHead = bareCommit5;
         } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
             String expectedSubString = "Missing commit " + bareCommit5.name();
-            assertTrue("Wrong message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
+            assertTrue("Wrong jgit message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
         } catch (GitException ge) {
-            assertTrue("Wrong message :" + ge.getMessage(),
+            assertTrue("Wrong cli git message :" + ge.getMessage(),
                        ge.getMessage().contains("Could not merge") ||
-                       ge.getMessage().contains("not something we can merge"));
+                       ge.getMessage().contains("not something we can merge") ||
+                       ge.getMessage().contains("does not point to a commit"));
             assertTrue("Wrong message :" + ge.getMessage(), ge.getMessage().contains(bareCommit5.name()));
         }
         /* Assert that expected change is in repo after merge.  With
@@ -1146,7 +1147,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("CliGit should have thrown an exception", newArea.git instanceof JGitAPIImpl);
         } catch (GitException ge) {
             final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated"));
+            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated") || msg.contains("error: cannot lock ref "));
         }
 
         /* Use git remote prune origin to remove obsolete branch named "parent" */
@@ -1321,22 +1322,32 @@ public abstract class GitAPITestCase extends TestCase {
         Set<String> tags = w.git.getTagNames(null);
         assertThat(tags, hasItem("no-slash"));
         assertThat(tags, not(hasItem("slashed/sample")));
-        assertThat(tags, not(hasItem("slashed/sample-with-empty-comment")));
+        assertThat(tags, not(hasItem("slashed/sample-with-short-comment")));
 
         w.git.tag("slashed/sample", "Tag slashed/sample includes a /");
-        w.git.tag("slashed/sample-with-empty-comment", "");
+        w.git.tag("slashed/sample-with-short-comment", "short comment");
 
         for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
             Set<String> latestTags = w.git.getTagNames(matchPattern);
             assertThat(tags, hasItem("no-slash"));
             assertThat(latestTags, not(hasItem("slashed/sample")));
-            assertThat(latestTags, not(hasItem("slashed/sample-with-empty-comment")));
+            assertThat(latestTags, not(hasItem("slashed/sample-with-short-comment")));
         }
 
         for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
             Set<String> latestTags = w.git.getTagNames(matchPattern);
             assertThat(latestTags, hasItem("slashed/sample"));
-            assertThat(latestTags, hasItem("slashed/sample-with-empty-comment"));
+            assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
+        }
+    }
+
+    public void test_empty_comment() throws Exception {
+        w.init();
+        w.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
+        if (isWindows()) {
+            w.git.tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
+        } else {
+            w.git.tag("empty-comment", "");
         }
     }
 
@@ -3977,7 +3988,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     /**
      * Returns the prefix for the remote branches while querying them.
-     * @return remote branch pregix, for example, "remotes/"
+     * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
 
@@ -4034,5 +4045,10 @@ public abstract class GitAPITestCase extends TestCase {
         } finally {
             FileUtils.deleteDirectory(nonexistentDir);
         }
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
     }
 }
