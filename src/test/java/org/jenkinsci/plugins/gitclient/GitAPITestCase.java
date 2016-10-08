@@ -1025,6 +1025,13 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("bare != working", commit1, bareCommit1);
         assertEquals(commit1, bare.git.getHeadRev(bare.repoPath(), "refs/heads/master"));
 
+        /* The git.push() further down below does not work if the git config push.default is set to "nothing" */
+        FileRepository repo = w.repo();
+        StoredConfig config = repo.getConfig();
+        config.setString("push",null,"default","simple");
+        config.save();
+        repo.close();
+
         /* Add tag to working repo and without pushing it to the bare repo */
         w.tag("tag1");
         assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
