@@ -843,18 +843,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (out==null)  throw new IllegalStateException();
 
-                try {
-                    // "git whatchanged" std output gives us byte stream of data
-                    // Commit messages in that byte stream are UTF-8 encoded.
-                    // We want to decode bytestream to strings using UTF-8 encoding.
-
-                    WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"));
-                    try {
-                        if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                            throw new GitException("Error launching git whatchanged");
-                    } finally {
-                        w.flush();
-                    }
+                // "git whatchanged" std output gives us byte stream of data
+                // Commit messages in that byte stream are UTF-8 encoded.
+                // We want to decode bytestream to strings using UTF-8 encoding.
+                try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
+                    if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
+                        throw new GitException("Error launching git whatchanged");
                 } catch (IOException e) {
                     throw new GitException("Error launching git whatchanged",e);
                 }
@@ -1696,7 +1690,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (PrintWriter w = new PrintWriter(ssh)) {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
-            w.flush();
         }
         ssh.setExecutable(true);
         return ssh;
