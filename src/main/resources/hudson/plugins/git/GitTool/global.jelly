@@ -31,5 +31,8 @@ THE SOFTWARE.
                      addCaption="${%Add Git}" hasHeader="true"
                      deleteCaption="${%Delete Git}"/>
     </f:entry>
+    <f:entry title="${%Git default timeout in minutes}" >
+      <f:textbox field="gitDefaultTimeout" />
+    </f:entry>
   </f:section>
 </j:jelly>

@@ -13,6 +13,7 @@ import hudson.tools.ToolProperty;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.math.NumberUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
-import java.util.logging.Level;
 
 /**
  * Information about Git installation. A GitTool is used to select
@@ -135,6 +135,8 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     @Extension @Symbol("git")
     public static class DescriptorImpl extends ToolDescriptor<GitTool> {
 
+        private Integer gitDefaultTimeout;
+
         public DescriptorImpl() {
             super();
             load();
@@ -148,8 +150,18 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         @Override
         public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
             setInstallations(req.bindJSONToList(clazz, json.get("tool")).toArray(new GitTool[0]));
+            if (json.has("gitDefaultTimeout")) {
+                setGitDefaultTimeout(json.getInt("gitDefaultTimeout"));
+            }
             save();
             return true;
+        }
+
+        public FormValidation doCheckGitDefaultTimeout(@QueryParameter String value) {
+            if (NumberUtils.isDigits(value)) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Git default timeout must be an integer value");
         }
 
         public FormValidation doCheckHome(@QueryParameter File value) {
@@ -192,6 +204,14 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
                 }
             }
             return r;
+        }
+
+        public void setGitDefaultTimeout(Integer gitDefaultTimeout) {
+            this.gitDefaultTimeout = gitDefaultTimeout;
+        }
+
+        public Integer getGitDefaultTimeout() {
+            return gitDefaultTimeout;
         }
     }
 

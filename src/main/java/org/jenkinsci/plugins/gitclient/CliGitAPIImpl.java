@@ -5,7 +5,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-
+import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
@@ -20,12 +20,13 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.GitObject;
+import hudson.plugins.git.GitTool;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
-
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
@@ -38,7 +39,17 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -1644,7 +1655,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
     		StandardCredentials credentials,
     		@NonNull URIish url) throws GitException, InterruptedException {
-    	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
+        return launchCommandWithCredentials(args, workDir, credentials, url, null);
     }
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
@@ -2015,7 +2026,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env) throws GitException, InterruptedException {
-    	return launchCommandIn(args, workDir, environment, TIMEOUT);
+    	return launchCommandIn(args, workDir, environment, null);
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env, Integer timeout) throws GitException, InterruptedException {
@@ -2039,11 +2050,23 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+
+            if (timeout == null) {
+                Jenkins jenkins = Jenkins.getInstance();
+                if (jenkins != null) {
+                    GitTool.DescriptorImpl gitTool = (GitTool.DescriptorImpl) jenkins.getDescriptor(GitTool.class);
+                    if (gitTool != null && gitTool.getGitDefaultTimeout() != null && gitTool.getGitDefaultTimeout() > 0) {
+                        timeout = gitTool.getGitDefaultTimeout();
+                    } else {
+                        timeout = TIMEOUT;
+                    }
+                }
+            }
+            listener.getLogger().println(" > " + command + (TIMEOUT_LOG_PREFIX + timeout));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
-            int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
+            int status = p.start().joinWithTimeout(timeout, TimeUnit.MINUTES, listener);
 
             String result = fos.toString(Charset.defaultCharset().toString());
             if (status != 0) {
