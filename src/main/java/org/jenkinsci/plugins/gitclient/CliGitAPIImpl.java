@@ -2060,6 +2060,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } else {
                         timeout = TIMEOUT;
                     }
+                } else {
+                    timeout = TIMEOUT;
                 }
             }
             listener.getLogger().println(" > " + command + (TIMEOUT_LOG_PREFIX + timeout));
