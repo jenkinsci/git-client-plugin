@@ -690,10 +690,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void clean() throws GitException, InterruptedException {
-        reset(true);
-        String cmd = "-fdx";
-
-        launchCommand("clean", cmd);
+        this.clean(false);
     }
 
     /** {@inheritDoc} */
