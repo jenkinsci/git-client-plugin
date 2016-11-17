@@ -682,6 +682,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	launchCommand("clean", cmd);
     }
 
+    /**
+     * Remove untracked files and directories, including files listed
+     * in the ignore rules.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void clean() throws GitException, InterruptedException {
+        reset(true);
+        String cmd = "-fdx";
+
+        launchCommand("clean", cmd);
+    }
+
     /** {@inheritDoc} */
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
 

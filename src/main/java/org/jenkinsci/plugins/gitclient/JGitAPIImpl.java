@@ -1192,6 +1192,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * clean.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    public void clean() throws GitException {
+        try (Repository repo = getRepository()) {
+            Git git = git(repo);
+            git.reset().setMode(HARD).call();
+            git.clean().setCleanDirectories(true).setIgnore(false).call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
+    }
+
+    /**
      * clone_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.

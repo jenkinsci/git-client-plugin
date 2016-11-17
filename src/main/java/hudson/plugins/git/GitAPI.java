@@ -308,8 +308,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void clean() throws GitException, InterruptedException {
-        // false provides original functionality
-        if (Git.USE_CLI) super.clean(false); else  jgit.clean(false);
+        if (Git.USE_CLI) super.clean(); else  jgit.clean();
     }
 
     /** {@inheritDoc} */
