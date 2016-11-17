@@ -828,15 +828,26 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch(fileName2);
         w.touch(fileName, "new content");
 
-        w.git.clean();
+        String dirName3 = "dir-with-submodule";
+        File submodule = w.file(dirName3);
+        assertTrue("Did not create dir " + dirName3, submodule.mkdir());
+        WorkingArea workingArea = new WorkingArea(submodule);
+        workingArea.init();
+        workingArea.commitEmpty("init");
+
+        w.git.clean(false);
         assertFalse(w.exists(dirName1));
         assertFalse(w.exists(fileName1));
         assertFalse(w.exists(fileName2));
+        assertTrue(w.exists(dirName3));
         assertEquals("content " + fileName, w.contentOf(fileName));
         assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
         assertEquals("content " + fileNameSwim, w.contentOf(fileNameSwim));
         String status = w.cmd("git status");
         assertTrue("unexpected status " + status, status.contains("working directory clean") || status.contains("working tree clean"));
+
+        w.git.clean(true);
+        assertFalse(w.exists(dirName3));
 
         /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
         FilePath fp = new FilePath(w.file(fileName));
