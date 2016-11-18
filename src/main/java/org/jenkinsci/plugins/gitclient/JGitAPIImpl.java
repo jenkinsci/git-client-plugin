@@ -1197,13 +1197,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
     public void clean() throws GitException {
-        try (Repository repo = getRepository()) {
-            Git git = git(repo);
-            git.reset().setMode(HARD).call();
-            git.clean().setCleanDirectories(true).setIgnore(false).call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        }
+        this.clean(false);
     }
 
     /**
@@ -1930,7 +1924,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void submoduleClean(boolean recursive) throws GitException {
         try {
             for (JGitAPIImpl sub : submodules()) {
-                sub.clean(false);
+                sub.clean();
                 if (recursive) {
                     sub.submoduleClean(true);
                 }
