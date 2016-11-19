@@ -68,7 +68,7 @@ public class GitToolTest {
         GitTool.DescriptorImpl gitDescriptor = gitTool.getDescriptor();
         GitTool.DescriptorImpl jgitDescriptor = (new JGitTool()).getDescriptor();
         GitTool.DescriptorImpl jgitApacheDescriptor = (new JGitApacheTool()).getDescriptor();
-        List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDesccriptors();
+        List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDescriptors();
         assertTrue("git tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(gitDescriptor));
         assertTrue("jgit tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitDescriptor));
         assertTrue("jgitapache tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitApacheDescriptor));

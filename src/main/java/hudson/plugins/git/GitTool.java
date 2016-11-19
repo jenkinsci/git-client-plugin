@@ -174,15 +174,31 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return null;
         }
 
+        /**
+         * Misspelled method name. Please use #getApplicableDescriptors.
+         * @return list of applicable GitTool descriptors
+         * @deprecated
+         */
+        @Deprecated
         public List<ToolDescriptor<? extends GitTool>> getApplicableDesccriptors() {
+            return getApplicableDescriptors();
+        }
+
+        /**
+         * Return list of applicable GitTool descriptors.
+         * @return list of applicable GitTool descriptors
+         */
+        @SuppressWarnings("unchecked")
+        public List<ToolDescriptor<? extends GitTool>> getApplicableDescriptors() {
             List<ToolDescriptor<? extends GitTool>> r = new ArrayList<>();
             Jenkins jenkinsInstance = Jenkins.getInstance();
             if (jenkinsInstance == null) {
                 return r;
             }
-            for (ToolDescriptor td : jenkinsInstance.<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
-                if (GitTool.class.isAssignableFrom(td.clazz))
-                    r.add(td);
+            for (ToolDescriptor<?> td : jenkinsInstance.<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
+                if (GitTool.class.isAssignableFrom(td.clazz)) { // This checks cast is allowed
+                    r.add((ToolDescriptor<? extends GitTool>)td); // This is the unchecked cast
+                }
             }
             return r;
         }
