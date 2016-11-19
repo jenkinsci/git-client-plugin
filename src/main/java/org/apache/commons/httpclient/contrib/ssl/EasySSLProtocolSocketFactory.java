@@ -30,6 +30,7 @@
 
 package org.apache.commons.httpclient.contrib.ssl;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -203,6 +204,8 @@ public class EasySSLProtocolSocketFactory implements SecureProtocolSocketFactory
     }
 
     /** {@inheritDoc} */
+    @SuppressFBWarnings(value = "EQ_GETCLASS_AND_CLASS_CONSTANT",
+            justification = "Implementation provided by Apache, never inherited")
     public boolean equals(Object obj) {
         return ((obj != null) && obj.getClass().equals(EasySSLProtocolSocketFactory.class));
     }

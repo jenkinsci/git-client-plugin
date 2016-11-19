@@ -230,7 +230,6 @@
         <version>${findbugs-maven-plugin.version}</version>
         <configuration>
           <skip>${skipFindbugs}</skip>
-          <excludeFilterFile>src/findbugs/excludesFilter.xml</excludeFilterFile>
           <failOnError>${maven.findbugs.failure.strict}</failOnError>
           <xmlOutput>true</xmlOutput>
           <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
