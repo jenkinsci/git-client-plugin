@@ -122,6 +122,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
 
@@ -1101,6 +1102,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Optional parent commit to produce the diff against. This only matters
          *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
          */
+        @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
+                justification = "Windows git implementation requires specific line termination")
         void format(RevCommit commit, @Nullable RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
             if (parent!=null)
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());

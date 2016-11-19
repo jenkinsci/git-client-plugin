@@ -1,17 +1,5 @@
 <FindBugsFilter>
 
-  <!-- Using platform default encoding seems relatively standard
-       throughout Jenkins -->
-
-  <!-- Windows git implementation requires specific line termination
-       for certain files.  Using newline instead of %n in a format
-       string is necessary in that case -->
-  <Match>
-    <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
-    <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl$RawFormatter"/>
-    <Method name="format"/>
-  </Match>
-
   <!-- this readLine intentionally discards its output -->
   <Match>
     <Bug pattern="RV_DONT_JUST_NULL_CHECK_READLINE"/>
