@@ -12,6 +12,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import com.google.common.collect.Lists;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -772,6 +773,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "RV_DONT_JUST_NULL_CHECK_READLINE",
+            justification = "Only needs first line, exception if multiple detected")
     private @CheckForNull String firstLine(String result) {
         BufferedReader reader = new BufferedReader(new StringReader(result));
         String line;
