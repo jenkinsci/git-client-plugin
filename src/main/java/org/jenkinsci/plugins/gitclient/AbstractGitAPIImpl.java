@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.ProxyConfiguration;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;
@@ -14,6 +15,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 /**
  * Common parts between {@link JGitAPIImpl} and {@link CliGitAPIImpl}.
@@ -49,7 +51,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     /** {@inheritDoc} */
     public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException {
-        changelog(revFrom, revTo, new OutputStreamWriter(outputStream));
+        changelog(revFrom, revTo, new OutputStreamWriter(outputStream, Charset.defaultCharset()));
     }
 
     /** {@inheritDoc} */

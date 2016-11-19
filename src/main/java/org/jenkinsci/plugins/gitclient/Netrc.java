@@ -6,8 +6,10 @@ import hudson.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -93,7 +95,7 @@ class Netrc {
 
         BufferedReader r = null;
         try {
-            r = new BufferedReader(new FileReader(netrc));
+            r = new BufferedReader(new InputStreamReader(new FileInputStream(netrc), Charset.defaultCharset()));
             String line = null;
             String machine = null;
             String login = null;

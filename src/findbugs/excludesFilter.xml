@@ -2,16 +2,6 @@
 
   <!-- Using platform default encoding seems relatively standard
        throughout Jenkins -->
-  <Match>
-    <Bug pattern="DM_DEFAULT_ENCODING"/>
-    <Or>
-      <Class name="org.jenkinsci.plugins.gitclient.AbstractGitAPIImpl"/>
-      <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl"/>
-      <Class name="org.jenkinsci.plugins.gitclient.Netrc"/>
-      <!-- Ugh - depends on order of inner class generation -->
-      <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl$2"/>
-    </Or>
-  </Match>
 
   <!-- Windows git implementation requires specific line termination
        for certain files.  Using newline instead of %n in a format
