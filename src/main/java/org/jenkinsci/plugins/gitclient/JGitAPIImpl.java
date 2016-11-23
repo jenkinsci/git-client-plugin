@@ -1074,6 +1074,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             RevWalk walk = new RevWalk(or);
             Writer out;
             boolean hasIncludedRev = false;
+            boolean listMerges = false;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1157,8 +1158,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
-                        if (commit.getParentCount()>1)  continue;
+                        if (commit.getParentCount() > 1 && !listMerges) continue;
 
                         formatter.format(commit, null, pw, true);
                     }
@@ -1167,6 +1167,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } finally {
                     closeResources();
                 }
+            }
+
+            public ChangelogCommand listMerges(boolean flag) {
+                this.listMerges = flag;
+                return this;
             }
         };
     }

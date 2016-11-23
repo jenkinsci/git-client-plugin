@@ -3164,6 +3164,30 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
     }
 
+    public void test_changelog_with_merge_commit() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        // Obtain last commit message
+        String mergeSha1 = w.git.revParse("HEAD").name();
+
+        assertThat("Merge commit exists in output",get_changelog(w.git.changelog()),not(containsString(mergeSha1)));
+        assertThat("Merge commit exists in output",get_changelog(w.git.changelog().listMerges(false)),not(containsString(mergeSha1)));
+        assertThat("Merge commit is not the first commit",get_changelog(w.git.changelog().listMerges(true)),startsWith(("commit " + mergeSha1)));
+    }
+
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
@@ -3714,15 +3738,10 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(w.repoPath(), getMirrorHead());
     }
 
-    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
-    {
-        ChangelogCommand changelogCommand = w.git.changelog();
-        changelogCommand.max(1);
+    private String get_changelog(ChangelogCommand changelogCommand) throws InterruptedException{
         StringWriter writer = new StringWriter();
-        changelogCommand.to(writer);
-        changelogCommand.execute();
-        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
-        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
+        changelogCommand.to(writer).execute();
+        return writer.toString();
     }
 
     public void test_changelog() throws Exception {
@@ -3732,7 +3751,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("changelog-file");
         w.git.commit("changelog-commit-message");
         String sha1 = w.git.revParse("HEAD").name();
-        check_changelog_sha1(sha1, "master");
+        assertThat("Wrong changelog line 1 on branch master", get_changelog(w.git.changelog().max(1)),startsWith("commit " + sha1));
     }
 
     public void test_show_revision_for_merge() throws Exception {

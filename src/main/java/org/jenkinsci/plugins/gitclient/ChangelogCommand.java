@@ -121,4 +121,11 @@ public interface ChangelogCommand extends GitCommand {
      * ChangelogCommand instance or files will be left open.
      */
     void abort();
+    
+    /**
+     * Include merge commits in the changelog
+     * @param flag true if merge commits should be listed
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
+    ChangelogCommand listMerges(boolean flag);
 }
