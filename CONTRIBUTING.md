@@ -11,8 +11,8 @@ Pull requests are evaluated by the
 [Cloudbees Jenkins job](https://jenkins.ci.cloudbees.com/job/plugins/job/git-client-plugin/).
 You should receive e-mail with the results of the evaluation.
 
-Before submitting your change, please assure that you've added a test
-which verifies your change.  There have been many developers involved
+Before submitting your change, please assure that you've added tests
+which verify your change.  There have been many developers involved
 in the git client plugin and there are many, many users who depend on
 the git-client-plugin.  Tests help us assure that we're delivering a
 reliable plugin, and that we've communicated our intent to other
