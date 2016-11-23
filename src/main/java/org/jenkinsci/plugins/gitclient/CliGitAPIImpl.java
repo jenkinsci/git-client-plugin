@@ -835,6 +835,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Integer n = null;
             Writer out = null;
+            boolean listMerges = false;
 
             public ChangelogCommand excludes(String rev) {
                 revs.add(sanitize('^'+rev));
@@ -873,6 +874,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.add("--format="+RAW);
                 if (n!=null)
                     args.add("-n").add(n);
+                if (listMerges)
+                    args.add("-m");
                 for (String rev : this.revs)
                     args.add(rev);
 
@@ -887,6 +890,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (IOException e) {
                     throw new GitException("Error launching git whatchanged",e);
                 }
+            }
+
+            public ChangelogCommand listMerges(boolean flag) {
+                listMerges = flag;
+                return this;
             }
         };
     }
