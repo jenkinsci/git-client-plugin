@@ -995,7 +995,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     // We might fail if we have no modules, so catch this
                     // exception and just return.
-                    cfgOutput = launchCommand("config", "--get-regexp", "^submodule");
+                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", "^submodule\\.(.*)\\.url");
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
