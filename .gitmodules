@@ -4,3 +4,6 @@
 [submodule "modules/ntp"]
 	path = modules/ntp
 	url = https://github.com/puppetlabs/puppetlabs-ntp.git
+[submodule "puppetssh"]
+	path = modules/sshkeys
+	url = https://github.com/puppetlabs/puppetlabs-sshkeys.git
