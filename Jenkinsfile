@@ -27,7 +27,7 @@ node('java') {
 /* Run maven from tool "mvn" */
 void mvn(def args) {
   /* Get jdk tool. */
-  String jdktool = tool name: "jdk7", type: 'hudson.model.JDK'
+  String jdktool = tool name: "jdk8", type: 'hudson.model.JDK'
 
   /* Get the maven tool. */
   def mvnHome = tool name: 'mvn'
