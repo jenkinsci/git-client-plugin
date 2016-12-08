@@ -11,6 +11,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -670,6 +672,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * clean_.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CleanCommand} object.
+     */
+    public CleanCommand clean_() {
+        return new CleanCommand() {
+        	private List<String> excludePatterns = Collections.emptyList();
+        	private Integer timeout = TIMEOUT;
+        	           
+            public CleanCommand excludePatterns(List<String> excludePatterns) {
+            	this.excludePatterns = excludePatterns;
+            	return this;
+            }
+
+            public CleanCommand timeout(Integer timeout) {
+            	this.timeout = timeout;
+            	return this;
+            }
+            
+            public void execute() throws GitException, InterruptedException {
+                reset(true);
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("clean");
+                args.add("-fdx");
+                if (excludePatterns != null) {
+                    for (String pattern : excludePatterns) {
+                        if ( !Strings.isNullOrEmpty(pattern) ) {
+                            args.add("-e");
+                        	args.add(pattern);
+                        }
+                    }
+                }
+                String result = launchCommandIn(args, workspace, environment, timeout);
+                listener.getLogger().println(result);
+            }
+        };
+    }
+    
+    /**
      * Remove untracked files and directories, including files listed
      * in the ignore rules.
      *
@@ -677,10 +718,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void clean() throws GitException, InterruptedException {
-        reset(true);
-        launchCommand("clean", "-fdx");
+    	clean_().execute();
     }
-
+    
     /** {@inheritDoc} */
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
 

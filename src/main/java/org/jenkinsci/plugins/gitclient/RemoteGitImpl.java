@@ -439,6 +439,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         proxy.prune(repository);
     }
 
+    public CleanCommand clean_() {
+    	return command(CleanCommand.class);
+    }
+    
     /**
      * clean.
      *
