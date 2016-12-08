@@ -700,7 +700,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     for (String pattern : excludePatterns) {
                         if ( !Strings.isNullOrEmpty(pattern) ) {
                             args.add("-e");
-                        	args.add(pattern);
+                            args.add(pattern);
                         }
                     }
                 }
