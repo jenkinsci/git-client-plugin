@@ -720,7 +720,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void clean() throws GitException, InterruptedException {
     	clean_().execute();
     }
-    
+
     /** {@inheritDoc} */
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
 

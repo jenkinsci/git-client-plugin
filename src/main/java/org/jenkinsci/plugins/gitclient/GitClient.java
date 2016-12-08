@@ -442,7 +442,7 @@ public interface GitClient {
      */
     CleanCommand clean_(); // can't use 'clean' as legacy IGitAPI already define this method
 
-    
+
     // --- manage branches
 
     /**

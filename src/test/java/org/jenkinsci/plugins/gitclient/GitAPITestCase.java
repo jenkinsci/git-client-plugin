@@ -835,8 +835,8 @@ public abstract class GitAPITestCase extends TestCase {
         	assertTrue(w.exists(fileName));
         }        
         w.git.clean();
-    	assertFalse(w.exists(dirName1));
-    	assertFalse(w.exists(fileName1));
+        assertFalse(w.exists(dirName1));
+        assertFalse(w.exists(fileName1));
         assertFalse(w.exists(fileName2));
         assertEquals("content " + fileName, w.contentOf(fileName));
         assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
