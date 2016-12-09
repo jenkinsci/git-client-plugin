@@ -3,7 +3,7 @@
     <f:entry title="${%Name}" field="name">
         <f:textbox />
     </f:entry>
-    <f:entry title="Path to Git executable" field="home">
+    <f:entry title="${%Path to Git executable}" field="home">
         <f:textbox />
     </f:entry>
     <j:set var="toolDescriptor" value="${descriptor}" /><!-- to make this descriptor accessible from properties -->
