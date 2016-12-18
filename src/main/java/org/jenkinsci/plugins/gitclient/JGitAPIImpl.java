@@ -1063,6 +1063,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
+                        // git whatachanged doesn't show the merge commits unless -m is given
                         if (commit.getParentCount()>1 && !includeMerges)  continue;
 
                         formatter.format(commit, null, pw, true);
