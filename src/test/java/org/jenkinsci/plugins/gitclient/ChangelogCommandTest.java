@@ -46,7 +46,6 @@ public class ChangelogCommandTest extends MergedRepositoryTest {
     public void changeCmd_withMergesEnabled_ExpectMergeCommitIncluded() throws InterruptedException {
         changeCmd.withMerges();
         changeCmd.execute();
-        System.out.println(writer.toString());
         assertThat(writer.toString(), containsString(" Merge commit '" + commit1Branch.name() + "'"));
     }
 
