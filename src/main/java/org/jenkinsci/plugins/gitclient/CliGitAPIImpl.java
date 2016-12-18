@@ -805,6 +805,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Integer n = null;
             Writer out = null;
+            boolean includeMerges = false;
 
             public ChangelogCommand excludes(String rev) {
                 revs.add(sanitize('^'+rev));
@@ -824,6 +825,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return includes(rev.name());
             }
 
+            public ChangelogCommand withMerges() {
+                includeMerges = true;
+                return this;
+            }
+
             public ChangelogCommand to(Writer w) {
                 this.out = w;
                 return this;
@@ -839,8 +845,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--no-abbrev", "-M");
                 args.add("--format="+RAW);
+                if (!includeMerges)
+                    args.add("--no-merges");
                 if (n!=null)
                     args.add("-n").add(n);
                 for (String rev : this.revs)
@@ -848,7 +856,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (out==null)  throw new IllegalStateException();
 
-                // "git whatchanged" std output gives us byte stream of data
+                // "git log" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {

@@ -86,6 +86,13 @@ public interface ChangelogCommand extends GitCommand {
     ChangelogCommand includes(ObjectId rev);
 
     /**
+     * When this method is called, the changeLog command will then also include
+     * merge commits. By default, merge commits are not included
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
+    ChangelogCommand withMerges();
+
+    /**
      * Sets the {@link java.io.OutputStream} that receives the changelog.
      *
      * This takes {@link java.io.Writer} and not {@link java.io.OutputStream} because the changelog is a textual format,
