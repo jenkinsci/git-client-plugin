@@ -14,9 +14,6 @@ import static org.hamcrest.Matchers.*;
 
 
 
-/**
- * Created by matsp on 12/17/2016.
- */
 @RunWith(Parameterized.class)
 public class ChangelogCommandTest extends MergedRepositoryTest {
 
@@ -27,7 +24,7 @@ public class ChangelogCommandTest extends MergedRepositoryTest {
     CharArrayWriter writer;
 
     @Before
-    public void asdf() throws InterruptedException {
+    public void setup() throws InterruptedException {
         changeCmd = git.changelog();
         writer = new CharArrayWriter();
         changeCmd.to(writer);
@@ -49,6 +46,7 @@ public class ChangelogCommandTest extends MergedRepositoryTest {
     public void changeCmd_withMergesEnabled_ExpectMergeCommitIncluded() throws InterruptedException {
         changeCmd.withMerges();
         changeCmd.execute();
+        System.out.println(writer.toString());
         assertThat(writer.toString(), containsString(" Merge commit '" + commit1Branch.name() + "'"));
     }
 

@@ -845,10 +845,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--no-abbrev", "-M");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
                 args.add("--format="+RAW);
-                if (!includeMerges)
-                    args.add("--no-merges");
+                if (includeMerges)
+                    args.add("-m");
                 if (n!=null)
                     args.add("-n").add(n);
                 for (String rev : this.revs)
