@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
+
 
 
 /**
@@ -48,12 +49,12 @@ public class ChangelogCommandTest extends MergedRepositoryTest {
     public void changeCmd_withMergesEnabled_ExpectMergeCommitIncluded() throws InterruptedException {
         changeCmd.withMerges();
         changeCmd.execute();
-        assertThat(writer.toString(), Matchers.containsString(" Merge commit '" + commit1Branch.name() + "'"));
+        assertThat(writer.toString(), containsString(" Merge commit '" + commit1Branch.name() + "'"));
     }
 
     @Test
     public void changeCmd_withMergesDisabled_ExpectMergeCommitsExcluded() throws InterruptedException {
         changeCmd.execute();
-        assertThat(writer.toString(), Matchers.not(Matchers.containsString(" Merge commit '" + commit1Branch.name() + "'")));
+        assertThat(writer.toString(), not(containsString(" Merge commit '" + commit1Branch.name() + "'")));
     }
 }
