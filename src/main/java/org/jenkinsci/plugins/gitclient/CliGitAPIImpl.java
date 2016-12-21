@@ -1515,9 +1515,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String quoteWindowsCredentials(String str) {
-        // Assumes the only meaningful character is %, this may be
-        // insufficient.
-        return str.replace("%", "%%");
+        // Quote special characters for Windows Batch Files
+        // See: http://ss64.com/nt/syntax-esc.html
+        String quoted = str.replace("%", "%%")
+                        .replace("^", "^^")
+                        .replace(" ", "^ ")
+                        .replace("\t", "^\t")
+                        .replace("\\", "^\\")
+                        .replace("&", "^&")
+                        .replace("|", "^|")
+                        .replace(">", "^>")
+                        .replace("<", "^<");
+        return quoted;
     }
 
     private String quoteUnixCredentials(String str) {
