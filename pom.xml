@@ -51,6 +51,8 @@
   </distributionManagement>
 
   <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
     <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
     <!-- Maven plugin versions provided by parent are outdated. -->
@@ -58,7 +60,7 @@
     <maven-dependency-plugin.version>2.9</maven-dependency-plugin.version>
     <maven-enforcer-plugin.version>1.4</maven-enforcer-plugin.version>
     <maven-hpi-plugin.version>1.119</maven-hpi-plugin.version>
-    <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
+    <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <maven-release-plugin.version>2.5.2</maven-release-plugin.version>
     <maven-site-plugin.version>3.5.1</maven-site-plugin.version>
     <!-- End of updated versions required for "mvn site" -->
@@ -187,16 +189,36 @@
         <version>${jacoco-maven-plugin.version}</version>
         <executions>
           <execution>
+            <id>default-prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
           </execution>
           <execution>
-            <id>report</id>
-            <phase>prepare-package</phase>
+            <id>default-report</id>
             <goals>
               <goal>report</goal>
             </goals>
+          </execution>
+          <execution>
+            <id>default-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+            <rules>
+              <rule>
+                <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>COMPLEXITY</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.40</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
           </execution>
         </executions>
       </plugin>
