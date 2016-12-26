@@ -2028,7 +2028,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
-    /*
+    @NotImplementedInJGit
     public void test_getSubmodules() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub_origin").execute();
@@ -2048,10 +2048,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
         assertFixSubmoduleUrlsThrows();
     }
-    */
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
-    /*
+    @NotImplementedInJGit
     public void test_submodule_update() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
@@ -2064,7 +2063,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
         assertFixSubmoduleUrlsThrows();
     }
-    */
 
     @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
