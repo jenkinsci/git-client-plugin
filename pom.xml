@@ -43,7 +43,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
     <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
     <jenkins.version>1.625.3</jenkins.version>
@@ -249,7 +248,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>${findbugs-maven-plugin.version}</version>
         <configuration>
           <skip>${skipFindbugs}</skip>
           <failOnError>${maven.findbugs.failure.strict}</failOnError>
