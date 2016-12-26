@@ -961,6 +961,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * @throws InterruptedException if called methods throw same exception
              */
             public void execute() throws GitException, InterruptedException {
+                // Initialize the submodules to ensure that the git config
+                // contains the URLs from .gitmodules.
+                submoduleInit();
+
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("submodule", "update");
                 if (recursive) {
@@ -995,7 +999,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     // We might fail if we have no modules, so catch this
                     // exception and just return.
-                    cfgOutput = launchCommand("config", "--get-regexp", "^submodule");
+                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", "^submodule\\.(.*)\\.url");
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
