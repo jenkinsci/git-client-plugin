@@ -21,3 +21,4 @@ tags
 
 # emacs backup files
 *~
+/nbproject/
