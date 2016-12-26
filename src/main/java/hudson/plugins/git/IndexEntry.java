@@ -108,6 +108,43 @@ public class IndexEntry implements Serializable {
         this.object = object;
     }
 
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 89 * hash + (this.mode != null ? this.mode.hashCode() : 0);
+        hash = 89 * hash + (this.type != null ? this.type.hashCode() : 0);
+        hash = 89 * hash + (this.object != null ? this.object.hashCode() : 0);
+        hash = 89 * hash + (this.file != null ? this.file.hashCode() : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final IndexEntry other = (IndexEntry) obj;
+        if ((this.mode == null) ? (other.mode != null) : !this.mode.equals(other.mode)) {
+            return false;
+        }
+        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+            return false;
+        }
+        if ((this.object == null) ? (other.object != null) : !this.object.equals(other.object)) {
+            return false;
+        }
+        if ((this.file == null) ? (other.file != null) : !this.file.equals(other.file)) {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Populates an {@link hudson.plugins.git.IndexEntry} from the current node that {@link org.eclipse.jgit.submodule.SubmoduleWalk} is pointing to.
      *
