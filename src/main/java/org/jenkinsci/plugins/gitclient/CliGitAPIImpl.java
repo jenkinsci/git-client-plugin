@@ -1012,16 +1012,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Matcher matcher = pattern.matcher(cfgOutput);
                 while (matcher.find()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
-                    String sUrl = matcher.group(1);
+                    String sModuleName = matcher.group(1);
 
+                    // Find the URL for this submodule
                     URIish urIish = null;
                     try {
-                        urIish = new URIish(getSubmoduleUrl(sUrl));
+                        urIish = new URIish(getSubmoduleUrl(sModuleName));
                     } catch (URISyntaxException e) {
-                        listener.error("Invalid repository for " + sUrl);
-                        throw new GitException("Invalid repository for " + sUrl);
+                        listener.error("Invalid repository for " + sModuleName);
+                        throw new GitException("Invalid repository for " + sModuleName);
                     }
 
+                    // Find credentials for this URL
                     StandardCredentials cred = credentials.get(urIish.toPrivateString());
                     if (parentCredentials) {
                         String parentUrl = getRemoteUrl(getDefaultRemote());
@@ -1037,7 +1039,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if (cred == null) cred = defaultCredentials;
 
-                    perModuleArgs.add(sUrl);
+                    // Find the path for this submodule
+                    String sModulePath = getSubmodulePath(sModuleName);
+
+                    perModuleArgs.add(sModulePath);
                     launchCommandWithCredentials(perModuleArgs, workspace, cred, urIish, timeout);
                 }
             }
@@ -1097,6 +1102,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
         launchCommand( "config", "submodule."+name+".url", url );
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Get submodule path
+     */
+    public @CheckForNull String getSubmodulePath(String name) throws GitException, InterruptedException {
+        String result = launchCommand( "config", "-f", ".gitmodules", "--get", "submodule."+name+".path" );
+        return StringUtils.trim(firstLine(result));
     }
 
     /** {@inheritDoc} */
