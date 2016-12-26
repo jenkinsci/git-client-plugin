@@ -21,6 +21,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -757,10 +758,12 @@ public class GitClientTest {
 
     @Test
     public void testHasGitModulesTrue() throws Exception {
-        /* Submodules not supported with JGit */
-        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
+        String branchName = "tests/getSubmodules";
+        if (!gitImplName.equals("git")) {
+            branchName = branchName + "-jgit";
+        }
         assertModulesDir(false);
-        checkoutAndAssertHasGitModules("tests/getSubmodules", true);
+        checkoutAndAssertHasGitModules(branchName, true);
         assertModulesDir(true); // repo has a modules dir and submodules
     }
 
@@ -807,7 +810,7 @@ public class GitClientTest {
     private void assertSubmoduleStatus(GitClient testGitClient, boolean initialized, String... expectedModules) throws Exception {
         Map<String, Boolean> submodulesFound = new HashMap<String, Boolean>();
         for (String submoduleName : expectedModules) {
-            submodulesFound.put(submoduleName, Boolean.FALSE);
+            submodulesFound.put("modules/" + submoduleName, Boolean.FALSE);
         }
         boolean emptyStatus = true;
         CliGitCommand gitCmd = new CliGitCommand(testGitClient);
@@ -822,9 +825,10 @@ public class GitClientTest {
             String submoduleName = statusLine.substring(42).split(" ")[0];
             if (submodulesFound.containsKey(submoduleName)) {
                 submodulesFound.put(submoduleName, Boolean.TRUE);
+            } else {
+                fail("Found unexpected submodule '" + submoduleName + "'");
             }
         }
-        /* Doesn't yet detect unexpected submodule in status */
         for (String submoduleName : submodulesFound.keySet()) {
             assertTrue("Submodule " + submoduleName + " not found", submodulesFound.get(submoduleName));
         }
@@ -842,12 +846,14 @@ public class GitClientTest {
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
-        assertSubmoduleStatus(false); // Has submodules, not yet updated
+        assertSubmoduleStatus(gitClient, false, "firewall", "ntp", "sshkeys");
+        /* Perform the update, then rename the module */
         gitClient.submoduleUpdate(true);
-        assertSubmoduleStatus(true); // Has submodules, updated
-        CliGitCommand gitMove = new CliGitCommand(gitClient, "mv", "modules/ntp", "modules/ntp-moved");
-        CliGitCommand gitCommit = new CliGitCommand(gitClient, "commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
-        assertSubmoduleStatus(true); // Has submodules, updated
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
+        gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
     // @Issue("37495") // submodule update fails if path and name differ
@@ -857,11 +863,13 @@ public class GitClientTest {
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
-        CliGitCommand gitMove = new CliGitCommand(gitClient, "mv", "modules/ntp", "modules/ntp-moved");
-        CliGitCommand gitCommit = new CliGitCommand(gitClient, "commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
-        assertSubmoduleStatus(false); // Has submodules, not yet updated
+        assertSubmoduleStatus(gitClient, false, "firewall", "ntp", "sshkeys");
+        /* Rename the module, then perform the update */
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
+        gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
         gitClient.submoduleUpdate(true);
-        assertSubmoduleStatus(true); // Has submodules, updated
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
     @Test
@@ -902,7 +910,7 @@ public class GitClientTest {
     private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) {
         File repoRoot = gitClient.getRepository().getWorkTree();
         for (String expectedDir : expectedDirs) {
-            File dir = new File(repoRoot, expectedDir);
+            File dir = new File(repoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
             File license = new File(dir, "LICENSE");
             assertEquals("Checking " + expectedDir + " LICENSE (path:" + lastUpdateSubmodulePath + ")", expectLicense, license.isFile());
@@ -912,10 +920,20 @@ public class GitClientTest {
     private void assertSubmoduleContents(GitClient client, String... directories) {
         File repoRoot = client.getRepository().getWorkTree();
         for (String directory : directories) {
-            File licenseDir = new File(repoRoot, directory);
+            File licenseDir = new File(repoRoot, "modules/" + directory);
             File licenseFile = new File(licenseDir, "LICENSE");
             assertTrue("Missing file " + licenseFile + " (path:" + lastUpdateSubmodulePath + ")", licenseFile.isFile());
         }
+        List<String> expectedDirList = Arrays.asList(directories);
+        List<String> dirList = new ArrayList<String>();
+        File modulesDir = new File(repoRoot, "modules");
+        for (File dir : modulesDir.listFiles()) {
+            if (dir.isDirectory()) {
+                dirList.add(dir.getName());
+            }
+        }
+        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray(new String[expectedDirList.size()])));
+        assertThat(expectedDirList, containsInAnyOrder(dirList.toArray(new String[dirList.size()])));
     }
 
     private void assertSubmoduleContents(String... directories) {
@@ -924,7 +942,36 @@ public class GitClientTest {
 
     private int lastUpdateSubmodulePath = -1;
 
+    private void updateSubmoduleJGit(String remote, String branch) throws Exception {
+        // Choose a random submodule update command
+        // These submodule update variants are equivalent for JGit
+        // JGitAPIImpl does not implement either reference or remote tracking
+        lastUpdateSubmodulePath = random.nextInt(5);
+        switch (lastUpdateSubmodulePath) {
+            default:
+            case 0:
+                gitClient.submoduleUpdate().execute();
+                break;
+            case 1:
+                gitClient.submoduleUpdate(true);
+                break;
+            case 2:
+                gitClient.submoduleUpdate(false);
+                break;
+            case 3:
+                gitClient.submoduleUpdate(false, false);
+                break;
+            case 4:
+                gitClient.submoduleUpdate(true, false);
+                break;
+        }
+    }
+
     private void updateSubmodule(String remote, String branch, Boolean remoteTracking) throws Exception {
+        if (!gitImplName.equals("git")) {
+            updateSubmoduleJGit(remote, branch);
+            return;
+        }
         if (remoteTracking == null) {
             // Allow caller to force remoteTracking value
             remoteTracking = true;
@@ -971,8 +1018,14 @@ public class GitClientTest {
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         /* Submodules not supported with JGit */
-        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branch = "tests/getSubmodules";
+        String[] expectedDirsWithRename = {"firewall", "ntp", "sshkeys"};
+        String[] expectedDirsWithoutRename = {"firewall", "ntp"};
+        String[] expectedDirs = expectedDirsWithRename;
+        if (!gitImplName.equals("git")) {
+            branch = branch + "-jgit";
+            expectedDirs = expectedDirsWithoutRename;
+        }
         String remote = fetchUpstream(branch);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(branch, remote + "/" + branch);
@@ -981,13 +1034,16 @@ public class GitClientTest {
         }
 
         gitClient.submoduleInit();
-        assertSubmoduleDirectories(gitClient, false, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        if (gitImplName.equals("git")) {
+            /* JGit doesn't create the empty directories - CliGit does */
+            assertSubmoduleDirectories(gitClient, false, expectedDirs);
+        }
 
         // Test fails if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
         updateSubmodule(remote, branch, false);
-        assertSubmoduleDirectories(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
-        assertSubmoduleContents("modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleDirectories(gitClient, true, expectedDirs);
+        assertSubmoduleContents(expectedDirs);
 
         /* Clone, checkout and submodule update a repository copy before submodule deletion */
         File cloneDir = dirAllocator.allocate();
@@ -995,11 +1051,14 @@ public class GitClientTest {
         cloneGitClient.init();
         cloneGitClient.clone_().url(repoFolder.getRoot().getAbsolutePath()).execute();
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
-        assertSubmoduleDirectories(cloneGitClient, false, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        if (gitImplName.equals("git")) {
+            /* JGit doesn't create the empty directories - CliGit does */
+            assertSubmoduleDirectories(cloneGitClient, false, expectedDirs);
+        }
         cloneGitClient.submoduleInit();
         cloneGitClient.submoduleUpdate().recursive(false).execute();
-        assertSubmoduleDirectories(cloneGitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
-        assertSubmoduleContents(cloneGitClient, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleDirectories(cloneGitClient, true, expectedDirs);
+        assertSubmoduleContents(cloneGitClient, expectedDirs);
 
         /* Remove firewall submodule */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
@@ -1008,21 +1067,29 @@ public class GitClientTest {
         assertFalse("firewallDir not deleted " + firewallDir, firewallDir.isDirectory());
         gitCmd.run("submodule", "deinit", "firewall");
         gitCmd.run("rm", "modules/firewall");
-        gitClient.add(".");
-        gitClient.commit("Remove firewall submodule");
+        gitCmd.run("add", "."); // gitClient.add() doesn't work in this JGit case
+        gitCmd.run("commit", "-m", "Remove firewall submodule");
         File submoduleDir = new File(repoFolder.getRoot(), ".git/modules/firewall");
         if (submoduleDir.exists()) {
             FileUtils.forceDelete(submoduleDir);
         }
 
         /* Assert that ntp and sshkeys unharmed */
-        assertSubmoduleContents("modules/ntp", "modules/sshkeys");
+        if (gitImplName.equals("git")) {
+            assertSubmoduleContents("ntp", "sshkeys");
+        } else {
+            assertSubmoduleContents("ntp");
+        }
 
         /* Update the clone with the commit that deletes the submodule */
         String refSpec = "+refs/heads/" + branch + ":refs/remotes/origin/" + branch;
         fetch(cloneGitClient, "origin", refSpec);
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
-        assertSubmoduleContents(cloneGitClient, "modules/ntp", "modules/sshkeys");
+        if (gitImplName.equals("git")) {
+            assertSubmoduleContents(cloneGitClient, "firewall", "ntp", "sshkeys");
+        } else {
+            assertSubmoduleContents(cloneGitClient, "firewall", "ntp");
+        }
 
         /* BUG: JENKINS-8053 Cloned modules/firewall not deleted by checkoutBranch in clone */
         File cloneFirewallDir = new File(cloneDir, "modules/firewall");
@@ -1035,7 +1102,11 @@ public class GitClientTest {
         assertTrue("cloneFirewallDir unexpectedly cleaned at " + cloneFirewallDir, cloneFirewallDir.isDirectory());
 
         /* Fixed JENKINS-37419 - submodules only from current branch */
-        assertSubmoduleStatus(cloneGitClient, true, "modules/ntp", "modules/sshkeys");
+        if (gitImplName.equals("git")) {
+            assertSubmoduleStatus(cloneGitClient, true, "ntp", "sshkeys");
+        } else {
+            assertSubmoduleStatus(cloneGitClient, true, "ntp");
+        }
 
         /**
          * With extra -f argument, git clean removes submodules
@@ -1069,23 +1140,22 @@ public class GitClientTest {
             gitClient.checkout().branch(oldBranchName).ref(upstream + "/" + oldBranchName).deleteBranchIfExist(true).execute();
         }
         assertBranches(gitClient, oldBranchName);
-        assertSubmoduleDirectories(gitClient, false, "modules/firewall", "modules/ntp", "modules/sshkeys"); // No submodule init or update yet
+        assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys"); // No submodule init or update yet
 
         /* Create tests/addSubmodules branch with one more module */
         String newBranchName = "tests/addSubmodules";
-        String newDirName = "modules/git-client-plugin-" + (10 + random.nextInt(90));
+        String newDirName = "git-client-plugin-" + (10 + random.nextInt(90));
         gitClient.branch(newBranchName);
-        gitClient.addSubmodule(srcRepoAbsolutePath, newDirName);
-        gitClient.add(newDirName);
-        gitClient.commit("Add " + newDirName);
-        assertSubmoduleContents(newDirName); // Surprising, since submodule update not yet called
+        gitClient.addSubmodule(srcRepoAbsolutePath, "modules/" + newDirName);
+        gitClient.add("modules/" + newDirName);
+        gitClient.commit("Added git-client-plugin module at modules/" + newDirName);
 
         // Test fails if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
         gitClient.submoduleInit();
         updateSubmodule(upstream, newBranchName, false);
-        assertSubmoduleContents("modules/firewall", "modules/ntp", "modules/sshkeys", newDirName);
-        assertSubmoduleStatus(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys", newDirName);
+        assertSubmoduleContents("firewall", "ntp", "sshkeys", newDirName);
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys", newDirName);
 
         /* Checkout tests/getSubmodules and its submodules */
         if (random.nextBoolean()) {
@@ -1099,23 +1169,24 @@ public class GitClientTest {
          * since the branch being checked out does not include newDirName submodule.
          * How many installations depend on that unexpected behavior?
          */
-        assertSubmoduleContents("modules/firewall", "modules/ntp", "modules/sshkeys", newDirName);
+        assertSubmoduleContents("firewall", "ntp", "sshkeys", newDirName);
 
         /* Assert newDirName not in submodule status
          * Shouldn't a checkoutBranch reset the submodule status?
          * If checkoutBranch did reset submodule status, this would be wrong
          */
-        assertSubmoduleStatus(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
 
         gitClient.submoduleInit();
 
         /* submoduleInit seems to make no change in this case */
-        assertSubmoduleStatus(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
-        // assertSubmoduleDirectories(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
+        // assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
 
+        /* These assertions show why a submodule aware clean is needed */
         updateSubmodule(upstream, oldBranchName, false);
-        assertSubmoduleContents("modules/firewall", "modules/ntp", "modules/sshkeys");
-        assertSubmoduleStatus(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleContents("firewall", "ntp", "sshkeys", newDirName); // newDirName dir will be there
+        assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
     }
 
     @Test
@@ -1151,12 +1222,12 @@ public class GitClientTest {
         String branchName = "tests/getSubmodules";
         String upstream = checkoutAndAssertHasGitModules(branchName, true);
         gitClient.submoduleInit();
-        assertSubmoduleDirectories(gitClient, false, "modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys");
         // Test may fail if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
         updateSubmodule(upstream, branchName, null);
-        assertSubmoduleDirectories(gitClient, true, "modules/firewall", "modules/ntp", "modules/sshkeys");
-        assertSubmoduleContents("modules/firewall", "modules/ntp", "modules/sshkeys");
+        assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
+        assertSubmoduleContents("firewall", "ntp", "sshkeys");
 
         final File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
         final File firewallFile = File.createTempFile("untracked-", ".txt", firewallDir);
