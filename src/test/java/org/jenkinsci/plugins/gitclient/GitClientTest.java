@@ -16,8 +16,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -49,9 +51,10 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+
+import org.jvnet.hudson.test.Issue;
 import static org.junit.Assume.assumeThat;
 
-// import org.jvnet.hudson.test.Issue;
 /**
  *
  * @author Mark Waite
@@ -96,8 +99,8 @@ public class GitClientTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<Object[]>();
-        String[] gitImplNames = {"git", "jgit"}; // , "jgitapache"
+        List<Object[]> arguments = new ArrayList<>();
+        String[] gitImplNames = {"git", "jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
             Object[] item = {gitImplName};
             arguments.add(item);
@@ -126,15 +129,10 @@ public class GitClientTest {
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
         File oneFile = new File(repoFolder.getRoot(), "One-File.txt");
-        PrintWriter writer = new PrintWriter(oneFile, "UTF-8");
-        // try (PrintWriter writer = new PrintWriter(oneFile, "UTF-8")) {
-        try {
-            writer.printf("A random UUID: %s%n", UUID.randomUUID().toString());
-            // } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-        } catch (Exception ex) {
+        try (PrintWriter writer = new PrintWriter(oneFile, "UTF-8")) {
+            writer.printf("A random UUID: %s\n", UUID.randomUUID().toString());
+        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             throw new GitException(ex);
-        } finally {
-            writer.close();
         }
         gitClient.add("One-File.txt");
         gitClient.commit(commitMessage);
@@ -168,7 +166,7 @@ public class GitClientTest {
     }
 
     @Test
-    // @Issue("37794")
+    @Issue("37794")
     public void tagWithSlashes() throws Exception {
         commitOneFile();
         gitClient.tag("has/a/slash", "This tag has a slash ('/')");
@@ -361,7 +359,7 @@ public class GitClientTest {
     }
 
     private boolean removeMatchingBranches(Set<Branch> filtered, Set<Branch> toRemove) {
-        Set<ObjectId> objectIds = new HashSet<ObjectId>();
+        Set<ObjectId> objectIds = new HashSet<>();
         for (Branch removeBranch : toRemove) {
             objectIds.add(removeBranch.getSHA1());
         }
@@ -427,7 +425,7 @@ public class GitClientTest {
     private int lastFetchPath = -1;
 
     private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
         refSpecs.add(refSpec);
         for (String refSpecString : optionalRefSpecs) {
@@ -437,12 +435,21 @@ public class GitClientTest {
         switch (lastFetchPath) {
             default:
             case 0:
+                if (remote.equals("origin")) {
+                    /* If remote == "origin", randomly use default remote */
+                    remote = random.nextBoolean() ? remote : null;
+                }
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
                 break;
             case 1:
                 URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
                 boolean fetchTags = random.nextBoolean();
-                client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
+                boolean pruneBranches = random.nextBoolean();
+                if (pruneBranches) {
+                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune().execute();
+                } else {
+                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
+                }
                 break;
         }
     }
@@ -650,11 +657,11 @@ public class GitClientTest {
     public void testRevList_() throws Exception {
         ObjectId commitA = commitOneFile();
 
-        List<ObjectId> resultAll = new ArrayList<ObjectId>();
+        List<ObjectId> resultAll = new ArrayList<>();
         gitClient.revList_().to(resultAll).all().execute();
         assertThat(resultAll, contains(commitA));
 
-        List<ObjectId> resultRef = new ArrayList<ObjectId>();
+        List<ObjectId> resultRef = new ArrayList<>();
         gitClient.revList_().to(resultRef).reference("master").execute();
         assertThat(resultRef, contains(commitA));
     }
@@ -664,14 +671,14 @@ public class GitClientTest {
         ObjectId commitA = commitOneFile();
         assertThat(gitClient.revListAll(), contains(commitA));
         /* Also test RevListCommand implementation */
-        List<ObjectId> resultA = new ArrayList<ObjectId>();
+        List<ObjectId> resultA = new ArrayList<>();
         gitClient.revList_().to(resultA).all().execute();
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
         assertThat(gitClient.revListAll(), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
-        List<ObjectId> resultB = new ArrayList<ObjectId>();
+        List<ObjectId> resultB = new ArrayList<>();
         gitClient.revList_().to(resultB).all().execute();
         assertThat(resultB, contains(commitB, commitA));
     }
@@ -681,14 +688,14 @@ public class GitClientTest {
         ObjectId commitA = commitOneFile();
         assertThat(gitClient.revList("master"), contains(commitA));
         /* Also test RevListCommand implementation */
-        List<ObjectId> resultA = new ArrayList<ObjectId>();
+        List<ObjectId> resultA = new ArrayList<>();
         gitClient.revList_().to(resultA).reference("master").execute();
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
         assertThat(gitClient.revList("master"), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
-        List<ObjectId> resultB = new ArrayList<ObjectId>();
+        List<ObjectId> resultB = new ArrayList<>();
         gitClient.revList_().to(resultB).reference("master").execute();
         assertThat(resultB, contains(commitB, commitA));
     }
@@ -805,7 +812,7 @@ public class GitClientTest {
     }
 
     private void assertSubmoduleStatus(GitClient testGitClient, boolean initialized, String... expectedModules) throws Exception {
-        Map<String, Boolean> submodulesFound = new HashMap<String, Boolean>();
+        Map<String, Boolean> submodulesFound = new HashMap<>();
         for (String submoduleName : expectedModules) {
             submodulesFound.put(submoduleName, Boolean.FALSE);
         }
@@ -835,7 +842,7 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, initialized);
     }
 
-    // @Issue("37495") // submodule update fails if path and name differ
+    @Issue("37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -850,7 +857,7 @@ public class GitClientTest {
         assertSubmoduleStatus(true); // Has submodules, updated
     }
 
-    // @Issue("37495") // submodule update fails if path and name differ
+    @Issue("37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -935,7 +942,7 @@ public class GitClientTest {
         switch (lastUpdateSubmodulePath) {
             default:
             case 0:
-                gitClient.submoduleUpdate().execute();
+                gitClient.submoduleUpdate().remoteTracking(remoteTracking).execute();
                 break;
             case 1:
                 gitClient.submoduleUpdate(true);
@@ -967,7 +974,7 @@ public class GitClientTest {
     }
 
     // @Issue("8053")  // outdated submodules not removed by checkout
-    // @Issue("37419") // Git plugin checking out non-existent submodule from different branch
+    @Issue("37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         /* Submodules not supported with JGit */
@@ -1046,7 +1053,7 @@ public class GitClientTest {
     }
 
     private void assertBranches(GitClient client, String... expectedBranchNames) throws GitException, InterruptedException {
-        List<String> branchNames = new ArrayList<String>(); // Arrays.asList(expectedBranchNames);
+        List<String> branchNames = new ArrayList<>(); // Arrays.asList(expectedBranchNames);
         for (Branch branch : client.getBranches()) {
             if (branch.getName().startsWith("remotes/")) {
                 continue; // Ignore remote branches
@@ -1056,7 +1063,7 @@ public class GitClientTest {
         assertThat(branchNames, containsInAnyOrder(expectedBranchNames));
     }
 
-    // @Issue("37419") // Submodules from other branches are used in checkout
+    @Issue("37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
