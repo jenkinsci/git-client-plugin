@@ -765,7 +765,7 @@ public class GitClientTest {
     @Test
     public void testHasGitModulesTrue() throws Exception {
         /* Submodules not supported with JGit */
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         assertModulesDir(false);
         checkoutAndAssertHasGitModules("tests/getSubmodules", true);
         assertModulesDir(true); // repo has a modules dir and submodules
@@ -845,7 +845,7 @@ public class GitClientTest {
     @Issue("37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -860,7 +860,7 @@ public class GitClientTest {
     @Issue("37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -978,7 +978,7 @@ public class GitClientTest {
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         /* Submodules not supported with JGit */
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         if (random.nextBoolean()) {
@@ -1067,7 +1067,7 @@ public class GitClientTest {
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String oldBranchName = "tests/getSubmodules";
         String upstream = fetchUpstream(oldBranchName);
         if (random.nextBoolean()) {
@@ -1127,7 +1127,7 @@ public class GitClientTest {
 
     @Test
     public void testGetSubmodules() throws Exception {
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branchName = "tests/getSubmodules";
         String upstream = checkoutAndAssertHasGitModules(branchName, true);
         List<IndexEntry> submodules = gitClient.getSubmodules(branchName);
@@ -1154,7 +1154,7 @@ public class GitClientTest {
 
     @Test
     public void testSubmoduleClean() throws Exception {
-        assumeThat(gitImplName, is("git"));
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branchName = "tests/getSubmodules";
         String upstream = checkoutAndAssertHasGitModules(branchName, true);
         gitClient.submoduleInit();
