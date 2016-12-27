@@ -1065,7 +1065,7 @@ public class GitClientTest {
         File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
         FileUtils.forceDelete(firewallDir);
         assertFalse("firewallDir not deleted " + firewallDir, firewallDir.isDirectory());
-        gitCmd.run("submodule", "deinit", "firewall");
+        gitCmd.run("submodule", "deinit", "modules/firewall");
         gitCmd.run("rm", "modules/firewall");
         gitCmd.run("add", "."); // gitClient.add() doesn't work in this JGit case
         gitCmd.run("commit", "-m", "Remove firewall submodule");
