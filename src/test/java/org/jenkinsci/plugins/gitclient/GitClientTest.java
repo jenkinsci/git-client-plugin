@@ -41,8 +41,9 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import static org.hamcrest.Matchers.*;
-import org.junit.After;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +51,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
-import static org.junit.Assume.assumeThat;
 
 // import org.jvnet.hudson.test.Issue;
 /**
@@ -834,6 +834,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
+        assumeTrue(((CliGitAPIImpl)gitClient).isAtLeastVersion(1, 9, 0, 0));
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -853,6 +854,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
+        assumeTrue(((CliGitAPIImpl)gitClient).isAtLeastVersion(1, 9, 0, 0));
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
