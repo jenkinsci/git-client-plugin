@@ -43,8 +43,9 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import static org.hamcrest.Matchers.*;
-import org.junit.After;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,7 +55,6 @@ import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import org.jvnet.hudson.test.Issue;
-import static org.junit.Assume.assumeThat;
 
 /**
  *
@@ -90,12 +90,29 @@ public class GitClientTest {
     /* Instance of object under test */
     private GitClient gitClient = null;
 
+    /* Capabilities of command line git in current environment */
+    private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
+
     @Rule
     public TemporaryFolder repoFolder = new TemporaryFolder();
 
     public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
         this.gitImplName = gitImplName;
         this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using(gitImplName).getClient();
+
+        CliGitAPIImpl cliGitClient;
+        if (this.srcGitClient instanceof CliGitAPIImpl) {
+            cliGitClient = (CliGitAPIImpl) this.srcGitClient;
+        } else {
+            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
+        }
+        CLI_GIT_REPORTS_DETACHED_SHA1 = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -385,42 +402,19 @@ public class GitClientTest {
 
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
-        boolean foundDetachedHead = false;
-        boolean foundRef = false;
-        StringBuilder output = new StringBuilder();
-        for (String line : gitCmd.run("status")) {
-            if (line.contains("Not currently on any branch")) { // Older git output
-                foundDetachedHead = true;
-	        foundRef = true; // Ref not expected in this message variant
-            }
-            if (line.contains("HEAD detached")) {
-                foundDetachedHead = true;
-                if (line.contains(ref.getName().substring(0, 6))) {
-                    foundRef = true;
-                }
-            }
-            output.append(line);
+        gitCmd.run("status");
+        if (CLI_GIT_REPORTS_DETACHED_SHA1) {
+            gitCmd.assertOutputContains(".*(Not currently on any branch|HEAD detached).*",
+                            ".*" + ref.getName().substring(0, 6) + ".*");
+        } else {
+            gitCmd.assertOutputContains(".*Not currently on any branch.*");
         }
-        assertTrue("Git status did not report detached head: " + output.toString(), foundDetachedHead);
-        assertTrue("Git status missing ref: " + ref.getName() + " in " + output.toString(), foundRef);
     }
 
     private void assertBranch(GitClient client, String branchName) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
-        boolean foundBranch = false;
-        boolean foundBranchName = false;
-        StringBuilder output = new StringBuilder();
-        for (String line : gitCmd.run("status")) {
-            if (line.contains("On branch")) {
-                foundBranch = true;
-                if (line.contains(branchName)) {
-                    foundBranchName = true;
-                }
-            }
-            output.append(line);
-        }
-        assertTrue("Git status did not report on branch: " + output.toString(), foundBranch);
-        assertTrue("Git status missing branch name: " + branchName + " in " + output.toString(), foundBranchName);
+        gitCmd.run("status");
+        gitCmd.assertOutputContains(".*On branch.*" + branchName + ".*");
     }
 
     private int lastFetchPath = -1;
@@ -776,22 +770,21 @@ public class GitClientTest {
 
     private class CliGitCommand {
 
-        private final GitClient git;
         private final TaskListener listener;
         private final transient Launcher launcher;
         private final EnvVars env;
         private final File dir;
+        private String[] output;
 
         private ArgumentListBuilder args;
 
-        CliGitCommand(GitClient gitClient, String... arguments) {
-            git = gitClient;
+        CliGitCommand(GitClient client, String... arguments) {
             args = new ArgumentListBuilder("git");
             args.add(arguments);
             listener = StreamTaskListener.NULL;
             launcher = new LocalLauncher(listener);
             env = new EnvVars();
-            dir = gitClient.getRepository().getWorkTree();
+            dir = client.getRepository().getWorkTree();
         }
 
         public String[] run(String... arguments) throws IOException, InterruptedException {
@@ -810,7 +803,26 @@ public class GitClientTest {
             if (bytesErr.size() > 0) {
                 result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
             }
-            return result.split("[\\n\\r]");
+            output = result.split("[\\n\\r]");
+            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", status, 0);
+            return output;
+        }
+
+        public void assertOutputContains(String... expectedRegExes) {
+            List<String> notFound = new ArrayList<String>();
+            boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
+            assertTrue("Missing regular expressions in assertion", modified);
+            for (String line : output) {
+                for (Iterator<String> iterator = notFound.iterator(); iterator.hasNext();) {
+                    String regex = iterator.next();
+                    if (line.matches(regex)) {
+                        iterator.remove();
+                    }
+                }
+            }
+            if (!notFound.isEmpty()) {
+                fail(Arrays.toString(output) + " did not match all strings in notFound: " + Arrays.toString(expectedRegExes));
+            }
         }
     }
 
@@ -850,6 +862,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_RENAME);
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -859,7 +872,9 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
+        gitCmd.assertOutputContains("^$"); // Empty string
         gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
+        gitCmd.assertOutputContains(".*modules/ntp.*modules/ntp-moved.*");
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
@@ -867,6 +882,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_RENAME);
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -874,7 +890,9 @@ public class GitClientTest {
         /* Rename the module, then perform the update */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
+        gitCmd.assertOutputContains("^$"); // Empty string
         gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
+        gitCmd.assertOutputContains(".*modules/ntp.*modules/ntp-moved.*");
         gitClient.submoduleUpdate(true);
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
@@ -1024,7 +1042,7 @@ public class GitClientTest {
     @Issue("37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
-        /* Submodules not supported with JGit */
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_DEINIT);
         String branch = "tests/getSubmodules";
         String[] expectedDirsWithRename = {"firewall", "ntp", "sshkeys"};
         String[] expectedDirsWithoutRename = {"firewall", "ntp"};
@@ -1072,10 +1090,14 @@ public class GitClientTest {
         File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
         FileUtils.forceDelete(firewallDir);
         assertFalse("firewallDir not deleted " + firewallDir, firewallDir.isDirectory());
-        gitCmd.run("submodule", "deinit", "firewall");
-        gitCmd.run("rm", "modules/firewall");
+        gitCmd.run("submodule", "deinit", "modules/firewall");
+        gitCmd.assertOutputContains(".*unregistered.*modules/firewall.*");
         gitCmd.run("add", "."); // gitClient.add() doesn't work in this JGit case
+        gitCmd.assertOutputContains("^$");
+        gitCmd.run("rm", "modules/firewall");
+        gitCmd.assertOutputContains(".*modules/firewall.*");
         gitCmd.run("commit", "-m", "Remove firewall submodule");
+        gitCmd.assertOutputContains(".*Remove firewall submodule.*");
         File submoduleDir = new File(repoFolder.getRoot(), ".git/modules/firewall");
         if (submoduleDir.exists()) {
             FileUtils.forceDelete(submoduleDir);
