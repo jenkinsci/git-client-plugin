@@ -87,12 +87,29 @@ public class GitClientTest {
     /* Instance of object under test */
     private GitClient gitClient = null;
 
+    /* Capabilities of command line git in current environment */
+    private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
+    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
+
     @Rule
     public TemporaryFolder repoFolder = new TemporaryFolder();
 
     public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
         this.gitImplName = gitImplName;
         this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using(gitImplName).getClient();
+
+        CliGitAPIImpl cliGitClient;
+        if (this.srcGitClient instanceof CliGitAPIImpl) {
+            cliGitClient = (CliGitAPIImpl) this.srcGitClient;
+        } else {
+            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
+        }
+        CLI_GIT_REPORTS_DETACHED_SHA1 = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
+        CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -388,8 +405,12 @@ public class GitClientTest {
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
-        gitCmd.assertOutputContains(".*(Not currently on any branch|HEAD detached).*",
-                ".*" + ref.getName().substring(0, 6) + ".*");
+        if (CLI_GIT_REPORTS_DETACHED_SHA1) {
+            gitCmd.assertOutputContains(".*(Not currently on any branch|HEAD detached).*",
+                            ".*" + ref.getName().substring(0, 6) + ".*");
+        } else {
+            gitCmd.assertOutputContains(".*Not currently on any branch.*");
+        }
     }
 
     private void assertBranch(GitClient client, String branchName) throws Exception {
@@ -834,7 +855,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
-        assumeTrue(((CliGitAPIImpl)gitClient).isAtLeastVersion(1, 9, 0, 0));
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_RENAME);
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -854,7 +875,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
-        assumeTrue(((CliGitAPIImpl)gitClient).isAtLeastVersion(1, 9, 0, 0));
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_RENAME);
         String branch = "tests/getSubmodules";
         String remote = fetchUpstream(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -1014,6 +1035,7 @@ public class GitClientTest {
     // @Issue("37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_DEINIT);
         String branch = "tests/getSubmodules";
         String[] expectedDirsWithRename = {"firewall", "ntp", "sshkeys"};
         String[] expectedDirsWithoutRename = {"firewall", "ntp"};
