@@ -678,17 +678,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public CleanCommand clean_() {
         return new CleanCommand() {
-        	private List<String> excludePatterns = Collections.emptyList();
-        	private Integer timeout = TIMEOUT;
+            private List<String> excludePatterns = Collections.emptyList();
+            private Integer timeout = TIMEOUT;
         	           
             public CleanCommand excludePatterns(List<String> excludePatterns) {
-            	this.excludePatterns = excludePatterns;
-            	return this;
+                this.excludePatterns = excludePatterns;
+                return this;
             }
 
             public CleanCommand timeout(Integer timeout) {
-            	this.timeout = timeout;
-            	return this;
+                this.timeout = timeout;
+                return this;
             }
             
             public void execute() throws GitException, InterruptedException {
