@@ -809,7 +809,7 @@ public class GitClientTest {
         }
 
         public void assertOutputContains(String... expectedRegExes) {
-            List<String> notFound = new ArrayList<String>();
+            List<String> notFound = new ArrayList<>();
             boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
             assertTrue("Missing regular expressions in assertion", modified);
             for (String line : output) {
@@ -950,7 +950,7 @@ public class GitClientTest {
             assertTrue("Missing file " + licenseFile + " (path:" + lastUpdateSubmodulePath + ")", licenseFile.isFile());
         }
         List<String> expectedDirList = Arrays.asList(directories);
-        List<String> dirList = new ArrayList<String>();
+        List<String> dirList = new ArrayList<>();
         File modulesDir = new File(repoRoot, "modules");
         for (File dir : modulesDir.listFiles()) {
             if (dir.isDirectory()) {
