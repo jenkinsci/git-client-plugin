@@ -907,9 +907,9 @@ public class GitClientTest {
         File lastModifiedFile = null;
         for (File file : repoFolder.getRoot().listFiles()) {
             if (file.isFile()) {
-                PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"), true);
-                writer.print(randomString);
-                writer.close();
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"), true)) {
+                    writer.print(randomString);
+                }
                 lastModifiedFile = file;
             }
         }
