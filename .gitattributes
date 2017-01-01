@@ -1,1 +1,14 @@
+# Set all text file line endings on this branch to be automatically
+# determined by the git file type heuristics.
+#
+# Automated tests in GitClientTest depend on the ability to perform a
+# "git mv modules/ntp modules/ntp-moved".  When that command is run on
+# a Windows machine with default line ending configuration, it fails
+# and reports that the pending changes must be committed or stashed.
+# The "git status" command shows no pending changes (since the changes
+# are purely in line endings).
+#
+# Setting text line endings to "auto" allows that test to pass and
+# should do no harm to the files in this branch.
+
 * text=auto
