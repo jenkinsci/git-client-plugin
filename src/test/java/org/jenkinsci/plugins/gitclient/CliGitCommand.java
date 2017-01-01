@@ -46,10 +46,14 @@ class CliGitCommand {
     public String[] run(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
-        return run();
+        return run(true);
     }
 
     public String[] run() throws IOException, InterruptedException {
+        return run(true);
+    }
+
+    private String[] run(boolean assertProcessStatus) throws IOException, InterruptedException {
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
         ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
         Launcher.ProcStarter p = launcher.launch().cmds(args).envs(env).stdout(bytesOut).stderr(bytesErr).pwd(dir);
@@ -59,7 +63,9 @@ class CliGitCommand {
             result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
         }
         output = result.split("[\\n\\r]");
-        Assert.assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+        if (assertProcessStatus) {
+            Assert.assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+        }
         return output;
     }
 
@@ -80,10 +86,19 @@ class CliGitCommand {
         }
     }
 
+    private String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
+        args = new ArgumentListBuilder("git");
+        args.add(arguments);
+        return run(false);
+    }
+
     private void setConfigIfEmpty(String configName, String value) throws Exception {
-        String[] cmdOutput = run("config", configName);
-        if (cmdOutput == null || cmdOutput[0].isEmpty()) {
-            cmdOutput = run("config", configName, value);
+        String[] cmdOutput = runWithoutAssert("config", configName);
+        if (cmdOutput == null || cmdOutput[0].isEmpty() || cmdOutput[0].equals("[]")) {
+            /* Set config value globally */
+            cmdOutput = run("config", "--global", configName, value);
+            /* Read config value */
+            cmdOutput = run("config", configName);
             if (cmdOutput == null || cmdOutput[0].isEmpty() || !cmdOutput[0].equals(value)) {
                 System.out.println("ERROR: git config " + configName + " reported '" + cmdOutput[0] + "' instead of '" + value + "'");
             }
@@ -102,7 +117,7 @@ class CliGitCommand {
      * @param userEmail email address to be defined (if value not already set)
      */
     public void setDefaults() throws Exception {
-        setConfigIfEmpty("user.name", "Vojtěch Zweibrücken Šafařík");
+        setConfigIfEmpty("user.name", "Vojtěch-Zweibrücken-Šafařík");
         setConfigIfEmpty("user.email", "email.address.from.git.client.plugin.test@example.com");
     }
 }
