@@ -37,7 +37,18 @@ public class RemotingTest extends HudsonTestCase {
     private static class Work implements Callable<Void,IOException> {
         private final GitClient git;
 
-        public Work(GitClient git) {
+        private static boolean cliGitDefaultsSet = false;
+
+        private void setCliGitDefaults() throws Exception {
+            if (!cliGitDefaultsSet) {
+                CliGitCommand gitCmd = new CliGitCommand(null);
+                gitCmd.setDefaults();
+            }
+            cliGitDefaultsSet = true;
+        }
+
+        public Work(GitClient git) throws Exception {
+            setCliGitDefaults();
             this.git = git;
         }
 

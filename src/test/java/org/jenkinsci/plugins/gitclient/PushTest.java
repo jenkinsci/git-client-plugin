@@ -174,7 +174,11 @@ public class PushTest {
     }
 
     @BeforeClass
-    public static void createBareRepository() throws IOException, InterruptedException, URISyntaxException {
+    public static void createBareRepository() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
+
         /* Randomly choose git implementation to create bare repository */
         final String[] gitImplementations = {"git", "jgit"};
         Random random = new Random();

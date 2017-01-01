@@ -2,17 +2,11 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Launcher.LocalLauncher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.StreamTaskListener;
-
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,7 +27,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 
@@ -47,6 +40,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -124,6 +118,13 @@ public class GitClientTest {
             arguments.add(item);
         }
         return arguments;
+    }
+
+    @BeforeClass
+    public static void setCliGitDefaults() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
     }
 
     @Before
@@ -766,64 +767,6 @@ public class GitClientTest {
         assertModulesDir(false);
         checkoutAndAssertHasGitModules(branchName, true);
         assertModulesDir(true); // repo has a modules dir and submodules
-    }
-
-    private class CliGitCommand {
-
-        private final TaskListener listener;
-        private final transient Launcher launcher;
-        private final EnvVars env;
-        private final File dir;
-        private String[] output;
-
-        private ArgumentListBuilder args;
-
-        CliGitCommand(GitClient client, String... arguments) {
-            args = new ArgumentListBuilder("git");
-            args.add(arguments);
-            listener = StreamTaskListener.NULL;
-            launcher = new LocalLauncher(listener);
-            env = new EnvVars();
-            dir = client.getRepository().getWorkTree();
-        }
-
-        public String[] run(String... arguments) throws IOException, InterruptedException {
-            args = new ArgumentListBuilder("git");
-            args.add(arguments);
-            return run();
-        }
-
-        public String[] run() throws IOException, InterruptedException {
-            ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-            ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
-            Launcher.ProcStarter p = launcher.launch().cmds(args).envs(env).stdout(bytesOut).stderr(bytesErr).pwd(dir);
-            int status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
-
-            String result = bytesOut.toString("UTF-8");
-            if (bytesErr.size() > 0) {
-                result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
-            }
-            output = result.split("[\\n\\r]");
-            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
-            return output;
-        }
-
-        public void assertOutputContains(String... expectedRegExes) {
-            List<String> notFound = new ArrayList<>();
-            boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
-            assertTrue("Missing regular expressions in assertion", modified);
-            for (String line : output) {
-                for (Iterator<String> iterator = notFound.iterator(); iterator.hasNext();) {
-                    String regex = iterator.next();
-                    if (line.matches(regex)) {
-                        iterator.remove();
-                    }
-                }
-            }
-            if (!notFound.isEmpty()) {
-                fail(Arrays.toString(output) + " did not match all strings in notFound: " + Arrays.toString(expectedRegExes));
-            }
-        }
     }
 
     private void assertSubmoduleStatus(GitClient testGitClient, boolean initialized, String... expectedModules) throws Exception {
