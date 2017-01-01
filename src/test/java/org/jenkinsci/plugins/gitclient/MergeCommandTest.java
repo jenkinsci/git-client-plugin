@@ -16,6 +16,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
@@ -46,6 +47,13 @@ public class MergeCommandTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @BeforeClass
+    public static void setCliGitDefaults() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
+    }
 
     @Before
     public void createMergeTestRepo() throws IOException, InterruptedException {
