@@ -396,8 +396,8 @@ public class GitClientTest {
         assertTrue(gitClient.hasGitRepo());
         File gitDir = new File(repoFolder.getRoot(), ".git");
         File[] gitDirListing = repoFolder.getRoot().listFiles();
-        assertEquals(gitDirListing[0], gitDir);
-        assertEquals(gitDirListing.length, 1);
+        assertEquals(gitDir, gitDirListing[0]);
+        assertEquals(1, gitDirListing.length);
     }
 
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
@@ -804,7 +804,7 @@ public class GitClientTest {
                 result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
             }
             output = result.split("[\\n\\r]");
-            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", status, 0);
+            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
             return output;
         }
 
@@ -1242,7 +1242,7 @@ public class GitClientTest {
             }
             output.append(line);
         }
-        assertEquals("Untracked content: " + output.toString(), foundUntrackedContent, expectUntrackedContent);
+        assertEquals("Untracked content: " + output.toString(), expectUntrackedContent, foundUntrackedContent);
     }
 
     @Test
