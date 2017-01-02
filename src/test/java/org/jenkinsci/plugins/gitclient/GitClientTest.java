@@ -454,11 +454,6 @@ public class GitClientTest {
         Set<Branch> originBranches = gitClient.getRemoteBranches();
         assertThat(originBranches, is(empty())); /* Nothing fetched into gitClient repo yet */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
-        List<ObjectId> originObjectIds = new ArrayList<ObjectId>(originHeads.values());
-        String originRef = "refs/remotes/origin/tests/getSubmodules-jgit";
-        ObjectId originRefId = ObjectId.fromString("607d87f71911ff66db898ccb338ec73d6668edde");
-        assertThat(originHeads.keySet(), hasItems(originRef));
-        assertThat(originHeads.get(originRef), is(originRefId));
         for (String originHead : originHeads.keySet()) {
             System.out.println(gitImplName + " origin head: " + originHead);
         }
@@ -467,14 +462,6 @@ public class GitClientTest {
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
         originBranches = gitClient.getRemoteBranches();
         assertThat(originBranches, is(not(empty())));
-        List<ObjectId> branchObjectIds = new ArrayList<ObjectId>();
-        for (Branch branch : originBranches) {
-            branchObjectIds.add(branch.getSHA1());
-        }
-        if (gitImplName.equals("git")) {
-            // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
-            assertThat(branchObjectIds, containsInAnyOrder(originObjectIds.toArray()));
-        }
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
