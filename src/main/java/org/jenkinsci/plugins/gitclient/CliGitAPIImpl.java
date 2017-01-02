@@ -693,7 +693,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-			public CleanCommand timeout(Integer timeout) {
+            public CleanCommand timeout(Integer timeout) {
                 this.timeout = timeout;
                 return this;
             }
