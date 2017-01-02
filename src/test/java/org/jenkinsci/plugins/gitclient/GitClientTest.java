@@ -455,8 +455,8 @@ public class GitClientTest {
         assertThat(originBranches, is(empty())); /* Nothing fetched into gitClient repo yet */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
         List<ObjectId> originObjectIds = new ArrayList<ObjectId>(originHeads.values());
-        String originRef = "refs/heads/ongoing/lts";
-        ObjectId originRefId = ObjectId.fromString("cb5d4f6c84b8d8a6898dd6d9f957eca188160255");
+        String originRef = "refs/remotes/origin/tests/getSubmodules-jgit";
+        ObjectId originRefId = ObjectId.fromString("607d87f71911ff66db898ccb338ec73d6668edde");
         assertThat(originHeads.keySet(), hasItems(originRef));
         assertThat(originHeads.get(originRef), is(originRefId));
         for (String originHead : originHeads.keySet()) {
