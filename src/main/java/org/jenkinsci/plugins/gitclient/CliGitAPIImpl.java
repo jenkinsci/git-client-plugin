@@ -1105,9 +1105,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * {@inheritDoc}
+     * Get submodule path.
      *
-     * Get submodule path
+     * @param name submodule name whose path is returned
+     * @return path to submodule
      */
     public @CheckForNull String getSubmodulePath(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "-f", ".gitmodules", "--get", "submodule."+name+".path" );
