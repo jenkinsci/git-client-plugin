@@ -48,6 +48,9 @@ import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 // import org.jvnet.hudson.test.Issue;
 /**
+ * GitClient tests, parameterized for multiple git implementations.
+ * Refer to conditionals in the tests for those cases where the
+ * implementations behave differently.
  *
  * @author Mark Waite
  */
