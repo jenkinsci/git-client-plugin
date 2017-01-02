@@ -22,3 +22,4 @@ To Do
 * Complete more of the JGit implementation
 * Combine CliGitAPIImplTest & JGitAPIImplTest into GitClientTest
 * Increase automated test coverage
+* Support windows credentials store
