@@ -447,8 +447,34 @@ public class GitClientTest {
     public void testCheckout_String() throws Exception {
         /* Confirm files not visible in empty repo */
         assertEmptyWorkingDir(gitClient);
+
+        /* Gather diagnostic information in case checkout fails */
+        final String originUrl = gitClient.getRemoteUrl("origin");
+        System.out.println("Origin URL: " + originUrl);
+        Set<Branch> originBranches = gitClient.getRemoteBranches();
+        assertThat(originBranches, is(empty())); /* Nothing fetched into gitClient repo yet */
+        final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
+        List<ObjectId> originObjectIds = new ArrayList<ObjectId>(originHeads.values());
+        String originRef = "refs/heads/ongoing/lts";
+        ObjectId originRefId = ObjectId.fromString("cb5d4f6c84b8d8a6898dd6d9f957eca188160255");
+        assertThat(originHeads.keySet(), hasItems(originRef));
+        assertThat(originHeads.get(originRef), is(originRefId));
+        for (String originHead : originHeads.keySet()) {
+            System.out.println(gitImplName + " origin head: " + originHead);
+        }
+
         /* Fetch from origin repo */
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        originBranches = gitClient.getRemoteBranches();
+        assertThat(originBranches, is(not(empty())));
+        List<ObjectId> branchObjectIds = new ArrayList<ObjectId>();
+        for (Branch branch : originBranches) {
+            branchObjectIds.add(branch.getSHA1());
+        }
+        if (gitImplName.equals("git")) {
+            // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
+            assertThat(branchObjectIds, containsInAnyOrder(originObjectIds.toArray()));
+        }
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
