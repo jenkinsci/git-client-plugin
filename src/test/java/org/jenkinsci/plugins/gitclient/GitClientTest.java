@@ -434,11 +434,13 @@ public class GitClientTest {
             default:
             case 0:
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
+                System.out.println("Last fetch path: " + lastFetchPath);
                 break;
             case 1:
                 URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
                 boolean fetchTags = random.nextBoolean();
                 client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
+                System.out.println("Last fetch path: " + lastFetchPath + " with tags - " + fetchTags);
                 break;
         }
     }
