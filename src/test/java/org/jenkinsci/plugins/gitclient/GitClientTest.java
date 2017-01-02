@@ -453,9 +453,7 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
-        System.out.println("Origin URL: " + originUrl);
         Set<Branch> originBranches = gitClient.getRemoteBranches();
-        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
         for (String originHead : originHeads.keySet()) {
             System.out.println(gitImplName + " origin head: " + originHead);
@@ -495,9 +493,7 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
-        System.out.println("Origin URL: " + originUrl);
         Set<Branch> originBranches = gitClient.getRemoteBranches();
-        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
         for (String originHead : originHeads.keySet()) {
             System.out.println(gitImplName + " origin head: " + originHead);
@@ -543,9 +539,7 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
-        System.out.println("Origin URL: " + originUrl);
         Set<Branch> originBranches = gitClient.getRemoteBranches();
-        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
         for (String originHead : originHeads.keySet()) {
             System.out.println(gitImplName + " origin head: " + originHead);
