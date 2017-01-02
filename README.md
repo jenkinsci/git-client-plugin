@@ -21,3 +21,4 @@ To Do
 * Create infrastructure to detect [files opened during a unit test](https://issues.jenkins-ci.org/browse/JENKINS-19994) and left open at exit from test
 * Complete more of the JGit implementation
 * Combine CliGitAPIImplTest & JGitAPIImplTest into GitClientTest
+* Increase automated test coverage
