@@ -406,7 +406,7 @@ public class GitClientTest {
     private void assertGitDirContents(GitClient gitClient) throws Exception {
         assertTrue(gitClient.hasGitRepo());
         File gitDir = new File(repoFolder.getRoot(), ".git");
-        File[] expectedDirsJGit = {
+        File[] expectedDirsJGit = { // CLI git && JGit
             new File(gitDir, "branches"),
             new File(gitDir, "config"),
             new File(gitDir, "FETCH_HEAD"),
@@ -416,12 +416,12 @@ public class GitClientTest {
             new File(gitDir, "objects"),
             new File(gitDir, "refs"),};
         File[] gitDirListing = gitDir.listFiles();
+        System.out.println("Git dir listing: " + Arrays.toString(gitDirListing));
         assertThat(Arrays.asList(gitDirListing), hasItems(expectedDirsJGit));
         if (gitImplName.equals("git")) {
-            File[] additionalDirsCliGit = {
-                new File(gitDir, "description"), // JGit doesn't create on fetch
-                new File(gitDir, "info"), // JGit doesn't create on fetch
-            };
+            File[] additionalDirsCliGit = { // CLI git only
+                new File(gitDir, "description"),
+                new File(gitDir, "info"),};
             assertThat(Arrays.asList(gitDirListing), hasItems(additionalDirsCliGit));
         }
     }
