@@ -403,6 +403,29 @@ public class GitClientTest {
         assertEquals(1, gitDirListing.length);
     }
 
+    private void assertGitDirContents(GitClient gitClient) throws Exception {
+        assertTrue(gitClient.hasGitRepo());
+        File gitDir = new File(repoFolder.getRoot(), ".git");
+        File[] expectedDirsJGit = {
+            new File(gitDir, "branches"),
+            new File(gitDir, "config"),
+            new File(gitDir, "FETCH_HEAD"),
+            new File(gitDir, "HEAD"),
+            new File(gitDir, "hooks"),
+            new File(gitDir, "logs"),
+            new File(gitDir, "objects"),
+            new File(gitDir, "refs"),};
+        File[] gitDirListing = gitDir.listFiles();
+        assertThat(Arrays.asList(gitDirListing), hasItems(expectedDirsJGit));
+        if (gitImplName.equals("git")) {
+            File[] additionalDirsCliGit = {
+                new File(gitDir, "description"), // JGit doesn't create on fetch
+                new File(gitDir, "info"), // JGit doesn't create on fetch
+            };
+            assertThat(Arrays.asList(gitDirListing), hasItems(additionalDirsCliGit));
+        }
+    }
+
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
@@ -452,6 +475,7 @@ public class GitClientTest {
 
         /* Fetch from origin repo */
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
@@ -488,7 +512,9 @@ public class GitClientTest {
 
     @Test
     public void testCheckout_String_String() throws Exception {
+        assertEmptyWorkingDir(gitClient);
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
@@ -531,7 +557,9 @@ public class GitClientTest {
 
     @Test
     public void testCheckout_0args() throws Exception {
+        assertEmptyWorkingDir(gitClient);
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
 
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
