@@ -448,24 +448,26 @@ public class GitClientTest {
         /* Confirm files not visible in empty repo */
         assertEmptyWorkingDir(gitClient);
 
+        /* Fetch from origin repo */
+        fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+
         /* Gather diagnostic information in case checkout fails */
         final String originUrl = gitClient.getRemoteUrl("origin");
         System.out.println("Origin URL: " + originUrl);
         Set<Branch> originBranches = gitClient.getRemoteBranches();
-        assertThat(originBranches, is(empty())); /* Nothing fetched into gitClient repo yet */
+        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
         for (String originHead : originHeads.keySet()) {
             System.out.println(gitImplName + " origin head: " + originHead);
         }
-
-        /* Fetch from origin repo */
-        fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
+        assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
-        CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", ref);
-        assertTrue("Last fetch " + lastFetchPath + ", log: '" + Arrays.toString(log) + "'", log.length > 1);
         gitClient.checkout(ref);
         /* Confirm README.md visible, src directory not */
         assertFileInWorkingDir(gitClient, "README.md");
@@ -490,6 +492,22 @@ public class GitClientTest {
     @Test
     public void testCheckout_String_String() throws Exception {
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+
+        /* Gather diagnostic information in case checkout fails */
+        final String originUrl = gitClient.getRemoteUrl("origin");
+        System.out.println("Origin URL: " + originUrl);
+        Set<Branch> originBranches = gitClient.getRemoteBranches();
+        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
+        final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
+        for (String originHead : originHeads.keySet()) {
+            System.out.println(gitImplName + " origin head: " + originHead);
+        }
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
+        assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
+
         int branchNumber = 10 + random.nextInt(80);
         String baseName = "branchA-";
         String branchName = baseName + branchNumber++;
@@ -522,6 +540,22 @@ public class GitClientTest {
     @Test
     public void testCheckout_0args() throws Exception {
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+
+        /* Gather diagnostic information in case checkout fails */
+        final String originUrl = gitClient.getRemoteUrl("origin");
+        System.out.println("Origin URL: " + originUrl);
+        Set<Branch> originBranches = gitClient.getRemoteBranches();
+        assertThat(originBranches, is(not(empty()))); /* fetched into gitClient repo */
+        final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
+        for (String originHead : originHeads.keySet()) {
+            System.out.println(gitImplName + " origin head: " + originHead);
+        }
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
+        assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
+
         int branchNumber = 10 + random.nextInt(80);
         String baseName = "branchA-";
         String branchName = baseName + branchNumber++;
