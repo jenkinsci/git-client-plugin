@@ -787,7 +787,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final FetchConnection c = tn.openFetch();
             try {
                 for (final Ref r : c.getRefs()) {
+                    // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
+                    // See GitClientTest.testGetHeadRev_String() for the failure
+                    // if (r.getName().startsWith(Constants.R_HEADS)) {
                     heads.put(r.getName(), r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
+                    // }
                 }
             } finally {
                 c.close();

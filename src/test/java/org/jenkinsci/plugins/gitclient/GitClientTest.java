@@ -582,13 +582,37 @@ public class GitClientTest {
 
         ObjectId commitA = commitOneFile();
         Map<String, ObjectId> headRevMapA = gitClient.getHeadRev(url);
-        assertThat(headRevMapA.keySet(), hasItems("refs/heads/master"));
+        if (gitImplName.equals("git")) {
+            assertThat(headRevMapA.keySet(), contains("refs/heads/master"));
+        } else {
+            // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
+            assertThat(headRevMapA.keySet(), hasItems("refs/heads/master"));
+        }
         assertThat(headRevMapA.get("refs/heads/master"), is(commitA));
 
         ObjectId commitB = commitOneFile();
         Map<String, ObjectId> headRevMapB = gitClient.getHeadRev(url);
-        assertThat(headRevMapB.keySet(), hasItems("refs/heads/master"));
+        if (gitImplName.equals("git")) {
+            assertThat(headRevMapB.keySet(), contains("refs/heads/master"));
+        } else {
+            // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
+            assertThat(headRevMapB.keySet(), hasItems("refs/heads/master"));
+        }
         assertThat(headRevMapB.get("refs/heads/master"), is(commitB));
+
+        /* Fetch from origin repo, should not change head rev */
+        fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        Map<String, ObjectId> headRevMapC = gitClient.getHeadRev(url);
+        if (gitImplName.equals("git")) {
+            assertThat(headRevMapC.keySet(), contains("refs/heads/master"));
+        } else {
+            // JGit getHeadRev(String) returns more entries than CliGit getHeadRev(String)
+            assertThat(headRevMapC.keySet(), hasItems("refs/heads/master"));
+        }
+        assertThat(headRevMapC.get("refs/heads/master"), is(commitB));
+        if (gitImplName.equals("git")) {
+            assertEquals(headRevMapB, headRevMapC);
+        }
     }
 
     @Test
