@@ -415,14 +415,14 @@ public class GitClientTest {
             new File(gitDir, "logs"),
             new File(gitDir, "objects"),
             new File(gitDir, "refs"),};
-        File[] gitDirListing = gitDir.listFiles();
-        System.out.println("Git dir listing: " + Arrays.toString(gitDirListing));
-        assertThat(Arrays.asList(gitDirListing), hasItems(expectedDirsJGit));
+        List<File> gitDirListing = Arrays.asList(gitDir.listFiles());
+        System.out.println("Git dir listing: " + gitDirListing);
+        assertThat(gitDirListing, hasItems(expectedDirsJGit));
         if (gitImplName.equals("git")) {
             File[] additionalDirsCliGit = { // CLI git only
                 new File(gitDir, "description"),
                 new File(gitDir, "info"),};
-            assertThat(Arrays.asList(gitDirListing), hasItems(additionalDirsCliGit));
+            assertThat(gitDirListing, hasItems(additionalDirsCliGit));
         }
     }
 
