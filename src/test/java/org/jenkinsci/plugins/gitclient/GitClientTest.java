@@ -412,7 +412,6 @@ public class GitClientTest {
             new File(gitDir, "FETCH_HEAD"),
             new File(gitDir, "HEAD"),
             new File(gitDir, "hooks"),
-            new File(gitDir, "logs"),
             new File(gitDir, "objects"),
             new File(gitDir, "refs"),};
         List<File> gitDirListing = Arrays.asList(gitDir.listFiles());
