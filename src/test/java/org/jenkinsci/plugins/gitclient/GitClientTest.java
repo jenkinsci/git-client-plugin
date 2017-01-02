@@ -461,7 +461,6 @@ public class GitClientTest {
         /* Fetch from origin repo */
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
         originBranches = gitClient.getRemoteBranches();
-        assertThat(originBranches, is(not(empty())));
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
