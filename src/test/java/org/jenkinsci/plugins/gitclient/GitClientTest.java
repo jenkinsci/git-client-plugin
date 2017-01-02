@@ -460,10 +460,12 @@ public class GitClientTest {
 
         /* Fetch from origin repo */
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
-        originBranches = gitClient.getRemoteBranches();
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", ref);
+        assertTrue("Last fetch " + lastFetchPath + ", log: '" + Arrays.toString(log) + "'", log.length > 1);
         gitClient.checkout(ref);
         /* Confirm README.md visible, src directory not */
         assertFileInWorkingDir(gitClient, "README.md");
