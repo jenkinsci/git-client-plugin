@@ -409,7 +409,6 @@ public class GitClientTest {
         File[] expectedDirsJGit = { // CLI git && JGit
             new File(gitDir, "branches"),
             new File(gitDir, "config"),
-            new File(gitDir, "FETCH_HEAD"),
             new File(gitDir, "HEAD"),
             new File(gitDir, "hooks"),
             new File(gitDir, "objects"),
@@ -420,6 +419,7 @@ public class GitClientTest {
         if (gitImplName.equals("git")) {
             File[] additionalDirsCliGit = { // CLI git only
                 new File(gitDir, "description"),
+                new File(gitDir, "FETCH_HEAD"),
                 new File(gitDir, "info"),};
             assertThat(gitDirListing, hasItems(additionalDirsCliGit));
         }
