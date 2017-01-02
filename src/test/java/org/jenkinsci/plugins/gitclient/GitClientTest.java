@@ -417,7 +417,6 @@ public class GitClientTest {
             new File(gitDir, "objects"),
             new File(gitDir, "refs"),};
         List<File> gitDirListing = Arrays.asList(gitDir.listFiles());
-        System.out.println("Git dir listing: " + gitDirListing);
         assertThat(gitDirListing, hasItems(expectedDirsJGit));
         if (gitImplName.equals("git")) {
             File[] additionalDirsCliGit = { // CLI git only
