@@ -455,9 +455,6 @@ public class GitClientTest {
         final String originUrl = gitClient.getRemoteUrl("origin");
         Set<Branch> originBranches = gitClient.getRemoteBranches();
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
-        for (String originHead : originHeads.keySet()) {
-            System.out.println(gitImplName + " origin head: " + originHead);
-        }
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
         assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
@@ -495,9 +492,6 @@ public class GitClientTest {
         final String originUrl = gitClient.getRemoteUrl("origin");
         Set<Branch> originBranches = gitClient.getRemoteBranches();
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
-        for (String originHead : originHeads.keySet()) {
-            System.out.println(gitImplName + " origin head: " + originHead);
-        }
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
         assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
@@ -541,9 +535,6 @@ public class GitClientTest {
         final String originUrl = gitClient.getRemoteUrl("origin");
         Set<Branch> originBranches = gitClient.getRemoteBranches();
         final Map<String, ObjectId> originHeads = gitClient.getHeadRev(originUrl);
-        for (String originHead : originHeads.keySet()) {
-            System.out.println(gitImplName + " origin head: " + originHead);
-        }
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         String[] logAll = gitCmd.run("log", "--all", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate");
         assertTrue("Last fetch " + lastFetchPath + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
