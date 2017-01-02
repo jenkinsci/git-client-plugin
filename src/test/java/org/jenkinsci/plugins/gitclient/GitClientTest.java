@@ -479,6 +479,8 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "HEAD");
+        System.out.println("HEAD rev-parse output is " + Arrays.toString(head));
         String[] status = gitCmd.run("status");
         assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
         String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
@@ -517,6 +519,8 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "HEAD");
+        System.out.println("HEAD rev-parse output is " + Arrays.toString(head));
         String[] status = gitCmd.run("status");
         assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
         String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
@@ -561,6 +565,8 @@ public class GitClientTest {
 
         /* Gather diagnostic information in case checkout fails */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "HEAD");
+        System.out.println("HEAD rev-parse output is " + Arrays.toString(head));
         String[] status = gitCmd.run("status");
         assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
         String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
