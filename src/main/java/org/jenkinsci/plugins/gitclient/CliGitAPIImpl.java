@@ -679,6 +679,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CleanCommand clean_() {
         return new CleanCommand() {
             private List<String> excludePatterns = Collections.emptyList();
+            private boolean removeSubmodules = false;
             private Integer timeout = TIMEOUT;
         	           
             public CleanCommand excludePatterns(List<String> excludePatterns) {
@@ -686,7 +687,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            public CleanCommand timeout(Integer timeout) {
+            @Override
+            public CleanCommand submodules(boolean removeSubmodules) {
+                this.removeSubmodules = false;
+                return this;
+            }
+
+			public CleanCommand timeout(Integer timeout) {
                 this.timeout = timeout;
                 return this;
             }
@@ -695,7 +702,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 reset(true);
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("clean");
-                args.add("-fdx");
+                if (removeSubmodules) {
+                    args.add("-ffdx");
+                }
+                else {
+                    args.add("-fdx");
+                }
                 if (excludePatterns != null) {
                     for (String pattern : excludePatterns) {
                         if ( !Strings.isNullOrEmpty(pattern) ) {

@@ -16,6 +16,11 @@ public interface CleanCommand extends GitCommand {
     CleanCommand excludePatterns(List<String> excludePatterns);
 
     /**
+     * 
+     */
+    CleanCommand submodules(boolean removeSubmodules);
+    
+    /**
      * timeout.
      *
      * @param timeout a {@link java.lang.Integer} object.
