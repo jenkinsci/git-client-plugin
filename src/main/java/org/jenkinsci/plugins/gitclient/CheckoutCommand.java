@@ -51,9 +51,10 @@ public interface CheckoutCommand extends GitCommand {
     CheckoutCommand timeout(Integer timeout);
     
     /**
-     * Enable LFS checkout.
+     * Call "git lfs pull" for the given remote after checkout.
      * 
+     * @param remote a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.CheckoutCommand} object.
      */
-    CheckoutCommand withLFS();
+    CheckoutCommand lfsRemote(String lfsRemote);
 }
