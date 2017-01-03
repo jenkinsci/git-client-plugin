@@ -86,6 +86,7 @@ public class GitClientTest {
 
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
+    private final boolean CLI_GIT_SUPPORTS_GIT_LFS;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
@@ -107,6 +108,16 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
+        
+        boolean gitLFSExists = false;
+        try {
+            // If git-lfs is installed then the version string should look like this:
+            // git-lfs/1.4.4 (GitHub; linux amd64; go 1.7.3; git cbf91a9)
+            gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+        } catch (GitException exception) {
+            // This is expected when git-lfs is not installed.
+        }
+        CLI_GIT_SUPPORTS_GIT_LFS = gitLFSExists;
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -552,6 +563,18 @@ public class GitClientTest {
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         assertTrue(src.isDirectory());
+    }
+    
+    @Issue("35687") // Add simple git lfs support
+    @Test
+    public void testCheckoutWithGitLFS() throws Exception {
+        assumeThat(gitImplName, is("git")); // JGit implementation doesn't support git lfs
+        assumeTrue(CLI_GIT_SUPPORTS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchUpstream(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+        File uuidFile = new File(repoFolder.getRoot(), "uuid.txt");
+        assertEquals("Incorrect file contents in " + uuidFile, "5e7733d8acc94636850cb466aec524e4", FileUtils.readFileToString(uuidFile, "utf-8").trim());
     }
 
     @Test
