@@ -1988,7 +1988,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.timeout = timeout;
                 return this;
             }
-            
+
             public CheckoutCommand lfsRemote(String lfsRemote) {
                 this.lfsRemote = lfsRemote;
                 return this;
@@ -2055,7 +2055,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     args.add(ref);
                     launchCommandIn(args, workspace, checkoutEnv, timeout);
-                    
+
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
                         StandardCredentials cred = credentials.get(url);

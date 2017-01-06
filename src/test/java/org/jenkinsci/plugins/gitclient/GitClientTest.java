@@ -108,7 +108,7 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        
+
         boolean gitLFSExists = false;
         try {
             // If git-lfs is installed then the version string should look like this:
@@ -564,7 +564,7 @@ public class GitClientTest {
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         assertTrue(src.isDirectory());
     }
-    
+
     @Issue("35687") // Add simple git lfs support
     @Test
     public void testCheckoutWithGitLFS() throws Exception {
