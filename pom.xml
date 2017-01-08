@@ -10,7 +10,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>2.1.1-SNAPSHOT</version>
+  <version>2.3.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
@@ -41,7 +41,8 @@
   </scm>
 
   <properties>
-    <findbugs-maven-plugin.version>3.0.4</findbugs-maven-plugin.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jacoco-maven-plugin.version>0.7.7.201606060606</jacoco-maven-plugin.version>
     <jenkins.version>1.625.3</jenkins.version>
@@ -190,16 +191,36 @@
         <version>${jacoco-maven-plugin.version}</version>
         <executions>
           <execution>
+            <id>default-prepare-agent</id>
             <goals>
               <goal>prepare-agent</goal>
             </goals>
           </execution>
           <execution>
-            <id>report</id>
-            <phase>prepare-package</phase>
+            <id>default-report</id>
             <goals>
               <goal>report</goal>
             </goals>
+          </execution>
+          <execution>
+            <id>default-check</id>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+            <rules>
+              <rule>
+                <element>BUNDLE</element>
+                  <limits>
+                    <limit>
+                      <counter>COMPLEXITY</counter>
+                      <value>COVEREDRATIO</value>
+                      <minimum>0.40</minimum>
+                    </limit>
+                  </limits>
+                </rule>
+              </rules>
+            </configuration>
           </execution>
         </executions>
       </plugin>
@@ -227,7 +248,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>findbugs-maven-plugin</artifactId>
-        <version>${findbugs-maven-plugin.version}</version>
         <configuration>
           <skip>${skipFindbugs}</skip>
           <failOnError>${maven.findbugs.failure.strict}</failOnError>

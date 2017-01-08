@@ -13,7 +13,18 @@ public class CliGitAPIImplTest extends GitAPITestCase {
 
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
+        setCliGitDefaults();
         return Git.with(listener, env).in(ws).using("git").getClient();
+    }
+
+    private static boolean cliGitDefaultsSet = false;
+
+    private void setCliGitDefaults() throws Exception {
+        if (!cliGitDefaultsSet) {
+            CliGitCommand gitCmd = new CliGitCommand(null);
+            gitCmd.setDefaults();
+        }
+        cliGitDefaultsSet = true;
     }
 
     /**

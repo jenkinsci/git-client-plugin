@@ -2028,7 +2028,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
-    @NotImplementedInCliGit // Until submodule rename is fixed
+    @NotImplementedInJGit
     public void test_getSubmodules() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub_origin").execute();
@@ -2053,7 +2053,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
-    @NotImplementedInCliGit // Until submodule rename is fixed
+    @NotImplementedInJGit
     public void test_submodule_update() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();

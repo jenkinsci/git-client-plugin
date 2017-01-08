@@ -6,6 +6,7 @@ import hudson.util.StreamTaskListener;
 import org.eclipse.jgit.lib.ObjectId;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.File;
@@ -38,6 +39,13 @@ public abstract class MergedRepositoryTest {
     ObjectId commit2Branch;
 
     public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+
+    @BeforeClass
+    public static void setCliGitDefaults() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
+    }
 
     @Before
     public void createMergeTestRepo() throws IOException, InterruptedException {

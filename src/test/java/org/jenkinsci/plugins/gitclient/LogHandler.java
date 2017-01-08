@@ -35,7 +35,7 @@ public class LogHandler extends Handler {
 
     /* package */ boolean containsMessageSubstring(String messageSubstring) {
         for (String message : messages) {
-            if (message.indexOf(messageSubstring) >= 0) {
+            if (message.contains(messageSubstring)) {
                 return true;
             }
         }

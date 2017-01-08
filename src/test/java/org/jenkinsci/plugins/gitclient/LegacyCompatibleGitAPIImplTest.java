@@ -24,6 +24,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,6 +48,13 @@ public class LegacyCompatibleGitAPIImplTest {
 
     public LegacyCompatibleGitAPIImplTest() {
         gitImpl = "git";
+    }
+
+    @BeforeClass
+    public static void setCliGitDefaults() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
     }
 
     @Before

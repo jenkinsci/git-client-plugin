@@ -1,19 +1,20 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.plugins.git.GitException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Test;
+
 import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 @RunWith(Parameterized.class)
 public class MergeCommandTest extends MergedRepositoryTest {
