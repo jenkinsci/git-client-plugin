@@ -97,7 +97,11 @@ public class CredentialsTest {
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
-        log().println("Repo: " + gitRepoUrl + " implementation: " + gitImpl + " username: " + username + " password: " + password + " key: " + privateKey);
+        log().println(show("Repo", gitRepoUrl)
+                + show("implementation", gitImpl)
+                + show("username", username)
+                + show("password", password)
+                + show("key", privateKey));
     }
 
     @Before
@@ -349,6 +353,20 @@ public class CredentialsTest {
         /* prune opens a remote connection to list remote branches */
         git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
         checkExpectedLogSubstring();
+    }
+
+    private String show(String name, String value) {
+        if (value != null && !value.isEmpty()) {
+            return " " + name + ": '" + value + "'";
+        }
+        return "";
+    }
+
+    private String show(String name, File file) {
+        if (file != null) {
+            return " " + name + ": '" + file.getPath() + "'";
+        }
+        return "";
     }
 
     /* If not in a Jenkins job, then default to run all credentials tests.
