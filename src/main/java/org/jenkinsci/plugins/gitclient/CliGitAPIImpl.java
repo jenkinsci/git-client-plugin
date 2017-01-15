@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -52,8 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -1536,7 +1533,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return key;
     }
 
-    private String quoteWindowsCredentials(String str) {
+    /* package protected for testability */
+    String quoteWindowsCredentials(String str) {
         // Quote special characters for Windows Batch Files
         // See: http://ss64.com/nt/syntax-esc.html
         String quoted = str.replace("%", "%%")
@@ -1577,15 +1575,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
-    private File createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
+    /* Package protected for testability */
+    File createWindowsBatFile(String userName, String password) throws IOException {
         File askpass = File.createTempFile("pass", ".bat");
         try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
             w.println("@set arg=%~1");
-            w.println("@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(creds.getUsername()));
-            w.println("@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(Secret.toString(creds.getPassword())));
+            w.println("@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(userName));
+            w.println("@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(password));
         }
         askpass.setExecutable(true);
         return askpass;
+    }
+
+    private File createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
+        return createWindowsBatFile(creds.getUsername(), Secret.toString(creds.getPassword()));
     }
 
     private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
