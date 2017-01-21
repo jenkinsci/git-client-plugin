@@ -33,7 +33,7 @@ public class CliGitAPIImplAuthTest {
 
     private final Random random = new Random();
 
-    private final String[] CARET_SPECIALS = {"&", "\\", "<", ">", "^", "|", " ", "\t"};
+    private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\t"};
     private final String[] PERCENT_SPECIALS = {"%"};
 
     @Before
@@ -42,50 +42,72 @@ public class CliGitAPIImplAuthTest {
     }
 
     @Test
-    public void testQuoteWindowsCredentials() throws Exception {
-        assertEquals("", git.quoteWindowsCredentials(""));
+    public void testQuotedUsernamePasswordCredentials() throws Exception {
+        assertEquals("", quoteCredentials(""));
         for (String special : CARET_SPECIALS) {
-            String expected = "^" + special;
-            assertEquals(expected, git.quoteWindowsCredentials(special));
-            assertEquals(expected + expected, git.quoteWindowsCredentials(special + special));
+            String expected = expectedQuoting(special);
+            assertEquals(expected, quoteCredentials(special));
             checkWindowsCommandOutput(special);
+            assertEquals(expected + expected, quoteCredentials(special + special));
+            checkWindowsCommandOutput(special + special);
         }
         for (String special : PERCENT_SPECIALS) {
-            String expected = "%" + special;
-            assertEquals(expected, git.quoteWindowsCredentials(special));
-            assertEquals(expected + expected, git.quoteWindowsCredentials(special + special));
+            String expected = expectedQuoting(special);
+            assertEquals(expected, quoteCredentials(special));
             checkWindowsCommandOutput(special);
+            assertEquals(expected + expected, quoteCredentials(special + special));
+            checkWindowsCommandOutput(special + special);
         }
         for (String startSpecial : CARET_SPECIALS) {
             for (String endSpecial : PERCENT_SPECIALS) {
-                String middle = randomString();
-                String source = startSpecial + middle + endSpecial;
-                String expected = "^" + startSpecial + middle.replace(" ", "^ ") + "%" + endSpecial;
-                assertEquals(expected, git.quoteWindowsCredentials(source));
-                assertEquals(expected + expected, git.quoteWindowsCredentials(source + source));
-                checkWindowsCommandOutput(source);
+                for (String middle : randomStrings()) {
+                    String source = startSpecial + middle + endSpecial;
+                    String expected = expectedQuoting(source);
+                    assertEquals(expected, quoteCredentials(source));
+                    checkWindowsCommandOutput(source);
+                    assertEquals(expected + expected, quoteCredentials(source + source));
+                    checkWindowsCommandOutput(source + source);
+                }
             }
         }
         for (String startSpecial : PERCENT_SPECIALS) {
             for (String endSpecial : CARET_SPECIALS) {
-                String middle = randomString();
-                String source = startSpecial + middle + endSpecial;
-                String expected = "%" + startSpecial + middle.replace(" ", "^ ") + "^" + endSpecial;
-                assertEquals(expected, git.quoteWindowsCredentials(source));
-                assertEquals(expected + expected, git.quoteWindowsCredentials(source + source));
-                checkWindowsCommandOutput(source);
+                for (String middle : randomStrings()) {
+                    String source = startSpecial + middle + endSpecial;
+                    String expected = expectedQuoting(source);
+                    assertEquals(expected, quoteCredentials(source));
+                    checkWindowsCommandOutput(source);
+                    assertEquals(expected + expected, quoteCredentials(source + source));
+                    checkWindowsCommandOutput(source + source);
+                }
             }
         }
         for (String startSpecial : PERCENT_SPECIALS) {
             for (String endSpecial : PERCENT_SPECIALS) {
-                String middle = randomString();
-                String source = startSpecial + middle + endSpecial;
-                String expected = "%" + startSpecial + middle.replace(" ", "^ ") + "%" + endSpecial;
-                assertEquals(expected, git.quoteWindowsCredentials(source));
-                assertEquals(expected + expected, git.quoteWindowsCredentials(source + source));
-                checkWindowsCommandOutput(source);
+                for (String middle : randomStrings()) {
+                    String source = startSpecial + middle + endSpecial;
+                    String expected = expectedQuoting(source);
+                    assertEquals(expected, quoteCredentials(source));
+                    checkWindowsCommandOutput(source);
+                    assertEquals(expected + expected, quoteCredentials(source + source));
+                    checkWindowsCommandOutput(source + source);
+                }
             }
         }
+    }
+
+    private String quoteCredentials(String password) {
+        return git.quoteWindowsCredentials(password);
+    }
+
+    private String expectedQuoting(String password) {
+        for (String needsCaret : CARET_SPECIALS) {
+            password = password.replace(needsCaret, "^" + needsCaret);
+        }
+        for (String needsPercent : PERCENT_SPECIALS) {
+            password = password.replace(needsPercent, "%" + needsPercent);
+        }
+        return password;
     }
 
     private void checkWindowsCommandOutput(String password) throws Exception {
@@ -139,7 +161,19 @@ public class CliGitAPIImplAuthTest {
         return sourceData[index];
     }
 
+    private String[] randomStrings() {
+        if (TEST_ALL_CREDENTIALS) {
+            return sourceData;
+        }
+        int index = random.nextInt(sourceData.length);
+        return new String[]{sourceData[index]};
+    }
+
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
+
+    /* If not in a Jenkins job, then default to run all credentials tests. */
+    private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
 }
