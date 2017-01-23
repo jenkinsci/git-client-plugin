@@ -577,6 +577,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public List<ObjectId> revList(String ref, int count) throws GitException, InterruptedException {
+        return proxy.revList(ref, count);
+    }
+
+    /** {@inheritDoc} */
     public GitClient subGit(String subdir) {
         return proxy.subGit(subdir);
     }

@@ -151,7 +151,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
-        /* If workspace is null, then default to current directory to match 
+        /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
         this.listener = listener;
@@ -1764,6 +1764,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
+            public int maxCount = 0;
 
             public RevListCommand all() {
                 this.all = true;
@@ -1782,6 +1783,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public RevListCommand reference(String reference){
                 this.refspec = reference;
+                return this;
+            }
+
+            public RevListCommand maxCount(int count){
+                this.maxCount = count;
                 return this;
             }
 
@@ -1806,7 +1812,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     walk.setRetainBody(false);
                     walk.sort(RevSort.COMMIT_TIME_DESC);
 
+                    int objectCount = 0;
                     for (RevCommit c : walk) {
+                        if (maxCount > 0 && objectCount++ == maxCount) {
+                            return;
+                        }
                         out.add(c.copy());
                     }
                 } catch (IOException e) {
@@ -1837,6 +1847,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<ObjectId> revList(String ref) throws GitException {
+        return revList(ref, 0);
+    }
+
+    /** {@inheritDoc} */
+    public List<ObjectId> revList(String ref, int count) throws GitException {
         List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.reference(ref);
