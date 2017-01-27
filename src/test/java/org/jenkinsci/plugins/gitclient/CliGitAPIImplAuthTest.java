@@ -111,8 +111,8 @@ public class CliGitAPIImplAuthTest {
     }
 
     private void checkWindowsCommandOutput(String password) throws Exception {
-        if (!isWindows() || password == null || password.isEmpty() || password.equals(" ") || password.equals("\t")) {
-            /* ArgumentListBuilder can't pass a single space or a single tab argument */
+        if (!isWindows() || password == null || password.trim().isEmpty()) {
+            /* ArgumentListBuilder can't pass spaces or tabs as arguments */
             return;
         }
         String userName = "git";
