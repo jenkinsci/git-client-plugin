@@ -1199,23 +1199,31 @@ public class GitClientTest {
 
     @Test
     public void testSubmoduleClean() throws Exception {
-        assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String branchName = "tests/getSubmodules";
         String upstream = checkoutAndAssertHasGitModules(branchName, true);
         gitClient.submoduleInit();
-        assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys");
+        if (gitImplName.equals("git")) {
+            assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys");
+        }
         // Test may fail if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
         updateSubmodule(upstream, branchName, null);
-        assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
-        assertSubmoduleContents("firewall", "ntp", "sshkeys");
+        if (gitImplName.equals("git")) {
+            assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
+            assertSubmoduleContents("firewall", "ntp", "sshkeys");
+        } else {
+            assertSubmoduleDirectories(gitClient, true, "firewall", "ntp"); // No renamed submodule
+            assertSubmoduleContents("firewall", "ntp"); // No renamed submodule
+        }
 
         final File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
         final File firewallFile = File.createTempFile("untracked-", ".txt", firewallDir);
         final File ntpDir = new File(repoFolder.getRoot(), "modules/ntp");
         final File ntpFile = File.createTempFile("untracked-", ".txt", ntpDir);
-        final File sshkeysDir = new File(repoFolder.getRoot(), "modules/sshkeys");
-        final File sshkeysFile = File.createTempFile("untracked-", ".txt", sshkeysDir);
+        if (gitImplName.equals("git")) {
+            final File sshkeysDir = new File(repoFolder.getRoot(), "modules/sshkeys");
+            final File sshkeysFile = File.createTempFile("untracked-", ".txt", sshkeysDir);
+        }
 
         assertStatusUntrackedContent(gitClient, true);
 
@@ -1226,6 +1234,12 @@ public class GitClientTest {
         /* GitClient submoduleClean expected to modify submodules */
         boolean recursive = random.nextBoolean();
         gitClient.submoduleClean(recursive);
+        if (!gitImplName.equals("git")) {
+            /* Fix damage done by JGit.submoduleClean()
+             * JGit won't leave repo clean, but does remove untracked content
+             */
+            FileUtils.deleteQuietly(new File(repoFolder.getRoot(), "modules/sshkeys"));
+        }
         assertStatusUntrackedContent(gitClient, false);
     }
 
