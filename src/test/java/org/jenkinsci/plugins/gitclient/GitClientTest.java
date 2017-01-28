@@ -1254,4 +1254,39 @@ public class GitClientTest {
         instance.setupSubmoduleUrls(rev, listener);
         fail("The test case is a prototype.");
     }
+
+    @Test
+    public void testDescribeSrcCommit() throws Exception {
+        assertThat(srcGitClient.describe(srcGitClientCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
+    }
+
+    @Test
+    public void testDescribeSrcCommitPredecessor() throws Exception {
+        assertThat(srcGitClient.describe(srcGitClientCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
+    }
+
+    @Test
+    public void testDescribeTag() throws Exception {
+        assertThat(srcGitClient.describe("git-client-1.19.6"), startsWith("git-client-1.19.6"));
+    }
+
+    @Test
+    public void testDescribeTagFromMerge() throws Exception {
+        assertThat(srcGitClient.describe("40d44ffce5fa589605dd6b6ad92ab7235a92b330"), startsWith("git-client-1.0.7-74-g40d44ff"));
+    }
+
+    @Test
+    public void testDescribeTagDeepGraph() throws Exception {
+        assertThat(srcGitClient.describe("640ef19f4157d9a5508d46c3f9ad0c41d7d7ef51"), startsWith("git-client-1.19.0-38-g640ef19"));
+    }
+
+    @Test
+    public void testDescribeTagDeeperGraph() throws Exception {
+        assertThat(srcGitClient.describe("88ca6b449dd155a03d7142c9ad5f17fd7ca2b34e"), startsWith("git-client-1.11.0-24-g88ca6b4"));
+    }
+
+    @Test(expected = GitException.class)
+    public void testDescribeNoTag() throws Exception {
+        srcGitClient.describe("5a865818566c9d03738cdcd49cc0a1543613fd41");
+    }
 }
