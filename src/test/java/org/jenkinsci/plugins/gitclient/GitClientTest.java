@@ -406,7 +406,7 @@ public class GitClientTest {
         gitCmd.run("status");
         if (CLI_GIT_REPORTS_DETACHED_SHA1) {
             gitCmd.assertOutputContains(".*(Not currently on any branch|HEAD detached).*",
-                            ".*" + ref.getName().substring(0, 6) + ".*");
+                    ".*" + ref.getName().substring(0, 6) + ".*");
         } else {
             gitCmd.assertOutputContains(".*Not currently on any branch.*");
         }
@@ -611,10 +611,19 @@ public class GitClientTest {
 
     @Test(expected = GitException.class)
     public void testGetHeadRev_Exception() throws Exception {
-        String url = "protocol://hostname:port/not-a-URL";
+        gitClient.getHeadRev("protocol://hostname:port/not-a-URL");
+    }
 
-        ObjectId commitA = commitOneFile();
-        Map<String, ObjectId> headRevMapA = gitClient.getHeadRev(url);
+    @Test(expected = GitException.class)
+    public void testGetHeadRev_String_String_URI_Exception() throws Exception {
+        gitClient.getHeadRev("protocol://hostname:port/not-a-URL", "master");
+    }
+
+    @Test
+    public void testGetHeadRev_String_String_Empty_Result() throws Exception {
+        String url = repoFolder.getRoot().getAbsolutePath();
+        ObjectId nonExistent = gitClient.getHeadRev(url, "this branch doesn't exist");
+        assertEquals(null, nonExistent);
     }
 
     @Test
