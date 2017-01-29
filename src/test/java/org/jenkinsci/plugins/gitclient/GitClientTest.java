@@ -1269,6 +1269,10 @@ public class GitClientTest {
         fail("The test case is a prototype.");
     }
 
+    /* The describe tests depend on specific tags from the
+     * jenkinsci/git-client-plugin repository. If your fork does not
+     * include these tags, the describe tests will fail.
+     */
     @Test
     public void testDescribeSrcCommit() throws Exception {
         assertThat(srcGitClient.describe(srcGitClientCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
