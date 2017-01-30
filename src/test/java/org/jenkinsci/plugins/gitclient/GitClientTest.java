@@ -1256,6 +1256,7 @@ public class GitClientTest {
     // @Issue("39253") // notifyCommit trigger should detect changes to a submodule
     // @Issue("21521") // submodule defaults in git plugin 2.x different than git plugin 1.x
     // @Issue("31244") // submodule misconfiguration not reported clearly
+    // @Issue("41553") // submodule status should be used instead of reading config file
     // Update submodules to latest commit
     // Recursive submodule update
     // Recursive submodule update to latest commit
