@@ -33,10 +33,11 @@ import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
@@ -68,7 +69,8 @@ public class CredentialsTest {
 
     private List<String> expectedLogSubstrings = new ArrayList<>();
 
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private int logCount;
     private LogHandler handler;
@@ -106,7 +108,7 @@ public class CredentialsTest {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        repo = temporaryDirectoryAllocator.allocate();
+        repo = tempFolder.newFolder();
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -131,7 +133,6 @@ public class CredentialsTest {
     @After
     public void tearDown() {
         git.clearCredentials();
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     private void checkExpectedLogSubstring() {

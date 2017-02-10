@@ -28,9 +28,12 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.junit.rules.TemporaryFolder;
 
 public class LegacyCompatibleGitAPIImplTest {
+
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -40,7 +43,6 @@ public class LegacyCompatibleGitAPIImplTest {
 
     private final hudson.EnvVars env = new hudson.EnvVars();
     private final TaskListener listener = StreamTaskListener.fromStdout();
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
     private final ObjectId gitClientCommit = ObjectId.fromString("d771d97f1e126b1b01ea214ef245d2d5f432200e");
     private final ObjectId taggedCommit = ObjectId.fromString("2db88a20bba8e98b6710f06213f3b60940a63c7c");
 
@@ -59,17 +61,12 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        repo = temporaryDirectoryAllocator.allocate();
+        repo = tempFolder.newFolder();
         assertNotGitRepo(repo);
         git = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         assertNotGitRepo(repo);
         git.init();
         assertIsGitRepo(repo);
-    }
-
-    @After
-    public void tearDown() throws IOException, InterruptedException {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     private void assertNotGitRepo(File dir) {

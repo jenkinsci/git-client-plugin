@@ -14,11 +14,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Bug;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 /**
  * The msysgit implementation (through at least 1.9.0) fails some credential
@@ -40,7 +41,9 @@ public class WarnTempDirValueTest {
         this.envVarName = envVarName;
     }
 
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private File repo = null;
     private int logCount = 0;
     private LogHandler handler = null;
@@ -49,7 +52,7 @@ public class WarnTempDirValueTest {
 
     @Before
     public void createRepo() throws IOException {
-        repo = temporaryDirectoryAllocator.allocate();
+        repo = tempFolder.newFolder();
     }
 
     @Before
@@ -62,11 +65,6 @@ public class WarnTempDirValueTest {
         logger.setLevel(Level.ALL);
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
-    }
-
-    @After
-    public void deleteRepo() {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     @After

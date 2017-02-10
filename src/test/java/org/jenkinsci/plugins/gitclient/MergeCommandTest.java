@@ -19,9 +19,9 @@ import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 @RunWith(Parameterized.class)
 public class MergeCommandTest {
@@ -43,7 +43,8 @@ public class MergeCommandTest {
     private ObjectId commit2Branch;
     private ObjectId commitConflict;
 
-    public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -59,7 +60,7 @@ public class MergeCommandTest {
     public void createMergeTestRepo() throws IOException, InterruptedException {
         EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStdout();
-        File repo = temporaryDirectoryAllocator.allocate();
+        File repo = tempFolder.newFolder();
         git = Git.with(listener, env).in(repo).using(gitImpl).getClient();
         git.init_().workspace(repo.getAbsolutePath()).execute();
 
@@ -139,11 +140,6 @@ public class MergeCommandTest {
         assertTrue("commit commitConflict missing on branch branch-conflict", git.revList("branch-conflict").contains(commitConflict));
         assertTrue("Conflicting README missing on branch branch-conflict", readmeOne.exists());
         git.checkout("master");
-    }
-
-    @After
-    public void removeMergeTestRepo() {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     @Parameterized.Parameters(name = "{0}")

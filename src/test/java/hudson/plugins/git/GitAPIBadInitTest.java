@@ -4,7 +4,6 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.gitclient.GitClient;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,14 +16,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 
 public class GitAPIBadInitTest {
 
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator;
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private final EnvVars env;
 
     public GitAPIBadInitTest() {
-        temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
         env = new EnvVars();
     }
 
@@ -36,13 +37,8 @@ public class GitAPIBadInitTest {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        tempDir = temporaryDirectoryAllocator.allocate();
+        tempDir = tempFolder.newFolder();
         listener = StreamTaskListener.fromStderr();
-    }
-
-    @After
-    public void tearDown() throws InterruptedException {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     @Test
