@@ -250,7 +250,7 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
           <skip>${skipFindbugs}</skip>
-          <failOnError>${maven.findbugs.failure.strict}</failOnError>
+          <failOnError>false</failOnError>
           <xmlOutput>true</xmlOutput>
           <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
         </configuration>
