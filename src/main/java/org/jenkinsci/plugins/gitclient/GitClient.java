@@ -36,11 +36,11 @@ import java.util.Set;
 public interface GitClient {
 
     /** Constant <code>verbose=Boolean.getBoolean(IGitAPI.class.getName() + ".verbose")</code> */
-    boolean verbose = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
+    boolean VERBOSE = Boolean.getBoolean(IGitAPI.class.getName() + ".verbose");
 
     // If true, do not print the list of remote branches.
     /** Constant <code>quietRemoteBranches=Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches")</code> */
-    boolean quietRemoteBranches = Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches");
+    boolean QUIET_REMOTE_BRANCHES = Boolean.getBoolean(GitClient.class.getName() + ".quietRemoteBranches");
 
     /**
      * The supported credential types.
