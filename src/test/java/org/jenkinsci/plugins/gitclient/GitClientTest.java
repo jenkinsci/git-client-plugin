@@ -1300,4 +1300,30 @@ public class GitClientTest {
     public void testDescribeNoTag() throws Exception {
         srcGitClient.describe("5a865818566c9d03738cdcd49cc0a1543613fd41");
     }
+
+    /* A SHA1 that exists in src repo, but unlikely to be referenced from a local branch in src repo */
+    private final String TESTS_NOT_SUBMODULE_SHA1 = "f04fae26f6b612c4a575314222d72c20ca4090a5";
+
+    public void testgetBranchesContainingTrue_existing_sha1() throws Exception {
+        List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, true);
+        assertThat(branches, is(empty()));
+    }
+
+    public void testgetBranchesContainingFalse_existing_sha1() throws Exception {
+        List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, false);
+        assertThat(branches, is(empty()));
+    }
+
+    /* A SHA1 that doesn't exist in src repo */
+    private final String NON_EXISTENT_SHA1 = "adbadcaddadfadba11adbeefb1abbedb1adebed5";
+
+    @Test(expected = GitException.class)
+    public void testgetBranchesContainingTrue_non_existent_sha1() throws Exception {
+        srcGitClient.getBranchesContaining(NON_EXISTENT_SHA1, true);
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetBranchesContainingFalse_non_existent_sha1() throws Exception {
+        srcGitClient.getBranchesContaining(NON_EXISTENT_SHA1, false);
+    }
 }
