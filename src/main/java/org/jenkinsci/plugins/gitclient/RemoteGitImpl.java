@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -196,17 +197,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void addCredentials(String url, StandardCredentials credentials) {
-        proxy.addCredentials(url, credentials); // credentials are Serializable
+        proxy.addCredentials(url, CredentialsProvider.snapshot(StandardCredentials.class, credentials)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
     public void setCredentials(StandardUsernameCredentials cred) {
-        proxy.setCredentials(cred);
+        proxy.setCredentials(CredentialsProvider.snapshot(StandardUsernameCredentials.class, cred)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
     public void addDefaultCredentials(StandardCredentials credentials) {
-        proxy.addDefaultCredentials(credentials); // credentials are Serializable
+        proxy.addDefaultCredentials(CredentialsProvider.snapshot(StandardCredentials.class, credentials)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
