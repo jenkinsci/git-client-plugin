@@ -77,12 +77,15 @@ public class GitClientTest {
     /** URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
 
+    /** URL of GitHub test repository with large file support. */
+    private final String lfsTestRepoURL = "https://github.com/MarkEWaite/jenkins-pipeline-utils";
+
     /* Instance of object under test */
     private GitClient gitClient = null;
 
     /* Capabilities of command line git in current environment */
+    private final boolean CLI_GIT_HAS_GIT_LFS;
     private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
-    private final boolean CLI_GIT_SUPPORTS_GIT_LFS;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
@@ -106,15 +109,16 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
 
-        boolean gitLFSExists = false;
+        boolean gitLFSExists;
         try {
             // If git-lfs is installed then the version string should look like this:
-            // git-lfs/1.4.4 (GitHub; linux amd64; go 1.7.3; git cbf91a9)
+            // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
             gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
+            gitLFSExists = false;
         }
-        CLI_GIT_SUPPORTS_GIT_LFS = gitLFSExists;
+        CLI_GIT_HAS_GIT_LFS = gitLFSExists;
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -557,16 +561,66 @@ public class GitClientTest {
         assertTrue(src.isDirectory());
     }
 
-    @Issue("35687") // Add simple git lfs support
+    @Issue("35687") // Git LFS support
     @Test
-    public void testCheckoutWithGitLFS() throws Exception {
-        assumeThat(gitImplName, is("git")); // JGit implementation doesn't support git lfs
-        assumeTrue(CLI_GIT_SUPPORTS_GIT_LFS);
+    public void testCheckoutWithCliGitLFS() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
         String branch = "tests/largeFileSupport";
-        String remote = fetchUpstream(branch);
+        String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
-        File uuidFile = new File(repoFolder.getRoot(), "uuid.txt");
-        assertEquals("Incorrect file contents in " + uuidFile, "5e7733d8acc94636850cb466aec524e4", FileUtils.readFileToString(uuidFile, "utf-8").trim());
+        File uuidFile = new File(repoRoot, "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "5e7733d8acc94636850cb466aec524e4";
+        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+    }
+
+    @Issue("35687") // Git LFS support - JGit not supported
+    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    public void testCheckoutWithJGitLFS() throws Exception {
+        assumeThat(gitImplName, startsWith("jgit"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+    }
+
+    // If LFS installed and not enabled, throw an exception
+    @Issue("35687") // Git LFS support
+    @Test(expected = GitException.class)
+    public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+    }
+
+    // If LFS installed and not enabled, throw an exception if branch includes LFS reference
+    @Issue("35687") // Git LFS support
+    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
+        assumeThat(gitImplName, startsWith("jgit"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+    }
+
+    // If LFS installed and not enabled, checkout content without download
+    @Issue("35687") // Git LFS support
+    @Test
+    public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
+        assumeFalse(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+        File uuidFile = new File(repoRoot, "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
+                + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
+                + "size 33";
+        assertEquals("Incorrect non-LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
     @Test
@@ -752,6 +806,15 @@ public class GitClientTest {
             }
             fetch(gitClient, remote, firstRefSpec, refSpecStrings);
         }
+        return remote;
+    }
+
+    private String fetchLFSTestRepo(String firstBranch) throws Exception {
+        String remote = "lfs-test-origin";
+        gitClient.addRemoteUrl(remote, lfsTestRepoURL);
+        String firstRef = remote + "/" + firstBranch;
+        String firstRefSpec = "+refs/heads/" + firstBranch + ":refs/remotes/" + firstRef;
+        fetch(gitClient, remote, firstRefSpec);
         return remote;
     }
 
