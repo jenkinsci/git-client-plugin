@@ -53,7 +53,7 @@ public interface CheckoutCommand extends GitCommand {
     /**
      * Call "git lfs pull" for the given remote after checkout.
      *
-     * @param remote a {@link java.lang.String} object.
+     * @param lfsRemote name of the remote used for git lfs operations (typically "origin").
      * @return a {@link org.jenkinsci.plugins.gitclient.CheckoutCommand} object.
      */
     CheckoutCommand lfsRemote(String lfsRemote);
