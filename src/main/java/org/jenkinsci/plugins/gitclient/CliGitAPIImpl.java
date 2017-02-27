@@ -1983,6 +1983,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean deleteBranch;
             public List<String> sparseCheckoutPaths = Collections.emptyList();
             public Integer timeout;
+            public String lfsRemote;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -2006,6 +2007,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CheckoutCommand timeout(Integer timeout) {
                 this.timeout = timeout;
+                return this;
+            }
+
+            public CheckoutCommand lfsRemote(String lfsRemote) {
+                this.lfsRemote = lfsRemote;
                 return this;
             }
 
@@ -2039,11 +2045,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // Will activate or deactivate sparse checkout depending on the given paths
                     sparseCheckout(sparseCheckoutPaths);
 
+                    EnvVars checkoutEnv = environment;
+                    if (lfsRemote != null) {
+                        // Disable the git-lfs smudge filter because it is much slower on
+                        // certain OSes than doing a single "git lfs pull" after checkout.
+                        checkoutEnv = new EnvVars(checkoutEnv);
+                        checkoutEnv.put("GIT_LFS_SKIP_SMUDGE", "1");
+                    }
+
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
                         ArgumentListBuilder args = new ArgumentListBuilder();
                         args.add("checkout", "-f", ref);
-                        launchCommandIn(args, workspace, environment, timeout);
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
 
                         // Second, check to see if the branch actually exists, and then delete it if it does.
                         for (Branch b : getBranches()) {
@@ -2061,7 +2075,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, environment, timeout);
+                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    if (lfsRemote != null) {
+                        final String url = getRemoteUrl(lfsRemote);
+                        StandardCredentials cred = credentials.get(url);
+                        if (cred == null) cred = defaultCredentials;
+                        ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
+                        lfsArgs.add("lfs");
+                        lfsArgs.add("pull");
+                        lfsArgs.add(lfsRemote);
+                        try {
+                            launchCommandWithCredentials(lfsArgs, workspace, cred, new URIish(url), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + url, e);
+                        }
+                    }
                 } catch (GitException e) {
                     if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
                         throw new GitLockFailedException("Could not lock repository. Please try again", e);
