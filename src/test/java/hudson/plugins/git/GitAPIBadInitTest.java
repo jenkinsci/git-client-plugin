@@ -10,13 +10,12 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
-import static junit.framework.TestCase.assertTrue;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import static org.junit.Assert.*;
 
 public class GitAPIBadInitTest {
 
