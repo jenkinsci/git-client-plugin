@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import static junit.framework.TestCase.assertTrue;
 import org.apache.commons.lang.SystemUtils;
 
 /**
