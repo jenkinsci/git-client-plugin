@@ -1451,7 +1451,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
-                key = createSshKeyFile(key, sshUser);
+                key = createSshKeyFile(sshUser);
                 if (launcher.isUnix()) {
                     ssh =  createUnixGitSSH(key, sshUser.getUsername());
                     pass =  createUnixSshAskpass(sshUser);
@@ -1527,8 +1527,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        key = File.createTempFile("ssh", "key");
+    private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
+        File key = File.createTempFile("ssh", "key");
         try (PrintWriter w = new PrintWriter(key, Charset.defaultCharset().toString())) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
