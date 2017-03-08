@@ -1503,7 +1503,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
-                key = createSshKeyFile(key, sshUser);
+                key = createSshKeyFile(sshUser);
                 if (launcher.isUnix()) {
                     ssh =  createUnixGitSSH(key, sshUser.getUsername());
                     pass =  createUnixSshAskpass(sshUser);
@@ -1515,6 +1515,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
+
+                // supply a dummy value for DISPLAY if not already present
+                // or else ssh will not invoke SSH_ASKPASS
+                if (!env.containsKey("DISPLAY")) {
+                    env.put("DISPLAY", ":");
+                }
 
             } else if (credentials instanceof StandardUsernamePasswordCredentials) {
                 StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
@@ -1573,8 +1579,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private File createSshKeyFile(File key, SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        key = File.createTempFile("ssh", "key");
+    private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
+        File key = File.createTempFile("ssh", "key");
         try (PrintWriter w = new PrintWriter(key, Charset.defaultCharset().toString())) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
@@ -1610,7 +1616,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = File.createTempFile("pass", ".bat");
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
-            w.println("echo \"" + quoteWindowsCredentials(Secret.toString(sshUser.getPassphrase())) + "\"");
+            // avoid echoing command as part of the password
+            w.println("@echo off");
+            // no need for quotes on windows echo -- they will get echoed too
+            w.println("echo " + Secret.toString(sshUser.getPassphrase()));
             w.flush();
         }
         ssh.setExecutable(true);
@@ -2026,6 +2035,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean deleteBranch;
             public List<String> sparseCheckoutPaths = Collections.emptyList();
             public Integer timeout;
+            public String lfsRemote;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -2049,6 +2059,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CheckoutCommand timeout(Integer timeout) {
                 this.timeout = timeout;
+                return this;
+            }
+
+            public CheckoutCommand lfsRemote(String lfsRemote) {
+                this.lfsRemote = lfsRemote;
                 return this;
             }
 
@@ -2082,11 +2097,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // Will activate or deactivate sparse checkout depending on the given paths
                     sparseCheckout(sparseCheckoutPaths);
 
+                    EnvVars checkoutEnv = environment;
+                    if (lfsRemote != null) {
+                        // Disable the git-lfs smudge filter because it is much slower on
+                        // certain OSes than doing a single "git lfs pull" after checkout.
+                        checkoutEnv = new EnvVars(checkoutEnv);
+                        checkoutEnv.put("GIT_LFS_SKIP_SMUDGE", "1");
+                    }
+
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
                         ArgumentListBuilder args = new ArgumentListBuilder();
                         args.add("checkout", "-f", ref);
-                        launchCommandIn(args, workspace, environment, timeout);
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
 
                         // Second, check to see if the branch actually exists, and then delete it if it does.
                         for (Branch b : getBranches()) {
@@ -2104,7 +2127,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, environment, timeout);
+                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    if (lfsRemote != null) {
+                        final String url = getRemoteUrl(lfsRemote);
+                        StandardCredentials cred = credentials.get(url);
+                        if (cred == null) cred = defaultCredentials;
+                        ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
+                        lfsArgs.add("lfs");
+                        lfsArgs.add("pull");
+                        lfsArgs.add(lfsRemote);
+                        try {
+                            launchCommandWithCredentials(lfsArgs, workspace, cred, new URIish(url), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + url, e);
+                        }
+                    }
                 } catch (GitException e) {
                     if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
                         throw new GitLockFailedException("Could not lock repository. Please try again", e);

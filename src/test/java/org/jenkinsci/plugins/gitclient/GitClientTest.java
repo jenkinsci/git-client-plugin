@@ -46,7 +46,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import org.jvnet.hudson.test.Issue;
 
@@ -78,20 +77,22 @@ public class GitClientTest {
     /** URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
 
-    /* Directory allocator */
-    private final TemporaryDirectoryAllocator dirAllocator = new TemporaryDirectoryAllocator();
+    /** URL of GitHub test repository with large file support. */
+    private final String lfsTestRepoURL = "https://github.com/MarkEWaite/jenkins-pipeline-utils";
 
     /* Instance of object under test */
     private GitClient gitClient = null;
 
     /* Capabilities of command line git in current environment */
+    private final boolean CLI_GIT_HAS_GIT_LFS;
     private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
 
     @Rule
-    public TemporaryFolder repoFolder = new TemporaryFolder();
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+    private File repoRoot = null;
 
     public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
         this.gitImplName = gitImplName;
@@ -107,6 +108,17 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
+
+        boolean gitLFSExists;
+        try {
+            // If git-lfs is installed then the version string should look like this:
+            // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
+            gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+        } catch (GitException exception) {
+            // This is expected when git-lfs is not installed.
+            gitLFSExists = false;
+        }
+        CLI_GIT_HAS_GIT_LFS = gitLFSExists;
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -129,17 +141,13 @@ public class GitClientTest {
 
     @Before
     public void setGitClient() throws IOException, InterruptedException {
-        gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoFolder.getRoot()).using(gitImplName).getClient();
+        repoRoot = tempFolder.newFolder();
+        gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
         File gitDir = gitClient.getRepository().getDirectory();
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
-        gitClient.init_().workspace(repoFolder.getRoot().getAbsolutePath()).execute();
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
         gitClient.setRemoteUrl("origin", srcRepoAbsolutePath);
-    }
-
-    @After
-    public void deleteTemporaryDirectories() {
-        dirAllocator.disposeAsync();
     }
 
     private ObjectId commitOneFile() throws Exception {
@@ -147,7 +155,7 @@ public class GitClientTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        File oneFile = new File(repoFolder.getRoot(), "One-File.txt");
+        File oneFile = new File(repoRoot, "One-File.txt");
         try (PrintWriter writer = new PrintWriter(oneFile, "UTF-8")) {
             writer.printf("A random UUID: %s\n", UUID.randomUUID().toString());
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
@@ -246,7 +254,7 @@ public class GitClientTest {
 
     @Test
     public void testGetWorkTree() {
-        assertThat(gitClient.getWorkTree(), is(new FilePath(repoFolder.getRoot())));
+        assertThat(gitClient.getWorkTree(), is(new FilePath(repoRoot)));
     }
 
     @Test
@@ -271,7 +279,7 @@ public class GitClientTest {
 
     @Test
     public void testGetRepository() {
-        File expectedRepo = new File(repoFolder.getRoot(), ".git");
+        File expectedRepo = new File(repoRoot, ".git");
         assertEquals(expectedRepo, gitClient.getRepository().getDirectory());
     }
 
@@ -317,7 +325,7 @@ public class GitClientTest {
 
     @Test
     public void testHasGitRepo() throws Exception {
-        assertTrue("Test repo '" + repoFolder.getRoot().getAbsolutePath() + "' not initialized", gitClient.hasGitRepo());
+        assertTrue("Test repo '" + repoRoot.getAbsolutePath() + "' not initialized", gitClient.hasGitRepo());
         StringBuilder fileList = new StringBuilder();
         for (File file : srcRepoDir.listFiles()) {
             fileList.append(file.getAbsolutePath());
@@ -325,8 +333,7 @@ public class GitClientTest {
         }
         assertTrue("Source repo '" + srcRepoDir.getAbsolutePath() + "' not initialized, contains " + fileList.toString(), srcGitClient.hasGitRepo());
 
-        File emptyDir = dirAllocator.allocate();
-        emptyDir.mkdirs();
+        File emptyDir = tempFolder.newFolder();
         assertTrue(emptyDir.exists());
         GitClient emptyClient = Git.with(TaskListener.NULL, new EnvVars()).in(emptyDir).using(gitImplName).getClient();
         assertFalse("Empty repo '" + emptyDir.getAbsolutePath() + "' initialized", emptyClient.hasGitRepo());
@@ -358,22 +365,22 @@ public class GitClientTest {
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
-        File fileInRepo = new File(repoFolder.getRoot(), fileName);
+        File fileInRepo = new File(repoRoot, fileName);
         assertTrue(fileInRepo.getAbsolutePath() + " not found", fileInRepo.isFile());
     }
 
     private void assertFileNotInWorkingDir(GitClient client, String fileName) {
-        File fileInRepo = new File(repoFolder.getRoot(), fileName);
+        File fileInRepo = new File(repoRoot, fileName);
         assertFalse(fileInRepo.getAbsolutePath() + " found", fileInRepo.isFile());
     }
 
     private void assertDirInWorkingDir(GitClient client, String dirName) {
-        File dirInRepo = new File(repoFolder.getRoot(), dirName);
+        File dirInRepo = new File(repoRoot, dirName);
         assertTrue(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
     }
 
     private void assertDirNotInWorkingDir(GitClient client, String dirName) {
-        File dirInRepo = new File(repoFolder.getRoot(), dirName);
+        File dirInRepo = new File(repoRoot, dirName);
         assertFalse(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
     }
 
@@ -395,8 +402,8 @@ public class GitClientTest {
 
     private void assertEmptyWorkingDir(GitClient gitClient) throws Exception {
         assertTrue(gitClient.hasGitRepo());
-        File gitDir = new File(repoFolder.getRoot(), ".git");
-        File[] gitDirListing = repoFolder.getRoot().listFiles();
+        File gitDir = new File(repoRoot, ".git");
+        File[] gitDirListing = repoRoot.listFiles();
         assertEquals(gitDir, gitDirListing[0]);
         assertEquals(1, gitDirListing.length);
     }
@@ -546,12 +553,74 @@ public class GitClientTest {
 
     @Test
     public void testCheckoutBranch() throws Exception {
-        File src = new File(repoFolder.getRoot(), "src");
+        File src = new File(repoRoot, "src");
         assertFalse(src.isDirectory());
         String branch = "master";
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         assertTrue(src.isDirectory());
+    }
+
+    @Issue("35687") // Git LFS support
+    @Test
+    public void testCheckoutWithCliGitLFS() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+        File uuidFile = new File(repoRoot, "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "5e7733d8acc94636850cb466aec524e4";
+        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+    }
+
+    @Issue("35687") // Git LFS support - JGit not supported
+    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    public void testCheckoutWithJGitLFS() throws Exception {
+        assumeThat(gitImplName, startsWith("jgit"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+    }
+
+    // If LFS installed and not enabled, throw an exception
+    @Issue("35687") // Git LFS support
+    @Test(expected = GitException.class)
+    public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+    }
+
+    // If LFS installed and not enabled, throw an exception if branch includes LFS reference
+    @Issue("35687") // Git LFS support
+    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
+        assumeThat(gitImplName, startsWith("jgit"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+    }
+
+    // If LFS installed and not enabled, checkout content without download
+    @Issue("35687") // Git LFS support
+    @Test
+    public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
+        assumeFalse(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/largeFileSupport";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+        File uuidFile = new File(repoRoot, "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
+                + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
+                + "size 33";
+        assertEquals("Incorrect non-LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
     @Test
@@ -585,7 +654,7 @@ public class GitClientTest {
 
     @Test
     public void testGetHeadRev_String() throws Exception {
-        String url = repoFolder.getRoot().getAbsolutePath();
+        String url = repoRoot.getAbsolutePath();
 
         ObjectId commitA = commitOneFile();
         Map<String, ObjectId> headRevMapA = gitClient.getHeadRev(url);
@@ -600,7 +669,7 @@ public class GitClientTest {
 
     @Test
     public void testGetHeadRev_String_String() throws Exception {
-        String url = repoFolder.getRoot().getAbsolutePath();
+        String url = repoRoot.getAbsolutePath();
 
         ObjectId commitA = commitOneFile();
         assertThat(gitClient.getHeadRev(url, "master"), is(commitA));
@@ -621,7 +690,7 @@ public class GitClientTest {
 
     @Test
     public void testGetHeadRev_String_String_Empty_Result() throws Exception {
-        String url = repoFolder.getRoot().getAbsolutePath();
+        String url = repoRoot.getAbsolutePath();
         ObjectId nonExistent = gitClient.getHeadRev(url, "this branch doesn't exist");
         assertEquals(null, nonExistent);
     }
@@ -635,7 +704,7 @@ public class GitClientTest {
 
     // @Test
     public void testGetRemoteReferences() throws Exception {
-        String url = repoFolder.getRoot().getAbsolutePath();
+        String url = repoRoot.getAbsolutePath();
         String pattern = null;
         boolean headsOnly = false; // Need variations here
         boolean tagsOnly = false; // Need variations here
@@ -740,6 +809,15 @@ public class GitClientTest {
         return remote;
     }
 
+    private String fetchLFSTestRepo(String firstBranch) throws Exception {
+        String remote = "lfs-test-origin";
+        gitClient.addRemoteUrl(remote, lfsTestRepoURL);
+        String firstRef = remote + "/" + firstBranch;
+        String firstRefSpec = "+refs/heads/" + firstBranch + ":refs/remotes/" + firstRef;
+        fetch(gitClient, remote, firstRefSpec);
+        return remote;
+    }
+
     private String checkoutAndAssertHasGitModules(String branch, boolean gitModulesExpected) throws Exception {
         assertFalse(gitClient.hasGitModules());
         String remote = fetchUpstream(branch);
@@ -749,7 +827,7 @@ public class GitClientTest {
     }
 
     private void assertModulesDir(boolean modulesDirExpected) {
-        File modulesDir = new File(repoFolder.getRoot(), "modules");
+        File modulesDir = new File(repoRoot, "modules");
         assertEquals(modulesDir.isDirectory(), modulesDirExpected);
     }
 
@@ -857,7 +935,7 @@ public class GitClientTest {
         String randomUUID = UUID.randomUUID().toString();
         String randomString = "Added after initial file checkin " + randomUUID + "\n";
         File lastModifiedFile = null;
-        for (File file : repoFolder.getRoot().listFiles()) {
+        for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"), true)) {
                     writer.print(randomString);
@@ -865,13 +943,13 @@ public class GitClientTest {
                 lastModifiedFile = file;
             }
         }
-        assertTrue("No files modified " + repoFolder.getRoot(), lastModifiedFile != null);
+        assertTrue("No files modified " + repoRoot, lastModifiedFile != null);
 
         /* Checkout a new branch - verify no files retain modification */
         gitClient.checkout().branch("master-" + randomUUID).ref(commitA.getName()).execute();
 
         lastModifiedFile = null;
-        for (File file : repoFolder.getRoot().listFiles()) {
+        for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
                 List<String> lines = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
                 for (String line : lines) {
@@ -1023,10 +1101,10 @@ public class GitClientTest {
         assertSubmoduleContents(expectedDirs);
 
         /* Clone, checkout and submodule update a repository copy before submodule deletion */
-        File cloneDir = dirAllocator.allocate();
+        File cloneDir = tempFolder.newFolder();
         GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
         cloneGitClient.init();
-        cloneGitClient.clone_().url(repoFolder.getRoot().getAbsolutePath()).execute();
+        cloneGitClient.clone_().url(repoRoot.getAbsolutePath()).execute();
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
         if (gitImplName.equals("git")) {
             /* JGit doesn't create the empty directories - CliGit does */
@@ -1039,7 +1117,7 @@ public class GitClientTest {
 
         /* Remove firewall submodule */
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
+        File firewallDir = new File(repoRoot, "modules/firewall");
         FileUtils.forceDelete(firewallDir);
         assertFalse("firewallDir not deleted " + firewallDir, firewallDir.isDirectory());
         gitCmd.run("submodule", "deinit", "modules/firewall");
@@ -1050,7 +1128,7 @@ public class GitClientTest {
         gitCmd.assertOutputContains(".*modules/firewall.*");
         gitCmd.run("commit", "-m", "Remove firewall submodule");
         gitCmd.assertOutputContains(".*Remove firewall submodule.*");
-        File submoduleDir = new File(repoFolder.getRoot(), ".git/modules/firewall");
+        File submoduleDir = new File(repoRoot, ".git/modules/firewall");
         if (submoduleDir.exists()) {
             FileUtils.forceDelete(submoduleDir);
         }
@@ -1216,12 +1294,12 @@ public class GitClientTest {
             assertSubmoduleContents("firewall", "ntp"); // No renamed submodule
         }
 
-        final File firewallDir = new File(repoFolder.getRoot(), "modules/firewall");
+        final File firewallDir = new File(repoRoot, "modules/firewall");
         final File firewallFile = File.createTempFile("untracked-", ".txt", firewallDir);
-        final File ntpDir = new File(repoFolder.getRoot(), "modules/ntp");
+        final File ntpDir = new File(repoRoot, "modules/ntp");
         final File ntpFile = File.createTempFile("untracked-", ".txt", ntpDir);
         if (gitImplName.equals("git")) {
-            final File sshkeysDir = new File(repoFolder.getRoot(), "modules/sshkeys");
+            final File sshkeysDir = new File(repoRoot, "modules/sshkeys");
             final File sshkeysFile = File.createTempFile("untracked-", ".txt", sshkeysDir);
         }
 
@@ -1238,7 +1316,7 @@ public class GitClientTest {
             /* Fix damage done by JGit.submoduleClean()
              * JGit won't leave repo clean, but does remove untracked content
              */
-            FileUtils.deleteQuietly(new File(repoFolder.getRoot(), "modules/sshkeys"));
+            FileUtils.deleteQuietly(new File(repoRoot, "modules/sshkeys"));
         }
         assertStatusUntrackedContent(gitClient, false);
     }
@@ -1307,5 +1385,31 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testDescribeNoTag() throws Exception {
         srcGitClient.describe("5a865818566c9d03738cdcd49cc0a1543613fd41");
+    }
+
+    /* A SHA1 that exists in src repo, but unlikely to be referenced from a local branch in src repo */
+    private final String TESTS_NOT_SUBMODULE_SHA1 = "f04fae26f6b612c4a575314222d72c20ca4090a5";
+
+    public void testgetBranchesContainingTrue_existing_sha1() throws Exception {
+        List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, true);
+        assertThat(branches, is(empty()));
+    }
+
+    public void testgetBranchesContainingFalse_existing_sha1() throws Exception {
+        List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, false);
+        assertThat(branches, is(empty()));
+    }
+
+    /* A SHA1 that doesn't exist in src repo */
+    private final String NON_EXISTENT_SHA1 = "adbadcaddadfadba11adbeefb1abbedb1adebed5";
+
+    @Test(expected = GitException.class)
+    public void testgetBranchesContainingTrue_non_existent_sha1() throws Exception {
+        srcGitClient.getBranchesContaining(NON_EXISTENT_SHA1, true);
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetBranchesContainingFalse_non_existent_sha1() throws Exception {
+        srcGitClient.getBranchesContaining(NON_EXISTENT_SHA1, false);
     }
 }

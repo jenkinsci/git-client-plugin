@@ -11,8 +11,7 @@ Contributing to the Plugin
 ==========================
 
 Refer to [contributing to the plugin](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.md)
-for suggestions to speed the acceptance of your contributions to the
-git client plugin.
+for suggestions to speed the acceptance of your contributions.
 
 To Do
 =====
