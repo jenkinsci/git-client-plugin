@@ -16,6 +16,7 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
 import hudson.remoting.VirtualChannel;
 import hudson.util.IOUtils;
 
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
@@ -71,7 +73,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
-import java.util.Random;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -1838,6 +1839,342 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    /**
+     * Command line git clean as implemented in CliGitAPIImpl does not remove
+     * untracked submodules or files contained in untracked submodule dirs.
+     * JGit clean as implemented in JGitAPIImpl removes untracked submodules.
+     * This test captures that surprising difference between the implementations.
+     *
+     * Command line git as implemented in CliGitAPIImpl supports renamed submodules.
+     * JGit as implemented in JGitAPIImpl does not support renamed submodules.
+     * This test captures that surprising difference between the implementations.
+     *
+     * This test really should be split into multiple tests.
+     * Current transitions in the test include:
+     *   with submodules -> without submodules, with files/dirs of same name
+     *   with submodules -> without submodules, no files/dirs of same name
+     *
+     * See bug reports such as:
+     * JENKINS-22510 - Clean After Checkout Results in Failed to Checkout Revision
+     * JENKINS-8053  - Git submodules are cloned too early and not removed once the revToBuild has been checked out
+     * JENKINS-14083 - Build can't recover from broken submodule path
+     * JENKINS-15399 - Changing remote URL doesn't update submodules
+     *
+     * @throws Exception on test failure
+     */
+    public void test_submodule_checkout_and_clean_transitions() throws Exception {
+        w = clone(localMirror());
+        assertSubmoduleDirs(w.repo, false, false);
+
+        String subBranch = "tests/getSubmodules";
+        String subRefName = "origin/" + subBranch;
+        String ntpDirName = "modules/ntp";
+        String contributingFileName = "modules/ntp/CONTRIBUTING.md";
+        String contributingFileContent = "Puppet Labs modules on the Puppet Forge are open projects";
+
+        File modulesDir = new File(w.repo, "modules");
+        assertDirNotFound(modulesDir);
+
+        File keeperFile = new File(modulesDir, "keeper");
+        assertFileNotFound(keeperFile);
+
+        File ntpDir = new File(modulesDir, "ntp");
+        File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
+        assertDirNotFound(ntpDir);
+        assertFileNotFound(ntpContributingFile);
+
+        File firewallDir = new File(modulesDir, "firewall");
+        assertDirNotFound(firewallDir);
+
+        File sshkeysDir = new File(modulesDir, "sshkeys");
+        File sshkeysModuleFile = new File(sshkeysDir, "Modulefile");
+        assertDirNotFound(sshkeysDir);
+        assertFileNotFound(sshkeysModuleFile);
+
+        /* Checkout a branch which includes submodules (in modules directory) */
+        w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        assertDirExists(modulesDir);
+        assertFileExists(keeperFile);
+        assertFileContents(keeperFile, "");
+        /* Command line git checkout creates empty directories for modules, JGit does not */
+        /* That behavioral difference seems harmless */
+        if (w.git instanceof CliGitAPIImpl) {
+            assertSubmoduleDirs(w.repo, true, false);
+        } else {
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+            assertFileNotFound(ntpContributingFile);
+            assertFileNotFound(sshkeysModuleFile);
+        }
+
+        /* Call submodule update without recursion */
+        w.git.submoduleUpdate().recursive(false).execute();
+        /* Command line git supports renamed submodule dirs, JGit does not */
+        /* JGit silently fails submodule updates on renamed submodule dirs */
+        if (w.git instanceof CliGitAPIImpl) {
+            assertSubmoduleDirs(w.repo, true, true);
+            assertSubmoduleContents(w.repo);
+        } else {
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        /* Call submodule update with recursion */
+        w.git.submoduleUpdate().recursive(true).execute();
+        /* Command line git supports renamed submodule dirs, JGit does not */
+        /* JGit silently fails submodule updates on renamed submodule dirs */
+        if (w.git instanceof CliGitAPIImpl) {
+            assertSubmoduleDirs(w.repo, true, true);
+            assertSubmoduleContents(w.repo);
+        } else {
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        String notSubBranchName = "tests/notSubmodules";
+        String notSubRefName = "origin/" + notSubBranchName;
+        String contributingFileContentFromNonsubmoduleBranch = "This is not a useful contribution";
+
+        /* Checkout a detached head which does not include submodules,
+         * since checkout of a branch does not currently use the "-f"
+         * option (though it probably should).  The checkout includes a file
+         * modules/ntp/CONTRIBUTING.md which collides with a file from the
+         * submodule but is provided from the repository rather than from a
+         * submodule.
+         */
+        // w.git.checkout().ref(notSubRefName).execute();
+        w.git.checkout().ref(notSubRefName).branch(notSubBranchName).deleteBranchIfExist(true).execute();
+        assertDirExists(ntpDir);
+        assertFileExists(ntpContributingFile);
+        assertFileContains(ntpContributingFile, contributingFileContentFromNonsubmoduleBranch);
+        if (w.git instanceof CliGitAPIImpl) {
+            /* submodule dirs exist because git.clean() won't remove untracked submodules */
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+            assertFileExists(sshkeysModuleFile);
+        } else {
+            /* firewallDir and sshKeysDir don't exist because JGit submodule update never created them */
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        /* CLI git clean does not remove submodule remnants, JGit does */
+        w.git.clean();
+        assertDirExists(ntpDir);
+        assertFileExists(ntpContributingFile); /* exists in nonSubmodule branch */
+        if (w.git instanceof CliGitAPIImpl) {
+            /* untracked - CLI clean doesn't remove submodule dirs or their contents */
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+            assertFileExists(sshkeysModuleFile);
+        } else {
+            /* JGit clean removes submodule dirs*/
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        /* Checkout master branch - will leave submodule files untracked */
+        w.git.checkout().ref("origin/master").execute();
+        // w.git.checkout().ref("origin/master").branch("master").execute();
+        if (w.git instanceof CliGitAPIImpl) {
+            /* CLI git clean will not remove untracked submodules */
+            assertDirExists(ntpDir);
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+            assertFileNotFound(ntpContributingFile); /* cleaned because it is in tests/notSubmodules branch */
+            assertFileExists(sshkeysModuleFile);
+        } else {
+            /* JGit git clean removes them */
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        /* git.clean() does not remove submodule remnants in CliGitAPIImpl, does in JGitAPIImpl */
+        w.git.clean();
+        if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+            assertDirExists(ntpDir);
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+        } else {
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        /* Really remove submodule remnant, use git command line double force */
+        if (w.git instanceof CliGitAPIImpl) {
+            w.cmd("git clean -xffd");
+        }
+        assertSubmoduleDirs(w.repo, false, false);
+
+        /* Checkout a branch which *includes submodules* after a prior
+         * checkout with a file which has the same name as a file
+         * provided by a submodule checkout.  Use a detached head,
+         * since checkout of a branch does not currently use the "-f"
+         * option.
+         */
+        assertEquals(ObjectId.fromString("a6dd186704985fdb0c60e60f5c6ea7ea35e082e5"), w.git.revParse(subRefName));
+        // w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        w.git.checkout().ref(subRefName).execute();
+        assertDirExists(modulesDir);
+        if (w.git instanceof CliGitAPIImpl) {
+            assertSubmoduleDirs(w.repo, true, false);
+        } else {
+            /* JGit does not support renamed submodules - creates none of the directories */
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+        }
+
+        w.git.submoduleClean(true);
+        assertSubmoduleDirs(w.repo, true, false);
+
+        if (w.git instanceof JGitAPIImpl) {
+            /* submoduleUpdate().recursive(true).execute() throws an exception */
+            return;
+        }
+        w.git.submoduleUpdate().recursive(true).execute();
+        assertSubmoduleDirs(w.repo, true, true);
+        assertSubmoduleContents(w.repo);
+
+        if (w.git instanceof CliGitAPIImpl) {
+            // This is a low value section of the test. Does not assert anything
+            // about the result of setupSubmoduleUrls
+            ObjectId headId = w.git.revParse("HEAD");
+            List<Branch> branches = new ArrayList<>();
+            branches.add(new Branch("HEAD", headId));
+            branches.add(new Branch(subRefName, headId));
+            Revision head = new Revision(headId, branches);
+            w.cgit().setupSubmoduleUrls(head, listener);
+            assertSubmoduleDirs(w.repo, true, true);
+            assertSubmoduleContents(w.repo);
+        }
+    }
+
+    /* Submodule checkout in JGit does not support renamed submodules.
+     * The test branch intentionally includes a renamed submodule, so this test
+     * is not run with JGit.
+     */
+    @NotImplementedInJGit
+    public void test_submodule_checkout_simple() throws Exception {
+        w = clone(localMirror());
+        assertSubmoduleDirs(w.repo, false, false);
+
+        /* Checkout a branch which includes submodules (in modules directory) */
+        String subBranch = "tests/getSubmodules";
+        String subRefName = "origin/" + subBranch;
+        w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        assertSubmoduleDirs(w.repo, true, false);
+
+        w.git.submoduleUpdate().recursive(true).execute();
+        assertSubmoduleDirs(w.repo, true, true);
+        assertSubmoduleContents(w.repo);
+    }
+
+    private String listDir(File dir) {
+        if (dir == null || !dir.exists()) {
+            return "";
+        }
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return "";
+        }
+        StringBuilder fileList = new StringBuilder();
+        for (File file : files) {
+            fileList.append(file.getName());
+            fileList.append(',');
+        }
+        if (fileList.length() > 0) {
+            fileList.deleteCharAt(fileList.length() - 1);
+        }
+        return fileList.toString();
+    }
+
+    private void assertFileExists(File file) {
+        assertTrue(file + " not found, peer files: " + listDir(file.getParentFile()), file.exists());
+    }
+
+    private void assertFileNotFound(File file) {
+        assertFalse(file + " found, peer files: " + listDir(file.getParentFile()), file.exists());
+    }
+
+    private void assertDirExists(File dir) {
+        assertFileExists(dir);
+        assertTrue(dir + " is not a directory", dir.isDirectory());
+    }
+
+    private void assertDirNotFound(File dir) {
+        assertFileNotFound(dir);
+    }
+
+    private void assertFileContains(File file, String expectedContent) throws IOException {
+        assertFileExists(file);
+        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
+        assertTrue(message, fileContent.contains(expectedContent));
+    }
+
+    private void assertFileContents(File file, String expectedContent) throws IOException {
+        assertFileExists(file);
+        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        assertEquals(file + " wrong content", expectedContent, fileContent);
+    }
+
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+        final File modulesDir = new File(w.repo, "modules");
+        final File ntpDir = new File(modulesDir, "ntp");
+        final File firewallDir = new File(modulesDir, "firewall");
+        final File keeperFile = new File(modulesDir, "keeper");
+        final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
+        final File sshkeysDir = new File(modulesDir, "sshkeys");
+        final File sshkeysModuleFile = new File(sshkeysDir, "Modulefile");
+        if (dirsShouldExist) {
+            assertDirExists(modulesDir);
+            assertDirExists(ntpDir);
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+            /* keeperFile is in the submodules branch, but is a plain file */
+            assertFileExists(keeperFile);
+        } else {
+            assertDirNotFound(modulesDir);
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+            /* keeperFile is in the submodules branch, but is a plain file */
+            assertFileNotFound(keeperFile);
+        }
+        if (filesShouldExist) {
+            assertFileExists(ntpContributingFile);
+            assertFileExists(sshkeysModuleFile);
+        } else {
+            assertFileNotFound(ntpContributingFile);
+            assertFileNotFound(sshkeysModuleFile);
+        }
+    }
+
+    private void assertSubmoduleContents(File repo) throws IOException {
+        final File modulesDir = new File(w.repo, "modules");
+
+        final File sshkeysDir = new File(modulesDir, "sshkeys");
+        final File sshkeysModuleFile = new File(sshkeysDir, "Modulefile");
+        assertFileExists(sshkeysModuleFile);
+
+        final File keeperFile = new File(modulesDir, "keeper");
+        final String keeperContent = "";
+        assertFileExists(keeperFile);
+        assertFileContents(keeperFile, keeperContent);
+
+        final File ntpDir = new File(modulesDir, "ntp");
+        final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
+        final String ntpContributingContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        assertFileExists(ntpContributingFile);
+        assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
+    }
+
     public void test_no_submodules() throws IOException, InterruptedException {
         w.init();
         w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
@@ -1886,7 +2223,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().submoduleSync();
         assertFixSubmoduleUrlsThrows();
     }
-
 
     @NotImplementedInJGit
     public void test_trackingSubmodule() throws Exception {
@@ -2134,7 +2470,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     @NotImplementedInJGit
     public void test_sparse_checkout() throws Exception {
-        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax 
+        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
          * required by the plugin implementation does not work in git 1.7.1.
          */
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
@@ -2716,7 +3052,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file1 does not exist after merge", w.exists("file1"));
 
         /* Git 1.7.1 does not understand the --orphan argument to checkout.
-         * Stop the test here on older git versions 
+         * Stop the test here on older git versions
          */
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             return;
