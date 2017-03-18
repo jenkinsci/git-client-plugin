@@ -1207,6 +1207,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return !"false".equals(line);
     }
 
+    /**
+     * Returns true if this repository is configured as a shallow clone.
+     * Shallow clone requires command line git 1.9 or later.
+     * @return true if this repository is configured as a shallow clone
+     */
     public boolean isShallowRepository() {
         return new File(workspace, pathJoin(".git", "shallow")).exists();
     }

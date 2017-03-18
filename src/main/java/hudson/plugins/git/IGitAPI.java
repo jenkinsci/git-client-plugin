@@ -167,6 +167,13 @@ public interface IGitAPI extends GitClient {
      */
     void reset() throws GitException, InterruptedException;
 
+    /**
+     * Push revspec to repository.
+     * @param repository git repository to receive commits
+     * @param revspec commits to be pushed
+     * @throws GitException if underlying git operating fails
+     * @throws InterruptedException if interrupted
+     */
     void push(RemoteConfig repository, String revspec) throws GitException, InterruptedException;
 
     /**
