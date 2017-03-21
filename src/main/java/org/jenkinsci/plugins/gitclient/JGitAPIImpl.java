@@ -85,6 +85,7 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.SymbolicRef;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -778,6 +779,51 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         references.put(refName, refObjectId);
                     }
                 }
+        } catch (GitAPIException | IOException e) {
+            throw new GitException(e);
+        }
+        return references;
+    }
+
+    @Override
+    public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
+            throws GitException, InterruptedException {
+        Map<String, String> references = new HashMap<>();
+        String regexPattern = null;
+        if (pattern != null) {
+            regexPattern = createRefRegexFromGlob(pattern);
+        }
+        // HACK ALERT... JGit doesn't give the info we require hard-coding HEAD symref support only based on pre 1.8.5
+        // behaviour of the git command line - whereby it would just look for the branch with the same ref as HEAD
+        // and if there are multiple matches and one of them is master then we can assume master... otherwise
+        // throw our hands up and say "no clue"
+        if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
+            return references;
+        }
+        try (Repository repo = openDummyRepository()) {
+            LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
+            lsRemote.setRemote(url);
+            lsRemote.setCredentialsProvider(getProvider());
+            Map<String, Ref> refs = lsRemote.callAsMap();
+            Ref target = refs.get(Constants.HEAD);
+            if (target == null) {
+                return references;
+            }
+            Set<String> candidates = new HashSet<>();
+            for (Map.Entry<String, Ref> entry: refs.entrySet()) {
+                if (entry.getValue() == target) {
+                    continue;
+                }
+                if (entry.getValue().getObjectId().equals(target.getObjectId())) {
+                    candidates.add(entry.getKey());
+                }
+            }
+            if (candidates.size() == 1) {
+                references.put(Constants.HEAD, candidates.iterator().next());
+            } else if (candidates.contains(Constants.R_HEADS+Constants.MASTER)) {
+                // if multiple heads have the same object ID, git 1.8.4 and earlier would give priority to master
+                references.put(Constants.HEAD, Constants.R_HEADS + Constants.MASTER);
+            } // else we have an inconclusive resolution
         } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }

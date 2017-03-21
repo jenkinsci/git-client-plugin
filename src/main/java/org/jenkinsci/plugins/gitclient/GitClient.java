@@ -620,6 +620,18 @@ public interface GitClient {
     Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
 
     /**
+     * List symbolic references in a remote repository. Equivalent to <tt>git ls-remote --symref &lt;repository&gt;
+     * [&lt;refs&gt;]</tt>.
+     *
+     * @param remoteRepoUrl Remote repository URL.
+     * @param pattern       Only references matching the given pattern are displayed.
+     * @return a map of references name and its underlying reference. Empty if none.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException  if interrupted.
+     */
+    Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern) throws GitException, InterruptedException;
+
+    /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
      *
      * @param revName a commit sha1 or tag/branch refname

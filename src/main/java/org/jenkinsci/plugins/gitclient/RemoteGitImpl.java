@@ -548,6 +548,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern)
+            throws GitException, InterruptedException {
+        return proxy.getRemoteSymbolicReferences(remoteRepoUrl, pattern);
+    }
+
+    /** {@inheritDoc} */
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
         return proxy.revParse(revName);
     }

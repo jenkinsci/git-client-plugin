@@ -2611,7 +2611,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return references;
     }
 
-    //
+    @Override
+    public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
+            throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
+        args.add("--symref");
+        args.add(url);
+        if (pattern != null) {
+            args.add(pattern);
+        }
+
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) cred = defaultCredentials;
+
+        String result = launchCommandWithCredentials(args, null, cred, url);
+
+        Map<String, String> references = new HashMap<>();
+        String[] lines = result.split("\n");
+        Pattern symRefPattern = Pattern.compile("^ref:\\s+([^ ]+)\\s+([^ ]+)$");
+        for (String line : lines) {
+            Matcher matcher = symRefPattern.matcher(line);
+            if (matcher.matches()) {
+                references.put(matcher.group(2), matcher.group(1));
+            } else  if (line.length() < 41) {
+                throw new GitException("unexpected ls-remote output " + line);
+            }
+        }
+        return references;
+    }
+
+//
     //
     // Legacy Implementation of IGitAPI
     //

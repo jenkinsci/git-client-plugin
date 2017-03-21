@@ -3372,6 +3372,23 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(references.isEmpty());
     }
 
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+    public void test_getRemoteSymbolicReferences() throws Exception {
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
+    }
+
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+    public void test_getRemoteSymbolicReferences_withMatchingPattern() throws Exception {
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
+        assertThat(references.size(), is(1));
+    }
+
     private Properties parseLsRemote(File file) throws IOException
     {
         Properties properties = new Properties();
