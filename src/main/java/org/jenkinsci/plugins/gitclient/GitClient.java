@@ -621,11 +621,13 @@ public interface GitClient {
 
     /**
      * List symbolic references in a remote repository. Equivalent to <tt>git ls-remote --symref &lt;repository&gt;
-     * [&lt;refs&gt;]</tt>.
+     * [&lt;refs&gt;]</tt>. Note: the response may be empty for multiple reasons
      *
      * @param remoteRepoUrl Remote repository URL.
      * @param pattern       Only references matching the given pattern are displayed.
-     * @return a map of references name and its underlying reference. Empty if none.
+     * @return a map of references name and its underlying reference. Empty if none or if the remote does not report
+     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
+     * (e.g. command line Git prior to 2.8.0).
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException  if interrupted.
      */

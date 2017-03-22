@@ -840,38 +840,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             }
                         }
                     }
-                } catch (URISyntaxException | NotSupportedException | TransportException e) {
                     // ignore this is a total hack
                 }
             } catch (IllegalAccessException | NoSuchFieldException e) {
-                // ignore, we just have to try it the Git 1.8.4 way
+                // ignore, caller will just have to try it the Git 1.8.4 way, we'll return an empty map
             }
-
-            LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
-            lsRemote.setRemote(url);
-            lsRemote.setCredentialsProvider(getProvider());
-            Map<String, Ref> refs = lsRemote.callAsMap();
-
-            Ref target = refs.get(Constants.HEAD);
-            if (target == null) {
-                return references;
-            }
-            Set<String> candidates = new HashSet<>();
-            for (Map.Entry<String, Ref> entry: refs.entrySet()) {
-                if (entry.getValue() == target) {
-                    continue;
-                }
-                if (entry.getValue().getObjectId().equals(target.getObjectId())) {
-                    candidates.add(entry.getKey());
-                }
-            }
-            if (candidates.size() == 1) {
-                references.put(Constants.HEAD, candidates.iterator().next());
-            } else if (candidates.contains(Constants.R_HEADS+Constants.MASTER)) {
-                // if multiple heads have the same object ID, git 1.8.4 and earlier would give priority to master
-                references.put(Constants.HEAD, Constants.R_HEADS + Constants.MASTER);
-            } // else we have an inconclusive resolution
-        } catch (GitAPIException | IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new GitException(e);
         }
         return references;
