@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assume.assumeThat;
 
 import hudson.FilePath;
 import hudson.Launcher;
@@ -3378,7 +3377,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getRemoteSymbolicReferences with listing all references
      */
     public void test_getRemoteSymbolicReferences() throws Exception {
-        assumeThat(hasWorkingGetRemoteSymbolicReferences(), is(true));
+        if (!hasWorkingGetRemoteSymbolicReferences()) return; // JUnit 3 replacement for assumeThat
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
     }
@@ -3389,7 +3388,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getRemoteSymbolicReferences with listing all references
      */
     public void test_getRemoteSymbolicReferences_withMatchingPattern() throws Exception {
-        assumeThat(hasWorkingGetRemoteSymbolicReferences(), is(true));
+        if (!hasWorkingGetRemoteSymbolicReferences()) return; // JUnit 3 replacement for assumeThat
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
         assertThat(references.size(), is(1));
