@@ -1,3 +1,4 @@
+
 package org.jenkinsci.plugins.gitclient;
 
 
@@ -2642,7 +2643,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return references;
     }
 
-//
+    //
     //
     // Legacy Implementation of IGitAPI
     //
