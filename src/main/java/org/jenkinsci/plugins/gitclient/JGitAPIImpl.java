@@ -796,12 +796,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Map<String, String> references = new HashMap<>();
         String regexPattern = null;
         if (pattern != null) {
-            regexPattern = createRefRegexFromGlob(pattern);
+            regexPattern = replaceGlobCharsWithRegExChars(pattern);
         }
-        // HACK ALERT... JGit doesn't give the info we require hard-coding HEAD symref support only based on pre 1.8.5
-        // behaviour of the git command line - whereby it would just look for the branch with the same ref as HEAD
-        // and if there are multiple matches and one of them is master then we can assume master... otherwise
-        // throw our hands up and say "no clue"
         if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
             return references;
         }
@@ -855,12 +851,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
-        if(glob.startsWith("refs/")) {
-            out.append("^");
-        } else {
-            out.append("^.*/");
+        out.append('^');
+        if(!glob.startsWith("refs/")) {
+            out.append(".*/");
         }
+        out.append(replaceGlobCharsWithRegExChars(glob));
+        out.append('$');
+        return out.toString();
+    }
 
+    private String replaceGlobCharsWithRegExChars(String glob)
+    {
+        StringBuilder out = new StringBuilder();
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
             switch(c) {
@@ -881,7 +883,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 break;
             }
         }
-        out.append('$');
         return out.toString();
     }
 
