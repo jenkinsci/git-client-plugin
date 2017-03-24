@@ -17,6 +17,11 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         return Git.with(listener, env).in(ws).using("git").getClient();
     }
 
+    @Override
+    protected boolean hasWorkingGetRemoteSymbolicReferences() {
+        return ((CliGitAPIImpl)(w.git)).isAtLeastVersion(2,8,0,0);
+    }
+
     private static boolean cliGitDefaultsSet = false;
 
     private void setCliGitDefaults() throws Exception {

@@ -30,7 +30,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +64,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -71,6 +74,7 @@ import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
+import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
@@ -85,6 +89,7 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.SymbolicRef;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -97,6 +102,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
+import org.eclipse.jgit.transport.BasePackFetchConnection;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.HttpTransport;
@@ -779,6 +785,67 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
         } catch (GitAPIException | IOException e) {
+            throw new GitException(e);
+        }
+        return references;
+    }
+
+    @Override
+    public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
+            throws GitException, InterruptedException {
+        Map<String, String> references = new HashMap<>();
+        String regexPattern = null;
+        if (pattern != null) {
+            regexPattern = createRefRegexFromGlob(pattern);
+        }
+        // HACK ALERT... JGit doesn't give the info we require hard-coding HEAD symref support only based on pre 1.8.5
+        // behaviour of the git command line - whereby it would just look for the branch with the same ref as HEAD
+        // and if there are multiple matches and one of them is master then we can assume master... otherwise
+        // throw our hands up and say "no clue"
+        if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
+            return references;
+        }
+        try (Repository repo = openDummyRepository()) {
+            try {
+                // HACK HACK HACK
+                // The symref info is advertised as a capability starting from git 1.8.5
+                // So all we need to do is ask JGit to fetch the refs and then (because JGit adds all capabilities
+                // into a Set) we iterate the resulting set to find any that matching symref=$symref:$realref
+                // of course JGit does not expose a way to iterate the capabilities, so instead we have to hack
+                // and peek inside
+                // TODO if JGit implement https://bugs.eclipse.org/bugs/show_bug.cgi?id=514052 we should switch to that
+                Class<?> basePackConnection = BasePackFetchConnection.class.getSuperclass();
+                Field remoteCapablities = basePackConnection.getDeclaredField("remoteCapablities");
+                remoteCapablities.setAccessible(true);
+                try (Transport transport = Transport.open(repo, url)) {
+                    transport.setCredentialsProvider(getProvider());
+                    try (FetchConnection fc = transport.openFetch()) {
+                        fc.getRefs();
+                        if (fc instanceof BasePackFetchConnection) {
+                            Object o = remoteCapablities.get(fc);
+                            if (o instanceof Set) {
+                                boolean hackWorked = false;
+                                for (String capability: (Set<String>)o) {
+                                    if (capability.startsWith("symref=")) {
+                                        hackWorked = true;
+                                        int index = capability.indexOf(":", 7);
+                                        if (index != -1) {
+                                            references.put(capability.substring(7, index), capability.substring(index+1));
+                                        }
+                                    }
+                                }
+                                if (hackWorked) {
+                                    return references;
+                                }
+                            }
+                        }
+                    }
+                    // ignore this is a total hack
+                }
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                // ignore, caller will just have to try it the Git 1.8.4 way, we'll return an empty map
+            }
+        } catch (IOException | URISyntaxException e) {
             throw new GitException(e);
         }
         return references;

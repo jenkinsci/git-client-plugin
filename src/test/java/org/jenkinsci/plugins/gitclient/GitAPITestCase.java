@@ -6,6 +6,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assume.assumeThat;
+
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
@@ -3370,6 +3372,27 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("unexpected ls-remote output"));
         }
         assertTrue(references.isEmpty());
+    }
+
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+    public void test_getRemoteSymbolicReferences() throws Exception {
+        assumeThat(hasWorkingGetRemoteSymbolicReferences(), is(true));
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
+    }
+
+    protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
+
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+    public void test_getRemoteSymbolicReferences_withMatchingPattern() throws Exception {
+        assumeThat(hasWorkingGetRemoteSymbolicReferences(), is(true));
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + Constants.MASTER)));
+        assertThat(references.size(), is(1));
     }
 
     private Properties parseLsRemote(File file) throws IOException
