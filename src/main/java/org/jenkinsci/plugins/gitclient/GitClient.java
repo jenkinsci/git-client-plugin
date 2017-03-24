@@ -613,7 +613,7 @@ public interface GitClient {
      *      Limit to only refs/tags.
      *      headsOnly and tagsOnly are not mutually exclusive;
      *      when both are true, references stored in refs/heads and refs/tags are displayed.
-     * @return a map of references name and its commit hash. Empty if none.
+     * @return a map of reference names and their commit hashes. Empty if none.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -625,7 +625,7 @@ public interface GitClient {
      *
      * @param remoteRepoUrl Remote repository URL.
      * @param pattern       Only references matching the given pattern are displayed.
-     * @return a map of references name and its underlying reference. Empty if none or if the remote does not report
+     * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
      * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
      * (e.g. command line Git prior to 2.8.0).
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
