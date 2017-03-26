@@ -198,6 +198,17 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         doTest("git version 2.5.0.windows.1", versions);
     }
 
+    public void test_git_version_windows_2_10_1_1() {
+        VersionTest[] versions = {
+            new VersionTest(true,  2, 10, 1, 1),
+            new VersionTest(true,  2, 10, 1, 0),
+            new VersionTest(true,  2, 10, 0, 1),
+            new VersionTest(false, 2, 10, 1, 2),
+            new VersionTest(false, 2, 10, 2, 0)
+        };
+        doTest("git version 2.10.1.windows.1", versions);
+    }
+
     public void test_git_version_redhat_5() {
         VersionTest[] versions = {
             new VersionTest(true,  1, 8, 2, 1),
