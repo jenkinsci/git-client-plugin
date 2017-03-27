@@ -1497,4 +1497,29 @@ public class GitClientTest {
         assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
                 hasEntry(Constants.HEAD, "refs/heads/new-branch"));
     }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteSymbolicReferences_URI_Syntax_old_jgit() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is(not("git")));
+        gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_URI_Syntax_old_git() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is("git"));
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD).keySet(), hasSize(0));
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteReferences_URI_Syntax() throws Exception {
+        gitClient.getRemoteReferences("error: invalid repo URL", Constants.HEAD, false, false);
+    }
 }
