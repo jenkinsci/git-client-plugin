@@ -77,7 +77,7 @@ public class FilePermissionsTest {
         GitClient git = Git.with(listener, new hudson.EnvVars()).in(newRepo).using("git").getClient();
         String repoURL = repo.toURI().toURL().toString();
         git.clone_().repositoryName("origin").url(repoURL).execute();
-        git.checkout("origin/master");
+        git.checkoutBranch("master", "origin/master");
         return newRepo;
     }
 
