@@ -48,12 +48,14 @@ public class FilePermissionsTest {
 
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
+        if (isWindows()) return;
         repo = com.google.common.io.Files.createTempDir();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
 
     @AfterClass
     public static void verifyTestRepo() throws IOException, InterruptedException {
+        if (isWindows()) return;
         File newRepo = null;
         try {
             newRepo = cloneTestRepo(repo);
