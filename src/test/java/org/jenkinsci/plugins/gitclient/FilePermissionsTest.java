@@ -15,7 +15,6 @@ import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -58,7 +57,7 @@ public class FilePermissionsTest {
         File newRepo = null;
         try {
             newRepo = cloneTestRepo(repo);
-            List<Integer[]> permissions = (List<Integer[]>) permissionBits();
+            List<Integer[]> permissions = permissionBits();
             for (Integer[] permArray : permissions) {
                 int filePermission = permArray[0];
                 verifyFile(repo, filePermission);
@@ -102,8 +101,8 @@ public class FilePermissionsTest {
     }
 
     @Parameterized.Parameters
-    public static Collection permissionBits() throws MalformedURLException, FileNotFoundException, IOException {
-        List<Object[]> permissions = new ArrayList<>();
+    public static List<Integer[]> permissionBits() throws MalformedURLException, FileNotFoundException, IOException {
+        List<Integer[]> permissions = new ArrayList<>();
         /* 0640 and 0740 are the only permissions to be tested */
         Integer[] permissionArray0640 = {0640};
         permissions.add(permissionArray0640);

@@ -1253,7 +1253,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch(new URIish(r.repo.toString()), Collections.EMPTY_LIST);
+        w.git.fetch(new URIish(r.repo.toString()), Collections.<RefSpec>emptyList());
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
     }
 

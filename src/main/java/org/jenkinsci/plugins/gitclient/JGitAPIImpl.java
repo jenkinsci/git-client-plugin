@@ -821,7 +821,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             Object o = remoteCapablities.get(fc);
                             if (o instanceof Set) {
                                 boolean hackWorked = false;
-                                for (String capability: (Set<String>)o) {
+                                @SuppressWarnings("unchecked") /* compile-time type erasure causes this */
+                                Set<String> capabilities = (Set<String>)o;
+                                for (String capability: capabilities) {
                                     if (capability.startsWith("symref=")) {
                                         hackWorked = true;
                                         int index = capability.indexOf(":", 7);

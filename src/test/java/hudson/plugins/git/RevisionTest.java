@@ -118,7 +118,7 @@ public class RevisionTest {
 
         String mySHA1 = "aaaaaaaa72a6433fe503d294ebb7d5691b590269";
         Branch myBranch = new Branch(myBranchName, ObjectId.fromString(mySHA1));
-        Collection<Branch> branches = new ArrayList();
+        Collection<Branch> branches = new ArrayList<>();
         Revision rev = new Revision(ObjectId.fromString(this.SHA1a), branches);
         assertFalse(rev.containsBranchName(myBranchName));
         branches.add(myBranch);
