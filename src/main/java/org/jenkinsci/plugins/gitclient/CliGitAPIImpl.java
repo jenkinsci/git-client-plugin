@@ -837,7 +837,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--no-abbrev", "--raw", "--diff-filter=ACDMRTUXB", "-M");
                 args.add("--format="+RAW);
                 if (n!=null)
                     args.add("-n").add(n);
@@ -846,14 +846,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (out==null)  throw new IllegalStateException();
 
-                // "git whatchanged" std output gives us byte stream of data
+                // "git log" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                        throw new GitException("Error launching git whatchanged");
+                        throw new GitException("Error launching git log");
                 } catch (IOException e) {
-                    throw new GitException("Error launching git whatchanged",e);
+                    throw new GitException("Error launching git log",e);
                 }
             }
         };

@@ -157,7 +157,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
-        /* If workspace is null, then default to current directory to match 
+        /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace);
         this.listener = listener;
@@ -1174,7 +1174,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Commit to format.
          * @param parent
          *      Optional parent commit to produce the diff against. This only matters
-         *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
+         *      for merge commits.
          */
         @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
                 justification = "Windows git implementation requires specific line termination")

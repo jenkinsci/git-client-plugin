@@ -865,7 +865,7 @@ public interface GitClient {
     public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -885,7 +885,7 @@ public interface GitClient {
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
