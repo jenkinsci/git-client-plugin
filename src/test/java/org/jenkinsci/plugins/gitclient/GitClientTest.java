@@ -157,17 +157,30 @@ public class GitClientTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        File oneFile = new File(repoRoot, "One-File.txt");
-        try (PrintWriter writer = new PrintWriter(oneFile, "UTF-8")) {
-            writer.printf("A random UUID: %s\n", UUID.randomUUID().toString());
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-            throw new GitException(ex);
-        }
-        gitClient.add("One-File.txt");
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        return commitFile("One-File.txt", content, commitMessage);
+    }
+
+    private ObjectId commitFile(final String path, final String content, final String commitMessage) throws Exception {
+        createFile(path, content);
+        gitClient.add(path);
         gitClient.commit(commitMessage);
         List<ObjectId> headList = gitClient.revList(Constants.HEAD);
         assertThat(headList.size(), is(greaterThan(0)));
         return headList.get(0);
+    }
+
+    public void createFile(String path, String content) throws Exception {
+        File aFile = new File(repoRoot, path);
+        File parentDir = aFile.getParentFile();
+        if (parentDir != null) {
+            parentDir.mkdirs();
+        }
+        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+            writer.printf(content);
+        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+            throw new GitException(ex);
+        }
     }
 
     private final Random random = new Random();
@@ -192,6 +205,17 @@ public class GitClientTest {
 
     private String randomEmail(String name) {
         return name.replaceAll(" ", ".") + "@middle.earth";
+    }
+
+    @Test
+    @Issue("43198")
+    public void testCleanSubdirGitignore() throws Exception {
+        final String filename = "this_is/not_ok/more/subdirs/file.txt";
+        commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
+        createFile(filename, "hi there");
+        assertFileInWorkingDir(gitClient, filename);
+        gitClient.clean();
+        assertDirNotInWorkingDir(gitClient, "this_is");
     }
 
     @Test

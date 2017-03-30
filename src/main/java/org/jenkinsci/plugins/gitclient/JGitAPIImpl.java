@@ -1268,8 +1268,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             git.clean().setCleanDirectories(true).setIgnore(false).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
+        // Fix JENKINS-43198:
+        // don't throw a "Could not delete file" if the file has actually been deleted
         } catch(JGitInternalException e) {
-            // don't throw a "Could not delete file" if the file has actually been deleted
             if (e.getMessage().startsWith("Could not delete file")) {
                 String path = e.getMessage().substring(22);
                 if (Files.exists(Paths.get(path))) {
