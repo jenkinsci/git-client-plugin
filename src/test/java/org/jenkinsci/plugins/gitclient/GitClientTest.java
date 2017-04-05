@@ -340,12 +340,17 @@ public class GitClientTest {
     @Test
     @Issue("JENKINS-43198")
     public void testCleanSubdirGitignore() throws Exception {
-        final String filename = "this_is/not_ok/more/subdirs/file.txt";
-        commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
-        createFile(filename, "hi there");
-        assertFileInWorkingDir(gitClient, filename);
+        final String filename1 =  "this_is/not_ok/more/subdirs/file.txt";
+        final String filename2 =  "this_is_also/not_ok_either/more/subdirs/file.txt";
+        commitFile(".gitignore", "/this_is/not_ok\n/this_is_also/not_ok_either\n", "set up gitignore");
+        createFile(filename1, "hi there");
+        createFile(filename2, "hi there");
+        assertFileInWorkingDir(gitClient, filename1);
+        assertFileInWorkingDir(gitClient, filename2);
         gitClient.clean();
         assertDirNotInWorkingDir(gitClient, "this_is");
+        assumeThat(gitImplName, is("git")); // Temporary until JENKINS-43198 is fixed in JGit 1.10.1 or later
+        assertDirNotInWorkingDir(gitClient, "this_is_also");
     }
 
     @Test
