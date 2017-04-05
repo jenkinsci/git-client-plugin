@@ -210,12 +210,16 @@ public class GitClientTest {
     @Test
     @Issue("43198")
     public void testCleanSubdirGitignore() throws Exception {
-        final String filename = "this_is/not_ok/more/subdirs/file.txt";
-        commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
-        createFile(filename, "hi there");
-        assertFileInWorkingDir(gitClient, filename);
+        final String filename1 =  "this_is/not_ok/more/subdirs/file.txt";
+        final String filename2 =  "this_is_also/not_ok_either/more/subdirs/file.txt";
+        commitFile(".gitignore", "/this_is/not_ok\n/this_is_also/not_ok_either\n", "set up gitignore");
+        createFile(filename1, "hi there");
+        createFile(filename2, "hi there");
+        assertFileInWorkingDir(gitClient, filename1);
+        assertFileInWorkingDir(gitClient, filename2);
         gitClient.clean();
         assertDirNotInWorkingDir(gitClient, "this_is");
+        assertDirNotInWorkingDir(gitClient, "this_is_also");
     }
 
     @Test
