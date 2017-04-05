@@ -11,7 +11,7 @@ node {
 
   stage('Build') {
     /* Call the maven build. */
-    mvn "clean install -B -V -U -e -Dsurefire.useFile=false -Dmaven.test.failure.ignore=true"
+    mvn "clean install -B -V -U -e -Dsurefire.useFile=false -Dmaven.test.failure.ignore=true -Dsurefire.rerunFailingTestsCount=4"
   }
 
   /* Save Results. */
