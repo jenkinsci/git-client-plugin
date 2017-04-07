@@ -48,6 +48,9 @@ import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 // import org.jvnet.hudson.test.Issue;
 /**
+ * GitClient tests, parameterized for multiple git implementations.
+ * Refer to conditionals in the tests for those cases where the
+ * implementations behave differently.
  *
  * @author Mark Waite
  */
@@ -403,6 +406,27 @@ public class GitClientTest {
         assertEquals(1, gitDirListing.length);
     }
 
+    private void assertGitDirContents(GitClient gitClient) throws Exception {
+        assertTrue(gitClient.hasGitRepo());
+        File gitDir = new File(repoFolder.getRoot(), ".git");
+        File[] expectedDirsJGit = { // CLI git && JGit
+            new File(gitDir, "branches"),
+            new File(gitDir, "config"),
+            new File(gitDir, "HEAD"),
+            new File(gitDir, "hooks"),
+            new File(gitDir, "objects"),
+            new File(gitDir, "refs"),};
+        List<File> gitDirListing = Arrays.asList(gitDir.listFiles());
+        assertThat(gitDirListing, hasItems(expectedDirsJGit));
+        if (gitImplName.equals("git")) {
+            File[] additionalDirsCliGit = { // CLI git only
+                new File(gitDir, "description"),
+                new File(gitDir, "FETCH_HEAD"),
+                new File(gitDir, "info"),};
+            assertThat(gitDirListing, hasItems(additionalDirsCliGit));
+        }
+    }
+
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
@@ -434,11 +458,13 @@ public class GitClientTest {
             default:
             case 0:
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
+                System.out.println("Last fetch path: " + lastFetchPath);
                 break;
             case 1:
                 URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
                 boolean fetchTags = random.nextBoolean();
                 client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
+                System.out.println("Last fetch path: " + lastFetchPath + " with tags - " + fetchTags);
                 break;
         }
     }
@@ -449,6 +475,18 @@ public class GitClientTest {
         assertEmptyWorkingDir(gitClient);
         /* Fetch from origin repo */
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
+
+        /* Gather diagnostic information in case checkout fails */
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        System.out.println("Last fetch " + lastFetchPath + " HEAD rev-parse output is " + Arrays.toString(head));
+        String[] status = gitCmd.run("status");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
+        String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
 
         /* Checkout a commit after README was added, before src directory was added */
         String ref = "5a865818566c9d03738cdcd49cc0a1543613fd41";
@@ -475,7 +513,21 @@ public class GitClientTest {
 
     @Test
     public void testCheckout_String_String() throws Exception {
+        assertEmptyWorkingDir(gitClient);
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
+
+        /* Gather diagnostic information in case checkout fails */
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        System.out.println("Last fetch " + lastFetchPath + " HEAD rev-parse output is " + Arrays.toString(head));
+        String[] status = gitCmd.run("status");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
+        String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
+
         int branchNumber = 10 + random.nextInt(80);
         String baseName = "branchA-";
         String branchName = baseName + branchNumber++;
@@ -507,7 +559,21 @@ public class GitClientTest {
 
     @Test
     public void testCheckout_0args() throws Exception {
+        assertEmptyWorkingDir(gitClient);
         fetch(gitClient, "origin", "+refs/heads/*:refs/remotes/origin/*");
+        assertGitDirContents(gitClient);
+
+        /* Gather diagnostic information in case checkout fails */
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] head = gitCmd.run("rev-parse", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        System.out.println("Last fetch " + lastFetchPath + " HEAD rev-parse output is " + Arrays.toString(head));
+        String[] status = gitCmd.run("status");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + "'", status.length > 0);
+        String[] logAll = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "--all");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", logAll: '" + Arrays.toString(logAll) + "'", logAll.length > 1);
+        String[] log = gitCmd.run("log", "--graph", "--pretty=oneline", "--abbrev-commit", "--decorate", "5a865818566c9d03738cdcd49cc0a1543613fd41");
+        assertTrue("Last fetch " + lastFetchPath + ", status: '" + Arrays.toString(status) + ", log: '" + Arrays.toString(log) + "', logAll: '" + Arrays.toString(logAll) + "'", log.length > 1);
+
         int branchNumber = 10 + random.nextInt(80);
         String baseName = "branchA-";
         String branchName = baseName + branchNumber++;
