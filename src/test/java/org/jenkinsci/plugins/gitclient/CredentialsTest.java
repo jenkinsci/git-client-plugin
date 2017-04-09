@@ -28,6 +28,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -42,6 +43,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.ClassRule;
+import org.junit.rules.Timeout;
 
 /**
  *
@@ -71,6 +73,9 @@ public class CredentialsTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(7);
 
     private int logCount;
     private LogHandler handler;
@@ -299,7 +304,7 @@ public class CredentialsTest {
 
     }
 
-    @Test
+    // @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
@@ -365,6 +370,14 @@ public class CredentialsTest {
         /* prune opens a remote connection to list remote branches */
         git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
         checkExpectedLogSubstring();
+    }
+
+    @Test
+    public void testRemoteReferencesWithCredentials() throws Exception {
+        addCredential(username, password, privateKey);
+        // assertThat(git.getRemoteReferences(gitRepoURL, null, true, false).keySet(), hasItems("refs/heads/master"));
+        // assertThat(git.getRemoteReferences(gitRepoURL, null, true, true).keySet(), hasItems("refs/heads/master"));
+        assertThat(git.getRemoteReferences(gitRepoURL, "master", true, true).keySet(), hasItems("refs/heads/master"));
     }
 
     private String show(String name, String value) {
