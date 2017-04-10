@@ -41,6 +41,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -2149,7 +2150,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"))) {
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
 		    for(String path : paths) {
 			writer.println(path);
 		    }
@@ -2350,8 +2351,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File f = null;
         try {
             f = File.createTempFile("gitcommit", ".txt");
-            try (FileOutputStream fos = new FileOutputStream(f)) {
-                fos.write(message.getBytes(Charset.defaultCharset().toString()));
+            try (OutputStream out = Files.newOutputStream(f.toPath())) {
+                out.write(message.getBytes(Charset.defaultCharset().toString()));
             }
             launchCommand("commit", "-F", f.getAbsolutePath());
 

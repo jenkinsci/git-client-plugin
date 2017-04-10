@@ -963,7 +963,7 @@ public class GitClientTest {
         File lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"), true)) {
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), "UTF-8"), true)) {
                     writer.print(randomString);
                 }
                 lastModifiedFile = file;
