@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -93,9 +94,7 @@ class Netrc {
         this.hosts.clear();
         this.lastModified = this.netrc.lastModified();
 
-        BufferedReader r = null;
-        try {
-            r = new BufferedReader(new InputStreamReader(new FileInputStream(netrc), Charset.defaultCharset()));
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(netrc.toPath()), Charset.defaultCharset()))) {
             String line = null;
             String machine = null;
             String login = null;
@@ -178,8 +177,6 @@ class Netrc {
 
         } catch (IOException e) {
             throw new GitException("Invalid netrc file: '" + this.netrc.getAbsolutePath() + "'", e);
-        } finally {
-            IOUtils.closeQuietly(r);
         }
 
         return this;
