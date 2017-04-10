@@ -19,16 +19,15 @@ import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.remoting.VirtualChannel;
-import hudson.util.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -3420,11 +3419,10 @@ public abstract class GitAPITestCase extends TestCase {
             if (entry.isDirectory())
                 entryDestination.mkdirs();
             else {
-                InputStream in = zipFile.getInputStream(entry);
-                OutputStream out = new FileOutputStream(entryDestination);
-                IOUtils.copy(in, out);
-                IOUtils.closeQuietly(in);
-                IOUtils.closeQuietly(out);
+                try (InputStream in = zipFile.getInputStream(entry);
+                        OutputStream out = Files.newOutputStream(entryDestination.toPath());) {
+                    org.apache.commons.io.IOUtils.copy(in, out);
+                }
             }
         }
     }
