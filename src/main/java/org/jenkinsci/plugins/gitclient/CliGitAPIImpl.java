@@ -1638,7 +1638,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("echo " + escapeWindowsCharsForUnquotedString(Secret.toString(sshUser.getPassphrase())));
             w.flush();
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
@@ -1648,7 +1648,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("#!/bin/sh");
             w.println("echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
@@ -1660,7 +1660,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("@if (%arg:~0,8%)==(Username) echo " + escapeWindowsCharsForUnquotedString(userName));
             w.println("@if (%arg:~0,8%)==(Password) echo " + escapeWindowsCharsForUnquotedString(password));
         }
-        askpass.setExecutable(true);
+        askpass.setExecutable(true, true);
         return askpass;
     }
 
@@ -1677,7 +1677,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;");
             w.println("esac");
         }
-        askpass.setExecutable(true);
+        askpass.setExecutable(true, true);
         return askpass;
     }
 
@@ -1807,7 +1807,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
@@ -1822,7 +1822,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("fi");
             w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
