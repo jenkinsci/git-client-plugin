@@ -263,6 +263,11 @@ public class CredentialsTest {
                         passphrase = null;
                     }
 
+                    if (passphrase != null && privateKey == null) {
+                        System.out.println("Non-empty passphrase, private key file '" + keyfile + "' not found");
+                        continue;
+                    }
+
                     if (repoURL == null) {
                         System.out.println("No repository URL provided.");
                         continue;
