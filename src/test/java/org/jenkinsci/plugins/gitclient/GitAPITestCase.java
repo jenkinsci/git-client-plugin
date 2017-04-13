@@ -1,5 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -3178,6 +3181,25 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId knownTag = w.git.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
         ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
         assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
+    }
+
+    /**
+     * User interface calls getHeadRev without a workspace while
+     * validating user input. This test showed a null pointer
+     * exception in a development version of credential passing to
+     * command line git. The referenced repository is a public
+     * repository, and https access to a public repository is allowed
+     * even if invalid credentials are provided.
+     *
+     * @throws Exception on test failure
+     */
+    public void test_getHeadRevFromPublicRepoWithInvalidCredential() throws Exception {
+        GitClient remoteGit = Git.with(listener, env).using("git").getClient();
+        StandardUsernamePasswordCredentials testCredential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "bad-id", "bad-desc", "bad-user", "bad-password");
+        remoteGit.addDefaultCredentials(testCredential);
+        Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
+        ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
     }
 
     @Bug(25444)
