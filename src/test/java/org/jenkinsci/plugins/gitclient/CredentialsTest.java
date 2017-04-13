@@ -190,7 +190,7 @@ public class CredentialsTest {
     @Parameterized.Parameters(name = "{2}-{1}-{0}-{5}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
-        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit"};
+        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
         for (String implementation : implementations) {
             /* Add master repository as authentication test with private
              * key of current user.  Try to test at least one
