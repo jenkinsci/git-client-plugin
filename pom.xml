@@ -253,6 +253,20 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemProperties>
+            <property>
+              <!-- Prefix git ssh authenticating command line calls with setsid -->
+              <!-- Detaches git from the controlling terminal of the test runner -->
+              <!-- For CredentialsTest with passphrase protected private keys -->
+              <name>org.jenkinsci.plugins.gitclient.CliGitAPIImpl.useSETSID</name>
+              <value>true</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <reporting>

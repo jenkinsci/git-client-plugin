@@ -66,8 +66,34 @@ import java.util.regex.Matcher;
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final boolean acceptSelfSignedCertificates;
+
+    /**
+     * Constant which can block use of setsid in git calls for ssh credentialed operations.
+     *
+     * <code>USE_SETSID=Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"))</code>.
+     *
+     * Allow ssh authenticated git calls on Unix variants to be preceded
+     * by setsid so that the git command is run without being associated
+     * with a terminal. Some docker runtime cases, and some automated test
+     * cases have shown that some versions of command line git or ssh will
+     * not allow automatic answers to private key passphrase prompts
+     * unless there is no controlling terminal associated with the process.
+     */
+    public static final boolean USE_SETSID = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
+
+    /**
+     * CALL_SETSID decides if command line git can use the setsid program
+     * during ssh based authentication to detach git from its controlling
+     * terminal.
+     *
+     * If the controlling terminal remains attached, then ssh passphrase based
+     * private keys cannot be decrypted during authentication (at least in some
+     * ssh configurations).
+     */
+    private static final boolean CALL_SETSID;
     static {
         acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
+        CALL_SETSID = setsidExists() && USE_SETSID;
     }
 
     private static final long serialVersionUID = 1;
@@ -1791,6 +1817,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
+            if (CALL_SETSID && launcher.isUnix() && env.containsKey("GIT_SSH") && env.containsKey("DISPLAY")) {
+                /* Detach from controlling terminal for git calls with ssh authentication */
+                /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
+                args.prepend("setsid");
+            }
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(environment).stdout(fos).stderr(err);
@@ -2750,5 +2781,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return File.pathSeparatorChar==';';
     }
 
-
+    /* Return true if setsid program exists */
+    static private boolean setsidExists() {
+        if (File.pathSeparatorChar == ';') {
+            return false;
+        }
+        String[] prefixes = { "/usr/bin/", "/bin/", "/usr/sbin/", "/sbin/" };
+        for (String prefix : prefixes) {
+            File setsidFile = new File(prefix + "setsid");
+            if (setsidFile.exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
