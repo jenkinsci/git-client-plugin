@@ -200,16 +200,8 @@
               <goal>check</goal>
             </goals>
             <configuration>
-            <rules>
-              <rule>
-                <element>BUNDLE</element>
-                  <limits>
-                    <limit>
-                      <counter>COMPLEXITY</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>0.40</minimum>
-                    </limit>
-                  </limits>
+              <rules>
+                <rule>
                 </rule>
               </rules>
             </configuration>
