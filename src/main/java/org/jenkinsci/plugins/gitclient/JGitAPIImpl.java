@@ -34,7 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,7 +65,6 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
@@ -76,7 +74,6 @@ import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
-import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
@@ -91,7 +88,6 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.lib.SymbolicRef;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -2269,18 +2265,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     walk.markStart(c);
                 }
             }
-        }
-    }
-
-    static class PrefixPredicate implements Predicate<Ref> {
-        private final String prefix;
-
-        PrefixPredicate(String prefix) {
-            this.prefix = prefix;
-        }
-
-        public boolean apply(Ref r) {
-            return r.getName().startsWith(prefix);
         }
     }
 
