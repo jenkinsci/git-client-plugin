@@ -334,6 +334,7 @@ public class CredentialsTest {
         } else {
             git.addCredentials(gitRepoURL, testedCredential);
         }
+        assertThat(git.getCredentials(), hasItem(testedCredential));
     }
 
     // @Test

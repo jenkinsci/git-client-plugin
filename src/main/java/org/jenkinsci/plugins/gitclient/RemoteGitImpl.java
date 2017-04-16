@@ -201,6 +201,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public List<StandardCredentials> getCredentials() {
+        return proxy.getCredentials();
+    }
+
+    /** {@inheritDoc} */
     public void setCredentials(StandardUsernameCredentials cred) {
         proxy.setCredentials(CredentialsProvider.snapshot(StandardUsernameCredentials.class, cred)); // credentials are Serializable
     }

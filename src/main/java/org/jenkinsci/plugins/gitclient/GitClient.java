@@ -69,6 +69,15 @@ public interface GitClient {
     void addCredentials(String url, StandardCredentials credentials);
 
     /**
+     * Returns credentials known to this object. If default credentials are
+     * assigned to the object, they are included in the returned list.
+     *
+     * @return credentials known to this object
+     * @since 2.5.0
+     */
+    List<StandardCredentials> getCredentials();
+
+    /**
      * Adds credentials to be used when there are not url specific credentials defined.
      *
      * @param credentials the credentials to use.
