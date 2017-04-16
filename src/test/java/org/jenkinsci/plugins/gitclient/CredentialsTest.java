@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -70,6 +73,7 @@ public class CredentialsTest {
     private File repo;
 
     private List<String> expectedLogSubstrings = new ArrayList<>();
+    private final Random random = new Random();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -301,12 +305,22 @@ public class CredentialsTest {
     }
 
     private void addCredential(String username, String password, File privateKey) throws IOException {
-        if (password != null) {
-            git.addDefaultCredentials(newUsernamePasswordCredential(username, password));
-        } else if (privateKey != null) {
-            git.addDefaultCredentials(newPrivateKeyCredential(username, privateKey));
+        assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
+                (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
+        StandardCredentials cred = null;
+        if (password != null && !password.isEmpty()) {
+            cred = newUsernamePasswordCredential(username, password);
         }
-
+        if (privateKey != null && privateKey.exists()) {
+            cred = newPrivateKeyCredential(username, privateKey);
+        }
+        assertThat(cred, notNullValue());
+        if (true || random.nextBoolean()) { // Temporary - pending one bug investigation
+            git.addDefaultCredentials(cred);
+        } else {
+            git.addCredentials(gitRepoURL, cred);
+        }
+        // assertThat(git.getCredentials(), hasItem(cred)); // API planned for git client 2.5.0
     }
 
     // @Test
@@ -380,9 +394,23 @@ public class CredentialsTest {
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
         addCredential(username, password, privateKey);
-        // assertThat(git.getRemoteReferences(gitRepoURL, null, true, false).keySet(), hasItems("refs/heads/master"));
-        // assertThat(git.getRemoteReferences(gitRepoURL, null, true, true).keySet(), hasItems("refs/heads/master"));
-        assertThat(git.getRemoteReferences(gitRepoURL, "master", true, true).keySet(), hasItems("refs/heads/master"));
+        Map<String, ObjectId> remoteReferences;
+        switch (random.nextInt(4)) {
+            default:
+            case 0:
+                remoteReferences = git.getRemoteReferences(gitRepoURL, null, true, false);
+                break;
+            case 1:
+                remoteReferences = git.getRemoteReferences(gitRepoURL, null, true, true);
+                break;
+            case 2:
+                remoteReferences = git.getRemoteReferences(gitRepoURL, "master", true, false);
+                break;
+            case 3:
+                remoteReferences = git.getRemoteReferences(gitRepoURL, "master", true, true);
+                break;
+        }
+        assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
     }
 
     private String show(String name, String value) {
