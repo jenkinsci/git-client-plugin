@@ -2,10 +2,12 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
+import hudson.model.Fingerprint;
 import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
@@ -71,6 +73,7 @@ public class CredentialsTest {
 
     private GitClient git;
     private File repo;
+    private StandardCredentials testedCredential;
 
     private List<String> expectedLogSubstrings = new ArrayList<>();
     private final Random random = new Random();
@@ -132,6 +135,19 @@ public class CredentialsTest {
             addExpectedLogSubstring("> git fetch ");
             addExpectedLogSubstring("> git checkout -b master ");
         }
+
+        assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
+                (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
+        if (password != null && !password.isEmpty()) {
+            testedCredential = newUsernamePasswordCredential(username, password);
+        }
+        if (privateKey != null && privateKey.exists()) {
+            testedCredential = newPrivateKeyCredential(username, privateKey);
+        }
+        assertThat(testedCredential, notNullValue());
+        Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
+        assertThat("Fingerprint should not be set", fingerprint, nullValue());
+
         /* FetchWithCredentials does not log expected message */
         /*
          if (gitImpl.equals("jgit")) {
@@ -141,7 +157,15 @@ public class CredentialsTest {
     }
 
     @After
-    public void tearDown() {
+    public void checkFingerprintNotSet() throws Exception {
+        /* Since these are API level tests, they should not track credential usage */
+        /* Credential usage is tracked at the job / project level */
+        Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
+        assertThat("Fingerprint should not be set after API level use", fingerprint, nullValue());
+    }
+
+    @After
+    public void clearCredentials() {
         git.clearCredentials();
     }
 
@@ -169,7 +193,7 @@ public class CredentialsTest {
 
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
-        String id = "private-key-" + privateKey.getPath();
+        String id = "private-key-" + privateKey.getPath() + random.nextInt();
         String privateKeyData = Files.toString(privateKey, Charset.forName("UTF-8"));
         BasicSSHUserPrivateKey.PrivateKeySource privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKeyData);
         String description = "private key from " + privateKey.getPath();
@@ -181,7 +205,7 @@ public class CredentialsTest {
 
     private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
         CredentialsScope scope = CredentialsScope.GLOBAL;
-        String id = "username-" + username + "-password-" + password;
+        String id = "username-" + username + "-password-" + password + random.nextInt();
         StandardUsernamePasswordCredentials usernamePasswordCredential = new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
         return usernamePasswordCredential;
     }
@@ -305,22 +329,11 @@ public class CredentialsTest {
     }
 
     private void addCredential(String username, String password, File privateKey) throws IOException {
-        assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
-                (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
-        StandardCredentials cred = null;
-        if (password != null && !password.isEmpty()) {
-            cred = newUsernamePasswordCredential(username, password);
-        }
-        if (privateKey != null && privateKey.exists()) {
-            cred = newPrivateKeyCredential(username, privateKey);
-        }
-        assertThat(cred, notNullValue());
         if (true || random.nextBoolean()) { // Temporary - pending one bug investigation
-            git.addDefaultCredentials(cred);
+            git.addDefaultCredentials(testedCredential);
         } else {
-            git.addCredentials(gitRepoURL, cred);
+            git.addCredentials(gitRepoURL, testedCredential);
         }
-        // assertThat(git.getCredentials(), hasItem(cred)); // API planned for git client 2.5.0
     }
 
     // @Test
@@ -354,6 +367,7 @@ public class CredentialsTest {
         assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        /* prune opens a remote connection to list remote branches */
         git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
         checkExpectedLogSubstring();
     }
