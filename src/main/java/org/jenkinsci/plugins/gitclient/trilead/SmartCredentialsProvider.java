@@ -10,7 +10,9 @@ import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,6 +58,20 @@ public class SmartCredentialsProvider extends CredentialsProvider {
      */
     public synchronized void addCredentials(String url, StandardCredentials credentials) {
         specificCredentials.put(url, credentials);
+    }
+
+    /**
+     * Returns credentials assigned to this provider, including both URL specific and default credentials.
+     *
+     * @return credentials assigned to this provider
+     * @since 2.5.0
+     */
+    public synchronized List<StandardCredentials> getCredentials() {
+        List<StandardCredentials> combined = new ArrayList<>(specificCredentials.values());
+        if (defaultCredentials != null) {
+            combined.add(defaultCredentials);
+        }
+        return combined;
     }
 
     /**
