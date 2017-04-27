@@ -10,7 +10,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>2.4.4</version>
+  <version>2.4.5-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
@@ -37,7 +37,7 @@
     <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>git-client-2.4.4</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <properties>
