@@ -33,7 +33,7 @@ public class CliGitAPIImplAuthTest {
 
     private final Random random = new Random();
 
-    private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\t"};
+    private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\"", "\t"};
     private final String[] PERCENT_SPECIALS = {"%"};
 
     @Before
@@ -97,7 +97,7 @@ public class CliGitAPIImplAuthTest {
     }
 
     private String quoteCredentials(String password) {
-        return git.quoteWindowsCredentials(password);
+        return git.escapeWindowsCharsForUnquotedString(password);
     }
 
     private String expectedQuoting(String password) {

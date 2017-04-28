@@ -619,11 +619,25 @@ public interface GitClient {
      *      Limit to only refs/tags.
      *      headsOnly and tagsOnly are not mutually exclusive;
      *      when both are true, references stored in refs/heads and refs/tags are displayed.
-     * @return a map of references name and its commit hash. Empty if none.
+     * @return a map of reference names and their commit hashes. Empty if none.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
+
+    /**
+     * List symbolic references in a remote repository. Equivalent to <tt>git ls-remote --symref &lt;repository&gt;
+     * [&lt;refs&gt;]</tt>. Note: the response may be empty for multiple reasons
+     *
+     * @param remoteRepoUrl Remote repository URL.
+     * @param pattern       Only references matching the given pattern are displayed.
+     * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
+     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
+     * (e.g. command line Git prior to 2.8.0).
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException  if interrupted.
+     */
+    Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern) throws GitException, InterruptedException;
 
     /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.

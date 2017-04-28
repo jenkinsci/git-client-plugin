@@ -3,10 +3,11 @@ package org.jenkinsci.plugins.gitclient;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import org.apache.commons.io.IOUtils;
 
 import org.apache.http.auth.Credentials;
@@ -80,28 +81,33 @@ public class NetrcTest
         }
     }
 
-    private void copyFileContents(InputStream sourceStream, FileOutputStream destinationStream) throws IOException
+    private void copyFileContents(String source, String destination) throws IOException
     {
-        IOUtils.copy(sourceStream, destinationStream);
-        IOUtils.closeQuietly(sourceStream);
-        IOUtils.closeQuietly(destinationStream);
+        try (InputStream sourceStream = Files.newInputStream(Paths.get(source));
+                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+            IOUtils.copy(sourceStream, out);
+        }
     }
 
+    private void copyResourceContents(String resource, String destination) throws IOException
+    {
+        try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource);
+                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+            IOUtils.copy(sourceStream, out);
+        }
+    }
 
     @Before
     public void setup() throws IOException
     {
         testFilePath_1 = folder.newFile(TEST_NETRC_FILE_1).getAbsolutePath();
-        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_1 + ".in"),
-                new FileOutputStream(testFilePath_1));
+        copyResourceContents(TEST_NETRC_FILE_1 + ".in", testFilePath_1);
 
         testFilePath_1a = folder.newFile(TEST_NETRC_FILE_1a).getAbsolutePath();
-        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_1a + ".in"),
-                new FileOutputStream(testFilePath_1a));
+        copyResourceContents(TEST_NETRC_FILE_1a + ".in", testFilePath_1a);
 
         testFilePath_2 = folder.newFile(TEST_NETRC_FILE_2).getAbsolutePath();
-        copyFileContents(this.getClass().getClassLoader().getResourceAsStream(TEST_NETRC_FILE_2 + ".in"),
-                new FileOutputStream(testFilePath_2));
+        copyResourceContents(TEST_NETRC_FILE_2 + ".in", testFilePath_2);
     }
 
 
@@ -177,7 +183,7 @@ public class NetrcTest
     {
         String testFilePath = testFilePath_1 + "_m";
 
-        copyFileContents(new FileInputStream(testFilePath_1), new FileOutputStream(testFilePath));
+        copyFileContents(testFilePath_1, testFilePath);
 
         Netrc netrc = Netrc.getInstance(testFilePath);
         assertNotNull(netrc);
@@ -199,7 +205,7 @@ public class NetrcTest
         try {
             Thread.sleep(1500);
         } catch (InterruptedException e) { /* ignored */ }
-        copyFileContents(new FileInputStream(testFilePath_1a), new FileOutputStream(testFilePath));
+        copyFileContents(testFilePath_1a, testFilePath);
 
 
         assertCredentials(TestHost.H1_01, netrc.getCredentials(TestHost.H1_01.machine));

@@ -22,7 +22,7 @@ public class StringSharesPrefix extends SubstringMatcher {
 
     /**
      * <p>
-     * Creates a matcher that matches if th examined {@link String} shares a
+     * Creates a matcher that matches if the examined {@link String} shares a
      * common prefix with the specified {@link String}.
      * </p>
      * For example:

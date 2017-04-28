@@ -30,6 +30,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,6 +100,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
+import org.eclipse.jgit.transport.BasePackFetchConnection;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.HttpTransport;
@@ -784,16 +788,81 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return references;
     }
 
+    @Override
+    public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
+            throws GitException, InterruptedException {
+        Map<String, String> references = new HashMap<>();
+        String regexPattern = null;
+        if (pattern != null) {
+            regexPattern = replaceGlobCharsWithRegExChars(pattern);
+        }
+        if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
+            return references;
+        }
+        try (Repository repo = openDummyRepository()) {
+            try {
+                // HACK HACK HACK
+                // The symref info is advertised as a capability starting from git 1.8.5
+                // So all we need to do is ask JGit to fetch the refs and then (because JGit adds all capabilities
+                // into a Set) we iterate the resulting set to find any that matching symref=$symref:$realref
+                // of course JGit does not expose a way to iterate the capabilities, so instead we have to hack
+                // and peek inside
+                // TODO if JGit implement https://bugs.eclipse.org/bugs/show_bug.cgi?id=514052 we should switch to that
+                Class<?> basePackConnection = BasePackFetchConnection.class.getSuperclass();
+                Field remoteCapablities = basePackConnection.getDeclaredField("remoteCapablities");
+                remoteCapablities.setAccessible(true);
+                try (Transport transport = Transport.open(repo, url)) {
+                    transport.setCredentialsProvider(getProvider());
+                    try (FetchConnection fc = transport.openFetch()) {
+                        fc.getRefs();
+                        if (fc instanceof BasePackFetchConnection) {
+                            Object o = remoteCapablities.get(fc);
+                            if (o instanceof Set) {
+                                boolean hackWorked = false;
+                                @SuppressWarnings("unchecked") /* compile-time type erasure causes this */
+                                Set<String> capabilities = (Set<String>)o;
+                                for (String capability: capabilities) {
+                                    if (capability.startsWith("symref=")) {
+                                        hackWorked = true;
+                                        int index = capability.indexOf(":", 7);
+                                        if (index != -1) {
+                                            references.put(capability.substring(7, index), capability.substring(index+1));
+                                        }
+                                    }
+                                }
+                                if (hackWorked) {
+                                    return references;
+                                }
+                            }
+                        }
+                    }
+                    // ignore this is a total hack
+                }
+            } catch (IllegalAccessException | NoSuchFieldException e) {
+                // ignore, caller will just have to try it the Git 1.8.4 way, we'll return an empty map
+            }
+        } catch (IOException | URISyntaxException e) {
+            throw new GitException(e);
+        }
+        return references;
+    }
+
     /* Adapted from http://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
-        if(glob.startsWith("refs/")) {
-            out.append("^");
-        } else {
-            out.append("^.*/");
+        out.append('^');
+        if(!glob.startsWith("refs/")) {
+            out.append(".*/");
         }
+        out.append(replaceGlobCharsWithRegExChars(glob));
+        out.append('$');
+        return out.toString();
+    }
 
+    private String replaceGlobCharsWithRegExChars(String glob)
+    {
+        StringBuilder out = new StringBuilder();
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
             switch(c) {
@@ -814,7 +883,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 break;
             }
         }
-        out.append('$');
         return out.toString();
     }
 
@@ -1200,6 +1268,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             git.clean().setCleanDirectories(true).setIgnore(false).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
+        // Fix JENKINS-43198:
+        // don't throw a "Could not delete file" if the file has actually been deleted
+        // See JGit bug 514434 https://bugs.eclipse.org/bugs/show_bug.cgi?id=514434
+        } catch(JGitInternalException e) {
+            String expected = "Could not delete file ";
+            if (e.getMessage().startsWith(expected)) {
+                String path = e.getMessage().substring(expected.length());
+                if (Files.exists(Paths.get(path))) {
+                    throw e;
+                } // else don't throw, everything is ok.
+            } else {
+                throw e;
+            }
         }
     }
 
@@ -2188,18 +2269,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     walk.markStart(c);
                 }
             }
-        }
-    }
-
-    static class PrefixPredicate implements Predicate<Ref> {
-        private final String prefix;
-
-        PrefixPredicate(String prefix) {
-            this.prefix = prefix;
-        }
-
-        public boolean apply(Ref r) {
-            return r.getName().startsWith(prefix);
         }
     }
 

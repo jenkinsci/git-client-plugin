@@ -12,7 +12,7 @@ import org.eclipse.jgit.transport.RefSpec;
  */
 public interface CloneCommand extends GitCommand {
     /**
-     * url.
+     * URL of the repository to be cloned.
      *
      * @param url a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
@@ -20,7 +20,7 @@ public interface CloneCommand extends GitCommand {
     CloneCommand url(String url);
 
     /**
-     * Name of the remote, such as 'origin' (which is the default.)
+     * Name of the remote, such as 'origin' (which is the default).
      *
      * @param name a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
@@ -28,7 +28,8 @@ public interface CloneCommand extends GitCommand {
     CloneCommand repositoryName(String name);
 
     /**
-     * shallow.
+     * Only clone the most recent history, not preceding history.  Depth of the
+     * shallow clone is controlled by the #depth method.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
      */
@@ -67,8 +68,19 @@ public interface CloneCommand extends GitCommand {
     @Deprecated
     CloneCommand noCheckout();
 
+    /**
+     * Boolean which allows caller to request that tags and their references are
+     * not fetched.  Default is to fetch tags when cloning.
+     * @param tags boolean controlling whether tags are fetched
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
     CloneCommand tags(boolean tags);
 
+    /**
+     * List of refspecs to be retrieved by the fetch.
+     * @param refspecs refspecs defining the references to be fetched
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
     CloneCommand refspecs(List<RefSpec> refspecs);
 
     /**

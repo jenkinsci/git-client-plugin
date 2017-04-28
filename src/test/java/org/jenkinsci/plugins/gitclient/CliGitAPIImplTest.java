@@ -17,6 +17,11 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         return Git.with(listener, env).in(ws).using("git").getClient();
     }
 
+    @Override
+    protected boolean hasWorkingGetRemoteSymbolicReferences() {
+        return ((CliGitAPIImpl)(w.git)).isAtLeastVersion(2,8,0,0);
+    }
+
     private static boolean cliGitDefaultsSet = false;
 
     private void setCliGitDefaults() throws Exception {
@@ -191,6 +196,17 @@ public class CliGitAPIImplTest extends GitAPITestCase {
             new VersionTest(false, 2, 5, 0, 2)
         };
         doTest("git version 2.5.0.windows.1", versions);
+    }
+
+    public void test_git_version_windows_2_10_1_1() {
+        VersionTest[] versions = {
+            new VersionTest(true,  2, 10, 1, 1),
+            new VersionTest(true,  2, 10, 1, 0),
+            new VersionTest(true,  2, 10, 0, 1),
+            new VersionTest(false, 2, 10, 1, 2),
+            new VersionTest(false, 2, 10, 2, 0)
+        };
+        doTest("git version 2.10.1.windows.1", versions);
     }
 
     public void test_git_version_redhat_5() {

@@ -7,7 +7,9 @@ import org.eclipse.jgit.lib.ObjectId;
  */
 public class Tag extends GitObject {
     private static final long serialVersionUID = 1L;
+    /** SHA1 hash of the tagged commit */
     public String commitSHA1;
+    /** Commit message of the tagged commit */
     public String commitMessage;
 
     /**

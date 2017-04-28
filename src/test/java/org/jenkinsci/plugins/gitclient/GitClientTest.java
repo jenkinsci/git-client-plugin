@@ -34,11 +34,11 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.lib.Constants;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -89,6 +89,7 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULES;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
+    private final boolean CLI_GIT_SUPPORTS_SYMREF;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -108,6 +109,7 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULES = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
+        CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
 
         boolean gitLFSExists;
         try {
@@ -155,17 +157,30 @@ public class GitClientTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        File oneFile = new File(repoRoot, "One-File.txt");
-        try (PrintWriter writer = new PrintWriter(oneFile, "UTF-8")) {
-            writer.printf("A random UUID: %s\n", UUID.randomUUID().toString());
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        return commitFile("One-File.txt", content, commitMessage);
+    }
+
+    private ObjectId commitFile(final String path, final String content, final String commitMessage) throws Exception {
+        createFile(path, content);
+        gitClient.add(path);
+        gitClient.commit(commitMessage);
+        List<ObjectId> headList = gitClient.revList(Constants.HEAD);
+        assertThat(headList.size(), is(greaterThan(0)));
+        return headList.get(0);
+    }
+
+    public void createFile(String path, String content) throws Exception {
+        File aFile = new File(repoRoot, path);
+        File parentDir = aFile.getParentFile();
+        if (parentDir != null) {
+            parentDir.mkdirs();
+        }
+        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+            writer.printf(content);
         } catch (FileNotFoundException | UnsupportedEncodingException ex) {
             throw new GitException(ex);
         }
-        gitClient.add("One-File.txt");
-        gitClient.commit(commitMessage);
-        List<ObjectId> headList = gitClient.revList("HEAD");
-        assertThat(headList.size(), is(greaterThan(0)));
-        return headList.get(0);
     }
 
     private final Random random = new Random();
@@ -190,6 +205,17 @@ public class GitClientTest {
 
     private String randomEmail(String name) {
         return name.replaceAll(" ", ".") + "@middle.earth";
+    }
+
+    @Test
+    @Issue("43198")
+    public void testCleanSubdirGitignore() throws Exception {
+        final String filename = "this_is/not_ok/more/subdirs/file.txt";
+        commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
+        createFile(filename, "hi there");
+        assertFileInWorkingDir(gitClient, filename);
+        gitClient.clean();
+        assertDirNotInWorkingDir(gitClient, "this_is");
     }
 
     @Test
@@ -937,7 +963,7 @@ public class GitClientTest {
         File lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(file, true), "UTF-8"), true)) {
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), "UTF-8"), true)) {
                     writer.print(randomString);
                 }
                 lastModifiedFile = file;
@@ -1390,11 +1416,13 @@ public class GitClientTest {
     /* A SHA1 that exists in src repo, but unlikely to be referenced from a local branch in src repo */
     private final String TESTS_NOT_SUBMODULE_SHA1 = "f04fae26f6b612c4a575314222d72c20ca4090a5";
 
+    @Test
     public void testgetBranchesContainingTrue_existing_sha1() throws Exception {
         List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, true);
-        assertThat(branches, is(empty()));
+        assertThat(branches, is(not(empty())));
     }
 
+    @Test
     public void testgetBranchesContainingFalse_existing_sha1() throws Exception {
         List<Branch> branches = srcGitClient.getBranchesContaining(TESTS_NOT_SUBMODULE_SHA1, false);
         assertThat(branches, is(empty()));
@@ -1411,5 +1439,111 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetBranchesContainingFalse_non_existent_sha1() throws Exception {
         srcGitClient.getBranchesContaining(NON_EXISTENT_SHA1, false);
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_from_empty_repo() throws Exception {
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null).keySet(), hasSize(0));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_null() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+                hasEntry(Constants.HEAD, "refs/heads/master"));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_null_old_git() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is("git"));
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null).keySet(), hasSize(0));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_null_old_git_use_jgit() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is(not("git")));
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+                hasEntry(Constants.HEAD, "refs/heads/master"));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_with_non_matching_pattern() throws Exception {
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), "non-matching-pattern").keySet(), hasSize(0));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_with_matching_pattern() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+                hasEntry(Constants.HEAD, "refs/heads/master"));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is("git"));
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD).keySet(), hasSize(0));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git_with_jgit() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is(not("git")));
+        commitOneFile("A-Single-File-Commit");
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+                hasEntry(Constants.HEAD, "refs/heads/master"));
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_with_non_default_HEAD() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        commitOneFile("A-Single-File-Commit");
+
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("checkout", "-b", "new-branch");
+        gitCmd.assertOutputContains(".*Switched to a new branch.*");
+
+        commitOneFile("A-Second-File-Commit");
+
+        gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("symbolic-ref", Constants.HEAD, "refs/heads/new-branch");
+
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+                hasEntry(Constants.HEAD, "refs/heads/new-branch"));
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+                hasEntry(Constants.HEAD, "refs/heads/new-branch"));
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteSymbolicReferences_URI_Syntax_old_jgit() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is(not("git")));
+        gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
+    }
+
+    @Test
+    public void testgetRemoteSymbolicReferences_URI_Syntax_old_git() throws Exception {
+        assumeFalse(CLI_GIT_SUPPORTS_SYMREF);
+        assumeThat(gitImplName, is("git"));
+        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD).keySet(), hasSize(0));
+    }
+
+    @Test(expected = GitException.class)
+    public void testgetRemoteReferences_URI_Syntax() throws Exception {
+        gitClient.getRemoteReferences("error: invalid repo URL", Constants.HEAD, false, false);
     }
 }
