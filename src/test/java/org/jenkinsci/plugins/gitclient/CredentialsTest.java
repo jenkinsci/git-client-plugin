@@ -122,6 +122,14 @@ public class CredentialsTest {
     @Before
     public void setUp() throws IOException, InterruptedException {
         repo = tempFolder.newFolder();
+        if (random.nextBoolean()) {
+            /* Randomly use a repo with a space in name - JENKINS-43931 */
+            File repoParent = repo;
+            repo = new File(repoParent, "a space");
+            assertTrue(repo.mkdirs());
+            File repoTemp = new File(repoParent, "a space@tmp"); // allows adjacent temp directory use
+            assertTrue(repoTemp.mkdirs());
+        }
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
