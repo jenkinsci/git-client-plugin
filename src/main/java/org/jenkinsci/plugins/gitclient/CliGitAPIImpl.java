@@ -1665,7 +1665,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /* Package protected for testability */
     File createWindowsBatFile(String userName, String password) throws IOException {
-        File askpass = createTempFile("pass", ".bat");
+        File askpass = createTempFile("pass", ".bat", true);
         try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
             w.println("@set arg=%~1");
             w.println("@if (%arg:~0,8%)==(Username) echo " + escapeWindowsCharsForUnquotedString(userName));
