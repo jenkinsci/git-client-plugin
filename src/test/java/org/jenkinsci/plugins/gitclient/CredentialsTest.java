@@ -349,7 +349,7 @@ public class CredentialsTest {
         }
     }
 
-    // @Test
+    @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
