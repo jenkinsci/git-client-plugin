@@ -1850,13 +1850,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        EnvVars environment = new EnvVars(env);
+        EnvVars freshEnv = new EnvVars(env);
         // If we don't have credentials, but the requested URL requires them,
         // it is possible for Git to hang forever waiting for interactive
         // credential input. Prevent this by setting GIT_ASKPASS to "echo"
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
-            environment.put("GIT_ASKPASS", "echo");
+            freshEnv.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -1868,7 +1868,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                    envs(environment).stdout(fos).stderr(err);
+                    envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
             int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
