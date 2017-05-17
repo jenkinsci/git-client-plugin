@@ -174,7 +174,9 @@ public class CredentialsTest {
 
     @After
     public void clearCredentials() {
-        git.clearCredentials();
+        if (git != null) {
+            git.clearCredentials();
+        }
     }
 
     private void checkExpectedLogSubstring() {
