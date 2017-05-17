@@ -124,11 +124,14 @@ public class CredentialsTest {
         repo = tempFolder.newFolder();
         if (random.nextBoolean()) {
             /* Randomly use a repo with a space in name - JENKINS-43931 */
+            String newDirName = "a space";
             File repoParent = repo;
-            repo = new File(repoParent, "a space");
-            assertTrue(repo.mkdirs());
-            File repoTemp = new File(repoParent, "a space@tmp"); // allows adjacent temp directory use
-            assertTrue(repoTemp.mkdirs());
+            repo = new File(repoParent, newDirName);
+            boolean dirCreated = repo.mkdirs();
+            assertTrue("Failed to create " + repo.getAbsolutePath(), dirCreated);
+            File repoTemp = new File(repoParent, newDirName + "@tmp"); // use adjacent temp directory
+            dirCreated = repoTemp.mkdirs();
+            assertTrue("Failed to create " + repoTemp.getAbsolutePath(), dirCreated);
         }
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
