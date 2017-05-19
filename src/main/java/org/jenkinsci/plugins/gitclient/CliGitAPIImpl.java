@@ -1439,12 +1439,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * their path, otherwise they break ssh argument passing through
      * the GIT_SSH or SSH_ASKPASS environment variable.
      *
+     * Package protected for testing.  Not to be used outside this class
+     *
      * @param prefix file name prefix for the generated temporary file
      * @param suffix file name suffix for the generated temporary file
      * @return temporary file
      * @throws IOException on error
      */
-    private File createTempFile(String prefix, String suffix) throws IOException {
+    File createTempFile(String prefix, String suffix) throws IOException {
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
