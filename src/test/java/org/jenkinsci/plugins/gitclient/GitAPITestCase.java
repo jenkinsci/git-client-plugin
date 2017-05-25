@@ -1389,11 +1389,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
         String output = w.cmd("git branch -v --no-abbrev");
-        assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
+            assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        } else {
+            assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertFalse("git branch -v --no-abbrev contains test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertFalse("git branch -v --no-abbrev contains another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        }
     }
 
     public void test_list_remote_branches() throws Exception {
