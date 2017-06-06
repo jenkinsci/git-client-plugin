@@ -41,6 +41,7 @@ public class MergeCommandTest {
     private ObjectId commit1Branch;
     private ObjectId commit2Master;
     private ObjectId commit2Branch;
+    private ObjectId commit1Branch2;
     private ObjectId commitConflict;
 
     @Rule
@@ -104,6 +105,19 @@ public class MergeCommandTest {
         assertTrue("Branch README missing on branch 1", readmeOne.exists());
         assertTrue("Master README missing on branch 1", readme.exists());
 
+        
+        git.checkoutBranch("branch-2", "master");
+        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+            writer.println("# Branch 2 README " + randomChar);
+            writer.println("");
+            writer.println("Changed on branch commit");
+        }
+        git.add("README.md");
+        git.commit("Commit README change on branch 2");
+        commit1Branch2 = git.revParse("HEAD");
+        assertTrue("Change README commit not on branch 2", git.revListAll().contains(commit1Branch2));
+        assertFalse("Change README commit on master branch unexpectedly", git.revList("master").contains(commit1Branch2));
+        
         // Commit a second change to master branch
         git.checkout("master");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
@@ -223,6 +237,12 @@ public class MergeCommandTest {
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing on master branch", readmeOne.exists());
+    }
+
+    @Test
+    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException {
+        mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
+        assertTrue("branch 2 commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch2));
     }
 
     /* Octopus merge strategy is not implemented in JGit, not exposed in CliGitAPIImpl */
