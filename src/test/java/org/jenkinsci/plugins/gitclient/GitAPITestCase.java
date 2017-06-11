@@ -2044,6 +2044,13 @@ public abstract class GitAPITestCase extends TestCase {
 
         if (w.git instanceof JGitAPIImpl) {
             /* submoduleUpdate().recursive(true).execute() throws an exception */
+            /* Call setupSubmoduleUrls to assure it throws expected exception */
+            try {
+                Revision nullRevision = null;
+                w.igit().setupSubmoduleUrls(nullRevision, listener);
+            } catch (UnsupportedOperationException uoe) {
+                assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+            }
             return;
         }
         w.git.submoduleUpdate().recursive(true).execute();
