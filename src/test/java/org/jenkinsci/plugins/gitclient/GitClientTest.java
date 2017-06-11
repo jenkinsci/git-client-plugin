@@ -8,7 +8,6 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
@@ -801,14 +800,8 @@ public class GitClientTest {
     }
 
     // @Test
-    public void testSubGit() {
-        System.out.println("subGit");
-        String subdir = "";
-        GitClient instance = gitClient;
-        GitClient expResult = null;
-        GitClient result = instance.subGit(subdir);
-        assertEquals(expResult, result);
-        fail("The test case is a prototype.");
+    public void testSubGit() throws Exception {
+        // Tested in assertSubmoduleContents
     }
 
     @Test
@@ -989,25 +982,28 @@ public class GitClientTest {
     }
 
     private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) {
-        File repoRoot = gitClient.getRepository().getWorkTree();
+        File myRepoRoot = gitClient.getRepository().getWorkTree();
         for (String expectedDir : expectedDirs) {
-            File dir = new File(repoRoot, "modules/" + expectedDir);
+            File dir = new File(myRepoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
             File license = new File(dir, "LICENSE");
             assertEquals("Checking " + expectedDir + " LICENSE (path:" + lastUpdateSubmodulePath + ")", expectLicense, license.isFile());
         }
     }
 
-    private void assertSubmoduleContents(GitClient client, String... directories) {
-        File repoRoot = client.getRepository().getWorkTree();
+    private void assertSubmoduleContents(GitClient client, String... directories) throws Exception {
+        File myRepoRoot = client.getRepository().getWorkTree();
         for (String directory : directories) {
-            File licenseDir = new File(repoRoot, "modules/" + directory);
+            File licenseDir = new File(myRepoRoot, "modules/" + directory);
             File licenseFile = new File(licenseDir, "LICENSE");
             assertTrue("Missing file " + licenseFile + " (path:" + lastUpdateSubmodulePath + ")", licenseFile.isFile());
+            GitClient subGitClient = client.subGit("modules/" + directory);
+            assertThat(subGitClient.hasGitModules(), is(false));
+            assertThat(subGitClient.getWorkTree().getName(), is(directory));
         }
         List<String> expectedDirList = Arrays.asList(directories);
         List<String> dirList = new ArrayList<>();
-        File modulesDir = new File(repoRoot, "modules");
+        File modulesDir = new File(myRepoRoot, "modules");
         for (File dir : modulesDir.listFiles()) {
             if (dir.isDirectory()) {
                 dirList.add(dir.getName());
@@ -1017,7 +1013,7 @@ public class GitClientTest {
         assertThat(expectedDirList, containsInAnyOrder(dirList.toArray(new String[dirList.size()])));
     }
 
-    private void assertSubmoduleContents(String... directories) {
+    private void assertSubmoduleContents(String... directories) throws Exception {
         assertSubmoduleContents(gitClient, directories);
     }
 
