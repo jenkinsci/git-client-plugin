@@ -824,7 +824,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 for (String capability: capabilities) {
                                     if (capability.startsWith("symref=")) {
                                         hackWorked = true;
-                                        int index = capability.indexOf(":", 7);
+                                        int index = capability.indexOf(':', 7);
                                         if (index != -1) {
                                             references.put(capability.substring(7, index), capability.substring(index+1));
                                         }
