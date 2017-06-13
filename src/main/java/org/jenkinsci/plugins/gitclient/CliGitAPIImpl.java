@@ -2459,11 +2459,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             launchCommand("commit", "-F", f.getAbsolutePath());
 
-        } catch (GitException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (FileNotFoundException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (IOException e) {
+        } catch (GitException | IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
             deleteTempFile(f);
