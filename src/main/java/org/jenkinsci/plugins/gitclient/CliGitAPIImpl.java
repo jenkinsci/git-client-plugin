@@ -2856,7 +2856,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (File.pathSeparatorChar == ';') {
             return false;
         }
-        String[] prefixes = { "/usr/bin/", "/bin/", "/usr/sbin/", "/sbin/" };
+        String[] prefixes = { "/usr/local/bin/", "/usr/bin/", "/bin/", "/usr/local/sbin/", "/usr/sbin/", "/sbin/" };
         for (String prefix : prefixes) {
             File setsidFile = new File(prefix + "setsid");
             if (setsidFile.exists()) {
