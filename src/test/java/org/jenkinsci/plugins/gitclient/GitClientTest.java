@@ -62,7 +62,7 @@ public class GitClientTest {
     private final String gitImplName;
 
     /* Git client plugin repository directory. */
-    private static File srcRepoDir = new File(".");
+    private static File srcRepoDir = null;
 
     /* GitClient for plugin development repository. */
     private GitClient srcGitClient;
