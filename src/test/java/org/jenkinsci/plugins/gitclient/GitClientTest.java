@@ -36,6 +36,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
 import static org.hamcrest.Matchers.*;
+import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import org.junit.Before;
@@ -49,34 +50,33 @@ import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
 
 /**
+ * Git Client tests, intended as an eventual replacement for CliGitAPIImplTest,
+ * JGitAPIImplTest, and JGitApacheAPIImplTest.
  *
  * @author Mark Waite
  */
 @RunWith(Parameterized.class)
 public class GitClientTest {
 
-    /** Git implementation name, either "git", "jgit", or "jgitapache". */
+    /* Git implementation name, either "git", "jgit", or "jgitapache". */
     private final String gitImplName;
 
-    /** Git client plugin repository directory.  */
-    private final File srcRepoDir = new File(".");
+    /* Git client plugin repository directory. */
+    private static File srcRepoDir = new File(".");
 
-    /** Absolute path to git client plugin repository directory. */
-    private final String srcRepoAbsolutePath = srcRepoDir.getAbsolutePath();
+    /* GitClient for plugin development repository. */
+    private GitClient srcGitClient;
 
-    /** GitClient for plugin development respository. */
-    private final GitClient srcGitClient;
+    /* commit known to exist in upstream. */
+    final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
+    final String upstreamCommitAuthor = "Teubel György";
+    final String upsstreamCommitEmail = "<tgyurci@freemail.hu>";
+    final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
 
-    /** commit known to exist in git client plugin repository and in upstream. */
-    final ObjectId srcGitClientCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
-    final String srcGitClientCommitAuthor = "Teubel György";
-    final String srcGitClientCommitEmail = "<tgyurci@freemail.hu>";
-    final ObjectId srcGitClientCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
-
-    /** URL of upstream (GitHub) repository. */
+    /* URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
 
-    /** URL of GitHub test repository with large file support. */
+    /* URL of GitHub test repository with large file support. */
     private final String lfsTestRepoURL = "https://github.com/MarkEWaite/jenkins-pipeline-utils";
 
     /* Instance of object under test */
@@ -140,6 +140,45 @@ public class GitClientTest {
         gitCmd.setDefaults();
     }
 
+    /**
+     * Mirror the git-client-plugin repo so that the tests have a reasonable and
+     * repeatable set of commits, tags, and branches.
+     */
+    private static File mirrorParent = null;
+
+    @BeforeClass
+    public static void mirrorUpstreamRepositoryLocally() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(currentDir).using("git").getClient();
+        boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
+
+        mirrorParent = Files.createTempDirectory("mirror").toFile();
+        /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
+        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(mirrorParent).using("git").getClient());
+        if (currentDirIsShallow) {
+            mirrorParentGitCmd.run("clone",
+                    // "--reference", currentDir.getAbsolutePath(), // --reference of shallow repo fails
+                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+        } else {
+            mirrorParentGitCmd.run("clone",
+                    "--reference", currentDir.getAbsolutePath(),
+                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+        }
+        File mirrorDir = new File(mirrorParent, "git-client-plugin.git");
+        assertTrue("Git client mirror repo not created at " + mirrorDir.getAbsolutePath(), mirrorDir.exists());
+        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars()).in(mirrorDir).using("git").getClient();
+        assertThat(mirrorClient.getTagNames("git-client-1.6.3"), contains("git-client-1.6.3"));
+
+        /* Clone from bare mirrorParent/git-client-plugin.git to working mirrorParent/git-client-plugin */
+        mirrorParentGitCmd.run("clone", mirrorDir.getAbsolutePath());
+        srcRepoDir = new File(mirrorParent, "git-client-plugin");
+    }
+
+    @AfterClass
+    public static void removeMirrorAndSrcRepos() throws Exception {
+        FileUtils.deleteDirectory(mirrorParent);
+    }
+
     @Before
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
@@ -148,7 +187,7 @@ public class GitClientTest {
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
-        gitClient.setRemoteUrl("origin", srcRepoAbsolutePath);
+        gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
     }
 
     private ObjectId commitOneFile() throws Exception {
@@ -264,7 +303,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testCommitNotFoundException() throws GitException, InterruptedException {
         /* Search wrong repository for a commit */
-        assertAuthor(srcGitClientCommitPredecessor, srcGitClientCommit, srcGitClientCommitAuthor, srcGitClientCommitEmail);
+        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upsstreamCommitEmail);
     }
 
     @Test
@@ -366,18 +405,18 @@ public class GitClientTest {
 
     @Test
     public void testIsCommitInRepo() throws Exception {
-        assertTrue(srcGitClient.isCommitInRepo(srcGitClientCommit));
-        assertFalse(gitClient.isCommitInRepo(srcGitClientCommit));
+        assertTrue(srcGitClient.isCommitInRepo(upstreamCommit));
+        assertFalse(gitClient.isCommitInRepo(upstreamCommit));
     }
 
     @Test
     public void testGetRemoteUrl() throws Exception {
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
     }
 
     @Test
     public void testSetRemoteUrl() throws Exception {
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         gitClient.setRemoteUrl("origin", upstreamRepoURL);
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("origin"));
     }
@@ -385,7 +424,7 @@ public class GitClientTest {
     @Test
     public void testAddRemoteUrl() throws Exception {
         gitClient.addRemoteUrl("upstream", upstreamRepoURL);
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
     }
 
@@ -1227,7 +1266,7 @@ public class GitClientTest {
         String newBranchName = "tests/addSubmodules";
         String newDirName = "git-client-plugin-" + (10 + random.nextInt(90));
         gitClient.branch(newBranchName);
-        gitClient.addSubmodule(srcRepoAbsolutePath, "modules/" + newDirName);
+        gitClient.addSubmodule(srcRepoDir.getAbsolutePath(), "modules/" + newDirName);
         gitClient.add("modules/" + newDirName);
         gitClient.commit("Added git-client-plugin module at modules/" + newDirName);
 
@@ -1376,12 +1415,12 @@ public class GitClientTest {
      */
     @Test
     public void testDescribeSrcCommit() throws Exception {
-        assertThat(srcGitClient.describe(srcGitClientCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
+        assertThat(srcGitClient.describe(upstreamCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
     }
 
     @Test
     public void testDescribeSrcCommitPredecessor() throws Exception {
-        assertThat(srcGitClient.describe(srcGitClientCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
+        assertThat(srcGitClient.describe(upstreamCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
     }
 
     @Test
