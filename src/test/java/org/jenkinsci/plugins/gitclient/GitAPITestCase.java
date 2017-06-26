@@ -2692,15 +2692,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(ws2.exists(".git/refs/remotes/origin/b1"));
         assertTrue( ws2.exists(".git/refs/remotes/origin/b2"));
         assertFalse(ws2.exists(".git/refs/remotes/origin/b3"));
-
-        String uriSyntaxExceptionRepoPath = "xyzzy://" + r.repoPath();
-        ws1.cmd("git remote add uri-syntax-exception " + uriSyntaxExceptionRepoPath);
-        try {
-            ws2.git.prune(new RemoteConfig(new Config(), uriSyntaxExceptionRepoPath));
-            fail("Missed expected GitException on URI syntax error");
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("Invalid URL"));
-        }
     }
 
     public void test_revListAll() throws Exception {
