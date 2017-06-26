@@ -622,7 +622,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add(strategy);    
                     }
                 }
-                
+
                 args.add(fastForwardMode);
                 args.add(rev.name());
                 launchCommand(args);

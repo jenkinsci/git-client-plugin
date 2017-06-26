@@ -105,7 +105,7 @@ public class MergeCommandTest {
         assertTrue("Branch README missing on branch 1", readmeOne.exists());
         assertTrue("Master README missing on branch 1", readme.exists());
 
-        
+
         git.checkoutBranch("branch-2", "master");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Branch 2 README " + randomChar);

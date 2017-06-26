@@ -1475,7 +1475,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.strategy = MergeStrategy.THEIRS;
                         return this;
                     }
-                    
+
                     listener.getLogger().println("[WARNING] JGit doesn't fully support merge strategies. This flag is ignored");
                 }
                 return this;
