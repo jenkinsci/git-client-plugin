@@ -35,7 +35,7 @@ public interface MergeCommand extends GitCommand {
 
     public enum Strategy {
         DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE, RECURSIVE_THEIRS;
-        
+
         @Override
         public String toString() {
             return name().toLowerCase();

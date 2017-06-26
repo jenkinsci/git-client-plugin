@@ -575,7 +575,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.strategy = strategy.toString();
                 return this;
             }
-            
+
             public MergeCommand setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode fastForwardMode) {
                 this.fastForwardMode = fastForwardMode.toString();
                 return this;
