@@ -4,7 +4,11 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class MergeCommandTest {
 
+    private static final String BRANCH_2_README_CONTENT = "# Branch 2 README ";
     private final String gitImpl;
 
     public MergeCommandTest(String implementation) {
@@ -36,6 +41,7 @@ public class MergeCommandTest {
     private MergeCommand mergeCmd;
 
     private File readmeOne;
+    private File readme;
 
     private ObjectId commit1Master;
     private ObjectId commit1Branch;
@@ -67,7 +73,7 @@ public class MergeCommandTest {
 
         // Create a master branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
-        File readme = new File(repo, "README.md");
+        readme = new File(repo, "README.md");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Master Branch README " + randomChar);
         }
@@ -108,7 +114,7 @@ public class MergeCommandTest {
 
         git.checkoutBranch("branch-2", "master");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
-            writer.println("# Branch 2 README " + randomChar);
+            writer.println(BRANCH_2_README_CONTENT + randomChar);
             writer.println("");
             writer.println("Changed on branch commit");
         }
@@ -240,9 +246,13 @@ public class MergeCommandTest {
     }
 
     @Test
-    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException {
+    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, FileNotFoundException, IOException {
         mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
         assertTrue("branch 2 commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch2));
+        assertTrue("README.md is missing on master", readme.exists());
+        try(FileReader reader = new FileReader(readme); BufferedReader br = new BufferedReader(reader)) {
+            assertTrue("README.md does not contain expected content", br.readLine().startsWith(BRANCH_2_README_CONTENT));
+        }
     }
 
     /* Octopus merge strategy is not implemented in JGit, not exposed in CliGitAPIImpl */
