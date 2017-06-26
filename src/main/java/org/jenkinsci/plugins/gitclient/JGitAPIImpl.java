@@ -1471,6 +1471,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.strategy = MergeStrategy.SIMPLE_TWO_WAY_IN_CORE;
                         return this;
                     }
+                    if (strategy == MergeCommand.Strategy.RECURSIVE_THEIRS) {
+                        this.strategy = MergeStrategy.THEIRS;
+                        return this;
+                    }
+
                     listener.getLogger().println("[WARNING] JGit doesn't fully support merge strategies. This flag is ignored");
                 }
                 return this;
