@@ -619,7 +619,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("--strategy-option");
                         args.add("theirs");
                     } else {
-                        args.add(strategy);    
+                        args.add(strategy);
                     }
                 }
 

@@ -123,7 +123,7 @@ public class MergeCommandTest {
         commit1Branch2 = git.revParse("HEAD");
         assertTrue("Change README commit not on branch 2", git.revListAll().contains(commit1Branch2));
         assertFalse("Change README commit on master branch unexpectedly", git.revList("master").contains(commit1Branch2));
-        
+
         // Commit a second change to master branch
         git.checkout("master");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
