@@ -4467,18 +4467,18 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
 
-        // First commit to branch1
-        w.git.branch("branch1");
-        w.git.checkout("branch1");
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
+        // First commit to branch-1
+        w.git.branch("branch-1");
+        w.git.checkout("branch-1");
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("commit-1");
         String commitSha1 = w.git.revParse("HEAD").name();
 
-        // Merge branch1 into master
+        // Merge branch-1 into master
         w.git.checkout("master");
         String mergeMessage = "Merge message to be tested.";
-        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
         StringWriter writer = new StringWriter();
         // bug in JGitAPIImpl, not in CliGitAPIImpl - JENKINS-40023
         int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2; // Changing JGit max limit to 2 passes the test
