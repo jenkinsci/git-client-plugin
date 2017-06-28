@@ -4462,8 +4462,33 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(40023)
+    public void test_changelog_with_merge_commit_and_max_log_history() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch1
+        w.git.branch("branch1");
+        w.git.checkout("branch1");
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        // Merge branch1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
+        StringWriter writer = new StringWriter();
+        // bug in JGitAPIImpl, not in CliGitAPIImpl - JENKINS-40023
+        int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2; // Changing JGit max limit to 2 passes the test
+        w.git.changelog().max(maxlimit).to(writer).execute();
+        assertThat(writer.toString(),not(isEmptyString()));
+    }
+
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
     }
+
 }
