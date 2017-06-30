@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>2.30</version>
+    <version>2.32</version>
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
@@ -265,6 +265,23 @@
               <value>true</value>
             </property>
           </systemProperties>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.4.2.jenkins-1</version>
+        <configuration>
+          <rules>
+            <requireUpperBoundDeps>
+              <excludes combine.children="append">
+                <!-- core requests 1.4, sshd requests 1.2 -->
+                <exclude>org.jenkins-ci.modules:instance-identity</exclude>
+                <!-- core requests 1.4, sshd requests 1.1 -->
+                <exclude>org.jenkins-ci.modules:ssh-cli-auth</exclude>
+              </excludes>
+            </requireUpperBoundDeps>
+          </rules>
         </configuration>
       </plugin>
     </plugins>
