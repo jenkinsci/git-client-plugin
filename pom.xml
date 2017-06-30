@@ -272,27 +272,13 @@
         <artifactId>maven-enforcer-plugin</artifactId>
         <version>1.4.2.jenkins-1</version>
         <configuration>
-          <rules combine.children="append">
+          <rules>
             <requireUpperBoundDeps>
-              <excludes>
-                <!-- TODO Stapler requests 14 while Jenkins requests 11; should backdate the Stapler version -->
-                <exclude>com.google.guava:guava</exclude>
-                <!-- TODO jenkins-test-harness-htmlunit requests 1.2, newer than 1.1.x in core -->
-                <exclude>commons-logging:commons-logging</exclude>
-                <!-- Stapler requests 2.x while core requests 1.x; anyway not used at runtime -->
-                <exclude>com.google.code.findbugs:jsr305</exclude>
-                 <!-- needed between Jenkins 2.36—2.60 -->
-                <exclude>org.kohsuke:access-modifier-annotation</exclude>
-                 <!-- core requests 1.4, sshd requests 1.2 -->
+              <excludes combine.children="append">
+                <!-- core requests 1.4, sshd requests 1.2 -->
                 <exclude>org.jenkins-ci.modules:instance-identity</exclude>
-                 <!-- core requests 1.4, sshd requests 1.1 -->
+                <!-- core requests 1.4, sshd requests 1.1 -->
                 <exclude>org.jenkins-ci.modules:ssh-cli-auth</exclude>
-                 <!-- core requests 1.8.4, lib-jenkins-embedder requests 1.9.2 -->
-                <exclude>org.apache.ant:ant</exclude>
-                 <!-- jenkins-test-harness requests 2.1, lib-jenkins-embedder requests 3.1.0 -->
-                <exclude>org.codehaus.plexus:plexus-utils</exclude>
-                 <!-- jenkins-test-harness requests 2.4, lib-jenkins-embedder requests 3.4.2 -->
-                <exclude>org.codehaus.plexus:plexus-classworlds</exclude>
               </excludes>
             </requireUpperBoundDeps>
           </rules>
