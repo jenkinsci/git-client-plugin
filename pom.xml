@@ -116,7 +116,7 @@
     <dependency>
       <groupId>org.jenkins-ci.modules</groupId>
       <artifactId>sshd</artifactId>
-      <version>1.7</version>
+      <version>1.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
