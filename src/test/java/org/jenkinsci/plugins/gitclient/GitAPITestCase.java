@@ -4479,9 +4479,20 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("master");
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
+
+        /* JGit, and git 1.7.1 handle merge commits in changelog
+         * differently than git 1.7.9 and later.  See JENKINS-40023.
+         */
+        int maxlimit;
+        if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+            maxlimit = 1;
+        } else if (!(w.git instanceof CliGitAPIImpl)) {
+            maxlimit = 2;
+        } else {
+            return; /* git 1.7.1 is too old, changelog is too different */
+        }
+
         StringWriter writer = new StringWriter();
-        // bug in JGitAPIImpl, not in CliGitAPIImpl - JENKINS-40023
-        int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2; // Changing JGit max limit to 2 passes the test
         w.git.changelog().max(maxlimit).to(writer).execute();
         assertThat(writer.toString(),not(isEmptyString()));
     }
