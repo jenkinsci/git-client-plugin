@@ -121,7 +121,11 @@ public class CliGitAPIImplAuthTest {
         ArgumentListBuilder args = new ArgumentListBuilder(batFile.getAbsolutePath(), "Password");
         String[] output = run(args);
         assertThat(Arrays.asList(output), hasItems(password));
-        assertTrue("Failed to delete test batch file", batFile.delete());
+        if (batFile.delete() == false) {
+            /* Retry delete only once */
+            Thread.sleep(501); /* Wait up to 0.5 second for Windows virus scanners, etc. */
+            assertTrue("Failed retry of delete test batch file", batFile.delete());
+        }
         assertFalse(batFile.exists());
     }
 
