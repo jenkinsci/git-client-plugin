@@ -15,6 +15,13 @@ Contributing to the Plugin
 Refer to [contributing to the plugin](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.md)
 for suggestions to speed the acceptance of your contributions.
 
+Building the Plugin
+===================
+
+  $ java -version # Need Java 1.8, earlier versions are unsupported for build
+  $ mvn -version # Need a modern maven version; maven 3.2.5 and 3.5.0 are known to work
+  $ mvn clean install # Compile and run tests
+
 To Do
 =====
 
