@@ -4484,12 +4484,13 @@ public abstract class GitAPITestCase extends TestCase {
          * differently than git 1.7.9 and later.  See JENKINS-40023.
          */
         int maxlimit;
-        if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+        if (w.git instanceof CliGitAPIImpl) {
+            if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+                return; /* git 1.7.1 is too old, changelog is too different */
+            }
             maxlimit = 1;
-        } else if (!(w.git instanceof CliGitAPIImpl)) {
-            maxlimit = 2;
         } else {
-            return; /* git 1.7.1 is too old, changelog is too different */
+            maxlimit = 2;
         }
 
         StringWriter writer = new StringWriter();
