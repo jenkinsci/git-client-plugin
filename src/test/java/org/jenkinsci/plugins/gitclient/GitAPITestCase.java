@@ -2031,7 +2031,17 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Really remove submodule remnant, use git command line double force */
         if (w.git instanceof CliGitAPIImpl) {
-            w.cmd("git clean -xffd");
+            if (!isWindows()) {
+                w.cmd("git clean -xffd");
+            } else {
+                try {
+                    w.cmd("git clean -xffd");
+                } catch (Exception e) {
+                    /* Retry once (and only once) in case of Windows busy file behavior */
+                    Thread.sleep(503); /* Wait 0.5 seconds for Windows */
+                    w.cmd("git clean -xffd");
+                }
+            }
         }
         assertSubmoduleDirs(w.repo, false, false);
 
