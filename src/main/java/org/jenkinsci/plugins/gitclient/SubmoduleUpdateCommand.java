@@ -58,4 +58,12 @@ public interface SubmoduleUpdateCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand timeout(Integer timeout);
+    
+    /**
+     * Call "git lfs pull" for the given remote after updating the submodule.
+     *
+     * @param lfsRemote name of the remote used for git lfs operations (typically "origin").
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand lfsRemote(String lfsRemote);
 }

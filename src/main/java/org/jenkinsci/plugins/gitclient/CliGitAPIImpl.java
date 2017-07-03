@@ -962,6 +962,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String  ref                            = null;
             Map<String, String> submodBranch   = new HashMap<>();
             public Integer timeout;
+            String lfsRemote;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -990,6 +991,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public SubmoduleUpdateCommand timeout(Integer timeout) {
                 this.timeout = timeout;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand lfsRemote(String lfsRemote) {
+                this.lfsRemote = lfsRemote;
                 return this;
             }
 
@@ -1076,11 +1082,32 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if (cred == null) cred = defaultCredentials;
 
+                    EnvVars env = environment;
+                    if (lfsRemote != null) {
+                        env = new EnvVars(environment);
+                        env.put("GIT_LFS_SKIP_SMUDGE", "1");
+                    }
+
                     // Find the path for this submodule
                     String sModulePath = getSubmodulePath(sModuleName);
 
                     perModuleArgs.add(sModulePath);
-                    launchCommandWithCredentials(perModuleArgs, workspace, cred, urIish, timeout);
+                    launchCommandWithCredentials(perModuleArgs, workspace, env, cred, urIish, timeout);
+                    if (lfsRemote != null) {
+                        final String url = getRemoteUrl(lfsRemote);
+                        cred = credentials.get(url);
+                        if (cred == null) cred = defaultCredentials;
+                        final File submoduleDir = new File(workspace, sModulePath);
+                        ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
+                        lfsArgs.add("lfs");
+                        lfsArgs.add("pull");
+                        lfsArgs.add(lfsRemote);
+                        try {
+                            launchCommandWithCredentials(lfsArgs, submoduleDir, cred, new URIish(url), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + url, e);
+                        }
+                    }
                 }
             }
         };
@@ -1546,7 +1573,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     		@NonNull URIish url) throws GitException, InterruptedException {
     	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
     }
+
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
+                                                StandardCredentials credentials,
+                                                @NonNull URIish url,
+                                                Integer timeout) throws GitException, InterruptedException {
+        return launchCommandWithCredentials(args, workDir, environment, credentials, url, timeout);
+    }
+
+    private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
+                                                EnvVars env,
                                                 StandardCredentials credentials,
                                                 @NonNull URIish url,
                                                 Integer timeout) throws GitException, InterruptedException {
@@ -1555,7 +1591,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = null;
         File pass = null;
         File askpass = null;
-        EnvVars env = environment;
         try {
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;

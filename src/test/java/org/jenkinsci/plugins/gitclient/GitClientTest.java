@@ -688,6 +688,63 @@ public class GitClientTest {
     }
 
     @Test
+    public void testCLICheckoutSubmoduleWithGitLFS() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/getLargeFileSubmodules";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+        gitClient.submoduleInit();
+        gitClient.submoduleUpdate().lfsRemote("origin").execute();
+        assertSubmoduleStatus(gitClient, true, "large-files");
+
+        File uuidFile = new File(repoRoot + "/modules/large-files", "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "5e7733d8acc94636850cb466aec524e4";
+        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+    }
+
+    // If LFS installed and not enabled, checkout submodule content without download
+    @Test
+    public void testCLICheckoutSubmoduleWithoutLFSWhenLFSAvailable() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/getLargeFileSubmodules";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+        gitClient.submoduleInit();
+        gitClient.submoduleUpdate().execute();
+        assertSubmoduleStatus(gitClient, true, "large-files");
+
+        File uuidFile = new File(repoRoot + "/modules/large-files", "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
+                + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
+                + "size 33";
+        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+    }
+
+    // If LFS not installed and not enabled, checkout submodule content without download
+    @Test
+    public void testCLICheckoutSubmoduleWithoutLFSWhenLFSNotAvailable() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeFalse(CLI_GIT_HAS_GIT_LFS);
+        String branch = "tests/getLargeFileSubmodules";
+        String remote = fetchLFSTestRepo(branch);
+        gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
+        gitClient.submoduleInit();
+        gitClient.submoduleUpdate().execute();
+        assertSubmoduleStatus(gitClient, true, "large-files");
+
+        File uuidFile = new File(repoRoot + "/modules/large-files", "uuid.txt");
+        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
+                + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
+                + "size 33";
+        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+    }
+
+    @Test
     public void testDeleteRef() throws Exception {
         assertThat(gitClient.getRefNames(""), is(empty()));
         if (gitImplName.startsWith("jgit")) {

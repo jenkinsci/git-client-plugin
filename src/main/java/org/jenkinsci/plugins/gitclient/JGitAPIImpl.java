@@ -2059,6 +2059,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand lfsRemote(String lfsRemote) {
+                // No-op for JGit implementation
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 if (remoteTracking) {
                     listener.getLogger().println("[ERROR] JGit doesn't support remoteTracking submodules yet.");
