@@ -616,8 +616,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
                     args.add("-s");
-                    args.add(strategy);
+                    if(strategy.equals(MergeCommand.Strategy.RECURSIVE_THEIRS.toString())) {
+                        args.add("recursive");
+                        args.add("--strategy-option");
+                        args.add("theirs");
+                    } else {
+                        args.add(strategy);
+                    }
                 }
+
                 args.add(fastForwardMode);
                 args.add(rev.name());
                 launchCommand(args);
@@ -1477,7 +1484,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return Files.createTempFile(prefix, suffix, fileAttribute).toFile();
     }
 
-    private File createTempFile(String prefix, String suffix) throws IOException {
+    /**
+     * Create temporary file that is aware of the specific limitations
+     * of command line git.
+     *
+     * For example, no temporary file name (Windows or Unix) may
+     * include a percent sign in its path because ssh uses the percent
+     * sign character as the start of token indicator for token
+     * expansion.
+     *
+     * As another example, windows temporary files may not contain a
+     * space, an open parenthesis, or a close parenthesis anywhere in
+     * their path, otherwise they break ssh argument passing through
+     * the GIT_SSH or SSH_ASKPASS environment variable.
+     *
+     * Package protected for testing.  Not to be used outside this class
+     *
+     * @param prefix file name prefix for the generated temporary file
+     * @param suffix file name suffix for the generated temporary file
+     * @return temporary file
+     * @throws IOException on error
+     */
+    File createTempFile(String prefix, String suffix) throws IOException {
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
@@ -1488,8 +1516,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         Path tmpPath = Paths.get(workspaceTmp.getAbsolutePath());
+        if (workspaceTmp.getAbsolutePath().contains("%")) {
+            // Avoid ssh token expansion on all platforms
+            return createTempFileInSystemDir(prefix, suffix);
+        }
         if (isWindows()) {
+            /* Windows git fails its call to GIT_SSH if its absolute
+             * path contains a space or parenthesis or pipe or question mark or asterisk.
+             * Use system temp dir instead of workspace temp dir.
+             */
+            if (workspaceTmp.getAbsolutePath().matches(".*[ ()|?*].*")) {
+                return createTempFileInSystemDir(prefix, suffix);
+            }
             return Files.createTempFile(tmpPath, prefix, suffix).toFile();
+        }
+        // Unix specific
+        if (workspaceTmp.getAbsolutePath().contains("`")) {
+            // Avoid backquote shell expansion
+            return createTempFileInSystemDir(prefix, suffix);
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
         FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
@@ -1891,13 +1935,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        EnvVars environment = new EnvVars(env);
+        EnvVars freshEnv = new EnvVars(env);
         // If we don't have credentials, but the requested URL requires them,
         // it is possible for Git to hang forever waiting for interactive
         // credential input. Prevent this by setting GIT_ASKPASS to "echo"
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
-            environment.put("GIT_ASKPASS", "echo");
+            freshEnv.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -1909,7 +1953,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                    envs(environment).stdout(fos).stderr(err);
+                    envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
             int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
@@ -2474,11 +2518,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             launchCommand("commit", "-F", f.getAbsolutePath());
 
-        } catch (GitException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (FileNotFoundException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (IOException e) {
+        } catch (GitException | IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
             deleteTempFile(f);
@@ -2871,7 +2911,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (File.pathSeparatorChar == ';') {
             return false;
         }
-        String[] prefixes = { "/usr/bin/", "/bin/", "/usr/sbin/", "/sbin/" };
+        String[] prefixes = { "/usr/local/bin/", "/usr/bin/", "/bin/", "/usr/local/sbin/", "/usr/sbin/", "/sbin/" };
         for (String prefix : prefixes) {
             File setsidFile = new File(prefix + "setsid");
             if (setsidFile.exists()) {

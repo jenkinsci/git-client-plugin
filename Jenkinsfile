@@ -1,6 +1,7 @@
 #!groovy
 
-// build both versions
-buildPlugin(jenkinsVersions: [null, '2.46.1'], failFast: false)
+// build both versions, retry test failures
+buildPlugin(jenkinsVersions: [null, '2.60.1'], failFast: false)
 
+// No plugin compatibility tests, retry test failures
 // buildPlugin(failFast: false)

@@ -1393,11 +1393,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
         String output = w.cmd("git branch -v --no-abbrev");
-        assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
+            assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        } else {
+            assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertFalse("git branch -v --no-abbrev contains test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertFalse("git branch -v --no-abbrev contains another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        }
     }
 
     public void test_list_remote_branches() throws Exception {
@@ -1776,13 +1782,28 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_notes_add() throws Exception {
+    public void test_notes_add_first_note() throws Exception {
         w.init();
         w.touch("file1");
         w.git.add("file1");
         w.commitEmpty("init");
 
         w.git.addNote("foo", "commits");
+        assertEquals("foo\n", w.cmd("git notes show"));
+        w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
+        // cgit normalizes CR+LF aggressively
+        // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
+        // note that CR itself is left as is
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.cmd("git notes show"));
+    }
+
+    public void test_notes_append_first_note() throws Exception {
+        w.init();
+        w.touch("file1");
+        w.git.add("file1");
+        w.commitEmpty("init");
+
+        w.git.appendNote("foo", "commits");
         assertEquals("foo\n", w.cmd("git notes show"));
         w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
         // cgit normalizes CR+LF aggressively
@@ -2014,7 +2035,17 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Really remove submodule remnant, use git command line double force */
         if (w.git instanceof CliGitAPIImpl) {
-            w.cmd("git clean -xffd");
+            if (!isWindows()) {
+                w.cmd("git clean -xffd");
+            } else {
+                try {
+                    w.cmd("git clean -xffd");
+                } catch (Exception e) {
+                    /* Retry once (and only once) in case of Windows busy file behavior */
+                    Thread.sleep(503); /* Wait 0.5 seconds for Windows */
+                    w.cmd("git clean -xffd");
+                }
+            }
         }
         assertSubmoduleDirs(w.repo, false, false);
 
@@ -2042,6 +2073,13 @@ public abstract class GitAPITestCase extends TestCase {
 
         if (w.git instanceof JGitAPIImpl) {
             /* submoduleUpdate().recursive(true).execute() throws an exception */
+            /* Call setupSubmoduleUrls to assure it throws expected exception */
+            try {
+                Revision nullRevision = null;
+                w.igit().setupSubmoduleUrls(nullRevision, listener);
+            } catch (UnsupportedOperationException uoe) {
+                assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+            }
             return;
         }
         w.git.submoduleUpdate().recursive(true).execute();
@@ -4438,8 +4476,45 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(40023)
+    public void test_changelog_with_merge_commit_and_max_log_history() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch-1
+        w.git.branch("branch-1");
+        w.git.checkout("branch-1");
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("commit-1");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        // Merge branch-1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
+
+        /* JGit, and git 1.7.1 handle merge commits in changelog
+         * differently than git 1.7.9 and later.  See JENKINS-40023.
+         */
+        int maxlimit;
+        if (w.git instanceof CliGitAPIImpl) {
+            if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+                return; /* git 1.7.1 is too old, changelog is too different */
+            }
+            maxlimit = 1;
+        } else {
+            maxlimit = 2;
+        }
+
+        StringWriter writer = new StringWriter();
+        w.git.changelog().max(maxlimit).to(writer).execute();
+        assertThat(writer.toString(),not(isEmptyString()));
+    }
+
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
     }
+
 }

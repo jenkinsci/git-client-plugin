@@ -70,6 +70,7 @@ public class CredentialsTest {
     private final String fileToCheck;
     private final Boolean submodules;
     private final Boolean useParentCreds;
+    private final char specialCharacter;
 
     private GitClient git;
     private File repo;
@@ -82,7 +83,7 @@ public class CredentialsTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(7);
+    public Timeout timeout = Timeout.seconds(13);
 
     private int logCount;
     private LogHandler handler;
@@ -102,6 +103,11 @@ public class CredentialsTest {
         return StreamTaskListener.fromStdout().getLogger();
     }
 
+    /* Windows refuses directory names with '*', '<', '>', '|', '?', and ':' */
+    private final String SPECIALS_TO_CHECK = "%()`$&{}[]"
+            + (isWindows() ? "" : "*<>:|?");
+    private static int specialsIndex = 0;
+
     public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
@@ -112,16 +118,32 @@ public class CredentialsTest {
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
+        this.specialCharacter = SPECIALS_TO_CHECK.charAt(specialsIndex);
+        specialsIndex = specialsIndex + 1;
+        if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
+            specialsIndex = 0;
+        }
         log().println(show("Repo", gitRepoUrl)
-                + show("implementation", gitImpl)
-                + show("username", username)
-                + show("password", password)
+                + show("spec", specialCharacter)
+                + show("impl", gitImpl)
+                + show("user", username)
+                + show("pass", password)
                 + show("key", privateKey));
     }
 
     @Before
     public void setUp() throws IOException, InterruptedException {
+        git = null;
         repo = tempFolder.newFolder();
+        /* Use a repo with a special character in name - JENKINS-43931 */
+        String newDirName = "use " + specialCharacter + " dir";
+        File repoParent = repo;
+        repo = new File(repoParent, newDirName);
+        boolean dirCreated = repo.mkdirs();
+        assertTrue("Failed to create " + repo.getAbsolutePath(), dirCreated);
+        File repoTemp = new File(repoParent, newDirName + "@tmp"); // use adjacent temp directory
+        dirCreated = repoTemp.mkdirs();
+        assertTrue("Failed to create " + repoTemp.getAbsolutePath(), dirCreated);
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -166,7 +188,9 @@ public class CredentialsTest {
 
     @After
     public void clearCredentials() {
-        git.clearCredentials();
+        if (git != null) {
+            git.clearCredentials();
+        }
     }
 
     private void checkExpectedLogSubstring() {
@@ -310,10 +334,7 @@ public class CredentialsTest {
             }
         }
         Collections.shuffle(repos); // randomize test order
-        int toIndex = repos.size() < 3 ? repos.size() : 3;
-        if (TEST_ALL_CREDENTIALS) {
-            toIndex = repos.size();
-        }
+        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 90 : 6); // Don't run more than 90 variations of test - about 12 minutes
         return repos.subList(0, toIndex);
     }
 
@@ -336,7 +357,7 @@ public class CredentialsTest {
         }
     }
 
-    // @Test
+    @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
@@ -439,6 +460,14 @@ public class CredentialsTest {
             return " " + name + ": '" + file.getPath() + "'";
         }
         return "";
+    }
+
+    private String show(String name, char value) {
+        return " " + name + ": '" + value + "'";
+    }
+
+    private boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 
     /* If not in a Jenkins job, then default to run all credentials tests.

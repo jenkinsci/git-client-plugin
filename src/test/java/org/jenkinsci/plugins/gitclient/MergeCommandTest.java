@@ -4,7 +4,11 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
+
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class MergeCommandTest {
 
+    private static final String BRANCH_2_README_CONTENT = "# Branch 2 README ";
     private final String gitImpl;
 
     public MergeCommandTest(String implementation) {
@@ -36,11 +41,13 @@ public class MergeCommandTest {
     private MergeCommand mergeCmd;
 
     private File readmeOne;
+    private File readme;
 
     private ObjectId commit1Master;
     private ObjectId commit1Branch;
     private ObjectId commit2Master;
     private ObjectId commit2Branch;
+    private ObjectId commit1Branch2;
     private ObjectId commitConflict;
 
     @Rule
@@ -66,7 +73,7 @@ public class MergeCommandTest {
 
         // Create a master branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
-        File readme = new File(repo, "README.md");
+        readme = new File(repo, "README.md");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Master Branch README " + randomChar);
         }
@@ -103,6 +110,19 @@ public class MergeCommandTest {
         assertTrue("branch commit 2 not on branch 1", git.revList("branch-1").contains(commit2Branch));
         assertTrue("Branch README missing on branch 1", readmeOne.exists());
         assertTrue("Master README missing on branch 1", readme.exists());
+
+
+        git.checkoutBranch("branch-2", "master");
+        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+            writer.println(BRANCH_2_README_CONTENT + randomChar);
+            writer.println("");
+            writer.println("Changed on branch commit");
+        }
+        git.add("README.md");
+        git.commit("Commit README change on branch 2");
+        commit1Branch2 = git.revParse("HEAD");
+        assertTrue("Change README commit not on branch 2", git.revListAll().contains(commit1Branch2));
+        assertFalse("Change README commit on master branch unexpectedly", git.revList("master").contains(commit1Branch2));
 
         // Commit a second change to master branch
         git.checkout("master");
@@ -223,6 +243,16 @@ public class MergeCommandTest {
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing on master branch", readmeOne.exists());
+    }
+
+    @Test
+    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, FileNotFoundException, IOException {
+        mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
+        assertTrue("branch 2 commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch2));
+        assertTrue("README.md is missing on master", readme.exists());
+        try(FileReader reader = new FileReader(readme); BufferedReader br = new BufferedReader(reader)) {
+            assertTrue("README.md does not contain expected content", br.readLine().startsWith(BRANCH_2_README_CONTENT));
+        }
     }
 
     /* Octopus merge strategy is not implemented in JGit, not exposed in CliGitAPIImpl */
