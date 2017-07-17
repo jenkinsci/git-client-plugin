@@ -618,6 +618,10 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_reference_working_repo() throws IOException, InterruptedException
     {
         assertTrue("SRC_DIR " + SRC_DIR + " has no .git subdir", (new File(SRC_DIR + File.separator + ".git").isDirectory()));
+        final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
+        if (shallowFile.exists()) {
+            return; /* Reference repository pointing to a shallow checkout is nonsense */
+        }
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
