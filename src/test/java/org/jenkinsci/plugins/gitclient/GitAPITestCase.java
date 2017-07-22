@@ -2131,6 +2131,7 @@ public abstract class GitAPITestCase extends TestCase {
         String subBranch = w.git instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
         String subRefName = "origin/" + subBranch;
         w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        w.git.submoduleInit();
         w.git.submoduleUpdate().recursive(true).execute();
 
         /* Get a client directly on the ntp submodule */
