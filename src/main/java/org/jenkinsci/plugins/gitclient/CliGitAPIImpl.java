@@ -31,7 +31,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -2516,11 +2516,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @NonNull
     public Repository getRepository() throws GitException {
         try {
-            return FileRepositoryBuilder.create(new File(workspace, Constants.DOT_GIT));
+            return new RepositoryBuilder().setWorkTree(workspace).build();
         } catch (IOException e) {
-            throw new GitException("Failed to open Git repository " + workspace, e);
+            throw new GitException(e);
         }
     }
+
 
     /**
      * getWorkTree.
