@@ -1943,6 +1943,9 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertSubmoduleDirs(w.repo, true, true);
             assertSubmoduleContents(w.repo);
+            assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+            assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+            assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
             assertDirNotFound(ntpDir);
             assertDirNotFound(firewallDir);
@@ -1956,6 +1959,9 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertSubmoduleDirs(w.repo, true, true);
             assertSubmoduleContents(w.repo);
+            assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+            assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+            assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
             assertDirNotFound(ntpDir);
             assertDirNotFound(firewallDir);
@@ -2085,6 +2091,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.submoduleUpdate().recursive(true).execute();
         assertSubmoduleDirs(w.repo, true, true);
         assertSubmoduleContents(w.repo);
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
 
         if (w.git instanceof CliGitAPIImpl) {
             // This is a low value section of the test. Does not assert anything
@@ -2118,30 +2126,36 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.submoduleUpdate().recursive(true).execute();
         assertSubmoduleDirs(w.repo, true, true);
         assertSubmoduleContents(w.repo);
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+        assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
     }
 
     /* Opening a git repository in a directory with a symbolic git file instead
-     * of a git directory should function properly. JGit does not implement
-     * renamed submodules, so we the submodules branch won't work with it...
+     * of a git directory should function properly.
      */
-    @NotImplementedInJGit
     public void test_with_repository_works_with_submodule() throws Exception {
         w = clone(localMirror());
         assertSubmoduleDirs(w.repo, false, false);
 
         /* Checkout a branch which includes submodules (in modules directory) */
-        String subBranch = "tests/getSubmodules";
+        String subBranch = w.git instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
         String subRefName = "origin/" + subBranch;
         w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        w.git.submoduleInit();
         w.git.submoduleUpdate().recursive(true).execute();
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+    }
 
-        /* Get a client directly on the ntp submodule */
-        GitClient ntpClient = setupGitAPI(new File(w.repo, "modules/ntp"));
+    private void assertSubmoduleRepository(File submoduleDir) throws Exception {
+        /* Get a client directly on the submoduleDir */
+        GitClient submoduleClient = setupGitAPI(submoduleDir);
 
         /* Assert that when we invoke the repository callback it gets a
          * functioning repository object
          */
-        ntpClient.withRepository(new RepositoryCallback<Void>() {
+        submoduleClient.withRepository(new RepositoryCallback<Void>() {
             public Void invoke(final Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
                 assertTrue(repo.getDirectory() + " is not a valid repository",
                            repo.getObjectDatabase().exists());
