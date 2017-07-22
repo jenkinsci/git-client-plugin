@@ -2121,16 +2121,14 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /* Opening a git repository in a directory with a symbolic git file instead
-     * of a git directory should function properly. JGit does not implement
-     * renamed submodules, so we the submodules branch won't work with it...
+     * of a git directory should function properly.
      */
-    @NotImplementedInJGit
     public void test_with_repository_works_with_submodule() throws Exception {
         w = clone(localMirror());
         assertSubmoduleDirs(w.repo, false, false);
 
         /* Checkout a branch which includes submodules (in modules directory) */
-        String subBranch = "tests/getSubmodules";
+        String subBranch = w.git instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
         String subRefName = "origin/" + subBranch;
         w.git.checkout().ref(subRefName).branch(subBranch).execute();
         w.git.submoduleUpdate().recursive(true).execute();
