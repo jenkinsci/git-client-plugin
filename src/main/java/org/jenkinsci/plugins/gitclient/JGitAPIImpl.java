@@ -1324,7 +1324,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand shared(boolean shared) {
-                this.shared = true;
+                this.shared = shared;
                 return this;
             }
 

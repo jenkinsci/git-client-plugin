@@ -438,7 +438,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand shared(boolean shared) {
-                this.shared = true;
+                this.shared = shared;
                 return this;
             }
 
@@ -2369,6 +2369,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.all = all;
                 return this;
             }
+            
             public RevListCommand firstParent() {
                 return firstParent(true);
             }
