@@ -32,16 +32,40 @@ public interface CloneCommand extends GitCommand {
      * shallow clone is controlled by the #depth method.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     * @deprecated favour {@link #shallow(boolean)}
      */
+    @Deprecated
     CloneCommand shallow();
+
+    /**
+     * Only clone the most recent history, not preceding history.  Depth of the
+     * shallow clone is controlled by the #depth method.
+     *
+     * @param shallow boolean controlling whether the clone is shallow
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     * @since 2.5.0
+     */
+    CloneCommand shallow(boolean shallow);
 
     /**
      * When the repository to clone is on the local machine, instead of using hard links, automatically setup
      * .git/objects/info/alternates to share the objects with the source repository
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     * @deprecated favour {@link #shared(boolean)}
      */
+    @Deprecated
     CloneCommand shared();
+
+    /**
+     * When the repository to clone is on the local machine, instead of using hard links, automatically setup
+     * .git/objects/info/alternates to share the objects with the source repository
+     *
+     * @param shared boolean controlling whether the clone is shared
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     * @since 2.5.0
+     */
+    CloneCommand shared(boolean shared);
 
     /**
      * reference.
