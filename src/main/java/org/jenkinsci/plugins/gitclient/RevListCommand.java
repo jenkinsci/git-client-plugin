@@ -24,6 +24,13 @@ public interface RevListCommand extends GitCommand {
     RevListCommand firstParent();
 
     /**
+     * Set the maximum numer of objects returned.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     */
+    RevListCommand maxCount(int count);
+
+    /**
      * to.
      *
      * @param revs a {@link java.util.List} object.

@@ -669,6 +669,16 @@ public interface GitClient {
      */
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
+    /**
+     * revList.
+     *
+     * @param ref a {@link java.lang.String} object.
+     * @param count the number of objects to return (0 for all)
+     * @return a {@link java.util.List} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<ObjectId> revList(String ref, int count) throws GitException, InterruptedException;
 
     // --- submodules
 

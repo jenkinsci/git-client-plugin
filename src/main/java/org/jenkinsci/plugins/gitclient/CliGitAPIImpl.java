@@ -2344,6 +2344,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
+            public int maxCount = 0;
 
             public RevListCommand all() {
                 this.all = true;
@@ -2365,6 +2366,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public RevListCommand maxCount(int count){
+                this.maxCount = count;
+                return this;
+            }
+
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
 
@@ -2378,6 +2384,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (refspec != null) {
                    args.add(refspec);
+                }
+
+                if (maxCount > 0) {
+                    args.add("--max-count=" + maxCount);
                 }
 
                 String result = launchCommand(args);
@@ -2416,10 +2426,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<ObjectId> revList(String ref) throws GitException, InterruptedException {
+        return revList(ref, 0);
+    }
+
+    /** {@inheritDoc} */
+    public List<ObjectId> revList(String ref, int count) throws GitException, InterruptedException {
         List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
         revListCommand.reference(ref);
         revListCommand.to(oidList);
+        revListCommand.maxCount(count);
         revListCommand.execute();
         return oidList;
     }
