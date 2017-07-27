@@ -1382,7 +1382,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             // we use origin as reference
                             reference = url;
                         } else {
-                            listener.getLogger().println("[WARNING] Both 'shared' and 'reference' is used, shared is ignored.");
+                            listener.getLogger().println("[WARNING] Both 'shared' and 'reference' are used, shared is ignored.");
                         }
                     }
 
