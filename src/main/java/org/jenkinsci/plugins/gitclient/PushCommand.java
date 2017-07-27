@@ -1,9 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-
-import java.util.List;
 
 /**
  * PushCommand interface.
