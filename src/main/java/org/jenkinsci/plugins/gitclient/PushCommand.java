@@ -32,8 +32,19 @@ public interface PushCommand extends GitCommand {
      * force.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.PushCommand} object.
+     * @deprecated favour {@link #force(boolean)}
      */
+    @Deprecated
     PushCommand force();
+
+    /**
+     * force.
+     *
+     * @param force {@code true} if the push should be forced
+     * @return a {@link org.jenkinsci.plugins.gitclient.PushCommand} object.
+     * @since 2.5.0
+     */
+    PushCommand force(boolean force);
 
     /**
      * tags.
