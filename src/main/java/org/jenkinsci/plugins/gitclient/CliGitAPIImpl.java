@@ -296,7 +296,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public FetchCommand prune() {
-                this.prune = true;
+                return prune(true);
+            }
+
+            public FetchCommand prune(boolean prune) {
+                this.prune = prune;
                 return this;
             }
 

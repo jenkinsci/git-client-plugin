@@ -541,7 +541,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
-                shouldPrune = true;
+                return prune(true);
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.FetchCommand prune(boolean prune) {
+                shouldPrune = prune;
                 return this;
             }
 

@@ -25,8 +25,19 @@ public interface FetchCommand extends GitCommand {
      * prune.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     * @deprecated favour {@link #prune(boolean)}
      */
+    @Deprecated
     FetchCommand prune();
+
+    /**
+     * prune.
+     *
+     * @param prune {@code true} if the fetch should prune.
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     * @since 2.5.0
+     */
+    FetchCommand prune(boolean prune);
 
     /**
      * shallow.
