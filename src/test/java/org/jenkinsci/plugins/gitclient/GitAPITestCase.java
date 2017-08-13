@@ -2417,7 +2417,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Confirm first checkout */
         String pomContent = w.contentOf("pom.xml");
-        assertTrue("Missing jacoco ref in master pom : " + pomContent, pomContent.contains("jacoco"));
+        assertTrue("Missing inceptionYear ref in master pom : " + pomContent, pomContent.contains("inceptionYear"));
         assertFalse("Found untracked file", w.file("untracked-file").exists());
 
         /* Modify the pom file by adding a comment */
@@ -2439,9 +2439,9 @@ public abstract class GitAPITestCase extends TestCase {
         }
         cmd.execute();
 
-        /* Tracked file should not contain added comment, nor the jacoco reference */
+        /* Tracked file should not contain added comment, nor the inceptionYear reference */
         pomContent = w.contentOf("pom.xml");
-        assertFalse("Found jacoco ref in 1.4.x pom : " + pomContent, pomContent.contains("jacoco"));
+        assertFalse("Found inceptionYear ref in 1.4.x pom : " + pomContent, pomContent.contains("inceptionYear"));
         assertFalse("Found comment in 1.4.x pom", pomContent.contains(comment));
         assertTrue("Missing untracked file", w.file("untracked-file").exists());
     }
