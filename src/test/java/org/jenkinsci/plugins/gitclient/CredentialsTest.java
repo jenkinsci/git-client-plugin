@@ -352,7 +352,7 @@ public class CredentialsTest {
     }
 
     private void addCredential(String username, String password, File privateKey) throws IOException {
-        if (true || random.nextBoolean()) { // Temporary - pending one bug investigation
+        if (random.nextBoolean()) {
             git.addDefaultCredentials(testedCredential);
         } else {
             git.addCredentials(gitRepoURL, testedCredential);
