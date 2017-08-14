@@ -29,7 +29,7 @@ assure that you haven't introduced new findbugs warnings.
 
 ## Indentation
 
-* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency for new additions.  Try to maintain reasonable consistency with the existing files.
+* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency.  Try to maintain reasonable consistency with the existing files.
 * Please don't perform wholesale reformatting of a file without discussing with the current maintainers.
 
 ## Maven POM file layout
