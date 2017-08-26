@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import org.eclipse.jgit.lib.ObjectId;
 
-import java.io.OutputStream;
 import java.io.Writer;
 
 /**

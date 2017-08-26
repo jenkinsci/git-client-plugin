@@ -2,11 +2,9 @@ package org.jenkinsci.plugins.gitclient;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.plugins.git.GitException;
-import hudson.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;

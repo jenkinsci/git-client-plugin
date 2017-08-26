@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
-import java.util.logging.Level;
 
 /**
  * Information about Git installation. A GitTool is used to select
