@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.ProxyConfiguration;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;

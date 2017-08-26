@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.FilePath.FileCallable;
-import hudson.remoting.Channel;
 import hudson.remoting.VirtualChannel;
 import org.eclipse.jgit.lib.Repository;
 
@@ -14,7 +12,7 @@ import java.io.Serializable;
  *
  * If necessary, the closure will be serialized and sent to remote.
  *
- * @see FileCallable
+ * @see hudson.FilePath.FileCallable
  * @author Kohsuke Kawaguchi
  */
 public interface RepositoryCallback<T> extends Serializable {
