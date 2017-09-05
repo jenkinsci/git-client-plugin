@@ -44,6 +44,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -90,6 +91,9 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -308,6 +312,24 @@ public class GitClientTest {
             assertThat(ge.getMessage(), containsString(missingSHA1));
             assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
         }
+    }
+
+    @Test
+    public void testNullChangelogDestinationIncludes() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        changelog.includes(commitA);
+        thrown.expect(IllegalStateException.class);
+        changelog.execute();
+    }
+
+    @Test
+    public void testNullChangelogDestinationExcludes() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        changelog.excludes(commitA);
+        thrown.expect(IllegalStateException.class);
+        changelog.execute();
     }
 
     @Test
