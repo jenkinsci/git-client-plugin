@@ -847,6 +847,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
+    @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
 
@@ -857,38 +858,46 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Integer n = null;
             Writer out = null;
 
+            @Override
             public ChangelogCommand excludes(String rev) {
                 revs.add(sanitize('^'+rev));
                 return this;
             }
 
+            @Override
             public ChangelogCommand excludes(ObjectId rev) {
                 return excludes(rev.name());
             }
 
+            @Override
             public ChangelogCommand includes(String rev) {
                 revs.add(rev);
                 return this;
             }
 
+            @Override
             public ChangelogCommand includes(ObjectId rev) {
                 return includes(rev.name());
             }
 
+            @Override
             public ChangelogCommand to(Writer w) {
                 this.out = w;
                 return this;
             }
 
+            @Override
             public ChangelogCommand max(int n) {
                 this.n = n;
                 return this;
             }
 
+            @Override
             public void abort() {
                 /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
                 args.add("--format="+RAW);
@@ -904,9 +913,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                        throw new GitException("Error launching git whatchanged");
+                        throw new GitException("Error: " + args + " in " + workspace);
                 } catch (IOException e) {
-                    throw new GitException("Error launching git whatchanged",e);
+                    throw new GitException("Error: " + args + " in " + workspace, e);
                 }
             }
         };
