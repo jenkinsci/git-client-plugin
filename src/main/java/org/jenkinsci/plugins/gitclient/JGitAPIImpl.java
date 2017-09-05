@@ -1056,6 +1056,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
+    @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
             Repository repo = getRepository();
@@ -1064,6 +1065,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Writer out;
             boolean hasIncludedRev = false;
 
+            @Override
             public ChangelogCommand excludes(String rev) {
                 try {
                     return excludes(repo.resolve(rev));
@@ -1072,6 +1074,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
+            @Override
             public ChangelogCommand excludes(ObjectId rev) {
                 try {
                     walk.markUninteresting(walk.lookupCommit(rev));
@@ -1091,6 +1094,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
+            @Override
             public ChangelogCommand includes(ObjectId rev) {
                 try {
                     walk.markStart(walk.lookupCommit(rev));
@@ -1101,11 +1105,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
+            @Override
             public ChangelogCommand to(Writer w) {
                 this.out = w;
                 return this;
             }
 
+            @Override
             public ChangelogCommand max(int n) {
                 walk.setRevFilter(MaxCountRevFilter.create(n));
                 return this;
@@ -1117,6 +1123,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 repo.close();
             }
 
+            @Override
             public void abort() {
                 closeResources();
             }
@@ -1128,6 +1135,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * or abort must be called for each ChangelogCommand or
              * files will remain open.
              */
+            @Override
             public void execute() throws GitException, InterruptedException {
                 try (PrintWriter pw = new PrintWriter(out,false)) {
                     RawFormatter formatter= new RawFormatter();
