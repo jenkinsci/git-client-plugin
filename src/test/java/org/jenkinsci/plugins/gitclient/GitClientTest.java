@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -190,8 +191,10 @@ public class GitClientTest {
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
     }
 
+    private static final String COMMITTED_ONE_TEXT_FILE = "Committed one text file";
+
     private ObjectId commitOneFile() throws Exception {
-        return commitOneFile("Committed one text file");
+        return commitOneFile(COMMITTED_ONE_TEXT_FILE);
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
@@ -243,6 +246,68 @@ public class GitClientTest {
 
     private String randomEmail(String name) {
         return name.replaceAll(" ", ".") + "@middle.earth";
+    }
+
+    @Test
+    @Issue("39832") // Diagnostics of ChangelogCommand were insufficient
+    public void testChangelogExceptionMessage() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commitA).to(changelogStringWriter).execute();
+        assertThat(changelogStringWriter.toString(), containsString(COMMITTED_ONE_TEXT_FILE));
+
+        final String missingSHA1 = "ca11ab1edeededacecadebadebeaddeadcedeade";
+
+        // Confirm includes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.includes(missingSHA1).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        // Confirm excludes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.excludes(missingSHA1).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        final ObjectId missingObject = ObjectId.fromString(missingSHA1);
+
+        // Confirm includes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.includes(missingObject).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        // Confirm excludes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.excludes(missingObject).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
     }
 
     @Test

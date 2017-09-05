@@ -129,6 +129,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
+import org.eclipse.jgit.errors.MissingObjectException;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -1080,7 +1081,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     walk.markUninteresting(walk.lookupCommit(rev));
                     return this;
                 } catch (IOException e) {
-                    throw new GitException(e);
+                    throw new GitException("Error: jgit excludes() in " + workspace + " " + e.getMessage(), e);
                 }
             }
 
@@ -1101,7 +1102,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     hasIncludedRev = true;
                     return this;
                 } catch (IOException e) {
-                    throw new GitException(e);
+                    throw new GitException("Error: jgit includes() in " + workspace + " " + e.getMessage(), e);
                 }
             }
 
@@ -1150,7 +1151,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
-                    throw new GitException(e);
+                    throw new GitException("Error: jgit whatchanged in " + workspace + " " + e.getMessage(), e);
                 } finally {
                     closeResources();
                 }

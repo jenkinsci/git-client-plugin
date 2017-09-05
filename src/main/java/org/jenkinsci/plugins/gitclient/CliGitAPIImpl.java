@@ -913,9 +913,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                        throw new GitException("Error launching git whatchanged");
+                        throw new GitException("Error: " + args + " in " + workspace);
                 } catch (IOException e) {
-                    throw new GitException("Error launching git whatchanged",e);
+                    throw new GitException("Error: " + args + " in " + workspace, e);
                 }
             }
         };
