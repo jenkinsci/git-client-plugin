@@ -1138,6 +1138,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              */
             @Override
             public void execute() throws GitException, InterruptedException {
+                if (out == null) {
+                    throw new IllegalStateException(); // Match CliGitAPIImpl
+                }
                 try (PrintWriter pw = new PrintWriter(out,false)) {
                     RawFormatter formatter= new RawFormatter();
                     if (!hasIncludedRev) {
