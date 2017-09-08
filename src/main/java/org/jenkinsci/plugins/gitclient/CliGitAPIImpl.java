@@ -537,8 +537,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
                             try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                                String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                listener.getLogger().println("Link to the reference repository " + absoluteReference);
                                 // git implementations on windows also use
-                                w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                w.print(absoluteReference);
                             } catch (UnsupportedEncodingException ex) {
                                 listener.error("Default character set is an unsupported encoding");
                             } catch (FileNotFoundException e) {
