@@ -2049,7 +2049,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Split fields into branch name, SHA1, and rest of line
                 // Fields are separated by one or more spaces
                 String[] branchVerboseOutput = line.substring(2).split(" +", 3);
-                if (branchVerboseOutput[1].length() == 40) {
+                if (branchVerboseOutput.length > 1 && branchVerboseOutput[1].length() == 40) {
                     branches.add(new Branch(branchVerboseOutput[0], ObjectId.fromString(branchVerboseOutput[1])));
                 }
             }
