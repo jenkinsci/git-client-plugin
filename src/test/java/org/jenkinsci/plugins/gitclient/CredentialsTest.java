@@ -159,6 +159,7 @@ public class CredentialsTest {
             addExpectedLogSubstring("> git fetch ");
             addExpectedLogSubstring("> git checkout -b master ");
         }
+         addExpectedLogSubstring("Using reference repository: ");
 
         assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
                 (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
@@ -171,13 +172,6 @@ public class CredentialsTest {
         assertThat(testedCredential, notNullValue());
         Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
         assertThat("Fingerprint should not be set", fingerprint, nullValue());
-
-        /* FetchWithCredentials does not log expected message */
-        /*
-         if (gitImpl.equals("jgit")) {
-         addExpectedLogSubstring("remote: Counting objects");
-         }
-         */
     }
 
     @After
