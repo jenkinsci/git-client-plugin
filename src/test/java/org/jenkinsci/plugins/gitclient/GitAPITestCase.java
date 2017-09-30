@@ -601,6 +601,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
         assertNoObjectsInRepository();
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
     }
 
     private void assertNoObjectsInRepository() {

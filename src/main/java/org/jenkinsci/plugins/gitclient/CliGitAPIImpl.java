@@ -538,7 +538,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
                             try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
                                 String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
-                                listener.getLogger().println("Link to the reference repository " + absoluteReference);
+                                listener.getLogger().println("Using reference repository: " + reference);
                                 // git implementations on windows also use
                                 w.print(absoluteReference);
                             } catch (UnsupportedEncodingException ex) {
