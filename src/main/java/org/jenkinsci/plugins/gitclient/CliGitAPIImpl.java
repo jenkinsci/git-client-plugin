@@ -2029,7 +2029,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param fos output of "git branch -v --no-abbrev"
      * @return a {@link java.util.Set} object.
      */
-    private Set<Branch> parseBranches(String fos) {
+    /*package*/ Set<Branch> parseBranches(String fos) {
+        // JENKINS-34309 if the commit message contains line breaks,
+        // "git branch -v --no-abbrev" output will include CR (Carriage Return) characters.
+        // Replace all CR characters to avoid interpreting them as line endings
+        fos = fos.replaceAll("\\r", "");
+
         Set<Branch> branches = new HashSet<>();
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
         String line;
@@ -2039,9 +2044,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // Line must contain 2 leading characters, branch
                     // name (at least 1 character), a space, and 40
                     // character SHA1.
-                    // JENKINS-34309 found cases where a Ctrl-M was
-                    // inserted into the output of
-                    // "git branch -v --no-abbrev"
                     continue;
                 }
                 // Ignore leading 2 characters (marker for current branch)
@@ -2049,7 +2051,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Split fields into branch name, SHA1, and rest of line
                 // Fields are separated by one or more spaces
                 String[] branchVerboseOutput = line.substring(2).split(" +", 3);
-                if (branchVerboseOutput[1].length() == 40) {
+                if (branchVerboseOutput.length > 1 && branchVerboseOutput[1].length() == 40) {
                     branches.add(new Branch(branchVerboseOutput[0], ObjectId.fromString(branchVerboseOutput[1])));
                 }
             }
