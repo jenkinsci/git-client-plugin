@@ -359,7 +359,7 @@ public class CredentialsTest {
         }
     }
 
-    @Test
+    // @Test
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
@@ -395,19 +395,18 @@ public class CredentialsTest {
         checkExpectedLogSubstring();
     }
 
-    // @Test
+    @Test
     public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/" + origin + "/master"));
         addCredential(username, password, privateKey);
-        CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin).refspecs(refSpecs);
+        CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin).refspecs(refSpecs).reference(CURR_DIR.getAbsolutePath());
         if (gitImpl.equals("git")) {
             // Reduce network transfer
-            // Use a reference repository, JGit does not support reference repositories
             // Use shallow clone, JGit does not support shallow clone
-            cmd.shallow().depth(1).reference(CURR_DIR.getAbsolutePath());
+            cmd.shallow().depth(1);
         }
         cmd.execute();
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
