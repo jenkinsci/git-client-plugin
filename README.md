@@ -4,7 +4,7 @@ Utility plugin for Git-related support
 Extracted from [git-plugin](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin)
 to make it easier for other plugins to use and contribute new features.
 Includes JGit as a library so that other Jenkins components can rely on
-JGit being available whenever the git client plugin is available.
+JGit whenever the git client plugin is available.
 
 * see [Jenkins wiki](https://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin) for feature descriptions
 * use [JIRA](https://issues.jenkins-ci.org) to report issues / feature requests
