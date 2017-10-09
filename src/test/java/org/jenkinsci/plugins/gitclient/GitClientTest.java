@@ -253,6 +253,109 @@ public class GitClientTest {
     }
 
     @Test
+    public void testBasicChangelog() throws Exception {
+
+        final String comp1File = "comp1/file.txt";
+        final String comp2File = "comp2/file.txt";
+
+        commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp1");
+
+        commitFile(
+                comp2File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp2");
+
+        final ObjectId commitC = commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "Second commit in comp1");
+
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commitC).to(changelogStringWriter).execute();
+
+        assertThat(changelogStringWriter.toString(),
+                allOf(
+                        containsString("First commit in comp1"),
+                        containsString("Second commit in comp1"),
+                        containsString("First commit in comp2")));
+    }
+
+    @Test
+    public void testChangelogWithPath() throws Exception {
+
+        final String comp1File = "comp1/file.txt";
+        final String comp2File = "comp2/file.txt";
+
+        commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp1");
+
+        commitFile(
+                comp2File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp2");
+
+        final ObjectId commitC = commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "Second commit in comp1");
+
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commitC).path("comp1").to(changelogStringWriter).execute();
+
+        assertThat(changelogStringWriter.toString(),
+                allOf(
+                        containsString("First commit in comp1"),
+                        containsString("Second commit in comp1"),
+                        not(containsString("First commit in comp2"))));
+    }
+
+    @Test
+    public void testChangelogWithMultiplePaths() throws Exception {
+
+        final String comp1File = "comp1/file.txt";
+        final String comp2File = "comp2/file.txt";
+        final String comp3File = "comp3/file.txt";
+
+        commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp1");
+
+        commitFile(
+                comp2File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp2");
+
+        commitFile(
+                comp1File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "Second commit in comp1");
+
+        final ObjectId commitD = commitFile(
+                comp3File,
+                String.format("A random UUID: %s\n", UUID.randomUUID().toString()),
+                "First commit in comp3");
+
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commitD).path("comp1").path("comp3").to(changelogStringWriter).execute();
+
+        assertThat(changelogStringWriter.toString(),
+                allOf(
+                        containsString("First commit in comp1"),
+                        containsString("Second commit in comp1"),
+                        containsString("First commit in comp3"),
+                        not(containsString("First commit in comp2"))));
+    }
+
+    @Test
     @Issue("39832") // Diagnostics of ChangelogCommand were insufficient
     public void testChangelogExceptionMessage() throws Exception {
         final ObjectId commitA = commitOneFile();

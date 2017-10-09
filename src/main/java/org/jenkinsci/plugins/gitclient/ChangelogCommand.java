@@ -86,6 +86,17 @@ public interface ChangelogCommand extends GitCommand {
     ChangelogCommand includes(ObjectId rev);
 
     /**
+     * Retrieve changelog for specified path.
+     *
+     * <p>
+     * If specified this excludes all other paths that are not also added to the command.
+     *
+     * @param path a path to get changelog for
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
+    ChangelogCommand path(String path);
+
+    /**
      * Sets the {@link java.io.OutputStream} that receives the changelog.
      *
      * This takes {@link java.io.Writer} and not {@link java.io.OutputStream} because the changelog is a textual format,

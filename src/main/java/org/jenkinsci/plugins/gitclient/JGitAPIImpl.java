@@ -98,6 +98,7 @@ import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
+import org.eclipse.jgit.revwalk.filter.PatternMatchRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.BasePackFetchConnection;
@@ -112,6 +113,9 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
@@ -1064,6 +1068,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ObjectReader or = repo.newObjectReader();
             RevWalk walk = new RevWalk(or);
             Writer out;
+            List<PathFilter> pathFilters = new ArrayList<>();
             boolean hasIncludedRev = false;
 
             @Override
@@ -1107,6 +1112,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public ChangelogCommand path(String path) {
+                pathFilters.add(PathFilter.create(path));
+                return this;
+            }
+
+            @Override
             public ChangelogCommand to(Writer w) {
                 this.out = w;
                 return this;
@@ -1147,8 +1158,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         /* If no rev has been included, assume HEAD */
                         this.includes("HEAD");
                     }
+
+                    if (pathFilters.size() > 0) {
+                        walk.setTreeFilter(AndTreeFilter.create(
+                                PathFilterGroup.create(pathFilters),
+                                TreeFilter.ANY_DIFF));
+                    }
+
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
+                        // git whatchanged doesn't show the merge commits unless -m is given
                         if (commit.getParentCount()>1)  continue;
 
                         formatter.format(commit, null, pw, true);
