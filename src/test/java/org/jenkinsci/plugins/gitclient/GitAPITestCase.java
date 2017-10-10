@@ -245,6 +245,8 @@ public abstract class GitAPITestCase extends TestCase {
 
         WorkingArea init() throws IOException, InterruptedException {
             git.init();
+            git.setAuthor("root", "root@mydomain.com");
+            git.setCommitter("root", "root@domain.com");
             return this;
         }
 
