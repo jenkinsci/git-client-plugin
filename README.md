@@ -18,8 +18,8 @@ for suggestions to speed the acceptance of your contributions.
 Building the Plugin
 ===================
 
-  $ java -version # Need Java 1.8, earlier versions are unsupported for build
-  $ mvn -version # Need a modern maven version; maven 3.2.5 and 3.5.0 are known to work
+  $ java -version # Requires Java 1.8
+  $ mvn -version # Requires a modern maven version; maven 3.2.5 and 3.5.0 are known to work
   $ mvn clean install
 
 To Do
