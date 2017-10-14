@@ -330,7 +330,7 @@ public class CredentialsTest {
             }
         }
         Collections.shuffle(repos); // randomize test order
-        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 90 : 6); // Don't run more than 90 variations of test - about 12 minutes
+        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 90 : 6); // Don't run more than 90 variations of test - about 3 minutes
         return repos.subList(0, toIndex);
     }
 
@@ -389,7 +389,7 @@ public class CredentialsTest {
         checkExpectedLogSubstring();
     }
 
-    @Test
+    // @Test
     public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         File clonedFile = new File(repo, fileToCheck);
         String origin = "origin";
