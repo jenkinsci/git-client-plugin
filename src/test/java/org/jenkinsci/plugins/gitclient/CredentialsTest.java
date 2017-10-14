@@ -8,7 +8,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.model.Fingerprint;
-import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
 import java.io.File;
@@ -17,7 +16,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,9 +28,6 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -159,7 +154,7 @@ public class CredentialsTest {
             addExpectedLogSubstring("> git fetch ");
             addExpectedLogSubstring("> git checkout -b master ");
         }
-         addExpectedLogSubstring("Using reference repository: ");
+        addExpectedLogSubstring("Using reference repository: ");
 
         assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
                 (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
@@ -334,91 +329,12 @@ public class CredentialsTest {
         return repos.subList(0, toIndex);
     }
 
-    private String listDir(File dir) {
-        File[] files = repo.listFiles();
-        StringBuilder fileList = new StringBuilder();
-        for (File file : files) {
-            fileList.append(file.getName());
-            fileList.append(',');
-        }
-        fileList.deleteCharAt(fileList.length() - 1);
-        return fileList.toString();
-    }
-
     private void addCredential(String username, String password, File privateKey) throws IOException {
         if (random.nextBoolean()) {
             git.addDefaultCredentials(testedCredential);
         } else {
             git.addCredentials(gitRepoURL, testedCredential);
         }
-    }
-
-    // @Test
-    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File clonedFile = new File(repo, fileToCheck);
-        String origin = "origin";
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/" + origin + "/master"));
-        git.init_().workspace(repo.getAbsolutePath()).execute();
-        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        addCredential(username, password, privateKey);
-        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
-        FetchCommand cmd = git.fetch_().from(new URIish(gitRepoURL), refSpecs).tags(false);
-        if (gitImpl.equals("git")) {
-            // Reduce network transfer by using shallow clone
-            // JGit does not support shallow clone
-            cmd.shallow(true).depth(1);
-        }
-        cmd.execute();
-        git.setRemoteUrl(origin, gitRepoURL);
-        ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master.getName() + " from " + gitRepoURL);
-        git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
-        if (submodules) {
-            log().println("Initializing submodules from " + gitRepoURL);
-            git.submoduleInit();
-            SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
-            subcmd.execute();
-        }
-        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
-        /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
-        checkExpectedLogSubstring();
-    }
-
-    // @Test
-    public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File clonedFile = new File(repo, fileToCheck);
-        String origin = "origin";
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/" + origin + "/master"));
-        addCredential(username, password, privateKey);
-        CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin).refspecs(refSpecs).reference(CURR_DIR.getAbsolutePath());
-        if (gitImpl.equals("git")) {
-            // Reduce network transfer
-            // Use shallow clone, JGit does not support shallow clone
-            cmd.shallow().depth(1);
-        }
-        cmd.execute();
-        ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master + " from " + gitRepoURL);
-        git.checkout().branch("master").ref(origin + "/master").deleteBranchIfExist(true).execute();
-        if (submodules) {
-            log().println("Initializing submodules from " + gitRepoURL);
-            git.submoduleInit();
-            SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
-            subcmd.execute();
-        }
-        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
-        checkExpectedLogSubstring();
     }
 
     @Test
