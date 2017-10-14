@@ -87,6 +87,33 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public static final boolean USE_SETSID = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
 
     /**
+     * Set promptForAuthentication=true if you must allow command line git
+     * versions 2.3 and later to prompt the user for authentication.
+     *
+     * Command line git prompting for authentication should be rare, since
+     * Jenkins credentials should be managed through the credentials plugin.
+     *
+     * Command line git 2.3 and later read the environment variable
+     * GIT_TERMINAL_PROMPT. If it has the value 0, then git will not prompt the
+     * user for authentication, even if a terminal is available (as when running
+     * a Jenkins agent from the Windows desktop, or when running it
+     * interactively from the command line, or from a Docker image). If a
+     * terminal is not available (most services on Windows and Linux), then
+     * command line git will not prompt for authentication, whether or not
+     * GIT_TERMINAL_PROMPT is set.
+     *
+     * GCM_INTERACTIVE=never is the environment variable which should
+     * cause the git credential manager for windows to never prompt
+     * for credentials.
+     *
+     * Credential prompting could happen on multiple platforms, but is
+     * more common on Windows computers because many Windows agents
+     * run from the desktop environment.  Agents running on the
+     * desktop are much less common in the Unix environments.
+     */
+    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
+
+    /**
      * CALL_SETSID decides if command line git can use the setsid program
      * during ssh based authentication to detach git from its controlling
      * terminal.
@@ -717,6 +744,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     launchCommand(args);
                 } catch (GitException e) {
                     throw new GitException("Could not init " + workspace, e);
+                }
+
+                if (!PROMPT_FOR_AUTHENTICATION && isWindows() && isAtLeastVersion(2, 9, 0, 0)) {
+                    listener.getLogger().println("Disabling credential helper for " + workspace);
+                    launchCommand("config", "--add", "credential.modalPrompt", "false");
+                    launchCommand("config", "--add", "credential.interactive", "never");
+                    launchCommand("config", "--add", "credential.microsoft.visualstudio.com.interactive", "never");
+                    launchCommand("config", "--add", "credential.helper", "\"\"");
                 }
             }
         };
@@ -1581,6 +1616,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File pass = null;
         File askpass = null;
         EnvVars env = environment;
+        if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
+            env = new EnvVars(env);
+            env.put("GIT_TERMINAL_PROMPT", "0"); // Don't prompt for auth from command line git
+            if (isWindows()) {
+                env.put("GCM_INTERACTIVE", "never"); // Don't prompt for auth from git credentials manager for windows
+            }
+        }
         try {
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
