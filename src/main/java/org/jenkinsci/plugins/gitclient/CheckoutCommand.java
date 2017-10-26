@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -57,4 +59,12 @@ public interface CheckoutCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.CheckoutCommand} object.
      */
     CheckoutCommand lfsRemote(String lfsRemote);
+
+    /**
+     * Use separate credentials for "git lfs pull".
+     *
+     * @param lfsCredentials a {@link com.cloudbees.plugins.credentials.common.StandardCredentials} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.CheckoutCommand} object.
+     */
+    CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials);
 }

@@ -139,6 +139,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
+    private StandardCredentials lfsCredentials;
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -2167,6 +2168,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public List<String> sparseCheckoutPaths = Collections.emptyList();
             public Integer timeout;
             public String lfsRemote;
+            public StandardCredentials lfsCredentials;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -2195,6 +2197,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CheckoutCommand lfsRemote(String lfsRemote) {
                 this.lfsRemote = lfsRemote;
+                return this;
+            }
+
+            @Override
+            public CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials) {
+                this.lfsCredentials = lfsCredentials;
                 return this;
             }
 
@@ -2262,7 +2270,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
-                        StandardCredentials cred = credentials.get(url);
+                        StandardCredentials cred = lfsCredentials;
+                        if (cred == null) cred = credentials.get(url);
                         if (cred == null) cred = defaultCredentials;
                         ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
                         lfsArgs.add("lfs");

@@ -280,10 +280,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            @Override
-            public CheckoutCommand lfsRemote(String lfsRemote) {
+            private CheckoutCommand lfsCheckoutIsNotSupported() {
                 listener.getLogger().println("[WARNING] JGit doesn't support LFS checkout. This flag is ignored.");
                 return this;
+            }
+
+            @Override
+            public CheckoutCommand lfsRemote(String lfsRemote) {
+                return lfsCheckoutIsNotSupported();
+            }
+
+            @Override
+            public CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials) {
+                return lfsCheckoutIsNotSupported();
             }
 
             public void execute() throws GitException, InterruptedException {
