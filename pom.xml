@@ -74,6 +74,18 @@
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- Provided by JSch plugin -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <!-- Include jgit http server so that git-userContent and other
@@ -106,6 +118,9 @@
       <artifactId>git-server</artifactId>
       <version>1.7</version>
       <scope>test</scope>
+      <exclusions>
+
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.googlecode.json-simple</groupId>
@@ -131,15 +146,14 @@
       <version>1.13</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.2</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-codec</groupId>
-          <artifactId>commons-codec</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>jsch</artifactId>
+      <version>0.1.54.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>apache-httpcomponents-client-4-api</artifactId>
+      <version>4.5.3-2.0</version>
     </dependency>
     <dependency>
       <groupId>org.objenesis</groupId>
