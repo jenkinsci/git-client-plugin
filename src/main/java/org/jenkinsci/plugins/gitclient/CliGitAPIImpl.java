@@ -1235,7 +1235,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         String line = firstLine(result);
         if (line == null)
-            throw new GitException("No output from bare repository check for " + GIT_DIR);
+            throw new GitException("No output from git config check for " + GIT_DIR);
         return line.trim();
     }
 
