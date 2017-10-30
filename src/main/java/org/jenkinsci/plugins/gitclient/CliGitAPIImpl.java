@@ -1967,7 +1967,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             String result = fos.toString(Charset.defaultCharset().toString());
             if (status != 0) {
-                throw new GitException("Command \""+command+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ err.toString(Charset.defaultCharset().toString()));
+                String message = "Command \"" + command + "\" returned status code " + status + ":\nstdout: " + result + "\nstderr: " + err.toString(Charset.defaultCharset().toString());
+                listener.getLogger().println(message);
+                throw new GitException(message);
             }
 
             return result;
