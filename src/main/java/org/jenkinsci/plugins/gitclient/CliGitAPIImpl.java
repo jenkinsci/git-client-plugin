@@ -377,6 +377,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
 
+                //TODO: Catch and log here?
                 launchCommandWithCredentials(args, workspace, cred, url, timeout);
             }
         };
@@ -411,6 +412,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
+        //TODO: Catch and log here?
         launchCommandWithCredentials(args, workspace, cred, url);
     }
 
@@ -669,6 +671,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 args.add(fastForwardMode);
                 args.add(rev.name());
+                //TODO: Catch and log here?
                 launchCommand(args);
             }
         };
@@ -2286,6 +2289,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 } catch (GitException e) {
+                    //TODO: Log here?
                     if (Pattern.compile("index\\.lock").matcher(e.getMessage()).find()) {
                         throw new GitLockFailedException("Could not lock repository. Please try again", e);
                     } else {
@@ -2850,6 +2854,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             launchCommand("merge", refSpec);
         } catch (GitException e) {
+            //TODO: Log here?
             throw new GitException("Could not merge " + refSpec, e);
         }
     }
