@@ -91,6 +91,7 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
+    private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -114,6 +115,7 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
+        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
 
         boolean gitLFSExists;
         try {
@@ -923,6 +925,23 @@ public class GitClientTest {
         List<ObjectId> resultB = new ArrayList<>();
         gitClient.revList_().to(resultB).reference("master").execute();
         assertThat(resultB, contains(commitB, commitA));
+    }
+
+    @Test
+    public void testRevListNoWalk() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_REV_LIST_NO_WALK);
+        ObjectId commitA = commitOneFile();
+        List<ObjectId> resultA = new ArrayList<>();
+        gitClient.revList_().to(resultA).reference(commitA.name()).nowalk(true).execute();
+        assertThat(resultA, contains(commitA));
+        assertEquals(resultA.size(), 1);
+
+        /* Make sure it's correct when there's more than one commit in the history */
+        ObjectId commitB = commitOneFile();
+        List<ObjectId> resultB = new ArrayList<>();
+        gitClient.revList_().to(resultB).reference(commitB.name()).nowalk(true).execute();
+        assertThat(resultB, contains(commitB));
+        assertEquals(resultB.size(), 1);
     }
 
     // @Test

@@ -2416,6 +2416,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public RevListCommand revList_() {
         return new RevListCommand() {
             public boolean all;
+            public boolean nowalk;
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
@@ -2429,7 +2430,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.all = all;
                 return this;
             }
-            
+            public RevListCommand nowalk(boolean nowalk) {
+                // --no-walk wasn't introduced until v1.5.3
+                if (isAtLeastVersion(1, 5, 3, 0)) {
+                    this.nowalk = nowalk;
+                }
+                return this;
+            }
+
             public RevListCommand firstParent() {
                 return firstParent(true);
             }
@@ -2459,6 +2467,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (all) {
                    args.add("--all");
+                }
+
+                if (nowalk) {
+                    args.add("--no-walk");
                 }
 
                 if (refspec != null) {
@@ -2515,9 +2527,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return false;
         }
         try {
-            List<ObjectId> revs = revList(commit.name());
+            // Use revList_() directly in order to pass .nowalk(true) which
+            // allows us to bypass the unnecessary revision walk when we
+            // only care to determine if the commit exists.
+            List<ObjectId> oidList = new ArrayList<>();
+            RevListCommand revListCommand = revList_();
+            revListCommand.reference(commit.name());
+            revListCommand.to(oidList);
+            revListCommand.nowalk(true);
+            revListCommand.execute();
 
-            return revs.size() != 0;
+            return oidList.size() != 0;
         } catch (GitException e) {
             return false;
         }

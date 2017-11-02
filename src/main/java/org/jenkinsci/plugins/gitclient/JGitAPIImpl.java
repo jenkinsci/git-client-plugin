@@ -1898,6 +1898,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     {
         return new RevListCommand() {
             public boolean all;
+            public boolean nowalk;
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
@@ -1909,6 +1910,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public RevListCommand all(boolean all) {
                 this.all = all;
+                return this;
+            }
+
+            public RevListCommand nowalk(boolean nowalk) {
+                this.nowalk = nowalk;
                 return this;
             }
 
@@ -1940,6 +1946,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository();
                      ObjectReader or = repo.newObjectReader();
                      RevWalk walk = new RevWalk(or)) {
+
+                    if (nowalk) {
+                        RevCommit c = walk.parseCommit(repo.resolve(refspec));
+                        out.add(c.copy());
+
+                        if (all) {
+                            for (Ref r : repo.getAllRefs().values()) {
+                                c = walk.parseCommit(r.getObjectId());
+                                out.add(c.copy());
+                            }
+                        }
+                        return;
+                    }
 
                     if (all)
                     {
