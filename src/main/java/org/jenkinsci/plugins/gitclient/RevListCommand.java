@@ -28,6 +28,14 @@ public interface RevListCommand extends GitCommand {
     RevListCommand all(boolean all);
 
     /**
+     * nowalk.
+     *
+     * @param nowalk {@code true} to skip revision walk.
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     */
+    RevListCommand nowalk(boolean nowalk);
+
+    /**
      * firstParent.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
