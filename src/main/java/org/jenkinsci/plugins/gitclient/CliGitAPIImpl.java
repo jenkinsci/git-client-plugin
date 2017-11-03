@@ -141,6 +141,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials defaultCredentials;
     private StandardCredentials lfsCredentials;
 
+    /* Package protected for testing */
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = "^submodule\\.(.*)\\.url";
+
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
             return;
@@ -1089,7 +1092,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     // We might fail if we have no modules, so catch this
                     // exception and just return.
-                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", "^submodule\\.(.*)\\.url");
+                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_STRING);
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
@@ -1098,7 +1101,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Use a matcher to find each configured submodule name, and
                 // then run the submodule update command with the provided
                 // path.
-                Pattern pattern = Pattern.compile("^submodule\\.(.*)\\.url", Pattern.MULTILINE);
+                Pattern pattern = Pattern.compile(SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(cfgOutput);
                 while (matcher.find()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
