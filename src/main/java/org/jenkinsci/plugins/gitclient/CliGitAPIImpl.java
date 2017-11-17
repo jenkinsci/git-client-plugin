@@ -2807,7 +2807,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Map<String, ObjectId> references = new HashMap<>();
         String[] lines = result.split("\n");
         for (String line : lines) {
-            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
+            if (line.length() < 41) {
+                continue; // throw new GitException("unexpected ls-remote output " + line);
+            }
             String refName = line.substring(41);
             ObjectId refObjectId = ObjectId.fromString(line.substring(0, 40));
             if (refName.startsWith("refs/tags") && refName.endsWith("^{}")) {
