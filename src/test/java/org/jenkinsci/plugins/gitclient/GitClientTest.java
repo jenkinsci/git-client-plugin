@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -864,6 +865,27 @@ public class GitClientTest {
         Map<String, ObjectId> expResult = null; // Working here
         Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
         assertEquals(expResult, result);
+    }
+
+    @Issue("JENKINS-30589")
+    @Test
+    public void testGetRemoteReferences_ReturnsEmptyMapIfNoTags() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "**";
+        boolean headsOnly = false;
+        boolean tagsOnly = true;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
+    }
+
+    @Test
+    public void testGetRemoteReferencesNonExistingPattern() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "non-existent-name";
+        boolean headsOnly = false;
+        boolean tagsOnly = false;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
     }
 
     @Test
