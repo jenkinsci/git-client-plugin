@@ -16,6 +16,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1435,6 +1436,54 @@ public class GitClientTest {
         updateSubmodule(upstream, oldBranchName, false);
         assertSubmoduleContents("firewall", "ntp", "sshkeys", newDirName); // newDirName dir will be there
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
+    }
+
+    @Issue("JENKINS-46054")
+    @Test
+    public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
+        // Create a new repository that includes ".url" in directory name
+        File baseDir = tempFolder.newFolder();
+        File urlRepoDir = new File(baseDir, "my-submodule.url");
+        assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
+        GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
+        urlRepoClient.init();
+        File readme = new File(urlRepoDir, "readme");
+        String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
+        urlRepoClient.add("readme");
+        urlRepoClient.commit("Added README to repo used as a submodule");
+
+        // Add new repository as submodule to repository that ends in .url
+        File repoHasSubmodule = new File(baseDir, "has-submodule.url");
+        assertTrue("Failed to create repo dir that will have submodule", repoHasSubmodule.mkdir());
+        GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoHasSubmodule).using(gitImplName).getClient();
+        repoHasSubmoduleClient.init();
+        File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
+        String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
+        repoHasSubmoduleClient.add("readme");
+        repoHasSubmoduleClient.commit("Added README to repo that will include a submodule whose URL ends in '.url'");
+        String moduleDirBaseName = "module.named.url";
+        File modulesDir = new File(repoHasSubmodule, "modules");
+        assertTrue("Failed to create modules dir in repoHasSubmodule", modulesDir.mkdir());
+        repoHasSubmoduleClient.addSubmodule(repoHasSubmodule.getAbsolutePath(), "modules/" + moduleDirBaseName);
+        repoHasSubmoduleClient.add(".");
+        repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
+        repoHasSubmoduleClient.submoduleInit();
+        repoHasSubmoduleClient.submoduleUpdate(false);
+        assertSubmoduleStatus(repoHasSubmoduleClient, true, moduleDirBaseName);
+
+        // Clone repoHasSubmodule to new repository with submodule
+        File cloneDir = new File(baseDir, "cloned-submodule");
+        assertTrue("Failed to create clone dir", cloneDir.mkdir());
+        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
+        cloneGitClient.init();
+        cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
+        String branch = "master";
+        cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        cloneGitClient.submoduleInit();
+        cloneGitClient.submoduleUpdate().recursive(false).execute();
+        assertSubmoduleStatus(cloneGitClient, true, moduleDirBaseName);
     }
 
     @Test
