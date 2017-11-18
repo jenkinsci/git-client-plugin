@@ -141,8 +141,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials defaultCredentials;
     private StandardCredentials lfsCredentials;
 
+    /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
+     * Thus, a config call:
+     *   git config -f .gitmodules --get-regexp "^submodule\.([^ ]+)\.url"
+     * will report two lines of output if the submodule URL includes ".url":
+     *   submodule.modules/JENKINS-46504.url.path modules/JENKINS-46504.url
+     *   submodule.modules/JENKINS-46504.url.url https://github.com/MarkEWaite/JENKINS-46054.url
+     * The code originally used the same pattern for get-regexp and for output parsing.
+     * By using the same pattern in both places, it incorrectly took the first line
+     * of output as the URL of a submodule (when it is instead the path of a submodule).
+    */
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.([^ ]+)\\.url";
+
+    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain why this
+     * regular expression string adds the trailing space character as part of its match.
+     * Without the trailing whitespace character in the pattern, too many matches are found.
+     */
     /* Package protected for testing */
-    final static String SUBMODULE_REMOTE_PATTERN_STRING = "^submodule\\.(.*)\\.url";
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\b\\s";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -1092,7 +1108,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     // We might fail if we have no modules, so catch this
                     // exception and just return.
-                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_STRING);
+                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
