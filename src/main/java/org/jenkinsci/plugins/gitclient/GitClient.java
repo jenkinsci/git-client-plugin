@@ -946,4 +946,13 @@ public interface GitClient {
      * @throws java.lang.InterruptedException on thread interruption
      */
     List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
+
+    /**
+     * Return name and object ID of all tags in current repository.
+     *
+     * @return set of tags in current repository
+     * @throws hudson.plugins.git.GitException on Git exceptions
+     * @throws java.lang.InterruptedException on thread interruption
+     */
+    Set<GitObject> getTags() throws GitException, InterruptedException;
 }
