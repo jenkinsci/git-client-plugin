@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
@@ -39,5 +40,26 @@ public class Branch extends GitObject {
     @Override
     public String toString() {
         return "Branch " + name + "(" + getSHA1String() + ")";
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Branch other = (Branch) obj;
+        return Objects.equals(this.name, other.name)
+                && Objects.equals(this.sha1, other.sha1);
     }
 }

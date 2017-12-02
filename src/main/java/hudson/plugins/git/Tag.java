@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
@@ -56,5 +57,26 @@ public class Tag extends GitObject {
      */
     public void setCommitSHA1(String commitSHA1) {
         this.commitSHA1 = commitSHA1;
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Tag other = (Tag) obj;
+        return Objects.equals(this.name, other.name)
+                && Objects.equals(this.sha1, other.sha1);
     }
 }
