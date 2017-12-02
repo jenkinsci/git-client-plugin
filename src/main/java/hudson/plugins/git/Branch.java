@@ -1,6 +1,5 @@
 package hudson.plugins.git;
 
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
@@ -37,7 +36,8 @@ public class Branch extends GitObject {
      * Returns branch name and SHA1 hash.
      * @return branch name and SHA1 hash
      */
-    public @Override String toString() {
-        return "Branch " + name + "(" + sha1 + ")";
+    @Override
+    public String toString() {
+        return "Branch " + name + "(" + getSHA1String() + ")";
     }
 }
