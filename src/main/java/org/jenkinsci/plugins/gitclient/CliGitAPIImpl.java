@@ -3014,11 +3014,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         7ac27f7a051e1017da9f7c45ade8f091dbe6f99d refs/tags/git-3.6.4
         7b5856ef2b4d35530a06d6482d0f4e972769d89b refs/tags/git-3.6.4^{}
          */
-        String[] output = result.split("[\\n\\r]");
+        String[] output = result.split("[\\n\\r]+");
         if (output.length == 0 || (output.length == 1 && output[0].isEmpty())) {
-            return new HashSet<>();
+            return Collections.EMPTY_SET;
         }
-        Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^\\^]*)(\\^\\{\\})?");
+        Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^^]+)(\\^\\{\\})?");
         Map<String, ObjectId> tagMap = new HashMap<>();
         for (String line : output) {
             Matcher matcher = pattern.matcher(line);
