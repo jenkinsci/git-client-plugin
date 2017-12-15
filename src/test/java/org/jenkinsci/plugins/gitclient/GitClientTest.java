@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
@@ -1757,5 +1758,49 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetRemoteReferences_URI_Syntax() throws Exception {
         gitClient.getRemoteReferences("error: invalid repo URL", Constants.HEAD, false, false);
+    }
+
+    @Test
+    public void testGetTags() throws Exception {
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_NoTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_OneTag() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, contains(expectedTag));
+    }
+
+    @Test
+    public void testGetTags_ThreeTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one-annotated";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        String tagName2 = "tag-two";
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("tag", tagName2);
+        GitObject expectedTag2 = new GitObject(tagName2, commitOne);
+
+        String tagName3 = "tag-three-annotated";
+        gitCmd.run("tag", "-a", tagName3, "-m", "Annotated tag " + tagName3);
+        GitObject expectedTag3 = new GitObject(tagName3, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, containsInAnyOrder(expectedTag, expectedTag2, expectedTag3));
     }
 }

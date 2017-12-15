@@ -10,11 +10,11 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
-import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
@@ -879,5 +879,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
             throws GitException, InterruptedException {
         return getGitAPI().getBranchesContaining(revspec, allBranches);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<GitObject> getTags() throws GitException, InterruptedException {
+        return proxy.getTags();
     }
 }

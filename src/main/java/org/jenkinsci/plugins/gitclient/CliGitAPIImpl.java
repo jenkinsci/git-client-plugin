@@ -19,6 +19,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -2994,5 +2995,57 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<GitObject> getTags() throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("show-ref", "--tags", "-d");
+        String result;
+        try {
+            result = launchCommandIn(args, workspace);
+        } catch (GitException ge) {
+            /* If no tags, then git show-ref --tags -d returns non-zero */
+            result = "";
+        }
+
+        /*
+        Output shows SHA1 and tag with (optional) marker for annotated tags
+        7ac27f7a051e1017da9f7c45ade8f091dbe6f99d refs/tags/git-3.6.4
+        7b5856ef2b4d35530a06d6482d0f4e972769d89b refs/tags/git-3.6.4^{}
+         */
+        String[] output = result.split("[\\n\\r]+");
+        if (output.length == 0 || (output.length == 1 && output[0].isEmpty())) {
+            return Collections.EMPTY_SET;
+        }
+        Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^^]+)(\\^\\{\\})?");
+        Map<String, ObjectId> tagMap = new HashMap<>();
+        for (String line : output) {
+            Matcher matcher = pattern.matcher(line);
+            if (!matcher.find()) {
+                // Log the surprise and skip the line
+                String message = MessageFormat.format(
+                        "git show-ref --tags -d output not matched in line: {0}",
+                        line);
+                listener.getLogger().println(message);
+                continue;
+            }
+            String sha1String = matcher.group(1);
+            String tagName = matcher.group(2);
+            String trailingText = matcher.group(3);
+            boolean isPeeledRef = false;
+            if (trailingText != null && trailingText.equals("^{}")) { // Line ends with '^{}'
+                isPeeledRef = true;
+            }
+            /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
+            if (isPeeledRef || !tagMap.containsKey(tagName)) {
+                tagMap.put(tagName, ObjectId.fromString(sha1String));
+            }
+        }
+        Set<GitObject> tags = new HashSet<>(tagMap.size());
+        for (Map.Entry<String, ObjectId> entry : tagMap.entrySet()) {
+            tags.add(new GitObject(entry.getKey(), entry.getValue()));
+        }
+        return tags;
     }
 }
