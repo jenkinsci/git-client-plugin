@@ -59,11 +59,26 @@ public class Tag extends GitObject {
         this.commitSHA1 = commitSHA1;
     }
 
+    /**
+     * Returns a hash code value for the object. Considers sha1 and name in the
+     * calculation.
+     *
+     * @return a hash code value for this object.
+     */
     @Override
     public int hashCode() {
         return super.hashCode();
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one. Includes sha1
+     * and name in the comparison. Objects of subclasses of this object are not
+     * equal to objects of this class, even if they add no fields.
+     *
+     * @param obj the reference object with which to compare.
+     * @return true if this object is the same as the obj argument; false
+     * otherwise
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
