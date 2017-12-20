@@ -131,9 +131,9 @@ import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.plugins.git.GitObject;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
-import org.eclipse.jgit.errors.MissingObjectException;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -284,10 +284,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            @Override
-            public CheckoutCommand lfsRemote(String lfsRemote) {
+            private CheckoutCommand lfsCheckoutIsNotSupported() {
                 listener.getLogger().println("[WARNING] JGit doesn't support LFS checkout. This flag is ignored.");
                 return this;
+            }
+
+            @Override
+            public CheckoutCommand lfsRemote(String lfsRemote) {
+                return lfsCheckoutIsNotSupported();
+            }
+
+            @Override
+            public CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials) {
+                return lfsCheckoutIsNotSupported();
             }
 
             public void execute() throws GitException, InterruptedException {
@@ -1907,6 +1916,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     {
         return new RevListCommand() {
             public boolean all;
+            public boolean nowalk;
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
@@ -1918,6 +1928,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public RevListCommand all(boolean all) {
                 this.all = all;
+                return this;
+            }
+
+            public RevListCommand nowalk(boolean nowalk) {
+                this.nowalk = nowalk;
                 return this;
             }
 
@@ -1949,6 +1964,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository();
                      ObjectReader or = repo.newObjectReader();
                      RevWalk walk = new RevWalk(or)) {
+
+                    if (nowalk) {
+                        RevCommit c = walk.parseCommit(repo.resolve(refspec));
+                        out.add(c.copy());
+
+                        if (all) {
+                            for (Ref r : repo.getAllRefs().values()) {
+                                c = walk.parseCommit(r.getObjectId());
+                                out.add(c.copy());
+                            }
+                        }
+                        return;
+                    }
 
                     if (all)
                     {
@@ -2661,5 +2689,33 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException ioe) {
             throw new GitException(ioe);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<GitObject> getTags() throws GitException, InterruptedException {
+        Set<GitObject> peeledTags = new HashSet<>();
+        Set<String> tagNames = new HashSet<>();
+        try (Repository repo = getRepository()) {
+            Map<String, Ref> tagsRead = repo.getTags();
+            for (Map.Entry<String, Ref> entry : tagsRead.entrySet()) {
+                /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
+                String tagName = entry.getKey();
+                Ref tagRef = entry.getValue();
+                if (!entry.getValue().isPeeled()) {
+                    Ref peeledRef = repo.peel(tagRef);
+                    if (peeledRef.getPeeledObjectId() != null) {
+                        tagRef = peeledRef; // Use peeled ref instead of annotated ref
+                    }
+                }
+                if (tagRef.isPeeled()) {
+                    peeledTags.add(new GitObject(tagName, tagRef.getPeeledObjectId()));
+                } else if (!tagNames.contains(tagName)) {
+                    peeledTags.add(new GitObject(tagName, tagRef.getObjectId()));
+                }
+                tagNames.add(entry.getKey());
+            }
+        }
+        return peeledTags;
     }
 }

@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
@@ -16,9 +17,11 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -91,6 +94,7 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
+    private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -114,6 +118,7 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
+        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
 
         boolean gitLFSExists;
         try {
@@ -967,6 +972,27 @@ public class GitClientTest {
         assertEquals(expResult, result);
     }
 
+    @Issue("JENKINS-30589")
+    @Test
+    public void testGetRemoteReferences_ReturnsEmptyMapIfNoTags() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "**";
+        boolean headsOnly = false;
+        boolean tagsOnly = true;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
+    }
+
+    @Test
+    public void testGetRemoteReferencesNonExistingPattern() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "non-existent-name";
+        boolean headsOnly = false;
+        boolean tagsOnly = false;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
+    }
+
     @Test
     public void testRevParse() throws Exception {
         ObjectId commitA = commitOneFile();
@@ -1026,6 +1052,23 @@ public class GitClientTest {
         List<ObjectId> resultB = new ArrayList<>();
         gitClient.revList_().to(resultB).reference("master").execute();
         assertThat(resultB, contains(commitB, commitA));
+    }
+
+    @Test
+    public void testRevListNoWalk() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_REV_LIST_NO_WALK);
+        ObjectId commitA = commitOneFile();
+        List<ObjectId> resultA = new ArrayList<>();
+        gitClient.revList_().to(resultA).reference(commitA.name()).nowalk(true).execute();
+        assertThat(resultA, contains(commitA));
+        assertEquals(resultA.size(), 1);
+
+        /* Make sure it's correct when there's more than one commit in the history */
+        ObjectId commitB = commitOneFile();
+        List<ObjectId> resultB = new ArrayList<>();
+        gitClient.revList_().to(resultB).reference(commitB.name()).nowalk(true).execute();
+        assertThat(resultB, contains(commitB));
+        assertEquals(resultB.size(), 1);
     }
 
     // @Test
@@ -1499,6 +1542,54 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
     }
 
+    @Issue("JENKINS-46054")
+    @Test
+    public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
+        // Create a new repository that includes ".url" in directory name
+        File baseDir = tempFolder.newFolder();
+        File urlRepoDir = new File(baseDir, "my-submodule.url");
+        assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
+        GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
+        urlRepoClient.init();
+        File readme = new File(urlRepoDir, "readme");
+        String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
+        urlRepoClient.add("readme");
+        urlRepoClient.commit("Added README to repo used as a submodule");
+
+        // Add new repository as submodule to repository that ends in .url
+        File repoHasSubmodule = new File(baseDir, "has-submodule.url");
+        assertTrue("Failed to create repo dir that will have submodule", repoHasSubmodule.mkdir());
+        GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoHasSubmodule).using(gitImplName).getClient();
+        repoHasSubmoduleClient.init();
+        File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
+        String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
+        repoHasSubmoduleClient.add("readme");
+        repoHasSubmoduleClient.commit("Added README to repo that will include a submodule whose URL ends in '.url'");
+        String moduleDirBaseName = "module.named.url";
+        File modulesDir = new File(repoHasSubmodule, "modules");
+        assertTrue("Failed to create modules dir in repoHasSubmodule", modulesDir.mkdir());
+        repoHasSubmoduleClient.addSubmodule(repoHasSubmodule.getAbsolutePath(), "modules/" + moduleDirBaseName);
+        repoHasSubmoduleClient.add(".");
+        repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
+        repoHasSubmoduleClient.submoduleInit();
+        repoHasSubmoduleClient.submoduleUpdate(false);
+        assertSubmoduleStatus(repoHasSubmoduleClient, true, moduleDirBaseName);
+
+        // Clone repoHasSubmodule to new repository with submodule
+        File cloneDir = new File(baseDir, "cloned-submodule");
+        assertTrue("Failed to create clone dir", cloneDir.mkdir());
+        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
+        cloneGitClient.init();
+        cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
+        String branch = "master";
+        cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        cloneGitClient.submoduleInit();
+        cloneGitClient.submoduleUpdate().recursive(false).execute();
+        assertSubmoduleStatus(cloneGitClient, true, moduleDirBaseName);
+    }
+
     @Test
     public void testGetSubmodules() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -1770,5 +1861,49 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetRemoteReferences_URI_Syntax() throws Exception {
         gitClient.getRemoteReferences("error: invalid repo URL", Constants.HEAD, false, false);
+    }
+
+    @Test
+    public void testGetTags() throws Exception {
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_NoTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_OneTag() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, contains(expectedTag));
+    }
+
+    @Test
+    public void testGetTags_ThreeTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one-annotated";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        String tagName2 = "tag-two";
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("tag", tagName2);
+        GitObject expectedTag2 = new GitObject(tagName2, commitOne);
+
+        String tagName3 = "tag-three-annotated";
+        gitCmd.run("tag", "-a", tagName3, "-m", "Annotated tag " + tagName3);
+        GitObject expectedTag3 = new GitObject(tagName3, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, containsInAnyOrder(expectedTag, expectedTag2, expectedTag3));
     }
 }

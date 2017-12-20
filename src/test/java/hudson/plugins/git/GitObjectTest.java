@@ -9,6 +9,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import static org.junit.Assert.*;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 @RunWith(Parameterized.class)
 public class GitObjectTest {
 
@@ -54,5 +56,13 @@ public class GitObjectTest {
     @Test
     public void testGetSHA1String() {
         assertEquals(sha1String, gitObject.getSHA1String());
+    }
+
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(GitObject.class)
+                .usingGetClass()
+                .withRedefinedSubclass(Tag.class)
+                .verify();
     }
 }
