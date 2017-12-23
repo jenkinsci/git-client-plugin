@@ -477,6 +477,17 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
+        Collection<String> branchNames = Collections2.transform(branches, new Function<Branch, String>() {
+            public String apply(Branch branch) {
+                return branch.getName();
+            }
+        });
+        for (String name : names) {
+            assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
+        }
+    }
+
     public void test_setAuthor() throws Exception {
         final String authorName = "Test Author";
         final String authorEmail = "jenkins@example.com";
@@ -1304,20 +1315,24 @@ public abstract class GitAPITestCase extends TestCase {
         int expectedBranchCount = 3;
         if (newArea.git instanceof CliGitAPIImpl && !w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             expectedBranchCount = 4;
+            assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
+        } else {
+            assertBranchesExist(remoteBranches, "origin/master", "origin/branch2", "origin/HEAD");
+            assertBranchesNotExist(remoteBranches, "origin/branch1");
         }
-        assertEquals("Wrong count in " + remoteBranches, expectedBranchCount, remoteBranches.size());
+        assertEquals("Wrong remote branch count", expectedBranchCount, remoteBranches.size());
     }
 
     public void test_fetch_from_url() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
         r.commitEmpty("init");
-        String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
+        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 HEAD");
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
         w.git.fetch(new URIish(r.repo.toString()), Collections.<RefSpec>emptyList());
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
+        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 HEAD")));
     }
 
     public void test_fetch_with_updated_tag() throws Exception {
@@ -1325,19 +1340,19 @@ public abstract class GitAPITestCase extends TestCase {
         r.init();
         r.commitEmpty("init");
         r.tag("t");
-        String sha1 = r.cmd("git rev-list --max-count=1 t");
+        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
         w.git.fetch("origin", new RefSpec[] {null});
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
+        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 t")));
 
         r.touch("file.txt");
         r.git.add("file.txt");
         r.git.commit("update");
         r.tag("-d t");
         r.tag("t");
-        sha1 = r.cmd("git rev-list --max-count=1 t");
+        sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
         w.git.fetch("origin", new RefSpec[] {null});
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
 
