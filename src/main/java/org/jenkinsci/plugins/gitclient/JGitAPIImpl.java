@@ -586,20 +586,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
 
-                    List<RefSpec> refSpecs = new ArrayList<>();
+                    List<RefSpec> allRefSpecs = new ArrayList<>();
                     if (tags) {
                         // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
-                        refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+                        allRefSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
                     }
                     if (refspecs != null)
                         for (RefSpec rs: refspecs)
                             if (rs != null)
-                                refSpecs.add(rs);
+                                allRefSpecs.add(rs);
 
                     if (shouldPrune) {
                         // since prune is broken in JGit, we go the trivial way:
                         // delete all refs matching the right side of the refspecs
-                        // then fetch and let the git recreate them.
+                        // then fetch and let git recreate them.
                         List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
 
                         List<String> toDelete = new ArrayList<>(refs.size());
@@ -607,7 +607,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
                             Ref branchRef = it.next();
                             if (!branchRef.isSymbolic()) { // Don't delete HEAD and other symbolic refs
-                                for (RefSpec rs : refSpecs) {
+                                for (RefSpec rs : allRefSpecs) {
                                     if (rs.matchDestination(branchRef)) {
                                         toDelete.add(branchRef.getName());
                                         break;
@@ -626,7 +626,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
 
-                    fetch.setRefSpecs(refSpecs);
+                    fetch.setRefSpecs(allRefSpecs);
                     // fetch.setRemoveDeletedRefs(shouldPrune);
 
                     fetch.call();
