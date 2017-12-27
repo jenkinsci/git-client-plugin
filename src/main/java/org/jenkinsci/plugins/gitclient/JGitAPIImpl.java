@@ -587,10 +587,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
 
                     List<RefSpec> allRefSpecs = new ArrayList<>();
-                    if (tags) {
-                        // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
-                        allRefSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
-                    }
                     if (refspecs != null)
                         for (RefSpec rs: refspecs)
                             if (rs != null)
@@ -623,6 +619,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     FetchCommand fetch = git.fetch();
                     fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
+                    if (allRefSpecs.isEmpty() && tags) {
+                        allRefSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
+                    }
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
 
@@ -656,9 +655,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (remoteName != null) fetch.setRemote(remoteName);
             fetch.setCredentialsProvider(getProvider());
 
-            // see http://stackoverflow.com/questions/14876321/jgit-fetch-dont-update-tag
             List<RefSpec> refSpecs = new ArrayList<>();
-            refSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
             if (refspec != null && refspec.length > 0)
                 for (RefSpec rs: refspec)
                     if (rs != null)

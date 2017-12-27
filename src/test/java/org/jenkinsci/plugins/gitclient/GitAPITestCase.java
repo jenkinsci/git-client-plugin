@@ -1006,12 +1006,12 @@ public abstract class GitAPITestCase extends TestCase {
              * command line less than 1.9.  Assert that change arrives in
              * repo if git command line 1.9 or later. */
             newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
-            assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
-            assertTrue("Wrong git version", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            // JGit 4.9.0 and later copy the revision, JGit 4.8.0 and earlier did not
+            // assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
+            if (newArea.git instanceof CliGitAPIImpl) {
+                assertTrue("Wrong git version", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            }
             expectedHead = bareCommit5;
-        } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
-            String expectedSubString = "Missing commit " + bareCommit5.name();
-            assertTrue("Wrong jgit message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
         } catch (GitException ge) {
             assertTrue("Wrong cli git message :" + ge.getMessage(),
                        ge.getMessage().contains("Could not merge") ||
