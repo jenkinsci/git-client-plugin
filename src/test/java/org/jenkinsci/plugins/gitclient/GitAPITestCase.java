@@ -18,6 +18,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -467,22 +468,14 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, new Function<Branch, String>() {
-            public String apply(Branch branch) {
-                return branch.getName();
-            }
-        });
+        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
         for (String name : names) {
             assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
         }
     }
 
     private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, new Function<Branch, String>() {
-            public String apply(Branch branch) {
-                return branch.getName();
-            }
-        });
+        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
         for (String name : names) {
             assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
         }
