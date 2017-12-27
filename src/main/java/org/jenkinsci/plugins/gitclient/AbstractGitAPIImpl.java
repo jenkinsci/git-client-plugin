@@ -92,7 +92,10 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
      * @return a {@link java.lang.Object} object.
      */
     protected Object writeReplace() {
-        return remoteProxyFor(Channel.current().export(GitClient.class, this));
+        Channel currentChannel = Channel.current();
+        if (currentChannel == null)
+            return null;
+        return remoteProxyFor(currentChannel.export(GitClient.class, this));
     }
 
     /**

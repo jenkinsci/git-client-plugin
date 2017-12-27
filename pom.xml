@@ -228,7 +228,7 @@
         <artifactId>findbugs-maven-plugin</artifactId>
         <configuration>
           <skip>${skipFindbugs}</skip>
-          <failOnError>false</failOnError>
+          <failOnError>true</failOnError>
           <xmlOutput>true</xmlOutput>
           <findbugsXmlWithMessages>true</findbugsXmlWithMessages>
         </configuration>

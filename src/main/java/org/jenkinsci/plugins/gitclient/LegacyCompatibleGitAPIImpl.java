@@ -195,7 +195,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     /** {@inheritDoc} */
     @Override
     protected Object writeReplace() {
-        return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
+        Channel currentChannel = Channel.current();
+        if (currentChannel == null)
+            return null;
+        return remoteProxyFor(currentChannel.export(IGitAPI.class, this));
     }
 
     /**
