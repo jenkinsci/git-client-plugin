@@ -118,12 +118,7 @@ public class Revision implements java.io.Serializable, Cloneable {
         StringBuilder s = new StringBuilder("Revision " + revisionName + " (");
         if (branches != null) {
             Joiner.on(", ").appendTo(s,
-                    Iterables.transform(branches, new Function<Branch, String>() {
-
-                        public String apply(Branch from) {
-                            return Util.fixNull(from.getName());
-                        }
-                    }));
+                    Iterables.transform(branches, (Branch from) -> Util.fixNull(from.getName())));
         }
         s.append(')');
         return s.toString();

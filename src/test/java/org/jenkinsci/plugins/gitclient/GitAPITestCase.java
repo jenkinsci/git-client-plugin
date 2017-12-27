@@ -672,18 +672,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         final WorkingArea w2 = new WorkingArea();
         w2.launchCommand("git", "clone", localMirror(), "./");
-        w2.git.withRepository(new RepositoryCallback<Void>() {
-            public Void invoke(final Repository realRepo, VirtualChannel channel) throws IOException, InterruptedException {
-                return w.git.withRepository(new RepositoryCallback<Void>() {
-                    public Void invoke(final Repository implRepo, VirtualChannel channel) {
-                        final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-                        final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-                        assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
-                        return null;
-                    }
-                });
-            }
-        });
+        w2.git.withRepository((final Repository realRepo, VirtualChannel channel) -> w.git.withRepository((final Repository implRepo, VirtualChannel channel1) -> {
+            final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
+            return null;
+        }));
     }
 
     public void test_clone_refspecs() throws Exception {
@@ -692,14 +686,13 @@ public abstract class GitAPITestCase extends TestCase {
           new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
       );
       w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
-      w.git.withRepository(new RepositoryCallback<Void>() {
-        public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+      w.git.withRepository((Repository repo, VirtualChannel channel) -> {
           String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
           assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
           assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
           assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
           return null;
-        }});
+      });
       Set<Branch> remoteBranches = w.git.getRemoteBranches();
       assertBranchesExist(remoteBranches, "origin/master");
       assertBranchesExist(remoteBranches, "origin/1.4.x");
@@ -2227,12 +2220,11 @@ public abstract class GitAPITestCase extends TestCase {
         /* Assert that when we invoke the repository callback it gets a
          * functioning repository object
          */
-        submoduleClient.withRepository(new RepositoryCallback<Void>() {
-            public Void invoke(final Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
-                assertTrue(repo.getDirectory() + " is not a valid repository",
-                           repo.getObjectDatabase().exists());
-                return null;
-            }});
+        submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
+            assertTrue(repo.getDirectory() + " is not a valid repository",
+                    repo.getObjectDatabase().exists());
+            return null;
+        });
     }
 
     private String listDir(File dir) {
@@ -3742,27 +3734,16 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(3, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         // Merge commit is duplicated as have to capture changes that may have been made as part of merge
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith(":");
-            }
-        });
-        Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
-            public String apply(String diff) {
-                return diff.substring(diff.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
-            }
-        });
+        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
+        Collection<String> paths = Collections2.transform(diffs, (String diff) -> diff.substring(diff.indexOf('\t')+1).trim() // Windows diff output ^M removed by trim()
+        );
 
         assertTrue(paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
@@ -3786,20 +3767,12 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(2, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith(":");
-            }
-        });
+        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
 
         assertTrue(diffs.isEmpty());
     }
@@ -3827,11 +3800,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
         List<String> revisionDetails = w.git.showRevision(null, to);
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(1, commits.size());
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
@@ -3844,11 +3813,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("first");
         ObjectId first = w.head();
         List<String> revisionDetails = w.git.showRevision(first);
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }

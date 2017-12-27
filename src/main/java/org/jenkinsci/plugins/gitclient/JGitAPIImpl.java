@@ -2563,11 +2563,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("No tags can describe "+tip);
 
             // if all the nodes are dominated by all the tags, the walk stops
-            Collections.sort(candidates,new Comparator<Candidate>() {
-                public int compare(Candidate o1, Candidate o2) {
-                    return o1.depth-o2.depth;
-                }
-            });
+            Collections.sort(candidates, (Candidate o1, Candidate o2) -> o1.depth-o2.depth);
 
             return candidates.get(0).describe(tipId);
         } catch (IOException e) {
