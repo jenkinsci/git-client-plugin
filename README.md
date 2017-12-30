@@ -12,7 +12,7 @@ JGit whenever the git client plugin is available.
 Contributing to the Plugin
 ==========================
 
-Refer to [contributing to the plugin](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.md)
+Refer to [contributing to the plugin](CONTRIBUTING.md)
 for suggestions to speed the acceptance of your contributions.
 
 Building the Plugin
