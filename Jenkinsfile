@@ -1,7 +1,7 @@
 #!groovy
 
 // build both versions, retry test failures
-buildPlugin(jenkinsVersions: [null, '2.89.1'],
+buildPlugin(jenkinsVersions: [null, '2.89.2'],
             findbugs: [run:true, archive:true, unstableTotalAll: '0'],
             failFast: false)
 
