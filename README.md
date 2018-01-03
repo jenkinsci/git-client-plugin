@@ -1,12 +1,12 @@
 Utility plugin for Git-related support
 ======================================
 
-Extracted from [git-plugin](https://wiki.jenkins-ci.org/display/JENKINS/Git+Plugin)
+Extracted from [git-plugin](https://plugins.jenkins.io/git)
 to make it easier for other plugins to use and contribute new features.
 Includes JGit as a library so that other Jenkins components can rely on
 JGit whenever the git client plugin is available.
 
-* see [Jenkins wiki](https://wiki.jenkins-ci.org/display/JENKINS/Git+Client+Plugin) for feature descriptions
+* see [Jenkins wiki](https://plugins.jenkins.io/git-client) for feature descriptions
 * use [JIRA](https://issues.jenkins-ci.org) to report issues / feature requests
 
 Contributing to the Plugin
