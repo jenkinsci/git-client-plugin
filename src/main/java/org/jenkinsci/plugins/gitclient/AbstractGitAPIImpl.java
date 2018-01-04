@@ -90,11 +90,12 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
      * When sent to remote, switch to the proxy.
      *
      * @return a {@link java.lang.Object} object.
+     * @throws java.io.ObjectStreamException if current channel is null
      */
-    protected Object writeReplace() {
+    protected Object writeReplace() throws java.io.ObjectStreamException {
         Channel currentChannel = Channel.current();
         if (currentChannel == null)
-            return null;
+            throw new java.io.WriteAbortedException("No current channel", new java.lang.NullPointerException());
         return remoteProxyFor(currentChannel.export(GitClient.class, this));
     }
 
