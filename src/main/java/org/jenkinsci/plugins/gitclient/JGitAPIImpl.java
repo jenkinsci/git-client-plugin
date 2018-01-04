@@ -619,6 +619,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     FetchCommand fetch = git.fetch();
                     fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
+                    /* JGit 4.5 required a work around that the tags refspec had to be passed in addition to setting
+                     * the FETCH_TAGS tagOpt.  JGit 4.9.0 fixed that bug.
+                     * However, JGit 4.9 and later will not accept an empty refspec.
+                     * If the refspec is empty and tag fetch is requested, must add the tags refspec to fetch.
+                     */
                     if (allRefSpecs.isEmpty() && tags) {
                         allRefSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
                     }
