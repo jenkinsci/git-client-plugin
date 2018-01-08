@@ -1521,12 +1521,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * Package protected for testing.  Not to be used outside this class
      *
-     * @param prefix file name prefix for the generated temporary file
+     * @param prefix file name prefix for the generated temporary file (will be preceeded by "jenkins-gitclient-")
      * @param suffix file name suffix for the generated temporary file
      * @return temporary file
      * @throws IOException on error
      */
     File createTempFile(String prefix, String suffix) throws IOException {
+        String common_prefix = "jenkins-gitclient-";
+        if (prefix == null) {
+            prefix = common_prefix;
+        } else {
+            prefix = common_prefix + prefix;
+        }
+
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
