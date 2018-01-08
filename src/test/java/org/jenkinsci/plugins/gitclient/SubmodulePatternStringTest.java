@@ -20,7 +20,7 @@ public class SubmodulePatternStringTest {
         submoduleConfigPattern = Pattern.compile(patternString, Pattern.MULTILINE);
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInRepoURL() {
         String repoUrl = "file://gitroot/thirdparty.url.repo.git";
@@ -30,7 +30,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInRepoURLsubmoduleEmbeddedDot() {
         String repoUrl = "https://mark.url:some%20pass.urlify@gitroot/repo.git";
@@ -41,7 +41,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInSubmoduleRepoNameEndsWithURL() {
         String repoUrl = "https://gitroot/repo.url";
@@ -52,7 +52,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInSubmoduleRepoNameEndsWithURLSpace() {
         String repoUrl = "https://gitroot/repo.url ";
@@ -63,7 +63,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInSubmoduleNameAndRepoNameEndsWithURL() {
         String repoUrl = "https://gitroot/repo.url.git";
@@ -74,7 +74,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlExploratoryTestFailureCase() {
         /* See https://github.com/MarkEWaite/JENKINS-46054.url/ */
@@ -86,7 +86,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void remoteNameIncludesSubmodule() {
         /* See https://github.com/MarkEWaite/JENKINS-46054.url/ */
@@ -98,7 +98,7 @@ public class SubmodulePatternStringTest {
         assertThat(matcher.group(1), is(remoteName));
     }
 
-    @Issue("46054")
+    @Issue("JENKINS-46054")
     @Test
     public void urlEmbeddedInRepoNameEndsWithURLEmptyRemoteName() {
         String repoUrl = "https://github.com/MarkEWaite/JENKINS-46054.url.git";
