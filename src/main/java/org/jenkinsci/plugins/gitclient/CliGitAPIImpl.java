@@ -144,22 +144,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
-     *   git config -f .gitmodules --get-regexp "^submodule\.([^ ]+)\.url"
+     *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
      * will report two lines of output if the submodule URL includes ".url":
      *   submodule.modules/JENKINS-46504.url.path modules/JENKINS-46504.url
      *   submodule.modules/JENKINS-46504.url.url https://github.com/MarkEWaite/JENKINS-46054.url
      * The code originally used the same pattern for get-regexp and for output parsing.
-     * By using the same pattern in both places, it incorrectly took the first line
-     * of output as the URL of a submodule (when it is instead the path of a submodule).
+     * By using the same pattern in both places, it incorrectly took some substrings
+     * as the submodule remote name, instead of taking the longest match.
+     * See SubmodulePatternStringTest for test cases.
     */
-    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.([^ ]+)\\.url";
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url";
 
-    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain why this
-     * regular expression string adds the trailing space character as part of its match.
-     * Without the trailing whitespace character in the pattern, too many matches are found.
+    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain
+     * why this regular expression string adds the trailing space
+     * characters and the sequence of non-space characters as part of
+     * its match.  The ending sequence of non-white-space characters
+     * is the repository URL in the output of the 'git config' command.
+     * Relies on repository URL not containing a whitespace character,
+     * per RFC1738.
      */
     /* Package protected for testing */
-    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\b\\s";
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
