@@ -1651,9 +1651,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
-            env.put("GIT_TERMINAL_PROMPT", "0"); // Don't prompt for auth from command line git
+            env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
             if (isWindows()) {
-                env.put("GCM_INTERACTIVE", "never"); // Don't prompt for auth from git credentials manager for windows
+                env.put("GCM_INTERACTIVE", "false"); // Don't prompt for auth from git credentials manager for windows
             }
         }
         try {
