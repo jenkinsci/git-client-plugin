@@ -1652,6 +1652,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
+                env.put("GIT_SSH_VARIANT", "ssh");
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
 
                 // supply a dummy value for DISPLAY if not already present
