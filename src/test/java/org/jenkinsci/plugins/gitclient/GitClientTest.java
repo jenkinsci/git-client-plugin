@@ -41,7 +41,6 @@ import org.eclipse.jgit.lib.Constants;
 
 import static org.hamcrest.Matchers.*;
 import org.junit.AfterClass;
-import org.junit.Ignore;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import org.junit.Before;
@@ -1442,7 +1441,6 @@ public class GitClientTest {
 
     @Issue("JENKINS-46054")
     @Test
-    @Ignore
     public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
         // Create a new repository that includes ".url" in directory name
         File baseDir = tempFolder.newFolder();
