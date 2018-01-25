@@ -258,7 +258,7 @@ public class GitClientTest {
     }
 
     @Test
-    @Issue("39832") // Diagnostics of ChangelogCommand were insufficient
+    @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
     public void testChangelogExceptionMessage() throws Exception {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
@@ -338,7 +338,7 @@ public class GitClientTest {
     }
 
     @Test
-    @Issue("43198")
+    @Issue("JENKINS-43198")
     public void testCleanSubdirGitignore() throws Exception {
         final String filename = "this_is/not_ok/more/subdirs/file.txt";
         commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
@@ -349,7 +349,7 @@ public class GitClientTest {
     }
 
     @Test
-    @Issue("37794")
+    @Issue("JENKINS-37794")
     public void tagWithSlashes() throws Exception {
         commitOneFile();
         gitClient.tag("has/a/slash", "This tag has a slash ('/')");
@@ -717,7 +717,7 @@ public class GitClientTest {
         assertTrue(src.isDirectory());
     }
 
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithCliGitLFS() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -731,7 +731,7 @@ public class GitClientTest {
         assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
-    @Issue("35687") // Git LFS support - JGit not supported
+    @Issue("JENKINS-35687") // Git LFS support - JGit not supported
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testCheckoutWithJGitLFS() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
@@ -742,7 +742,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test(expected = GitException.class)
     public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -753,7 +753,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception if branch includes LFS reference
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
@@ -764,7 +764,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, checkout content without download
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
         assumeFalse(CLI_GIT_HAS_GIT_LFS);
@@ -1083,7 +1083,7 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, initialized);
     }
 
-    @Issue("37495") // submodule update fails if path and name differ
+    @Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -1103,7 +1103,7 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
-    @Issue("37495") // submodule update fails if path and name differ
+    @Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -1266,8 +1266,8 @@ public class GitClientTest {
         }
     }
 
-    // @Issue("8053")  // outdated submodules not removed by checkout
-    @Issue("37419") // Git plugin checking out non-existent submodule from different branch
+    // @Issue("JENKINS-8053")  // outdated submodules not removed by checkout
+    @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_DEINIT);
@@ -1384,7 +1384,7 @@ public class GitClientTest {
         assertThat(branchNames, containsInAnyOrder(expectedBranchNames));
     }
 
-    @Issue("37419") // Submodules from other branches are used in checkout
+    @Issue("JENKINS-37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
@@ -1554,20 +1554,20 @@ public class GitClientTest {
         assertStatusUntrackedContent(gitClient, false);
     }
 
-    // @Issue("14083") // build can't recover from broken submodule path
-    // @Issue("15399") // changing submodule URL does not update repository
-    // @Issue("27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
-    // @Issue("39350") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
-    // @Issue("22510") // clean after checkout fails to clean revision
-    // @Issue("23727") // submodule update did not fail build on timeout
-    // @Issue("28748") // submodule update --init fails on large submodule
-    // @Issue("22084") // submodule update failure did not send configured e-mail
-    // @Issue("31532") // pipeline snippet generator garbles certain submodule options
-    // @Issue("31586") // NPE when using submodules extension
-    // @Issue("39253") // notifyCommit trigger should detect changes to a submodule
-    // @Issue("21521") // submodule defaults in git plugin 2.x different than git plugin 1.x
-    // @Issue("31244") // submodule misconfiguration not reported clearly
-    // @Issue("41553") // submodule status should be used instead of reading config file
+    // @Issue("JENKINS-14083") // build can't recover from broken submodule path
+    // @Issue("JENKINS-15399") // changing submodule URL does not update repository
+    // @Issue("JENKINS-27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-39350") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-22510") // clean after checkout fails to clean revision
+    // @Issue("JENKINS-23727") // submodule update did not fail build on timeout
+    // @Issue("JENKINS-28748") // submodule update --init fails on large submodule
+    // @Issue("JENKINS-22084") // submodule update failure did not send configured e-mail
+    // @Issue("JENKINS-31532") // pipeline snippet generator garbles certain submodule options
+    // @Issue("JENKINS-31586") // NPE when using submodules extension
+    // @Issue("JENKINS-39253") // notifyCommit trigger should detect changes to a submodule
+    // @Issue("JENKINS-21521") // submodule defaults in git plugin 2.x different than git plugin 1.x
+    // @Issue("JENKINS-31244") // submodule misconfiguration not reported clearly
+    // @Issue("JENKINS-41553") // submodule status should be used instead of reading config file
     // Update submodules to latest commit
     // Recursive submodule update
     // Recursive submodule update to latest commit
