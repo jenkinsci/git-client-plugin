@@ -495,16 +495,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Override
     public Set<Branch> getBranches() throws GitException {
-        try (Repository repo = getRepository()) {
-            List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
-            Set<Branch> branches = new HashSet<>(refs.size());
-            for (Ref ref : refs) {
-                branches.add(new Branch(ref));
-            }
-            return branches;
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        }
+        return getBranchesInternal(ListBranchCommand.ListMode.ALL);
     }
 
     /**
@@ -515,8 +506,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Override
     public Set<Branch> getRemoteBranches() throws GitException {
+        return getBranchesInternal(ListBranchCommand.ListMode.REMOTE);
+    }
+
+    public Set<Branch> getBranchesInternal(ListBranchCommand.ListMode mode) throws GitException {
         try (Repository repo = getRepository()) {
-            List<Ref> refs = git(repo).branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
+            List<Ref> refs = git(repo).branchList().setListMode(mode).call();
             Set<Branch> branches = new HashSet<>(refs.size());
             for (Ref ref : refs) {
                 branches.add(new Branch(ref));
