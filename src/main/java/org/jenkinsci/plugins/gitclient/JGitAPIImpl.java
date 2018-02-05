@@ -344,7 +344,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 for (String remote : repo.getRemoteNames()) {
                     // look for exactly ONE remote tracking branch
                     String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
-                    if (repo.getRef(matchingRemoteBranch) != null) {
+                    if (repo.exactRef(matchingRemoteBranch) != null) {
                         remoteTrackingBranches.add(matchingRemoteBranch);
                     }
                 }
