@@ -303,16 +303,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (branch == null)
-                    doCheckout(ref);
+                    doCheckoutWithResetAndRetry(ref);
                 else if (deleteBranch)
-                    doCheckoutCleanBranch(branch, ref);
+                    doCheckoutWithResetAndRetryAndCleanBranch(branch, ref);
                 else
                     doCheckout(ref, branch);
             }
         };
     }
 
-    private void doCheckout(String ref) throws GitException {
+    private void doCheckoutWithResetAndRetry(String ref) throws GitException {
         boolean retried = false;
         Repository repo = null;
         while (true) {
@@ -400,14 +400,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private void doCheckout(String ref, String branch) throws GitException {
         try (Repository repo = getRepository()) {
-            if (ref == null) ref = repo.resolve(HEAD).name();
             git(repo).checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
-        } catch (IOException | GitAPIException e) {
+        } catch (GitAPIException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }
     }
 
-    private void doCheckoutCleanBranch(String branch, String ref) throws GitException {
+    private void doCheckoutWithResetAndRetryAndCleanBranch(String branch, String ref) throws GitException {
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(repo.resolve(ref));
@@ -421,7 +420,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Could not update " + branch + " to " + ref);
             }
 
-            doCheckout(branch);
+            doCheckoutWithResetAndRetry(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch +  " with start point " + ref, e);
         }
@@ -444,9 +443,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     public void commit(String message) throws GitException {
         try (Repository repo = getRepository()) {
-            CommitCommand cmd = git(repo).commit().setMessage(message);
-            if (author!=null)
-                cmd.setAuthor(author);
+            CommitCommand cmd = git(repo).commit().setMessage(message).setAuthor(author);
             if (committer!=null)
                 cmd.setCommitter(new PersonIdent(committer,new Date()));
             cmd.call();
