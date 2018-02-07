@@ -787,19 +787,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
-        Map<String, ObjectId> heads = new HashMap<>();
-        try (Repository repo = openDummyRepository();
-             final Transport tn = Transport.open(repo, new URIish(url))) {
-            tn.setCredentialsProvider(getProvider());
-            try (FetchConnection c = tn.openFetch()) {
-                for (final Ref r : c.getRefs()) {
-                    heads.put(r.getName(), r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId());
-                }
-            }
-        } catch (IOException | URISyntaxException e) {
-            throw new GitException(e);
-        }
-        return heads;
+        return getRemoteReferences(url, null, true, false);
     }
 
     /** {@inheritDoc} */
@@ -834,7 +822,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         references.put(refName, refObjectId);
                     }
                 }
-        } catch (GitAPIException | IOException e) {
+        } catch (JGitInternalException | GitAPIException | IOException e) {
             throw new GitException(e);
         }
         return references;
