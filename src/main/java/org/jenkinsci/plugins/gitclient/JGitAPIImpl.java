@@ -1286,26 +1286,34 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
     public void clean() throws GitException {
-        try (Repository repo = getRepository()) {
-            Git git = git(repo);
-            git.reset().setMode(HARD).call();
-            git.clean().setCleanDirectories(true).setIgnore(false).call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
-        // Fix JENKINS-43198:
-        // don't throw a "Could not delete file" if the file has actually been deleted
-        // See JGit bug 514434 https://bugs.eclipse.org/bugs/show_bug.cgi?id=514434
-        } catch(JGitInternalException e) {
-            String expected = "Could not delete file ";
-            if (e.getMessage().startsWith(expected)) {
-                String path = e.getMessage().substring(expected.length());
-                if (Files.exists(Paths.get(path))) {
-                    throw e;
-                } // else don't throw, everything is ok.
-            } else {
-                throw e;
-            }
-        }
+        boolean hadJGitFalseError = false;
+        do {
+	        try (Repository repo = getRepository()) {
+	            Git git = git(repo);
+	            git.reset().setMode(HARD).call();
+	            git.clean().setCleanDirectories(true).setIgnore(false).call();
+	            hadJGitFalseError = false;
+	        } catch (GitAPIException e) {
+	            throw new GitException(e);
+	        // Fix JENKINS-43198:
+	        // don't throw a "Could not delete file" if the file has actually been deleted
+	        // See JGit bug 514434 https://bugs.eclipse.org/bugs/show_bug.cgi?id=514434
+	        } catch(JGitInternalException e) {
+	            String expected = "Could not delete file ";
+	            if (e.getMessage().startsWith(expected)) {
+	                String path = e.getMessage().substring(expected.length());
+	                if (Files.exists(Paths.get(path))) {
+	                    throw e;
+	                } else {
+                        // else don't throw, everything is ok.
+                        hadJGitFalseError = true;
+                        listener.getLogger().println("[INFO] Caught a JGit issue on deleting " + path);
+	                }
+	            } else {
+	                throw e;
+	            }
+	        }
+        } while(hadJGitFalseError);
     }
 
     /**
