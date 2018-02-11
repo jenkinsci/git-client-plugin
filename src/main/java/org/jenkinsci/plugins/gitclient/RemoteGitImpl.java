@@ -446,6 +446,16 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
+        proxy.clean(cleanSubmodule);
+    }
+
+    /**
+     * clean.
+     *
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
     public void clean() throws GitException, InterruptedException {
         proxy.clean();
     }

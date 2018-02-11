@@ -813,6 +813,35 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
     }
 
+    public void test_clean_with_parameter() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        String dirName1 = "dir1";
+        String fileName1 = dirName1 + File.separator + "fileName1";
+        String fileName2 = "fileName2";
+        assertTrue("Did not create dir " + dirName1, w.file(dirName1).mkdir());
+        w.touch(fileName1);
+        w.touch(fileName2);
+
+        String dirName3 = "dir-with-submodule";
+        File submodule = w.file(dirName3);
+        assertTrue("Did not create dir " + dirName3, submodule.mkdir());
+        WorkingArea workingArea = new WorkingArea(submodule);
+        workingArea.init();
+        workingArea.commitEmpty("init");
+
+        w.git.clean(false);
+        assertFalse(w.exists(dirName1));
+        assertFalse(w.exists(fileName1));
+        assertFalse(w.exists(fileName2));
+        assertTrue(w.exists(dirName3));
+
+        w.git.clean(true);
+        assertFalse(w.exists(dirName3));
+
+    }
+
     @Bug(20410)
     public void test_clean() throws Exception {
         w.init();
