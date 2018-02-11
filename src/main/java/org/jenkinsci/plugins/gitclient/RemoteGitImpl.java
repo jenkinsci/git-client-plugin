@@ -443,6 +443,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     /**
      * clean.
      *
+     * @param cleanSubmodule flag to add extra -f
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
