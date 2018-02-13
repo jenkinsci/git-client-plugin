@@ -147,9 +147,6 @@
       <artifactId>git-server</artifactId>
       <version>1.7</version>
       <scope>test</scope>
-      <exclusions>
-
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.googlecode.json-simple</groupId>
