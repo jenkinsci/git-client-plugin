@@ -247,6 +247,10 @@
               <name>org.jenkinsci.plugins.gitclient.CliGitAPIImpl.useSETSID</name>
               <value>true</value>
             </property>
+            <property>
+              <name>org.jenkinsci.plugins.gitclient.CliGitAPIImpl.showGitCommands</name>
+              <value>true</value>
+            </property>
           </systemProperties>
         </configuration>
       </plugin>

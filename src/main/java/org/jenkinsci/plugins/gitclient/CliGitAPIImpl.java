@@ -74,10 +74,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private static final boolean acceptSelfSignedCertificates;
 
     /**
-     * Set showGitCommands=false if you don't want the Git commands to
+     * Set showGitCommands=true if you want the Git commands to
      * be printed in the jobs output.
      */
-    public static final boolean SHOW_GIT_COMMANDS = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".showGitCommands", "true"));
+    public static final boolean SHOW_GIT_COMMANDS = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".showGitCommands", "false"));
 
     /**
      * Constant which can block use of setsid in git calls for ssh credentialed operations.
