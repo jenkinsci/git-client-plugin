@@ -74,6 +74,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private static final boolean acceptSelfSignedCertificates;
 
     /**
+     * Set showGitCommands=false if you don't want the Git commands to
+     * be printed in the jobs output.
+     */
+    public static final boolean SHOW_GIT_COMMANDS = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".showGitCommands", "true"));
+
+    /**
      * Constant which can block use of setsid in git calls for ssh credentialed operations.
      *
      * <code>USE_SETSID=Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"))</code>.
@@ -2000,7 +2006,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            if (SHOW_GIT_COMMANDS) {
+                listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            }
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
