@@ -59,6 +59,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
@@ -70,6 +72,8 @@ import java.util.regex.Matcher;
  * </b>
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
+
+    private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
     private static final boolean acceptSelfSignedCertificates;
 
@@ -2000,7 +2004,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            LOGGER.log(Level.INFO, " > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
