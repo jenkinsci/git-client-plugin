@@ -20,12 +20,14 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.GitObject;
+import hudson.plugins.git.GitTool;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 
+import jenkins.model.Jenkins;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
@@ -141,6 +143,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
     private StandardCredentials lfsCredentials;
+    private boolean verbose = true;
 
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
@@ -251,6 +254,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.environment = environment;
 
         launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+
+        GitTool git = resolveGitTool();
+        if (git != null && git.isHideDebugCommands()) {
+            this.verbose = false;
+        }
+    }
+
+    public GitTool resolveGitTool() {
+        Jenkins instance = Jenkins.getInstance();
+        if (instance == null) {
+            return null;
+        }
+        if (gitExe == null || instance == null) return GitTool.getDefaultInstallation();
+        GitTool git = instance.getDescriptorByType(GitTool.DescriptorImpl.class).getInstallation(gitExe);
+        if (git == null) {
+            git = GitTool.getDefaultInstallation();
+        }
+        return git;
     }
 
     /** {@inheritDoc} */
@@ -2007,7 +2028,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            if (verbose) {
+                listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            }
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);

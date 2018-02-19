@@ -15,6 +15,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
@@ -36,6 +37,8 @@ import java.util.logging.Level;
  */
 public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, EnvironmentSpecific<GitTool> {
 
+    private boolean hideDebugCommands;
+
     /**
      * Constructor for GitTool.
      *
@@ -46,6 +49,15 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     @DataBoundConstructor
     public GitTool(String name, String home, List<? extends ToolProperty<?>> properties) {
         super(name, home, properties);
+    }
+
+    @DataBoundSetter
+    public void setHideDebugCommands(boolean hideDebugCommands) {
+        this.hideDebugCommands = hideDebugCommands;
+    }
+
+    public boolean isHideDebugCommands() {
+        return hideDebugCommands;
     }
 
     /** Constant <code>DEFAULT="Default"</code> */
