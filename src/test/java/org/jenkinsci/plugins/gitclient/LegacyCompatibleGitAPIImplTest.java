@@ -21,16 +21,18 @@ import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.After;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
+import org.junit.rules.TemporaryFolder;
 
 public class LegacyCompatibleGitAPIImplTest {
+
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -40,7 +42,6 @@ public class LegacyCompatibleGitAPIImplTest {
 
     private final hudson.EnvVars env = new hudson.EnvVars();
     private final TaskListener listener = StreamTaskListener.fromStdout();
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
     private final ObjectId gitClientCommit = ObjectId.fromString("d771d97f1e126b1b01ea214ef245d2d5f432200e");
     private final ObjectId taggedCommit = ObjectId.fromString("2db88a20bba8e98b6710f06213f3b60940a63c7c");
 
@@ -59,17 +60,12 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        repo = temporaryDirectoryAllocator.allocate();
+        repo = tempFolder.newFolder();
         assertNotGitRepo(repo);
         git = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         assertNotGitRepo(repo);
         git.init();
         assertIsGitRepo(repo);
-    }
-
-    @After
-    public void tearDown() throws IOException, InterruptedException {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     private void assertNotGitRepo(File dir) {
@@ -205,12 +201,15 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit_tag_name() throws Exception {
+    public void testGetTagsOnCommit() throws Exception {
         repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
-        String revName = "git-client-1.9.1";
-        List<Tag> result = myGit.getTagsOnCommit(revName);
-        assertFalse("Tag list empty for " + revName, result.isEmpty());
+        final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID().toString();
+        final String tagMessage = "Tagged with " + uniqueTagName;
+        myGit.tag(uniqueTagName, tagMessage);
+        List<Tag> result = myGit.getTagsOnCommit(uniqueTagName);
+        myGit.deleteTag(uniqueTagName);
+        assertFalse("Tag list empty for " + uniqueTagName, result.isEmpty());
         assertEquals("Unexpected SHA1 for commit: " + result.get(0).getCommitMessage(), null, result.get(0).getCommitSHA1());
         assertEquals("Unexpected message for commit: " + result.get(0).getCommitSHA1(), null, result.get(0).getCommitMessage());
     }

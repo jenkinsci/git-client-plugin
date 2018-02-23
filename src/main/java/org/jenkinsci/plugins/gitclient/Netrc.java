@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -93,9 +94,7 @@ class Netrc {
         this.hosts.clear();
         this.lastModified = this.netrc.lastModified();
 
-        BufferedReader r = null;
-        try {
-            r = new BufferedReader(new InputStreamReader(new FileInputStream(netrc), Charset.defaultCharset()));
+        try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(netrc.toPath()), Charset.defaultCharset()))) {
             String line = null;
             String machine = null;
             String login = null;
@@ -123,20 +122,24 @@ class Netrc {
                         break;
 
                     case REQ_KEY:
-                        if ("login".equals(match)) {
-                            state = ParseState.LOGIN;
-                        }
-                        else if ("password".equals(match)) {
-                            state = ParseState.PASSWORD;
-                        }
-                        else if ("macdef".equals(match)) {
-                            state = ParseState.MACDEF;
-                        }
-                        else if ("machine".equals(match)) {
-                            state = ParseState.MACHINE;
-                        }
-                        else {
+                        if (null == match) {
                             state = ParseState.REQ_VALUE;
+                        } else switch (match) {
+                            case "login":
+                                state = ParseState.LOGIN;
+                                break;
+                            case "password":
+                                state = ParseState.PASSWORD;
+                                break;
+                            case "macdef":
+                                state = ParseState.MACDEF;
+                                break;
+                            case "machine":
+                                state = ParseState.MACHINE;
+                                break;
+                            default:
+                                state = ParseState.REQ_VALUE;
+                                break;
                         }
                         break;
 
@@ -178,8 +181,6 @@ class Netrc {
 
         } catch (IOException e) {
             throw new GitException("Invalid netrc file: '" + this.netrc.getAbsolutePath() + "'", e);
-        } finally {
-            IOUtils.closeQuietly(r);
         }
 
         return this;

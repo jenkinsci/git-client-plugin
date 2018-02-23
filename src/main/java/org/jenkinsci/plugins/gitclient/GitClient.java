@@ -435,6 +435,18 @@ public interface GitClient {
      */
     void clean() throws GitException, InterruptedException;
 
+    /**
+     * Fully revert working copy to a clean state, i.e. run both
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-reset.html">git-reset(1) --hard</a> then
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-clean.html">git-clean(1)</a> for working copy to
+     * match a fresh clone.
+     *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void clean(boolean cleanSubmodule) throws GitException, InterruptedException;
+
 
 
     // --- manage branches
@@ -613,11 +625,25 @@ public interface GitClient {
      *      Limit to only refs/tags.
      *      headsOnly and tagsOnly are not mutually exclusive;
      *      when both are true, references stored in refs/heads and refs/tags are displayed.
-     * @return a map of references name and its commit hash. Empty if none.
+     * @return a map of reference names and their commit hashes. Empty if none.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
+
+    /**
+     * List symbolic references in a remote repository. Equivalent to <tt>git ls-remote --symref &lt;repository&gt;
+     * [&lt;refs&gt;]</tt>. Note: the response may be empty for multiple reasons
+     *
+     * @param remoteRepoUrl Remote repository URL.
+     * @param pattern       Only references matching the given pattern are displayed.
+     * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
+     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
+     * (e.g. command line Git prior to 2.8.0).
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException  if interrupted.
+     */
+    Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern) throws GitException, InterruptedException;
 
     /**
      * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
@@ -932,4 +958,13 @@ public interface GitClient {
      * @throws java.lang.InterruptedException on thread interruption
      */
     List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
+
+    /**
+     * Return name and object ID of all tags in current repository.
+     *
+     * @return set of tags in current repository
+     * @throws hudson.plugins.git.GitException on Git exceptions
+     * @throws java.lang.InterruptedException on thread interruption
+     */
+    Set<GitObject> getTags() throws GitException, InterruptedException;
 }

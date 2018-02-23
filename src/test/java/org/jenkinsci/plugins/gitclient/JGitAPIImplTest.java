@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import org.eclipse.jgit.transport.BasePackFetchConnection;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -11,6 +12,17 @@ public class JGitAPIImplTest extends GitAPITestCase {
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
         return Git.with(listener, env).in(ws).using("jgit").getClient();
+    }
+
+    @Override
+    protected boolean hasWorkingGetRemoteSymbolicReferences() {
+        try {
+            // TODO if JGit implement https://bugs.eclipse.org/bugs/show_bug.cgi?id=514052 we should switch to that
+            BasePackFetchConnection.class.getSuperclass().getDeclaredField("remoteCapablities");
+            return true;
+        } catch (NoSuchFieldException e) {
+            return false;
+        }
     }
 
     /**
