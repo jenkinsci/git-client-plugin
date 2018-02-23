@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 @RunWith(Parameterized.class)
 public class MergeCommandTest extends MergedRepositoryTest {
