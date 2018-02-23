@@ -361,7 +361,7 @@ public class GitClientTest {
     }
 
     @Test
-    @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
+    @Issue("JENKINS-39832") // ChangelogCommand diagnostics were insufficient
     public void testChangelogExceptionMessage() throws Exception {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
