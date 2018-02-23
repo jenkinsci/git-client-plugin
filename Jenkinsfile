@@ -1,6 +1,9 @@
 #!groovy
 
-// buildPlugin(jenkinsVersions: [null, '2.32.2'], failFast: false)
-// Cannot build both versions due to 1 hour timeout on ci.jenkins.io
+// build both versions, retry test failures
+buildPlugin(jenkinsVersions: [null, '2.89.3'],
+            findbugs: [run:true, archive:true, unstableTotalAll: '0'],
+            failFast: false)
 
-buildPlugin(failFast: false)
+// No plugin compatibility tests, retry test failures
+// buildPlugin(failFast: false)

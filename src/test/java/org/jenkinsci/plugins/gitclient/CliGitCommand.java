@@ -70,7 +70,7 @@ class CliGitCommand {
     }
 
     public void assertOutputContains(String... expectedRegExes) {
-        List<String> notFound = new ArrayList<String>();
+        List<String> notFound = new ArrayList<>();
         boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
         Assert.assertTrue("Missing regular expressions in assertion", modified);
         for (String line : output) {

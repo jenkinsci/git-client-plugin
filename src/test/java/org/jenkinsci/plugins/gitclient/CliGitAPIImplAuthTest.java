@@ -33,7 +33,7 @@ public class CliGitAPIImplAuthTest {
 
     private final Random random = new Random();
 
-    private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\t"};
+    private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\"", "\t"};
     private final String[] PERCENT_SPECIALS = {"%"};
 
     @Before
@@ -97,7 +97,7 @@ public class CliGitAPIImplAuthTest {
     }
 
     private String quoteCredentials(String password) {
-        return git.quoteWindowsCredentials(password);
+        return git.escapeWindowsCharsForUnquotedString(password);
     }
 
     private String expectedQuoting(String password) {
@@ -121,7 +121,11 @@ public class CliGitAPIImplAuthTest {
         ArgumentListBuilder args = new ArgumentListBuilder(batFile.getAbsolutePath(), "Password");
         String[] output = run(args);
         assertThat(Arrays.asList(output), hasItems(password));
-        assertTrue("Failed to delete test batch file", batFile.delete());
+        if (batFile.delete() == false) {
+            /* Retry delete only once */
+            Thread.sleep(501); /* Wait up to 0.5 second for Windows virus scanners, etc. */
+            assertTrue("Failed retry of delete test batch file", batFile.delete());
+        }
         assertFalse(batFile.exists());
     }
 

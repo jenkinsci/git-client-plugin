@@ -12,7 +12,7 @@ import org.junit.runners.Parameterized;
 
 public class PushSimpleTest extends PushTest {
 
-    public PushSimpleTest(String gitImpl, String branchName, String refSpec, Class expectedException) {
+    public PushSimpleTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
         super(gitImpl, branchName, refSpec, expectedException);
     }
 

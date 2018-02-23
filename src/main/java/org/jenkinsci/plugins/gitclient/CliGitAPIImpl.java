@@ -19,6 +19,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
@@ -31,7 +32,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -41,6 +42,12 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,8 +72,61 @@ import java.util.regex.Matcher;
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final boolean acceptSelfSignedCertificates;
+
+    /**
+     * Constant which can block use of setsid in git calls for ssh credentialed operations.
+     *
+     * <code>USE_SETSID=Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"))</code>.
+     *
+     * Allow ssh authenticated git calls on Unix variants to be preceded
+     * by setsid so that the git command is run without being associated
+     * with a terminal. Some docker runtime cases, and some automated test
+     * cases have shown that some versions of command line git or ssh will
+     * not allow automatic answers to private key passphrase prompts
+     * unless there is no controlling terminal associated with the process.
+     */
+    public static final boolean USE_SETSID = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
+
+    /**
+     * Set promptForAuthentication=true if you must allow command line git
+     * versions 2.3 and later to prompt the user for authentication.
+     *
+     * Command line git prompting for authentication should be rare, since
+     * Jenkins credentials should be managed through the credentials plugin.
+     *
+     * Command line git 2.3 and later read the environment variable
+     * GIT_TERMINAL_PROMPT. If it has the value 0, then git will not prompt the
+     * user for authentication, even if a terminal is available (as when running
+     * a Jenkins agent from the Windows desktop, or when running it
+     * interactively from the command line, or from a Docker image). If a
+     * terminal is not available (most services on Windows and Linux), then
+     * command line git will not prompt for authentication, whether or not
+     * GIT_TERMINAL_PROMPT is set.
+     *
+     * GCM_INTERACTIVE=never is the environment variable which should
+     * cause the git credential manager for windows to never prompt
+     * for credentials.
+     *
+     * Credential prompting could happen on multiple platforms, but is
+     * more common on Windows computers because many Windows agents
+     * run from the desktop environment.  Agents running on the
+     * desktop are much less common in the Unix environments.
+     */
+    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
+
+    /**
+     * CALL_SETSID decides if command line git can use the setsid program
+     * during ssh based authentication to detach git from its controlling
+     * terminal.
+     *
+     * If the controlling terminal remains attached, then ssh passphrase based
+     * private keys cannot be decrypted during authentication (at least in some
+     * ssh configurations).
+     */
+    private static final boolean CALL_SETSID;
     static {
         acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
+        CALL_SETSID = setsidExists() && USE_SETSID;
     }
 
     private static final long serialVersionUID = 1;
@@ -80,6 +140,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
+    private StandardCredentials lfsCredentials;
+
+    /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
+     * Thus, a config call:
+     *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
+     * will report two lines of output if the submodule URL includes ".url":
+     *   submodule.modules/JENKINS-46504.url.path modules/JENKINS-46504.url
+     *   submodule.modules/JENKINS-46504.url.url https://github.com/MarkEWaite/JENKINS-46054.url
+     * The code originally used the same pattern for get-regexp and for output parsing.
+     * By using the same pattern in both places, it incorrectly took some substrings
+     * as the submodule remote name, instead of taking the longest match.
+     * See SubmodulePatternStringTest for test cases.
+    */
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url";
+
+    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain
+     * why this regular expression string adds the trailing space
+     * characters and the sequence of non-space characters as part of
+     * its match.  The ending sequence of non-white-space characters
+     * is the repository URL in the output of the 'git config' command.
+     * Relies on repository URL not containing a whitespace character,
+     * per RFC1738.
+     */
+    /* Package protected for testing */
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -264,7 +349,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public FetchCommand prune() {
-                this.prune = true;
+                return prune(true);
+            }
+
+            public FetchCommand prune(boolean prune) {
+                this.prune = prune;
                 return this;
             }
 
@@ -401,12 +490,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand shared() {
-                this.shared = true;
+                return shared(true);
+            }
+
+            @Override
+            public CloneCommand shared(boolean shared) {
+                this.shared = shared;
                 return this;
             }
 
             public CloneCommand shallow() {
-                this.shallow = true;
+                return shallow(true);
+            }
+
+            @Override
+            public CloneCommand shallow(boolean shallow) {
+                this.shallow = shallow;
                 return this;
             }
 
@@ -491,8 +590,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
                             try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                                String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                listener.getLogger().println("Using reference repository: " + reference);
                                 // git implementations on windows also use
-                                w.print(objectsPath.getAbsolutePath().replace('\\', '/'));
+                                w.print(absoluteReference);
                             } catch (UnsupportedEncodingException ex) {
                                 listener.error("Default character set is an unsupported encoding");
                             } catch (FileNotFoundException e) {
@@ -582,8 +683,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (strategy != null && !strategy.isEmpty() && !strategy.equals(MergeCommand.Strategy.DEFAULT.toString())) {
                     args.add("-s");
-                    args.add(strategy);
+                    if(strategy.equals(MergeCommand.Strategy.RECURSIVE_THEIRS.toString())) {
+                        args.add("recursive");
+                        args.add("--strategy-option");
+                        args.add("theirs");
+                    } else {
+                        args.add(strategy);
+                    }
                 }
+
                 args.add(fastForwardMode);
                 args.add(rev.name());
                 launchCommand(args);
@@ -671,12 +779,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Remove untracked files and directories, including files listed
      * in the ignore rules.
      *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
+        reset(true);
+	String cmd = "-fdx";
+	if (cleanSubmodule) cmd = "-ffdx";
+
+	launchCommand("clean", cmd);
+    }
+
+    /**
+     * Remove untracked files and directories, including files listed
+     * in the ignore rules.
+     *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void clean() throws GitException, InterruptedException {
-        reset(true);
-        launchCommand("clean", "-fdx");
+        this.clean(false);
     }
 
     /** {@inheritDoc} */
@@ -794,6 +917,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
+    @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
 
@@ -804,38 +928,46 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Integer n = null;
             Writer out = null;
 
+            @Override
             public ChangelogCommand excludes(String rev) {
                 revs.add(sanitize('^'+rev));
                 return this;
             }
 
+            @Override
             public ChangelogCommand excludes(ObjectId rev) {
                 return excludes(rev.name());
             }
 
+            @Override
             public ChangelogCommand includes(String rev) {
                 revs.add(rev);
                 return this;
             }
 
+            @Override
             public ChangelogCommand includes(ObjectId rev) {
                 return includes(rev.name());
             }
 
+            @Override
             public ChangelogCommand to(Writer w) {
                 this.out = w;
                 return this;
             }
 
+            @Override
             public ChangelogCommand max(int n) {
                 this.n = n;
                 return this;
             }
 
+            @Override
             public void abort() {
                 /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--no-abbrev", "--raw", "--diff-filter=ACDMRTUXB", "-M");
                 args.add("--format="+RAW);
@@ -851,9 +983,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
-                        throw new GitException("Error launching git log");
+                        throw new GitException("Error: " + args + " in " + workspace);
                 } catch (IOException e) {
-                    throw new GitException("Error launching git log",e);
+                    throw new GitException("Error: " + args + " in " + workspace, e);
                 }
             }
         };
@@ -997,7 +1129,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try {
                     // We might fail if we have no modules, so catch this
                     // exception and just return.
-                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", "^submodule\\.(.*)\\.url");
+                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
@@ -1006,7 +1138,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Use a matcher to find each configured submodule name, and
                 // then run the submodule update command with the provided
                 // path.
-                Pattern pattern = Pattern.compile("^submodule\\.(.*)\\.url", Pattern.MULTILINE);
+                Pattern pattern = Pattern.compile(SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(cfgOutput);
                 while (matcher.find()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
@@ -1143,7 +1275,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         String line = firstLine(result);
         if (line == null)
-            throw new GitException("No output from bare repository check for " + GIT_DIR);
+            throw new GitException("No output from git config check for " + GIT_DIR);
         return line.trim();
     }
 
@@ -1384,6 +1516,78 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         createNote(note,namespace,"add");
     }
 
+    private File createTempFileInSystemDir(String prefix, String suffix) throws IOException {
+        if (isWindows()) {
+            return Files.createTempFile(prefix, suffix).toFile();
+        }
+        Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
+        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        return Files.createTempFile(prefix, suffix, fileAttribute).toFile();
+    }
+
+    /**
+     * Create temporary file that is aware of the specific limitations
+     * of command line git.
+     *
+     * For example, no temporary file name (Windows or Unix) may
+     * include a percent sign in its path because ssh uses the percent
+     * sign character as the start of token indicator for token
+     * expansion.
+     *
+     * As another example, windows temporary files may not contain a
+     * space, an open parenthesis, or a close parenthesis anywhere in
+     * their path, otherwise they break ssh argument passing through
+     * the GIT_SSH or SSH_ASKPASS environment variable.
+     *
+     * Package protected for testing.  Not to be used outside this class
+     *
+     * @param prefix file name prefix for the generated temporary file (will be preceeded by "jenkins-gitclient-")
+     * @param suffix file name suffix for the generated temporary file
+     * @return temporary file
+     * @throws IOException on error
+     */
+    File createTempFile(String prefix, String suffix) throws IOException {
+        String common_prefix = "jenkins-gitclient-";
+        if (prefix == null) {
+            prefix = common_prefix;
+        } else {
+            prefix = common_prefix + prefix;
+        }
+
+        if (workspace == null) {
+            return createTempFileInSystemDir(prefix, suffix);
+        }
+        File workspaceTmp = new File(workspace.getAbsolutePath() + "@tmp");
+        if (!workspaceTmp.isDirectory() && !workspaceTmp.mkdirs()) {
+            if (!workspaceTmp.isDirectory()) {
+                return createTempFileInSystemDir(prefix, suffix);
+            }
+        }
+        Path tmpPath = Paths.get(workspaceTmp.getAbsolutePath());
+        if (workspaceTmp.getAbsolutePath().contains("%")) {
+            // Avoid ssh token expansion on all platforms
+            return createTempFileInSystemDir(prefix, suffix);
+        }
+        if (isWindows()) {
+            /* Windows git fails its call to GIT_SSH if its absolute
+             * path contains a space or parenthesis or pipe or question mark or asterisk.
+             * Use system temp dir instead of workspace temp dir.
+             */
+            if (workspaceTmp.getAbsolutePath().matches(".*[ ()|?*].*")) {
+                return createTempFileInSystemDir(prefix, suffix);
+            }
+            return Files.createTempFile(tmpPath, prefix, suffix).toFile();
+        }
+        // Unix specific
+        if (workspaceTmp.getAbsolutePath().contains("`")) {
+            // Avoid backquote shell expansion
+            return createTempFileInSystemDir(prefix, suffix);
+        }
+        Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
+        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute).toFile();
+    }
+
     private void deleteTempFile(File tempFile) {
         if (tempFile != null && !tempFile.delete() && tempFile.exists()) {
             listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
@@ -1393,7 +1597,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException {
         File msg = null;
         try {
-            msg = File.createTempFile("git-note", "txt", workspace);
+            msg = createTempFile("git-note", ".txt");
             FileUtils.writeStringToFile(msg,note);
             launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
         } catch (IOException | GitException e) {
@@ -1452,6 +1656,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File pass = null;
         File askpass = null;
         EnvVars env = environment;
+        if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
+            env = new EnvVars(env);
+            env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
+            if (isWindows()) {
+                env.put("GCM_INTERACTIVE", "false"); // Don't prompt for auth from git credentials manager for windows
+            }
+        }
         try {
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
@@ -1468,6 +1679,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
+                env.put("GIT_SSH_VARIANT", "ssh");
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
 
                 // supply a dummy value for DISPLAY if not already present
@@ -1534,7 +1746,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        File key = File.createTempFile("ssh", "key");
+        File key = createTempFile("ssh", ".key");
         try (PrintWriter w = new PrintWriter(key, Charset.defaultCharset().toString())) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
@@ -1546,8 +1758,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /* package protected for testability */
-    String quoteWindowsCredentials(String str) {
+    String escapeWindowsCharsForUnquotedString(String str) {
         // Quote special characters for Windows Batch Files
+        // See: http://stackoverflow.com/questions/562038/escaping-double-quotes-in-batch-script
         // See: http://ss64.com/nt/syntax-esc.html
         String quoted = str.replace("%", "%%")
                         .replace("^", "^^")
@@ -1556,6 +1769,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .replace("\\", "^\\")
                         .replace("&", "^&")
                         .replace("|", "^|")
+                        .replace("\"", "^\"")
                         .replace(">", "^>")
                         .replace("<", "^<");
         return quoted;
@@ -1568,37 +1782,37 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
-        File ssh = File.createTempFile("pass", ".bat");
+        File ssh = createTempFile("pass", ".bat");
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
             // avoid echoing command as part of the password
             w.println("@echo off");
-            // no need for quotes on windows echo -- they will get echoed too
-            w.println("echo " + Secret.toString(sshUser.getPassphrase()));
+            // no surrounding double quotes on windows echo -- they are echoed too
+            w.println("echo " + escapeWindowsCharsForUnquotedString(Secret.toString(sshUser.getPassphrase())));
             w.flush();
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
     private File createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
-        File ssh = File.createTempFile("pass", ".sh");
+        File ssh = createTempFile("pass", ".sh");
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
             w.println("#!/bin/sh");
             w.println("echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
     /* Package protected for testability */
     File createWindowsBatFile(String userName, String password) throws IOException {
-        File askpass = File.createTempFile("pass", ".bat");
+        File askpass = createTempFile("pass", ".bat");
         try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
             w.println("@set arg=%~1");
-            w.println("@if (%arg:~0,8%)==(Username) echo " + quoteWindowsCredentials(userName));
-            w.println("@if (%arg:~0,8%)==(Password) echo " + quoteWindowsCredentials(password));
+            w.println("@if (%arg:~0,8%)==(Username) echo " + escapeWindowsCharsForUnquotedString(userName));
+            w.println("@if (%arg:~0,8%)==(Password) echo " + escapeWindowsCharsForUnquotedString(password));
         }
-        askpass.setExecutable(true);
+        askpass.setExecutable(true, true);
         return askpass;
     }
 
@@ -1607,7 +1821,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
-        File askpass = File.createTempFile("pass", ".sh");
+        File askpass = createTempFile("pass", ".sh");
         try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
             w.println("#!/bin/sh");
             w.println("case \"$1\" in");
@@ -1615,7 +1829,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("Password*) echo '" + quoteUnixCredentials(Secret.toString(creds.getPassword())) + "' ;;");
             w.println("esac");
         }
-        askpass.setExecutable(true);
+        askpass.setExecutable(true, true);
         return askpass;
     }
 
@@ -1737,7 +1951,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createWindowsGitSSH(File key, String user) throws IOException {
-        File ssh = File.createTempFile("ssh", ".bat");
+        File ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
 
@@ -1745,12 +1959,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
     private File createUnixGitSSH(File key, String user) throws IOException {
-        File ssh = File.createTempFile("ssh", ".sh");
+        File ssh = createTempFile("ssh", ".sh");
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
             w.println("#!/bin/sh");
             // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
@@ -1760,7 +1974,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("fi");
             w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
-        ssh.setExecutable(true);
+        ssh.setExecutable(true, true);
         return ssh;
     }
 
@@ -1777,20 +1991,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // JENKINS-13356: capture the output of stderr separately
         ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-        EnvVars environment = new EnvVars(env);
+        EnvVars freshEnv = new EnvVars(env);
         // If we don't have credentials, but the requested URL requires them,
         // it is possible for Git to hang forever waiting for interactive
         // credential input. Prevent this by setting GIT_ASKPASS to "echo"
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
-            environment.put("GIT_ASKPASS", "echo");
+            freshEnv.put("GIT_ASKPASS", "echo");
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
+            if (CALL_SETSID && launcher.isUnix() && env.containsKey("GIT_SSH") && env.containsKey("DISPLAY")) {
+                /* Detach from controlling terminal for git calls with ssh authentication */
+                /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
+                args.prepend("setsid");
+            }
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                    envs(environment).stdout(fos).stderr(err);
+                    envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
             int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
@@ -1834,7 +2053,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public PushCommand force() {
-                this.force = true;
+                return force(true);
+            }
+
+            @Override
+            public PushCommand force(boolean force) {
+                this.force = force;
                 return this;
             }
 
@@ -1890,7 +2114,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param fos output of "git branch -v --no-abbrev"
      * @return a {@link java.util.Set} object.
      */
-    private Set<Branch> parseBranches(String fos) {
+    /*package*/ Set<Branch> parseBranches(String fos) {
+        // JENKINS-34309 if the commit message contains line breaks,
+        // "git branch -v --no-abbrev" output will include CR (Carriage Return) characters.
+        // Replace all CR characters to avoid interpreting them as line endings
+        fos = fos.replaceAll("\\r", "");
+
         Set<Branch> branches = new HashSet<>();
         BufferedReader rdr = new BufferedReader(new StringReader(fos));
         String line;
@@ -1900,9 +2129,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // Line must contain 2 leading characters, branch
                     // name (at least 1 character), a space, and 40
                     // character SHA1.
-                    // JENKINS-34309 found cases where a Ctrl-M was
-                    // inserted into the output of
-                    // "git branch -v --no-abbrev"
                     continue;
                 }
                 // Ignore leading 2 characters (marker for current branch)
@@ -1910,7 +2136,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Split fields into branch name, SHA1, and rest of line
                 // Fields are separated by one or more spaces
                 String[] branchVerboseOutput = line.substring(2).split(" +", 3);
-                if (branchVerboseOutput[1].length() == 40) {
+                if (branchVerboseOutput.length > 1 && branchVerboseOutput[1].length() == 40) {
                     branches.add(new Branch(branchVerboseOutput[0], ObjectId.fromString(branchVerboseOutput[1])));
                 }
             }
@@ -1990,6 +2216,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public List<String> sparseCheckoutPaths = Collections.emptyList();
             public Integer timeout;
             public String lfsRemote;
+            public StandardCredentials lfsCredentials;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -2018,6 +2245,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public CheckoutCommand lfsRemote(String lfsRemote) {
                 this.lfsRemote = lfsRemote;
+                return this;
+            }
+
+            @Override
+            public CheckoutCommand lfsCredentials(StandardCredentials lfsCredentials) {
+                this.lfsCredentials = lfsCredentials;
                 return this;
             }
 
@@ -2085,7 +2318,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
-                        StandardCredentials cred = credentials.get(url);
+                        StandardCredentials cred = lfsCredentials;
+                        if (cred == null) cred = credentials.get(url);
                         if (cred == null) cred = defaultCredentials;
                         ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
                         lfsArgs.add("lfs");
@@ -2149,7 +2383,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(sparseCheckoutFile, false), "UTF-8"))) {
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
 		    for(String path : paths) {
 			writer.println(path);
 		    }
@@ -2230,17 +2464,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public RevListCommand revList_() {
         return new RevListCommand() {
             public boolean all;
+            public boolean nowalk;
             public boolean firstParent;
             public String refspec;
             public List<ObjectId> out;
 
             public RevListCommand all() {
-                this.all = true;
+                return all(true);
+            }
+
+            @Override
+            public RevListCommand all(boolean all) {
+                this.all = all;
+                return this;
+            }
+            public RevListCommand nowalk(boolean nowalk) {
+                // --no-walk wasn't introduced until v1.5.3
+                if (isAtLeastVersion(1, 5, 3, 0)) {
+                    this.nowalk = nowalk;
+                }
                 return this;
             }
 
             public RevListCommand firstParent() {
-                this.firstParent = true;
+                return firstParent(true);
+            }
+
+            @Override
+            public RevListCommand firstParent(boolean firstParent) {
+                this.firstParent = firstParent;
                 return this;
             }
 
@@ -2263,6 +2515,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (all) {
                    args.add("--all");
+                }
+
+                if (nowalk) {
+                    args.add("--no-walk");
                 }
 
                 if (refspec != null) {
@@ -2319,9 +2575,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return false;
         }
         try {
-            List<ObjectId> revs = revList(commit.name());
+            // Use revList_() directly in order to pass .nowalk(true) which
+            // allows us to bypass the unnecessary revision walk when we
+            // only care to determine if the commit exists.
+            List<ObjectId> oidList = new ArrayList<>();
+            RevListCommand revListCommand = revList_();
+            revListCommand.reference(commit.name());
+            revListCommand.to(oidList);
+            revListCommand.nowalk(true);
+            revListCommand.execute();
 
-            return revs.size() != 0;
+            return oidList.size() != 0;
         } catch (GitException e) {
             return false;
         }
@@ -2349,17 +2613,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void commit(String message) throws GitException, InterruptedException {
         File f = null;
         try {
-            f = File.createTempFile("gitcommit", ".txt");
-            try (FileOutputStream fos = new FileOutputStream(f)) {
-                fos.write(message.getBytes(Charset.defaultCharset().toString()));
+            f = createTempFile("gitcommit", ".txt");
+            try (OutputStream out = Files.newOutputStream(f.toPath())) {
+                out.write(message.getBytes(Charset.defaultCharset().toString()));
             }
             launchCommand("commit", "-F", f.getAbsolutePath());
 
-        } catch (GitException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (FileNotFoundException e) {
-            throw new GitException("Cannot commit " + message, e);
-        } catch (IOException e) {
+        } catch (GitException | IOException e) {
             throw new GitException("Cannot commit " + message, e);
         } finally {
             deleteTempFile(f);
@@ -2409,11 +2669,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @NonNull
     public Repository getRepository() throws GitException {
         try {
-            return FileRepositoryBuilder.create(new File(workspace, Constants.DOT_GIT));
+            return new RepositoryBuilder().setWorkTree(workspace).build();
         } catch (IOException e) {
-            throw new GitException("Failed to open Git repository " + workspace, e);
+            throw new GitException(e);
         }
     }
+
 
     /**
      * getWorkTree.
@@ -2594,7 +2855,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Map<String, ObjectId> references = new HashMap<>();
         String[] lines = result.split("\n");
         for (String line : lines) {
-            if (line.length() < 41) throw new GitException("unexpected ls-remote output " + line);
+            if (line.length() < 41) {
+                continue; // throw new GitException("unexpected ls-remote output " + line);
+            }
             String refName = line.substring(41);
             ObjectId refObjectId = ObjectId.fromString(line.substring(0, 40));
             if (refName.startsWith("refs/tags") && refName.endsWith("^{}")) {
@@ -2747,5 +3010,70 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return File.pathSeparatorChar==';';
     }
 
+    /* Return true if setsid program exists */
+    static private boolean setsidExists() {
+        if (File.pathSeparatorChar == ';') {
+            return false;
+        }
+        String[] prefixes = { "/usr/local/bin/", "/usr/bin/", "/bin/", "/usr/local/sbin/", "/usr/sbin/", "/sbin/" };
+        for (String prefix : prefixes) {
+            File setsidFile = new File(prefix + "setsid");
+            if (setsidFile.exists()) {
+                return true;
+            }
+        }
+        return false;
+    }
 
+    /** {@inheritDoc} */
+    @Override
+    public Set<GitObject> getTags() throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("show-ref", "--tags", "-d");
+        String result;
+        try {
+            result = launchCommandIn(args, workspace);
+        } catch (GitException ge) {
+            /* If no tags, then git show-ref --tags -d returns non-zero */
+            result = "";
+        }
+
+        /*
+        Output shows SHA1 and tag with (optional) marker for annotated tags
+        7ac27f7a051e1017da9f7c45ade8f091dbe6f99d refs/tags/git-3.6.4
+        7b5856ef2b4d35530a06d6482d0f4e972769d89b refs/tags/git-3.6.4^{}
+         */
+        String[] output = result.split("[\\n\\r]+");
+        if (output.length == 0 || (output.length == 1 && output[0].isEmpty())) {
+            return Collections.EMPTY_SET;
+        }
+        Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^^]+)(\\^\\{\\})?");
+        Map<String, ObjectId> tagMap = new HashMap<>();
+        for (String line : output) {
+            Matcher matcher = pattern.matcher(line);
+            if (!matcher.find()) {
+                // Log the surprise and skip the line
+                String message = MessageFormat.format(
+                        "git show-ref --tags -d output not matched in line: {0}",
+                        line);
+                listener.getLogger().println(message);
+                continue;
+            }
+            String sha1String = matcher.group(1);
+            String tagName = matcher.group(2);
+            String trailingText = matcher.group(3);
+            boolean isPeeledRef = false;
+            if (trailingText != null && trailingText.equals("^{}")) { // Line ends with '^{}'
+                isPeeledRef = true;
+            }
+            /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
+            if (isPeeledRef || !tagMap.containsKey(tagName)) {
+                tagMap.put(tagName, ObjectId.fromString(sha1String));
+            }
+        }
+        Set<GitObject> tags = new HashSet<>(tagMap.size());
+        for (Map.Entry<String, ObjectId> entry : tagMap.entrySet()) {
+            tags.add(new GitObject(entry.getKey(), entry.getValue()));
+        }
+        return tags;
+    }
 }

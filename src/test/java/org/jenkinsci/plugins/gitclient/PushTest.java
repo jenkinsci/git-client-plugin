@@ -48,7 +48,7 @@ public class PushTest {
     private final String gitImpl;
     protected final String refSpec;
     private final String branchName;
-    private final Class expectedException;
+    private final Class<Throwable> expectedException;
 
     private static File bareRepo;
     protected static URIish bareURI;
@@ -69,7 +69,7 @@ public class PushTest {
     @Rule
     public TestName name = new TestName();
 
-    public PushTest(String gitImpl, String branchName, String refSpec, Class expectedException) {
+    public PushTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
         this.gitImpl = gitImpl;
         this.branchName = branchName;
         this.refSpec = refSpec;

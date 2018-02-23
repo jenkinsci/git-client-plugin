@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient.jgit;
 import org.apache.http.auth.NTCredentials;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -11,7 +10,7 @@ import org.junit.Test;
  */
 public class PreemptiveAuthHttpClientConnectionTest {
 
-    @Test @Ignore("URIish thinks the path is 'example.com''") public void goUp_noPath() throws Exception {
+    @Test public void goUp_noPath() throws Exception {
         final URIish input = new URIish("http://example.com");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);

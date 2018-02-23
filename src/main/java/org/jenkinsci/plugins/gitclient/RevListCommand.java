@@ -13,15 +13,45 @@ public interface RevListCommand extends GitCommand {
      * all.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @deprecated favour {@link #all(boolean)}
      */
+    @Deprecated
     RevListCommand all();
+
+    /**
+     * all.
+     *
+     * @param all {@code true} to list all.
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @since 2.5.0
+     */
+    RevListCommand all(boolean all);
+
+    /**
+     * nowalk.
+     *
+     * @param nowalk {@code true} to skip revision walk.
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     */
+    RevListCommand nowalk(boolean nowalk);
 
     /**
      * firstParent.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @deprecated favour {@link #firstParent(boolean)}
      */
+    @Deprecated
     RevListCommand firstParent();
+
+    /**
+     * firstParent.
+     *
+     * @param firstParent {@code true} to list first parent
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @since 2.5.0
+     */
+    RevListCommand firstParent(boolean firstParent);
 
     /**
      * to.

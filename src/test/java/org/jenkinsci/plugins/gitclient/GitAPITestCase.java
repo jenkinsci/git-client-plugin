@@ -1,11 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 import hudson.FilePath;
 import hudson.Launcher;
@@ -15,20 +18,20 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.remoting.VirtualChannel;
-import hudson.util.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -243,6 +246,8 @@ public abstract class GitAPITestCase extends TestCase {
 
         WorkingArea init() throws IOException, InterruptedException {
             git.init();
+            git.setAuthor("root", "root@mydomain.com");
+            git.setCommitter("root", "root@domain.com");
             return this;
         }
 
@@ -252,7 +257,11 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         void tag(String tag) throws IOException, InterruptedException {
-            cmd("git tag " + tag);
+            tag(tag, false);
+        }
+
+        void tag(String tag, boolean force) throws IOException, InterruptedException {
+            cmd("git tag" + (force ? " --force " : " ") + tag);
         }
 
         void commitEmpty(String msg) throws IOException, InterruptedException {
@@ -459,13 +468,16 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, new Function<Branch, String>() {
-            public String apply(Branch branch) {
-                return branch.getName();
-            }
-        });
+        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
         for (String name : names) {
             assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
+        }
+    }
+
+    private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
+        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
+        for (String name : names) {
+            assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
         }
     }
 
@@ -541,13 +553,12 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_shallow() throws Exception
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shallow().execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shallow(true).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
         assertEquals("isShallow?", w.igit() instanceof CliGitAPIImpl, w.cgit().isShallowRepository());
         final String shallow = ".git" + File.separator + "shallow";
@@ -556,12 +567,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_shallow_with_depth() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shallow().depth(2).execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shallow(true).depth(2).execute();
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
+        assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
         final String shallow = ".git" + File.separator + "shallow";
         assertEquals("Shallow file existence: " + shallow, w.igit() instanceof CliGitAPIImpl, w.exists(shallow));
@@ -578,6 +588,16 @@ public abstract class GitAPITestCase extends TestCase {
         assertNoObjectsInRepository();
     }
 
+    public void test_clone_unshared() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared(false).execute();
+        createRevParseBranch(); // Verify JENKINS-32258 is fixed
+        w.git.checkout("origin/master", "master");
+        check_remote_url("origin");
+        assertBranchesExist(w.git.getBranches(), "master");
+        assertAlternatesFileNotFound();
+    }
+
     public void test_clone_reference() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(localMirror()).execute();
@@ -587,6 +607,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
         assertNoObjectsInRepository();
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
     }
 
     private void assertNoObjectsInRepository() {
@@ -600,6 +623,11 @@ public abstract class GitAPITestCase extends TestCase {
             assertEquals("Pack dir must noct contain anything", 0, packDir.list().length);
         }
 
+    }
+
+    private void assertAlternatesFileNotFound() {
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
     private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
@@ -616,6 +644,10 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_reference_working_repo() throws IOException, InterruptedException
     {
         assertTrue("SRC_DIR " + SRC_DIR + " has no .git subdir", (new File(SRC_DIR + File.separator + ".git").isDirectory()));
+        final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
+        if (shallowFile.exists()) {
+            return; /* Reference repository pointing to a shallow checkout is nonsense */
+        }
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
         w.git.checkout("origin/master", "master");
         check_remote_url("origin");
@@ -633,18 +665,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         final WorkingArea w2 = new WorkingArea();
         w2.launchCommand("git", "clone", localMirror(), "./");
-        w2.git.withRepository(new RepositoryCallback<Void>() {
-            public Void invoke(final Repository realRepo, VirtualChannel channel) throws IOException, InterruptedException {
-                return w.git.withRepository(new RepositoryCallback<Void>() {
-                    public Void invoke(final Repository implRepo, VirtualChannel channel) {
-                        final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-                        final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-                        assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
-                        return null;
-                    }
-                });
-            }
-        });
+        w2.git.withRepository((final Repository realRepo, VirtualChannel channel) -> w.git.withRepository((final Repository implRepo, VirtualChannel channel1) -> {
+            final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
+            return null;
+        }));
     }
 
     public void test_clone_refspecs() throws Exception {
@@ -653,14 +679,13 @@ public abstract class GitAPITestCase extends TestCase {
           new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
       );
       w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
-      w.git.withRepository(new RepositoryCallback<Void>() {
-        public Void invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+      w.git.withRepository((Repository repo, VirtualChannel channel) -> {
           String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
           assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
           assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
           assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
           return null;
-        }});
+      });
       Set<Branch> remoteBranches = w.git.getRemoteBranches();
       assertBranchesExist(remoteBranches, "origin/master");
       assertBranchesExist(remoteBranches, "origin/1.4.x");
@@ -786,6 +811,35 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.addRemoteUrl("upstream", upstreamURL);
         assertEquals("Wrong upstream URL", upstreamURL, w.git.getRemoteUrl("upstream"));
         assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
+    }
+
+    public void test_clean_with_parameter() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        String dirName1 = "dir1";
+        String fileName1 = dirName1 + File.separator + "fileName1";
+        String fileName2 = "fileName2";
+        assertTrue("Did not create dir " + dirName1, w.file(dirName1).mkdir());
+        w.touch(fileName1);
+        w.touch(fileName2);
+
+        String dirName3 = "dir-with-submodule";
+        File submodule = w.file(dirName3);
+        assertTrue("Did not create dir " + dirName3, submodule.mkdir());
+        WorkingArea workingArea = new WorkingArea(submodule);
+        workingArea.init();
+        workingArea.commitEmpty("init");
+
+        w.git.clean(false);
+        assertFalse(w.exists(dirName1));
+        assertFalse(w.exists(fileName1));
+        assertFalse(w.exists(fileName2));
+        assertTrue(w.exists(dirName3));
+
+        w.git.clean(true);
+        assertFalse(w.exists(dirName3));
+
     }
 
     @Bug(20410)
@@ -981,12 +1035,12 @@ public abstract class GitAPITestCase extends TestCase {
              * command line less than 1.9.  Assert that change arrives in
              * repo if git command line 1.9 or later. */
             newArea.git.merge().setRevisionToMerge(bareCommit5).execute();
-            assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
-            assertTrue("Wrong git version", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            // JGit 4.9.0 and later copy the revision, JGit 4.8.0 and earlier did not
+            // assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
+            if (newArea.git instanceof CliGitAPIImpl) {
+                assertTrue("Wrong git version", w.cgit().isAtLeastVersion(1, 9, 0, 0));
+            }
             expectedHead = bareCommit5;
-        } catch (org.eclipse.jgit.api.errors.JGitInternalException je) {
-            String expectedSubString = "Missing commit " + bareCommit5.name();
-            assertTrue("Wrong jgit message :" + je.getMessage(), je.getMessage().contains(expectedSubString));
         } catch (GitException ge) {
             assertTrue("Wrong cli git message :" + ge.getMessage(),
                        ge.getMessage().contains("Could not merge") ||
@@ -1027,11 +1081,46 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("bare != working", commit1, bareCommit1);
         assertEquals(commit1, bare.git.getHeadRev(bare.repoPath(), "refs/heads/master"));
 
-        /* Add tag to working repo and without pushing it to the bare repo */
+        /* Add tag1 to working repo without pushing it to bare repo */
         w.tag("tag1");
         assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
+        assertEquals("tag1 points to wrong commit", commit1, w.git.revParse("tag1"));
         w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(false).execute();
-        assertFalse("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
+        assertFalse("tag1 pushed unexpectedly", bare.cmd("git tag").contains("tag1"));
+
+        /* Push tag1 to bare repo */
+        w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).execute();
+        assertTrue("tag1 not pushed", bare.cmd("git tag").contains("tag1"));
+
+        /* Create a new commit, move tag1 to that commit, attempt push */
+        w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
+        w.git.add("file1");
+        w.git.commit("commit2");
+        ObjectId commit2 = w.head();
+        w.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
+        assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
+        assertEquals("tag1 points to wrong commit", commit2, w.git.revParse("tag1"));
+        try {
+            w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).execute();
+            /* JGit does not throw exception updating existing tag - ugh */
+            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
+            if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 0, 0)) {
+	        fail("Modern CLI git should throw exception pushing a change to existing tag");
+	    }
+        } catch (GitException ge) {
+            assertThat(ge.getMessage(), containsString("already exists"));
+        }
+        try {
+            w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).force(false).execute();
+            /* JGit does not throw exception updating existing tag - ugh */
+            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
+            if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 0, 0)) {
+	        fail("Modern CLI git should throw exception pushing a change to existing tag");
+	    }
+        } catch (GitException ge) {
+            assertThat(ge.getMessage(), containsString("already exists"));
+        }
+        w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).force(true).execute();
 
         /* Add tag to working repo without pushing it to the bare
          * repo, tests the default behavior when tags() is not added
@@ -1241,20 +1330,24 @@ public abstract class GitAPITestCase extends TestCase {
         int expectedBranchCount = 3;
         if (newArea.git instanceof CliGitAPIImpl && !w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             expectedBranchCount = 4;
+            assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
+        } else {
+            assertBranchesExist(remoteBranches, "origin/master", "origin/branch2", "origin/HEAD");
+            assertBranchesNotExist(remoteBranches, "origin/branch1");
         }
-        assertEquals("Wrong count in " + remoteBranches, expectedBranchCount, remoteBranches.size());
+        assertEquals("Wrong remote branch count", expectedBranchCount, remoteBranches.size());
     }
 
     public void test_fetch_from_url() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();
         r.commitEmpty("init");
-        String sha1 = r.cmd("git rev-list --max-count=1 HEAD");
+        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 HEAD");
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch(new URIish(r.repo.toString()), Collections.EMPTY_LIST);
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 HEAD")));
+        w.git.fetch(new URIish(r.repo.toString()), Collections.<RefSpec>emptyList());
+        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 HEAD")));
     }
 
     public void test_fetch_with_updated_tag() throws Exception {
@@ -1262,19 +1355,19 @@ public abstract class GitAPITestCase extends TestCase {
         r.init();
         r.commitEmpty("init");
         r.tag("t");
-        String sha1 = r.cmd("git rev-list --max-count=1 t");
+        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
 
         w.init();
         w.cmd("git remote add origin " + r.repoPath());
         w.git.fetch("origin", new RefSpec[] {null});
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
+        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 t")));
 
         r.touch("file.txt");
         r.git.add("file.txt");
         r.git.commit("update");
         r.tag("-d t");
         r.tag("t");
-        sha1 = r.cmd("git rev-list --max-count=1 t");
+        sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
         w.git.fetch("origin", new RefSpec[] {null});
         assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
 
@@ -1387,11 +1480,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
         String output = w.cmd("git branch -v --no-abbrev");
-        assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
-        assertFalse("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
+            assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        } else {
+            assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertFalse("git branch -v --no-abbrev contains test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertFalse("git branch -v --no-abbrev contains another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        }
     }
 
     public void test_list_remote_branches() throws Exception {
@@ -1770,13 +1869,28 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_notes_add() throws Exception {
+    public void test_notes_add_first_note() throws Exception {
         w.init();
         w.touch("file1");
         w.git.add("file1");
         w.commitEmpty("init");
 
         w.git.addNote("foo", "commits");
+        assertEquals("foo\n", w.cmd("git notes show"));
+        w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
+        // cgit normalizes CR+LF aggressively
+        // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
+        // note that CR itself is left as is
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.cmd("git notes show"));
+    }
+
+    public void test_notes_append_first_note() throws Exception {
+        w.init();
+        w.touch("file1");
+        w.git.add("file1");
+        w.commitEmpty("init");
+
+        w.git.appendNote("foo", "commits");
         assertEquals("foo\n", w.cmd("git notes show"));
         w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
         // cgit normalizes CR+LF aggressively
@@ -1916,6 +2030,9 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertSubmoduleDirs(w.repo, true, true);
             assertSubmoduleContents(w.repo);
+            assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+            assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+            assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
             assertDirNotFound(ntpDir);
             assertDirNotFound(firewallDir);
@@ -1929,6 +2046,9 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof CliGitAPIImpl) {
             assertSubmoduleDirs(w.repo, true, true);
             assertSubmoduleContents(w.repo);
+            assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+            assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+            assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
             assertDirNotFound(ntpDir);
             assertDirNotFound(firewallDir);
@@ -2008,7 +2128,17 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Really remove submodule remnant, use git command line double force */
         if (w.git instanceof CliGitAPIImpl) {
-            w.cmd("git clean -xffd");
+            if (!isWindows()) {
+                w.cmd("git clean -xffd");
+            } else {
+                try {
+                    w.cmd("git clean -xffd");
+                } catch (Exception e) {
+                    /* Retry once (and only once) in case of Windows busy file behavior */
+                    Thread.sleep(503); /* Wait 0.5 seconds for Windows */
+                    w.cmd("git clean -xffd");
+                }
+            }
         }
         assertSubmoduleDirs(w.repo, false, false);
 
@@ -2036,11 +2166,20 @@ public abstract class GitAPITestCase extends TestCase {
 
         if (w.git instanceof JGitAPIImpl) {
             /* submoduleUpdate().recursive(true).execute() throws an exception */
+            /* Call setupSubmoduleUrls to assure it throws expected exception */
+            try {
+                Revision nullRevision = null;
+                w.igit().setupSubmoduleUrls(nullRevision, listener);
+            } catch (UnsupportedOperationException uoe) {
+                assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+            }
             return;
         }
         w.git.submoduleUpdate().recursive(true).execute();
         assertSubmoduleDirs(w.repo, true, true);
         assertSubmoduleContents(w.repo);
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
 
         if (w.git instanceof CliGitAPIImpl) {
             // This is a low value section of the test. Does not assert anything
@@ -2074,6 +2213,40 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.submoduleUpdate().recursive(true).execute();
         assertSubmoduleDirs(w.repo, true, true);
         assertSubmoduleContents(w.repo);
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+        assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
+    }
+
+    /* Opening a git repository in a directory with a symbolic git file instead
+     * of a git directory should function properly.
+     */
+    public void test_with_repository_works_with_submodule() throws Exception {
+        w = clone(localMirror());
+        assertSubmoduleDirs(w.repo, false, false);
+
+        /* Checkout a branch which includes submodules (in modules directory) */
+        String subBranch = w.git instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
+        String subRefName = "origin/" + subBranch;
+        w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().recursive(true).execute();
+        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
+        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
+    }
+
+    private void assertSubmoduleRepository(File submoduleDir) throws Exception {
+        /* Get a client directly on the submoduleDir */
+        GitClient submoduleClient = setupGitAPI(submoduleDir);
+
+        /* Assert that when we invoke the repository callback it gets a
+         * functioning repository object
+         */
+        submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
+            assertTrue(repo.getDirectory() + " is not a valid repository",
+                    repo.getObjectDatabase().exists());
+            return null;
+        });
     }
 
     private String listDir(File dir) {
@@ -2278,7 +2451,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Confirm first checkout */
         String pomContent = w.contentOf("pom.xml");
-        assertTrue("Missing jacoco ref in master pom : " + pomContent, pomContent.contains("jacoco"));
+        assertTrue("Missing inceptionYear ref in master pom : " + pomContent, pomContent.contains("inceptionYear"));
         assertFalse("Found untracked file", w.file("untracked-file").exists());
 
         /* Modify the pom file by adding a comment */
@@ -2300,9 +2473,9 @@ public abstract class GitAPITestCase extends TestCase {
         }
         cmd.execute();
 
-        /* Tracked file should not contain added comment, nor the jacoco reference */
+        /* Tracked file should not contain added comment, nor the inceptionYear reference */
         pomContent = w.contentOf("pom.xml");
-        assertFalse("Found jacoco ref in 1.4.x pom : " + pomContent, pomContent.contains("jacoco"));
+        assertFalse("Found inceptionYear ref in 1.4.x pom : " + pomContent, pomContent.contains("inceptionYear"));
         assertFalse("Found comment in 1.4.x pom", pomContent.contains(comment));
         assertTrue("Missing untracked file", w.file("untracked-file").exists());
     }
@@ -3181,6 +3354,25 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
     }
 
+    /**
+     * User interface calls getHeadRev without a workspace while
+     * validating user input. This test showed a null pointer
+     * exception in a development version of credential passing to
+     * command line git. The referenced repository is a public
+     * repository, and https access to a public repository is allowed
+     * even if invalid credentials are provided.
+     *
+     * @throws Exception on test failure
+     */
+    public void test_getHeadRevFromPublicRepoWithInvalidCredential() throws Exception {
+        GitClient remoteGit = Git.with(listener, env).using("git").getClient();
+        StandardUsernamePasswordCredentials testCredential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "bad-id", "bad-desc", "bad-user", "bad-password");
+        remoteGit.addDefaultCredentials(testCredential);
+        Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
+        ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
+    }
+
     @Bug(25444)
     public void test_fetch_delete_cleans() throws Exception {
         w.init();
@@ -3218,7 +3410,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
         ObjectId getSubmodules1 = w.git.getHeadRev(localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*od*");
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*mod*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
@@ -3420,11 +3612,10 @@ public abstract class GitAPITestCase extends TestCase {
             if (entry.isDirectory())
                 entryDestination.mkdirs();
             else {
-                InputStream in = zipFile.getInputStream(entry);
-                OutputStream out = new FileOutputStream(entryDestination);
-                IOUtils.copy(in, out);
-                IOUtils.closeQuietly(in);
-                IOUtils.closeQuietly(out);
+                try (InputStream in = zipFile.getInputStream(entry);
+                        OutputStream out = Files.newOutputStream(entryDestination.toPath());) {
+                    org.apache.commons.io.IOUtils.copy(in, out);
+                }
             }
         }
     }
@@ -3565,27 +3756,16 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(3, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         // Merge commit is duplicated as have to capture changes that may have been made as part of merge
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith(":");
-            }
-        });
-        Collection<String> paths = Collections2.transform(diffs, new Function<String, String>() {
-            public String apply(String diff) {
-                return diff.substring(diff.indexOf('\t')+1).trim(); // Windows diff output ^M removed by trim()
-            }
-        });
+        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
+        Collection<String> paths = Collections2.transform(diffs, (String diff) -> diff.substring(diff.indexOf('\t')+1).trim() // Windows diff output ^M removed by trim()
+        );
 
         assertTrue(paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
@@ -3609,20 +3789,12 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(2, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith(":");
-            }
-        });
+        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
 
         assertTrue(diffs.isEmpty());
     }
@@ -3650,11 +3822,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
         List<String> revisionDetails = w.git.showRevision(null, to);
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertEquals(1, commits.size());
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
@@ -3667,11 +3835,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("first");
         ObjectId first = w.head();
         List<String> revisionDetails = w.git.showRevision(first);
-        Collection<String> commits = Collections2.filter(revisionDetails, new Predicate<String>() {
-            public boolean apply(String detail) {
-                return detail.startsWith("commit ");
-            }
-        });
+        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }
@@ -4414,8 +4578,45 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @Bug(40023)
+    public void test_changelog_with_merge_commit_and_max_log_history() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch-1
+        w.git.branch("branch-1");
+        w.git.checkout("branch-1");
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("commit-1");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        // Merge branch-1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
+
+        /* JGit, and git 1.7.1 handle merge commits in changelog
+         * differently than git 1.7.9 and later.  See JENKINS-40023.
+         */
+        int maxlimit;
+        if (w.git instanceof CliGitAPIImpl) {
+            if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+                return; /* git 1.7.1 is too old, changelog is too different */
+            }
+            maxlimit = 1;
+        } else {
+            maxlimit = 2;
+        }
+
+        StringWriter writer = new StringWriter();
+        w.git.changelog().max(maxlimit).to(writer).execute();
+        assertThat(writer.toString(),not(isEmptyString()));
+    }
+
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
     }
+
 }
