@@ -144,22 +144,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
-     *   git config -f .gitmodules --get-regexp "^submodule\.([^ ]+)\.url"
+     *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
      * will report two lines of output if the submodule URL includes ".url":
      *   submodule.modules/JENKINS-46504.url.path modules/JENKINS-46504.url
      *   submodule.modules/JENKINS-46504.url.url https://github.com/MarkEWaite/JENKINS-46054.url
      * The code originally used the same pattern for get-regexp and for output parsing.
-     * By using the same pattern in both places, it incorrectly took the first line
-     * of output as the URL of a submodule (when it is instead the path of a submodule).
+     * By using the same pattern in both places, it incorrectly took some substrings
+     * as the submodule remote name, instead of taking the longest match.
+     * See SubmodulePatternStringTest for test cases.
     */
-    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.([^ ]+)\\.url";
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url";
 
-    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain why this
-     * regular expression string adds the trailing space character as part of its match.
-     * Without the trailing whitespace character in the pattern, too many matches are found.
+    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain
+     * why this regular expression string adds the trailing space
+     * characters and the sequence of non-space characters as part of
+     * its match.  The ending sequence of non-white-space characters
+     * is the repository URL in the output of the 'git config' command.
+     * Relies on repository URL not containing a whitespace character,
+     * per RFC1738.
      */
     /* Package protected for testing */
-    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\b\\s";
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -774,12 +779,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Remove untracked files and directories, including files listed
      * in the ignore rules.
      *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
+        reset(true);
+	String cmd = "-fdx";
+	if (cleanSubmodule) cmd = "-ffdx";
+
+	launchCommand("clean", cmd);
+    }
+
+    /**
+     * Remove untracked files and directories, including files listed
+     * in the ignore rules.
+     *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void clean() throws GitException, InterruptedException {
-        reset(true);
-        launchCommand("clean", "-fdx");
+        this.clean(false);
     }
 
     /** {@inheritDoc} */
@@ -1530,12 +1550,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * Package protected for testing.  Not to be used outside this class
      *
-     * @param prefix file name prefix for the generated temporary file
+     * @param prefix file name prefix for the generated temporary file (will be preceeded by "jenkins-gitclient-")
      * @param suffix file name suffix for the generated temporary file
      * @return temporary file
      * @throws IOException on error
      */
     File createTempFile(String prefix, String suffix) throws IOException {
+        String common_prefix = "jenkins-gitclient-";
+        if (prefix == null) {
+            prefix = common_prefix;
+        } else {
+            prefix = common_prefix + prefix;
+        }
+
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
@@ -1640,9 +1667,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
-            env.put("GIT_TERMINAL_PROMPT", "0"); // Don't prompt for auth from command line git
+            env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
             if (isWindows()) {
-                env.put("GCM_INTERACTIVE", "never"); // Don't prompt for auth from git credentials manager for windows
+                env.put("GCM_INTERACTIVE", "false"); // Don't prompt for auth from git credentials manager for windows
             }
         }
         try {
@@ -1661,6 +1688,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 env = new EnvVars(env);
                 env.put("GIT_SSH", ssh.getAbsolutePath());
+                env.put("GIT_SSH_VARIANT", "ssh");
                 env.put("SSH_ASKPASS", pass.getAbsolutePath());
 
                 // supply a dummy value for DISPLAY if not already present
