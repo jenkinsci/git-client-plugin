@@ -122,20 +122,24 @@ class Netrc {
                         break;
 
                     case REQ_KEY:
-                        if ("login".equals(match)) {
-                            state = ParseState.LOGIN;
-                        }
-                        else if ("password".equals(match)) {
-                            state = ParseState.PASSWORD;
-                        }
-                        else if ("macdef".equals(match)) {
-                            state = ParseState.MACDEF;
-                        }
-                        else if ("machine".equals(match)) {
-                            state = ParseState.MACHINE;
-                        }
-                        else {
+                        if (null == match) {
                             state = ParseState.REQ_VALUE;
+                        } else switch (match) {
+                            case "login":
+                                state = ParseState.LOGIN;
+                                break;
+                            case "password":
+                                state = ParseState.PASSWORD;
+                                break;
+                            case "macdef":
+                                state = ParseState.MACDEF;
+                                break;
+                            case "machine":
+                                state = ParseState.MACHINE;
+                                break;
+                            default:
+                                state = ParseState.REQ_VALUE;
+                                break;
                         }
                         break;
 

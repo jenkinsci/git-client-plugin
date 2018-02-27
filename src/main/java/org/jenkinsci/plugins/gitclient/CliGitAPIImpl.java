@@ -779,12 +779,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Remove untracked files and directories, including files listed
      * in the ignore rules.
      *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
+        reset(true);
+	String cmd = "-fdx";
+	if (cleanSubmodule) cmd = "-ffdx";
+
+	launchCommand("clean", cmd);
+    }
+
+    /**
+     * Remove untracked files and directories, including files listed
+     * in the ignore rules.
+     *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void clean() throws GitException, InterruptedException {
-        reset(true);
-        launchCommand("clean", "-fdx");
+        this.clean(false);
     }
 
     /** {@inheritDoc} */
@@ -1526,12 +1541,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * Package protected for testing.  Not to be used outside this class
      *
-     * @param prefix file name prefix for the generated temporary file
+     * @param prefix file name prefix for the generated temporary file (will be preceeded by "jenkins-gitclient-")
      * @param suffix file name suffix for the generated temporary file
      * @return temporary file
      * @throws IOException on error
      */
     File createTempFile(String prefix, String suffix) throws IOException {
+        String common_prefix = "jenkins-gitclient-";
+        if (prefix == null) {
+            prefix = common_prefix;
+        } else {
+            prefix = common_prefix + prefix;
+        }
+
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
@@ -1636,9 +1658,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
-            env.put("GIT_TERMINAL_PROMPT", "0"); // Don't prompt for auth from command line git
+            env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
             if (isWindows()) {
-                env.put("GCM_INTERACTIVE", "never"); // Don't prompt for auth from git credentials manager for windows
+                env.put("GCM_INTERACTIVE", "false"); // Don't prompt for auth from git credentials manager for windows
             }
         }
         try {
