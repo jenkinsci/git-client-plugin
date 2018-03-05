@@ -49,7 +49,6 @@ public interface GitClient {
     CredentialsMatcher CREDENTIALS_MATCHER = CredentialsMatchers.anyOf(
             CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
             CredentialsMatchers.instanceOf(SSHUserPrivateKey.class)
-            // TODO does anyone use SSL client certificates with GIT?
     );
 
     /**
