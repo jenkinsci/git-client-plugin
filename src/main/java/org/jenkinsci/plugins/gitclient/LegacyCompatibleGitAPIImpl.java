@@ -269,8 +269,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         } else if (branchSpec.startsWith("refs/heads/")) {
             branch = branchSpec;
         } else if (branchSpec.startsWith("refs/tags/")) {
-            //TODO: Discuss if tags shall be allowed.
-            //hudson.plugins.git.util.DefaultBuildChooser.getCandidateRevisions() in git plugin 2.0.1 explicitly allowed it.
+            // Tags are allowed because git plugin 2.0.1
+            // DefaultBuildChooser.getCandidateRevisions() allowed them.
             branch = branchSpec;
         } else {
             /* Old behaviour - retained for compatibility.
