@@ -2184,6 +2184,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
             boolean recursive      = false;
             boolean remoteTracking = false;
+            boolean shallow        = false;
             String  ref            = null;
 
             @Override
@@ -2216,6 +2217,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
+                this.shallow = shallow;
+                return this;
+            }
+
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
+                return this;
+            }
+
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 return this;
@@ -2229,6 +2239,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 if ((ref != null) && !ref.isEmpty()) {
                     listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if (shallow) {
+                    listener.getLogger().println("[ERROR] JGit doesn't support shallow submodules yet.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
 
