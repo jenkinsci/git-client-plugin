@@ -44,7 +44,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jenkins.version>2.60.3</jenkins.version>
     <java.level>8</java.level>
     <jgit.version>4.11.0.201803080745-r</jgit.version>
@@ -295,7 +294,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>${maven-project-info-reports-plugin.version}</version>
+        <version>2.9</version>
       </plugin>
     </plugins>
   </reporting>
