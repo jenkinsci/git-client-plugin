@@ -47,7 +47,7 @@
     <maven-project-info-reports-plugin.version>2.9</maven-project-info-reports-plugin.version>
     <jenkins.version>2.60.3</jenkins.version>
     <java.level>8</java.level>
-    <jgit.version>4.10.0.201712302008-r</jgit.version>
+    <jgit.version>4.11.0.201803080745-r</jgit.version>
   </properties>
 
   <repositories>
@@ -84,6 +84,11 @@
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
+        <exclusion>
+          <!-- Provided by Jenkins core -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jzlib</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -105,6 +110,11 @@
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
+        <exclusion>
+          <!-- Provided by Jenkins core -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jzlib</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -123,6 +133,34 @@
           <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Provided by Jenkins core -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jzlib</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <!-- Include jgit's LFS module for large file support -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.lfs</artifactId>
+      <version>${jgit.version}</version>
+      <exclusions>
+        <exclusion>
+          <!-- Provided by JSch plugin -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Provided by Jenkins core -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jzlib</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
