@@ -588,6 +588,16 @@ public abstract class GitAPITestCase extends TestCase {
         assertNoObjectsInRepository();
     }
 
+    public void test_clone_null_branch() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        createRevParseBranch();
+        w.git.checkout("origin/master", null);
+        check_remote_url("origin");
+        assertAlternateFilePointsToLocalMirror();
+        assertNoObjectsInRepository();
+    }
+
     public void test_clone_unshared() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared(false).execute();
@@ -2011,17 +2021,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertDirExists(modulesDir);
         assertFileExists(keeperFile);
         assertFileContents(keeperFile, "");
-        /* Command line git checkout creates empty directories for modules, JGit does not */
-        /* That behavioral difference seems harmless */
-        if (w.git instanceof CliGitAPIImpl) {
-            assertSubmoduleDirs(w.repo, true, false);
-        } else {
-            assertDirNotFound(ntpDir);
-            assertDirNotFound(firewallDir);
-            assertDirNotFound(sshkeysDir);
-            assertFileNotFound(ntpContributingFile);
-            assertFileNotFound(sshkeysModuleFile);
-        }
+        assertSubmoduleDirs(w.repo, true, false);
 
         /* Call submodule update without recursion */
         w.git.submoduleUpdate().recursive(false).execute();
@@ -2034,9 +2034,8 @@ public abstract class GitAPITestCase extends TestCase {
             assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
             assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
-            assertDirNotFound(ntpDir);
-            assertDirNotFound(firewallDir);
-            assertDirNotFound(sshkeysDir);
+            /* JGit does not fully support renamed submodules - creates directories but not content */
+            assertSubmoduleDirs(w.repo, true, false);
         }
 
         /* Call submodule update with recursion */
@@ -2050,9 +2049,8 @@ public abstract class GitAPITestCase extends TestCase {
             assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
             assertSubmoduleRepository(new File(w.repo, "modules/sshkeys"));
         } else {
-            assertDirNotFound(ntpDir);
-            assertDirNotFound(firewallDir);
-            assertDirNotFound(sshkeysDir);
+            /* JGit does not fully support renamed submodules - creates directories but not content */
+            assertSubmoduleDirs(w.repo, true, false);
         }
 
         String notSubBranchName = "tests/notSubmodules";
@@ -2152,14 +2150,7 @@ public abstract class GitAPITestCase extends TestCase {
         // w.git.checkout().ref(subRefName).branch(subBranch).execute();
         w.git.checkout().ref(subRefName).execute();
         assertDirExists(modulesDir);
-        if (w.git instanceof CliGitAPIImpl) {
-            assertSubmoduleDirs(w.repo, true, false);
-        } else {
-            /* JGit does not support renamed submodules - creates none of the directories */
-            assertDirNotFound(ntpDir);
-            assertDirNotFound(firewallDir);
-            assertDirNotFound(sshkeysDir);
-        }
+        assertSubmoduleDirs(w.repo, true, false);
 
         w.git.submoduleClean(true);
         assertSubmoduleDirs(w.repo, true, false);
@@ -3428,15 +3419,15 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(tempRemoteDir.getAbsolutePath());
         final String remote = tempRemoteDir.getAbsolutePath();
 
-        final String[][] checkBranchSpecs = {};
-//TODO: Fix and enable test
-//                {
-//                {"master", commits.getProperty("refs/heads/master")},
-//                {"a_tests/b_namespace1/master", commits.getProperty("refs/heads/a_tests/b_namespace1/master")},
-//                {"a_tests/b_namespace2/master", commits.getProperty("refs/heads/a_tests/b_namespace2/master")},
-//                {"a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
-//                {"b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")}
-//                };
+        final String[][] checkBranchSpecs =
+        //TODO: Fix and enable test
+        {
+            {"a_tests/b_namespace1/master", commits.getProperty("refs/heads/a_tests/b_namespace1/master")},
+            // {"a_tests/b_namespace2/master", commits.getProperty("refs/heads/a_tests/b_namespace2/master")},
+            // {"a_tests/b_namespace3/master", commits.getProperty("refs/heads/a_tests/b_namespace3/master")},
+            // {"b_namespace3/master", commits.getProperty("refs/heads/b_namespace3/master")},
+            // {"master", commits.getProperty("refs/heads/master")},
+        };
 
         for(String[] branch : checkBranchSpecs) {
             final ObjectId objectId = ObjectId.fromString(branch[1]);
