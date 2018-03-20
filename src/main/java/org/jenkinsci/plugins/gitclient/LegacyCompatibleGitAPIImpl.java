@@ -73,13 +73,31 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     }
 
+    /** {@inheitDoc} */
+    public void setupSubmoduleUrls(
+            Revision rev,
+            TaskListener listener) throws GitException, InterruptedException {
+        setupSubmoduleUrls(rev, listener, false);
+    }
+
     /** {@inheritDoc} */
     @Deprecated
-    public void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException {
+    public void setupSubmoduleUrls(
+            String remote,
+            TaskListener listener) throws GitException, InterruptedException {
+        setupSubmoduleUrls(remote, listener, false);
+    }
+
+    /** {@inheritDoc} */
+    @Deprecated
+    public void setupSubmoduleUrls(
+            String remote,
+            TaskListener listener,
+            boolean recursive) throws GitException, InterruptedException {
         // This is to make sure that we don't miss any new submodules or
         // changes in submodule origin paths...
         submoduleInit();
-        submoduleSync();
+        submoduleSync(recursive);
         // This allows us to seamlessly use bare and non-bare superproject
         // repositories.
         fixSubmoduleUrls( remote, listener );
@@ -120,6 +138,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         reset(false);
     }
 
+
+    /** {@inheritDoc} */
+    public void submoduleSync() throws GitException, InterruptedException
+    {
+        submoduleSync(false);
+    }
 
     /** {@inheritDoc} */
     @Deprecated

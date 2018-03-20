@@ -2462,7 +2462,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Deprecated
     @Override
-    public void submoduleSync() throws GitException, InterruptedException {
+    public void submoduleSync(boolean recursive) throws GitException, InterruptedException {
+
+        if (recursive) {
+            throw new UnsupportedOperationException("JGitAPIImpl doesn't support recursive submodule sync");
+        }
+
         try (Repository repo = getRepository()) {
             git(repo).submoduleSync().call();
         } catch (GitAPIException e) {
@@ -2505,7 +2510,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Deprecated
     @Override
-    public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException {
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener, boolean recursive) throws GitException {
         throw new UnsupportedOperationException("not implemented yet");
     }
 

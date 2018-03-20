@@ -669,6 +669,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public void setupSubmoduleUrls(Revision rev, TaskListener listener, boolean recursive) throws GitException, InterruptedException {
+        proxy.setupSubmoduleUrls(rev, listener, recursive);
+    }
+
+    /** {@inheritDoc} */
     public void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException {
         proxy.changelog(revFrom, revTo, wrap(os));
     }
@@ -773,7 +778,19 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public void submoduleSync() throws GitException, InterruptedException {
-        getGitAPI().submoduleSync();
+        getGitAPI().submoduleSync(false);
+    }
+
+    /** {@inheritDoc} */
+    /**
+     * submoduleSync.
+     *
+     * @param recursive Recursively sync submodules
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void submoduleSync(boolean recursive) throws GitException, InterruptedException {
+        getGitAPI().submoduleSync(recursive);
     }
 
     /** {@inheritDoc} */
