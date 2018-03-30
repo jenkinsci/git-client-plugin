@@ -31,6 +31,14 @@ public class PushSimpleTest extends PushTest {
         workingGitClient.push().to(bad).ref(refSpec).execute();
     }
 
+    @Test
+    public void dryPushBadURIThrows() throws IOException, GitException, InterruptedException, URISyntaxException {
+        checkoutBranchAndCommitFile();
+        URIish bad = new URIish(bareURI.toString() + "-bad");
+        thrown.expect(GitException.class);
+        workingGitClient.push().to(bad).ref(refSpec).dryRun(true).execute();
+    }
+
     @Parameterized.Parameters(name = "{0} with {1}")
     public static Collection pushParameters() {
         List<Object[]> parameters = new ArrayList<>();

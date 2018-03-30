@@ -58,4 +58,12 @@ public interface PushCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.PushCommand} object.
      */
     PushCommand timeout(Integer timeout);
+
+    /**
+     * dryRun.
+     *
+     * @param dryRun {@code true} if the push should be dry-run.
+     * @return a {@link org.jenkinsci.plugins.gitclient.PushCommand} object.
+     */
+    PushCommand dryRun(boolean dryRun);
 }

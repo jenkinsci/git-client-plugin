@@ -4,10 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -83,6 +80,7 @@ public class PushTest {
         if (expectedException != null) {
             thrown.expect(expectedException);
         }
+        workingGitClient.push().to(bareURI).ref(refSpec).dryRun(true).execute();
         workingGitClient.push().to(bareURI).ref(refSpec).execute();
     }
 
@@ -116,9 +114,9 @@ public class PushTest {
             "src/ref/does/not/exist:dest/ref/does/not/exist"
         };
 
-        shuffleArray(implementations);
-        shuffleArray(goodRefSpecs);
-        shuffleArray(badRefSpecs);
+        Collections.shuffle(Arrays.asList(implementations));
+        Collections.shuffle(Arrays.asList(goodRefSpecs));
+        Collections.shuffle(Arrays.asList(badRefSpecs));
 
         for (String implementation : implementations) {
             for (String branch : branchNames) {
@@ -141,7 +139,6 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = Files.createTempDir();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()
@@ -263,16 +260,5 @@ public class PushTest {
         assertNotEquals(bareFirstCommit, workingCommit);
 
         return workingCommit;
-    }
-
-    private static void shuffleArray(String[] ar) {
-        Random rnd = new Random();
-        for (int i = ar.length - 1; i > 0; i--) {
-            int index = rnd.nextInt(i + 1);
-            // Simple swap
-            String a = ar[index];
-            ar[index] = ar[i];
-            ar[i] = a;
-        }
     }
 }
