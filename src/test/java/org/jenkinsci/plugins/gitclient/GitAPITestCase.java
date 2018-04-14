@@ -4214,7 +4214,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertFalse("null is a bare repository", w.igit().isBareRepository(null));
             fail("Did not throw expected exception");
         } catch (GitException ge) {
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
@@ -4225,7 +4225,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("null is not a bare repository", w.igit().isBareRepository(null));
             fail("Did not throw expected exception");
         } catch (GitException ge) {
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
@@ -4289,7 +4289,7 @@ public abstract class GitAPITestCase extends TestCase {
                 fail("Did not throw expected exception");
             }
         } catch (GitException ge) {
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
@@ -4325,7 +4325,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
             /* Only enters this path for CliGit */
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
@@ -4340,7 +4340,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
             /* Only enters this path for CliGit */
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
@@ -4354,7 +4354,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
         } catch (GitException ge) {
             /* Only enters this path for CliGit */
-            assertTrue("Wrong exception message: " + ge, ge.getMessage().contains("Not a git repository"));
+            assertTrue("Wrong exception message: " + ge, ge.getMessage().toLowerCase().contains("not a git repository"));
         }
     }
 
