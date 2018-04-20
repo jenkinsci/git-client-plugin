@@ -1983,13 +1983,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String fromLocation = ssh.toString();
         String toLocation = ssh_copy.toString();
         //Copying ssh file
-		try {
-			new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
-			isCopied = true;
-			ssh_copy.setExecutable(true,true);
-			//Deleting original file
-			deleteTempFile(ssh);
-		}
+	try {
+		new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
+		isCopied = true;
+		ssh_copy.setExecutable(true,true);
+		//Deleting original file
+		deleteTempFile(ssh);
+	}
         catch(InterruptedException ie)
         {
             //Delete the copied file in case of failure
