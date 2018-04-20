@@ -1965,6 +1965,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixGitSSH(File key, String user) throws IOException {
         File ssh = createTempFile("ssh", ".sh");
+        File ssh_copy = new File(ssh.toString() + "-copy");
+        boolean isCopied = false;
         try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
             w.println("#!/bin/sh");
             // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
@@ -1975,7 +1977,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
         ssh.setExecutable(true, true);
-        return ssh;
+        //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
+        //The following creates a copy of the generated file and deletes the original
+        //In case of a failure return the original and delete the copy
+        String fromLocation = ssh.toString();
+        String toLocation = ssh_copy.toString();
+        //Copying ssh file
+		try {
+			new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
+			isCopied = true;
+			ssh_copy.setExecutable(true,true);
+			//Deleting original file
+			deleteTempFile(ssh);
+		}
+        catch(InterruptedException ie)
+        {
+            //Delete the copied file in case of failure
+            if(isCopied)
+            {
+                deleteTempFile(ssh_copy);
+            }
+            //Previous operation failed. Return original file
+            return ssh;
+        }
+		
+        return ssh_copy;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
