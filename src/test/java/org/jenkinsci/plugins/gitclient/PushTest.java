@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.*;
 
+import com.google.common.collect.Lists;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -97,8 +98,8 @@ public class PushTest {
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
     public static Collection pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
-        final String[] implementations = {"git", "jgit"};
-        final String[] goodRefSpecs = {
+        final List<String> implementations = Lists.newArrayList("git", "jgit");
+        final List<String> goodRefSpecs = Lists.newArrayList(
             "{0}",
             "HEAD",
             "HEAD:{0}",
@@ -106,17 +107,17 @@ public class PushTest {
             "refs/heads/{0}",
             "{0}:heads/{0}",
             "{0}:refs/heads/{0}"
-        };
-        final String[] badRefSpecs = {
+        );
+        final List<String> badRefSpecs = Lists.newArrayList(
             /* ":", // JGit fails with "ERROR: branch is currently checked out" */
             /* ":{0}", // CliGitAPIImpl will delete the remote branch with this refspec */
             "this/ref/does/not/exist",
             "src/ref/does/not/exist:dest/ref/does/not/exist"
-        };
+        );
 
-        Collections.shuffle(Arrays.asList(implementations));
-        Collections.shuffle(Arrays.asList(goodRefSpecs));
-        Collections.shuffle(Arrays.asList(badRefSpecs));
+        Collections.shuffle(implementations);
+        Collections.shuffle(goodRefSpecs);
+        Collections.shuffle(badRefSpecs);
 
         for (String implementation : implementations) {
             for (String branch : branchNames) {
