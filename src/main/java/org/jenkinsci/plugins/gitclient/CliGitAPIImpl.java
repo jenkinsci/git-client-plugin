@@ -2020,6 +2020,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
             String result = fos.toString(Charset.defaultCharset().toString());
+            listener.getLogger().println(" > FINISHED " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
             if (status != 0) {
                 throw new GitException("Command \""+command+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ err.toString(Charset.defaultCharset().toString()));
             }
