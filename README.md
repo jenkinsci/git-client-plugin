@@ -6,7 +6,7 @@ to make it easier for other plugins to use and contribute new features.
 Includes JGit as a library so that other Jenkins components can rely on
 JGit whenever the git client plugin is available.
 
-* see [Jenkins wiki](https://plugins.jenkins.io/git-client) for feature descriptions
+* see [Jenkins plugins site](https://plugins.jenkins.io/git-client) for feature descriptions
 * use [JIRA](https://issues.jenkins-ci.org) to report issues / feature requests
 
 Contributing to the Plugin
@@ -19,7 +19,7 @@ Building the Plugin
 ===================
 
   $ java -version # Requires Java 1.8
-  $ mvn -version # Requires a modern maven version; maven 3.2.5 and 3.5.0 are known to work
+  $ mvn -version # Requires Apache Maven 3.5.0 or later
   $ mvn clean install
 
 To Do
