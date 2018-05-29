@@ -349,7 +349,6 @@ public class GitClientTest {
         assertFileInWorkingDir(gitClient, filename2);
         gitClient.clean();
         assertDirNotInWorkingDir(gitClient, "this_is");
-        assumeThat(gitImplName, is("git")); // Temporary until JENKINS-43198 is fixed in JGit 1.10.1 or later
         assertDirNotInWorkingDir(gitClient, "this_is_also");
     }
 
