@@ -241,18 +241,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * current use cases are not disrupted by a behavioral change.
      * <br><br>
      * E.g.
-     * <table summary="Branch Spec Normalization Examples">
-     * <tr><th align="left">branch spec</th><th align="left">normalized</th></tr>
-     * <tr><td><tt>master</tt></td><td><tt>master*</tt></td></tr>
-     * <tr><td><tt>feature1</tt></td><td><tt>feature1*</tt></td></tr>
-     * <tr><td><tt>feature1/master</tt></td><td><div style="color:red">master <tt>feature1/master</tt>*</div></td></tr>
-     * <tr><td><tt>origin/master</tt></td><td><tt>master*</tt></td></tr>
-     * <tr><td><tt>repo2/feature1</tt></td><td><tt>feature1*</tt></td></tr>
-     * <tr><td><tt>refs/heads/feature1</tt></td><td><tt>refs/heads/feature1</tt></td></tr>
+     * <table>
+     * <caption>Branch Spec Normalization Examples</caption>
+     * <tr><th>branch spec</th><th>normalized</th></tr>
+     * <tr><td><code>master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>feature1</code></td><td><code>feature1*</code></td></tr>
+     * <tr><td><code>feature1/master</code></td><td><div style="color:red">master <code>feature1/master</code>*</div></td></tr>
+     * <tr><td><code>origin/master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>repo2/feature1</code></td><td><code>feature1*</code></td></tr>
+     * <tr><td><code>refs/heads/feature1</code></td><td><code>refs/heads/feature1</code></td></tr>
      * <tr><td valign="top">origin/namespaceA/fix15</td>
-     *     <td><div style="color:red">fix15 <tt>namespaceA/fix15</tt>*</div></td><td></td></tr>
-     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
-     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
+     *     <td><div style="color:red">fix15 <code>namespaceA/fix15</code>*</div></td><td></td></tr>
+     * <tr><td><code>refs/heads/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
+     * <tr><td><code>remotes/origin/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
      * </table><br>
      * *) TODO: Normalize to "refs/heads/"
      *
