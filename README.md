@@ -15,6 +15,14 @@ Contributing to the Plugin
 Refer to [contributing to the plugin](CONTRIBUTING.md)
 for suggestions to speed the acceptance of your contributions.
 
+Code coverage reporting is available as a maven target and is actively
+monitored.  Please improve code coverage with the tests you submit.
+Code coverage reporting is written to `target/site/jacoco/` by the maven command:
+
+```
+  $ mvn -P enable-jacoco clean install jacoco:report
+```
+
 Building the Plugin
 ===================
 
