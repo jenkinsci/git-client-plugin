@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -9,11 +10,11 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
-import hudson.remoting.Callable;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
@@ -113,7 +114,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     private static class CommandInvocationHandler implements InvocationHandler, GitCommand, Serializable {
         private final Class<? extends GitCommand> command;
-        private final List<Invocation> invocations = new ArrayList<Invocation>();
+        private final List<Invocation> invocations = new ArrayList<>();
         private transient final Channel channel;
         private final GitClient proxy;
 
@@ -142,7 +143,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
         public void execute() throws GitException, InterruptedException {
             try {
-                channel.call(new Callable<Void, GitException>() {
+                channel.call(new jenkins.security.MasterToSlaveCallable<Void, GitException>() {
                     public Void call() throws GitException {
                         try {
                             GitCommand cmd = createCommand();
@@ -151,11 +152,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
                             }
                             cmd.execute();
                             return null;
-                        } catch (InvocationTargetException e) {
-                            throw new GitException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new GitException(e);
-                        } catch (InterruptedException e) {
+                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
                             throw new GitException(e);
                         }
                     }
@@ -200,17 +197,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void addCredentials(String url, StandardCredentials credentials) {
-        proxy.addCredentials(url, credentials); // credentials are Serializable
+        proxy.addCredentials(url, CredentialsProvider.snapshot(StandardCredentials.class, credentials)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
     public void setCredentials(StandardUsernameCredentials cred) {
-        proxy.setCredentials(cred);
+        proxy.setCredentials(CredentialsProvider.snapshot(StandardUsernameCredentials.class, cred)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
     public void addDefaultCredentials(StandardCredentials credentials) {
-        proxy.addDefaultCredentials(credentials); // credentials are Serializable
+        proxy.addDefaultCredentials(CredentialsProvider.snapshot(StandardCredentials.class, credentials)); // credentials are Serializable
     }
 
     /** {@inheritDoc} */
@@ -366,6 +363,15 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    public RebaseCommand rebase() {
+       return command(RebaseCommand.class);
+    }
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
@@ -432,6 +438,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     /** {@inheritDoc} */
     public void prune(RemoteConfig repository) throws GitException, InterruptedException {
         proxy.prune(repository);
+    }
+
+    /**
+     * clean.
+     *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
+        proxy.clean(cleanSubmodule);
     }
 
     /**
@@ -539,6 +556,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     /** {@inheritDoc} */
     public Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException {
         return proxy.getRemoteReferences(remoteRepoUrl, pattern, headsOnly, tagsOnly);
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern)
+            throws GitException, InterruptedException {
+        return proxy.getRemoteSymbolicReferences(remoteRepoUrl, pattern);
     }
 
     /** {@inheritDoc} */
@@ -688,6 +711,10 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     /** {@inheritDoc} */
     public List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException {
         return proxy.showRevision(from, to);
+    }
+
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException {
+        return proxy.showRevision(from, to, useRawOutput);
     }
 
     /** {@inheritDoc} */
@@ -872,5 +899,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
             throws GitException, InterruptedException {
         return getGitAPI().getBranchesContaining(revspec, allBranches);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Set<GitObject> getTags() throws GitException, InterruptedException {
+        return proxy.getTags();
     }
 }

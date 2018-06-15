@@ -12,7 +12,7 @@ import org.junit.runners.Parameterized;
 
 public class PushSimpleTest extends PushTest {
 
-    public PushSimpleTest(String gitImpl, String branchName, String refSpec, Class expectedException) {
+    public PushSimpleTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
         super(gitImpl, branchName, refSpec, expectedException);
     }
 
@@ -33,7 +33,7 @@ public class PushSimpleTest extends PushTest {
 
     @Parameterized.Parameters(name = "{0} with {1}")
     public static Collection pushParameters() {
-        List<Object[]> parameters = new ArrayList<Object[]>();
+        List<Object[]> parameters = new ArrayList<>();
         Object[] gitParameter = {"git", "master", "master", null};
         parameters.add(gitParameter);
         Object[] jgitParameter = {"jgit", "master", "master", null};

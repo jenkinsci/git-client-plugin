@@ -19,7 +19,6 @@ import org.eclipse.jgit.transport.URIish;
 
 import javax.annotation.CheckForNull;
 import java.io.IOException;
-import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.util.List;
@@ -50,7 +49,6 @@ public interface GitClient {
     CredentialsMatcher CREDENTIALS_MATCHER = CredentialsMatchers.anyOf(
             CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
             CredentialsMatchers.instanceOf(SSHUserPrivateKey.class)
-            // TODO does anyone use SSL client certificates with GIT?
     );
 
     /**
@@ -233,7 +231,7 @@ public interface GitClient {
 
     /**
      * Checks out the specified commit/tag/branch into the workspace.
-     * (equivalent of <tt>git checkout <em>branch</em></tt>.)
+     * (equivalent of <code>git checkout <em>branch</em></code>.)
      *
      * @param ref A git object references expression (either a sha1, tag or branch)
      * @deprecated use {@link #checkout()} and {@link org.jenkinsci.plugins.gitclient.CheckoutCommand}
@@ -248,7 +246,7 @@ public interface GitClient {
      *
      * This will fail if the branch already exists.
      *
-     * @param ref A git object references expression. For backward compatibility, <tt>null</tt> will checkout current HEAD
+     * @param ref A git object references expression. For backward compatibility, <code>null</code> will checkout current HEAD
      * @param branch name of the branch to create from reference
      * @deprecated use {@link #checkout()} and {@link org.jenkinsci.plugins.gitclient.CheckoutCommand}
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -270,7 +268,7 @@ public interface GitClient {
      *
      * <ul>
      *     <li>The branch of the specified name <em>branch</em> exists and points to the specified <em>ref</em>
-     *     <li><tt>HEAD</tt> points to <em>branch</em>. IOW, the workspace is on the specified branch.
+     *     <li><code>HEAD</code> points to <em>branch</em>. In other words, the workspace is on the specified branch.
      *     <li>Both index and workspace are the same tree with <em>ref</em>.
      *         (no dirty files and no staged changes, although this method will not touch untracked files
      *         in the workspace.)
@@ -278,7 +276,7 @@ public interface GitClient {
      *
      * <p>
      * This method is preferred over the {@link #checkout(String, String)} family of methods, as
-     * this method is affected far less by the current state of the repository. The <tt>checkout</tt>
+     * this method is affected far less by the current state of the repository. The <code>checkout</code>
      * methods, in their attempt to emulate the "git checkout" command line behaviour, have too many
      * side effects. In Jenkins, where you care a lot less about throwing away local changes and
      * care a lot more about resetting the workspace into a known state, methods like this is more useful.
@@ -299,7 +297,7 @@ public interface GitClient {
      * Clone a remote repository
      *
      * @param url URL for remote repository to clone
-     * @param origin upstream track name, defaults to <tt>origin</tt> by convention
+     * @param origin upstream track name, defaults to <code>origin</code> by convention
      * @param useShallowClone option to create a shallow clone, that has some restriction but will make clone operation
      * @param reference (optional) reference to a local clone for faster clone operations (reduce network and local storage costs)
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -316,7 +314,7 @@ public interface GitClient {
 
     /**
      * Fetch commits from url which match any of the passed in
-     * refspecs. Assumes <tt>remote.remoteName.url</tt> has been set.
+     * refspecs. Assumes <code>remote.remoteName.url</code> has been set.
      *
      * @deprecated use {@link #fetch_()} and configure a {@link org.jenkinsci.plugins.gitclient.FetchCommand}
      * @param url a {@link org.eclipse.jgit.transport.URIish} object.
@@ -403,6 +401,13 @@ public interface GitClient {
     MergeCommand merge();
 
     /**
+     * rebase.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.RebaseCommand} object.
+     */
+    RebaseCommand rebase();
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
@@ -428,6 +433,18 @@ public interface GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      */
     void clean() throws GitException, InterruptedException;
+
+    /**
+     * Fully revert working copy to a clean state, i.e. run both
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-reset.html">git-reset(1) --hard</a> then
+     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-clean.html">git-clean(1)</a> for working copy to
+     * match a fresh clone.
+     *
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void clean(boolean cleanSubmodule) throws GitException, InterruptedException;
 
 
 
@@ -473,7 +490,7 @@ public interface GitClient {
     // --- manage tags
 
     /**
-     * Create (or update) a tag. If tag already exist it gets updated (equivalent to <tt>git tag --force</tt>)
+     * Create (or update) a tag. If tag already exist it gets updated (equivalent to <code>git tag --force</code>)
      *
      * @param tagName a {@link java.lang.String} object.
      * @param comment a {@link java.lang.String} object.
@@ -534,7 +551,7 @@ public interface GitClient {
     // --- manage refs
 
     /**
-     * Create (or update) a ref. The ref will reference HEAD (equivalent to <tt>git update-ref ... HEAD</tt>).
+     * Create (or update) a ref. The ref will reference HEAD (equivalent to <code>git update-ref ... HEAD</code>).
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -543,7 +560,7 @@ public interface GitClient {
     void ref(String refName) throws GitException, InterruptedException;
 
     /**
-     * Check if a ref exists. Equivalent to comparing the return code of <tt>git show-ref</tt> to zero.
+     * Check if a ref exists. Equivalent to comparing the return code of <code>git show-ref</code> to zero.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
      * @return True if the ref exists, false otherwse.
@@ -553,7 +570,7 @@ public interface GitClient {
     boolean refExists(String refName) throws GitException, InterruptedException;
 
     /**
-     * Deletes a ref. Has no effect if the ref does not exist, equivalent to <tt>git update-ref -d</tt>.
+     * Deletes a ref. Has no effect if the ref does not exist, equivalent to <code>git update-ref -d</code>.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -562,7 +579,7 @@ public interface GitClient {
     void deleteRef(String refName) throws GitException, InterruptedException;
 
     /**
-     * List refs with the given prefix. Equivalent to <tt>git for-each-ref --format="%(refname)"</tt>.
+     * List refs with the given prefix. Equivalent to <code>git for-each-ref --format="%(refname)"</code>.
      *
      * @param refPrefix the literal prefix any ref returned will have. The empty string implies all.
      * @return a set of refs, each beginning with the given prefix. Empty if none.
@@ -595,7 +612,7 @@ public interface GitClient {
     ObjectId getHeadRev(String remoteRepoUrl, String branch) throws GitException, InterruptedException;
 
     /**
-     * List references in a remote repository. Equivalent to <tt>git ls-remote [--heads] [--tags] &lt;repository&gt; [&lt;refs&gt;]</tt>.
+     * List references in a remote repository. Equivalent to <code>git ls-remote [--heads] [--tags] &lt;repository&gt; [&lt;refs&gt;]</code>.
      *
      * @param remoteRepoUrl
      *      Remote repository URL.
@@ -607,14 +624,28 @@ public interface GitClient {
      *      Limit to only refs/tags.
      *      headsOnly and tagsOnly are not mutually exclusive;
      *      when both are true, references stored in refs/heads and refs/tags are displayed.
-     * @return a map of references name and its commit hash. Empty if none.
+     * @return a map of reference names and their commit hashes. Empty if none.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     Map<String, ObjectId> getRemoteReferences(String remoteRepoUrl, String pattern, boolean headsOnly, boolean tagsOnly) throws GitException, InterruptedException;
 
     /**
-     * Retrieve commit object that is direct child for <tt>revName</tt> revision reference.
+     * List symbolic references in a remote repository. Equivalent to <code>git ls-remote --symref &lt;repository&gt;
+     * [&lt;refs&gt;]</code>. Note: the response may be empty for multiple reasons
+     *
+     * @param remoteRepoUrl Remote repository URL.
+     * @param pattern       Only references matching the given pattern are displayed.
+     * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
+     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
+     * (e.g. command line Git prior to 2.8.0).
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException  if interrupted.
+     */
+    Map<String, String> getRemoteSymbolicReferences(String remoteRepoUrl, String pattern) throws GitException, InterruptedException;
+
+    /**
+     * Retrieve commit object that is direct child for <code>revName</code> revision reference.
      *
      * @param revName a commit sha1 or tag/branch refname
      * @throws hudson.plugins.git.GitException when no such commit / revName is found in repository.
@@ -691,7 +722,7 @@ public interface GitClient {
 
     /**
      * Run submodule update optionally recursively on all submodules
-     * (equivalent of <tt>git submodule update <em>--recursive</em></tt>.)
+     * (equivalent of <code>git submodule update <em>--recursive</em></code>.)
      *
      * @deprecated use {@link #submoduleUpdate()} and {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand}
      * @param recursive a boolean.
@@ -703,7 +734,7 @@ public interface GitClient {
     /**
      * Run submodule update optionally recursively on all submodules, with a specific
      * reference passed to git clone if needing to --init.
-     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--reference 'reference'</em></tt>.)
+     * (equivalent of <code>git submodule update <em>--recursive</em> <em>--reference 'reference'</em></code>.)
      *
      * @deprecated use {@link #submoduleUpdate()} and {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand}
      * @param recursive a boolean.
@@ -715,7 +746,7 @@ public interface GitClient {
 
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking submodules
-     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--remote</em></tt>.)
+     * (equivalent of <code>git submodule update <em>--recursive</em> <em>--remote</em></code>.)
      *
      * @deprecated use {@link #submoduleUpdate()} and {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand}
      * @param recursive a boolean.
@@ -727,7 +758,7 @@ public interface GitClient {
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking, with a specific
      * reference passed to git clone if needing to --init.
-     * (equivalent of <tt>git submodule update <em>--recursive</em> <em>--remote</em> <em>--reference 'reference'</em></tt>.)
+     * (equivalent of <code>git submodule update <em>--recursive</em> <em>--remote</em> <em>--reference 'reference'</em></code>.)
      *
      * @deprecated use {@link #submoduleUpdate()} and {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand}
      * @param recursive a boolean.
@@ -856,13 +887,38 @@ public interface GitClient {
      * For merge commit, this method reports one diff per each parent. This makes this method
      * behave differently from {@link #changelog()}.
      *
-     * @return The git show output, in <tt>raw</tt> format.
+     * @return The git show output, in <code>raw</code> format.
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
+
+    /**
+     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * can be parsed by GitChangeLogParser.
+     *
+     * <p>
+     * If useRawOutput is true, the '--raw' option will include commit file information to be passed to the
+     * GitChangeLogParser.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * For merge commit, this method reports one diff per each parent. This makes this method
+     * behave differently from {@link #changelog()}.
+     *
+     * @return The git show output, in <code>raw</code> format.
+     * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param useRawOutput a {java.lang.Boolean} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException;
 
     /**
      * showChangedPaths.
@@ -932,4 +988,13 @@ public interface GitClient {
      * @throws java.lang.InterruptedException on thread interruption
      */
     List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException;
+
+    /**
+     * Return name and object ID of all tags in current repository.
+     *
+     * @return set of tags in current repository
+     * @throws hudson.plugins.git.GitException on Git exceptions
+     * @throws java.lang.InterruptedException on thread interruption
+     */
+    Set<GitObject> getTags() throws GitException, InterruptedException;
 }

@@ -47,7 +47,7 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setStrategy(Strategy strategy);
 
     public enum Strategy {
-        DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE;
+        DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE, RECURSIVE_THEIRS;
 
         @Override
         public String toString() {
@@ -83,4 +83,12 @@ public interface MergeCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
      */
     MergeCommand setSquash(boolean squash);
+
+    /**
+     * setCommit
+     *
+     * @param commit - whether or not to commit the result after a successful merge.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
+    MergeCommand setCommit(boolean commit);
 }

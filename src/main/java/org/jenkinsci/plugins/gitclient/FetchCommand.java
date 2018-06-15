@@ -25,8 +25,19 @@ public interface FetchCommand extends GitCommand {
      * prune.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     * @deprecated favour {@link #prune(boolean)}
      */
+    @Deprecated
     FetchCommand prune();
+
+    /**
+     * prune.
+     *
+     * @param prune {@code true} if the fetch should prune.
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     * @since 2.5.0
+     */
+    FetchCommand prune(boolean prune);
 
     /**
      * shallow.
@@ -50,6 +61,7 @@ public interface FetchCommand extends GitCommand {
      * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
      * Has no effect if shallow is set to false (default)
      *
+     * @param depth number of revisions to be included in shallow clone
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
      */
     FetchCommand depth(Integer depth);

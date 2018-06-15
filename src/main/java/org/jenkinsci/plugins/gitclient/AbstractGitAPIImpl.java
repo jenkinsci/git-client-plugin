@@ -1,10 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;
-import jenkins.model.Jenkins.MasterComputer;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 /**
  * Common parts between {@link JGitAPIImpl} and {@link CliGitAPIImpl}.
@@ -23,11 +24,8 @@ import java.io.Writer;
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     /** {@inheritDoc} */
     public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
-        Repository repo = getRepository();
-        try {
-            return callable.invoke(repo, MasterComputer.localChannel);
-        } finally {
-            repo.close();
+        try (Repository repo = getRepository()) {
+            return callable.invoke(repo, FilePath.localChannel);
         }
     }
 
@@ -52,7 +50,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     /** {@inheritDoc} */
     public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException {
-        changelog(revFrom, revTo, new OutputStreamWriter(outputStream));
+        changelog(revFrom, revTo, new OutputStreamWriter(outputStream, Charset.defaultCharset()));
     }
 
     /** {@inheritDoc} */
@@ -91,9 +89,13 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
      * When sent to remote, switch to the proxy.
      *
      * @return a {@link java.lang.Object} object.
+     * @throws java.io.ObjectStreamException if current channel is null
      */
-    protected Object writeReplace() {
-        return remoteProxyFor(Channel.current().export(GitClient.class, this));
+    protected Object writeReplace() throws java.io.ObjectStreamException {
+        Channel currentChannel = Channel.current();
+        if (currentChannel == null)
+            throw new java.io.WriteAbortedException("No current channel", new java.lang.NullPointerException());
+        return remoteProxyFor(currentChannel.export(GitClient.class, this));
     }
 
     /**

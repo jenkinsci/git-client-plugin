@@ -48,7 +48,7 @@ public class PushTest {
     private final String gitImpl;
     protected final String refSpec;
     private final String branchName;
-    private final Class expectedException;
+    private final Class<Throwable> expectedException;
 
     private static File bareRepo;
     protected static URIish bareURI;
@@ -69,7 +69,7 @@ public class PushTest {
     @Rule
     public TestName name = new TestName();
 
-    public PushTest(String gitImpl, String branchName, String refSpec, Class expectedException) {
+    public PushTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
         this.gitImpl = gitImpl;
         this.branchName = branchName;
         this.refSpec = refSpec;
@@ -98,7 +98,7 @@ public class PushTest {
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
     public static Collection pushParameters() {
-        List<Object[]> parameters = new ArrayList<Object[]>();
+        List<Object[]> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
             "{0}",
@@ -141,7 +141,7 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<RefSpec>();
+        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = Files.createTempDir();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()
@@ -174,7 +174,11 @@ public class PushTest {
     }
 
     @BeforeClass
-    public static void createBareRepository() throws IOException, InterruptedException, URISyntaxException {
+    public static void createBareRepository() throws Exception {
+        /* Command line git commands fail unless certain default values are set */
+        CliGitCommand gitCmd = new CliGitCommand(null);
+        gitCmd.setDefaults();
+
         /* Randomly choose git implementation to create bare repository */
         final String[] gitImplementations = {"git", "jgit"};
         Random random = new Random();

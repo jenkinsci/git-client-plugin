@@ -9,16 +9,17 @@ import hudson.util.StreamTaskListener;
 import java.io.IOException;
 import java.util.List;
 import org.apache.commons.lang.SystemUtils;
+import org.jenkinsci.plugins.gitclient.JGitApacheTool;
 import org.jenkinsci.plugins.gitclient.JGitTool;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class GitToolTest {
 
-    @Rule public JenkinsRule j = new JenkinsRule();
+    @ClassRule public static JenkinsRule j = new JenkinsRule();
 
     private GitTool gitTool;
 
@@ -66,10 +67,12 @@ public class GitToolTest {
     public void testGetApplicableFromDescriptor() {
         GitTool.DescriptorImpl gitDescriptor = gitTool.getDescriptor();
         GitTool.DescriptorImpl jgitDescriptor = (new JGitTool()).getDescriptor();
-        List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDesccriptors();
+        GitTool.DescriptorImpl jgitApacheDescriptor = (new JGitApacheTool()).getDescriptor();
+        List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDescriptors();
         assertTrue("git tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(gitDescriptor));
         assertTrue("jgit tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitDescriptor));
-        assertEquals("Wrong tool descriptor count in " + toolDescriptors, 2, toolDescriptors.size());
+        assertTrue("jgitapache tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitApacheDescriptor));
+        assertEquals("Wrong tool descriptor count in " + toolDescriptors, 3, toolDescriptors.size());
     }
 
 }

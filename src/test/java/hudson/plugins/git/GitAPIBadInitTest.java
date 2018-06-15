@@ -4,27 +4,27 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.gitclient.GitClient;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
-import static junit.framework.TestCase.assertTrue;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
+import static org.junit.Assert.*;
 
 public class GitAPIBadInitTest {
 
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator;
+    @Rule
+    public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private final EnvVars env;
 
     public GitAPIBadInitTest() {
-        temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
         env = new EnvVars();
     }
 
@@ -36,13 +36,8 @@ public class GitAPIBadInitTest {
 
     @Before
     public void setUp() throws IOException, InterruptedException {
-        tempDir = temporaryDirectoryAllocator.allocate();
+        tempDir = tempFolder.newFolder();
         listener = StreamTaskListener.fromStderr();
-    }
-
-    @After
-    public void tearDown() throws InterruptedException {
-        temporaryDirectoryAllocator.disposeAsync();
     }
 
     @Test
@@ -52,15 +47,6 @@ public class GitAPIBadInitTest {
         File gitDir = new File(tempDir, ".git");
         assertTrue(gitDir + " not created", gitDir.exists());
         assertTrue(gitDir + " not a directory", gitDir.isDirectory());
-    }
-
-    @Test
-    public void testInitNoDirectory() throws Exception {
-        File nonExistentDirectory = new File(tempDir, "dir-does-not-exist");
-        GitClient git = new GitAPI("git", nonExistentDirectory, listener, env);
-        thrown.expect(GitException.class);
-        thrown.expectMessage("Could not init " + nonExistentDirectory.getAbsolutePath());
-        git.init();
     }
 
     @Test

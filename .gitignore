@@ -18,3 +18,7 @@ Session.vim
 
 # Exhuberant ctags
 tags
+
+# emacs backup files
+*~
+/nbproject/

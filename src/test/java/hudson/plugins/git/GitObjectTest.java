@@ -9,6 +9,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import static org.junit.Assert.*;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 @RunWith(Parameterized.class)
 public class GitObjectTest {
 
@@ -27,7 +29,7 @@ public class GitObjectTest {
 
     @Parameterized.Parameters(name = "{0}-{1}")
     public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<Object[]>();
+        List<Object[]> arguments = new ArrayList<>();
         String tagStr = "git-client-1.16.0";
         String tagSHA1 = "b24875cb995865a9e3a802dc0e9c8041640df0a7";
         String[] names = {tagStr, ObjectId.zeroId().getName(), "", null};
@@ -54,5 +56,13 @@ public class GitObjectTest {
     @Test
     public void testGetSHA1String() {
         assertEquals(sha1String, gitObject.getSHA1String());
+    }
+
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(GitObject.class)
+                .usingGetClass()
+                .withRedefinedSubclass(Tag.class)
+                .verify();
     }
 }

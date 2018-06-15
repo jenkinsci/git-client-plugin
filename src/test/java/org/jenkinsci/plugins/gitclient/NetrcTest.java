@@ -3,19 +3,25 @@ package org.jenkinsci.plugins.gitclient;
 import static org.junit.Assert.*;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import org.apache.commons.io.IOUtils;
 
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class NetrcTest
 {
+    @Rule
+    public TemporaryFolder folder = new TemporaryFolder();
+
     private static final String TEST_NETRC_FILE_1 = "netrc_1";
     private static final String TEST_NETRC_FILE_1a = "netrc_1a";
     private static final String TEST_NETRC_FILE_2 = "netrc_2";
@@ -75,52 +81,33 @@ public class NetrcTest
         }
     }
 
-
-    private void copyFileContents(String _source, String _destination) throws IOException
+    private void copyFileContents(String source, String destination) throws IOException
     {
-        FileChannel inputChannel = null;
-        FileChannel outputChannel = null;
-        try {
-            inputChannel = new FileInputStream(_source).getChannel();
-            outputChannel = new FileOutputStream(_destination).getChannel();
-            outputChannel.transferFrom(inputChannel, 0, inputChannel.size());
-        } finally {
-            inputChannel.close();
-            outputChannel.close();
+        try (InputStream sourceStream = Files.newInputStream(Paths.get(source));
+                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+            IOUtils.copy(sourceStream, out);
         }
     }
 
+    private void copyResourceContents(String resource, String destination) throws IOException
+    {
+        try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource);
+                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+            IOUtils.copy(sourceStream, out);
+        }
+    }
 
     @Before
     public void setup() throws IOException
     {
-        URL testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_1 + ".in");
-        if (testNetrc == null) {
-            testFilePath_1 = null;
-        }
-        else {
-            String path = testNetrc.getPath();
-            testFilePath_1 = path.substring(0, path.length()-3);
-            copyFileContents(path, testFilePath_1);
-        }
+        testFilePath_1 = folder.newFile(TEST_NETRC_FILE_1).getAbsolutePath();
+        copyResourceContents(TEST_NETRC_FILE_1 + ".in", testFilePath_1);
 
-        testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_1a + ".in");
-        if (testNetrc == null) {
-            testFilePath_1a = null;
-        }
-        else {
-            testFilePath_1a = testNetrc.getPath();
-        }
+        testFilePath_1a = folder.newFile(TEST_NETRC_FILE_1a).getAbsolutePath();
+        copyResourceContents(TEST_NETRC_FILE_1a + ".in", testFilePath_1a);
 
-        testNetrc = this.getClass().getClassLoader().getResource(TEST_NETRC_FILE_2 + ".in");
-        if (testNetrc == null) {
-            testFilePath_2 = null;
-        }
-        else {
-            String path = testNetrc.getPath();
-            testFilePath_2 = path.substring(0, path.length()-3);
-            copyFileContents(path, testFilePath_2);
-        }
+        testFilePath_2 = folder.newFile(TEST_NETRC_FILE_2).getAbsolutePath();
+        copyResourceContents(TEST_NETRC_FILE_2 + ".in", testFilePath_2);
     }
 
 

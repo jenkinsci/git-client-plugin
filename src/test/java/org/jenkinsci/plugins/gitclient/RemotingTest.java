@@ -12,6 +12,7 @@ import org.jvnet.hudson.test.HudsonTestCase;
 
 import java.io.File;
 import java.io.IOException;
+import org.jenkinsci.remoting.RoleChecker;
 
 /**
  * @author Kohsuke Kawaguchi
@@ -36,7 +37,18 @@ public class RemotingTest extends HudsonTestCase {
     private static class Work implements Callable<Void,IOException> {
         private final GitClient git;
 
-        public Work(GitClient git) {
+        private static boolean cliGitDefaultsSet = false;
+
+        private void setCliGitDefaults() throws Exception {
+            if (!cliGitDefaultsSet) {
+                CliGitCommand gitCmd = new CliGitCommand(null);
+                gitCmd.setDefaults();
+            }
+            cliGitDefaultsSet = true;
+        }
+
+        public Work(GitClient git) throws Exception {
+            setCliGitDefaults();
             this.git = git;
         }
 
@@ -58,6 +70,11 @@ public class RemotingTest extends HudsonTestCase {
         }
 
         private static final long serialVersionUID = 1L;
+
+        @Override
+        public void checkRoles(RoleChecker rc) throws SecurityException {
+            throw new UnsupportedOperationException("unexpected call to checkRoles in private static Work class");
+        }
     }
 
     private static class RepositoryCallableImpl implements RepositoryCallback<FilePath> {

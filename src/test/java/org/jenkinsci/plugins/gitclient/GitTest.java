@@ -20,7 +20,7 @@ import org.junit.runners.Parameterized;
 public class GitTest {
 
     /* A known commit from the git-client-plugin repository */
-    private static final ObjectId expectedCommit = ObjectId.fromString("168bdb557bea221a386aae8b77ebc90d8be77a5e");
+    private ObjectId expectedCommit = null;
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitImplementation() {
@@ -32,8 +32,10 @@ public class GitTest {
 
     private final String implementation;
 
-    public GitTest(String implementation) {
+    public GitTest(String implementation) throws Exception {
         this.implementation = implementation;
+        Git git = new Git(null, null).using(implementation).in(new File("."));
+        expectedCommit = git.getClient().revParse("HEAD");
     }
 
     @Test

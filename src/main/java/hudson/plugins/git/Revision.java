@@ -32,7 +32,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      */
     public Revision(ObjectId sha1) {
         this.sha1 = sha1;
-        this.branches = new ArrayList<Branch>();
+        this.branches = new ArrayList<>();
     }
 
     /**
@@ -118,12 +118,7 @@ public class Revision implements java.io.Serializable, Cloneable {
         StringBuilder s = new StringBuilder("Revision " + revisionName + " (");
         if (branches != null) {
             Joiner.on(", ").appendTo(s,
-                    Iterables.transform(branches, new Function<Branch, String>() {
-
-                        public String apply(Branch from) {
-                            return Util.fixNull(from.getName());
-                        }
-                    }));
+                    Iterables.transform(branches, from -> Util.fixNull(from.getName())));
         }
         s.append(')');
         return s.toString();
@@ -139,7 +134,7 @@ public class Revision implements java.io.Serializable, Cloneable {
         catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
-        clone.branches = new ArrayList<Branch>(branches);
+        clone.branches = new ArrayList<>(branches);
         return clone;
     }
 

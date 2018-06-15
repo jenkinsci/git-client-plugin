@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.HostnamePortRequirement;
 import com.cloudbees.plugins.credentials.domains.HostnameRequirement;
+import com.cloudbees.plugins.credentials.domains.PathRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -145,7 +146,7 @@ public class GitURIRequirementsBuilder {
      * @param requirements the list of requirements.
      */
     private GitURIRequirementsBuilder(@NonNull List<DomainRequirement> requirements) {
-        this.requirements = new ArrayList<DomainRequirement>(requirements);
+        this.requirements = new ArrayList<>(requirements);
     }
 
     /**
@@ -190,34 +191,37 @@ public class GitURIRequirementsBuilder {
         if (uri != null) {
             Matcher matcher = SINGLE_SLASH_FILE_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("file").withoutHostname().withoutHostnamePort();
+                return withScheme("file").withPath(matcher.group(2)).withoutHostname().withoutHostnamePort();
             }
             matcher = FULL_URI.matcher(uri);
             if (matcher.matches()) {
                 withScheme(matcher.group(1));
                 if (!"file".equals(matcher.group(1)) && matcher.group(4) != null) {
+                    withPath(matcher.group(7));
                     if (matcher.group(5) != null) {
                         withHostnamePort(matcher.group(4), Integer.parseInt(matcher.group(5)));
                     } else {
                         withHostname(matcher.group(4)).withoutHostnamePort();
                     }
+                } else {
+                    withPath(matcher.group(4)+"/"+matcher.group(7));
                 }
                 return this;
             }
             matcher = RELATIVE_SCP_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("ssh").withHostnamePort(matcher.group(3),22);
+                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3),22);
             }
             matcher = ABSOLUTE_SCP_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("ssh").withHostnamePort(matcher.group(3),22);
+                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3),22);
             }
             matcher = LOCAL_FILE.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("file").withoutHostname().withoutHostnamePort();
+                return withScheme("file").withPath(matcher.group(2)).withoutHostname().withoutHostnamePort();
             }
         }
-        return withoutScheme().withoutHostname().withoutHostnamePort();
+        return withoutScheme().withoutPath().withoutHostname().withoutHostnamePort();
     }
 
     /**
@@ -230,6 +234,22 @@ public class GitURIRequirementsBuilder {
         for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
             DomainRequirement r = iterator.next();
             if (r instanceof SchemeRequirement) {
+                iterator.remove();
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Removes any path requirements.
+     *
+     * @return {@code this}.
+     */
+    @NonNull
+    public GitURIRequirementsBuilder withoutPath() {
+        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
+            DomainRequirement r = iterator.next();
+            if (r instanceof PathRequirement) {
                 iterator.remove();
             }
         }
@@ -284,6 +304,21 @@ public class GitURIRequirementsBuilder {
     }
 
     /**
+     * Replace any path requirements with the supplied path.
+     *
+     * @param path to use as a requirement
+     * @return {@code this}.
+     */
+    @NonNull
+    public GitURIRequirementsBuilder withPath(@CheckForNull String path) {
+        withoutPath();
+        if (path != null) {
+            requirements.add(new PathRequirement(path));
+        }
+        return this;
+    }
+
+    /**
      * Replace any hostname requirements with the supplied hostname.
      *
      * @param hostname the hostname to use as a requirement
@@ -321,7 +356,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public List<DomainRequirement> build() {
-        return new ArrayList<DomainRequirement>(requirements);
+        return new ArrayList<>(requirements);
     }
 
 }

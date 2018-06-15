@@ -1,0 +1,7 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <j:set var="toolDescriptor" value="${descriptor}" /><!-- to make this descriptor accessible from properties -->
+<!-- TODO: just exclude auto-installer
+  <f:descriptorList descriptors="${descriptor.propertyDescriptors}" field="properties"/>
+-->
+</j:jelly>
