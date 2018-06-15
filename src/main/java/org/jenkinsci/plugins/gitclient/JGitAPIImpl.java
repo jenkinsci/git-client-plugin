@@ -2163,10 +2163,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException, InterruptedException {
-        Repository repo = null;
-        try {
-            repo = getRepository();
-
+        try (Repository repo = getRepository()) {
             List<RevCommit> oldRevCommits = new ArrayList<RevCommit>();
             RevWalk walk = new RevWalk(repo);
             RevCommit toCommit = walk.parseCommit(to);
@@ -2209,20 +2206,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } catch (GitAPIException e) {
             throw new GitException(e);
-        } finally {
-            if (repo != null) repo.close();
         }
     }
 
     private static CanonicalTreeParser prepareTreeParser(Repository repo, ObjectId objectId) throws GitException {
-        ObjectReader or = null;
-        RevWalk walk = null;
         CanonicalTreeParser treeIter = new CanonicalTreeParser();
 
-        try {
+        try (ObjectReader or = repo.newObjectReader();
+             RevWalk walk = new RevWalk(repo)) {
             // from the commit we can build the tree which allows us to construct the TreeParser
-            or = repo.newObjectReader();
-            walk = new RevWalk(repo);
             RevCommit commit = walk.parseCommit(objectId);
             RevTree tree = walk.parseTree(commit.getTree().getId());
 
@@ -2233,9 +2225,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             throw new GitException(e);
         } catch (IOException e) {
             throw new GitException(e);
-        } finally {
-            if (walk != null) walk.dispose();
-            if (or != null) or.release();
         }
 
         return treeIter;
