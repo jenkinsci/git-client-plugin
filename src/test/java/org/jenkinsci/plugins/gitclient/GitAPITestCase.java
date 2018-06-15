@@ -4649,8 +4649,8 @@ public abstract class GitAPITestCase extends TestCase {
      *
      * Creates a structure like:
      *
-     * base -> branch a -> branch a-b 
-     *      -> branch c 
+     * base -> branch a -> branch a-b
+     *      -> branch c
      *      -> branch d -> branch d-e -> branch d-e-f
      *
      * Performs a merge of all three branches and checks
