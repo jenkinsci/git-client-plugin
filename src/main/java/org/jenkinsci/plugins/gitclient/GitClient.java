@@ -937,7 +937,7 @@ public interface GitClient {
      * <p>
      * Changes are computed on the [from..to] range, For merge commit, only actual path changes
      * are included rather than changes from all parents. This makes this method report
-     * more accurately on path changes from {@link #showRevision()}.
+     * more accurately on path changes from {@link #showRevision}.
      *
      * <p>
      * If {@code from} is null, this prints paths from just one commit that {@code to} represents.
