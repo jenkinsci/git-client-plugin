@@ -481,7 +481,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean tags = true;
             List<RefSpec> refspecs;
             Integer depth = 1;
-            private boolean noCheckout = true;
+            boolean noCheckout = true;
 
             public CloneCommand url(String url) {
                 this.url = url;
