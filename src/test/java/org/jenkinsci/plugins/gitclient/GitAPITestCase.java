@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -114,8 +115,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void assertCloneTimeout() {
         if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git fetch", cloneTimeout);
+            assertSubstringTimeout("git clone", cloneTimeout);
         }
     }
 
@@ -461,8 +461,21 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
-        assertEquals("Wrong remote URL", localMirror(), w.git.getRemoteUrl(repositoryName));
+    private String removeFileScheme( String filePathUrl )
+    {
+      String fileSchemePrefix = "file://";
+      if (isWindows()) {
+        fileSchemePrefix += "/"; // absolute windows path starts with a drive letter, so URIish appends an additional slash in format()
+      }
+      String filePath = filePathUrl;
+      if( filePathUrl.startsWith( fileSchemePrefix ) ) {
+        filePath = filePathUrl.substring( fileSchemePrefix.length() );
+      }
+      return filePath;
+    }
+
+    private void check_remote_url(final String repositoryName ) throws InterruptedException, IOException {
+        assertEquals("Wrong remote URL", localMirror(), removeFileScheme( w.git.getRemoteUrl(repositoryName) ) );
         String remotes = w.cmd("git remote -v");
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
@@ -616,7 +629,6 @@ public abstract class GitAPITestCase extends TestCase {
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
-        assertNoObjectsInRepository();
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
         assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
@@ -691,15 +703,22 @@ public abstract class GitAPITestCase extends TestCase {
       w.git.clone_().url(localMirror()).refspecs(refspecs).repositoryName("origin").execute();
       w.git.withRepository((Repository repo, VirtualChannel channel) -> {
           String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-          assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
-          assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
-          assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
+          int refSpecIndex = 0;
+          if( fetchRefSpecs.length == 3 ) {
+              assertEquals("Incorrect refspec 0", "+refs/heads/*:refs/remotes/origin/*", fetchRefSpecs[refSpecIndex]);
+              refSpecIndex += 1;
+          } else {
+            assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
+          }
+          assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[refSpecIndex]);
+          refSpecIndex += 1;
+          assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[refSpecIndex]);
           return null;
       });
       Set<Branch> remoteBranches = w.git.getRemoteBranches();
       assertBranchesExist(remoteBranches, "origin/master");
       assertBranchesExist(remoteBranches, "origin/1.4.x");
-      assertEquals(2, remoteBranches.size());
+      assertTrue(remoteBranches.size() >= 2);
     }
 
     public void test_detect_commit_in_repo() throws Exception {
@@ -1448,6 +1467,21 @@ public abstract class GitAPITestCase extends TestCase {
             Set<String> latestTags = w.git.getTagNames(matchPattern);
             assertThat(latestTags, hasItem("slashed/sample"));
             assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
+        }
+    }
+
+    public void test_getTags_after_clone() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        Set<GitObject> availableTags = w.git.getTags();
+
+        Set< GitObject > expectedTags = new HashSet< GitObject >();
+        expectedTags.add( new GitObject( "git-client-1.1.2", ObjectId.fromString( "b72f8b0eb90c71181aae33d018d2e082572847b0" ) ) );
+        expectedTags.add( new GitObject( "git-client-1.16.0", ObjectId.fromString( "b24875cb995865a9e3a802dc0e9c8041640df0a7" ) ) );
+        expectedTags.add( new GitObject( "git-client-1.19.5", ObjectId.fromString( "75233992621959b582bb6ac9cd80f0e550668381" ) ) );
+        expectedTags.add( new GitObject( "git-client-1.4.0", ObjectId.fromString( "22fc3729136dd9062a1955b40aaa867c44011b9f" ) ) );
+
+        for( GitObject expectedTag : expectedTags ) {
+          assertTrue( "expected tag: \"" + expectedTag.getName() + "\" with sha: \"" + expectedTag.getSHA1String() + "\" not found", availableTags.contains( expectedTag ) );
         }
     }
 
@@ -4085,7 +4119,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.fetch_().from(remote, refspecs).execute();
 
         try {
-            w.git.checkout().ref(Constants.MASTER).execute();
+            w.git.checkout().ref("1.4.x").execute();
             fail("GitException expected");
         } catch (GitException e) {
             // expected
