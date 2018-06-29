@@ -463,7 +463,10 @@ public abstract class GitAPITestCase extends TestCase {
 
     private String removeFileScheme( String filePathUrl )
     {
-      final String fileSchemePrefix = "file://";
+      String fileSchemePrefix = "file://";
+      if (isWindows()) {
+        fileSchemePrefix += "/"; // absolute windows path starts with a drive letter, so URIish appends an additional slash in format()
+      }
       String filePath = filePathUrl;
       if( filePathUrl.startsWith( fileSchemePrefix ) ) {
         filePath = filePathUrl.substring( fileSchemePrefix.length() );
