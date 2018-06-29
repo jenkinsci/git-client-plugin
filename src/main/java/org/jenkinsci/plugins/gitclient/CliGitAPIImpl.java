@@ -166,6 +166,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /* Package protected for testing */
     final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
+    protected static final String DEFAULT_ORIGIN = "orgin";
+
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
             return;
@@ -471,13 +473,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
         return new CloneCommand() {
             String url;
-            String origin = "origin";
+            String origin = DEFAULT_ORIGIN;
             String reference;
-            boolean shallow,shared;
+            boolean shallow = false;
+            boolean shared = false;
             Integer timeout;
             boolean tags = true;
             List<RefSpec> refspecs;
             Integer depth = 1;
+            private boolean noCheckout = true;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -510,7 +514,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public CloneCommand noCheckout() {
-                //this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the --no-checkout option is always satisfied
+                this.noCheckout = true;
                 return this;
             }
 
@@ -558,11 +562,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("Failed to delete workspace", e);
                 }
 
-                // we don't run a 'git clone' command but git init + git fetch
-                // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
-
-                init_().workspace(workspace.getAbsolutePath()).execute();
-
                 if (shared) {
                     if (reference == null || reference.isEmpty()) {
                         // we use origin as reference
@@ -572,6 +571,50 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
 
+                launchCloneCommand(urIish);
+
+                addReferenceToAlternates();
+                if (refspecs != null) {
+                    for (RefSpec refSpec : refspecs) {
+                        launchCommand("config", "--add", "remote." + origin + ".fetch", refSpec.toString());
+                    }
+                }
+            }
+
+            private void launchCloneCommand(URIish urIish) throws InterruptedException {
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("clone");
+                if( noCheckout ) {
+                    args.add("--no-checkout");
+                }
+                if( shared ) {
+                    args.add("--shared");
+                }
+                if( shallow ) {
+                    if( new File( url ).exists() ) { // shallow clones of local repos need file urls
+                        urIish = urIish.setScheme( "file" );
+                    }
+                    args.add("--depth");
+                    args.add( depth );
+                }
+                if( !origin.equals( DEFAULT_ORIGIN ) ) {
+                    args.add( "--origin" );
+                    args.add( origin );
+                }
+
+                if (isAtLeastVersion(1,7,1,0)) {
+                    args.add("--progress");
+                }
+                args.add(urIish.toString());
+                args.add(workspace.getAbsolutePath());
+
+                StandardCredentials cred = credentials.get(urIish.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+
+                launchCommandWithCredentials(args, workspace.getParentFile(), cred, urIish, timeout);
+            }
+
+            private void addReferenceToAlternates() {
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
@@ -585,9 +628,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             // reference path is bare repo
                             objectsPath = new File(referencePath, "objects");
                         }
-                        if (!objectsPath.isDirectory())
+                        if (!objectsPath.isDirectory()) {
                             listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
-                        else {
+                        } else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
                             try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
                                 String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
@@ -602,22 +645,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 }
-
-                if (refspecs == null) {
-                    refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/"+origin+"/*"));
-                }
-                fetch_().from(urIish, refspecs)
-                        .shallow(shallow)
-                        .depth(depth)
-                        .timeout(timeout)
-                        .tags(tags)
-                        .execute();
-                setRemoteUrl(origin, url);
-                for (RefSpec refSpec : refspecs) {
-                    launchCommand("config", "--add", "remote." + origin + ".fetch", refSpec.toString());
-                }
-            }
-
+			}
         };
     }
 
@@ -2340,7 +2368,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     ArgumentListBuilder args = new ArgumentListBuilder();
                     args.add("checkout");
                     if (branch != null) {
-                        args.add("-b");
+                        if( branch.equals("master") ) {
+                            args.add("-B");
+                        } else {
+                            args.add("-b");
+                        }
                         args.add(branch);
                     } else {
                         args.add("-f");
