@@ -143,34 +143,36 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
         public void execute() throws GitException, InterruptedException {
             try {
-                channel.call(new jenkins.security.MasterToSlaveCallable<Void, GitException>() {
-                    public Void call() throws GitException {
-                        try {
-                            GitCommand cmd = createCommand();
-                            for (Invocation inv : invocations) {
-                                inv.replay(cmd);
-                            }
-                            cmd.execute();
-                            return null;
-                        } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
-                            throw new GitException(e);
-                        }
-                    }
-
-                    private GitCommand createCommand() throws InvocationTargetException, IllegalAccessException {
-                        for (Method m : GitClient.class.getMethods()) {
-                            if (m.getReturnType()==command && m.getParameterTypes().length==0)
-                                return command.cast(m.invoke(proxy));
-                        }
-                        throw new IllegalStateException("Can't find the factory method for "+command);
-                    }
-                });
+                channel.call(new GitCommandMasterToSlaveCallable());
             } catch (IOException e) {
                 throw new GitException(e);
             }
         }
 
         private static final long serialVersionUID = 1L;
+
+        private class GitCommandMasterToSlaveCallable extends jenkins.security.MasterToSlaveCallable<Void, GitException> {
+            public Void call() throws GitException {
+                try {
+                    GitCommand cmd = createCommand();
+                    for (Invocation inv : invocations) {
+                        inv.replay(cmd);
+                    }
+                    cmd.execute();
+                    return null;
+                } catch (InvocationTargetException | IllegalAccessException | InterruptedException e) {
+                    throw new GitException(e);
+                }
+            }
+
+            private GitCommand createCommand() throws InvocationTargetException, IllegalAccessException {
+                for (Method m : GitClient.class.getMethods()) {
+                    if (m.getReturnType()==command && m.getParameterTypes().length==0)
+                        return command.cast(m.invoke(proxy));
+                }
+                throw new IllegalStateException("Can't find the factory method for "+command);
+            }
+        }
     }
 
     private OutputStream wrap(OutputStream os) {
