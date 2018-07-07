@@ -134,11 +134,6 @@ public class IndexEntryTest {
         assertEquals(entryNull4, entryNull4a);
         assertEquals(entryNull4a, entryNull4);
 
-        IndexEntry entryNullA = null;
-        IndexEntry entryNullB = null;
-        assertEquals(entryNullA, entryNullB);
-        assertEquals(entryNullB, entryNullA);
-
         assertNotEquals(entry, null);
         assertNotEquals(entry, "not an IndexEntry object");
     }
