@@ -221,8 +221,7 @@ public class CredentialsTest {
     private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "username-" + username + "-password-" + password + random.nextInt();
-        StandardUsernamePasswordCredentials usernamePasswordCredential = new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
-        return usernamePasswordCredential;
+        return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
     }
 
     private static boolean isCredentialsSupported() throws IOException, InterruptedException {
