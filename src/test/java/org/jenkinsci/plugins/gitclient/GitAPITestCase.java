@@ -1612,7 +1612,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (w.git instanceof JGitAPIImpl) {
             assertEquals("Annotated tag does not match SHA1", init, testTag);
         } else {
-            assertNotEquals("Annotated tag unexpectedly equals SHA1", init, testTag);
+            assertNull("Annotated tag unexpectedly not null", testTag);
         }
 
         /* Because refs/tags/test syntax is more specific than "test",
