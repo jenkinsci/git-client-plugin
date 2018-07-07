@@ -35,6 +35,9 @@ public class RemotingTest extends HudsonTestCase {
     }
 
     private static class Work implements Callable<Void,IOException> {
+
+        private static final long serialVersionUID = 1L;
+
         private final GitClient git;
 
         private static boolean cliGitDefaultsSet = false;
@@ -52,6 +55,7 @@ public class RemotingTest extends HudsonTestCase {
             this.git = git;
         }
 
+        @Override
         public Void call() throws IOException {
             try {
                 git.init();
@@ -69,8 +73,6 @@ public class RemotingTest extends HudsonTestCase {
             }
         }
 
-        private static final long serialVersionUID = 1L;
-
         @Override
         public void checkRoles(RoleChecker rc) throws SecurityException {
             throw new UnsupportedOperationException("unexpected call to checkRoles in private static Work class");
@@ -78,11 +80,13 @@ public class RemotingTest extends HudsonTestCase {
     }
 
     private static class RepositoryCallableImpl implements RepositoryCallback<FilePath> {
-        public FilePath invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException {
+
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public FilePath invoke(Repository repo, VirtualChannel channel) {
             assertNotNull(repo);
             return new FilePath(repo.getWorkTree());
         }
-
-        private static final long serialVersionUID = 1L;
     }
 }
