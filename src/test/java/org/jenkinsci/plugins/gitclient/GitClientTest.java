@@ -585,8 +585,6 @@ public class GitClientTest {
         gitCmd.assertOutputContains(".*On branch.*" + branchName + ".*");
     }
 
-    private int lastFetchPath = -1;
-
     private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
         List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
@@ -594,8 +592,7 @@ public class GitClientTest {
         for (String refSpecString : optionalRefSpecs) {
             refSpecs.add(new RefSpec(refSpecString));
         }
-        lastFetchPath = random.nextInt(2);
-        switch (lastFetchPath) {
+        switch (random.nextInt(2)) {
             default:
             case 0:
                 if (remote.equals("origin")) {
