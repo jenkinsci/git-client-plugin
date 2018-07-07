@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.*;
+
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.TaskListener;
@@ -13,7 +15,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.junit.Assert;
 
 /**
  * Run a command line git command, return output as array of String, optionally
@@ -64,7 +65,7 @@ class CliGitCommand {
         }
         output = result.split("[\\n\\r]");
         if (assertProcessStatus) {
-            Assert.assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
         }
         return output;
     }
@@ -72,7 +73,7 @@ class CliGitCommand {
     public void assertOutputContains(String... expectedRegExes) {
         List<String> notFound = new ArrayList<>();
         boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
-        Assert.assertTrue("Missing regular expressions in assertion", modified);
+        assertTrue("Missing regular expressions in assertion", modified);
         for (String line : output) {
             for (Iterator<String> iterator = notFound.iterator(); iterator.hasNext();) {
                 String regex = iterator.next();
@@ -82,7 +83,7 @@ class CliGitCommand {
             }
         }
         if (!notFound.isEmpty()) {
-            Assert.fail(Arrays.toString(output) + " did not match all strings in notFound: " + Arrays.toString(expectedRegExes));
+            fail(Arrays.toString(output) + " did not match all strings in notFound: " + Arrays.toString(expectedRegExes));
         }
     }
 

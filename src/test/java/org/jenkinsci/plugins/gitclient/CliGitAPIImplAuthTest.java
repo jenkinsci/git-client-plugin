@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.hasItems;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -140,7 +139,7 @@ public class CliGitAPIImplAuthTest {
             result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
         }
         output = result.split("[\\n\\r]");
-        Assert.assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+        assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
         return output;
     }
 
