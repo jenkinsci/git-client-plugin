@@ -78,20 +78,20 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
-        for (int i = 0; i < versions.length; ++i) {
-            String msg = versionOutput + " for " + versions[i].major + versions[i].minor + versions[i].rev + versions[i].bugfix;
-            if (versions[i].expectedIsAtLeastVersion) {
+        for (VersionTest version : versions) {
+            String msg = versionOutput + " for " + version.major + version.minor + version.rev + version.bugfix;
+            if (version.expectedIsAtLeastVersion) {
                 assertTrue("Failed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             } else {
                 assertFalse("Passed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             }
         }
     }

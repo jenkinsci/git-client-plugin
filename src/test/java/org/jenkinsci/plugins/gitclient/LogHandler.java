@@ -34,12 +34,7 @@ public class LogHandler extends Handler {
     }
 
     boolean containsMessageSubstring(String messageSubstring) {
-        for (String message : messages) {
-            if (message.contains(messageSubstring)) {
-                return true;
-            }
-        }
-        return false;
+        return messages.stream().anyMatch(message -> message.contains(messageSubstring));
     }
 
     List<Integer> getTimeouts() {
