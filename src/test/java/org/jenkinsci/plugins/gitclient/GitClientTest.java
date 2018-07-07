@@ -859,7 +859,7 @@ public class GitClientTest {
     public void testGetHeadRev_String_String_Empty_Result() throws Exception {
         String url = repoRoot.getAbsolutePath();
         ObjectId nonExistent = gitClient.getHeadRev(url, "this branch doesn't exist");
-        assertEquals(null, nonExistent);
+        assertNull(nonExistent);
     }
 
     @Test
@@ -875,9 +875,8 @@ public class GitClientTest {
         String pattern = null;
         boolean headsOnly = false; // Need variations here
         boolean tagsOnly = false; // Need variations here
-        Map<String, ObjectId> expResult = null; // Working here
         Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
-        assertEquals(expResult, result);
+        assertNull(result);
     }
 
     @Issue("JENKINS-30589")
@@ -1142,7 +1141,7 @@ public class GitClientTest {
                 lastModifiedFile = file;
             }
         }
-        assertTrue("No files modified " + repoRoot, lastModifiedFile != null);
+        assertNotNull("No files modified " + repoRoot, lastModifiedFile);
 
         /* Checkout a new branch - verify no files retain modification */
         gitClient.checkout().branch("master-" + randomUUID).ref(commitA.getName()).execute();
@@ -1189,8 +1188,7 @@ public class GitClientTest {
                 dirList.add(dir.getName());
             }
         }
-        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray(new String[expectedDirList.size()])));
-        assertThat(expectedDirList, containsInAnyOrder(dirList.toArray(new String[dirList.size()])));
+        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray()));
     }
 
     private void assertSubmoduleContents(String... directories) throws Exception {

@@ -73,7 +73,7 @@ public class RevisionTest {
         assertEquals(rev.getSha1(), newObjectId);
         assertEquals(rev.getSha1String(), newSHA1);
         rev.setSha1(null);
-        assertEquals(rev.getSha1(), null);
+        assertNull(rev.getSha1());
         assertEquals(rev.getSha1String(), "");
     }
 

@@ -296,7 +296,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         setTimeoutVisibleInCurrentTest(false);
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         Set<Branch> branches = git.parseBranches(gitBranchOutput);
-        assertTrue("\"git branch -a -v --no-abbrev\" output correctly parsed", branches.size() == 2);
+        assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
     }
 
     @Override

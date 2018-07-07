@@ -20,7 +20,7 @@ public class TagTest {
 
     @Test
     public void testGetCommitMessage() {
-        assertEquals(null, tag.getCommitMessage());
+        assertNull(tag.getCommitMessage());
     }
 
     @Test
@@ -32,7 +32,7 @@ public class TagTest {
 
     @Test
     public void testGetCommitSHA1() {
-        assertEquals(null, tag.getCommitSHA1());
+        assertNull(tag.getCommitSHA1());
     }
 
     @Test
