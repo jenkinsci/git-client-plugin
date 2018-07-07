@@ -76,7 +76,6 @@ import org.objenesis.ObjenesisStd;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -684,7 +683,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_clone_refspecs() throws Exception {
-      List<RefSpec> refspecs = Lists.newArrayList(
+      List<RefSpec> refspecs = Arrays.asList(
           new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
           new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
       );
@@ -2668,17 +2667,17 @@ public abstract class GitAPITestCase extends TestCase {
         workingArea.git.clone_().url(w.repoPath()).execute();
 
         checkoutTimeout = 1 + random.nextInt(60 * 24);
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir1")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertFalse(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir2")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir2")).timeout(checkoutTimeout).execute();
         assertFalse(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Lists.newArrayList("dir1", "dir2")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir1", "dir2")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
