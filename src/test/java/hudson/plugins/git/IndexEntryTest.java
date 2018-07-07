@@ -13,9 +13,6 @@ public class IndexEntryTest {
     private final String file = ".git" + File.separator + "index-entry-file";
     private IndexEntry entry;
 
-    public IndexEntryTest() {
-    }
-
     @Before
     public void setUp() {
         entry = new IndexEntry(mode, type, object, file);
