@@ -113,9 +113,6 @@ class CliGitCommand {
      * values assigned for user.name and user.email. This method checks the
      * existing values, and if they are not set, assigns default values.
      * If the values are already set, they are unchanged.
-     *
-     * @param userName user name to be defined (if value not already set)
-     * @param userEmail email address to be defined (if value not already set)
      */
     public void setDefaults() throws Exception {
         setConfigIfEmpty("user.name", "Vojtěch-Zweibrücken-Šafařík");
