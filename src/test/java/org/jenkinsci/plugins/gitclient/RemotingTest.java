@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.*;
+
 import hudson.FilePath;
 import hudson.model.Computer;
 import hudson.model.StreamBuildListener;
@@ -8,8 +10,10 @@ import hudson.remoting.VirtualChannel;
 import hudson.slaves.DumbSlave;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
-import org.jvnet.hudson.test.HudsonTestCase;
-
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.jvnet.hudson.test.JenkinsRule;
 import java.io.File;
 import java.io.IOException;
 import org.jenkinsci.remoting.RoleChecker;
@@ -17,15 +21,22 @@ import org.jenkinsci.remoting.RoleChecker;
 /**
  * @author Kohsuke Kawaguchi
  */
-public class RemotingTest extends HudsonTestCase {
+public class RemotingTest {
+
+    @ClassRule
+    public static JenkinsRule j = new JenkinsRule();
+
+    @ClassRule
+    public static TemporaryFolder tempFolder = new TemporaryFolder();
+
     /**
      * Makes sure {@link GitClient} is remotable.
      */
+    @Test
     public void testRemotability() throws Exception {
-        DumbSlave s = createSlave();
+        DumbSlave s = j.createSlave();
 
-        File dir = createTmpDir();
-        final GitClient jgit = new JGitAPIImpl(dir,StreamBuildListener.fromStdout());
+        GitClient jgit = new JGitAPIImpl(tempFolder.getRoot(), StreamBuildListener.fromStdout());
 
         Computer c = s.toComputer();
         c.connect(false).get();
@@ -34,7 +45,7 @@ public class RemotingTest extends HudsonTestCase {
         channel.close();
     }
 
-    private static class Work implements Callable<Void,IOException> {
+    private static class Work implements Callable<Void, IOException> {
 
         private static final long serialVersionUID = 1L;
 
@@ -62,10 +73,12 @@ public class RemotingTest extends HudsonTestCase {
                 git.getWorkTree().child("foo").touch(0);
                 git.add("foo");
                 PersonIdent alice = new PersonIdent("alice", "alice@jenkins-ci.org");
-                git.commit("committing changes", alice, alice);
+                git.setAuthor(alice);
+                git.setCommitter(alice);
+                git.commit("committing changes");
 
                 FilePath ws = git.withRepository(new RepositoryCallableImpl());
-                assertEquals(ws,git.getWorkTree());
+                assertEquals(ws, git.getWorkTree());
 
                 return null;
             } catch (InterruptedException e) {
