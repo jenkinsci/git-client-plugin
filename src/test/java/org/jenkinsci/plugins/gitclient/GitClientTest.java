@@ -75,7 +75,7 @@ public class GitClientTest {
     /* commit known to exist in upstream. */
     private final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
     private final String upstreamCommitAuthor = "Teubel György";
-    private final String upsstreamCommitEmail = "<tgyurci@freemail.hu>";
+    private final String upstreamCommitEmail = "<tgyurci@freemail.hu>";
     private final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
 
     /* URL of upstream (GitHub) repository. */
@@ -399,7 +399,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testCommitNotFoundException() throws GitException, InterruptedException {
         /* Search wrong repository for a commit */
-        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upsstreamCommitEmail);
+        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upstreamCommitEmail);
     }
 
     @Test
