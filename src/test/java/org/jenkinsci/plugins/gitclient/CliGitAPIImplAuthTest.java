@@ -22,18 +22,14 @@ import static org.junit.Assert.*;
  */
 public class CliGitAPIImplAuthTest {
 
-    private final Launcher launcher;
-
-    public CliGitAPIImplAuthTest() {
-        launcher = new Launcher.LocalLauncher(TaskListener.NULL);
-    }
-
-    private CliGitAPIImpl git;
+    private final Launcher launcher = new Launcher.LocalLauncher(TaskListener.NULL);
 
     private final Random random = new Random();
 
     private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\"", "\t"};
     private final String[] PERCENT_SPECIALS = {"%"};
+
+    private CliGitAPIImpl git;
 
     @Before
     public void setUp() {
