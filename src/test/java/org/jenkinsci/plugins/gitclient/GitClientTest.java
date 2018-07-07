@@ -73,10 +73,10 @@ public class GitClientTest {
     private GitClient srcGitClient;
 
     /* commit known to exist in upstream. */
-    final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
-    final String upstreamCommitAuthor = "Teubel György";
-    final String upsstreamCommitEmail = "<tgyurci@freemail.hu>";
-    final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
+    private final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
+    private final String upstreamCommitAuthor = "Teubel György";
+    private final String upsstreamCommitEmail = "<tgyurci@freemail.hu>";
+    private final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
 
     /* URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
@@ -220,7 +220,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    public void createFile(String path, String content) throws Exception {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {

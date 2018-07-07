@@ -57,15 +57,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    class VersionTest {
+    private class VersionTest {
 
-        public boolean expectedIsAtLeastVersion;
-        public int major;
-        public int minor;
-        public int rev;
-        public int bugfix;
+        private boolean expectedIsAtLeastVersion;
+        private int major;
+        private int minor;
+        private int rev;
+        private int bugfix;
 
-        public VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
+        private VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
             this.expectedIsAtLeastVersion = assertTrueOrFalse;
             this.major = major;
             this.minor = minor;

@@ -116,7 +116,7 @@ public class CliGitAPITempFileTest {
 
     private class CliGitAPIImplExtension extends CliGitAPIImpl {
 
-        public CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
+        private CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
             super(gitExe, workspace, listener, environment);
         }
     }

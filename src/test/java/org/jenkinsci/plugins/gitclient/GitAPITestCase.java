@@ -83,12 +83,12 @@ import com.google.common.collect.Lists;
  */
 public abstract class GitAPITestCase extends TestCase {
 
-    public final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
+    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
     protected hudson.EnvVars env = new hudson.EnvVars();
     protected TaskListener listener;
 
-    protected LogHandler handler = null;
+    private LogHandler handler = null;
     private int logCount = 0;
     private static final String LOGGING_STARTED = "Logging started";
 
@@ -295,32 +295,32 @@ public abstract class GitAPITestCase extends TestCase {
             return f;
         }
 
-        public void rm(String path) {
+        void rm(String path) {
             file(path).delete();
         }
 
-        public String contentOf(String path) throws IOException {
+        String contentOf(String path) throws IOException {
             return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
         /**
          * Creates a CGit implementation. Sometimes we need this for testing JGit impl.
          */
-        protected CliGitAPIImpl cgit() throws Exception {
+        CliGitAPIImpl cgit() throws Exception {
             return (CliGitAPIImpl)Git.with(listener, env).in(repo).using("git").getClient();
         }
 
         /**
          * Creates a JGit implementation. Sometimes we need this for testing CliGit impl.
          */
-        protected JGitAPIImpl jgit() throws Exception {
+        JGitAPIImpl jgit() throws Exception {
             return (JGitAPIImpl)Git.with(listener, env).in(repo).using("jgit").getClient();
         }
 
         /**
          * Creates a {@link Repository} object out of it.
          */
-        protected FileRepository repo() throws IOException {
+        FileRepository repo() throws IOException {
             return bare ? new FileRepository(repo) : new FileRepository(new File(repo, ".git"));
         }
 
@@ -334,14 +334,14 @@ public abstract class GitAPITestCase extends TestCase {
         /**
          * Casts the {@link #git} to {@link IGitAPI}
          */
-        public IGitAPI igit() {
+        IGitAPI igit() {
             return (IGitAPI)git;
         }
     }
 
     protected WorkingArea w;
 
-    WorkingArea clone(String src) throws Exception {
+    protected WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
         x.launchCommand("git", "clone", src, x.repoPath());
         return new WorkingArea(x.repo);
@@ -408,7 +408,7 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * Obtains the local mirror of https://github.com/jenkinsci/git-client-plugin.git and return URLish to it.
      */
-    public String localMirror() throws IOException, InterruptedException {
+    protected String localMirror() throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
         for (File f=base; f!=null; f=f.getParentFile()) {
             if (new File(f,"target").exists()) {

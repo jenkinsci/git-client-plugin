@@ -29,11 +29,11 @@ public class LogHandler extends Handler {
         messages = new ArrayList<>();
     }
 
-    /* package */ List<String> getMessages() {
+    List<String> getMessages() {
         return messages;
     }
 
-    /* package */ boolean containsMessageSubstring(String messageSubstring) {
+    boolean containsMessageSubstring(String messageSubstring) {
         for (String message : messages) {
             if (message.contains(messageSubstring)) {
                 return true;
@@ -42,7 +42,7 @@ public class LogHandler extends Handler {
         return false;
     }
 
-    /* package */ List<Integer> getTimeouts() {
+    List<Integer> getTimeouts() {
         List<Integer> timeouts = new ArrayList<>();
         for (String message : getMessages()) {
             int start = message.indexOf(CliGitAPIImpl.TIMEOUT_LOG_PREFIX);

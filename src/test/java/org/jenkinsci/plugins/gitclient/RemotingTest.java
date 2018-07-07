@@ -47,7 +47,7 @@ public class RemotingTest extends HudsonTestCase {
             cliGitDefaultsSet = true;
         }
 
-        public Work(GitClient git) throws Exception {
+        private Work(GitClient git) throws Exception {
             setCliGitDefaults();
             this.git = git;
         }

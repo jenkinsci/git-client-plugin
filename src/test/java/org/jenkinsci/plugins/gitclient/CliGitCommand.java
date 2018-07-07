@@ -44,13 +44,13 @@ class CliGitCommand {
         }
     }
 
-    public String[] run(String... arguments) throws IOException, InterruptedException {
+    String[] run(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
         return run(true);
     }
 
-    public String[] run() throws IOException, InterruptedException {
+    String[] run() throws IOException, InterruptedException {
         return run(true);
     }
 
@@ -70,7 +70,7 @@ class CliGitCommand {
         return output;
     }
 
-    public void assertOutputContains(String... expectedRegExes) {
+    void assertOutputContains(String... expectedRegExes) {
         List<String> notFound = new ArrayList<>();
         boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
         assertTrue("Missing regular expressions in assertion", modified);
@@ -114,7 +114,7 @@ class CliGitCommand {
      * existing values, and if they are not set, assigns default values.
      * If the values are already set, they are unchanged.
      */
-    public void setDefaults() throws Exception {
+    void setDefaults() throws Exception {
         setConfigIfEmpty("user.name", "Vojtěch-Zweibrücken-Šafařík");
         setConfigIfEmpty("user.email", "email.address.from.git.client.plugin.test@example.com");
     }
