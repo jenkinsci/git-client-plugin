@@ -981,6 +981,7 @@ public abstract class GitAPITestCase extends TestCase {
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
+        newArea.cmd("git config fetch.prune false");
         newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
 
         /* Confirm the fetch did not alter working branch */
@@ -1249,6 +1250,7 @@ public abstract class GitAPITestCase extends TestCase {
         try {
             /* Fetch parent/a into newArea repo - fails for
              * CliGitAPIImpl, succeeds for JGitAPIImpl */
+            newArea.cmd("git config fetch.prune false");
             newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
             assertTrue("CliGit should have thrown an exception", newArea.git instanceof JGitAPIImpl);
         } catch (GitException ge) {
@@ -1329,6 +1331,7 @@ public abstract class GitAPITestCase extends TestCase {
         refSpecs.add(defaultRefSpec);
 
         /* Fetch without prune should leave branch1 in newArea */
+        newArea.cmd("git config fetch.prune false");
         newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).execute();
         remoteBranches = newArea.git.getRemoteBranches();
         assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
