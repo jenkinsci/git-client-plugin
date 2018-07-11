@@ -20,7 +20,6 @@ public class CredentialsProviderImplTest {
 
     private CredentialsProviderImpl provider;
     private TaskListener listener;
-    private StandardUsernameCredentials cred;
     private final String USER_NAME = "user-name";
     private final URIish uri;
     private final String SECRET_VALUE = "secret-credentials-provider-impl-test";
@@ -36,7 +35,7 @@ public class CredentialsProviderImplTest {
     public void setUp() {
         Secret secret = Secret.fromString(SECRET_VALUE);
         listener = StreamTaskListener.fromStdout();
-        cred = new StandardUsernamePasswordCredentialsImpl(USER_NAME, secret);
+        StandardUsernameCredentials cred = new StandardUsernamePasswordCredentialsImpl(USER_NAME, secret);
         provider = new CredentialsProviderImpl(listener, cred);
     }
 

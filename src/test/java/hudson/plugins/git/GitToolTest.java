@@ -59,8 +59,8 @@ public class GitToolTest {
     @Test
     public void testGetInstallationFromDescriptor() {
         GitTool.DescriptorImpl descriptor = gitTool.getDescriptor();
-        assertEquals(null, descriptor.getInstallation(""));
-        assertEquals(null, descriptor.getInstallation("not-a-valid-git-install"));
+        assertNull(descriptor.getInstallation(""));
+        assertNull(descriptor.getInstallation("not-a-valid-git-install"));
     }
 
     @Test

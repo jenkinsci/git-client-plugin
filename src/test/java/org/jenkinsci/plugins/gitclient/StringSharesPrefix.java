@@ -6,7 +6,7 @@ import org.hamcrest.core.SubstringMatcher;
 /**
  * Tests if the argument shares a prefix.
  */
-public class StringSharesPrefix extends SubstringMatcher {
+class StringSharesPrefix extends SubstringMatcher {
     public StringSharesPrefix(String substring) { super(substring); }
 
     @Override
@@ -32,5 +32,5 @@ public class StringSharesPrefix extends SubstringMatcher {
      *      the substring that the returned matcher will expect to share a
      *      prefix of any examined string
      */
-    public static Matcher<String> sharesPrefix(String prefix) { return new StringSharesPrefix(prefix); }
+    static Matcher<String> sharesPrefix(String prefix) { return new StringSharesPrefix(prefix); }
 }

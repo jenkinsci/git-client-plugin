@@ -210,8 +210,8 @@ public class LegacyCompatibleGitAPIImplTest {
         List<Tag> result = myGit.getTagsOnCommit(uniqueTagName);
         myGit.deleteTag(uniqueTagName);
         assertFalse("Tag list empty for " + uniqueTagName, result.isEmpty());
-        assertEquals("Unexpected SHA1 for commit: " + result.get(0).getCommitMessage(), null, result.get(0).getCommitSHA1());
-        assertEquals("Unexpected message for commit: " + result.get(0).getCommitSHA1(), null, result.get(0).getCommitMessage());
+        assertNull("Unexpected SHA1 for commit: " + result.get(0).getCommitMessage(), result.get(0).getCommitSHA1());
+        assertNull("Unexpected message for commit: " + result.get(0).getCommitSHA1(), result.get(0).getCommitMessage());
     }
 
     @Test
