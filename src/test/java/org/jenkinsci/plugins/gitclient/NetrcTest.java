@@ -29,8 +29,7 @@ public class NetrcTest
     private String testFilePath_1a;
     private String testFilePath_2;
 
-
-    enum TestHost {
+    private enum TestHost {
         H1_01("1-srvr-lp.example.com", "jenkins", "pw4jenkins"),
         H1_02("2-ldap-lp.example.com", "ldap", "pw4ldap"),
         H1_03("3-jenk-pl.example.com", "jenkins", "jenkinspwd"),
@@ -56,9 +55,9 @@ public class NetrcTest
         H2_03("builder3.example.com", null, null),
         H2_04("builder4.example.com", "jenk", "myvoice");
 
-        public String machine;
-        public String login;
-        public String password;
+        private String machine;
+        private String login;
+        private String password;
 
         private TestHost(String _machine, String _login, String _password)
         {

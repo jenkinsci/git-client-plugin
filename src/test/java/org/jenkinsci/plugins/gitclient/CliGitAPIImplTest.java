@@ -57,15 +57,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    class VersionTest {
+    private class VersionTest {
 
-        public boolean expectedIsAtLeastVersion;
-        public int major;
-        public int minor;
-        public int rev;
-        public int bugfix;
+        private boolean expectedIsAtLeastVersion;
+        private int major;
+        private int minor;
+        private int rev;
+        private int bugfix;
 
-        public VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
+        private VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
             this.expectedIsAtLeastVersion = assertTrueOrFalse;
             this.major = major;
             this.minor = minor;
@@ -78,20 +78,20 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
-        for (int i = 0; i < versions.length; ++i) {
-            String msg = versionOutput + " for " + versions[i].major + versions[i].minor + versions[i].rev + versions[i].bugfix;
-            if (versions[i].expectedIsAtLeastVersion) {
+        for (VersionTest version : versions) {
+            String msg = versionOutput + " for " + version.major + version.minor + version.rev + version.bugfix;
+            if (version.expectedIsAtLeastVersion) {
                 assertTrue("Failed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             } else {
                 assertFalse("Passed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             }
         }
     }
@@ -296,7 +296,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         setTimeoutVisibleInCurrentTest(false);
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         Set<Branch> branches = git.parseBranches(gitBranchOutput);
-        assertTrue("\"git branch -a -v --no-abbrev\" output correctly parsed", branches.size() == 2);
+        assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
     }
 
     @Override
