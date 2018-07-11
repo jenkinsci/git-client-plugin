@@ -8,7 +8,7 @@ or can be submitted directly if you have commit permission to the
 git-client-plugin repository.
 
 Pull requests are evaluated by the
-[Cloudbees Jenkins job](https://jenkins.ci.cloudbees.com/job/plugins/job/git-client-plugin/).
+[ci.jenkins.io Jenkins job](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/).
 You should receive e-mail with the results of the evaluation.
 
 Before submitting your change, please assure that you've added tests

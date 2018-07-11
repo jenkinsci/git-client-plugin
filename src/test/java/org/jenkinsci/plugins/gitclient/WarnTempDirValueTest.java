@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.Bug;
+import org.jvnet.hudson.test.Issue;
 
 /**
  * The msysgit implementation (through at least 1.9.0) fails some credential
@@ -92,7 +92,7 @@ public class WarnTempDirValueTest {
     }
 
     @Test
-    @Bug(22706)
+    @Issue("JENKINS-22706")
     public void warnWhenValueContainsSpaceCharacter() throws IOException, InterruptedException {
         EnvVars env = new hudson.EnvVars();
         assertFalse(env.get(envVarName, "/tmp").contains(" "));
