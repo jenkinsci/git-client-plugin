@@ -536,7 +536,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public boolean tagExists(String tagName) throws GitException {
         try (Repository repo = getRepository()) {
-            Ref tag =  repo.getRefDatabase().getRef(R_TAGS + tagName);
+            Ref tag =  repo.getRefDatabase().exactRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -708,7 +708,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    switch (refUpdate.forceUpdate()) {
 	    case NOT_ATTEMPTED:
 	    case LOCK_FAILURE:
@@ -742,7 +742,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
 	    // Required, even though this is a forced delete.
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    refUpdate.setForceUpdate(true);
 	    switch (refUpdate.delete()) {
 	    case NOT_ATTEMPTED:
@@ -1937,7 +1937,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         switch (spec) {
                             default:
                             case 0: //for the source ref. we use the repository to determine what should be pushed
-                                Ref ref = repository.getRef(specs[spec]);
+                                Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
                                     throw new IOException(String.format("Ref %s not found.", specs[spec]));
                                 }
