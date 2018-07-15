@@ -5,6 +5,7 @@
 
 target/
 work/
+.@tmp/
 
 .project
 .classpath
