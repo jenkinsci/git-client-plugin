@@ -865,7 +865,14 @@ public abstract class GitAPITestCase extends TestCase {
          */
         String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
         w.touch(fileName, "content " + fileName);
-        w.git.add(fileName);
+        try {
+            w.git.add(fileName);
+        } catch (GitException ge) {
+            // Exception should contain actual file name
+            // If mangled name is seen instead, throw a clear exception to indicate root cause
+            assertTrue("System locale does not support filename '" + fileName + "'", ge.getMessage().contains("?-????-A?-?-?-fileName.xml"));
+            throw ge; // Fail the test on exception even if the preceding assertion did not fail
+        }
         w.git.commit(fileName);
 
         /* JENKINS-27910 reported that certain cyrillic file names
