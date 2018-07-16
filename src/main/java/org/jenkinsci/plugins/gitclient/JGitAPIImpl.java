@@ -766,7 +766,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	}
 	try (Repository repo = getRepository()) {
 	    List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
-	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
 	    Set<String> refs = new HashSet<>(refList.size());
 	    for (Ref ref : refList) {
 		refs.add(ref.getName());
