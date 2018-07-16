@@ -536,7 +536,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public boolean tagExists(String tagName) throws GitException {
         try (Repository repo = getRepository()) {
-            Ref tag =  repo.getRefDatabase().exactRef(R_TAGS + tagName);
+            Ref tag =  repo.exactRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -728,7 +728,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public boolean refExists(String refName) throws GitException, InterruptedException {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
-	    Ref ref = repo.getRefDatabase().getRef(refName);
+	    Ref ref = repo.findRef(refName);
 	    return ref != null;
 	} catch (IOException e) {
 	    throw new GitException("Error checking ref " + refName, e);
