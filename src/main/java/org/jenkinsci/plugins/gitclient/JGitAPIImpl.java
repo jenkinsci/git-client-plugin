@@ -765,10 +765,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	    refPrefix = refPrefix.replace(' ', '_');
 	}
 	try (Repository repo = getRepository()) {
-	    Map<String, Ref> refList = repo.getRefDatabase().getRefs(refPrefix);
+	    List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
 	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
 	    Set<String> refs = new HashSet<>(refList.size());
-	    for (Ref ref : refList.values()) {
+	    for (Ref ref : refList) {
 		refs.add(ref.getName());
 	    }
 	    return refs;
@@ -1753,8 +1753,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             Set<String> tags = new HashSet<>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
-            Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
-            for (Ref ref : refList.values()) {
+            List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(R_TAGS);
+            for (Ref ref : refList) {
                 String name = ref.getName().substring(R_TAGS.length());
                 matcher.reset();
                 matcher.append(name);
