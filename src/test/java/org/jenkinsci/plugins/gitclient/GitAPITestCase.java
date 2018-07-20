@@ -4043,7 +4043,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(w.head(),w.git.revParse("t1"));
         assertEquals(w.head(),w.git.revParse("foo"));
 
-        Ref head = w.repo().getRef("HEAD");
+        Ref head = w.repo().exactRef("HEAD");
         assertTrue(head.isSymbolic());
         assertEquals("refs/heads/foo",head.getTarget().getName());
     }
@@ -4105,20 +4105,20 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         List<ObjectId> revList = w.git.revList("origin/1.4.x");
         assertEquals("Wrong list size: " + revList, 267, revList.size());
-        Ref branchRef = w.repo().getRef("origin/1.4.x");
+        Ref branchRef = w.repo().findRef("origin/1.4.x");
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
     public void test_revList_tag() throws Exception {
         w.init();
         w.commitEmpty("c1");
-        Ref commitRefC1 = w.repo().getRef("HEAD");
+        Ref commitRefC1 = w.repo().exactRef("HEAD");
         w.tag("t1");
-        Ref tagRefT1 = w.repo().getRef("t1");
-        Ref head = w.repo().getRef("HEAD");
+        Ref tagRefT1 = w.repo().findRef("t1");
+        Ref head = w.repo().exactRef("HEAD");
         assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
         w.commitEmpty("c2");
-        Ref commitRefC2 = w.repo().getRef("HEAD");
+        Ref commitRefC2 = w.repo().exactRef("HEAD");
         List<ObjectId> revList = w.git.revList("t1");
         assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
         assertEquals("Wrong list size: " + revList, 1, revList.size());
@@ -4144,7 +4144,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         assertEquals(w.head(),w.git.revParse(sha1));
 
-        Ref head = w.repo().getRef("HEAD");
+        Ref head = w.repo().exactRef("HEAD");
         assertFalse(head.isSymbolic());
     }
 

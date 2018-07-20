@@ -30,8 +30,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -536,7 +534,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public boolean tagExists(String tagName) throws GitException {
         try (Repository repo = getRepository()) {
-            Ref tag =  repo.getRefDatabase().getRef(R_TAGS + tagName);
+            Ref tag =  repo.exactRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -708,7 +706,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    switch (refUpdate.forceUpdate()) {
 	    case NOT_ATTEMPTED:
 	    case LOCK_FAILURE:
@@ -728,7 +726,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public boolean refExists(String refName) throws GitException, InterruptedException {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
-	    Ref ref = repo.getRefDatabase().getRef(refName);
+	    Ref ref = repo.findRef(refName);
 	    return ref != null;
 	} catch (IOException e) {
 	    throw new GitException("Error checking ref " + refName, e);
@@ -742,7 +740,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
 	    // Required, even though this is a forced delete.
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    refUpdate.setForceUpdate(true);
 	    switch (refUpdate.delete()) {
 	    case NOT_ATTEMPTED:
@@ -767,10 +765,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	    refPrefix = refPrefix.replace(' ', '_');
 	}
 	try (Repository repo = getRepository()) {
-	    Map<String, Ref> refList = repo.getRefDatabase().getRefs(refPrefix);
-	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
+	    List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
 	    Set<String> refs = new HashSet<>(refList.size());
-	    for (Ref ref : refList.values()) {
+	    for (Ref ref : refList) {
 		refs.add(ref.getName());
 	    }
 	    return refs;
@@ -1755,8 +1752,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             Set<String> tags = new HashSet<>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
-            Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
-            for (Ref ref : refList.values()) {
+            List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(R_TAGS);
+            for (Ref ref : refList) {
                 String name = ref.getName().substring(R_TAGS.length());
                 matcher.reset();
                 matcher.append(name);
@@ -1937,7 +1934,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         switch (spec) {
                             default:
                             case 0: //for the source ref. we use the repository to determine what should be pushed
-                                Ref ref = repository.getRef(specs[spec]);
+                                Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
                                     throw new IOException(String.format("Ref %s not found.", specs[spec]));
                                 }
