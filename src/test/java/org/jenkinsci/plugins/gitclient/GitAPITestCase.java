@@ -1601,6 +1601,13 @@ public abstract class GitAPITestCase extends TestCase {
          * Spec: "test" (short tag syntax)
          * CliGit does not support this syntax for remotes.
          * JGit fully supports this syntax.
+         *
+         * JGit seems to have the better behavior in this case, always
+         * returning the SHA1 of the commit. Most users are using
+         * command line git, so the difference is retained in command
+         * line git for compatibility with any legacy command line git
+         * use cases which depend on returning null rather than the
+         * SHA-1 of the commit to which the annotated tag points.
          */
         String shortTagRef = "test";
         ObjectId tagHeadIdByShortRef = w.git.getHeadRev(gitDir, shortTagRef);
