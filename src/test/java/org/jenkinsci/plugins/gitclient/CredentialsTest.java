@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -326,13 +327,11 @@ public class CredentialsTest {
 
     private String listDir(File dir) {
         File[] files = repo.listFiles();
-        StringBuilder fileList = new StringBuilder();
+        StringJoiner joiner = new StringJoiner(",");
         for (File file : files) {
-            fileList.append(file.getName());
-            fileList.append(',');
+            joiner.add(file.getName());
         }
-        fileList.deleteCharAt(fileList.length() - 1);
-        return fileList.toString();
+        return joiner.toString();
     }
 
     private void addCredential() throws IOException {
