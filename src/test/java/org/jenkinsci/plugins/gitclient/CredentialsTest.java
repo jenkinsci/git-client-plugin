@@ -375,6 +375,8 @@ public class CredentialsTest {
         /* Fetch with remote URL */
         doFetch(gitRepoURL);
         git.setRemoteUrl("origin", gitRepoURL);
+        /* Fetch with remote name "origin" instead of remote URL */
+        doFetch("origin");
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         log().println("Checking out " + master.getName().substring(0, 8) + " from " + gitRepoURL);
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
