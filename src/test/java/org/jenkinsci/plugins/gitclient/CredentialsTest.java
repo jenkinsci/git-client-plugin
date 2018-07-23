@@ -101,6 +101,8 @@ public class CredentialsTest {
     private final static File CURR_DIR = new File(".");
 
     private static long firstTestStartTime = 0;
+    private static long longestTestDuration = 0;
+    private long currentTestStartTime = 0;
 
     private static PrintStream log() {
         return StreamTaskListener.fromStdout().getLogger();
@@ -129,6 +131,7 @@ public class CredentialsTest {
         if (firstTestStartTime == 0) {
             firstTestStartTime = System.currentTimeMillis();
         }
+        currentTestStartTime = System.currentTimeMillis();
         log().println(show("Repo", gitRepoUrl)
                 + show("spec", specialCharacter)
                 + show("impl", gitImpl)
@@ -179,6 +182,14 @@ public class CredentialsTest {
         /* Credential usage is tracked at the job / project level */
         Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
         assertThat("Fingerprint should not be set after API level use", fingerprint, nullValue());
+    }
+
+    @After
+    public void recordLongestTestTime() {
+        long elapsedTime = System.currentTimeMillis() - currentTestStartTime;
+        if (elapsedTime > longestTestDuration) {
+            longestTestDuration = elapsedTime;
+        }
     }
 
     @After
@@ -356,13 +367,13 @@ public class CredentialsTest {
     }
 
     /**
-     * Returns true if less than than 130 seconds have elapsed since start.
+     * Returns true if another test should be allowed to start.
      * JenkinsRule test timeout defaults to 180 seconds.
      *
-     * @return true if less than than 130 seconds have elapsed since start
+     * @return true if another test should be allowed to start
      */
     private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < (130 * 1000L);
+        return (System.currentTimeMillis() - firstTestStartTime) < (180 * 1000L - 3 * longestTestDuration - 2000L);
     }
 
     @Test
