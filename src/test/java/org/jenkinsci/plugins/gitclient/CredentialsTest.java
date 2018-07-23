@@ -346,7 +346,9 @@ public class CredentialsTest {
     }
 
     private void addCredential() throws IOException {
-        if (random.nextBoolean()) {
+        // Always use addDefaultCredentials for private keys
+        // addCredential stops tests to prompt for passphrase
+        if (random.nextBoolean() || this.privateKey != null) {
             git.addDefaultCredentials(testedCredential);
         } else {
             git.addCredentials(gitRepoURL, testedCredential);
