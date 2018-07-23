@@ -365,7 +365,12 @@ public class CredentialsTest {
 
     private String show(String name, File file) {
         if (file != null) {
-            return " " + name + ": '" + file.getPath() + "'";
+            String homePath = HOME_DIR.getAbsolutePath();
+            String filePath = file.getAbsolutePath();
+            if (filePath.startsWith(homePath)) {
+                filePath = filePath.replace(homePath, "~");
+            }
+            return " " + name + ": '" + filePath + "'";
         }
         return "";
     }
