@@ -1699,7 +1699,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 env = new EnvVars(env);
                 env.put("GIT_ASKPASS", askpass.getAbsolutePath());
-                // SSH binary does not recognize GIT_ASKPASS, so set SSH_ASKPASS also, in the case we have an ssh:// URL
                 env.put("SSH_ASKPASS", askpass.getAbsolutePath());
             }
 
