@@ -30,6 +30,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
@@ -94,6 +95,8 @@ public class CredentialsTest {
 
     private final static File CURR_DIR = new File(".");
 
+    private static long firstTestStartTime = 0;
+
     private static PrintStream log() {
         return StreamTaskListener.fromStdout().getLogger();
     }
@@ -117,6 +120,9 @@ public class CredentialsTest {
         specialsIndex = specialsIndex + 1;
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
+        }
+        if (firstTestStartTime == 0) {
+            firstTestStartTime = System.currentTimeMillis();
         }
         log().println(show("Repo", gitRepoUrl)
                 + show("spec", specialCharacter)
@@ -305,8 +311,8 @@ public class CredentialsTest {
             }
         }
         Collections.shuffle(repos); // randomize test order
-        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 120 : 6); // Don't run more than 120 variations of test - about 3 minutes
-        return repos.subList(0, toIndex);
+        // If we're not testing all credentials, take 6 or less
+        return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
     private void addCredential(String username, String password, File privateKey) throws IOException {
@@ -317,8 +323,19 @@ public class CredentialsTest {
         }
     }
 
+    /**
+     * Returns true if less than than 130 seconds have elapsed since start.
+     * JenkinsRule test timeout defaults to 180 seconds.
+     *
+     * @return true if less than than 130 seconds have elapsed since start
+     */
+    private boolean testPeriodNotExpired() {
+        return (System.currentTimeMillis() - firstTestStartTime) < (130 * 1000L);
+    }
+
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
+        assumeTrue(testPeriodNotExpired());
         addCredential(username, password, privateKey);
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
