@@ -315,7 +315,7 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void addCredential(String username, String password, File privateKey) throws IOException {
+    private void addCredential() throws IOException {
         if (random.nextBoolean()) {
             git.addDefaultCredentials(testedCredential);
         } else {
@@ -336,7 +336,7 @@ public class CredentialsTest {
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
-        addCredential(username, password, privateKey);
+        addCredential();
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
             default:
