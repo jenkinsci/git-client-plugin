@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.model.Fingerprint;
+import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
 import java.io.File;
@@ -16,6 +17,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,9 +29,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
@@ -94,6 +100,8 @@ public class CredentialsTest {
 
     private final static File CURR_DIR = new File(".");
 
+    private static long firstTestStartTime = 0;
+
     private static PrintStream log() {
         return StreamTaskListener.fromStdout().getLogger();
     }
@@ -117,6 +125,9 @@ public class CredentialsTest {
         specialsIndex = specialsIndex + 1;
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
+        }
+        if (firstTestStartTime == 0) {
+            firstTestStartTime = System.currentTimeMillis();
         }
         log().println(show("Repo", gitRepoUrl)
                 + show("spec", specialCharacter)
@@ -295,21 +306,88 @@ public class CredentialsTest {
             }
         }
         Collections.shuffle(repos); // randomize test order
-        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 120 : 6); // Don't run more than 120 variations of test - about 3 minutes
-        return repos.subList(0, toIndex);
+        // If we're not testing all credentials, take 6 or less
+        return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void addCredential(String username, String password, File privateKey) throws IOException {
-        if (random.nextBoolean()) {
+    private void doFetch(String source) throws InterruptedException, URISyntaxException {
+        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
+        URIish sourceURI = new URIish(source);
+        List<RefSpec> refSpecs = new ArrayList<>();
+        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+        FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
+        if (gitImpl.equals("git")) {
+            // Reduce network transfer by using shallow clone
+            // JGit does not support shallow clone
+            cmd.shallow(true).depth(1);
+        }
+        cmd.execute();
+    }
+
+    private String listDir(File dir) {
+        File[] files = repo.listFiles();
+        StringBuilder fileList = new StringBuilder();
+        for (File file : files) {
+            fileList.append(file.getName());
+            fileList.append(',');
+        }
+        fileList.deleteCharAt(fileList.length() - 1);
+        return fileList.toString();
+    }
+
+    private void addCredential() throws IOException {
+        // Always use addDefaultCredentials for private keys
+        // addCredential stops tests to prompt for passphrase
+        if (random.nextBoolean() || this.privateKey != null) {
             git.addDefaultCredentials(testedCredential);
         } else {
             git.addCredentials(gitRepoURL, testedCredential);
         }
     }
 
+    /**
+     * Returns true if less than than 130 seconds have elapsed since start.
+     * JenkinsRule test timeout defaults to 180 seconds.
+     *
+     * @return true if less than than 130 seconds have elapsed since start
+     */
+    private boolean testPeriodNotExpired() {
+        return (System.currentTimeMillis() - firstTestStartTime) < (130 * 1000L);
+    }
+
+    @Test
+    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
+        assumeTrue(testPeriodNotExpired());
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        addCredential();
+        /* Fetch with remote URL */
+        doFetch(gitRepoURL);
+        git.setRemoteUrl("origin", gitRepoURL);
+        /* Fetch with remote name "origin" instead of remote URL */
+        doFetch("origin");
+        ObjectId master = git.getHeadRev(gitRepoURL, "master");
+        log().println("Checking out " + master.getName().substring(0, 8) + " from " + gitRepoURL);
+        git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
+        if (submodules) {
+            log().println("Initializing submodules from " + gitRepoURL);
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
+            subcmd.execute();
+        }
+        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
+        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
+        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        /* prune opens a remote connection to list remote branches */
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
+    }
+
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
-        addCredential(username, password, privateKey);
+        assumeTrue(testPeriodNotExpired());
+        addCredential();
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
             default:
@@ -338,7 +416,12 @@ public class CredentialsTest {
 
     private String show(String name, File file) {
         if (file != null) {
-            return " " + name + ": '" + file.getPath() + "'";
+            String homePath = HOME_DIR.getAbsolutePath();
+            String filePath = file.getAbsolutePath();
+            if (filePath.startsWith(homePath)) {
+                filePath = filePath.replace(homePath, "~");
+            }
+            return " " + name + ": '" + filePath + "'";
         }
         return "";
     }
