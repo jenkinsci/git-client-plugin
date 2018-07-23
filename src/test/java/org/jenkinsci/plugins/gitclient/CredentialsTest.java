@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.model.Fingerprint;
+import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
 import hudson.util.StreamTaskListener;
 import java.io.File;
@@ -16,6 +17,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,6 +29,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
@@ -315,6 +320,31 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
+    private void doFetch(String source) throws InterruptedException, URISyntaxException {
+        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
+        URIish sourceURI = new URIish(source);
+        List<RefSpec> refSpecs = new ArrayList<>();
+        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+        FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
+        if (gitImpl.equals("git")) {
+            // Reduce network transfer by using shallow clone
+            // JGit does not support shallow clone
+            cmd.shallow(true).depth(1);
+        }
+        cmd.execute();
+    }
+
+    private String listDir(File dir) {
+        File[] files = repo.listFiles();
+        StringBuilder fileList = new StringBuilder();
+        for (File file : files) {
+            fileList.append(file.getName());
+            fileList.append(',');
+        }
+        fileList.deleteCharAt(fileList.length() - 1);
+        return fileList.toString();
+    }
+
     private void addCredential() throws IOException {
         if (random.nextBoolean()) {
             git.addDefaultCredentials(testedCredential);
@@ -331,6 +361,33 @@ public class CredentialsTest {
      */
     private boolean testPeriodNotExpired() {
         return (System.currentTimeMillis() - firstTestStartTime) < (130 * 1000L);
+    }
+
+    @Test
+    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
+        assumeTrue(testPeriodNotExpired());
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        addCredential();
+        /* Fetch with remote URL */
+        doFetch(gitRepoURL);
+        git.setRemoteUrl("origin", gitRepoURL);
+        ObjectId master = git.getHeadRev(gitRepoURL, "master");
+        log().println("Checking out " + master.getName().substring(0, 8) + " from " + gitRepoURL);
+        git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
+        if (submodules) {
+            log().println("Initializing submodules from " + gitRepoURL);
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
+            subcmd.execute();
+        }
+        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
+        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
+        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        /* prune opens a remote connection to list remote branches */
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
     }
 
     @Test
