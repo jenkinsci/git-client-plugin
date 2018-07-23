@@ -26,7 +26,6 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
@@ -73,7 +72,6 @@ public class CredentialsTest {
     private File repo;
     private StandardCredentials testedCredential;
 
-    private List<String> expectedLogSubstrings = new ArrayList<>();
     private final Random random = new Random();
 
     @Rule
@@ -150,11 +148,6 @@ public class CredentialsTest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
-        if (gitImpl.equals("git")) {
-            addExpectedLogSubstring("> git fetch ");
-            addExpectedLogSubstring("> git checkout -b master ");
-        }
-        addExpectedLogSubstring("Using reference repository: ");
 
         assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
                 (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
@@ -184,28 +177,6 @@ public class CredentialsTest {
         }
     }
 
-    private void checkExpectedLogSubstring() {
-        try {
-            String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
-            for (String expectedLogSubstring : expectedLogSubstrings) {
-                assertTrue("No '" + expectedLogSubstring + "' in " + messages,
-                        handler.containsMessageSubstring(expectedLogSubstring));
-            }
-        } finally {
-            clearExpectedLogSubstring();
-            handler.close();
-        }
-    }
-
-    protected void addExpectedLogSubstring(String expectedLogSubstring) {
-        this.expectedLogSubstrings.add(expectedLogSubstring);
-    }
-
-    protected void clearExpectedLogSubstring() {
-        this.expectedLogSubstrings = new ArrayList<>();
-    }
-
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath() + random.nextInt();
@@ -221,8 +192,7 @@ public class CredentialsTest {
     private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "username-" + username + "-password-" + password + random.nextInt();
-        StandardUsernamePasswordCredentials usernamePasswordCredential = new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
-        return usernamePasswordCredential;
+        return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
     }
 
     private static boolean isCredentialsSupported() throws IOException, InterruptedException {
