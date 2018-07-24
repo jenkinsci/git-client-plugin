@@ -402,7 +402,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
 
-                launchCommandWithCredentials(args, workspace, cred, url, timeout);
+                /* If url looks like a remote name reference, convert to remote URL for authentication */
+                /* See JENKINS-50573 for more details */
+                /* "git remote add" rejects remote names with ':' (and it is a common character in remote URLs) */
+                /* "git remote add" allows remote names with '@' but internal git parsing problems seem likely (and it is a common character in remote URLs) */
+                /* "git remote add" allows remote names with '/' but git client plugin parsing problems will occur (and it is a common character in remote URLs) */
+                /* "git remote add" allows remote names with '\' but git client plugin parsing problems will occur */
+                URIish remoteUrl = url;
+                if (!url.isRemote() && !StringUtils.containsAny(url.toString(), ":@/\\")) {
+                    try {
+                        remoteUrl = new URIish(getRemoteUrl(url.toString()));
+                    } catch (URISyntaxException e) {
+                        listener.getLogger().println("Unexpected remote name or URL: '" + url + "'");
+                    }
+                }
+
+                launchCommandWithCredentials(args, workspace, cred, remoteUrl, timeout);
             }
         };
     }
