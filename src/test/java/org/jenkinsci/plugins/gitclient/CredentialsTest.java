@@ -43,6 +43,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -364,6 +365,7 @@ public class CredentialsTest {
     }
 
     @Test
+    @Issue("JENKINS_50573")
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         assumeTrue(testPeriodNotExpired());
         File clonedFile = new File(repo, fileToCheck);
@@ -413,6 +415,13 @@ public class CredentialsTest {
                 break;
         }
         assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
+    }
+
+    @Test
+    @Issue("JENKINS_50573")
+    public void isURIishRemote() throws Exception {
+        URIish uri = new URIish(gitRepoURL);
+        assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
     }
 
     private String show(String name, String value) {
