@@ -101,8 +101,6 @@ public class CredentialsTest {
     private final static File CURR_DIR = new File(".");
 
     private static long firstTestStartTime = 0;
-    private static long longestTestDuration = 0;
-    private long currentTestStartTime = 0;
 
     private static PrintStream log() {
         return StreamTaskListener.fromStdout().getLogger();
@@ -131,7 +129,6 @@ public class CredentialsTest {
         if (firstTestStartTime == 0) {
             firstTestStartTime = System.currentTimeMillis();
         }
-        currentTestStartTime = System.currentTimeMillis();
         log().println(show("Repo", gitRepoUrl)
                 + show("spec", specialCharacter)
                 + show("impl", gitImpl)
@@ -182,14 +179,6 @@ public class CredentialsTest {
         /* Credential usage is tracked at the job / project level */
         Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
         assertThat("Fingerprint should not be set after API level use", fingerprint, nullValue());
-    }
-
-    @After
-    public void recordLongestTestTime() {
-        long elapsedTime = System.currentTimeMillis() - currentTestStartTime;
-        if (elapsedTime > longestTestDuration) {
-            longestTestDuration = elapsedTime;
-        }
     }
 
     @After
@@ -371,7 +360,7 @@ public class CredentialsTest {
      * @return true if another test should be allowed to start
      */
     private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < (180 * 1000L - 4 * longestTestDuration - 2000L);
+        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 60) * 1000L);
     }
 
     @Test
