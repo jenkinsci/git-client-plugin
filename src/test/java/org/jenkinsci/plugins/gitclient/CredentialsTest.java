@@ -102,10 +102,6 @@ public class CredentialsTest {
 
     private static long firstTestStartTime = 0;
 
-    private static PrintStream log() {
-        return StreamTaskListener.fromStdout().getLogger();
-    }
-
     /* Windows refuses directory names with '*', '<', '>', '|', '?', and ':' */
     private final String SPECIALS_TO_CHECK = "%()`$&{}[]"
             + (isWindows() ? "" : "*<>:|?");
@@ -129,12 +125,6 @@ public class CredentialsTest {
         if (firstTestStartTime == 0) {
             firstTestStartTime = System.currentTimeMillis();
         }
-        log().println(show("Repo", gitRepoUrl)
-                + show("spec", specialCharacter)
-                + show("impl", gitImpl)
-                + show("user", username)
-                + show("pass", password)
-                + show("key", privateKey));
     }
 
     @Before
@@ -157,7 +147,6 @@ public class CredentialsTest {
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
-        listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
 
         assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
@@ -360,7 +349,7 @@ public class CredentialsTest {
      * @return true if another test should be allowed to start
      */
     private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 60) * 1000L);
+        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 120) * 1000L);
     }
 
     @Test
@@ -376,10 +365,8 @@ public class CredentialsTest {
         /* Fetch with remote name "origin" instead of remote URL */
         doFetch("origin");
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master.getName().substring(0, 8) + " from " + gitRepoURL);
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         if (submodules) {
-            log().println("Initializing submodules from " + gitRepoURL);
             git.submoduleInit();
             SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
             subcmd.execute();
