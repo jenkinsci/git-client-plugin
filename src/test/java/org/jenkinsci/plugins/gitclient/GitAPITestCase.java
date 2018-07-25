@@ -848,7 +848,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     }
 
-    @Issue("JENKINS-20410")
+    @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
     public void test_clean() throws Exception {
         w.init();
         w.commitEmpty("init");
@@ -862,28 +862,27 @@ public abstract class GitAPITestCase extends TestCase {
          */
         String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
         w.touch(fileName, "content " + fileName);
-        try {
+        withSystemLocaleReporting(fileName, () -> {
             w.git.add(fileName);
-        } catch (GitException ge) {
-            // Exception should contain actual file name
-            // If mangled name is seen instead, throw a clear exception to indicate root cause
-            assertTrue("System locale does not support filename '" + fileName + "'", ge.getMessage().contains("?-????-A?-?-?-fileName.xml"));
-            throw ge; // Fail the test on exception even if the preceding assertion did not fail
-        }
-        w.git.commit(fileName);
+            w.git.commit(fileName);
+        });
 
         /* JENKINS-27910 reported that certain cyrillic file names
          * failed to delete if the encoding was not UTF-8.
          */
         String fileNameSwim = "\u00d0\u00bf\u00d0\u00bb\u00d0\u00b0\u00d0\u00b2\u00d0\u00b0\u00d0\u00bd\u00d0\u00b8\u00d0\u00b5-swim.png";
         w.touch(fileNameSwim, "content " + fileNameSwim);
-        w.git.add(fileNameSwim);
-        w.git.commit(fileNameSwim);
+        withSystemLocaleReporting(fileNameSwim, () -> {
+            w.git.add(fileNameSwim);
+            w.git.commit(fileNameSwim);
+        });
 
         String fileNameFace = "\u00d0\u00bb\u00d0\u00b8\u00d1\u2020\u00d0\u00be-face.png";
         w.touch(fileNameFace, "content " + fileNameFace);
-        w.git.add(fileNameFace);
-        w.git.commit(fileNameFace);
+        withSystemLocaleReporting(fileNameFace, () -> {
+            w.git.add(fileNameFace);
+            w.git.commit(fileNameFace);
+        });
 
         w.touch(".gitignore", ".test");
         w.git.add(".gitignore");
@@ -4624,4 +4623,21 @@ public abstract class GitAPITestCase extends TestCase {
         return File.pathSeparatorChar==';';
     }
 
+    private void withSystemLocaleReporting(String fileName, TestedCode code) throws Exception {
+        try {
+            code.run();
+        } catch (GitException ge) {
+            // Exception message should contain the actual file name.
+            // It may just contain ? for characters that are not encoded correctly due to the system locale.
+            // If such a mangled file name is seen instead, throw a clear exception to indicate the root cause.
+            assertTrue("System locale does not support filename '" + fileName + "'", ge.getMessage().contains("?"));
+            // Rethrow exception for all other issues.
+            throw ge;
+        }
+    }
+
+    @FunctionalInterface
+    interface TestedCode {
+        void run() throws Exception;
+    }
 }
