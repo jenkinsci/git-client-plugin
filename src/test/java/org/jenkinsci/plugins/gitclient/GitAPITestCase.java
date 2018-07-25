@@ -8,7 +8,6 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
-import static org.junit.Assert.*;
 
 import hudson.FilePath;
 import hudson.Launcher;
@@ -73,8 +72,6 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 
 /**
@@ -1597,38 +1594,46 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         String gitDir = w.repoPath() + File.separator + ".git";
         w.commitEmpty("init");
-        ObjectId init = w.git.revParse("HEAD"); // Remember SHA1 of init commit
-        w.git.tag("test", "this is a tag");
+        ObjectId commitId = w.git.revParse("HEAD");
+        w.git.tag("test", "this is an annotated tag");
 
-        /* JGit seems to have the better behavior in this case, always
+        /*
+         * Spec: "test" (short tag syntax)
+         * CliGit does not support this syntax for remotes.
+         * JGit fully supports this syntax.
+         *
+         * JGit seems to have the better behavior in this case, always
          * returning the SHA1 of the commit. Most users are using
          * command line git, so the difference is retained in command
          * line git for compatibility with any legacy command line git
-         * use cases which depend on returning the SHA-1 of the
-         * annotated tag rather than the SHA-1 of the commit to which
-         * the annotated tag points.
+         * use cases which depend on returning null rather than the
+         * SHA-1 of the commit to which the annotated tag points.
          */
-        ObjectId testTag = w.git.getHeadRev(gitDir, "test"); // Remember SHA1 of annotated test tag
+        String shortTagRef = "test";
+        ObjectId tagHeadIdByShortRef = w.git.getHeadRev(gitDir, shortTagRef);
         if (w.git instanceof JGitAPIImpl) {
-            assertEquals("Annotated tag does not match SHA1", init, testTag);
+            assertEquals("annotated tag does not match commit SHA1", commitId, tagHeadIdByShortRef);
         } else {
-            assertNotEquals("Annotated tag unexpectedly equals SHA1", init, testTag);
+            assertNull("annotated tag unexpectedly not null", tagHeadIdByShortRef);
         }
+        assertEquals("annotated tag does not match commit SHA1", commitId, w.git.revParse(shortTagRef));
 
-        /* Because refs/tags/test syntax is more specific than "test",
-         * and because the more specific syntax was only introduced in
-         * more recent git client plugin versions (like 1.10.0 and
-         * later), the CliGit and JGit behavior are kept the same here
-         * in order to fix JENKINS-23299.
+        /*
+         * Spec: "refs/tags/test" (more specific tag syntax)
+         * CliGit and JGit fully support this syntax.
          */
-        ObjectId testTagCommit = w.git.getHeadRev(gitDir, "refs/tags/test"); // SHA1 of commit identified by test tag
-        assertEquals("Annotated tag doesn't match queried commit SHA1", init, testTagCommit);
-        assertEquals(init, w.git.revParse("test")); // SHA1 of commit identified by test tag
-        assertEquals(init, w.git.revParse("refs/tags/test")); // SHA1 of commit identified by test tag
-        assertTrue("test tag not created", w.cmd("git tag").contains("test"));
-        String message = w.cmd("git tag -l -n1");
-        assertTrue("unexpected test tag message : " + message, message.contains("this is a tag"));
-        assertNull(w.git.getHeadRev(gitDir, "not-a-valid-tag")); // Confirm invalid tag returns null
+        String longTagRef = "refs/tags/test";
+        assertEquals("annotated tag does not match commit SHA1", commitId, w.git.getHeadRev(gitDir, longTagRef));
+        assertEquals("annotated tag does not match commit SHA1", commitId, w.git.revParse(longTagRef));
+
+        String tagNames = w.cmd("git tag -l").trim();
+        assertEquals("tag not created", "test", tagNames);
+
+        String tagNamesWithMessages = w.cmd("git tag -l -n1");
+        assertTrue("unexpected tag message : " + tagNamesWithMessages, tagNamesWithMessages.contains("this is an annotated tag"));
+
+        ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
+        assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
     public void test_delete_tag() throws Exception {
