@@ -4,14 +4,20 @@ import hudson.EnvVars;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.DumbSlave;
+import hudson.tools.CommandInstaller;
+import hudson.tools.InstallSourceProperty;
 import hudson.tools.ToolDescriptor;
 import hudson.util.StreamTaskListener;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+
 import org.apache.commons.lang.SystemUtils;
 import org.jenkinsci.plugins.gitclient.JGitApacheTool;
 import org.jenkinsci.plugins.gitclient.JGitTool;
 import static org.junit.Assert.*;
+
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -41,6 +47,21 @@ public class GitToolTest {
         TaskListener log = StreamTaskListener.fromStdout();
         GitTool newTool = gitTool.forNode(slave, log);
         assertEquals(gitTool.getGitExe(), newTool.getGitExe());
+    }
+
+    @Test
+    public void shouldResolveToolsOnMaster() throws Exception {
+        Assume.assumeTrue(!hudson.remoting.Launcher.isWindows());
+        TaskListener log = StreamTaskListener.fromStdout();
+        GitTool t = new GitTool("myGit", null, Collections.singletonList(
+                new InstallSourceProperty(Collections.singletonList(
+                        new CommandInstaller("master", "echo Hello", "TOOL_HOME")
+                ))));
+        t.getDescriptor().setInstallations(t);
+
+        GitTool defaultTool = GitTool.getDefaultInstallation();
+        GitTool resolved = (GitTool) defaultTool.translate(j.jenkins, new EnvVars(), TaskListener.NULL);
+        assertThat(resolved.getGitExe(), org.hamcrest.CoreMatchers.containsString("TOOL_HOME"));
     }
 
     @Test
