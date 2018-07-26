@@ -58,4 +58,21 @@ public interface SubmoduleUpdateCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand timeout(Integer timeout);
+
+    /**
+     * shallow.
+     *
+     * @param shallow a boolean.
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand shallow(boolean shallow);
+
+    /**
+     * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
+     * Has no effect if shallow is set to false (default)
+     *
+     * @param depth number of revisions to be included in shallow clone
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand depth(Integer depth);
 }

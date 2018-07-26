@@ -2589,6 +2589,18 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @NotImplementedInJGit
+    public void test_submodule_update_shallow() throws Exception {
+        w.init();
+        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
+        w.git.checkout().branch("tests/getRelativeSubmodule").ref("sub2_origin/tests/getRelativeSubmodule").deleteBranchIfExist(true).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().shallow(true).execute();
+
+        final String shallow = ".git" + File.separator + "modules" + File.separator + "sub" + File.separator + "shallow";
+        assertTrue("Shallow file does not exist: " + shallow, w.exists(shallow));
+    }
+
+    @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
             setTimeoutVisibleInCurrentTest(false);
