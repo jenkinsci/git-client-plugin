@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -2593,18 +2594,43 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
         }
         assertFixSubmoduleUrlsThrows();
+
+        String shallow = Paths.get(".git", "modules", "module", "1", "shallow").toString();
+        assertFalse("shallow file existence: " + shallow, w.exists(shallow));
     }
 
-    @NotImplementedInJGit
     public void test_submodule_update_shallow() throws Exception {
-        w.init();
-        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
-        w.git.checkout().branch("tests/getRelativeSubmodule").ref("sub2_origin/tests/getRelativeSubmodule").deleteBranchIfExist(true).execute();
+        WorkingArea remote = setupRepositoryWithSubmodule();
+        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.checkout().branch("master").ref("origin/master").execute();
         w.git.submoduleInit();
         w.git.submoduleUpdate().shallow(true).execute();
 
-        final String shallow = ".git" + File.separator + "modules" + File.separator + "sub" + File.separator + "shallow";
-        assertTrue("Shallow file does not exist: " + shallow, w.exists(shallow));
+        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+
+        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
+
+        int localSubmoduleCommits = w.cgit().subGit("submodule").revList("master").size();
+        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList("master").size();
+        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
+    }
+
+    public void test_submodule_update_shallow_with_depth() throws Exception {
+        WorkingArea remote = setupRepositoryWithSubmodule();
+        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.checkout().branch("master").ref("origin/master").execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().shallow(true).depth(2).execute();
+
+        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+
+        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
+
+        int localSubmoduleCommits = w.cgit().subGit("submodule").revList("master").size();
+        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList("master").size();
+        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 2 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
 
     @NotImplementedInJGit
@@ -4658,5 +4684,33 @@ public abstract class GitAPITestCase extends TestCase {
     @FunctionalInterface
     interface TestedCode {
         void run() throws Exception;
+    }
+
+    private WorkingArea setupRepositoryWithSubmodule() throws Exception {
+        WorkingArea workingArea = new WorkingArea();
+
+        File repositoryDir = workingArea.file("dir-repository");
+        File submoduleDir = workingArea.file("dir-submodule");
+
+        assertTrue("did not create dir " + repositoryDir.getName(), repositoryDir.mkdir());
+        assertTrue("did not create dir " + submoduleDir.getName(), submoduleDir.mkdir());
+
+        WorkingArea submoduleWorkingArea = new WorkingArea(submoduleDir).init();
+
+        for (int commit = 1; commit <= 5; commit++) {
+            submoduleWorkingArea.touch("file", String.format("submodule content-%d", commit));
+            submoduleWorkingArea.cgit().add("file");
+            submoduleWorkingArea.cgit().commit(String.format("submodule commit-%d", commit));
+        }
+
+        WorkingArea repositoryWorkingArea = new WorkingArea(repositoryDir).init();
+
+        repositoryWorkingArea.commitEmpty("init");
+
+        repositoryWorkingArea.cgit().add(".");
+        repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
+        repositoryWorkingArea.cgit().commit("submodule");
+
+        return workingArea;
     }
 }

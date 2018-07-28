@@ -2175,7 +2175,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * submoduleUpdate.
+     * Update submodules.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
@@ -2184,7 +2184,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
             boolean recursive      = false;
             boolean remoteTracking = false;
-            boolean shallow        = false;
             String  ref            = null;
 
             @Override
@@ -2217,12 +2216,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
-                this.shallow = shallow;
+                if (shallow) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                }
                 return this;
             }
 
+            @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
             }
 
@@ -2239,10 +2243,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 if ((ref != null) && !ref.isEmpty()) {
                     listener.getLogger().println("[ERROR] JGit doesn't support submodule update --reference yet.");
-                    throw new UnsupportedOperationException("not implemented yet");
-                }
-                if (shallow) {
-                    listener.getLogger().println("[ERROR] JGit doesn't support shallow submodules yet.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
 

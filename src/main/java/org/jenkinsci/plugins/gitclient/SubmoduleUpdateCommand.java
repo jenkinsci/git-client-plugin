@@ -60,18 +60,19 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand timeout(Integer timeout);
 
     /**
-     * shallow.
+     * Only clone the most recent history, not preceding history.  Depth of the
+     * shallow clone is controlled by the #depth method.
      *
-     * @param shallow a boolean.
+     * @param shallow boolean controlling whether the clone is shallow (requires git&gt;=1.8.4)
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand shallow(boolean shallow);
 
     /**
      * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
-     * Has no effect if shallow is set to false (default)
+     * Has no effect if shallow is set to false (default).
      *
-     * @param depth number of revisions to be included in shallow clone
+     * @param depth number of revisions to be included in shallow clone (requires git&gt;=1.8.4)
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand depth(Integer depth);
