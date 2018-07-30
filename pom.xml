@@ -118,6 +118,11 @@
           <artifactId>httpclient</artifactId>
         </exclusion>
         <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpcore</artifactId>
+        </exclusion>
+        <exclusion>
           <!-- Provided by Jenkins core -->
           <groupId>com.jcraft</groupId>
           <artifactId>jzlib</artifactId>
