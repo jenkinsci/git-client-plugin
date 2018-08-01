@@ -2175,7 +2175,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * submoduleUpdate.
+     * Update submodules.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
@@ -2213,6 +2213,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand timeout(Integer timeout) {
             	// noop in jgit
+                return this;
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
+                if (shallow) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                }
+                return this;
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
             }
 

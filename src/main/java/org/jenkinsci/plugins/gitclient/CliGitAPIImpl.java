@@ -394,7 +394,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (prune) args.add("--prune");
 
                 if (shallow) {
-                    if (depth == null){
+                    if (depth == null) {
                         depth = 1;
                     }
                     args.add("--depth=" + depth);
@@ -1067,9 +1067,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             boolean recursive                      = false;
             boolean remoteTracking                 = false;
             boolean parentCredentials              = false;
+            boolean shallow                        = false;
             String  ref                            = null;
             Map<String, String> submodBranch   = new HashMap<>();
             public Integer timeout;
+            Integer depth = 1;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -1098,6 +1100,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public SubmoduleUpdateCommand timeout(Integer timeout) {
                 this.timeout = timeout;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand shallow(boolean shallow) {
+                this.shallow = shallow;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand depth(Integer depth) {
+                this.depth = depth;
                 return this;
             }
 
@@ -1131,7 +1143,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     else
                         args.add("--reference", ref);
                 }
-
+                if (shallow) {
+                    if (depth == null) {
+                        depth = 1;
+                    }
+                    if (isAtLeastVersion(1, 8, 4, 0)) {
+                        args.add("--depth=" + depth);
+                    } else {
+                        listener.getLogger().println("[WARNING] Git client older than 1.8.4 doesn't support shallow submodule updates. This flag is ignored.");
+                    }
+                }
 
                 // We need to call submodule update for each configured
                 // submodule. Note that we can't reliably depend on the
