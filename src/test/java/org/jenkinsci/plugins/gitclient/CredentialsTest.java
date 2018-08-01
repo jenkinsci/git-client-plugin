@@ -42,6 +42,7 @@ import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
@@ -353,6 +354,7 @@ public class CredentialsTest {
     }
 
     @Test
+    @Issue("JENKINS_50573")
     public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
         assumeTrue(testPeriodNotExpired());
         File clonedFile = new File(repo, fileToCheck);
@@ -402,27 +404,11 @@ public class CredentialsTest {
         assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
     }
 
-    private String show(String name, String value) {
-        if (value != null && !value.isEmpty()) {
-            return " " + name + ": '" + value + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, File file) {
-        if (file != null) {
-            String homePath = HOME_DIR.getAbsolutePath();
-            String filePath = file.getAbsolutePath();
-            if (filePath.startsWith(homePath)) {
-                filePath = filePath.replace(homePath, "~");
-            }
-            return " " + name + ": '" + filePath + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, char value) {
-        return " " + name + ": '" + value + "'";
+    @Test
+    @Issue("JENKINS_50573")
+    public void isURIishRemote() throws Exception {
+        URIish uri = new URIish(gitRepoURL);
+        assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
     }
 
     private boolean isWindows() {
