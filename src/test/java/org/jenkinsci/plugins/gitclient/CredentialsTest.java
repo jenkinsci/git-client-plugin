@@ -103,8 +103,6 @@ public class CredentialsTest {
     private final static File CURR_DIR = new File(".");
 
     private static long firstTestStartTime = 0;
-    private static long longestTestDuration = 0;
-    private long currentTestStartTime = 0;
 
     /* Windows refuses directory names with '*', '<', '>', '|', '?', and ':' */
     private final String SPECIALS_TO_CHECK = "%()`$&{}[]"
@@ -129,7 +127,6 @@ public class CredentialsTest {
         if (firstTestStartTime == 0) {
             firstTestStartTime = System.currentTimeMillis();
         }
-        currentTestStartTime = System.currentTimeMillis();
     }
 
     @Before
@@ -173,14 +170,6 @@ public class CredentialsTest {
         /* Credential usage is tracked at the job / project level */
         Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
         assertThat("Fingerprint should not be set after API level use", fingerprint, nullValue());
-    }
-
-    @After
-    public void recordLongestTestTime() {
-        long elapsedTime = System.currentTimeMillis() - currentTestStartTime;
-        if (elapsedTime > longestTestDuration) {
-            longestTestDuration = elapsedTime;
-        }
     }
 
     @After
@@ -409,29 +398,6 @@ public class CredentialsTest {
     public void isURIishRemote() throws Exception {
         URIish uri = new URIish(gitRepoURL);
         assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
-    }
-
-    private String show(String name, String value) {
-        if (value != null && !value.isEmpty()) {
-            return " " + name + ": '" + value + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, File file) {
-        if (file != null) {
-            String homePath = HOME_DIR.getAbsolutePath();
-            String filePath = file.getAbsolutePath();
-            if (filePath.startsWith(homePath)) {
-                filePath = filePath.replace(homePath, "~");
-            }
-            return " " + name + ": '" + filePath + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, char value) {
-        return " " + name + ": '" + value + "'";
     }
 
     private boolean isWindows() {
