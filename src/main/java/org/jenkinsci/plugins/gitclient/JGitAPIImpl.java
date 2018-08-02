@@ -2231,6 +2231,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(Integer threads) {
+                // TODO: I have no idea if JGit can update submodules in parallel
+                // It might work, or it might blow up horribly. This probably depends on
+                // whether JGit relies on any global/shared state. Since I have no
+                // experience with JGit, I'm leaving this unimplemented for the time
+                // being. But if some brave soul wants to test this, feel free to provide
+                // an implementation similar to the one in the CliGitAPIImpl class using
+                // an ExecutorService.
+                listener.getLogger().println("[WARNING] JGit doesn't support updating submodules in parallel. This flag is ignored");
+                return this;
+            }
+
+            @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 return this;
             }

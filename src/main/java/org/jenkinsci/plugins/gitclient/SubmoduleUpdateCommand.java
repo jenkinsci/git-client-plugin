@@ -76,4 +76,12 @@ public interface SubmoduleUpdateCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand depth(Integer depth);
+
+    /**
+     * Update submodules in parallel with the given number of threads.
+     *
+     * @param threads number of threads to use for updating submodules in parallel
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand threads(Integer threads);
 }

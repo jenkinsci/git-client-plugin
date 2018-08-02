@@ -58,6 +58,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -1072,6 +1075,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             Map<String, String> submodBranch   = new HashMap<>();
             public Integer timeout;
             Integer depth = 1;
+            Integer threads = 1;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -1110,6 +1114,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             public SubmoduleUpdateCommand depth(Integer depth) {
                 this.depth = depth;
+                return this;
+            }
+
+            public SubmoduleUpdateCommand threads(Integer threads) {
+                this.threads = threads;
                 return this;
             }
 
@@ -1176,6 +1185,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // path.
                 Pattern pattern = Pattern.compile(SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(cfgOutput);
+
+                ExecutorService executorService;
+                if (threads > 1) {
+                    executorService = Executors.newFixedThreadPool(threads);
+                } else {
+                    executorService = Executors.newSingleThreadExecutor();
+                }
+
                 while (matcher.find()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
                     String sModuleName = matcher.group(1);
@@ -1209,8 +1226,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     String sModulePath = getSubmodulePath(sModuleName);
 
                     perModuleArgs.add(sModulePath);
-                    launchCommandWithCredentials(perModuleArgs, workspace, cred, urIish, timeout);
+                    StandardCredentials finalCred = cred;
+                    URIish finalUrIish = urIish;
+                    executorService.submit(() -> {
+                        try {
+                            launchCommandWithCredentials(perModuleArgs, workspace, finalCred, finalUrIish, timeout);
+                        } catch (InterruptedException e) {
+                            throw new GitException("Interrupted while updating submodule for " + sModuleName);
+                        }
+                    });
                 }
+
+                executorService.shutdown();
+                executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
             }
         };
     }
