@@ -2634,6 +2634,23 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @NotImplementedInJGit
+    public void test_submodule_update_with_threads() throws Exception {
+        w.init();
+        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
+        w.git.checkout().branch("tests/getSubmodules").ref("sub2_origin/tests/getSubmodules").deleteBranchIfExist(true).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().threads(3).execute();
+
+        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
+        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+        // JGit submodule implementation doesn't handle renamed submodules
+        if (w.igit() instanceof CliGitAPIImpl) {
+            assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
+        }
+        assertFixSubmoduleUrlsThrows();
+    }
+
+    @NotImplementedInJGit
     public void test_trackingSubmoduleBranches() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
             setTimeoutVisibleInCurrentTest(false);
