@@ -333,13 +333,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public FetchCommand fetch_() {
         return new FetchCommand() {
-            public URIish url;
-            public List<RefSpec> refspecs;
-            public boolean prune;
-            public boolean shallow;
-            public Integer timeout;
-            public boolean tags = true;
-            public Integer depth = 1;
+            private URIish url;
+            private List<RefSpec> refspecs;
+            private boolean prune;
+            private boolean shallow;
+            private Integer timeout;
+            private boolean tags = true;
+            private Integer depth = 1;
 
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
@@ -489,14 +489,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public CloneCommand clone_() {
         return new CloneCommand() {
-            String url;
-            String origin = "origin";
-            String reference;
-            boolean shallow,shared;
-            Integer timeout;
-            boolean tags = true;
-            List<RefSpec> refspecs;
-            Integer depth = 1;
+            private String url;
+            private String origin = "origin";
+            private String reference;
+            private boolean shallow,shared;
+            private Integer timeout;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
+            private Integer depth = 1;
 
             public CloneCommand url(String url) {
                 this.url = url;
@@ -647,12 +647,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public MergeCommand merge() {
         return new MergeCommand() {
-            public ObjectId rev;
-            public String comment;
-            public String strategy;
-            public String fastForwardMode;
-            public boolean squash;
-            public boolean commit = true;
+            private ObjectId rev;
+            private String comment;
+            private String strategy;
+            private String fastForwardMode;
+            private boolean squash;
+            private boolean commit = true;
 
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
@@ -754,8 +754,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public InitCommand init_() {
         return new InitCommand() {
 
-            public String workspace;
-            public boolean bare;
+            private String workspace;
+            private boolean bare;
 
             public InitCommand workspace(String workspace) {
                 this.workspace = workspace;
@@ -942,10 +942,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
             public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
-            final List<String> revs = new ArrayList<>();
+            private final List<String> revs = new ArrayList<>();
 
-            Integer n = null;
-            Writer out = null;
+            private Integer n = null;
+            private Writer out = null;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1068,15 +1068,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
-            boolean recursive                      = false;
-            boolean remoteTracking                 = false;
-            boolean parentCredentials              = false;
-            boolean shallow                        = false;
-            String  ref                            = null;
-            Map<String, String> submodBranch   = new HashMap<>();
-            public Integer timeout;
-            Integer depth = 1;
-            Integer threads = 1;
+            private boolean recursive                      = false;
+            private boolean remoteTracking                 = false;
+            private boolean parentCredentials              = false;
+            private boolean shallow                        = false;
+            private String  ref                            = null;
+            private Map<String, String> submodBranch   = new HashMap<>();
+            private Integer timeout;
+            private Integer depth = 1;
+            private Integer threads = 1;
 
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
@@ -2173,11 +2173,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public PushCommand push() {
         return new PushCommand() {
-            public URIish remote;
-            public String refspec;
-            public boolean force;
-            public boolean tags;
-            public Integer timeout;
+            private URIish remote;
+            private String refspec;
+            private boolean force;
+            private boolean tags;
+            private Integer timeout;
 
             public PushCommand to(URIish remote) {
                 this.remote = remote;
@@ -2347,13 +2347,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
 
-            public String ref;
-            public String branch;
-            public boolean deleteBranch;
-            public List<String> sparseCheckoutPaths = Collections.emptyList();
-            public Integer timeout;
-            public String lfsRemote;
-            public StandardCredentials lfsCredentials;
+            private String ref;
+            private String branch;
+            private boolean deleteBranch;
+            private List<String> sparseCheckoutPaths = Collections.emptyList();
+            private Integer timeout;
+            private String lfsRemote;
+            private StandardCredentials lfsCredentials;
 
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
@@ -2600,11 +2600,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public RevListCommand revList_() {
         return new RevListCommand() {
-            public boolean all;
-            public boolean nowalk;
-            public boolean firstParent;
-            public String refspec;
-            public List<ObjectId> out;
+            private boolean all;
+            private boolean nowalk;
+            private boolean firstParent;
+            private String refspec;
+            private List<ObjectId> out;
 
             public RevListCommand all() {
                 return all(true);
