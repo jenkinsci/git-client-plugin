@@ -1323,13 +1323,13 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * JGit 3.3.0 thru 3.6.0 "prune during fetch" prunes more remote
-     * branches than command line git prunes during fetch.  This test
-     * should be used to evaluate future versions of JGit to see if
-     * pruning behavior more closely emulates command line git.
-     *
-     * This has been fixed using a workaround.
+     * JGit 3.3.0 thru 4.5.4 "prune during fetch" prunes more remote
+     * branches than command line git prunes during fetch.  JGit 5.0.2
+     * fixes the problem.
+     * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533549
+     * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533806
      */
+    @Issue("JENKINS-26197")
     public void test_fetch_with_prune() throws Exception {
         WorkingArea bare = new WorkingArea();
         bare.init(true);
