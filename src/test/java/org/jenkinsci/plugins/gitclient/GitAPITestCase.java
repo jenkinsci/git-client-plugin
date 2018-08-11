@@ -1375,9 +1375,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* Remove branch1 from bare repo using original repo */
         w.cmd("git push " + bare.repoPath() + " :branch1");
 
-        RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(defaultRefSpec);
+        List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
         newArea.cmd("git config fetch.prune false");
