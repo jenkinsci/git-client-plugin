@@ -2839,11 +2839,12 @@ public abstract class GitAPITestCase extends TestCase {
         return false;
     }
 
-    /**
-     * core.symlinks is set to false by msysgit on Windows and by JGit
-     * 3.3.0 on all platforms.  It is not set on Linux.  Refer to
-     * JENKINS-21168, JENKINS-22376, and JENKINS-22391 for details.
+    /*
+     * core.symlinks is set to false by git for WIndows.
+     * It is not set on Linux.
+     * See also JENKINS-22376 and JENKINS-22391
      */
+    @Issue("JENKINS-21168")
     private void checkSymlinkSetting(WorkingArea area) throws IOException {
         String expected = SystemUtils.IS_OS_WINDOWS || (area.git instanceof JGitAPIImpl && isJava6()) ? "false" : "";
         String symlinkValue = null;
