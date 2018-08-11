@@ -1346,7 +1346,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file-master", "file master content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-master");
         w.git.commit("master-commit");
-        ObjectId master = w.head();
         assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
 
@@ -1355,7 +1354,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file-branch1", "file branch1 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch1");
         w.git.commit("branch1-commit");
-        ObjectId branch1 = w.head();
         assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1"));
         w.git.push("origin", "branch1"); /* branch1 is now on bare repo */
 
@@ -1364,7 +1362,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file-branch2", "file branch2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch2");
         w.git.commit("branch2-commit");
-        ObjectId branch2 = w.head();
         assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1", "branch2"));
         assertThat(w.git.getRemoteBranches(), is(empty()));
         w.git.push("origin", "branch2"); /* branch2 is now on bare repo */
