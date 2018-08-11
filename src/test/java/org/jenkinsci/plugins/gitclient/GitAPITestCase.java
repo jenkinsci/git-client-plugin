@@ -465,15 +465,19 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
+    private Collection<String> getBranchNames(Set<Branch> branches) {
+        return Collections2.transform(branches, GitObject::getName);
+    }
+
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
+        Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
         }
     }
 
     private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
+        Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
         }
