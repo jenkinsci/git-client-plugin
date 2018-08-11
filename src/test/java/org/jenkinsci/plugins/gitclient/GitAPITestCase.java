@@ -1338,12 +1338,12 @@ public abstract class GitAPITestCase extends TestCase {
         /* master -> branch1 */
         /*        -> branch2 */
         w.init();
+        w.git.setRemoteUrl("origin", bare.repoPath());
         w.touch("file-master", "file master content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-master");
         w.git.commit("master-commit");
         ObjectId master = w.head();
-        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
-        w.git.setRemoteUrl("origin", bare.repoPath());
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
 
         w.git.checkout("master");
