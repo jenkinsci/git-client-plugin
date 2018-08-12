@@ -2102,11 +2102,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
-            listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
+            int usedTimeout = timeout == null ? TIMEOUT : timeout;
+            listener.getLogger().println(" > " + command + TIMEOUT_LOG_PREFIX + usedTimeout);
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                     envs(freshEnv).stdout(fos).stderr(err);
             if (workDir != null) p.pwd(workDir);
-            int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
+            int status = p.start().joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
 
             String result = fos.toString(Charset.defaultCharset().toString());
             if (status != 0) {

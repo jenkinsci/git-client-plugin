@@ -478,6 +478,45 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    @NotImplementedInJGit
+    public void test_clone_default_timeout_logging() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+
+        cloneTimeout = CliGitAPIImpl.TIMEOUT;
+        assertCloneTimeout();
+    }
+
+    @NotImplementedInJGit
+    public void test_fetch_default_timeout_logging() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+
+        w.git.fetch_().from(new URIish("origin"), null).execute();
+
+        fetchTimeout = CliGitAPIImpl.TIMEOUT;
+        assertFetchTimeout();
+    }
+
+    @NotImplementedInJGit
+    public void test_checkout_default_timeout_logging() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+
+        w.git.checkout().ref("origin/master").execute();
+
+        checkoutTimeout = CliGitAPIImpl.TIMEOUT;
+        assertCheckoutTimeout();
+    }
+
+    @NotImplementedInJGit
+    public void test_submodule_update_default_timeout_logging() throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
+        w.git.checkout().ref("origin/tests/getSubmodules").execute();
+
+        w.git.submoduleUpdate().execute();
+
+        submoduleUpdateTimeout = CliGitAPIImpl.TIMEOUT;
+        assertSubmoduleUpdateTimeout();
+    }
+
     public void test_setAuthor() throws Exception {
         final String authorName = "Test Author";
         final String authorEmail = "jenkins@example.com";
