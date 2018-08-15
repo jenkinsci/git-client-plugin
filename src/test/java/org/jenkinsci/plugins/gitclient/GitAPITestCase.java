@@ -2631,6 +2631,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("shallow file existence: " + shallow, w.exists(shallow));
     }
 
+    @NotImplementedInJGit
+    public void test_submodule_update_with_error() throws Exception {
+        w.git.clone_().url(localMirror()).execute();
+        w.git.checkout().ref("origin/tests/getSubmodules").execute();
+        w.rm("modules/ntp");
+        w.touch("modules/ntp", "file that interferes with ntp submodule folder");
+
+        try {
+            w.git.submoduleUpdate().execute();
+            fail("Did not throw expected submodule update exception");
+        } catch (GitException e) {
+            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" returned status code 1"));
+        }
+    }
+
     public void test_submodule_update_shallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();

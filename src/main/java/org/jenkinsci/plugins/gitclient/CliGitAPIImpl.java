@@ -1,6 +1,4 @@
-
 package org.jenkinsci.plugins.gitclient;
-
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -38,6 +36,7 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
 import java.io.*;
@@ -67,8 +66,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -1264,12 +1262,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Pattern pattern = Pattern.compile(SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
                 Matcher matcher = pattern.matcher(cfgOutput);
 
-                ExecutorService executorService;
-                if (threads > 1) {
-                    executorService = Executors.newFixedThreadPool(threads);
-                } else {
-                    executorService = Executors.newSingleThreadExecutor();
-                }
+                List<Callable<String>> commands = new ArrayList<>();
 
                 while (matcher.find()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
@@ -1306,17 +1299,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     perModuleArgs.add(sModulePath);
                     StandardCredentials finalCred = cred;
                     URIish finalUrIish = urIish;
-                    executorService.submit(() -> {
-                        try {
-                            launchCommandWithCredentials(perModuleArgs, workspace, finalCred, finalUrIish, timeout);
-                        } catch (InterruptedException e) {
-                            throw new GitException("Interrupted while updating submodule for " + sModuleName);
-                        }
-                    });
+
+                    commands.add(() -> launchCommandWithCredentials(perModuleArgs, workspace, finalCred, finalUrIish, timeout));
                 }
 
-                executorService.shutdown();
-                executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                new GitCommandsExecutor(threads, listener).invokeAll(commands);
             }
         };
     }
