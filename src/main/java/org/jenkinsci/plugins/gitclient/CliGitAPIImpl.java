@@ -1621,7 +1621,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
-        File workspaceTmp = new File(workspace.getAbsolutePath() + "@tmp");
+        // Not using workspace variable to create the @tmp directory
+        // cause this is not the job's workspace when cloning into
+        // subdirectories.
+        String workspaceDir;
+        if (environment != null) {
+            workspaceDir = environment.get("WORKSPACE", workspace.getAbsolutePath());
+        } else {
+            workspaceDir = workspace.getAbsolutePath();
+        }
+        File workspaceTmp = new File(workspaceDir + "@tmp");
         if (!workspaceTmp.isDirectory() && !workspaceTmp.mkdirs()) {
             if (!workspaceTmp.isDirectory()) {
                 return createTempFileInSystemDir(prefix, suffix);
