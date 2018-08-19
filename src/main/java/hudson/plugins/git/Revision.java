@@ -1,8 +1,7 @@
 package hudson.plugins.git;
 
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
+import static java.util.stream.Collectors.joining;
+
 import hudson.Util;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
@@ -22,7 +21,7 @@ import java.util.Collection;
 public class Revision implements java.io.Serializable, Cloneable {
     private static final long serialVersionUID = -7203898556389073882L;
 
-    ObjectId           sha1;
+    ObjectId sha1;
     Collection<Branch> branches;
 
     /**
@@ -94,37 +93,26 @@ public class Revision implements java.io.Serializable, Cloneable {
     }
 
     /**
-     * containsBranchName.
+     * Returns whether the revision contains the specified branch.
      *
-     * @param name a {@link java.lang.String} object.
-     * @return true if this repository is bare
+     * @param name the name of the branch
+     * @return whether the revision contains the branch
      */
     public boolean containsBranchName(String name) {
-        for (Branch b : branches) {
-            if (b.getName().equals(name)) {
-                return true;
-            }
-        }
-        return false;
+        return branches.stream().anyMatch(branch -> branch.getName().equals(name));
     }
 
-    /**
-     * toString.
-     *
-     * @return a {@link java.lang.String} object.
-     */
+    @Override
     public String toString() {
         final String revisionName = sha1 != null ? sha1.name() : "null";
         StringBuilder s = new StringBuilder("Revision " + revisionName + " (");
         if (branches != null) {
-            Joiner.on(", ").appendTo(s,
-                    Iterables.transform(branches, from -> Util.fixNull(from.getName())));
+            s.append(branches.stream().map(Branch::getName).map(Util::fixNull).collect(joining(", ")));
         }
         s.append(')');
         return s.toString();
     }
 
-    /** {@inheritDoc} */
     @Override
     public Revision clone() {
         Revision clone;
@@ -138,13 +126,11 @@ public class Revision implements java.io.Serializable, Cloneable {
         return clone;
     }
 
-    /** {@inheritDoc} */
     @Override
     public int hashCode() {
         return sha1 != null ? 31 + sha1.hashCode() : 1;
     }
 
-    /** {@inheritDoc} */
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Revision)) {
