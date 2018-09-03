@@ -232,11 +232,6 @@ public class PushTest {
         bareFirstCommit = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), "master");
     }
 
-    @AfterClass
-    public static void removeBareRepository() throws IOException {
-        FileUtils.deleteDirectory(bareRepo);
-    }
-
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
         previousCommit = checkoutBranch(false);
         workingCommit = commitFileToCurrentBranch();
