@@ -2027,18 +2027,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Proc prc = p.start();
 
                 status = prc.joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
-                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout()));
-                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStdout()));
+                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.defaultCharset()));
+                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.defaultCharset()));
 
                 String  stdout;
-
+                StringBuffer buf = new StringBuffer();
                 while ((stdout = brStdout.readLine()) != null) {
-                    result += stdout;
+                    buf.append(stdout);
                 }
+                result = buf.toString();
                 String stderr;
+                buf.setLength(0);
                 while ((stderr = brStdErr.readLine()) != null) {
-                    errorString += stderr;
+                    buf.append(stderr);
                 }
+                errorString = buf.toString();
                 brStdErr.close();
                 brStdout.close();
             } else {
