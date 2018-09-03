@@ -2146,7 +2146,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                         envs(freshEnv).stdout(fos).stderr(err);
                 if (workDir != null) p.pwd(workDir);
-                int status = p.start().joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
+                status = p.start().joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
 
                 result = fos.toString(Charset.defaultCharset().toString());
                 errorString = err.toString(Charset.defaultCharset().toString());
