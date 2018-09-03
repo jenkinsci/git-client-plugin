@@ -8,13 +8,10 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
+import hudson.*;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
-import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -166,6 +163,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /* Package protected for testing */
     final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
+
+    /* Encoding charset for z/OS - used only when we are running on z/OS
+    * platform    
+    */
+    private final String encoding;
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
             return;
@@ -249,7 +251,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-
+        this.encoding = ZosCheck() ? "IBM1047" : Charset.defaultCharset().toString();
+        
         launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
     }
 
@@ -1745,7 +1748,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         File key = createTempFile("ssh", ".key");
-        try (PrintWriter w = new PrintWriter(key, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(key, this.encoding)) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
                 w.println(s);
@@ -1781,7 +1784,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
             // avoid echoing command as part of the password
             w.println("@echo off");
             // no surrounding double quotes on windows echo -- they are echoed too
@@ -1794,7 +1797,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
             w.println("#!/bin/sh");
             w.println("echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         }
@@ -1805,7 +1808,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /* Package protected for testability */
     File createWindowsBatFile(String userName, String password) throws IOException {
         File askpass = createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(askpass, this.encoding)) {
             w.println("@set arg=%~1");
             w.println("@if (%arg:~0,8%)==(Username) echo " + escapeWindowsCharsForUnquotedString(userName));
             w.println("@if (%arg:~0,8%)==(Password) echo " + escapeWindowsCharsForUnquotedString(password));
@@ -1820,7 +1823,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
         File askpass = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(askpass, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(askpass, this.encoding)) {
             w.println("#!/bin/sh");
             w.println("case \"$1\" in");
             w.println("Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;");
@@ -1953,7 +1956,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         File sshexe = getSSHExecutable();
 
-        try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
         }
@@ -1961,9 +1964,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
+    private static final boolean ZosCheck() {
+        return (File.pathSeparatorChar==':') && System.getProperty("os.name").equals("z/OS");
+    }
+
     private File createUnixGitSSH(File key, String user) throws IOException {
         File ssh = createTempFile("ssh", ".sh");
-        try (PrintWriter w = new PrintWriter(ssh, Charset.defaultCharset().toString())) {
+        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
             w.println("#!/bin/sh");
             // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
             w.println("if [ -z \"${DISPLAY}\" ]; then");
@@ -2006,14 +2013,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.prepend("setsid");
             }
             listener.getLogger().println(" > " + command + (timeout != null ? TIMEOUT_LOG_PREFIX + timeout : ""));
-            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                    envs(freshEnv).stdout(fos).stderr(err);
-            if (workDir != null) p.pwd(workDir);
-            int status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
 
-            String result = fos.toString(Charset.defaultCharset().toString());
+            int status=0;
+            String result = "";
+            String errorString = "";
+            if(ZosCheck() == true) {
+                // Another behavior on z/OS required due to the race
+                // condition with CopyThread on IBM Java z/OS implementation
+                Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
+                        envs(freshEnv);
+                if (workDir != null) p.pwd(workDir);
+                p.readStdout().readStderr();
+                Proc prc = p.start();
+
+                status = prc.joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
+                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.forName("IBM1047")));
+                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.forName("IBM1047")));
+
+                String  stdout;
+                StringBuffer buf = new StringBuffer();
+                while ((stdout = brStdout.readLine()) != null) {
+                    buf.append(stdout);
+                }
+                result = buf.toString();
+                String stderr;
+                buf.setLength(0);
+                while ((stderr = brStdErr.readLine()) != null) {
+                    buf.append(stderr);
+                }
+                errorString = buf.toString();
+                brStdErr.close();
+                brStdout.close();
+            } else {
+                // Original behaviour
+                Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
+                        envs(freshEnv).stdout(fos).stderr(err);
+                if (workDir != null) p.pwd(workDir);
+                status = p.start().joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
+
+                result = fos.toString(Charset.defaultCharset().toString());
+                errorString = err.toString(Charset.defaultCharset().toString());
+            }
             if (status != 0) {
-                throw new GitException("Command \""+command+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ err.toString(Charset.defaultCharset().toString()));
+                throw new GitException("Command \""+command+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ errorString);
             }
 
             return result;
