@@ -49,6 +49,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import static java.util.stream.Collectors.toList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -982,6 +983,10 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
+    }
+
     public void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
         w.init();
@@ -995,7 +1000,7 @@ public abstract class GitAPITestCase extends TestCase {
         bare.init(true);
         w.git.setRemoteUrl("origin", bare.repoPath());
         Set<Branch> remoteBranchesEmpty = w.git.getRemoteBranches();
-        assertEquals("Unexpected branch count", 0, remoteBranchesEmpty.size());
+        assertThat(remoteBranchesEmpty, is(empty()));
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
@@ -1006,7 +1011,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId newAreaHead = newArea.head();
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
         Set<Branch> remoteBranches1 = newArea.git.getRemoteBranches();
-        assertEquals("Unexpected branch count in " + remoteBranches1, 2, remoteBranches1.size());
+        assertThat(getBranchNames(remoteBranches1), hasItems("origin/master"));
         assertEquals(bareCommit1, newArea.git.getHeadRev(newArea.repoPath(), "refs/heads/master"));
 
         /* Commit a new change to the original repo */
@@ -1136,7 +1141,7 @@ public abstract class GitAPITestCase extends TestCase {
         bare.init(true);
         w.git.setRemoteUrl("origin", bare.repoPath());
         Set<Branch> remoteBranchesEmpty = w.git.getRemoteBranches();
-        assertEquals("Unexpected branch count", 0, remoteBranchesEmpty.size());
+        assertThat(remoteBranchesEmpty, is(empty()));
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
@@ -1212,8 +1217,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
         ObjectId commit1 = w.head();
-        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
-        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
+        assertThat(w.git.getRemoteBranches(), is(empty()));
 
         /* Prune when a remote is not yet defined */
         try {
@@ -1232,8 +1237,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.push("origin", "master");
         ObjectId bareCommit1 = bare.git.getHeadRev(bare.repoPath(), "master");
         assertEquals("bare != working", commit1, bareCommit1);
-        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
-        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
+        assertThat(w.git.getRemoteBranches(), is(empty()));
 
         /* Create a branch in working repo named "parent" */
         w.git.branch("parent");
@@ -1242,23 +1247,22 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file2");
         w.git.commit("commit2");
         ObjectId commit2 = w.head();
-        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
-        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+        assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "parent"));
+        assertThat(w.git.getRemoteBranches(), is(empty()));
 
         /* Push branch named "parent" to bare repo */
         w.git.push("origin", "parent");
         ObjectId bareCommit2 = bare.git.getHeadRev(bare.repoPath(), "parent");
         assertEquals("working parent != bare parent", commit2, bareCommit2);
-        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
-        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+        assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "parent"));
+        assertThat(w.git.getRemoteBranches(), is(empty()));
 
         /* Clone new working repo from bare repo */
         WorkingArea newArea = clone(bare.repoPath());
         ObjectId newAreaHead = newArea.head();
         assertEquals("bare != newArea", bareCommit1, newAreaHead);
         Set<Branch> remoteBranches = newArea.git.getRemoteBranches();
-        assertBranchesExist(remoteBranches, "origin/master", "origin/parent", "origin/HEAD");
-        assertEquals("Wrong count in " + remoteBranches, 3, remoteBranches.size());
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/parent", "origin/HEAD"));
 
         /* Checkout parent in new working repo */
         newArea.git.checkout("origin/parent", "parent");
@@ -1268,7 +1272,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* Delete parent branch from w */
         w.git.checkout("master");
         w.cmd("git branch -D parent");
-        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
 
         /* Delete parent branch on bare repo*/
         bare.cmd("git branch -D parent");
@@ -1287,7 +1291,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId bareCommit3 = bare.git.getHeadRev(bare.repoPath(), "parent/a");
         assertEquals("parent/a != bare", commit3, bareCommit3);
         remoteBranches = bare.git.getRemoteBranches();
-        assertEquals("Wrong count in " + remoteBranches, 0, remoteBranches.size());
+        assertThat(remoteBranches, is(empty()));
 
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
@@ -1338,7 +1342,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-master");
         w.git.commit("master-commit");
         ObjectId master = w.head();
-        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
+        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
         w.git.setRemoteUrl("origin", bare.repoPath());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
 
@@ -1348,7 +1352,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-branch1");
         w.git.commit("branch1-commit");
         ObjectId branch1 = w.head();
-        assertEquals("Wrong branch count", 2, w.git.getBranches().size());
+        assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1"));
         w.git.push("origin", "branch1"); /* branch1 is now on bare repo */
 
         w.git.checkout("master");
@@ -1357,16 +1361,15 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file-branch2");
         w.git.commit("branch2-commit");
         ObjectId branch2 = w.head();
-        assertEquals("Wrong branch count", 3, w.git.getBranches().size());
-        assertTrue("Remote branches should not exist", w.git.getRemoteBranches().isEmpty());
+        assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1", "branch2"));
+        assertThat(w.git.getRemoteBranches(), is(empty()));
         w.git.push("origin", "branch2"); /* branch2 is now on bare repo */
 
         /* Clone new working repo from bare repo */
         WorkingArea newArea = clone(bare.repoPath());
         ObjectId newAreaHead = newArea.head();
         Set<Branch> remoteBranches = newArea.git.getRemoteBranches();
-        assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
-        assertEquals("Wrong count in " + remoteBranches, 4, remoteBranches.size());
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Remove branch1 from bare repo using original repo */
         w.cmd("git push " + bare.repoPath() + " :branch1");
@@ -1379,26 +1382,21 @@ public abstract class GitAPITestCase extends TestCase {
         newArea.cmd("git config fetch.prune false");
         newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).execute();
         remoteBranches = newArea.git.getRemoteBranches();
-        assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
-        assertEquals("Wrong count in " + remoteBranches, 4, remoteBranches.size());
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Fetch with prune should remove branch1 from newArea */
         newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).prune().execute();
         remoteBranches = newArea.git.getRemoteBranches();
-        assertBranchesExist(remoteBranches, "origin/master", "origin/branch2", "origin/HEAD");
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch2", "origin/HEAD"));
 
-        /* Git 1.7.1 on Red Hat 6 does not prune branch1, don't fail the test
+        /* Git older than 1.7.9 (like 1.7.1 on Red Hat 6) does not prune branch1, don't fail the test
          * on that old git version.
          */
-        int expectedBranchCount = 3;
         if (newArea.git instanceof CliGitAPIImpl && !w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            expectedBranchCount = 4;
-            assertBranchesExist(remoteBranches, "origin/master", "origin/branch1", "origin/branch2", "origin/HEAD");
+            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
         } else {
-            assertBranchesExist(remoteBranches, "origin/master", "origin/branch2", "origin/HEAD");
-            assertBranchesNotExist(remoteBranches, "origin/branch1");
+            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch2", "origin/HEAD"));
         }
-        assertEquals("Wrong remote branch count", expectedBranchCount, remoteBranches.size());
     }
 
     public void test_fetch_from_url() throws Exception {
