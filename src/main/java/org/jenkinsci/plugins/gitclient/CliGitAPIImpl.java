@@ -2027,8 +2027,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Proc prc = p.start();
 
                 status = prc.joinWithTimeout(timeout != null ? timeout : TIMEOUT, TimeUnit.MINUTES, listener);
-                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.defaultCharset()));
-                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.defaultCharset()));
+                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.forName("IBM1047")));
+                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.forName("IBM1047")));
 
                 String  stdout;
                 StringBuffer buf = new StringBuffer();
