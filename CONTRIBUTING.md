@@ -27,10 +27,12 @@ assure that you haven't introduced new findbugs warnings.
 
 # Code Style Guidelines
 
-## Indentation
+Use the [Jenkins SCM API coding style guide](https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines) for new code.
 
-* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency.  Try to maintain reasonable consistency with the existing files.
-* Please don't perform wholesale reformatting of a file without discussing with the current maintainers.
+## Indentation and White Space
+
+* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency.  Try to maintain reasonable consistency with the existing files
+* Please don't reformat a file without discussing with the current maintainers
 
 ## Maven POM file layout
 
