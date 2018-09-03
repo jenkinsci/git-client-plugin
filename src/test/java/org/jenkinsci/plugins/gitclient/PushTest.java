@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toList;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -240,7 +240,7 @@ public class PushTest {
     }
 
     private Collection<String> getBranchNames(List<Branch> branches) {
-        return branches.stream().map(p -> p.getName()).collect(Collectors.toList());
+        return branches.stream().map(Branch::getName).collect(toList());
     }
 
     private ObjectId checkoutBranch(boolean useOldCommit) throws GitException, InterruptedException {

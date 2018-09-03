@@ -49,7 +49,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -984,7 +984,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(p -> p.getName()).collect(Collectors.toList());
+        return branches.stream().map(Branch::getName).collect(toList());
     }
 
     public void test_fetch() throws Exception {
