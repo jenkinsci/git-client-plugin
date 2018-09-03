@@ -225,9 +225,6 @@ public class PushTest {
             cloneGitClient.push().to(bareURI).ref("HEAD:" + branchName).execute();
         }
 
-        /* Remove the clone */
-        FileUtils.deleteDirectory(cloneRepo);
-
         /* Remember the SHA1 of the first commit */
         bareFirstCommit = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), "master");
     }
