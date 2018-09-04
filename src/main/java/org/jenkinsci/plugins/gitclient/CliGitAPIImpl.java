@@ -8,10 +8,13 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.*;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -22,6 +25,7 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
+import hudson.Proc;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -167,7 +171,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
 
-    /* Encoding charset for z/OS, only on z/OS USS platform                 
+    /* Encoding charset for z/OS, only on z/OS USS platform
     */
     private final String encoding;
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
@@ -806,15 +810,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
         reset(true);
 	String cmd = "-fdx";
-    if (cleanSubmodule) cmd = "-ffdx";
-    
-	launchCommand("clean", cmd);
-}
+	if (cleanSubmodule) cmd = "-ffdx";
 
-/**
- * Remove untracked files and directories, including files listed
- * in the ignore rules.
- *
+	launchCommand("clean", cmd);
+    }
+
+    /**
+     * Remove untracked files and directories, including files listed
+     * in the ignore rules.
+     *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -1818,7 +1822,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         File key = createTempFile("ssh", ".key");
-        try (PrintWriter w = new PrintWriter(key, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(key, encoding)) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
                 w.println(s);
@@ -1854,7 +1858,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createWindowsSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
             // avoid echoing command as part of the password
             w.println("@echo off");
             // no surrounding double quotes on windows echo -- they are echoed too
@@ -1867,7 +1871,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixSshAskpass(SSHUserPrivateKey sshUser) throws IOException {
         File ssh = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
             w.println("#!/bin/sh");
             w.println("echo '" + quoteUnixCredentials(Secret.toString(sshUser.getPassphrase())) + "'");
         }
@@ -1878,7 +1882,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /* Package protected for testability */
     File createWindowsBatFile(String userName, String password) throws IOException {
         File askpass = createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(askpass, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(askpass, encoding)) {
             w.println("@set arg=%~1");
             w.println("@if (%arg:~0,8%)==(Username) echo " + escapeWindowsCharsForUnquotedString(userName));
             w.println("@if (%arg:~0,8%)==(Password) echo " + escapeWindowsCharsForUnquotedString(password));
@@ -1893,7 +1897,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds) throws IOException {
         File askpass = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(askpass, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(askpass, encoding)) {
             w.println("#!/bin/sh");
             w.println("case \"$1\" in");
             w.println("Username*) echo '" + quoteUnixCredentials(creds.getUsername()) + "' ;;");
@@ -2025,8 +2029,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
-        
-        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
+
+        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
             w.println("@echo off");
             w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
         }
@@ -2042,7 +2046,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File ssh = createTempFile("ssh", ".sh");
         File ssh_copy = new File(ssh.toString() + "-copy");
         boolean isCopied = false;
-        try (PrintWriter w = new PrintWriter(ssh, this.encoding)) {
+        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
             w.println("#!/bin/sh");
             // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
             w.println("if [ -z \"${DISPLAY}\" ]; then");
@@ -2052,7 +2056,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
         ssh.setExecutable(true, true);
-                //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
+        //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         //The following creates a copy of the generated file and deletes the original
         //In case of a failure return the original and delete the copy
         String fromLocation = ssh.toString();
@@ -2073,11 +2077,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 deleteTempFile(ssh_copy);
             }
             //Previous operation failed. Return original file
-        return ssh;
+            return ssh;
+        }
+		
+        return ssh_copy;
     }
-
-    return ssh_copy;
-}
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
@@ -2115,7 +2119,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String result = "";
             String errorString = "";
             if(ZosCheck() == true) {
-                // Another behavior on z/OS required due to the race condition
+                /* Another behavior on z/OS required due to the race condition happening during transcoding of charset in
+                EBCDIC code page if CopyThread is used on IBM z/OS Java. For unclear reason, if we rely on Proc class consumption 
+                of stdout and stderr with StreamCopyThread, then first several chars of a stream aren't get transcoded
+                Also, there is a need to pass a EBCDIC codepage conversion charset into input stream
+                */
                 Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
                         envs(freshEnv);
                 if (workDir != null) p.pwd(workDir);
@@ -2123,24 +2131,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Proc prc = p.start();
 
                 status = prc.joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
-                BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.forName("IBM1047")));
-                BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.forName("IBM1047")));
-
-                String  stdout;
-
                 StringBuffer buf = new StringBuffer();
-                while ((stdout = brStdout.readLine()) != null) {
-                    buf.append(stdout);
+                String stdout;
+                String stderr;
+                try(BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.forName("IBM1047")))) {
+                    while ((stdout = brStdout.readLine()) != null) {
+                        buf.append(stdout);
+                    }
                 }
                 result = buf.toString();
-                String stderr;
                 buf.setLength(0);
-                while ((stderr = brStdErr.readLine()) != null) {
-                    buf.append(stderr);
+                try(BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.forName("IBM1047")))) {
+                    while ((stderr = brStdErr.readLine()) != null) {
+                        buf.append(stderr);
+                    }
                 }
                 errorString = buf.toString();
-                brStdErr.close();
-                brStdout.close();
             } else {
                 // Original behaviour
                 Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
