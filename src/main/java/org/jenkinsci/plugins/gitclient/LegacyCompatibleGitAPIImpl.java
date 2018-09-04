@@ -227,7 +227,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     public List<String> showRevision(ObjectId r) throws GitException, InterruptedException {
         return showRevision(null, r);
     }
-    
+
+    /** {@inheritDoc} */
+    public List<String> showChangedPaths(ObjectId r) throws GitException, InterruptedException {
+        return showChangedPaths(null, r);
+    }
+
     /**
      * This method takes a branch specification and normalizes it get unambiguous results.
      * This is the case when using "refs/heads/"<br>

@@ -715,9 +715,18 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         return proxy.showRevision(from, to);
     }
 
-    /** {@inheritDoc} */
     public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException {
         return proxy.showRevision(from, to, useRawOutput);
+    }
+
+    /** {@inheritDoc} */
+    public List<String> showChangedPaths(ObjectId r) throws GitException, InterruptedException {
+        return proxy.showChangedPaths(r);
+    }
+
+    /** {@inheritDoc} */
+    public List<String> showChangedPaths(ObjectId from, ObjectId to) throws GitException, InterruptedException {
+        return proxy.showChangedPaths(from, to);
     }
 
     /** {@inheritDoc} */

@@ -10,12 +10,25 @@ import org.eclipse.jgit.lib.ObjectId;
 public interface MergeCommand extends GitCommand {
 
     /**
-     * setRevisionToMerge.
+     * Sets the first revision to include in the merge.  If additional revisions
+     * need to be added to the merge, use addRevisionToMerge.
      *
      * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @see #addRevisionToMerge
      */
     MergeCommand setRevisionToMerge(ObjectId rev);
+
+    /**
+     * Add to the list of revisions to merge.  Most interesting when performing
+     * a merge of multiple branches simultaneously ("octopus" merge).  
+     * Use setRevisionToMerge for the first revision to merge.
+     *
+     * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @see #setRevisionToMerge
+     */
+    MergeCommand addRevisionToMerge(ObjectId rev);
 
     /**
      * setMessage.
