@@ -550,7 +550,7 @@ public class GitURIRequirementsBuilderTest {
 
     }
 
-    <T> T firstOrNull(List<? super T> list, Class<T> type) {
+    private static <T> T firstOrNull(List<? super T> list, Class<T> type) {
         for (Object i: list) {
             if (type.isInstance(i))
                 return type.cast(i);

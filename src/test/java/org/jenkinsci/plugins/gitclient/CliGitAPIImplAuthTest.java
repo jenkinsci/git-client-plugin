@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.hasItems;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -23,18 +22,14 @@ import static org.junit.Assert.*;
  */
 public class CliGitAPIImplAuthTest {
 
-    private final Launcher launcher;
-
-    public CliGitAPIImplAuthTest() {
-        launcher = new Launcher.LocalLauncher(TaskListener.NULL);
-    }
-
-    private CliGitAPIImpl git;
+    private final Launcher launcher = new Launcher.LocalLauncher(TaskListener.NULL);
 
     private final Random random = new Random();
 
     private final String[] CARET_SPECIALS = {"^", "&", "\\", "<", ">", "|", " ", "\"", "\t"};
     private final String[] PERCENT_SPECIALS = {"%"};
+
+    private CliGitAPIImpl git;
 
     @Before
     public void setUp() {
@@ -140,7 +135,7 @@ public class CliGitAPIImplAuthTest {
             result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
         }
         output = result.split("[\\n\\r]");
-        Assert.assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+        assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
         return output;
     }
 

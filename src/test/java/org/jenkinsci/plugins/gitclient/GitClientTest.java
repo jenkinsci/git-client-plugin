@@ -73,10 +73,10 @@ public class GitClientTest {
     private GitClient srcGitClient;
 
     /* commit known to exist in upstream. */
-    final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
-    final String upstreamCommitAuthor = "Teubel György";
-    final String upsstreamCommitEmail = "<tgyurci@freemail.hu>";
-    final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
+    private final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
+    private final String upstreamCommitAuthor = "Teubel György";
+    private final String upstreamCommitEmail = "<tgyurci@freemail.hu>";
+    private final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
 
     /* URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
@@ -220,7 +220,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    public void createFile(String path, String content) throws Exception {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -399,7 +399,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testCommitNotFoundException() throws GitException, InterruptedException {
         /* Search wrong repository for a commit */
-        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upsstreamCommitEmail);
+        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upstreamCommitEmail);
     }
 
     @Test
@@ -585,8 +585,6 @@ public class GitClientTest {
         gitCmd.assertOutputContains(".*On branch.*" + branchName + ".*");
     }
 
-    private int lastFetchPath = -1;
-
     private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
         List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
@@ -594,8 +592,7 @@ public class GitClientTest {
         for (String refSpecString : optionalRefSpecs) {
             refSpecs.add(new RefSpec(refSpecString));
         }
-        lastFetchPath = random.nextInt(2);
-        switch (lastFetchPath) {
+        switch (random.nextInt(2)) {
             default:
             case 0:
                 if (remote.equals("origin")) {
@@ -859,7 +856,7 @@ public class GitClientTest {
     public void testGetHeadRev_String_String_Empty_Result() throws Exception {
         String url = repoRoot.getAbsolutePath();
         ObjectId nonExistent = gitClient.getHeadRev(url, "this branch doesn't exist");
-        assertEquals(null, nonExistent);
+        assertNull(nonExistent);
     }
 
     @Test
@@ -875,9 +872,8 @@ public class GitClientTest {
         String pattern = null;
         boolean headsOnly = false; // Need variations here
         boolean tagsOnly = false; // Need variations here
-        Map<String, ObjectId> expResult = null; // Working here
         Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
-        assertEquals(expResult, result);
+        assertNull(result);
     }
 
     @Issue("JENKINS-30589")
@@ -1142,7 +1138,7 @@ public class GitClientTest {
                 lastModifiedFile = file;
             }
         }
-        assertTrue("No files modified " + repoRoot, lastModifiedFile != null);
+        assertNotNull("No files modified " + repoRoot, lastModifiedFile);
 
         /* Checkout a new branch - verify no files retain modification */
         gitClient.checkout().branch("master-" + randomUUID).ref(commitA.getName()).execute();
@@ -1189,8 +1185,7 @@ public class GitClientTest {
                 dirList.add(dir.getName());
             }
         }
-        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray(new String[expectedDirList.size()])));
-        assertThat(expectedDirList, containsInAnyOrder(dirList.toArray(new String[dirList.size()])));
+        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray()));
     }
 
     private void assertSubmoduleContents(String... directories) throws Exception {

@@ -91,7 +91,7 @@ public class CliGitAPITempFileTest {
      *
      */
     @Test
-    @Issue("JENKINS-44301") // and 43931 and ...
+    @Issue({"JENKINS-44301", "JENKINS-43931"}) // and ...
     public void testTempFilePathCharactersValid() throws IOException {
         CliGitAPIImplExtension cliGit = new CliGitAPIImplExtension("git", workspace, null, null);
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
@@ -116,7 +116,7 @@ public class CliGitAPITempFileTest {
 
     private class CliGitAPIImplExtension extends CliGitAPIImpl {
 
-        public CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
+        private CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
             super(gitExe, workspace, listener, environment);
         }
     }
