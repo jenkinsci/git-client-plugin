@@ -465,15 +465,19 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
+    private Collection<String> getBranchNames(Set<Branch> branches) {
+        return Collections2.transform(branches, GitObject::getName);
+    }
+
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
+        Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
         }
     }
 
     private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = Collections2.transform(branches, GitObject::getName);
+        Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
         }
@@ -1338,12 +1342,11 @@ public abstract class GitAPITestCase extends TestCase {
         /* master -> branch1 */
         /*        -> branch2 */
         w.init();
+        w.git.setRemoteUrl("origin", bare.repoPath());
         w.touch("file-master", "file master content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-master");
         w.git.commit("master-commit");
-        ObjectId master = w.head();
-        assertThat(getBranchNames(w.git.getBranches()), contains("master"));
-        w.git.setRemoteUrl("origin", bare.repoPath());
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
 
         w.git.checkout("master");
@@ -1351,7 +1354,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file-branch1", "file branch1 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch1");
         w.git.commit("branch1-commit");
-        ObjectId branch1 = w.head();
         assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1"));
         w.git.push("origin", "branch1"); /* branch1 is now on bare repo */
 
@@ -1360,7 +1362,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("file-branch2", "file branch2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch2");
         w.git.commit("branch2-commit");
-        ObjectId branch2 = w.head();
         assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1", "branch2"));
         assertThat(w.git.getRemoteBranches(), is(empty()));
         w.git.push("origin", "branch2"); /* branch2 is now on bare repo */
@@ -1374,9 +1375,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* Remove branch1 from bare repo using original repo */
         w.cmd("git push " + bare.repoPath() + " :branch1");
 
-        RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(defaultRefSpec);
+        List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
         newArea.cmd("git config fetch.prune false");
@@ -2832,20 +2831,14 @@ public abstract class GitAPITestCase extends TestCase {
         assertFixSubmoduleUrlsThrows();
     }
 
-    private boolean isJava6() {
-        if (System.getProperty("java.version").startsWith("1.6")) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * core.symlinks is set to false by msysgit on Windows and by JGit
-     * 3.3.0 on all platforms.  It is not set on Linux.  Refer to
-     * JENKINS-21168, JENKINS-22376, and JENKINS-22391 for details.
+    /*
+     * core.symlinks is set to false by git for WIndows.
+     * It is not set on Linux.
+     * See also JENKINS-22376 and JENKINS-22391
      */
+    @Issue("JENKINS-21168")
     private void checkSymlinkSetting(WorkingArea area) throws IOException {
-        String expected = SystemUtils.IS_OS_WINDOWS || (area.git instanceof JGitAPIImpl && isJava6()) ? "false" : "";
+        String expected = SystemUtils.IS_OS_WINDOWS ? "false" : "";
         String symlinkValue = null;
         try {
             symlinkValue = w.cmd(true, "git config core.symlinks").trim();
