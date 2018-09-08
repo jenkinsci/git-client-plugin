@@ -465,8 +465,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
-    private Collection<String> getBranchNames(Set<Branch> branches) {
-        return Collections2.transform(branches, GitObject::getName);
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
     }
 
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
@@ -985,10 +985,6 @@ public abstract class GitAPITestCase extends TestCase {
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
-    }
-
-    private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
     }
 
     public void test_fetch() throws Exception {
