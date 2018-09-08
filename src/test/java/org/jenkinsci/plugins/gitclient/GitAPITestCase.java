@@ -472,14 +472,14 @@ public abstract class GitAPITestCase extends TestCase {
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
-            assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
+            assertThat(branchNames, hasItem(name));
         }
     }
 
     private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
-            assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
+            assertThat(branchNames, not(hasItem(name)));
         }
     }
 
