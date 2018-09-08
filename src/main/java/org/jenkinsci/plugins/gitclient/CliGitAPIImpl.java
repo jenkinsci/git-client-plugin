@@ -59,7 +59,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -145,6 +144,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
     private StandardCredentials lfsCredentials;
+    private final String encoding;
 
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
@@ -170,10 +170,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /* Package protected for testing */
     final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
 
-
-    /* Encoding charset for z/OS, only on z/OS USS platform
-    */
-    private final String encoding;
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
             return;
@@ -251,15 +247,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param listener a {@link hudson.model.TaskListener} object.
      * @param environment a {@link hudson.EnvVars} object.
      */
-    protected CliGitAPIImpl(String gitExe, File workspace,
-                         TaskListener listener, EnvVars environment) {
+    protected CliGitAPIImpl(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
         super(workspace);
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-        this.encoding = ZosCheck() ? "IBM1047" : Charset.defaultCharset().toString();
-        
-        launcher = new LocalLauncher(IGitAPI.verbose?listener:TaskListener.NULL);
+        this.encoding = isZos() ? "IBM1047" : Charset.defaultCharset().toString();
+
+        launcher = new LocalLauncher(IGitAPI.verbose ? listener : TaskListener.NULL);
     }
 
     /** {@inheritDoc} */
@@ -2038,10 +2033,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return ssh;
     }
 
-    private static final boolean ZosCheck() {
-            return (File.pathSeparatorChar==':') && System.getProperty("os.name").equals("z/OS");
-    }
-
     private File createUnixGitSSH(File key, String user) throws IOException {
         File ssh = createTempFile("ssh", ".sh");
         File ssh_copy = new File(ssh.toString() + "-copy");
@@ -2092,9 +2083,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env, Integer timeout) throws GitException, InterruptedException {
-        ByteArrayOutputStream fos = new ByteArrayOutputStream();
-        // JENKINS-13356: capture the output of stderr separately
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
 
         EnvVars freshEnv = new EnvVars(env);
         // If we don't have credentials, but the requested URL requires them,
@@ -2115,53 +2103,60 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             int usedTimeout = timeout == null ? TIMEOUT : timeout;
             listener.getLogger().println(" > " + command + TIMEOUT_LOG_PREFIX + usedTimeout);
 
-            int status=0;
-            String result = "";
-            String errorString = "";
-            if(ZosCheck() == true) {
-                /* Another behavior on z/OS required due to the race condition happening during transcoding of charset in
-                EBCDIC code page if CopyThread is used on IBM z/OS Java. For unclear reason, if we rely on Proc class consumption 
-                of stdout and stderr with StreamCopyThread, then first several chars of a stream aren't get transcoded
-                Also, there is a need to pass a EBCDIC codepage conversion charset into input stream
-                */
-                Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                        envs(freshEnv);
-                if (workDir != null) p.pwd(workDir);
-                p.readStdout().readStderr();
-                Proc prc = p.start();
+            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).envs(freshEnv);
 
-                status = prc.joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
-                StringBuffer buf = new StringBuffer();
-                String stdout;
-                String stderr;
-                try(BufferedReader brStdout = new BufferedReader(new InputStreamReader(prc.getStdout(),Charset.forName("IBM1047")))) {
-                    while ((stdout = brStdout.readLine()) != null) {
-                        buf.append(stdout);
+            if (workDir != null) {
+                p.pwd(workDir);
+            }
+
+            int status;
+            String stdout;
+            String stderr;
+
+            if (isZos()) {
+                // Another behavior on z/OS required due to the race condition happening during transcoding of charset in
+                // EBCDIC code page if CopyThread is used on IBM z/OS Java. For unclear reason, if we rely on Proc class consumption
+                // of stdout and stderr with StreamCopyThread, then first several chars of a stream aren't get transcoded.
+                // Also, there is a need to pass a EBCDIC codepage conversion charset into input stream.
+                p.readStdout().readStderr();
+                Proc process = p.start();
+
+                status = process.joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
+
+                StringBuilder stdoutBuilder = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getStdout(), encoding))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stdoutBuilder.append(line);
                     }
                 }
-                result = buf.toString();
-                buf.setLength(0);
-                try(BufferedReader brStdErr = new BufferedReader(new InputStreamReader(prc.getStderr(),Charset.forName("IBM1047")))) {
-                    while ((stderr = brStdErr.readLine()) != null) {
-                        buf.append(stderr);
+                stdout = stdoutBuilder.toString();
+
+                StringBuilder stderrBuilder = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getStderr(), encoding))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        stderrBuilder.append(line);
                     }
                 }
-                errorString = buf.toString();
+                stderr = stderrBuilder.toString();
             } else {
-                // Original behaviour
-                Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray()).
-                        envs(freshEnv).stdout(fos).stderr(err);
-                if (workDir != null) p.pwd(workDir);
+                // JENKINS-13356: capture stdout and stderr separately
+                ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
+                ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
+
+                p.stdout(stdoutStream).stderr(stderrStream);
                 status = p.start().joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
 
-                result = fos.toString(Charset.defaultCharset().toString());
-                errorString = err.toString(Charset.defaultCharset().toString());
-            }
-            if (status != 0) {
-                throw new GitException("Command \""+command+"\" returned status code " + status + ":\nstdout: " + result + "\nstderr: "+ errorString);
+                stdout = stdoutStream.toString(encoding);
+                stderr = stderrStream.toString(encoding);
             }
 
-            return result;
+            if (status != 0) {
+                throw new GitException("Command \"" + command + "\" returned status code " + status + ":\nstdout: " + stdout + "\nstderr: "+ stderr);
+            }
+
+            return stdout;
         } catch (GitException | InterruptedException e) {
             throw e;
         } catch (IOException e) {
@@ -2169,7 +2164,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (Throwable t) {
             throw new GitException("Error performing git command", t);
         }
-
     }
 
     /**
@@ -3150,7 +3144,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
-        return File.pathSeparatorChar==';';
+        return File.pathSeparatorChar == ';';
+    }
+
+    private boolean isZos() {
+        return File.pathSeparatorChar == ':' && System.getProperty("os.name").equals("z/OS");
     }
 
     /* Return true if setsid program exists */
