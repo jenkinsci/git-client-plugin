@@ -125,7 +125,7 @@ public class MergeCommandTest {
         assertFalse("Change README commit on master branch unexpectedly", git.revList("master").contains(commit1Branch2));
 
         // Commit a second change to master branch
-        git.checkout("master");
+        git.checkout().ref("master").execute();
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Master Branch README " + randomChar);
             writer.println("");
@@ -147,9 +147,9 @@ public class MergeCommandTest {
     private void createConflictingCommit() throws Exception {
         assertNotNull(git);
         // Create branch-conflict
-        git.checkout("master");
+        git.checkout().ref("master").execute();
         git.branch("branch-conflict");
-        git.checkout("branch-conflict");
+        git.checkout().ref("branch-conflict").execute();
         try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
             writer.println("# branch-conflict README with conflicting change");
         }
@@ -159,7 +159,7 @@ public class MergeCommandTest {
         assertFalse("branch branch-conflict on master branch", git.revList("master").contains(commitConflict));
         assertTrue("commit commitConflict missing on branch branch-conflict", git.revList("branch-conflict").contains(commitConflict));
         assertTrue("Conflicting README missing on branch branch-conflict", readmeOne.exists());
-        git.checkout("master");
+        git.checkout().ref("master").execute();
     }
 
     @Parameterized.Parameters(name = "{0}")
