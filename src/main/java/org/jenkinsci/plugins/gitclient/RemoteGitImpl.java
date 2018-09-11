@@ -268,7 +268,9 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
-        proxy.commit(message, author, committer);
+        proxy.setAuthor(author);
+        proxy.setCommitter(committer);
+        proxy.commit(message);
     }
 
     /**

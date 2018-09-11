@@ -250,7 +250,15 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.commit(message, author, committer); else  jgit.commit(message, author, committer);
+        if (Git.USE_CLI) {
+            super.setAuthor(author);
+            super.setCommitter(committer);
+            super.commit(message);
+        } else {
+            jgit.setAuthor(author);
+            jgit.setCommitter(committer);
+            jgit.commit(message);
+        }
     }
 
     /** {@inheritDoc} */
