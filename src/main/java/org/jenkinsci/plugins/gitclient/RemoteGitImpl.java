@@ -434,7 +434,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void merge(ObjectId rev) throws GitException, InterruptedException {
-        proxy.merge(rev);
+        proxy.merge().setRevisionToMerge(rev).execute();
     }
 
     /** {@inheritDoc} */
