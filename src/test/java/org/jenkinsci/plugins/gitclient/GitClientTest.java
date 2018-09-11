@@ -1208,7 +1208,7 @@ public class GitClientTest {
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
         assertSubmoduleStatus(gitClient, false, "firewall", "ntp", "sshkeys");
         /* Perform the update, then rename the module */
-        gitClient.submoduleUpdate(true);
+        gitClient.submoduleUpdate().recursive(true).execute();
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
@@ -1233,7 +1233,7 @@ public class GitClientTest {
         gitCmd.assertOutputContains("^$"); // Empty string
         gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
         gitCmd.assertOutputContains(".*modules/ntp.*modules/ntp-moved.*");
-        gitClient.submoduleUpdate(true);
+        gitClient.submoduleUpdate().recursive(true).execute();
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
@@ -1320,16 +1320,16 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().execute();
                 break;
             case 1:
-                gitClient.submoduleUpdate(true);
+                gitClient.submoduleUpdate().recursive(true).execute();
                 break;
             case 2:
-                gitClient.submoduleUpdate(false);
+                gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate(false, false);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate(true, false);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
                 break;
         }
     }
@@ -1352,30 +1352,30 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().remoteTracking(remoteTracking).execute();
                 break;
             case 1:
-                gitClient.submoduleUpdate(true);
+                gitClient.submoduleUpdate().recursive(true).execute();
                 break;
             case 2:
-                gitClient.submoduleUpdate(false);
+                gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate(true, remote + "/" + branch);
+                gitClient.submoduleUpdate().recursive(true).ref(remote + "/" + branch).execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate(false, remote + "/" + branch);
+                gitClient.submoduleUpdate().recursive(false).ref(remote + "/" + branch).execute();
                 break;
             case 5:
-                gitClient.submoduleUpdate(false, false);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
                 break;
             case 6:
-                gitClient.submoduleUpdate(true, false);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
                 break;
             case 7:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate(false, remoteTracking);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(remoteTracking).execute();
                 break;
             case 8:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate(true, remoteTracking);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(remoteTracking).execute();
                 break;
         }
     }
@@ -1592,7 +1592,7 @@ public class GitClientTest {
         repoHasSubmoduleClient.add(".");
         repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
         repoHasSubmoduleClient.submoduleInit();
-        repoHasSubmoduleClient.submoduleUpdate(false);
+        repoHasSubmoduleClient.submoduleUpdate().recursive(false).execute();
         assertSubmoduleStatus(repoHasSubmoduleClient, true, moduleDirBaseName);
 
         // Clone repoHasSubmodule to new repository with submodule

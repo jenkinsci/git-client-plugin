@@ -167,14 +167,14 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /*
-    public void submoduleUpdate(boolean recursive) throws GitException {
-        if (Git.USE_CLI) super.submoduleUpdate(recursive); else  jgit.submoduleUpdate(recursive);
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).execute(); else  jgit.submoduleUpdate().recursive(recursive).execute();
     }
     */
 
     /*
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
-        if (Git.USE_CLI) super.submoduleUpdate(recursive, String reference); else  jgit.submoduleUpdate(recursive, String reference);
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).ref(reference).execute(); else  jgit.submoduleUpdate().recursive(recursive).ref(reference).execute();
     }
     */
 

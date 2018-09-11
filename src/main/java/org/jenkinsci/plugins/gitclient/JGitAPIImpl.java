@@ -2240,7 +2240,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     update.call();
                     if (recursive) {
                         for (JGitAPIImpl sub : submodules()) {
-                            sub.submoduleUpdate(recursive);
+                            sub.submoduleUpdate().recursive(recursive).execute();
                         }
                     }
                 } catch (IOException | GitAPIException e) {

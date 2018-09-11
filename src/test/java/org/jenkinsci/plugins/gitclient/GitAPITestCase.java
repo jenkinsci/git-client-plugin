@@ -2416,8 +2416,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit1");
         w.igit().submoduleClean(false);
         w.igit().submoduleClean(true);
-        w.igit().submoduleUpdate(false);
-        w.igit().submoduleUpdate(true);
+        w.igit().submoduleUpdate().recursive(false).execute();
+        w.igit().submoduleUpdate().recursive(true).execute();
         w.igit().submoduleSync();
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
     }
@@ -2446,11 +2446,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
         assertTrue("submodule1 file not found after add", w.file(readme1).exists());
 
-        w.igit().submoduleUpdate(false);
+        w.igit().submoduleUpdate().recursive(false).execute();
         assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
         assertTrue("submodule1 file not found after add", w.file(readme1).exists());
 
-        w.igit().submoduleUpdate(true);
+        w.igit().submoduleUpdate().recursive(true).execute();
         assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
         assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
 
@@ -2499,11 +2499,11 @@ public abstract class GitAPITestCase extends TestCase {
 
         // Make sure that the new file doesn't exist in the repo with remoteTracking
         String subFile = subModDir + File.separator + "file2";
-        w.git.submoduleUpdate(true, false);
+        w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
         assertFalse("file2 exists and should not because we didn't update to the tip of the branch (master).", w.exists(subFile));
 
         // Run submodule update with remote tracking
-        w.git.submoduleUpdate(true, true);
+        w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
         assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
         assertFixSubmoduleUrlsThrows();
     }
