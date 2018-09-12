@@ -254,11 +254,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
-
-            public String ref;
-            public String branch;
-            public boolean deleteBranch;
-            public List<String> sparseCheckoutPaths = Collections.emptyList();
+            private String ref;
+            private String branch;
+            private boolean deleteBranch;
+            private List<String> sparseCheckoutPaths = Collections.emptyList();
 
             @Override
             public CheckoutCommand ref(String ref) {
@@ -549,10 +548,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public org.jenkinsci.plugins.gitclient.FetchCommand fetch_() {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
-            public URIish url;
-            public List<RefSpec> refspecs;
+            private URIish url;
+            private List<RefSpec> refspecs;
             private boolean shouldPrune = false;
-            public boolean tags = true;
+            private boolean tags = true;
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -1067,11 +1066,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
-            Repository repo = getRepository();
-            ObjectReader or = repo.newObjectReader();
-            RevWalk walk = new RevWalk(or);
-            Writer out;
-            boolean hasIncludedRev = false;
+            private Repository repo = getRepository();
+            private ObjectReader or = repo.newObjectReader();
+            private RevWalk walk = new RevWalk(or);
+            private Writer out;
+            private boolean hasIncludedRev = false;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1313,13 +1312,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
 
         return new CloneCommand() {
-            String url;
-            String remote = Constants.DEFAULT_REMOTE_NAME;
-            String reference;
-            Integer timeout;
-            boolean shared;
-            boolean tags = true;
-            List<RefSpec> refspecs;
+            private String url;
+            private String remote = Constants.DEFAULT_REMOTE_NAME;
+            private String reference;
+            private Integer timeout;
+            private boolean shared;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
 
             @Override
             public CloneCommand url(String url) {
@@ -1495,13 +1494,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public MergeCommand merge() {
         return new MergeCommand() {
-
-            ObjectId rev;
-            MergeStrategy strategy;
-            FastForwardMode fastForwardMode;
-            boolean squash;
-            boolean commit = true;
-            String comment;
+            private ObjectId rev;
+            private MergeStrategy strategy;
+            private FastForwardMode fastForwardMode;
+            private boolean squash;
+            private boolean commit = true;
+            private String comment;
 
             @Override
             public MergeCommand setRevisionToMerge(ObjectId rev) {
@@ -1592,9 +1590,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public InitCommand init_() {
         return new InitCommand() {
-
-            public String workspace;
-            public boolean bare;
+            private String workspace;
+            private boolean bare;
 
             @Override
             public InitCommand workspace(String workspace) {
@@ -1814,10 +1811,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public PushCommand push() {
         return new PushCommand() {
-            public URIish remote;
-            public String refspec;
-            public boolean force;
-            public boolean tags;
+            private URIish remote;
+            private String refspec;
+            private boolean force;
+            private boolean tags;
 
             @Override
             public PushCommand to(URIish remote) {
@@ -1939,11 +1936,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public RevListCommand revList_()
     {
         return new RevListCommand() {
-            public boolean all;
-            public boolean nowalk;
-            public boolean firstParent;
-            public String refspec;
-            public List<ObjectId> out;
+            private boolean all;
+            private boolean nowalk;
+            private boolean firstParent;
+            private String refspec;
+            private List<ObjectId> out;
 
             @Override
             public RevListCommand all() {
@@ -2155,9 +2152,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand submoduleUpdate() {
         return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
-            boolean recursive      = false;
-            boolean remoteTracking = false;
-            String  ref            = null;
+            private boolean recursive      = false;
+            private boolean remoteTracking = false;
+            private String  ref            = null;
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand recursive(boolean recursive) {

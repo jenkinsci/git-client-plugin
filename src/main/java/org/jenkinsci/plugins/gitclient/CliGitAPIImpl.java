@@ -333,49 +333,57 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public FetchCommand fetch_() {
         return new FetchCommand() {
-            public URIish url;
-            public List<RefSpec> refspecs;
-            public boolean prune;
-            public boolean shallow;
-            public Integer timeout;
-            public boolean tags = true;
-            public Integer depth = 1;
+            private URIish url;
+            private List<RefSpec> refspecs;
+            private boolean prune;
+            private boolean shallow;
+            private Integer timeout;
+            private boolean tags = true;
+            private Integer depth = 1;
 
+            @Override
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
                 this.refspecs = refspecs;
                 return this;
             }
 
+            @Override
             public FetchCommand tags(boolean tags) {
                 this.tags = tags;
                 return this;
             }
 
+            @Override
             public FetchCommand prune() {
                 return prune(true);
             }
 
+            @Override
             public FetchCommand prune(boolean prune) {
                 this.prune = prune;
                 return this;
             }
 
+            @Override
             public FetchCommand shallow(boolean shallow) {
                 this.shallow = shallow;
                 return this;
             }
 
+            @Override
             public FetchCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
             }
 
+            @Override
             public FetchCommand depth(Integer depth) {
                 this.depth = depth;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 listener.getLogger().println(
                         "Fetching upstream changes from " + url);
@@ -489,25 +497,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public CloneCommand clone_() {
         return new CloneCommand() {
-            String url;
-            String origin = "origin";
-            String reference;
-            boolean shallow,shared;
-            Integer timeout;
-            boolean tags = true;
-            List<RefSpec> refspecs;
-            Integer depth = 1;
+            private String url;
+            private String origin = "origin";
+            private String reference;
+            private boolean shallow,shared;
+            private Integer timeout;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
+            private Integer depth = 1;
 
+            @Override
             public CloneCommand url(String url) {
                 this.url = url;
                 return this;
             }
 
+            @Override
             public CloneCommand repositoryName(String name) {
                 this.origin = name;
                 return this;
             }
 
+            @Override
             public CloneCommand shared() {
                 return shared(true);
             }
@@ -518,6 +529,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public CloneCommand shallow() {
                 return shallow(true);
             }
@@ -528,36 +540,43 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public CloneCommand noCheckout() {
                 //this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the --no-checkout option is always satisfied
                 return this;
             }
 
+            @Override
             public CloneCommand tags(boolean tags) {
                 this.tags = tags;
                 return this;
             }
 
+            @Override
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
             }
 
+            @Override
             public CloneCommand timeout(Integer timeout) {
             	this.timeout = timeout;
             	return this;
             }
 
+            @Override
             public CloneCommand depth(Integer depth) {
                 this.depth = depth;
                 return this;
             }
 
+            @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
                 this.refspecs = new ArrayList<>(refspecs);
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
 
                 URIish urIish = null;
@@ -647,43 +666,50 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public MergeCommand merge() {
         return new MergeCommand() {
-            public ObjectId rev;
-            public String comment;
-            public String strategy;
-            public String fastForwardMode;
-            public boolean squash;
-            public boolean commit = true;
+            private ObjectId rev;
+            private String comment;
+            private String strategy;
+            private String fastForwardMode;
+            private boolean squash;
+            private boolean commit = true;
 
+            @Override
             public MergeCommand setRevisionToMerge(ObjectId rev) {
                 this.rev = rev;
                 return this;
             }
 
+            @Override
             public MergeCommand setStrategy(MergeCommand.Strategy strategy) {
                 this.strategy = strategy.toString();
                 return this;
             }
 
+            @Override
             public MergeCommand setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode fastForwardMode) {
                 this.fastForwardMode = fastForwardMode.toString();
                 return this;
             }
 
+            @Override
             public MergeCommand setSquash(boolean squash) {
                 this.squash = squash;
                 return this;
             }
 
+            @Override
             public MergeCommand setMessage(String comment) {
                 this.comment = comment;
                 return this;
             }
 
+            @Override
             public MergeCommand setCommit(boolean commit) {
                 this.commit = commit;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("merge");
@@ -727,11 +753,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new RebaseCommand() {
             private String upstream;
 
+            @Override
             public RebaseCommand setUpstream(String upstream) {
                 this.upstream = upstream;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 try {
                     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -754,19 +782,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public InitCommand init_() {
         return new InitCommand() {
 
-            public String workspace;
-            public boolean bare;
+            private String workspace;
+            private boolean bare;
 
+            @Override
             public InitCommand workspace(String workspace) {
                 this.workspace = workspace;
                 return this;
             }
 
+            @Override
             public InitCommand bare(boolean bare) {
                 this.bare = bare;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 /* Match JGit - create directory if it does not exist */
                 /* Multi-branch pipeline assumes init() creates directory */
@@ -942,10 +973,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
             public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(76,4,4)%s%n%n%b";
-            final List<String> revs = new ArrayList<>();
+            private final List<String> revs = new ArrayList<>();
 
-            Integer n = null;
-            Writer out = null;
+            private Integer n = null;
+            private Writer out = null;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1068,56 +1099,65 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public SubmoduleUpdateCommand submoduleUpdate() {
         return new SubmoduleUpdateCommand() {
-            boolean recursive                      = false;
-            boolean remoteTracking                 = false;
-            boolean parentCredentials              = false;
-            boolean shallow                        = false;
-            String  ref                            = null;
-            Map<String, String> submodBranch   = new HashMap<>();
-            public Integer timeout;
-            Integer depth = 1;
-            Integer threads = 1;
+            private boolean recursive                      = false;
+            private boolean remoteTracking                 = false;
+            private boolean parentCredentials              = false;
+            private boolean shallow                        = false;
+            private String  ref                            = null;
+            private Map<String, String> submodBranch   = new HashMap<>();
+            private Integer timeout;
+            private Integer depth = 1;
+            private Integer threads = 1;
 
+            @Override
             public SubmoduleUpdateCommand recursive(boolean recursive) {
                 this.recursive = recursive;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand remoteTracking(boolean remoteTracking) {
                 this.remoteTracking = remoteTracking;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand parentCredentials(boolean parentCredentials) {
                 this.parentCredentials = parentCredentials;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand ref(String ref) {
                 this.ref = ref;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
                 this.submodBranch.put(submodule, branchname);
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand timeout(Integer timeout) {
                 this.timeout = timeout;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand shallow(boolean shallow) {
                 this.shallow = shallow;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand depth(Integer depth) {
                 this.depth = depth;
                 return this;
             }
 
+            @Override
             public SubmoduleUpdateCommand threads(Integer threads) {
                 this.threads = threads;
                 return this;
@@ -1127,6 +1167,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * @throws GitException if executing the Git command fails
              * @throws InterruptedException if called methods throw same exception
              */
+            @Override
             public void execute() throws GitException, InterruptedException {
                 // Initialize the submodules to ensure that the git config
                 // contains the URLs from .gitmodules.
@@ -2173,22 +2214,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public PushCommand push() {
         return new PushCommand() {
-            public URIish remote;
-            public String refspec;
-            public boolean force;
-            public boolean tags;
-            public Integer timeout;
+            private URIish remote;
+            private String refspec;
+            private boolean force;
+            private boolean tags;
+            private Integer timeout;
 
+            @Override
             public PushCommand to(URIish remote) {
                 this.remote = remote;
                 return this;
             }
 
+            @Override
             public PushCommand ref(String refspec) {
                 this.refspec = refspec;
                 return this;
             }
 
+            @Override
             public PushCommand force() {
                 return force(true);
             }
@@ -2199,16 +2243,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public PushCommand tags(boolean tags) {
                 this.tags = tags;
                 return this;
             }
 
+            @Override
             public PushCommand timeout(Integer timeout) {
                 this.timeout = timeout;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("push", remote.toPrivateASCIIString());
@@ -2347,39 +2394,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
 
-            public String ref;
-            public String branch;
-            public boolean deleteBranch;
-            public List<String> sparseCheckoutPaths = Collections.emptyList();
-            public Integer timeout;
-            public String lfsRemote;
-            public StandardCredentials lfsCredentials;
+            private String ref;
+            private String branch;
+            private boolean deleteBranch;
+            private List<String> sparseCheckoutPaths = Collections.emptyList();
+            private Integer timeout;
+            private String lfsRemote;
+            private StandardCredentials lfsCredentials;
 
+            @Override
             public CheckoutCommand ref(String ref) {
                 this.ref = ref;
                 return this;
             }
 
+            @Override
             public CheckoutCommand branch(String branch) {
                 this.branch = branch;
                 return this;
             }
 
+            @Override
             public CheckoutCommand deleteBranchIfExist(boolean deleteBranch) {
                 this.deleteBranch = deleteBranch;
                 return this;
             }
 
+            @Override
             public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
                 this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
                 return this;
             }
 
+            @Override
             public CheckoutCommand timeout(Integer timeout) {
                 this.timeout = timeout;
                 return this;
             }
 
+            @Override
             public CheckoutCommand lfsRemote(String lfsRemote) {
                 this.lfsRemote = lfsRemote;
                 return this;
@@ -2403,6 +2456,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new InterruptedException(interruptMessage);
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 /* File.lastModified() limited by file system time, several
                  * popular Linux file systems only have 1 second granularity.
@@ -2600,12 +2654,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     public RevListCommand revList_() {
         return new RevListCommand() {
-            public boolean all;
-            public boolean nowalk;
-            public boolean firstParent;
-            public String refspec;
-            public List<ObjectId> out;
+            private boolean all;
+            private boolean nowalk;
+            private boolean firstParent;
+            private String refspec;
+            private List<ObjectId> out;
 
+            @Override
             public RevListCommand all() {
                 return all(true);
             }
@@ -2615,6 +2670,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 this.all = all;
                 return this;
             }
+
+            @Override
             public RevListCommand nowalk(boolean nowalk) {
                 // --no-walk wasn't introduced until v1.5.3
                 if (isAtLeastVersion(1, 5, 3, 0)) {
@@ -2623,6 +2680,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public RevListCommand firstParent() {
                 return firstParent(true);
             }
@@ -2633,16 +2691,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Override
             public RevListCommand to(List<ObjectId> revs){
                 this.out = revs;
                 return this;
             }
 
+            @Override
             public RevListCommand reference(String reference){
                 this.refspec = reference;
                 return this;
             }
 
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
 
