@@ -1143,7 +1143,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Map<String, String> submodBranch   = new HashMap<>();
             private Integer timeout;
             private Integer depth = 1;
-            private Integer threads = 1;
+            private int threads = 1;
 
             @Override
             public SubmoduleUpdateCommand recursive(boolean recursive) {
@@ -1194,7 +1194,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public SubmoduleUpdateCommand threads(Integer threads) {
+            public SubmoduleUpdateCommand threads(int threads) {
                 this.threads = threads;
                 return this;
             }
