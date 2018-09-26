@@ -252,7 +252,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-        this.encoding = isZos() ? "IBM1047" : Charset.defaultCharset().toString();
+        this.encoding = isZos() && System.getProperty("ibm.system.encoding")!=null ? 
+        Charset.forName(System.getProperty("ibm.system.encoding")).toString() : Charset.defaultCharset().toString();
 
         launcher = new LocalLauncher(IGitAPI.verbose ? listener : TaskListener.NULL);
     }
