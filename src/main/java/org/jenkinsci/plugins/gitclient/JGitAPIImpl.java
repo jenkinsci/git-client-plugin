@@ -21,7 +21,6 @@ import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
-import hudson.util.IOUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,6 +46,7 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
