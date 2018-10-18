@@ -23,3 +23,6 @@ tags
 # emacs backup files
 *~
 /nbproject/
+
+# Mac OSX
+.DS_Store
