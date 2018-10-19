@@ -977,7 +977,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new ChangelogCommand() {
 
             /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
-            public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(0,4,4)%s%n%n%b";
+            public static final String RAW = "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(0,4,4)%B%n%n";
             private final List<String> revs = new ArrayList<>();
 
             private Integer n = null;
