@@ -30,8 +30,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -256,11 +254,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public CheckoutCommand checkout() {
         return new CheckoutCommand() {
-
-            public String ref;
-            public String branch;
-            public boolean deleteBranch;
-            public List<String> sparseCheckoutPaths = Collections.emptyList();
+            private String ref;
+            private String branch;
+            private boolean deleteBranch;
+            private List<String> sparseCheckoutPaths = Collections.emptyList();
 
             @Override
             public CheckoutCommand ref(String ref) {
@@ -536,7 +533,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public boolean tagExists(String tagName) throws GitException {
         try (Repository repo = getRepository()) {
-            Ref tag =  repo.getRefDatabase().getRef(R_TAGS + tagName);
+            Ref tag =  repo.exactRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -551,12 +548,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public org.jenkinsci.plugins.gitclient.FetchCommand fetch_() {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
-            public URIish url;
-            public List<RefSpec> refspecs;
-            // JGit 3.3.0 thru 3.6.0 prune more branches than expected
-            // Refer to GitAPITestCase.test_fetch_with_prune()
+            private URIish url;
+            private List<RefSpec> refspecs;
             private boolean shouldPrune = false;
-            public boolean tags = true;
+            private boolean tags = true;
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -613,31 +608,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             if (rs != null)
                                 allRefSpecs.add(rs);
 
-                    if (shouldPrune) {
-                        // since prune is broken in JGit, we go the trivial way:
-                        // delete all refs matching the right side of the refspecs
-                        // then fetch and let git recreate them.
-                        List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call();
-
-                        List<String> toDelete = new ArrayList<>(refs.size());
-
-                        for (ListIterator<Ref> it = refs.listIterator(); it.hasNext(); ) {
-                            Ref branchRef = it.next();
-                            if (!branchRef.isSymbolic()) { // Don't delete HEAD and other symbolic refs
-                                for (RefSpec rs : allRefSpecs) {
-                                    if (rs.matchDestination(branchRef)) {
-                                        toDelete.add(branchRef.getName());
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (!toDelete.isEmpty()) {
-                            // we need force = true because usually not all remote branches will be merged into the current branch.
-                            git.branchDelete().setForce(true).setBranchNames(toDelete.toArray(new String[toDelete.size()])).call();
-                        }
-                    }
-
                     FetchCommand fetch = git.fetch();
                     fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
                     /* JGit 4.5 required a work around that the tags refspec had to be passed in addition to setting
@@ -652,7 +622,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     fetch.setCredentialsProvider(getProvider());
 
                     fetch.setRefSpecs(allRefSpecs);
-                    // fetch.setRemoveDeletedRefs(shouldPrune);
+                    fetch.setRemoveDeletedRefs(shouldPrune);
 
                     fetch.call();
                 } catch (GitAPIException e) {
@@ -708,7 +678,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    switch (refUpdate.forceUpdate()) {
 	    case NOT_ATTEMPTED:
 	    case LOCK_FAILURE:
@@ -728,7 +698,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public boolean refExists(String refName) throws GitException, InterruptedException {
 	refName = refName.replace(' ', '_');
 	try (Repository repo = getRepository()) {
-	    Ref ref = repo.getRefDatabase().getRef(refName);
+	    Ref ref = repo.findRef(refName);
 	    return ref != null;
 	} catch (IOException e) {
 	    throw new GitException("Error checking ref " + refName, e);
@@ -742,7 +712,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	try (Repository repo = getRepository()) {
 	    RefUpdate refUpdate = repo.updateRef(refName);
 	    // Required, even though this is a forced delete.
-	    refUpdate.setNewObjectId(repo.getRef(Constants.HEAD).getObjectId());
+	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
 	    refUpdate.setForceUpdate(true);
 	    switch (refUpdate.delete()) {
 	    case NOT_ATTEMPTED:
@@ -767,10 +737,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 	    refPrefix = refPrefix.replace(' ', '_');
 	}
 	try (Repository repo = getRepository()) {
-	    Map<String, Ref> refList = repo.getRefDatabase().getRefs(refPrefix);
-	    // The key set for refList will have refPrefix removed, so to recover it we just grab the full name.
+	    List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
 	    Set<String> refs = new HashSet<>(refList.size());
-	    for (Ref ref : refList.values()) {
+	    for (Ref ref : refList) {
 		refs.add(ref.getName());
 	    }
 	    return refs;
@@ -1097,11 +1066,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
-            Repository repo = getRepository();
-            ObjectReader or = repo.newObjectReader();
-            RevWalk walk = new RevWalk(or);
-            Writer out;
-            boolean hasIncludedRev = false;
+            private Repository repo = getRepository();
+            private ObjectReader or = repo.newObjectReader();
+            private RevWalk walk = new RevWalk(or);
+            private Writer out;
+            private boolean hasIncludedRev = false;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1343,13 +1312,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public CloneCommand clone_() {
 
         return new CloneCommand() {
-            String url;
-            String remote = Constants.DEFAULT_REMOTE_NAME;
-            String reference;
-            Integer timeout;
-            boolean shared;
-            boolean tags = true;
-            List<RefSpec> refspecs;
+            private String url;
+            private String remote = Constants.DEFAULT_REMOTE_NAME;
+            private String reference;
+            private Integer timeout;
+            private boolean shared;
+            private boolean tags = true;
+            private List<RefSpec> refspecs;
 
             @Override
             public CloneCommand url(String url) {
@@ -1525,13 +1494,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public MergeCommand merge() {
         return new MergeCommand() {
-
-            ObjectId rev;
-            MergeStrategy strategy;
-            FastForwardMode fastForwardMode;
-            boolean squash;
-            boolean commit = true;
-            String comment;
+            private ObjectId rev;
+            private MergeStrategy strategy;
+            private FastForwardMode fastForwardMode;
+            private boolean squash;
+            private boolean commit = true;
+            private String comment;
 
             @Override
             public MergeCommand setRevisionToMerge(ObjectId rev) {
@@ -1622,9 +1590,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public InitCommand init_() {
         return new InitCommand() {
-
-            public String workspace;
-            public boolean bare;
+            private String workspace;
+            private boolean bare;
 
             @Override
             public InitCommand workspace(String workspace) {
@@ -1755,8 +1722,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             Set<String> tags = new HashSet<>();
             FileNameMatcher matcher = new FileNameMatcher(tagPattern, '/');
-            Map<String, Ref> refList = repo.getRefDatabase().getRefs(R_TAGS);
-            for (Ref ref : refList.values()) {
+            List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(R_TAGS);
+            for (Ref ref : refList) {
                 String name = ref.getName().substring(R_TAGS.length());
                 matcher.reset();
                 matcher.append(name);
@@ -1844,10 +1811,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public PushCommand push() {
         return new PushCommand() {
-            public URIish remote;
-            public String refspec;
-            public boolean force;
-            public boolean tags;
+            private URIish remote;
+            private String refspec;
+            private boolean force;
+            private boolean tags;
 
             @Override
             public PushCommand to(URIish remote) {
@@ -1937,7 +1904,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         switch (spec) {
                             default:
                             case 0: //for the source ref. we use the repository to determine what should be pushed
-                                Ref ref = repository.getRef(specs[spec]);
+                                Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
                                     throw new IOException(String.format("Ref %s not found.", specs[spec]));
                                 }
@@ -1969,11 +1936,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public RevListCommand revList_()
     {
         return new RevListCommand() {
-            public boolean all;
-            public boolean nowalk;
-            public boolean firstParent;
-            public String refspec;
-            public List<ObjectId> out;
+            private boolean all;
+            private boolean nowalk;
+            private boolean firstParent;
+            private String refspec;
+            private List<ObjectId> out;
 
             @Override
             public RevListCommand all() {
@@ -2178,16 +2145,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * submoduleUpdate.
+     * Update submodules.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     @Override
     public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand submoduleUpdate() {
         return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
-            boolean recursive      = false;
-            boolean remoteTracking = false;
-            String  ref            = null;
+            private boolean recursive      = false;
+            private boolean remoteTracking = false;
+            private String  ref            = null;
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand recursive(boolean recursive) {
@@ -2216,6 +2183,33 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand timeout(Integer timeout) {
             	// noop in jgit
+                return this;
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
+                if (shallow) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                }
+                return this;
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
+                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                return this;
+            }
+
+            @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(Integer threads) {
+                // TODO: I have no idea if JGit can update submodules in parallel
+                // It might work, or it might blow up horribly. This probably depends on
+                // whether JGit relies on any global/shared state. Since I have no
+                // experience with JGit, I'm leaving this unimplemented for the time
+                // being. But if some brave soul wants to test this, feel free to provide
+                // an implementation similar to the one in the CliGitAPIImpl class using
+                // an ExecutorService.
+                listener.getLogger().println("[WARNING] JGit doesn't support updating submodules in parallel. This flag is ignored");
                 return this;
             }
 

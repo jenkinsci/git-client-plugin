@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.commons.lang.SystemUtils;
 import org.jenkinsci.plugins.gitclient.JGitApacheTool;
 import org.jenkinsci.plugins.gitclient.JGitTool;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -59,8 +60,8 @@ public class GitToolTest {
     @Test
     public void testGetInstallationFromDescriptor() {
         GitTool.DescriptorImpl descriptor = gitTool.getDescriptor();
-        assertEquals(null, descriptor.getInstallation(""));
-        assertEquals(null, descriptor.getInstallation("not-a-valid-git-install"));
+        assertNull(descriptor.getInstallation(""));
+        assertNull(descriptor.getInstallation("not-a-valid-git-install"));
     }
 
     @Test
@@ -69,10 +70,7 @@ public class GitToolTest {
         GitTool.DescriptorImpl jgitDescriptor = (new JGitTool()).getDescriptor();
         GitTool.DescriptorImpl jgitApacheDescriptor = (new JGitApacheTool()).getDescriptor();
         List<ToolDescriptor<? extends GitTool>> toolDescriptors = gitDescriptor.getApplicableDescriptors();
-        assertTrue("git tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(gitDescriptor));
-        assertTrue("jgit tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitDescriptor));
-        assertTrue("jgitapache tool descriptor not found in " + toolDescriptors, toolDescriptors.contains(jgitApacheDescriptor));
-        assertEquals("Wrong tool descriptor count in " + toolDescriptors, 3, toolDescriptors.size());
+        assertThat(toolDescriptors, containsInAnyOrder(gitDescriptor, jgitDescriptor, jgitApacheDescriptor));
     }
 
 }

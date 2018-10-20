@@ -11,9 +11,6 @@ public class LogHandlerTest {
 
     private LogHandler handler;
 
-    public LogHandlerTest() {
-    }
-
     @Before
     public void setUp() {
         handler = new LogHandler();
