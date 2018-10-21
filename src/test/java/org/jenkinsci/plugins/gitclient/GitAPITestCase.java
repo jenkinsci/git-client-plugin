@@ -465,21 +465,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
-    private Collection<String> getBranchNames(Set<Branch> branches) {
-        return Collections2.transform(branches, GitObject::getName);
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
     }
 
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
-            assertTrue(name + " branch not found in " + branchNames, branchNames.contains(name));
+            assertThat(branchNames, hasItem(name));
         }
     }
 
     private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
-            assertFalse(name + " branch found in " + branchNames, branchNames.contains(name));
+            assertThat(branchNames, not(hasItem(name)));
         }
     }
 
@@ -987,10 +987,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
-    private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
-    }
-
     public void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
         w.init();
@@ -1327,13 +1323,13 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * JGit 3.3.0 thru 3.6.0 "prune during fetch" prunes more remote
-     * branches than command line git prunes during fetch.  This test
-     * should be used to evaluate future versions of JGit to see if
-     * pruning behavior more closely emulates command line git.
-     *
-     * This has been fixed using a workaround.
+     * JGit 3.3.0 thru 4.5.4 "prune during fetch" prunes more remote
+     * branches than command line git prunes during fetch.  JGit 5.0.2
+     * fixes the problem.
+     * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533549
+     * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533806
      */
+    @Issue("JENKINS-26197")
     public void test_fetch_with_prune() throws Exception {
         WorkingArea bare = new WorkingArea();
         bare.init(true);
