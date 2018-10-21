@@ -1815,6 +1815,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private boolean force;
             private boolean tags;
+            private boolean dryRun;
 
             @Override
             public PushCommand to(URIish remote) {
@@ -1852,6 +1853,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public PushCommand dryRun(boolean dryRun) {
+                this.dryRun = dryRun;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
                 try (Repository repo = getRepository()) {
                     RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(repo)) : Transport.REFSPEC_PUSH_ALL;
@@ -1862,7 +1869,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     org.eclipse.jgit.api.PushCommand pc = g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setCredentialsProvider(getProvider())
-                            .setForce(force);
+                            .setForce(force)
+                            .setDryRun(dryRun);
                     if(tags) {
                         pc.setPushTags();
                     }

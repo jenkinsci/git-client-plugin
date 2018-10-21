@@ -2306,6 +2306,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean force;
             private boolean tags;
             private Integer timeout;
+            private boolean dryRun;
 
             @Override
             public PushCommand to(URIish remote) {
@@ -2343,6 +2344,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public PushCommand dryRun(boolean dryRun) {
+                this.dryRun = dryRun;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("push", remote.toPrivateASCIIString());
@@ -2357,6 +2364,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (tags) {
                     args.add("--tags");
+                }
+
+                if (dryRun) {
+                    args.add("--dry-run");
                 }
 
                 if (!isAtLeastVersion(1,9,0,0) && isShallowRepository()) {

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Random;
 import static java.util.stream.Collectors.toList;
 
-import com.google.common.collect.Lists;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -66,6 +65,7 @@ public class PushTest {
     private File workingRepo;
     protected GitClient workingGitClient;
     private ObjectId workingCommit;
+    private boolean isDryRun;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -98,6 +98,17 @@ public class PushTest {
     }
 
     @Test
+    public void pushDryRun() throws IOException, GitException, InterruptedException, URISyntaxException {
+        checkoutBranchAndCommitFile();
+
+        if (expectedException != null) {
+            thrown.expect(expectedException);
+        }
+        isDryRun = true;
+        workingGitClient.push().to(bareURI).ref(refSpec).dryRun(true).execute();
+    }
+
+    @Test
     public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException, URISyntaxException {
         checkoutOldBranchAndCommitFile();
 
@@ -110,26 +121,26 @@ public class PushTest {
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
     public static Collection pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
-        final List<String> implementations = Lists.newArrayList("git", "jgit");
-        final List<String> goodRefSpecs = Lists.newArrayList(
-            "{0}",
-            "HEAD",
-            "HEAD:{0}",
-            "{0}:{0}",
-            "refs/heads/{0}",
-            "{0}:heads/{0}",
-            "{0}:refs/heads/{0}"
-        );
-        final List<String> badRefSpecs = Lists.newArrayList(
-            /* ":", // JGit fails with "ERROR: branch is currently checked out" */
-            /* ":{0}", // CliGitAPIImpl will delete the remote branch with this refspec */
-            "this/ref/does/not/exist",
-            "src/ref/does/not/exist:dest/ref/does/not/exist"
-        );
+        final String[] implementations = {"git", "jgit"};
+        final String[] goodRefSpecs = {
+                "{0}",
+                "HEAD",
+                "HEAD:{0}",
+                "{0}:{0}",
+                "refs/heads/{0}",
+                "{0}:heads/{0}",
+                "{0}:refs/heads/{0}"
+        };
+        final String[] badRefSpecs = {
+                /* ":", // JGit fails with "ERROR: branch is currently checked out" */
+                /* ":{0}", // CliGitAPIImpl will delete the remote branch with this refspec */
+                "this/ref/does/not/exist",
+                "src/ref/does/not/exist:dest/ref/does/not/exist"
+        };
 
-        Collections.shuffle(implementations);
-        Collections.shuffle(goodRefSpecs);
-        Collections.shuffle(badRefSpecs);
+        shuffleArray(implementations);
+        shuffleArray(goodRefSpecs);
+        shuffleArray(badRefSpecs);
 
         for (String implementation : implementations) {
             for (String branch : branchNames) {
@@ -152,6 +163,7 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
+        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = temporaryFolder.newFolder();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()
@@ -176,9 +188,15 @@ public class PushTest {
         /* Confirm push reached bare repo */
         if (expectedException == null && !name.getMethodName().contains("Throws")) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
-            assertEquals(branchName + " commit not pushed to " + refSpec, workingCommit, latestBareHead);
-            assertNotEquals(previousCommit, workingCommit);
-            assertNotEquals(previousCommit, latestBareHead);
+            if (isDryRun) {
+                assertEquals(branchName + " commit pushed to " + refSpec, previousCommit, latestBareHead);
+                assertNotEquals(previousCommit, workingCommit);
+                assertEquals(previousCommit, latestBareHead);
+            } else {
+                assertEquals(branchName + " commit not pushed to " + refSpec, workingCommit, latestBareHead);
+                assertNotEquals(previousCommit, workingCommit);
+                assertNotEquals(previousCommit, latestBareHead);
+            }
         }
     }
 
@@ -267,5 +285,16 @@ public class PushTest {
         assertNotEquals(bareFirstCommit, workingCommit);
 
         return workingCommit;
+    }
+
+    private static void shuffleArray(String[] ar) {
+        Random rnd = new Random();
+        for (int i = ar.length - 1; i > 0; i--) {
+            int index = rnd.nextInt(i + 1);
+            // Simple swap
+            String a = ar[index];
+            ar[index] = ar[i];
+            ar[i] = a;
+        }
     }
 }
