@@ -266,7 +266,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <excludePackageNames>org.apache.commons.httpclient.contrib.ssl</excludePackageNames>
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
           <!-- <detectLinks>true</detectLinks> -->
