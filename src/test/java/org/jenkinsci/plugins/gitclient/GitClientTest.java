@@ -259,10 +259,18 @@ public class GitClientTest {
 
     @Test
     @Issue("JENKINS-297799")
+    /**
+     *  Changelog was formatted on word boundary prior to
+     * 72 characters with git client plugin 2.0+ when using CLI git.
+     * Was not truncated by git client plugin using JGit (And Apache version).
+     * Rely on caller to truncate first line if desired.
+     * Matching change will be included in git plugin 4.0.0
+     * to retain existing truncation behavior.
+     */
     public void testChangelongVeryLong() throws Exception {
 
         final String gitMessage =
-                        "Uno Dos Tres Cuatro cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut " +
+                        "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut " +
                         "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate" +
                         "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer" +
                         "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis" +
