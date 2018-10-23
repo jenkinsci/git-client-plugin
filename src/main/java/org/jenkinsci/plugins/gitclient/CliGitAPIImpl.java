@@ -28,6 +28,7 @@ import hudson.util.Secret;
 import hudson.Proc;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -2210,6 +2211,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     	return launchCommandIn(args, workDir, environment, TIMEOUT);
     }
 
+    @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "earlier readStderr()/readStdout() call prevents null return")
+    private String readProcessIntoString(Proc process, String encoding, boolean useStderr)
+        throws IOException, UnsupportedEncodingException {
+        if (useStderr) {
+            /* process.getStderr reference is the findbugs warning to be suppressed */
+            return IOUtils.toString(process.getStderr(), encoding);
+        }
+        /* process.getStdout reference is the findbugs warning to be suppressed */
+        return IOUtils.toString(process.getStdout(), encoding);
+    }
+
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env, Integer timeout) throws GitException, InterruptedException {
 
         EnvVars freshEnv = new EnvVars(env);
@@ -2251,23 +2263,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 status = process.joinWithTimeout(usedTimeout, TimeUnit.MINUTES, listener);
 
-                StringBuilder stdoutBuilder = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getStdout(), encoding))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        stdoutBuilder.append(line);
-                    }
-                }
-                stdout = stdoutBuilder.toString();
-
-                StringBuilder stderrBuilder = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getStderr(), encoding))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        stderrBuilder.append(line);
-                    }
-                }
-                stderr = stderrBuilder.toString();
+                stdout = readProcessIntoString(process, encoding, false);
+                stderr = readProcessIntoString(process, encoding, true);
             } else {
                 // JENKINS-13356: capture stdout and stderr separately
                 ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
