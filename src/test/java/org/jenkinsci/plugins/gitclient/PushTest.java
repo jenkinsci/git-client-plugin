@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import static java.util.stream.Collectors.toList;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -15,7 +16,6 @@ import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 
 import org.apache.commons.io.FileUtils;
-import com.google.common.io.Files;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
@@ -23,12 +23,15 @@ import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -68,6 +71,12 @@ public class PushTest {
 
     @Rule
     public TestName name = new TestName();
+
+    @ClassRule
+    public static TemporaryFolder staticTemporaryFolder = new TemporaryFolder();
+
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     public PushTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
         this.gitImpl = gitImpl;
@@ -142,7 +151,7 @@ public class PushTest {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
         List<RefSpec> refSpecs = new ArrayList<>();
-        workingRepo = Files.createTempDir();
+        workingRepo = temporaryFolder.newFolder();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()
                 .url(bareRepo.getAbsolutePath())
@@ -170,7 +179,6 @@ public class PushTest {
             assertNotEquals(previousCommit, workingCommit);
             assertNotEquals(previousCommit, latestBareHead);
         }
-        FileUtils.deleteDirectory(workingRepo.getAbsoluteFile());
     }
 
     @BeforeClass
@@ -185,7 +193,7 @@ public class PushTest {
         String gitImpl = gitImplementations[random.nextInt(gitImplementations.length)];
 
         /* Create the bare repository */
-        bareRepo = Files.createTempDir();
+        bareRepo = staticTemporaryFolder.newFolder();
         bareURI = new URIish(bareRepo.getAbsolutePath());
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
@@ -193,7 +201,7 @@ public class PushTest {
         bareGitClient.init_().workspace(bareRepo.getAbsolutePath()).bare(true).execute();
 
         /* Clone the bare repository into a working copy */
-        File cloneRepo = Files.createTempDir();
+        File cloneRepo = staticTemporaryFolder.newFolder();
         GitClient cloneGitClient = Git.with(listener, env).in(cloneRepo).using(gitImpl).getClient();
         cloneGitClient.clone_()
                 .url(bareRepo.getAbsolutePath())
@@ -217,16 +225,8 @@ public class PushTest {
             cloneGitClient.push().to(bareURI).ref("HEAD:" + branchName).execute();
         }
 
-        /* Remove the clone */
-        FileUtils.deleteDirectory(cloneRepo);
-
         /* Remember the SHA1 of the first commit */
         bareFirstCommit = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), "master");
-    }
-
-    @AfterClass
-    public static void removeBareRepository() throws IOException {
-        FileUtils.deleteDirectory(bareRepo);
     }
 
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
@@ -239,12 +239,15 @@ public class PushTest {
         workingCommit = commitFileToCurrentBranch();
     }
 
+    private Collection<String> getBranchNames(List<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
+    }
+
     private ObjectId checkoutBranch(boolean useOldCommit) throws GitException, InterruptedException {
         /* Checkout branchName */
         workingGitClient.checkoutBranch(branchName, "origin/" + branchName + (useOldCommit ? "^" : ""));
         List<Branch> branches = workingGitClient.getBranchesContaining(branchName, false);
-        assertEquals("Wrong working branch count", 1, branches.size());
-        assertEquals("Wrong working branch name", branchName, branches.get(0).getName());
+        assertThat(getBranchNames(branches), contains(branchName));
         return bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
     }
 

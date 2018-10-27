@@ -443,12 +443,12 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
 
             public void verify(String host, String[] cns, String[] subjectAlts)
                     throws SSLException {
-                throw new UnsupportedOperationException(); // TODO message
+                throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host);
             }
 
             public void verify(String host, X509Certificate cert)
                     throws SSLException {
-                throw new UnsupportedOperationException(); // TODO message
+                throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host + " with X.509 certificate");
             }
 
             public void verify(String host, SSLSocket ssl) throws IOException {

@@ -1,8 +1,9 @@
 package org.jenkinsci.plugins.gitclient.jgit;
 
+import static org.junit.Assert.*;
+
 import org.apache.http.auth.NTCredentials;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -15,7 +16,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertEquals(null, actual);
+        assertEquals(null, actual);
     }
 
     @Test public void goUp_slash() throws Exception {
@@ -23,7 +24,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertEquals(null, actual);
+        assertEquals(null, actual);
     }
 
     @Test public void goUp_slashSlash() throws Exception {
@@ -31,8 +32,8 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com", actual.toString());
     }
 
     @Test public void goUp_one() throws Exception {
@@ -40,8 +41,8 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com", actual.toString());
     }
 
     @Test public void goUp_oneSlash() throws Exception {
@@ -49,8 +50,8 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com", actual.toString());
     }
 
     @Test public void goUp_oneSlashTwo() throws Exception {
@@ -58,8 +59,8 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com/one", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com/one", actual.toString());
     }
 
     @Test public void goUp_oneSlashSlashTwoSlash() throws Exception {
@@ -67,8 +68,8 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com/one/", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com/one/", actual.toString());
     }
 
     @Test public void goUp_oneSlashTwoSlash() throws Exception {
@@ -76,17 +77,17 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        Assert.assertNotNull(actual);
-        Assert.assertEquals("http://example.com/one", actual.toString());
+        assertNotNull(actual);
+        assertEquals("http://example.com/one", actual.toString());
     }
 
     private static void createNTCredentials(final String inputUserName, final String inputPassword, final String expectedDomain, final String expectedUserName, final String expectedPassword) {
 
         final NTCredentials actual = PreemptiveAuthHttpClientConnection.createNTCredentials(inputUserName, inputPassword);
 
-        Assert.assertEquals(expectedDomain, actual.getDomain());
-        Assert.assertEquals(expectedUserName, actual.getUserName());
-        Assert.assertEquals(expectedPassword, actual.getPassword());
+        assertEquals(expectedDomain, actual.getDomain());
+        assertEquals(expectedUserName, actual.getUserName());
+        assertEquals(expectedPassword, actual.getPassword());
     }
 
     @Test public void createNTCredentials_plainUser() throws Exception {

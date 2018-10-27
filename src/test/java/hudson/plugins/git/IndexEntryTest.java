@@ -13,9 +13,6 @@ public class IndexEntryTest {
     private final String file = ".git" + File.separator + "index-entry-file";
     private IndexEntry entry;
 
-    public IndexEntryTest() {
-    }
-
     @Before
     public void setUp() {
         entry = new IndexEntry(mode, type, object, file);
@@ -136,11 +133,6 @@ public class IndexEntryTest {
         assertNotEquals(entryNull4, entryNull3);
         assertEquals(entryNull4, entryNull4a);
         assertEquals(entryNull4a, entryNull4);
-
-        IndexEntry entryNullA = null;
-        IndexEntry entryNullB = null;
-        assertEquals(entryNullA, entryNullB);
-        assertEquals(entryNullB, entryNullA);
 
         assertNotEquals(entry, null);
         assertNotEquals(entry, "not an IndexEntry object");

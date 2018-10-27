@@ -5,7 +5,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.util.Secret;
 
-/* package */ class StandardUsernamePasswordCredentialsImpl implements StandardUsernamePasswordCredentials {
+class StandardUsernamePasswordCredentialsImpl implements StandardUsernamePasswordCredentials {
 
     private final String userName;
     private final Secret password;
