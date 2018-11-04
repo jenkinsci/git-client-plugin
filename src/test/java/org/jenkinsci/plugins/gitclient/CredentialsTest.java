@@ -61,8 +61,8 @@ import org.junit.rules.Timeout;
 public class CredentialsTest {
 
     // Required for credentials use
-    @ClassRule
-    public static final JenkinsRule j = new JenkinsRule();
+    @Rule
+    public final JenkinsRule j = new JenkinsRule();
 
     private final String gitImpl;
     private final String gitRepoURL;
