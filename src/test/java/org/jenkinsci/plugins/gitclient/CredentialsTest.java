@@ -62,8 +62,8 @@ import org.junit.rules.Timeout;
 public class CredentialsTest {
 
     // Required for credentials use
-    @ClassRule
-    public static final JenkinsRule j = new JenkinsRule();
+    @Rule
+    public final JenkinsRule j = new JenkinsRule();
 
     private final String gitImpl;
     private final String gitRepoURL;
@@ -339,7 +339,7 @@ public class CredentialsTest {
      * @return true if another test should be allowed to start
      */
     private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 120) * 1000L);
+        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 30) * 1000L);
     }
 
     @Test

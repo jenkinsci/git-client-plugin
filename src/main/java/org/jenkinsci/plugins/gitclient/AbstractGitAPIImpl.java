@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.plugins.git.GitException;
