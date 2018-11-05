@@ -260,7 +260,7 @@ public class GitClientTest {
     @Test
     @Issue("JENKINS-29977")
     /**
-     *  Changelog was formatted on word boundary prior to
+     * Changelog was formatted on word boundary prior to
      * 72 characters with git client plugin 2.0+ when using CLI git.
      * Was not truncated by git client plugin using JGit (And Apache version).
      * Rely on caller to truncate first line if desired.
@@ -290,10 +290,7 @@ public class GitClientTest {
         changelog.includes(message).to(changelogStringWriter).execute();
         assertThat(changelogStringWriter.toString(), containsString("Ut posuere"));
         assertThat(changelogStringWriter.toString(), containsString("conubia nostra"));
-
-
     }
-
 
     @Test
     @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
@@ -1833,5 +1830,60 @@ public class GitClientTest {
 
         Set<GitObject> result = gitClient.getTags();
         assertThat(result, containsInAnyOrder(expectedTag, expectedTag2, expectedTag3));
+    }
+
+    private String truncateAtWord(String src, int maxLength) {
+        java.text.BreakIterator breakIterator = java.text.BreakIterator.getWordInstance();
+        breakIterator.setText(src);
+        return src.substring(0, breakIterator.preceding(maxLength + 1)).trim();
+    }
+
+    private String wrapAtWord(String src, int maxLength) {
+        return org.apache.commons.text.WordUtils.wrap(src, maxLength);
+    }
+
+    private String padLinesWithSpaces(String src, int spacePadCount) {
+        char[] paddingArray = new char[spacePadCount];
+        Arrays.fill(paddingArray, ' ');
+        String padding = new String(paddingArray);
+        return padding + src.replace("\n", "\n" + padding).trim();
+    }
+
+    @Test
+    @Issue("JENKINS-29977")
+    public void testChangelogFirstLineTruncation() throws Exception {
+        //            1         2         3         4         5         6         7         8
+        //   12345678901234567890123456789012345678901234567890123456789012345678901234567890
+        final String longFirstLine =
+            "The first line of this commit message is longer than 72 characters to show JENKINS-29977";
+        final String longBody =
+            "The body of this commit message is also longer than 72 characters though that is not part of JENKINS-29977";
+        // Intentionally randomize whether the commit message body ends with a newline character
+        final String commitMessage = longFirstLine + "\n\n" + longBody + (random.nextBoolean() ? "\n" : "");
+        final ObjectId commit = commitOneFile(commitMessage);
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commit).to(changelogStringWriter).execute();
+
+        final String truncatedFirstLine = truncateAtWord(longFirstLine, 72) + "\n";
+        final String truncatedBody = truncateAtWord(longBody, 72) + "\n";
+
+        final String wrappedFirstLine = wrapAtWord(longFirstLine, 72);
+        final String wrappedBody = wrapAtWord(longBody, 72);
+
+        // Truncated lines are NOT included in the changelog
+        assertThat(changelogStringWriter.toString(), not(containsString(truncatedFirstLine)));
+        assertThat(changelogStringWriter.toString(), not(containsString(truncatedBody)));
+
+        // Wrapped lines are NOT included in the changelog
+        assertThat(changelogStringWriter.toString(), not(containsString(padLinesWithSpaces(wrappedFirstLine, 4))));
+        assertThat(changelogStringWriter.toString(), not(containsString(padLinesWithSpaces(wrappedBody, 4))));
+
+        // Unmodified lines are included in the changelog
+        assertThat(changelogStringWriter.toString(), containsString(longFirstLine));
+        assertThat(changelogStringWriter.toString(), containsString(longBody));
+
+        // Entire unmodified commit message is included in the changelog
+        assertThat(changelogStringWriter.toString(), containsString(padLinesWithSpaces(commitMessage, 4)));
     }
 }
