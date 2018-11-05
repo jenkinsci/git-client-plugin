@@ -258,6 +258,44 @@ public class GitClientTest {
     }
 
     @Test
+    @Issue("JENKINS-29977")
+    /**
+     *  Changelog was formatted on word boundary prior to
+     * 72 characters with git client plugin 2.0+ when using CLI git.
+     * Was not truncated by git client plugin using JGit (And Apache version).
+     * Rely on caller to truncate first line if desired.
+     * Matching change will be included in git plugin 4.0.0
+     * to retain existing truncation behavior.
+     */
+    public void testChangelogVeryLong() throws Exception {
+
+        final String gitMessage =
+                        "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut " +
+                        "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate" +
+                        "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer" +
+                        "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis" +
+                        "aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex" +
+                        "eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam" +
+                        "sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus" +
+                        "felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia " +
+                        "nostra, per inceptos himenaeos." +
+                        "\nseis\n" +
+                        "\nasfasfasfasf\n"
+                ;
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        ObjectId message = commitFile("One-File.txt", content, gitMessage);
+
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(message).to(changelogStringWriter).execute();
+        assertThat(changelogStringWriter.toString(), containsString("Ut posuere"));
+        assertThat(changelogStringWriter.toString(), containsString("conubia nostra"));
+
+
+    }
+
+
+    @Test
     @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
     public void testChangelogExceptionMessage() throws Exception {
         final ObjectId commitA = commitOneFile();
