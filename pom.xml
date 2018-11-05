@@ -43,7 +43,7 @@
 
   <properties>
     <revision>3.0.0-beta6</revision>
-    <changelist>-rc1791.3a94dfffd1fc</changelist>
+    <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <jenkins.version>2.60.3</jenkins.version>
