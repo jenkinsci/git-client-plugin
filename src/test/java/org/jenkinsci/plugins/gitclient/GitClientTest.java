@@ -260,7 +260,7 @@ public class GitClientTest {
     @Test
     @Issue("JENKINS-29977")
     /**
-     *  Changelog was formatted on word boundary prior to
+     * Changelog was formatted on word boundary prior to
      * 72 characters with git client plugin 2.0+ when using CLI git.
      * Was not truncated by git client plugin using JGit (And Apache version).
      * Rely on caller to truncate first line if desired.
@@ -290,10 +290,7 @@ public class GitClientTest {
         changelog.includes(message).to(changelogStringWriter).execute();
         assertThat(changelogStringWriter.toString(), containsString("Ut posuere"));
         assertThat(changelogStringWriter.toString(), containsString("conubia nostra"));
-
-
     }
-
 
     @Test
     @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
