@@ -1719,6 +1719,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return createTempFileInSystemDir(prefix, suffix);
             }
             return Files.createTempFile(tmpPath, prefix, suffix).toFile();
+        } else if (workspaceTmp.getAbsolutePath().contains("%")) {
+            /* Avoid Linux expansion of % in ssh arguments */
+            return createTempFileInSystemDir(prefix, suffix);
         }
         // Unix specific
         if (workspaceTmp.getAbsolutePath().contains("`")) {
