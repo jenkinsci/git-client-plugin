@@ -25,10 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -36,18 +36,22 @@ import org.eclipse.jgit.transport.URIish;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.ClassRule;
+import org.junit.rules.DisableOnDebug;
+import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 
 /**
@@ -58,8 +62,8 @@ import org.junit.rules.Timeout;
 public class CredentialsTest {
 
     // Required for credentials use
-    @ClassRule
-    public static final JenkinsRule j = new JenkinsRule();
+    @Rule
+    public final JenkinsRule j = new JenkinsRule();
 
     private final String gitImpl;
     private final String gitRepoURL;
@@ -76,14 +80,13 @@ public class CredentialsTest {
     private File repo;
     private StandardCredentials testedCredential;
 
-    private List<String> expectedLogSubstrings = new ArrayList<>();
     private final Random random = new Random();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(13);
+    public TestRule timeout = new DisableOnDebug(Timeout.seconds(17));
 
     private int logCount;
     private LogHandler handler;
@@ -99,9 +102,7 @@ public class CredentialsTest {
 
     private final static File CURR_DIR = new File(".");
 
-    private static PrintStream log() {
-        return StreamTaskListener.fromStdout().getLogger();
-    }
+    private static long firstTestStartTime = 0;
 
     /* Windows refuses directory names with '*', '<', '>', '|', '?', and ':' */
     private final String SPECIALS_TO_CHECK = "%()`$&{}[]"
@@ -123,12 +124,9 @@ public class CredentialsTest {
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
         }
-        log().println(show("Repo", gitRepoUrl)
-                + show("spec", specialCharacter)
-                + show("impl", gitImpl)
-                + show("user", username)
-                + show("pass", password)
-                + show("key", privateKey));
+        if (firstTestStartTime == 0) {
+            firstTestStartTime = System.currentTimeMillis();
+        }
     }
 
     @Before
@@ -151,12 +149,7 @@ public class CredentialsTest {
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
-        listener.getLogger().println(LOGGING_STARTED);
         git = Git.with(listener, new hudson.EnvVars()).in(repo).using(gitImpl).getClient();
-        if (gitImpl.equals("git")) {
-            addExpectedLogSubstring("> git fetch ");
-            addExpectedLogSubstring("> git checkout -b master ");
-        }
 
         assertTrue("Bad username, password, privateKey combo: '" + username + "', '" + password + "'",
                 (password == null || password.isEmpty()) ^ (privateKey == null || !privateKey.exists()));
@@ -169,13 +162,6 @@ public class CredentialsTest {
         assertThat(testedCredential, notNullValue());
         Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
         assertThat("Fingerprint should not be set", fingerprint, nullValue());
-
-        /* FetchWithCredentials does not log expected message */
-        /*
-         if (gitImpl.equals("jgit")) {
-         addExpectedLogSubstring("remote: Counting objects");
-         }
-         */
     }
 
     @After
@@ -193,28 +179,6 @@ public class CredentialsTest {
         }
     }
 
-    private void checkExpectedLogSubstring() {
-        try {
-            String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
-            for (String expectedLogSubstring : expectedLogSubstrings) {
-                assertTrue("No '" + expectedLogSubstring + "' in " + messages,
-                        handler.containsMessageSubstring(expectedLogSubstring));
-            }
-        } finally {
-            clearExpectedLogSubstring();
-            handler.close();
-        }
-    }
-
-    protected void addExpectedLogSubstring(String expectedLogSubstring) {
-        this.expectedLogSubstrings.add(expectedLogSubstring);
-    }
-
-    protected void clearExpectedLogSubstring() {
-        this.expectedLogSubstrings = new ArrayList<>();
-    }
-
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath() + random.nextInt();
@@ -230,13 +194,20 @@ public class CredentialsTest {
     private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "username-" + username + "-password-" + password + random.nextInt();
-        StandardUsernamePasswordCredentials usernamePasswordCredential = new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
-        return usernamePasswordCredential;
+        return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
     }
 
     private static boolean isCredentialsSupported() throws IOException, InterruptedException {
         CliGitAPIImpl cli = (CliGitAPIImpl) Git.with(null, new hudson.EnvVars()).in(CURR_DIR).using("git").getClient();
         return cli.isAtLeastVersion(1, 7, 9, 0);
+    }
+
+    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) throws IOException, InterruptedException {
+        if (!implementation.equals("git")) {
+            return false;
+        }
+        CliGitAPIImpl cli = (CliGitAPIImpl) gitClient;
+        return cli.isAtLeastVersion(1, 9, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{2}-{1}-{0}-{5}")
@@ -281,7 +252,7 @@ public class CredentialsTest {
                         if (skipIf.equals(implementation)) {
                             continue;
                         }
-                        if (implementation.startsWith("jgit") && skipIf.startsWith("jgit")) { // Treat jgitapache like jgit
+                        if (implementation.startsWith("jgit") && skipIf.equals("jgit")) { // Treat jgitapache like jgit
                             continue;
                         }
                     }
@@ -334,101 +305,83 @@ public class CredentialsTest {
             }
         }
         Collections.shuffle(repos); // randomize test order
-        int toIndex = Math.min(repos.size(), TEST_ALL_CREDENTIALS ? 90 : 6); // Don't run more than 90 variations of test - about 12 minutes
-        return repos.subList(0, toIndex);
+        // If we're not testing all credentials, take 6 or less
+        return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private String listDir(File dir) {
-        File[] files = repo.listFiles();
-        StringBuilder fileList = new StringBuilder();
-        for (File file : files) {
-            fileList.append(file.getName());
-            fileList.append(',');
-        }
-        fileList.deleteCharAt(fileList.length() - 1);
-        return fileList.toString();
-    }
-
-    private void addCredential(String username, String password, File privateKey) throws IOException {
-        if (true || random.nextBoolean()) { // Temporary - pending one bug investigation
-            git.addDefaultCredentials(testedCredential);
-        } else {
-            git.addCredentials(gitRepoURL, testedCredential);
-        }
-    }
-
-    @Test
-    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File clonedFile = new File(repo, fileToCheck);
-        String origin = "origin";
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/" + origin + "/master"));
-        git.init_().workspace(repo.getAbsolutePath()).execute();
-        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        addCredential(username, password, privateKey);
+    private void doFetch(String source) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
-        FetchCommand cmd = git.fetch_().from(new URIish(gitRepoURL), refSpecs).tags(false);
-        if (gitImpl.equals("git")) {
+        URIish sourceURI = new URIish(source);
+        List<RefSpec> refSpecs = new ArrayList<>();
+        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+        FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
+        if (isShallowCloneSupported(gitImpl, git)) {
             // Reduce network transfer by using shallow clone
             // JGit does not support shallow clone
             cmd.shallow(true).depth(1);
         }
         cmd.execute();
-        git.setRemoteUrl(origin, gitRepoURL);
+    }
+
+    private String listDir(File dir) {
+        File[] files = repo.listFiles();
+        StringJoiner joiner = new StringJoiner(",");
+        for (File file : files) {
+            joiner.add(file.getName());
+        }
+        return joiner.toString();
+    }
+
+    private void addCredential() throws IOException {
+        // Always use addDefaultCredentials
+        git.addDefaultCredentials(testedCredential);
+        // addCredential stops tests to prompt for passphrase
+        // addCredentials fails some github username / password tests
+        // git.addCredentials(gitRepoURL, testedCredential);
+    }
+
+    /**
+     * Returns true if another test should be allowed to start.
+     * JenkinsRule test timeout defaults to 180 seconds.
+     *
+     * @return true if another test should be allowed to start
+     */
+    private boolean testPeriodNotExpired() {
+        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 30) * 1000L);
+    }
+
+    @Test
+    @Issue("JENKINS_50573")
+    public void testFetchWithCredentials() throws Exception {
+        assumeTrue(testPeriodNotExpired());
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        addCredential();
+        /* Fetch with remote URL */
+        doFetch(gitRepoURL);
+        git.setRemoteUrl("origin", gitRepoURL);
+        /* Fetch with remote name "origin" instead of remote URL */
+        doFetch("origin");
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master.getName() + " from " + gitRepoURL);
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         if (submodules) {
-            log().println("Initializing submodules from " + gitRepoURL);
             git.submoduleInit();
             SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
+        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
-        checkExpectedLogSubstring();
-    }
-
-    // @Test
-    public void testCloneWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
-        File clonedFile = new File(repo, fileToCheck);
-        String origin = "origin";
-        List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/" + origin + "/master"));
-        addCredential(username, password, privateKey);
-        CloneCommand cmd = git.clone_().url(gitRepoURL).repositoryName(origin).refspecs(refSpecs);
-        if (gitImpl.equals("git")) {
-            // Reduce network transfer
-            // Use a reference repository, JGit does not support reference repositories
-            // Use shallow clone, JGit does not support shallow clone
-            cmd.shallow().depth(1).reference(CURR_DIR.getAbsolutePath());
-        }
-        cmd.execute();
-        ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        log().println("Checking out " + master + " from " + gitRepoURL);
-        git.checkout().branch("master").ref(origin + "/master").deleteBranchIfExist(true).execute();
-        if (submodules) {
-            log().println("Initializing submodules from " + gitRepoURL);
-            git.submoduleInit();
-            SubmoduleUpdateCommand subcmd = git.submoduleUpdate();
-            subcmd.execute();
-        }
-        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), origin));
-        checkExpectedLogSubstring();
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
     }
 
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
-        addCredential(username, password, privateKey);
+        assumeTrue(testPeriodNotExpired());
+        addCredential();
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
             default:
@@ -448,22 +401,11 @@ public class CredentialsTest {
         assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
     }
 
-    private String show(String name, String value) {
-        if (value != null && !value.isEmpty()) {
-            return " " + name + ": '" + value + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, File file) {
-        if (file != null) {
-            return " " + name + ": '" + file.getPath() + "'";
-        }
-        return "";
-    }
-
-    private String show(String name, char value) {
-        return " " + name + ": '" + value + "'";
+    @Test
+    @Issue("JENKINS_50573")
+    public void isURIishRemote() throws Exception {
+        URIish uri = new URIish(gitRepoURL);
+        assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
     }
 
     private boolean isWindows() {

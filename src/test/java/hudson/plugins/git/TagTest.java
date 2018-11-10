@@ -5,20 +5,22 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class TagTest {
-    private final String tagName = "git-client-1.8.1";
-    private final String tagSHA1String = "3725b67f3daa6621dd01356c96c08a1f85b90c61";
-    private final ObjectId tagSHA1 = ObjectId.fromString(tagSHA1String);
-    Tag tag;
+
+    private Tag tag;
 
     @Before
     public void assignTag() {
+        String tagName = "git-client-1.8.1";
+        ObjectId tagSHA1 = ObjectId.fromString("3725b67f3daa6621dd01356c96c08a1f85b90c61");
         tag = new Tag(tagName, tagSHA1);
     }
 
     @Test
     public void testGetCommitMessage() {
-        assertEquals(null, tag.getCommitMessage());
+        assertNull(tag.getCommitMessage());
     }
 
     @Test
@@ -30,7 +32,7 @@ public class TagTest {
 
     @Test
     public void testGetCommitSHA1() {
-        assertEquals(null, tag.getCommitSHA1());
+        assertNull(tag.getCommitSHA1());
     }
 
     @Test
@@ -40,4 +42,12 @@ public class TagTest {
         assertEquals(mySHA1, tag.getCommitSHA1());
     }
 
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(Tag.class)
+                .withIgnoredFields("commitSHA1", "commitMessage")
+                .usingGetClass()
+                .withRedefinedSuperclass()
+                .verify();
+    }
 }

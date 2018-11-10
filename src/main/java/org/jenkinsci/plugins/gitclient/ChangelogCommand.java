@@ -9,7 +9,7 @@ import java.io.Writer;
  * Command builder for generating changelog in the format {@code GitSCM} expects.
  *
  * <p>
- * The output format is that of <tt>git-whatchanged</tt>, which looks something like this:
+ * The output format is that of <code>git-whatchanged</code>, which looks something like this:
  *
  * <pre>
  * commit dadaf808d99c4c23c53476b0c48e25a181016300

@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
@@ -56,5 +57,41 @@ public class Tag extends GitObject {
      */
     public void setCommitSHA1(String commitSHA1) {
         this.commitSHA1 = commitSHA1;
+    }
+
+    /**
+     * Returns a hash code value for the object. Considers sha1 and name in the
+     * calculation.
+     *
+     * @return a hash code value for this object.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    /**
+     * Indicates whether some other object is "equal to" this one. Includes sha1
+     * and name in the comparison. Objects of subclasses of this object are not
+     * equal to objects of this class, even if they add no fields.
+     *
+     * @param obj the reference object with which to compare.
+     * @return true if this object is the same as the obj argument; false
+     * otherwise
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Tag other = (Tag) obj;
+        return Objects.equals(this.name, other.name)
+                && Objects.equals(this.sha1, other.sha1);
     }
 }

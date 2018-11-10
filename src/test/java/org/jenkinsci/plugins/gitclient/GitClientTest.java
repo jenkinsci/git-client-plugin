@@ -5,20 +5,23 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,12 +40,14 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
 import static org.hamcrest.Matchers.*;
+import org.junit.AfterClass;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,34 +55,33 @@ import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
 
 /**
+ * Git Client tests, intended as an eventual replacement for CliGitAPIImplTest,
+ * JGitAPIImplTest, and JGitApacheAPIImplTest.
  *
  * @author Mark Waite
  */
 @RunWith(Parameterized.class)
 public class GitClientTest {
 
-    /** Git implementation name, either "git", "jgit", or "jgitapache". */
+    /* Git implementation name, either "git", "jgit", or "jgitapache". */
     private final String gitImplName;
 
-    /** Git client plugin repository directory.  */
-    private final File srcRepoDir = new File(".");
+    /* Git client plugin repository directory. */
+    private static File srcRepoDir = null;
 
-    /** Absolute path to git client plugin repository directory. */
-    private final String srcRepoAbsolutePath = srcRepoDir.getAbsolutePath();
+    /* GitClient for plugin development repository. */
+    private GitClient srcGitClient;
 
-    /** GitClient for plugin development respository. */
-    private final GitClient srcGitClient;
+    /* commit known to exist in upstream. */
+    private final ObjectId upstreamCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
+    private final String upstreamCommitAuthor = "Teubel György";
+    private final String upstreamCommitEmail = "<tgyurci@freemail.hu>";
+    private final ObjectId upstreamCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
 
-    /** commit known to exist in git client plugin repository and in upstream. */
-    final ObjectId srcGitClientCommit = ObjectId.fromString("f75720d5de9d79ab4be2633a21de23b3ccbf8ce3");
-    final String srcGitClientCommitAuthor = "Teubel György";
-    final String srcGitClientCommitEmail = "<tgyurci@freemail.hu>";
-    final ObjectId srcGitClientCommitPredecessor = ObjectId.fromString("867e5f148377fd5a6d96e5aafbdaac132a117a5a");
-
-    /** URL of upstream (GitHub) repository. */
+    /* URL of upstream (GitHub) repository. */
     private final String upstreamRepoURL = "https://github.com/jenkinsci/git-client-plugin";
 
-    /** URL of GitHub test repository with large file support. */
+    /* URL of GitHub test repository with large file support. */
     private final String lfsTestRepoURL = "https://github.com/MarkEWaite/jenkins-pipeline-utils";
 
     /* Instance of object under test */
@@ -90,6 +94,10 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
+    private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -110,6 +118,7 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
+        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
 
         boolean gitLFSExists;
         try {
@@ -141,6 +150,45 @@ public class GitClientTest {
         gitCmd.setDefaults();
     }
 
+    /**
+     * Mirror the git-client-plugin repo so that the tests have a reasonable and
+     * repeatable set of commits, tags, and branches.
+     */
+    private static File mirrorParent = null;
+
+    @BeforeClass
+    public static void mirrorUpstreamRepositoryLocally() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(currentDir).using("git").getClient();
+        boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
+
+        mirrorParent = Files.createTempDirectory("mirror").toFile();
+        /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
+        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(mirrorParent).using("git").getClient());
+        if (currentDirIsShallow) {
+            mirrorParentGitCmd.run("clone",
+                    // "--reference", currentDir.getAbsolutePath(), // --reference of shallow repo fails
+                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+        } else {
+            mirrorParentGitCmd.run("clone",
+                    "--reference", currentDir.getAbsolutePath(),
+                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+        }
+        File mirrorDir = new File(mirrorParent, "git-client-plugin.git");
+        assertTrue("Git client mirror repo not created at " + mirrorDir.getAbsolutePath(), mirrorDir.exists());
+        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars()).in(mirrorDir).using("git").getClient();
+        assertThat(mirrorClient.getTagNames("git-client-1.6.3"), contains("git-client-1.6.3"));
+
+        /* Clone from bare mirrorParent/git-client-plugin.git to working mirrorParent/git-client-plugin */
+        mirrorParentGitCmd.run("clone", mirrorDir.getAbsolutePath());
+        srcRepoDir = new File(mirrorParent, "git-client-plugin");
+    }
+
+    @AfterClass
+    public static void removeMirrorAndSrcRepos() throws Exception {
+        FileUtils.deleteDirectory(mirrorParent);
+    }
+
     @Before
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
@@ -149,11 +197,13 @@ public class GitClientTest {
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
-        gitClient.setRemoteUrl("origin", srcRepoAbsolutePath);
+        gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
     }
 
+    private static final String COMMITTED_ONE_TEXT_FILE = "Committed one text file";
+
     private ObjectId commitOneFile() throws Exception {
-        return commitOneFile("Committed one text file");
+        return commitOneFile(COMMITTED_ONE_TEXT_FILE);
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
@@ -170,7 +220,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    public void createFile(String path, String content) throws Exception {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -208,18 +258,137 @@ public class GitClientTest {
     }
 
     @Test
-    @Issue("43198")
-    public void testCleanSubdirGitignore() throws Exception {
-        final String filename = "this_is/not_ok/more/subdirs/file.txt";
-        commitFile(".gitignore", "/this_is/not_ok\n", "set up gitignore");
-        createFile(filename, "hi there");
-        assertFileInWorkingDir(gitClient, filename);
-        gitClient.clean();
-        assertDirNotInWorkingDir(gitClient, "this_is");
+    @Issue("JENKINS-29977")
+    /**
+     * Changelog was formatted on word boundary prior to
+     * 72 characters with git client plugin 2.0+ when using CLI git.
+     * Was not truncated by git client plugin using JGit (And Apache version).
+     * Rely on caller to truncate first line if desired.
+     * Matching change will be included in git plugin 4.0.0
+     * to retain existing truncation behavior.
+     */
+    public void testChangelogVeryLong() throws Exception {
+
+        final String gitMessage =
+                        "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut " +
+                        "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate" +
+                        "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer" +
+                        "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis" +
+                        "aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex" +
+                        "eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam" +
+                        "sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus" +
+                        "felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia " +
+                        "nostra, per inceptos himenaeos." +
+                        "\nseis\n" +
+                        "\nasfasfasfasf\n"
+                ;
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        ObjectId message = commitFile("One-File.txt", content, gitMessage);
+
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(message).to(changelogStringWriter).execute();
+        assertThat(changelogStringWriter.toString(), containsString("Ut posuere"));
+        assertThat(changelogStringWriter.toString(), containsString("conubia nostra"));
     }
 
     @Test
-    @Issue("37794")
+    @Issue("JENKINS-39832") // Diagnostics of ChangelogCommand were insufficient
+    public void testChangelogExceptionMessage() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commitA).to(changelogStringWriter).execute();
+        assertThat(changelogStringWriter.toString(), containsString(COMMITTED_ONE_TEXT_FILE));
+
+        final String missingSHA1 = "ca11ab1edeededacecadebadebeaddeadcedeade";
+
+        // Confirm includes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.includes(missingSHA1).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        // Confirm excludes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.excludes(missingSHA1).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        final ObjectId missingObject = ObjectId.fromString(missingSHA1);
+
+        // Confirm includes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.includes(missingObject).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+
+        // Confirm excludes exception is as expected
+        changelog = gitClient.changelog();
+        changelogStringWriter = new StringWriter();
+        try {
+            changelog.excludes(missingObject).to(changelogStringWriter).execute();
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            // Check that directory and SHA1 are included in exception message
+            assertThat(ge.getMessage(), containsString(missingSHA1));
+            assertThat(ge.getMessage(), containsString(" in " + repoRoot.getAbsolutePath()));
+        }
+    }
+
+    @Test
+    public void testNullChangelogDestinationIncludes() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        changelog.includes(commitA);
+        thrown.expect(IllegalStateException.class);
+        changelog.execute();
+    }
+
+    @Test
+    public void testNullChangelogDestinationExcludes() throws Exception {
+        final ObjectId commitA = commitOneFile();
+        ChangelogCommand changelog = gitClient.changelog();
+        changelog.excludes(commitA);
+        thrown.expect(IllegalStateException.class);
+        changelog.execute();
+    }
+
+    @Test
+    @Issue("JENKINS-43198")
+    public void testCleanSubdirGitignore() throws Exception {
+        final String filename1 =  "this_is/not_ok/more/subdirs/file.txt";
+        final String filename2 =  "this_is_also/not_ok_either/more/subdirs/file.txt";
+        commitFile(".gitignore", "/this_is/not_ok\n/this_is_also/not_ok_either\n", "set up gitignore");
+        createFile(filename1, "hi there");
+        createFile(filename2, "hi there");
+        assertFileInWorkingDir(gitClient, filename1);
+        assertFileInWorkingDir(gitClient, filename2);
+        gitClient.clean();
+        assertDirNotInWorkingDir(gitClient, "this_is");
+        assertDirNotInWorkingDir(gitClient, "this_is_also");
+    }
+
+    @Test
+    @Issue("JENKINS-37794")
     public void tagWithSlashes() throws Exception {
         commitOneFile();
         gitClient.tag("has/a/slash", "This tag has a slash ('/')");
@@ -265,7 +434,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testCommitNotFoundException() throws GitException, InterruptedException {
         /* Search wrong repository for a commit */
-        assertAuthor(srcGitClientCommitPredecessor, srcGitClientCommit, srcGitClientCommitAuthor, srcGitClientCommitEmail);
+        assertAuthor(upstreamCommitPredecessor, upstreamCommit, upstreamCommitAuthor, upstreamCommitEmail);
     }
 
     @Test
@@ -367,18 +536,18 @@ public class GitClientTest {
 
     @Test
     public void testIsCommitInRepo() throws Exception {
-        assertTrue(srcGitClient.isCommitInRepo(srcGitClientCommit));
-        assertFalse(gitClient.isCommitInRepo(srcGitClientCommit));
+        assertTrue(srcGitClient.isCommitInRepo(upstreamCommit));
+        assertFalse(gitClient.isCommitInRepo(upstreamCommit));
     }
 
     @Test
     public void testGetRemoteUrl() throws Exception {
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
     }
 
     @Test
     public void testSetRemoteUrl() throws Exception {
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         gitClient.setRemoteUrl("origin", upstreamRepoURL);
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("origin"));
     }
@@ -386,7 +555,7 @@ public class GitClientTest {
     @Test
     public void testAddRemoteUrl() throws Exception {
         gitClient.addRemoteUrl("upstream", upstreamRepoURL);
-        assertEquals(srcRepoAbsolutePath, gitClient.getRemoteUrl("origin"));
+        assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
     }
 
@@ -451,8 +620,6 @@ public class GitClientTest {
         gitCmd.assertOutputContains(".*On branch.*" + branchName + ".*");
     }
 
-    private int lastFetchPath = -1;
-
     private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
         List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
@@ -460,8 +627,7 @@ public class GitClientTest {
         for (String refSpecString : optionalRefSpecs) {
             refSpecs.add(new RefSpec(refSpecString));
         }
-        lastFetchPath = random.nextInt(2);
-        switch (lastFetchPath) {
+        switch (random.nextInt(2)) {
             default:
             case 0:
                 if (remote.equals("origin")) {
@@ -587,7 +753,7 @@ public class GitClientTest {
         assertTrue(src.isDirectory());
     }
 
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithCliGitLFS() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -601,7 +767,7 @@ public class GitClientTest {
         assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
-    @Issue("35687") // Git LFS support - JGit not supported
+    @Issue("JENKINS-35687") // Git LFS support - JGit not supported
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testCheckoutWithJGitLFS() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
@@ -612,7 +778,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test(expected = GitException.class)
     public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, is("git"));
@@ -623,7 +789,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception if branch includes LFS reference
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
@@ -634,7 +800,7 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, checkout content without download
-    @Issue("35687") // Git LFS support
+    @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
         assumeFalse(CLI_GIT_HAS_GIT_LFS);
@@ -649,6 +815,13 @@ public class GitClientTest {
         assertEquals("Incorrect non-LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
+    /*
+     * JGit versions prior to 4.9.0 required a work around that the
+     * tags refspec had to be passed in addition to setting the
+     * FETCH_TAGS tagOpt.  JGit 4.9.0 fixed that bug.  This test would
+     * throw a DuplicateRef exception with JGit 4.9.0 prior to the
+     * removal of the work around (from JGitAPIImpl).
+     */
     @Test
     public void testDeleteRef() throws Exception {
         assertThat(gitClient.getRefNames(""), is(empty()));
@@ -718,7 +891,7 @@ public class GitClientTest {
     public void testGetHeadRev_String_String_Empty_Result() throws Exception {
         String url = repoRoot.getAbsolutePath();
         ObjectId nonExistent = gitClient.getHeadRev(url, "this branch doesn't exist");
-        assertEquals(null, nonExistent);
+        assertNull(nonExistent);
     }
 
     @Test
@@ -734,9 +907,29 @@ public class GitClientTest {
         String pattern = null;
         boolean headsOnly = false; // Need variations here
         boolean tagsOnly = false; // Need variations here
-        Map<String, ObjectId> expResult = null; // Working here
         Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
-        assertEquals(expResult, result);
+        assertNull(result);
+    }
+
+    @Issue("JENKINS-30589")
+    @Test
+    public void testGetRemoteReferences_ReturnsEmptyMapIfNoTags() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "**";
+        boolean headsOnly = false;
+        boolean tagsOnly = true;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
+    }
+
+    @Test
+    public void testGetRemoteReferencesNonExistingPattern() throws Exception {
+        String url = repoRoot.getAbsolutePath();
+        String pattern = "non-existent-name";
+        boolean headsOnly = false;
+        boolean tagsOnly = false;
+        Map<String, ObjectId> result = gitClient.getRemoteReferences(url, pattern, headsOnly, tagsOnly);
+        assertThat(result, is(Collections.EMPTY_MAP));
     }
 
     @Test
@@ -800,15 +993,26 @@ public class GitClientTest {
         assertThat(resultB, contains(commitB, commitA));
     }
 
+    @Test
+    public void testRevListNoWalk() throws Exception {
+        assumeTrue(CLI_GIT_SUPPORTS_REV_LIST_NO_WALK);
+        ObjectId commitA = commitOneFile();
+        List<ObjectId> resultA = new ArrayList<>();
+        gitClient.revList_().to(resultA).reference(commitA.name()).nowalk(true).execute();
+        assertThat(resultA, contains(commitA));
+        assertEquals(resultA.size(), 1);
+
+        /* Make sure it's correct when there's more than one commit in the history */
+        ObjectId commitB = commitOneFile();
+        List<ObjectId> resultB = new ArrayList<>();
+        gitClient.revList_().to(resultB).reference(commitB.name()).nowalk(true).execute();
+        assertThat(resultB, contains(commitB));
+        assertEquals(resultB.size(), 1);
+    }
+
     // @Test
-    public void testSubGit() {
-        System.out.println("subGit");
-        String subdir = "";
-        GitClient instance = gitClient;
-        GitClient expResult = null;
-        GitClient result = instance.subGit(subdir);
-        assertEquals(expResult, result);
-        fail("The test case is a prototype.");
+    public void testSubGit() throws Exception {
+        // Tested in assertSubmoduleContents
     }
 
     @Test
@@ -914,7 +1118,7 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, initialized);
     }
 
-    @Issue("37495") // submodule update fails if path and name differ
+    @Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -934,7 +1138,7 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
-    @Issue("37495") // submodule update fails if path and name differ
+    @Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -969,7 +1173,7 @@ public class GitClientTest {
                 lastModifiedFile = file;
             }
         }
-        assertTrue("No files modified " + repoRoot, lastModifiedFile != null);
+        assertNotNull("No files modified " + repoRoot, lastModifiedFile);
 
         /* Checkout a new branch - verify no files retain modification */
         gitClient.checkout().branch("master-" + randomUUID).ref(commitA.getName()).execute();
@@ -989,35 +1193,37 @@ public class GitClientTest {
     }
 
     private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) {
-        File repoRoot = gitClient.getRepository().getWorkTree();
+        File myRepoRoot = gitClient.getRepository().getWorkTree();
         for (String expectedDir : expectedDirs) {
-            File dir = new File(repoRoot, "modules/" + expectedDir);
+            File dir = new File(myRepoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
             File license = new File(dir, "LICENSE");
             assertEquals("Checking " + expectedDir + " LICENSE (path:" + lastUpdateSubmodulePath + ")", expectLicense, license.isFile());
         }
     }
 
-    private void assertSubmoduleContents(GitClient client, String... directories) {
-        File repoRoot = client.getRepository().getWorkTree();
+    private void assertSubmoduleContents(GitClient client, String... directories) throws Exception {
+        File myRepoRoot = client.getRepository().getWorkTree();
         for (String directory : directories) {
-            File licenseDir = new File(repoRoot, "modules/" + directory);
+            File licenseDir = new File(myRepoRoot, "modules/" + directory);
             File licenseFile = new File(licenseDir, "LICENSE");
             assertTrue("Missing file " + licenseFile + " (path:" + lastUpdateSubmodulePath + ")", licenseFile.isFile());
+            GitClient subGitClient = client.subGit("modules/" + directory);
+            assertThat(subGitClient.hasGitModules(), is(false));
+            assertThat(subGitClient.getWorkTree().getName(), is(directory));
         }
         List<String> expectedDirList = Arrays.asList(directories);
         List<String> dirList = new ArrayList<>();
-        File modulesDir = new File(repoRoot, "modules");
+        File modulesDir = new File(myRepoRoot, "modules");
         for (File dir : modulesDir.listFiles()) {
             if (dir.isDirectory()) {
                 dirList.add(dir.getName());
             }
         }
-        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray(new String[expectedDirList.size()])));
-        assertThat(expectedDirList, containsInAnyOrder(dirList.toArray(new String[dirList.size()])));
+        assertThat(dirList, containsInAnyOrder(expectedDirList.toArray()));
     }
 
-    private void assertSubmoduleContents(String... directories) {
+    private void assertSubmoduleContents(String... directories) throws Exception {
         assertSubmoduleContents(gitClient, directories);
     }
 
@@ -1094,8 +1300,8 @@ public class GitClientTest {
         }
     }
 
-    // @Issue("8053")  // outdated submodules not removed by checkout
-    @Issue("37419") // Git plugin checking out non-existent submodule from different branch
+    // @Issue("JENKINS-8053")  // outdated submodules not removed by checkout
+    @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         assumeTrue(CLI_GIT_SUPPORTS_SUBMODULE_DEINIT);
@@ -1212,7 +1418,7 @@ public class GitClientTest {
         assertThat(branchNames, containsInAnyOrder(expectedBranchNames));
     }
 
-    @Issue("37419") // Submodules from other branches are used in checkout
+    @Issue("JENKINS-37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
@@ -1231,7 +1437,7 @@ public class GitClientTest {
         String newBranchName = "tests/addSubmodules";
         String newDirName = "git-client-plugin-" + (10 + random.nextInt(90));
         gitClient.branch(newBranchName);
-        gitClient.addSubmodule(srcRepoAbsolutePath, "modules/" + newDirName);
+        gitClient.addSubmodule(srcRepoDir.getAbsolutePath(), "modules/" + newDirName);
         gitClient.add("modules/" + newDirName);
         gitClient.commit("Added git-client-plugin module at modules/" + newDirName);
 
@@ -1274,6 +1480,54 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
     }
 
+    @Issue("JENKINS-46054")
+    @Test
+    public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
+        // Create a new repository that includes ".url" in directory name
+        File baseDir = tempFolder.newFolder();
+        File urlRepoDir = new File(baseDir, "my-submodule.url");
+        assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
+        GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
+        urlRepoClient.init();
+        File readme = new File(urlRepoDir, "readme");
+        String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
+        urlRepoClient.add("readme");
+        urlRepoClient.commit("Added README to repo used as a submodule");
+
+        // Add new repository as submodule to repository that ends in .url
+        File repoHasSubmodule = new File(baseDir, "has-submodule.url");
+        assertTrue("Failed to create repo dir that will have submodule", repoHasSubmodule.mkdir());
+        GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoHasSubmodule).using(gitImplName).getClient();
+        repoHasSubmoduleClient.init();
+        File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
+        String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
+        Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
+        repoHasSubmoduleClient.add("readme");
+        repoHasSubmoduleClient.commit("Added README to repo that will include a submodule whose URL ends in '.url'");
+        String moduleDirBaseName = "module.named.url";
+        File modulesDir = new File(repoHasSubmodule, "modules");
+        assertTrue("Failed to create modules dir in repoHasSubmodule", modulesDir.mkdir());
+        repoHasSubmoduleClient.addSubmodule(repoHasSubmodule.getAbsolutePath(), "modules/" + moduleDirBaseName);
+        repoHasSubmoduleClient.add(".");
+        repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
+        repoHasSubmoduleClient.submoduleInit();
+        repoHasSubmoduleClient.submoduleUpdate(false);
+        assertSubmoduleStatus(repoHasSubmoduleClient, true, moduleDirBaseName);
+
+        // Clone repoHasSubmodule to new repository with submodule
+        File cloneDir = new File(baseDir, "cloned-submodule");
+        assertTrue("Failed to create clone dir", cloneDir.mkdir());
+        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
+        cloneGitClient.init();
+        cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
+        String branch = "master";
+        cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        cloneGitClient.submoduleInit();
+        cloneGitClient.submoduleUpdate().recursive(false).execute();
+        assertSubmoduleStatus(cloneGitClient, true, moduleDirBaseName);
+    }
+
     @Test
     public void testGetSubmodules() throws Exception {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
@@ -1312,22 +1566,15 @@ public class GitClientTest {
         // Test may fail if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
         updateSubmodule(upstream, branchName, null);
-        if (gitImplName.equals("git")) {
-            assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
-            assertSubmoduleContents("firewall", "ntp", "sshkeys");
-        } else {
-            assertSubmoduleDirectories(gitClient, true, "firewall", "ntp"); // No renamed submodule
-            assertSubmoduleContents("firewall", "ntp"); // No renamed submodule
-        }
+        assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
+        assertSubmoduleContents("firewall", "ntp", "sshkeys");
 
         final File firewallDir = new File(repoRoot, "modules/firewall");
         final File firewallFile = File.createTempFile("untracked-", ".txt", firewallDir);
         final File ntpDir = new File(repoRoot, "modules/ntp");
         final File ntpFile = File.createTempFile("untracked-", ".txt", ntpDir);
-        if (gitImplName.equals("git")) {
-            final File sshkeysDir = new File(repoRoot, "modules/sshkeys");
-            final File sshkeysFile = File.createTempFile("untracked-", ".txt", sshkeysDir);
-        }
+        final File sshkeysDir = new File(repoRoot, "modules/sshkeys");
+        final File sshkeysFile = File.createTempFile("untracked-", ".txt", sshkeysDir);
 
         assertStatusUntrackedContent(gitClient, true);
 
@@ -1338,29 +1585,23 @@ public class GitClientTest {
         /* GitClient submoduleClean expected to modify submodules */
         boolean recursive = random.nextBoolean();
         gitClient.submoduleClean(recursive);
-        if (!gitImplName.equals("git")) {
-            /* Fix damage done by JGit.submoduleClean()
-             * JGit won't leave repo clean, but does remove untracked content
-             */
-            FileUtils.deleteQuietly(new File(repoRoot, "modules/sshkeys"));
-        }
         assertStatusUntrackedContent(gitClient, false);
     }
 
-    // @Issue("14083") // build can't recover from broken submodule path
-    // @Issue("15399") // changing submodule URL does not update repository
-    // @Issue("27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
-    // @Issue("39350") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
-    // @Issue("22510") // clean after checkout fails to clean revision
-    // @Issue("23727") // submodule update did not fail build on timeout
-    // @Issue("28748") // submodule update --init fails on large submodule
-    // @Issue("22084") // submodule update failure did not send configured e-mail
-    // @Issue("31532") // pipeline snippet generator garbles certain submodule options
-    // @Issue("31586") // NPE when using submodules extension
-    // @Issue("39253") // notifyCommit trigger should detect changes to a submodule
-    // @Issue("21521") // submodule defaults in git plugin 2.x different than git plugin 1.x
-    // @Issue("31244") // submodule misconfiguration not reported clearly
-    // @Issue("41553") // submodule status should be used instead of reading config file
+    // @Issue("JENKINS-14083") // build can't recover from broken submodule path
+    // @Issue("JENKINS-15399") // changing submodule URL does not update repository
+    // @Issue("JENKINS-27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-39350") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-22510") // clean after checkout fails to clean revision
+    // @Issue("JENKINS-23727") // submodule update did not fail build on timeout
+    // @Issue("JENKINS-28748") // submodule update --init fails on large submodule
+    // @Issue("JENKINS-22084") // submodule update failure did not send configured e-mail
+    // @Issue("JENKINS-31532") // pipeline snippet generator garbles certain submodule options
+    // @Issue("JENKINS-31586") // NPE when using submodules extension
+    // @Issue("JENKINS-39253") // notifyCommit trigger should detect changes to a submodule
+    // @Issue("JENKINS-21521") // submodule defaults in git plugin 2.x different than git plugin 1.x
+    // @Issue("JENKINS-31244") // submodule misconfiguration not reported clearly
+    // @Issue("JENKINS-41553") // submodule status should be used instead of reading config file
     // Update submodules to latest commit
     // Recursive submodule update
     // Recursive submodule update to latest commit
@@ -1380,12 +1621,12 @@ public class GitClientTest {
      */
     @Test
     public void testDescribeSrcCommit() throws Exception {
-        assertThat(srcGitClient.describe(srcGitClientCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
+        assertThat(srcGitClient.describe(upstreamCommit.getName()), startsWith("git-client-1.6.3-23-gf75720d"));
     }
 
     @Test
     public void testDescribeSrcCommitPredecessor() throws Exception {
-        assertThat(srcGitClient.describe(srcGitClientCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
+        assertThat(srcGitClient.describe(upstreamCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
     }
 
     @Test
@@ -1545,5 +1786,104 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetRemoteReferences_URI_Syntax() throws Exception {
         gitClient.getRemoteReferences("error: invalid repo URL", Constants.HEAD, false, false);
+    }
+
+    @Test
+    public void testGetTags() throws Exception {
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_NoTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, is(empty()));
+    }
+
+    @Test
+    public void testGetTags_OneTag() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, contains(expectedTag));
+    }
+
+    @Test
+    public void testGetTags_ThreeTags() throws Exception {
+        ObjectId commitOne = commitOneFile();
+        String tagName = "tag-one-annotated";
+        gitClient.tag(tagName, "Comment for annotated " + tagName);
+        GitObject expectedTag = new GitObject(tagName, commitOne);
+
+        String tagName2 = "tag-two";
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("tag", tagName2);
+        GitObject expectedTag2 = new GitObject(tagName2, commitOne);
+
+        String tagName3 = "tag-three-annotated";
+        gitCmd.run("tag", "-a", tagName3, "-m", "Annotated tag " + tagName3);
+        GitObject expectedTag3 = new GitObject(tagName3, commitOne);
+
+        Set<GitObject> result = gitClient.getTags();
+        assertThat(result, containsInAnyOrder(expectedTag, expectedTag2, expectedTag3));
+    }
+
+    private String truncateAtWord(String src, int maxLength) {
+        java.text.BreakIterator breakIterator = java.text.BreakIterator.getWordInstance();
+        breakIterator.setText(src);
+        return src.substring(0, breakIterator.preceding(maxLength + 1)).trim();
+    }
+
+    private String wrapAtWord(String src, int maxLength) {
+        return org.apache.commons.text.WordUtils.wrap(src, maxLength);
+    }
+
+    private String padLinesWithSpaces(String src, int spacePadCount) {
+        char[] paddingArray = new char[spacePadCount];
+        Arrays.fill(paddingArray, ' ');
+        String padding = new String(paddingArray);
+        return padding + src.replace("\n", "\n" + padding).trim();
+    }
+
+    @Test
+    @Issue("JENKINS-29977")
+    public void testChangelogFirstLineTruncation() throws Exception {
+        //            1         2         3         4         5         6         7         8
+        //   12345678901234567890123456789012345678901234567890123456789012345678901234567890
+        final String longFirstLine =
+            "The first line of this commit message is longer than 72 characters to show JENKINS-29977";
+        final String longBody =
+            "The body of this commit message is also longer than 72 characters though that is not part of JENKINS-29977";
+        // Intentionally randomize whether the commit message body ends with a newline character
+        final String commitMessage = longFirstLine + "\n\n" + longBody + (random.nextBoolean() ? "\n" : "");
+        final ObjectId commit = commitOneFile(commitMessage);
+        ChangelogCommand changelog = gitClient.changelog();
+        StringWriter changelogStringWriter = new StringWriter();
+        changelog.includes(commit).to(changelogStringWriter).execute();
+
+        final String truncatedFirstLine = truncateAtWord(longFirstLine, 72) + "\n";
+        final String truncatedBody = truncateAtWord(longBody, 72) + "\n";
+
+        final String wrappedFirstLine = wrapAtWord(longFirstLine, 72);
+        final String wrappedBody = wrapAtWord(longBody, 72);
+
+        // Truncated lines are NOT included in the changelog
+        assertThat(changelogStringWriter.toString(), not(containsString(truncatedFirstLine)));
+        assertThat(changelogStringWriter.toString(), not(containsString(truncatedBody)));
+
+        // Wrapped lines are NOT included in the changelog
+        assertThat(changelogStringWriter.toString(), not(containsString(padLinesWithSpaces(wrappedFirstLine, 4))));
+        assertThat(changelogStringWriter.toString(), not(containsString(padLinesWithSpaces(wrappedBody, 4))));
+
+        // Unmodified lines are included in the changelog
+        assertThat(changelogStringWriter.toString(), containsString(longFirstLine));
+        assertThat(changelogStringWriter.toString(), containsString(longBody));
+
+        // Entire unmodified commit message is included in the changelog
+        assertThat(changelogStringWriter.toString(), containsString(padLinesWithSpaces(commitMessage, 4)));
     }
 }

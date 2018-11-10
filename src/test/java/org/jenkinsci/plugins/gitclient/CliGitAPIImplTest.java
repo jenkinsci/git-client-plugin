@@ -1,10 +1,12 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.plugins.git.Branch;
+import org.apache.commons.lang.SystemUtils;
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import org.apache.commons.lang.SystemUtils;
-import static org.junit.Assert.*;
+import java.util.Set;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -55,15 +57,15 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    class VersionTest {
+    private class VersionTest {
 
-        public boolean expectedIsAtLeastVersion;
-        public int major;
-        public int minor;
-        public int rev;
-        public int bugfix;
+        private boolean expectedIsAtLeastVersion;
+        private int major;
+        private int minor;
+        private int rev;
+        private int bugfix;
 
-        public VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
+        private VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
             this.expectedIsAtLeastVersion = assertTrueOrFalse;
             this.major = major;
             this.minor = minor;
@@ -76,20 +78,20 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
-        for (int i = 0; i < versions.length; ++i) {
-            String msg = versionOutput + " for " + versions[i].major + versions[i].minor + versions[i].rev + versions[i].bugfix;
-            if (versions[i].expectedIsAtLeastVersion) {
+        for (VersionTest version : versions) {
+            String msg = versionOutput + " for " + version.major + version.minor + version.rev + version.bugfix;
+            if (version.expectedIsAtLeastVersion) {
                 assertTrue("Failed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             } else {
                 assertFalse("Passed " + msg, git.isAtLeastVersion(
-                        versions[i].major,
-                        versions[i].minor,
-                        versions[i].rev,
-                        versions[i].bugfix));
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             }
         }
     }
@@ -283,6 +285,18 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
 
         assertTrue("ssh.exe not found", w.cgit().getSSHExecutable().exists());
+    }
+
+    public void test_git_branch_with_line_breaks_and_long_strings() throws Exception {
+        String gitBranchOutput =
+                "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n" +
+                "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n" +
+                "  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message\n";
+
+        setTimeoutVisibleInCurrentTest(false);
+        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
+        Set<Branch> branches = git.parseBranches(gitBranchOutput);
+        assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
     }
 
     @Override
