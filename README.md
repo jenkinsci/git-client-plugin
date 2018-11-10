@@ -26,9 +26,11 @@ Code coverage reporting is written to `target/site/jacoco/` by the maven command
 Building the Plugin
 ===================
 
+```
   $ java -version # Requires Java 1.8
   $ mvn -version # Requires Apache Maven 3.5.0 or later
   $ mvn clean install
+```
 
 To Do
 =====
