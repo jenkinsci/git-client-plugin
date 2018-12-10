@@ -351,7 +351,7 @@ public class CredentialsTest {
     }
 
     @Test
-    @Issue("JENKINS_50573")
+    @Issue("JENKINS-50573")
     public void testFetchWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
         File clonedFile = new File(repo, fileToCheck);
@@ -402,7 +402,7 @@ public class CredentialsTest {
     }
 
     @Test
-    @Issue("JENKINS_50573")
+    @Issue("JENKINS-50573")
     public void isURIishRemote() throws Exception {
         URIish uri = new URIish(gitRepoURL);
         assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
