@@ -103,10 +103,12 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A {@link HttpConnection} which uses {@link HttpClient} and attempts to
@@ -331,14 +333,19 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     }
 
     public Map<String, List<String>> getHeaderFields() {
-        Map<String, List<String>> ret = new HashMap<>();
+        Map<String, List<String>> ret = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Header hdr : resp.getAllHeaders()) {
             List<String> list = new LinkedList<>();
             for (HeaderElement hdrElem : hdr.getElements())
                 list.add(hdrElem.toString());
-            ret.put(hdr.getName(), list);
+            ret.put(hdr.getName(), Collections.unmodifiableList(list));
         }
-        return ret;
+        return Collections.unmodifiableMap(ret);
+    }
+
+    public List<String> getHeaderFields(@org.eclipse.jgit.annotations.NonNull String name) {
+        Map<String, List<String>> allHeaders = getHeaderFields();
+        return allHeaders.get(name);
     }
 
     public void setRequestProperty(String name, String value) {
