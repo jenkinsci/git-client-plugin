@@ -2201,7 +2201,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(Integer threads) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(int threads) {
                 // TODO: I have no idea if JGit can update submodules in parallel
                 // It might work, or it might blow up horribly. This probably depends on
                 // whether JGit relies on any global/shared state. Since I have no
