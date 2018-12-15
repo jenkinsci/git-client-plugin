@@ -1,4 +1,6 @@
+
 package org.jenkinsci.plugins.gitclient;
+
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -281,8 +283,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
-
-        if( isZos() && System.getProperty("ibm.system.encoding") != null ) {
+        
+        if( isZos() && System.getProperty("ibm.system.encoding") != null ) { 
             this.encoding = Charset.forName(System.getProperty("ibm.system.encoding")).toString();
         } else {
             this.encoding = Charset.defaultCharset().toString();
