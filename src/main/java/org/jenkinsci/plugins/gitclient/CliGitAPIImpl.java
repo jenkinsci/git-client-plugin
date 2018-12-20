@@ -435,6 +435,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
+        if (isAtLeastVersion(2, 20, 0, 0)) {
+            /* CLI git 2.20.0 fixed a long-standing bug that now requires --force to update existing tags */
+            args.add("--force");
+        }
 
         if (remoteName == null)
             remoteName = getDefaultRemote();
