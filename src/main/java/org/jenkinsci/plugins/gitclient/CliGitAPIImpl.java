@@ -129,6 +129,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         CALL_SETSID = setsidExists() && USE_SETSID;
     }
 
+    /**
+     * Constant which prevents use of 'force' in git fetch with CLI git versions 2.20 and later.
+     *
+     * <code>USE_FORCE_FETCH=Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"))</code>.
+     *
+     * Command line git 2.20 and later have changed fetch of remote
+     * tags which already exist in the repository. Command line git
+     * before 2.20 silently updates an existing tag if the remote tag
+     * points to a different SHA1 than the local tag.  Command line
+     * git 2.20 and later do not update an existing tag if the remote
+     * tag points to a different SHA1 than the local tag unless the
+     * 'force' option is passed to 'git fetch'.
+     *
+     * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.forceFetch=false'
+     * to prevent 'force' in 'git fetch' with CLI git 2.20 and later.
+     */
+    private static final boolean USE_FORCE_FETCH = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
+
     private static final long serialVersionUID = 1;
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
@@ -435,6 +453,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("fetch", "-t");
+        if (USE_FORCE_FETCH && isAtLeastVersion(2, 20, 0, 0)) {
+            /* CLI git 2.20.0 fixed a long-standing bug that now requires --force to update existing tags */
+            args.add("--force");
+        }
 
         if (remoteName == null)
             remoteName = getDefaultRemote();
