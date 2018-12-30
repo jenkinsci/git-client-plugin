@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.FilePath.FileCallable;
-import hudson.remoting.Channel;
 import hudson.remoting.VirtualChannel;
 import org.eclipse.jgit.lib.Repository;
 

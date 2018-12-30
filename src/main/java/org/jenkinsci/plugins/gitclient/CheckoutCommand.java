@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
