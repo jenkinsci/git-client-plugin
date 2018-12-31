@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
-import java.util.logging.Level;
 
 /**
  * Information about Git installation. A GitTool is used to select
@@ -63,7 +62,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     private static GitTool[] getInstallations(DescriptorImpl descriptor) {
-        GitTool[] installations = null;
+        GitTool[] installations;
         try {
             installations = descriptor.getInstallations();
         } catch (NullPointerException e) {

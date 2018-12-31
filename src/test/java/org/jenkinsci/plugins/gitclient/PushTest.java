@@ -58,7 +58,7 @@ public class PushTest {
     private static GitClient bareGitClient;
     private static ObjectId bareFirstCommit;
 
-    private static final String branchNames[] = {"master", "feature/push-test"};
+    private static final String BRANCH_NAMES[] = {"master", "feature/push-test"};
 
     private ObjectId previousCommit;
 
@@ -130,7 +130,7 @@ public class PushTest {
         shuffleArray(badRefSpecs);
 
         for (String implementation : implementations) {
-            for (String branch : branchNames) {
+            for (String branch : BRANCH_NAMES) {
                 for (String paramRefSpec : goodRefSpecs) {
                     String spec = MessageFormat.format(paramRefSpec, branch);
                     Object[] parameter = {implementation, branch, spec, null};
@@ -208,7 +208,7 @@ public class PushTest {
                 .repositoryName("origin")
                 .execute();
 
-        for (String branchName : branchNames) {
+        for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */
             File added = File.createTempFile("added-", ".txt", cloneRepo);
             String randomContent = java.util.UUID.randomUUID().toString();
