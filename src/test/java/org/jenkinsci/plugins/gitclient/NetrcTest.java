@@ -23,7 +23,7 @@ public class NetrcTest
     public TemporaryFolder folder = new TemporaryFolder();
 
     private static final String TEST_NETRC_FILE_1 = "netrc_1";
-    private static final String TEST_NETRC_FILE_1a = "netrc_1a";
+    private static final String TEST_NETRC_FILE_1A = "netrc_1a";
     private static final String TEST_NETRC_FILE_2 = "netrc_2";
     private String testFilePath_1;
     private String testFilePath_1a;
@@ -102,8 +102,8 @@ public class NetrcTest
         testFilePath_1 = folder.newFile(TEST_NETRC_FILE_1).getAbsolutePath();
         copyResourceContents(TEST_NETRC_FILE_1 + ".in", testFilePath_1);
 
-        testFilePath_1a = folder.newFile(TEST_NETRC_FILE_1a).getAbsolutePath();
-        copyResourceContents(TEST_NETRC_FILE_1a + ".in", testFilePath_1a);
+        testFilePath_1a = folder.newFile(TEST_NETRC_FILE_1A).getAbsolutePath();
+        copyResourceContents(TEST_NETRC_FILE_1A + ".in", testFilePath_1a);
 
         testFilePath_2 = folder.newFile(TEST_NETRC_FILE_2).getAbsolutePath();
         copyResourceContents(TEST_NETRC_FILE_2 + ".in", testFilePath_2);

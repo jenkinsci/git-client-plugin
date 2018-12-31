@@ -62,7 +62,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     private static GitTool[] getInstallations(DescriptorImpl descriptor) {
-        GitTool[] installations = null;
+        GitTool[] installations;
         try {
             installations = descriptor.getInstallations();
         } catch (NullPointerException e) {

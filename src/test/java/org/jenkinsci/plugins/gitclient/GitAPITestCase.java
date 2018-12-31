@@ -2854,7 +2854,7 @@ public abstract class GitAPITestCase extends TestCase {
     @Issue("JENKINS-21168")
     private void checkSymlinkSetting(WorkingArea area) throws IOException {
         String expected = SystemUtils.IS_OS_WINDOWS ? "false" : "";
-        String symlinkValue = null;
+        String symlinkValue;
         try {
             symlinkValue = w.cmd(true, "git config core.symlinks").trim();
         } catch (Exception e) {
@@ -3159,8 +3159,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
 
         // The first merge will have base and branch1 as parents
-        List<ObjectId> revList = null;
-        revList = w.git.revList("HEAD^1");
+        List<ObjectId> revList = w.git.revList("HEAD^1");
         assertEquals("Merge commit failed. base should be a parent of HEAD but it isn't.",revList.get(0).name(), base.name());
         revList = w.git.revList("HEAD^2");
         assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());

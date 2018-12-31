@@ -93,7 +93,7 @@ class Netrc {
         this.lastModified = this.netrc.lastModified();
 
         try (BufferedReader r = new BufferedReader(new InputStreamReader(Files.newInputStream(netrc.toPath()), Charset.defaultCharset()))) {
-            String line = null;
+            String line;
             String machine = null;
             String login = null;
             String password = null;

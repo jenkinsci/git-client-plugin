@@ -91,7 +91,7 @@ class CliGitCommand {
         String[] cmdOutput = runWithoutAssert("config", configName);
         if (cmdOutput == null || cmdOutput[0].isEmpty() || cmdOutput[0].equals("[]")) {
             /* Set config value globally */
-            cmdOutput = run("config", "--global", configName, value);
+            run("config", "--global", configName, value);
             /* Read config value */
             cmdOutput = run("config", configName);
             if (cmdOutput == null || cmdOutput[0].isEmpty() || !cmdOutput[0].equals(value)) {
