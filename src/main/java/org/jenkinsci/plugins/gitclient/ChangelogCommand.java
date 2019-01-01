@@ -85,6 +85,18 @@ public interface ChangelogCommand extends GitCommand {
     ChangelogCommand includes(ObjectId rev);
 
     /**
+     * Sets the firstParent private variable to true
+     */
+    ChangelogCommand firstParent();
+
+    /**
+     * Sets the firstParent private variable to boolean param
+     *
+     * @param firstParent a {@link java.lang.boolean} object.
+     */
+    ChangelogCommand firstParent(boolean firstParent);
+
+    /**
      * Sets the {@link java.io.OutputStream} that receives the changelog.
      *
      * This takes {@link java.io.Writer} and not {@link java.io.OutputStream} because the changelog is a textual format,

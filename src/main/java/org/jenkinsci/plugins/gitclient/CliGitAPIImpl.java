@@ -1035,6 +1035,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             private Integer n = null;
             private Writer out = null;
+            private boolean firstParent;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1056,6 +1057,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public ChangelogCommand includes(ObjectId rev) {
                 return includes(rev.name());
+            }
+
+            public ChangelogCommand firstParent() {
+                return firstParent(true);
+            }
+
+            public ChangelogCommand firstParent(boolean firstParent) {
+                this.firstParent = firstParent;
+                return this;
             }
 
             @Override
@@ -1085,6 +1095,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add(rev);
 
                 if (out==null)  throw new IllegalStateException();
+
+                if (firstParent) {
+                   args.add("--first-parent");
+                }
 
                 // "git whatchanged" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
