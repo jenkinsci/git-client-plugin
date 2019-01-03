@@ -1070,7 +1070,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private RevWalk walk = new RevWalk(or);
             private Writer out;
             private boolean hasIncludedRev = false;
-            private boolean firstParent;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1118,7 +1117,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             public ChangelogCommand firstParent(boolean firstParent) {
-                this.firstParent = firstParent;
                 return this;
             }
 
