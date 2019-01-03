@@ -4724,6 +4724,34 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(writer.toString(),not(isEmptyString()));
     }
 
+    /*
+     * Verify that .firstParent() shows no changes when doing a merge
+     */
+    public void test_changelog_with_merge_commit_and_first_parent() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // First commit to branch-1
+        w.git.branch("branch-1");
+        w.git.checkout("branch-1");
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("commit-1");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        // Merge branch-1 into master
+        w.git.checkout("master");
+        String mergeMessage = "Merge message to be tested.";
+        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
+
+        if (w.git instanceof CliGitAPIImpl) {
+            // Only CliGit currently supports firstParent
+            StringWriter writer = new StringWriter();
+            w.git.changelog().firstParent().to(writer).execute();
+            assertThat(writer.toString(),isEmptyString());
+        }
+    }
+
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
