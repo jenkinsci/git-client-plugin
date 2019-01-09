@@ -397,6 +397,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("fetch");
                 args.add(tags ? "--tags" : "--no-tags");
+                if (USE_FORCE_FETCH && isAtLeastVersion(2, 20, 0, 0)) {
+                    /* CLI git 2.20.0 fixed a long-standing bug that now requires --force to update existing tags */
+                    args.add("--force");
+                }
                 if (isAtLeastVersion(1,7,1,0))
                     args.add("--progress");
 
