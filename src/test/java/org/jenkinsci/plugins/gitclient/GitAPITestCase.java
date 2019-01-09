@@ -1335,29 +1335,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 HEAD")));
     }
 
-    public void test_fetch_with_updated_tag() throws Exception {
-        WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("init");
-        r.tag("t");
-        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
-
-        w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.git.fetch("origin", new RefSpec[] {null});
-        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 t")));
-
-        r.touch("file.txt");
-        r.git.add("file.txt");
-        r.git.commit("update");
-        r.tag("-d t");
-        r.tag("t");
-        sha1 = r.cmd("git rev-list --no-walk --max-count=1 t");
-        w.git.fetch("origin", new RefSpec[] {null});
-        assertTrue(sha1.equals(r.cmd("git rev-list --max-count=1 t")));
-
-    }
-
     public void test_fetch_shallow() throws Exception {
         w.init();
         w.git.setRemoteUrl("origin", localMirror());
