@@ -620,7 +620,12 @@ public class GitClientTest {
         gitCmd.assertOutputContains(".*On branch.*" + branchName + ".*");
     }
 
-    private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
+    private void deleteTag(GitClient client, String tagName) throws Exception {
+        CliGitCommand gitCmd = new CliGitCommand(client);
+        gitCmd.run("tag", "-d", tagName);
+    }
+
+    private void fetch(GitClient client, String remote, boolean fetchTags, String firstRefSpec, String... optionalRefSpecs) throws Exception {
         List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
         refSpecs.add(refSpec);
@@ -638,7 +643,6 @@ public class GitClientTest {
                 break;
             case 1:
                 URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
-                boolean fetchTags = random.nextBoolean();
                 boolean pruneBranches = random.nextBoolean();
                 if (pruneBranches) {
                     client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune().execute();
@@ -647,6 +651,16 @@ public class GitClientTest {
                 }
                 break;
         }
+    }
+
+    private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
+        boolean fetchTags = random.nextBoolean();
+        fetch(client, remote, fetchTags, firstRefSpec, optionalRefSpecs);
+    }
+
+    private void fetchWithTags(GitClient client, String remote) throws Exception {
+        final boolean FETCH_ALL_TAGS = true;
+        fetch(client, remote, FETCH_ALL_TAGS, "+refs/heads/*:refs/remotes/origin/*");
     }
 
     @Test
@@ -1885,5 +1899,36 @@ public class GitClientTest {
 
         // Entire unmodified commit message is included in the changelog
         assertThat(changelogStringWriter.toString(), containsString(padLinesWithSpaces(commitMessage, 4)));
+    }
+
+    @Test
+    @Issue("JENKINS-55284") // Pull must overwrite existing tags
+    public void testFetchOverwritesExistingTags() throws Exception {
+        fetchWithTags(gitClient, "origin");
+
+        /* Confirm expected tag exists */
+        Set<GitObject> tags = gitClient.getTags();
+        String tagName = "git-client-2.7.5";
+        GitObject tag = new GitObject(tagName, ObjectId.fromString("0629421ea3ffb2b91ea0d62ffc5f97142fe137f3"));
+        assertThat(tags, hasItems(tag));
+
+        /* Delete the tag that was just confirmed to exist */
+        deleteTag(gitClient, tagName);
+
+        /* Create a new tag using the same name on a new commit */
+        ObjectId commitOne = commitOneFile();
+        gitClient.tag(tagName, "Moved tag " + tagName);
+        GitObject updatedTag = new GitObject(tagName, commitOne);
+
+        /* Confirm updated tag exists and old tag does not exist */
+        tags = gitClient.getTags();
+        assertThat(tags, hasItems(updatedTag));
+        assertThat(tags, not(hasItems(tag)));
+
+        /* Fetch to replace updated tag with original tag */
+        fetchWithTags(gitClient, "origin");
+        tags = gitClient.getTags();
+        assertThat(tags, not(hasItems(updatedTag)));
+        assertThat(tags, hasItems(tag));
     }
 }
