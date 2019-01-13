@@ -1369,7 +1369,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Remove branch1 from bare repo using original repo */
-        w.cmd("git push " + bare.repoPath() + " :branch1");
+        w.launchCommand("git", "push", bare.repoPath(), ":branch1");
 
         List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
@@ -1401,7 +1401,7 @@ public abstract class GitAPITestCase extends TestCase {
         String sha1 = r.cmd("git rev-list --no-walk --max-count=1 HEAD");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.git.fetch(new URIish(r.repo.toString()), Collections.<RefSpec>emptyList());
         assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 HEAD")));
     }
@@ -1538,7 +1538,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.git.branch("another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.cmd("git fetch origin");
         Set<Branch> branches = w.git.getRemoteBranches();
         assertBranchesExist(branches, "origin/master", "origin/test", "origin/another");
@@ -1554,7 +1554,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.tag("yet_another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.cmd("git fetch origin");
         Set<String> local_tags = w.git.getTagNames("*test");
         Set<String> tags = w.git.getRemoteTagNames("*test");
@@ -1572,7 +1572,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.tag("yet_another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.cmd("git fetch origin");
         Set<String> allTags = w.git.getRemoteTagNames(null);
         assertTrue("tag 'test' not listed", allTags.contains("test"));
@@ -1836,7 +1836,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         WorkingArea r = new WorkingArea();
         r.init(true);
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
 
         w.git.push("origin", "master");
         String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
@@ -1894,7 +1894,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.cmd("git checkout -b other");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.cmd("git pull --depth=1 origin master");
 
         w.touch("file2");
@@ -2909,13 +2909,13 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea ws2 = w.init();
 
         ws1.commitEmpty("c");
-        ws1.cmd("git remote add origin " + r.repoPath());
+        ws1.launchCommand("git", "remote", "add", "origin", r.repoPath());
 
         ws1.cmd("git push origin master:b1");
         ws1.cmd("git push origin master:b2");
         ws1.cmd("git push origin master");
 
-        ws2.cmd("git remote add origin " + r.repoPath());
+        ws2.launchCommand("git", "remote", "add", "origin", r.repoPath());
         ws2.cmd("git fetch origin");
 
         // at this point both ws1&ws2 have several remote tracking branches
