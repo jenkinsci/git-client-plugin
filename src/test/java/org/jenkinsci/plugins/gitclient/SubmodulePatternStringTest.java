@@ -3,11 +3,9 @@ package org.jenkinsci.plugins.gitclient;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -17,16 +15,16 @@ import org.jvnet.hudson.test.Issue;
 public class SubmodulePatternStringTest {
 
     private final String remoteName;
-    private final String submoduleConfigOutput;
-    private final Matcher matcher;
-
-    private static final Pattern SUBMODULE_CONFIG_PATTERN = Pattern.compile(CliGitAPIImpl.SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
+    private final String submoduleConfigOutputNewlineSeparated;
+    private final String submoduleConfigOutputNullSeparated;
 
     public SubmodulePatternStringTest(String repoUrl, String remoteName)
     {
         this.remoteName = remoteName;
-        this.submoduleConfigOutput = "submodule." + remoteName + ".url " + repoUrl;
-        this.matcher = SUBMODULE_CONFIG_PATTERN.matcher(submoduleConfigOutput);
+        // "git config --get" default style
+        this.submoduleConfigOutputNewlineSeparated = "submodule." + remoteName + ".url " + repoUrl;
+        // "git config --get --null" style
+        this.submoduleConfigOutputNullSeparated = "submodule." + remoteName + ".url\n" + repoUrl + '\0';
     }
 
     /*
@@ -74,8 +72,16 @@ public class SubmodulePatternStringTest {
 
     @Issue("JENKINS-46054")
     @Test
-    public void urlFoundInSubmoduleConfigOutput() {
-        assertTrue("Match not found for '" + submoduleConfigOutput + "'", matcher.find());
-        assertThat(matcher.group(1), is(remoteName));
+    public void urlFoundInSubmoduleConfigOutputPre153() {
+        Map<String, String> results = CliGitAPIImpl.parseSubmodulesListingWithNewlineSeparator(submoduleConfigOutputNewlineSeparated, null);
+        assertFalse("Match not found for '" + submoduleConfigOutputNewlineSeparated + "'", results.isEmpty());
+        assertThat(results.keySet().iterator().next(), is(remoteName));
+    }
+
+    @Test
+    public void urlFoundInSubmoduleConfigOutputPost153() {
+        Map<String, String> results = CliGitAPIImpl.parseSubmodulesListingWithNullSeparator(submoduleConfigOutputNullSeparated, null);
+        assertFalse("Match not found for '" + submoduleConfigOutputNullSeparated + "'", results.isEmpty());
+        assertThat(results.keySet().iterator().next(), is(remoteName));
     }
 }

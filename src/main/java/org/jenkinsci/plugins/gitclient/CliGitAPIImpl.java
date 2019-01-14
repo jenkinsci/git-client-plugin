@@ -11,6 +11,8 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -1206,45 +1208,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             private Map<String, String> listSubmodulesURLsPre153() throws GitException, InterruptedException {
-                Map<String, String> results = new LinkedHashMap<>();
-
-                String cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
-                // cfgOutput is a newline-separated list of key/value pairs,
-                // where key/value are separated by a space character.
-                String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\n');
-
-                for (String kvPair: splittedCfgOutput) {
-                    String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url ");
-                    String left;
-                    if (kv.length >2) {
-                        // Found ".url " several times, this is ambiguous. Let's assume it's part
-                        // of the submodule name, to mimic behavior of previous git-client versions.
-                        listener.getLogger().println("[WARNING] your submodules list contains an entry which is "
-                                + "ambiguous to parse with Git client older than 1.5.3: " + kvPair);
-                        left = StringUtils.join(kv, ".url ", 0, kv.length - 1);
-                    } else {
-                        left = kv[0];
-                    }
-                    results.put(left.substring("submodule.".length()), kv[kv.length - 1]);
-                }
-
-                return results;
+                return parseSubmodulesListingWithNewlineSeparator(launchCommand("config", "-f", ".gitmodules",
+                        "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY), listener);
             }
 
             private Map<String, String> listSubmodulesURLsPost153() throws GitException, InterruptedException {
-                Map<String, String> results = new LinkedHashMap<>();
-
-                String cfgOutput = launchCommand("config", "-f", ".gitmodules", "--null", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
-                // cfgOutput is a null-separated list of key/value pairs,
-                // where key/value are separated by a newline.
-                String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\0');
-
-                for (String kvPair: splittedCfgOutput) {
-                    String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url\n", 2);
-                    results.put(kv[0].substring("submodule.".length()), kv[1]);
-                }
-
-                return results;
+                return parseSubmodulesListingWithNullSeparator(launchCommand("config", "-f", ".gitmodules",
+                        "--null", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY), listener);
             }
 
             /**
@@ -3430,4 +3400,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return tags;
     }
+
+    @VisibleForTesting
+    static Map<String, String> parseSubmodulesListingWithNewlineSeparator(String cfgOutput, TaskListener listener) {
+        // cfgOutput is a newline-separated list of key/value pairs,
+        // where key/value are separated by a space character.
+        String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\n');
+
+        Map<String, String> results = new LinkedHashMap<>();
+
+        for (String kvPair: splittedCfgOutput) {
+            String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url ");
+            String left;
+            if (kv.length >2) {
+                // Found ".url " several times, this is ambiguous. Let's assume it's part
+                // of the submodule name, to mimic behavior of previous git-client versions.
+                if (listener != null) {
+                    listener.getLogger().println("[WARNING] your submodules list contains an entry which is "
+                            + "ambiguous to parse with Git client older than 1.5.3: " + kvPair);
+                }
+                left = StringUtils.join(kv, ".url ", 0, kv.length - 1);
+            } else {
+                left = kv[0];
+            }
+            results.put(left.substring("submodule.".length()), kv[kv.length - 1]);
+        }
+
+        return results;
+    }
+
+    @VisibleForTesting
+    static Map<String, String> parseSubmodulesListingWithNullSeparator(String cfgOutput, TaskListener listener) {
+        // cfgOutput is a null-separated list of key/value pairs,
+        // where key/value are separated by a newline.
+        String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\0');
+
+        Map<String, String> results = new LinkedHashMap<>();
+
+        for (String kvPair: splittedCfgOutput) {
+            String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url\n", 2);
+            results.put(kv[0].substring("submodule.".length()), kv[1]);
+        }
+
+        return results;
+    }
+
 }
