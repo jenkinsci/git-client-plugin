@@ -64,6 +64,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -195,29 +196,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials lfsCredentials;
     private final String encoding;
 
-    /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
-     * Thus, a config call:
-     *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
-     * will report two lines of output if the submodule URL includes ".url":
-     *   submodule.modules/JENKINS-46504.url.path modules/JENKINS-46504.url
-     *   submodule.modules/JENKINS-46504.url.url https://github.com/MarkEWaite/JENKINS-46054.url
-     * The code originally used the same pattern for get-regexp and for output parsing.
-     * By using the same pattern in both places, it incorrectly took some substrings
-     * as the submodule remote name, instead of taking the longest match.
-     * See SubmodulePatternStringTest for test cases.
-    */
-    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url";
-
-    /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain
-     * why this regular expression string adds the trailing space
-     * characters and the sequence of non-space characters as part of
-     * its match.  The ending sequence of non-white-space characters
-     * is the repository URL in the output of the 'git config' command.
-     * Relies on repository URL not containing a whitespace character,
-     * per RFC1738.
-     */
-    /* Package protected for testing */
-    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
+    /* A regexp for "git config --get-regex", for listing submodules URLs.*/
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\..+\\.url$";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {
@@ -1225,6 +1205,48 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            private Map<String, String> listSubmodulesURLsPre153() throws GitException, InterruptedException {
+                Map<String, String> results = new LinkedHashMap<>();
+
+                String cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
+                // cfgOutput is a newline-separated list of key/value pairs,
+                // where key/value are separated by a space character.
+                String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\n');
+
+                for (String kvPair: splittedCfgOutput) {
+                    String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url ");
+                    String left;
+                    if (kv.length >2) {
+                        // Found ".url " several times, this is ambiguous. Let's assume it's part
+                        // of the submodule name, to mimic behavior of previous git-client versions.
+                        listener.getLogger().println("[WARNING] your submodules list contains an entry which is "
+                                + "ambiguous to parse with Git client older than 1.5.3: " + kvPair);
+                        left = StringUtils.join(kv, ".url ", 0, kv.length - 1);
+                    } else {
+                        left = kv[0];
+                    }
+                    results.put(left.substring("submodule.".length()), kv[kv.length - 1]);
+                }
+
+                return results;
+            }
+
+            private Map<String, String> listSubmodulesURLsPost153() throws GitException, InterruptedException {
+                Map<String, String> results = new LinkedHashMap<>();
+
+                String cfgOutput = launchCommand("config", "-f", ".gitmodules", "--null", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
+                // cfgOutput is a null-separated list of key/value pairs,
+                // where key/value are separated by a newline.
+                String[] splittedCfgOutput = StringUtils.split(cfgOutput, '\0');
+
+                for (String kvPair: splittedCfgOutput) {
+                    String[] kv = StringUtils.splitByWholeSeparator(kvPair, ".url\n", 2);
+                    results.put(kv[0].substring("submodule.".length()), kv[1]);
+                }
+
+                return results;
+            }
+
             /**
              * @throws GitException if executing the Git command fails
              * @throws InterruptedException if called methods throw same exception
@@ -1274,21 +1296,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // submodules, just the ones for this super project. Thus,
                 // loop through the config output and parse it for configured
                 // modules.
-                String cfgOutput = null;
+                final Map<String, String> submodules;
+
+                // We might fail if we have no modules, so catch this
+                // exception and just return.
                 try {
-                    // We might fail if we have no modules, so catch this
-                    // exception and just return.
-                    cfgOutput = launchCommand("config", "-f", ".gitmodules", "--get-regexp", SUBMODULE_REMOTE_PATTERN_CONFIG_KEY);
+                    // git 1.5.3+ helps listing modules with hazardous name or URL,
+                    // thanks to the --null option for "git config"
+                    submodules = isAtLeastVersion(1, 5, 3, 0) ? listSubmodulesURLsPost153() : listSubmodulesURLsPre153();
                 } catch (GitException e) {
                     listener.error("No submodules found.");
                     return;
                 }
-
-                // Use a matcher to find each configured submodule name, and
-                // then run the submodule update command with the provided
-                // path.
-                Pattern pattern = Pattern.compile(SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
-                Matcher matcher = pattern.matcher(cfgOutput);
 
                 ExecutorService executorService;
                 if (threads > 1) {
@@ -1297,14 +1316,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     executorService = Executors.newSingleThreadExecutor();
                 }
 
-                while (matcher.find()) {
+                for (Map.Entry<String,String> kv: submodules.entrySet()) {
                     ArgumentListBuilder perModuleArgs = args.clone();
-                    String sModuleName = matcher.group(1);
+                    String sModuleName = kv.getKey();
 
                     // Find the URL for this submodule
                     URIish urIish = null;
                     try {
                         urIish = new URIish(getSubmoduleUrl(sModuleName));
+                        // TODO: what about using kv.value() instead? (with sanity checks and trim maybe)
                     } catch (URISyntaxException e) {
                         listener.error("Invalid repository for " + sModuleName);
                         throw new GitException("Invalid repository for " + sModuleName);
