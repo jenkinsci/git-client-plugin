@@ -212,14 +212,6 @@ public abstract class GitAPITestCase extends TestCase {
           return null;
         }
 
-        String cmd(String args) throws IOException, InterruptedException {
-            return launchCommand(args.split(" "));
-        }
-
-        String cmd(boolean ignoreError, String args) throws IOException, InterruptedException {
-            return launchCommand(ignoreError, args.split(" "));
-        }
-
         String launchCommand(String... args) throws IOException, InterruptedException {
             return launchCommand(false, args);
         }
@@ -259,11 +251,15 @@ public abstract class GitAPITestCase extends TestCase {
         }
 
         void tag(String tag, boolean force) throws IOException, InterruptedException {
-            cmd("git tag" + (force ? " --force " : " ") + tag);
+            if (force) {
+                launchCommand("git", "tag", "--force", tag);
+            } else {
+                launchCommand("git", "tag", tag);
+            }
         }
 
         void commitEmpty(String msg) throws IOException, InterruptedException {
-            cmd("git commit --allow-empty -m " + msg);
+            launchCommand("git", "commit", "--allow-empty", "-m", msg);
         }
 
         /**
@@ -461,7 +457,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
         assertEquals("Wrong remote URL", localMirror(), w.git.getRemoteUrl(repositoryName));
-        String remotes = w.cmd("git remote -v");
+        String remotes = w.launchCommand("git", "remote", "-v");
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
@@ -817,8 +813,8 @@ public abstract class GitAPITestCase extends TestCase {
     @Deprecated
     public void test_getDefaultRemote() throws Exception {
         w.init();
-        w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
-        w.cmd("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
+        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
+        w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
         /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
@@ -828,8 +824,8 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getRemoteURL() throws Exception {
         w.init();
-        w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
-        w.cmd("git remote add ndeloof git@github.com:ndeloof/git-client-plugin.git");
+        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
+        w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = w.git.getRemoteUrl("origin");
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
@@ -837,15 +833,15 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteURL_local_clone() throws Exception {
         w = clone(localMirror());
         assertEquals("Wrong origin URL", localMirror(), w.git.getRemoteUrl("origin"));
-        String remotes = w.cmd("git remote -v");
+        String remotes = w.launchCommand("git", "remote", "-v");
         assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
     }
 
     public void test_setRemoteURL() throws Exception {
         w.init();
-        w.cmd("git remote add origin https://github.com/jenkinsci/git-client-plugin.git");
+        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
         w.git.setRemoteUrl("origin", "git@github.com:ndeloof/git-client-plugin.git");
-        String remotes = w.cmd("git remote -v");
+        String remotes = w.launchCommand("git", "remote", "-v");
         assertTrue("remote URL has not been updated", remotes.contains("git@github.com:ndeloof/git-client-plugin.git"));
     }
 
@@ -854,7 +850,7 @@ public abstract class GitAPITestCase extends TestCase {
         String originURL = "https://github.com/jenkinsci/git-client-plugin.git";
         w.git.setRemoteUrl("origin", originURL);
         assertEquals("Wrong origin URL", originURL, w.git.getRemoteUrl("origin"));
-        String remotes = w.cmd("git remote -v");
+        String remotes = w.launchCommand("git", "remote", "-v");
         assertTrue("remote URL has not been updated", remotes.contains(originURL));
     }
 
@@ -951,7 +947,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("content " + fileName, w.contentOf(fileName));
         assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
         assertEquals("content " + fileNameSwim, w.contentOf(fileNameSwim));
-        String status = w.cmd("git status");
+        String status = w.launchCommand("git", "status");
         assertTrue("unexpected status " + status, status.contains("working directory clean") || status.contains("working tree clean"));
 
         /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
@@ -978,7 +974,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(fp2 + " not deleted", fp2.exists());
 
         String dirContents = Arrays.toString((new File(w.repoPath())).listFiles());
-        String finalStatus = w.cmd("git status");
+        String finalStatus = w.launchCommand("git", "status");
         assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
     }
 
@@ -1031,7 +1027,7 @@ public abstract class GitAPITestCase extends TestCase {
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
-        newArea.cmd("git config fetch.prune false");
+        newArea.launchCommand("git", "config", "fetch.prune", "false");
         newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
 
         /* Confirm the fetch did not alter working branch */
@@ -1152,11 +1148,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("tag1 wasn't created", w.git.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit1, w.git.revParse("tag1"));
         w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(false).execute();
-        assertFalse("tag1 pushed unexpectedly", bare.cmd("git tag").contains("tag1"));
+        assertFalse("tag1 pushed unexpectedly", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Push tag1 to bare repo */
         w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).execute();
-        assertTrue("tag1 not pushed", bare.cmd("git tag").contains("tag1"));
+        assertTrue("tag1 not pushed", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Create a new commit, move tag1 to that commit, attempt push */
         w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
@@ -1195,7 +1191,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("tag3");
         assertTrue("tag3 wasn't created", w.git.tagExists("tag3"));
         w.git.push().ref("master").to(new URIish(bare.repoPath())).execute();
-        assertFalse("tag3 was pushed", bare.cmd("git tag").contains("tag3"));
+        assertFalse("tag3 was pushed", bare.launchCommand("git", "tag").contains("tag3"));
 
         /* Add another tag to working repo and push tags to the bare repo */
         w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
@@ -1204,9 +1200,9 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("tag2");
         assertTrue("tag2 wasn't created", w.git.tagExists("tag2"));
         w.git.push().ref("master").to(new URIish(bare.repoPath())).tags(true).execute();
-        assertTrue("tag1 wasn't pushed", bare.cmd("git tag").contains("tag1"));
-        assertTrue("tag2 wasn't pushed", bare.cmd("git tag").contains("tag2"));
-        assertTrue("tag3 wasn't pushed", bare.cmd("git tag").contains("tag3"));
+        assertTrue("tag1 wasn't pushed", bare.launchCommand("git", "tag").contains("tag1"));
+        assertTrue("tag2 wasn't pushed", bare.launchCommand("git", "tag").contains("tag2"));
+        assertTrue("tag3 wasn't pushed", bare.launchCommand("git", "tag").contains("tag3"));
     }
 
     @Issue("JENKINS-19591")
@@ -1271,11 +1267,11 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Delete parent branch from w */
         w.git.checkout("master");
-        w.cmd("git branch -D parent");
+        w.launchCommand("git", "branch", "-D", "parent");
         assertThat(getBranchNames(w.git.getBranches()), contains("master"));
 
         /* Delete parent branch on bare repo*/
-        bare.cmd("git branch -D parent");
+        bare.launchCommand("git", "branch", "-D", "parent");
         // assertEquals("Wrong branch count", 1, bare.git.getBranches().size());
 
         /* Create parent/a branch in working repo */
@@ -1299,7 +1295,7 @@ public abstract class GitAPITestCase extends TestCase {
         try {
             /* Fetch parent/a into newArea repo - fails for
              * CliGitAPIImpl, succeeds for JGitAPIImpl */
-            newArea.cmd("git config fetch.prune false");
+            newArea.launchCommand("git", "config", "fetch.prune", "false");
             newArea.git.fetch(new URIish(bare.repo.toString()), refSpecs);
             assertTrue("CliGit should have thrown an exception", newArea.git instanceof JGitAPIImpl);
         } catch (GitException ge) {
@@ -1369,12 +1365,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Remove branch1 from bare repo using original repo */
-        w.cmd("git push " + bare.repoPath() + " :branch1");
+        w.launchCommand("git", "push", bare.repoPath(),  ":branch1");
 
         List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
-        newArea.cmd("git config fetch.prune false");
+        newArea.launchCommand("git", "config", "fetch.prune", "false");
         newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).execute();
         remoteBranches = newArea.git.getRemoteBranches();
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
@@ -1398,12 +1394,12 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea r = new WorkingArea();
         r.init();
         r.commitEmpty("init");
-        String sha1 = r.cmd("git rev-list --no-walk --max-count=1 HEAD");
+        String sha1 = r.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
         w.git.fetch(new URIish(r.repo.toString()), Collections.<RefSpec>emptyList());
-        assertTrue(sha1.equals(r.cmd("git rev-list --no-walk --max-count=1 HEAD")));
+        assertTrue(sha1.equals(r.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")));
     }
 
     public void test_fetch_shallow() throws Exception {
@@ -1487,7 +1483,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
         w.git.branch("test");
-        String branches = w.cmd("git branch -l");
+        String branches = w.launchCommand("git", "branch", "-l");
         assertTrue("master branch not listed", branches.contains("master"));
         assertTrue("test branch not listed", branches.contains("test"));
     }
@@ -1516,7 +1512,7 @@ public abstract class GitAPITestCase extends TestCase {
         branches = w.git.getBranches();
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
-        String output = w.cmd("git branch -v --no-abbrev");
+        String output = w.launchCommand("git", "branch", "-v", "--no-abbrev");
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
         if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
@@ -1538,8 +1534,8 @@ public abstract class GitAPITestCase extends TestCase {
         r.git.branch("another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.cmd("git fetch origin");
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
+        w.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = w.git.getRemoteBranches();
         assertBranchesExist(branches, "origin/master", "origin/test", "origin/another");
         assertEquals(3, branches.size());
@@ -1554,8 +1550,8 @@ public abstract class GitAPITestCase extends TestCase {
         r.tag("yet_another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.cmd("git fetch origin");
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
+        w.launchCommand("git", "fetch", "origin");
         Set<String> local_tags = w.git.getTagNames("*test");
         Set<String> tags = w.git.getRemoteTagNames("*test");
         assertTrue("expected tag test not listed", tags.contains("test"));
@@ -1572,8 +1568,8 @@ public abstract class GitAPITestCase extends TestCase {
         r.tag("yet_another");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.cmd("git fetch origin");
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
+        w.launchCommand("git", "fetch",  "origin");
         Set<String> allTags = w.git.getRemoteTagNames(null);
         assertTrue("tag 'test' not listed", allTags.contains("test"));
         assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
@@ -1595,7 +1591,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("init");
         w.git.branch("test");
         w.git.deleteBranch("test");
-        String branches = w.cmd("git branch -l");
+        String branches = w.launchCommand("git", "branch", "-l");
         assertFalse("deleted test branch still present", branches.contains("test"));
         try {
             w.git.deleteBranch("test");
@@ -1642,10 +1638,10 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("annotated tag does not match commit SHA1", commitId, w.git.getHeadRev(gitDir, longTagRef));
         assertEquals("annotated tag does not match commit SHA1", commitId, w.git.revParse(longTagRef));
 
-        String tagNames = w.cmd("git tag -l").trim();
+        String tagNames = w.launchCommand("git", "tag", "-l").trim();
         assertEquals("tag not created", "test", tagNames);
 
-        String tagNamesWithMessages = w.cmd("git tag -l -n1");
+        String tagNamesWithMessages = w.launchCommand("git", "tag", "-l", "-n1");
         assertTrue("unexpected tag message : " + tagNamesWithMessages, tagNamesWithMessages.contains("this is an annotated tag"));
 
         ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
@@ -1658,7 +1654,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("test");
         w.tag("another");
         w.git.deleteTag("test");
-        String tags = w.cmd("git tag");
+        String tags = w.launchCommand("git", "tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another"));
         try {
@@ -1716,7 +1712,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_get_tag_message() throws Exception {
         w.init();
         w.commitEmpty("init");
-        w.tag("test -m this-is-a-test");
+        w.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
         assertEquals("this-is-a-test", w.git.getTagMessage("test"));
     }
 
@@ -1735,7 +1731,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
         w.git.ref("refs/testing/testref");
-        assertTrue("test ref not created", w.cmd("git show-ref").contains("refs/testing/testref"));
+        assertTrue("test ref not created", w.launchCommand("git", "show-ref").contains("refs/testing/testref"));
     }
 
     public void test_delete_ref() throws Exception {
@@ -1744,7 +1740,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.ref("refs/testing/testref");
         w.git.ref("refs/testing/anotherref");
         w.git.deleteRef("refs/testing/testref");
-        String refs = w.cmd("git show-ref");
+        String refs = w.launchCommand("git", "show-ref");
         assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
         assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
         w.git.deleteRef("refs/testing/testref");  // Double-deletes do nothing.
@@ -1790,7 +1786,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.add("file1");
         w.git.commit("commit1");
         w.tag("test");
-        String sha1 = w.cmd("git rev-parse HEAD").substring(0,40);
+        String sha1 = w.launchCommand("git", "rev-parse", "HEAD").substring(0,40);
         assertEquals(sha1, w.git.revParse(sha1).name());
         assertEquals(sha1, w.git.revParse("HEAD").name());
         assertEquals(sha1, w.git.revParse("test").name());
@@ -1836,10 +1832,10 @@ public abstract class GitAPITestCase extends TestCase {
 
         WorkingArea r = new WorkingArea();
         r.init(true);
-        w.cmd("git remote add origin " + r.repoPath());
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
 
         w.git.push("origin", "master");
-        String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
+        String remoteSha1 = r.launchCommand("git", "rev-parse", "master").substring(0, 40);
         assertEquals(sha1.name(), remoteSha1);
     }
 
@@ -1861,7 +1857,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* Push to bare repo */
         w.git.push("origin", "master");
         /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
+        ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", "master").substring(0, 40));
         assertEquals("Heads don't match", workHead, bareHead);
         assertEquals("Heads don't match", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
 
@@ -1877,8 +1873,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.igit().push(origin, "master");
 
         /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.cmd("git rev-parse master").substring(0, 40));
-        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.cmd("git rev-parse master").substring(0, 40));
+        ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.launchCommand("git", "rev-parse", "master").substring(0, 40));
+        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", "master").substring(0, 40));
         assertEquals("Working SHA1 != bare SHA1", workHead2, bareHead2);
         assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), "master"), bare.git.getHeadRev(bare.repoPath(), "master"));
     }
@@ -1891,11 +1887,11 @@ public abstract class GitAPITestCase extends TestCase {
         r.touch("file1");
         r.git.add("file1");
         r.git.commit("commit1");
-        r.cmd("git checkout -b other");
+        r.launchCommand("git", "checkout", "-b", "other");
 
         w.init();
-        w.cmd("git remote add origin " + r.repoPath());
-        w.cmd("git pull --depth=1 origin master");
+        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
+        w.launchCommand("git", "pull", "--depth=1", "origin", "master");
 
         w.touch("file2");
         w.git.add("file2");
@@ -1905,7 +1901,7 @@ public abstract class GitAPITestCase extends TestCase {
         try {
             w.git.push("origin", "master");
             assertTrue("git < 1.9.0 can push from shallow repository", w.cgit().isAtLeastVersion(1, 9, 0, 0));
-            String remoteSha1 = r.cmd("git rev-parse master").substring(0, 40);
+            String remoteSha1 = r.launchCommand("git", "rev-parse", "master").substring(0, 40);
             assertEquals(sha1.name(), remoteSha1);
         } catch (GitException e) {
             // expected for git cli < 1.9.0
@@ -1921,12 +1917,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("init");
 
         w.git.addNote("foo", "commits");
-        assertEquals("foo\n", w.cmd("git notes show"));
+        assertEquals("foo\n", w.launchCommand("git", "notes", "show"));
         w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
         // cgit normalizes CR+LF aggressively
         // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
         // note that CR itself is left as is
-        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.cmd("git notes show"));
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.launchCommand("git", "notes", "show"));
     }
 
     public void test_notes_append_first_note() throws Exception {
@@ -1936,12 +1932,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("init");
 
         w.git.appendNote("foo", "commits");
-        assertEquals("foo\n", w.cmd("git notes show"));
+        assertEquals("foo\n", w.launchCommand("git", "notes", "show"));
         w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
         // cgit normalizes CR+LF aggressively
         // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
         // note that CR itself is left as is
-        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.cmd("git notes show"));
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.launchCommand("git", "notes", "show"));
     }
 
     /**
@@ -1958,7 +1954,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
         w.tag("master"); // ref "master" is now ambiguous
-        String revParse = w.cmd("git rev-parse master");
+        String revParse = w.launchCommand("git", "rev-parse", "master");
         assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
         ObjectId masterTag = w.git.revParse("refs/tags/master");
         assertEquals("masterTag != head", w.head(), masterTag);
@@ -1973,8 +1969,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit1-master");
         final ObjectId masterTip = w.head();
 
-        w.cmd("git branch branch1 " + masterTip.name());
-        w.cmd("git checkout branch1");
+        w.launchCommand("git", "branch", "branch1", masterTip.name());
+        w.launchCommand("git", "checkout", "branch1");
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1-branch1");
@@ -2181,14 +2177,14 @@ public abstract class GitAPITestCase extends TestCase {
         /* Really remove submodule remnant, use git command line double force */
         if (w.git instanceof CliGitAPIImpl) {
             if (!isWindows()) {
-                w.cmd("git clean -xffd");
+                w.launchCommand("git", "clean", "-xffd");
             } else {
                 try {
-                    w.cmd("git clean -xffd");
+                    w.launchCommand("git", "clean", "-xffd");
                 } catch (Exception e) {
                     /* Retry once (and only once) in case of Windows busy file behavior */
                     Thread.sleep(503); /* Wait 0.5 seconds for Windows */
-                    w.cmd("git clean -xffd");
+                    w.launchCommand("git", "clean", "-xffd");
                 }
             }
         }
@@ -2551,7 +2547,7 @@ public abstract class GitAPITestCase extends TestCase {
         checkoutTimeout = 1 + random.nextInt(60 * 24);
         w.git.checkout().ref("origin/master").branch("master").timeout(checkoutTimeout).execute();
 
-        String tagsBefore = w.cmd("git tag");
+        String tagsBefore = w.launchCommand("git", "tag");
         Set<String> tagNamesBefore = w.git.getTagNames(null);
         for (String tag : tagNamesBefore) {
             assertTrue(tag + " not in " + tagsBefore, tagsBefore.contains(tag));
@@ -2560,7 +2556,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").timeout(checkoutTimeout).execute();
         w.git.submoduleUpdate().recursive(true).execute();
 
-        String tagsAfter = w.cmd("git tag");
+        String tagsAfter = w.launchCommand("git", "tag");
         Set<String> tagNamesAfter = w.git.getTagNames(null);
         for (String tag : tagNamesAfter) {
             assertTrue(tag + " not in " + tagsAfter, tagsAfter.contains(tag));
@@ -2833,7 +2829,7 @@ public abstract class GitAPITestCase extends TestCase {
         String expected = SystemUtils.IS_OS_WINDOWS ? "false" : "";
         String symlinkValue;
         try {
-            symlinkValue = w.cmd(true, "git config core.symlinks").trim();
+            symlinkValue = w.launchCommand(true, "git", "config", "core.symlinks").trim();
         } catch (Exception e) {
             symlinkValue = e.getMessage();
         }
@@ -2874,7 +2870,7 @@ public abstract class GitAPITestCase extends TestCase {
     @NotImplementedInCliGit // Until submodule rename is fixed
     public void test_getSubmoduleUrl() throws Exception {
         w = clone(localMirror());
-        w.cmd("git checkout tests/getSubmodules");
+        w.launchCommand("git", "checkout", "tests/getSubmodules");
         w.git.submoduleInit();
 
         assertEquals("https://github.com/puppetlabs/puppetlabs-firewall.git", w.igit().getSubmoduleUrl("modules/firewall"));
@@ -2889,7 +2885,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_setSubmoduleUrl() throws Exception {
         w = clone(localMirror());
-        w.cmd("git checkout tests/getSubmodules");
+        w.launchCommand("git", "checkout", "tests/getSubmodules");
         w.git.submoduleInit();
 
         String DUMMY = "/dummy";
@@ -2909,19 +2905,19 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea ws2 = w.init();
 
         ws1.commitEmpty("c");
-        ws1.cmd("git remote add origin " + r.repoPath());
+        ws1.launchCommand("git", "remote", "add", "origin", r.repoPath());
 
-        ws1.cmd("git push origin master:b1");
-        ws1.cmd("git push origin master:b2");
-        ws1.cmd("git push origin master");
+        ws1.launchCommand("git", "push", "origin", "master:b1");
+        ws1.launchCommand("git", "push", "origin", "master:b2");
+        ws1.launchCommand("git", "push", "origin", "master");
 
-        ws2.cmd("git remote add origin " + r.repoPath());
-        ws2.cmd("git fetch origin");
+        ws2.launchCommand("git", "remote", "add", "origin", r.repoPath());
+        ws2.launchCommand("git", "fetch", "origin");
 
         // at this point both ws1&ws2 have several remote tracking branches
 
-        ws1.cmd("git push origin :b1");
-        ws1.cmd("git push origin master:b3");
+        ws1.launchCommand("git", "push", "origin", ":b1");
+        ws1.launchCommand("git", "push", "origin", "master:b3");
 
         ws2.git.prune(new RemoteConfig(new Config(),"origin"));
 
@@ -2938,7 +2934,7 @@ public abstract class GitAPITestCase extends TestCase {
         for (ObjectId id : w.git.revListAll()) {
             out.append(id.name()).append('\n');
         }
-        String all = w.cmd("git rev-list --all");
+        String all = w.launchCommand("git", "rev-list", "--all");
         assertEquals(all,out.toString());
     }
 
@@ -2956,7 +2952,7 @@ public abstract class GitAPITestCase extends TestCase {
         for (ObjectId id : oidList) {
             out.append(id.name()).append('\n');
         }
-        String all = w.cmd("git rev-list --all");
+        String all = w.launchCommand("git", "rev-list", "--all");
         assertEquals(all,out.toString());
     }
 
@@ -2978,7 +2974,7 @@ public abstract class GitAPITestCase extends TestCase {
                 out.append(id.name()).append('\n');
             }
 
-            String all = w.cmd("git rev-list --first-parent " + b.getName());
+            String all = w.launchCommand("git", "rev-list", "--first-parent",  b.getName());
             assertEquals(all,out.toString());
         }
     }
@@ -2992,7 +2988,7 @@ public abstract class GitAPITestCase extends TestCase {
             for (ObjectId id : w.git.revList(b.getName())) {
                 out.append(id.name()).append('\n');
             }
-            String all = w.cmd("git rev-list " + b.getName());
+            String all = w.launchCommand("git", "rev-list", b.getName());
             assertEquals(all,out.toString());
         }
     }
@@ -3286,7 +3282,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
-        w.cmd("git branch branch2 master");
+        w.launchCommand("git", "branch", "branch2", "master");
         w.git.checkout("branch2");
         File f = w.touch("file2", "content2");
         w.git.add("file2");
@@ -3323,7 +3319,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             return;
         }
-        w.cmd("git checkout --orphan newroot"); // Create an independent root
+        w.launchCommand("git", "checkout", "--orphan", "newroot"); // Create an independent root
         w.commitEmpty("init-on-newroot");
         final ObjectId newRootCommit = w.head();
         assertNull("Common root not expected", w.igit().mergeBase(newRootCommit, branch1));
@@ -3762,7 +3758,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     public void test_getHeadRev_remote() throws Exception {
-        String lsRemote = w.cmd("git ls-remote -h " + remoteMirrorURL + " refs/heads/master");
+        String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/master");
         ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
         check_headRev(remoteMirrorURL, lsRemoteId);
     }
@@ -3802,7 +3798,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
-        w.cmd("git branch branch.2 master");
+        w.launchCommand("git", "branch", "branch.2", "master");
         w.git.checkout("branch.2");
         File f = w.touch("file.2", "content2");
         w.git.add("file.2");
@@ -3935,14 +3931,14 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_describe() throws Exception {
         w.init();
         w.commitEmpty("first");
-        w.tag("-m test t1");
+        w.launchCommand("git", "tag", "-m", "test", "t1");
         w.touch("a");
         w.git.add("a");
         w.git.commit("second");
-        assertThat(w.cmd("git describe").trim(), sharesPrefix(w.git.describe("HEAD")));
+        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
 
-        w.tag("-m test2 t2");
-        assertThat(w.cmd("git describe").trim(), sharesPrefix(w.git.describe("HEAD")));
+        w.launchCommand("git", "tag", "-m", "test2", "t2");
+        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
     }
 
     public void test_getAllLogEntries() throws Exception {
@@ -3981,7 +3977,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("c1");
         ObjectId c1 = w.head();
 
-        w.cmd("git branch Z "+c1.name());
+        w.launchCommand("git", "branch", "Z", c1.name());
         w.git.checkout("Z");
         w.commitEmpty("T");
         ObjectId t = w.head();
@@ -3989,15 +3985,15 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId c2 = w.head();
         w.commitEmpty("Z");
 
-        w.cmd("git branch X "+c1.name());
+        w.launchCommand("git", "branch", "X", c1.name());
         w.git.checkout("X");
         w.commitEmpty("X");
 
-        w.cmd("git branch Y "+c1.name());
+        w.launchCommand("git", "branch", "Y", c1.name());
         w.git.checkout("Y");
         w.commitEmpty("c3");
         ObjectId c3 = w.head();
-        w.cmd("git merge --no-ff -m Y "+c2.name());
+        w.launchCommand("git", "merge", "--no-ff", "-m", "Y", c2.name());
 
         w.git.deleteBranch("master");
         assertEquals(3,w.git.getBranches().size());     // X, Y, and Z
@@ -4044,25 +4040,25 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_checkout_null_ref() throws Exception {
         w = clone(localMirror());
-        String branches = w.cmd("git branch -l");
+        String branches = w.launchCommand("git", "branch", "-l");
         assertTrue("master branch not current branch in " + branches, branches.contains("* master"));
         final String branchName = "test-checkout-null-ref-branch-" + java.util.UUID.randomUUID().toString();
-        branches = w.cmd("git branch -l");
+        branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
         w.git.checkout(null, branchName);
-        branches = w.cmd("git branch -l");
+        branches = w.launchCommand("git", "branch", "-l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
     }
 
     public void test_checkout() throws Exception {
         w = clone(localMirror());
-        String branches = w.cmd("git branch -l");
+        String branches = w.launchCommand("git", "branch", "-l");
         assertTrue("master branch not current branch in " + branches, branches.contains("* master"));
         final String branchName = "test-checkout-branch-" + java.util.UUID.randomUUID().toString();
-        branches = w.cmd("git branch -l");
+        branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
         w.git.checkout("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea", branchName); // git-client-1.6.0
-        branches = w.cmd("git branch -l");
+        branches = w.launchCommand("git", "branch", "-l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
         String sha1 = w.git.revParse("HEAD").name();
         String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
@@ -4252,7 +4248,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.tag("t1");
 
         // delete the file from git
-        w.cmd("git rm foo");
+        w.launchCommand("git", "rm", "foo");
         w.git.commit("c2");
         assertFalse(w.file("foo").exists());
 
@@ -4464,7 +4460,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("added-file exists at commit1", w.file("added-file").exists());
         assertFalse("touched-file exists at commit1", w.file("added-file").exists());
 
-        w.cmd("git rm committed-file");
+        w.launchCommand("git", "rm", "committed-file");
         w.touch("added-file", "File 2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("added-file");
         w.touch("touched-file", "File 3 content " + java.util.UUID.randomUUID().toString());
@@ -4591,7 +4587,7 @@ public abstract class GitAPITestCase extends TestCase {
         assert_longpaths(false);
         w.init();
         assert_longpaths(w, false);
-        w.cmd("git config core.longpaths true");
+        w.launchCommand("git", "config", "core.longpaths", "true");
         assert_longpaths(w, true);
         check_longpaths(true);
         assert_longpaths(w, true);
@@ -4603,7 +4599,7 @@ public abstract class GitAPITestCase extends TestCase {
         assert_longpaths(false);
         w.init();
         assert_longpaths(w, false);
-        w.cmd("git config core.longpaths false");
+        w.launchCommand("git", "config", "core.longpaths", "false");
         assert_longpaths(w, false);
         check_longpaths(false);
         assert_longpaths(w, false);
