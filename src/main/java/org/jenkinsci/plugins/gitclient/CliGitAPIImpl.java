@@ -657,9 +657,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
                     if (!referencePath.exists())
-                        listener.error("Reference path does not exist: " + reference);
+                        listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                     else if (!referencePath.isDirectory())
-                        listener.error("Reference path is not a directory: " + reference);
+                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
                     else {
                         // reference path can either be a normal or a base repository
                         File objectsPath = new File(referencePath, ".git/objects");
@@ -668,7 +668,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             objectsPath = new File(referencePath, "objects");
                         }
                         if (!objectsPath.isDirectory())
-                            listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                            listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
                             try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
@@ -1242,9 +1242,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if ((ref != null) && !ref.isEmpty()) {
                     File referencePath = new File(ref);
                     if (!referencePath.exists())
-                        listener.error("Reference path does not exist: " + ref);
+                        listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
                     else if (!referencePath.isDirectory())
-                        listener.error("Reference path is not a directory: " + ref);
+                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
                     else
                         args.add("--reference", ref);
                 }
