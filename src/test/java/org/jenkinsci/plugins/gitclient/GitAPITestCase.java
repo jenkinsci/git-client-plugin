@@ -630,7 +630,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_shared() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared(true).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
@@ -641,7 +641,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_null_branch() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared(true).execute();
         createRevParseBranch();
         w.git.checkout().ref("origin/master").branch(null).execute();
         check_remote_url("origin");
