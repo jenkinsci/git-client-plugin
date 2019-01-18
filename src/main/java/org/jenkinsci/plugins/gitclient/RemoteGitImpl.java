@@ -411,7 +411,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        proxy.fetch(url, refspecs);
+        proxy.fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */

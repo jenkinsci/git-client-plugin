@@ -290,7 +290,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
+        if (Git.USE_CLI) super.fetch_().from(url, refspecs).execute(); else  jgit.fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
