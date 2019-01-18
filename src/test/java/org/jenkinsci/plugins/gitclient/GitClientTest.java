@@ -671,7 +671,7 @@ public class GitClientTest {
                 URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
                 boolean pruneBranches = random.nextBoolean();
                 if (pruneBranches) {
-                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune().execute();
+                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune(true).execute();
                 } else {
                     client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
                 }
