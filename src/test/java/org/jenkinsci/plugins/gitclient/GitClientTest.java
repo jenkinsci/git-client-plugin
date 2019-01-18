@@ -1031,7 +1031,7 @@ public class GitClientTest {
         ObjectId commitA = commitOneFile();
 
         List<ObjectId> resultAll = new ArrayList<>();
-        gitClient.revList_().to(resultAll).all().execute();
+        gitClient.revList_().to(resultAll).all(true).execute();
         assertThat(resultAll, contains(commitA));
 
         List<ObjectId> resultRef = new ArrayList<>();
@@ -1045,14 +1045,14 @@ public class GitClientTest {
         assertThat(gitClient.revListAll(), contains(commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultA = new ArrayList<>();
-        gitClient.revList_().to(resultA).all().execute();
+        gitClient.revList_().to(resultA).all(true).execute();
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
         assertThat(gitClient.revListAll(), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultB = new ArrayList<>();
-        gitClient.revList_().to(resultB).all().execute();
+        gitClient.revList_().to(resultB).all(true).execute();
         assertThat(resultB, contains(commitB, commitA));
     }
 

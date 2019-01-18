@@ -2924,7 +2924,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public List<ObjectId> revListAll() throws GitException, InterruptedException {
         List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
-        revListCommand.all();
+        revListCommand.all(true);
         revListCommand.to(oidList);
         revListCommand.execute();
         return oidList;
