@@ -1,10 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.MIXED;
-import static org.eclipse.jgit.lib.Constants.CHARSET;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
@@ -1052,7 +1052,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(),CHARSET),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
                     sw.write("\n");
                     addNote(sw.toString() + normalizeNote(note), namespace);
                 }
