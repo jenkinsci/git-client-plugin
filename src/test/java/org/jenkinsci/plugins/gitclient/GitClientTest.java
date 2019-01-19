@@ -196,7 +196,7 @@ public class GitClientTest {
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
-        File gitDir = gitClient.getRepository().getDirectory();
+        File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
@@ -483,7 +483,7 @@ public class GitClientTest {
 
     @Test
     public void testInit() throws Exception {
-        File gitDir = gitClient.getRepository().getDirectory();
+        File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         gitClient.init();
         assertTrue("init did not create " + gitDir, gitDir.isDirectory());
     }
@@ -668,7 +668,7 @@ public class GitClientTest {
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
                 break;
             case 1:
-                URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
+                URIish repoURL = new URIish(client.withRepository((repo, channel) -> repo.getConfig()).getString("remote", remote, "url"));
                 boolean pruneBranches = random.nextBoolean();
                 if (pruneBranches) {
                     client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune(true).execute();
@@ -1272,8 +1272,8 @@ public class GitClientTest {
         assertNull("Checkout did not revert change in " + lastModifiedFile, lastModifiedFile);
     }
 
-    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) {
-        File myRepoRoot = gitClient.getRepository().getWorkTree();
+    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) throws Exception {
+        File myRepoRoot = gitClient.withRepository((repo, channel) -> repo.getWorkTree());
         for (String expectedDir : expectedDirs) {
             File dir = new File(myRepoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
@@ -1283,7 +1283,7 @@ public class GitClientTest {
     }
 
     private void assertSubmoduleContents(GitClient client, String... directories) throws Exception {
-        File myRepoRoot = client.getRepository().getWorkTree();
+        File myRepoRoot = client.withRepository((repo, channel) -> repo.getWorkTree());
         for (String directory : directories) {
             File licenseDir = new File(myRepoRoot, "modules/" + directory);
             File licenseFile = new File(licenseDir, "LICENSE");
