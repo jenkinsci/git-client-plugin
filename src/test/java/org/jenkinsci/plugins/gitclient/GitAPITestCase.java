@@ -3012,7 +3012,7 @@ public abstract class GitAPITestCase extends TestCase {
             List<ObjectId> oidList = new ArrayList<>();
 
             RevListCommand revListCommand = w.git.revList_();
-            revListCommand.firstParent();
+            revListCommand.firstParent(true);
             revListCommand.to(oidList);
             revListCommand.reference(b.getName());
             revListCommand.execute();
