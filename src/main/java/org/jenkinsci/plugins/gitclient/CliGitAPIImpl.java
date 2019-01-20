@@ -70,6 +70,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 
 /**
@@ -2756,6 +2757,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
                 }
 
+                if (lfsRemote != null) {
+                    // Currently git-lfs doesn't support commas in "fetchinclude" and "fetchexclude".
+                    // (see https://github.com/git-lfs/git-lfs/issues/2264)
+                    // Therefore selective fetching is disabled in this case.
+                    if (paths.stream().anyMatch(path -> path.contains(","))) {
+                        setLfsFetchOption("lfs.fetchinclude", "");
+                        setLfsFetchOption("lfs.fetchexclude", "");
+                    } else {
+                        String lfsIncludePaths = paths.stream()
+                                .filter(path -> !path.startsWith("!"))
+                                .collect(Collectors.joining(","));
+
+                        String lfsExcludePaths = paths.stream()
+                                .filter(path -> path.startsWith("!"))
+                                .map(path -> path.substring(1))
+                                .collect(Collectors.joining(","));
+
+                        setLfsFetchOption("lfs.fetchinclude", lfsIncludePaths);
+                        setLfsFetchOption("lfs.fetchexclude", lfsExcludePaths);
+                    }
+                }
+
                 try {
                     launchCommand( "read-tree", "-mu", "HEAD" );
                 } catch (GitException e) {
@@ -2767,6 +2790,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if(deactivatingSparseCheckout) {
                     launchCommand( "config", "core.sparsecheckout", "false" );
+                }
+            }
+
+            private void setLfsFetchOption(String key, String value) throws GitException, InterruptedException {
+                if (value.isEmpty() || value.equals("/*")) {
+                    try {
+                        launchCommand("config", "--unset", key);
+                    } catch (GitException e) {
+                        // normal return code if the option was not set before
+                        if (!e.getMessage().contains("returned status code 5:")) {
+                            throw e;
+                        }
+                    }
+                } else {
+                    launchCommand("config", key, value);
                 }
             }
         };

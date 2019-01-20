@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -17,6 +18,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
@@ -595,6 +597,12 @@ public class GitClientTest {
         assertFalse(fileInRepo.getAbsolutePath() + " found", fileInRepo.isFile());
     }
 
+    private void assertFileContent(String fileName, String expectedContent) throws IOException {
+        File file = new File(repoRoot, fileName);
+        String actualContent = FileUtils.readFileToString(file, StandardCharsets.UTF_8).trim();
+        assertEquals("Incorrect file content in " + fileName, expectedContent, actualContent);
+    }
+
     private void assertDirInWorkingDir(GitClient client, String dirName) {
         File dirInRepo = new File(repoRoot, dirName);
         assertTrue(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
@@ -838,13 +846,294 @@ public class GitClientTest {
     public void testCheckoutWithCliGitLFS() throws Exception {
         assumeThat(gitImplName, is("git"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);
+
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
-        File uuidFile = new File(repoRoot, "uuid.txt");
-        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
-        String expectedContent = "5e7733d8acc94636850cb466aec524e4";
-        assertEquals("Incorrect LFS file contents in " + uuidFile, expectedContent, fileContent);
+
+        assertFileContent("uuid.txt", "5e7733d8acc94636850cb466aec524e4");
+    }
+
+    @Issue("JENKINS-43427") // Git LFS sparse checkout support
+    @Test
+    public void testSparseCheckoutWithCliGitLFS() throws Exception {
+        assumeThat(gitImplName, is("git"));
+        assumeTrue(CLI_GIT_HAS_GIT_LFS);
+
+        String branch = "tests/largeFileSupport";
+
+        String file1 = "uuid.txt";
+        String file2 = "uuid2.txt";
+        String file3 = "uuid,3.txt";
+        String file4 = "uuid 4.txt";
+
+        String lfsObjectFile1 = ".git/lfs/objects/75/d1/75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e";
+        String lfsObjectFile2 = ".git/lfs/objects/7f/0b/7f0bbf4cdb2bdf3e862c5f00285d362db0b46465ed089775743ce1ebe6c912ce";
+        String lfsObjectFile3 = ".git/lfs/objects/1e/35/1e359899b05181e6a118865d47ed027b9930bc870dffbd9608c609ec3b2a3d16";
+        String lfsObjectFile4 = ".git/lfs/objects/44/a0/44a0d97ff32b5ba6a28ea8a35d1ebbfd8f9a8a2db316e87abd530b4b60153b5c";
+
+        String expectedContent1 = "5e7733d8acc94636850cb466aec524e4";
+        String expectedContent2 = "c49d89a61c3411e9a5555b2af3892239";
+        String expectedContent3 = "6fd3199a1cb111e9bbaf537fc996ab9b";
+        String expectedContent4 = "803219bc1cb111e9abbfb7cc7b029948";
+
+        // it should support sparse checkout of LFS files
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support multiple sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.txt", "uuid2.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileContent(file2, expectedContent2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support commas (",") in sparse checkout paths
+        // (due to https://github.com/git-lfs/git-lfs/issues/2264 no sparse checkout can be used here)
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid,3.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1); // file present due to workaround
+            assertFileContent(file2, expectedContent2); // file present due to workaround
+            assertFileContent(file3, expectedContent3);
+            assertFileContent(file4, expectedContent4); // file present due to workaround
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1); // file present due to workaround
+            assertFileInWorkingDir(gitClient, lfsObjectFile2); // file present due to workaround
+            assertFileInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4); // file present due to workaround
+        }
+
+        // it should support spaces (" ") in sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid 4.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileNotInWorkingDir(gitClient, file1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileContent(file4, expectedContent4);
+
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support pattern matching with "?" in sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.t?t");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support pattern matching with "*" in sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.*");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support pattern matching with "**" in sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("/**/uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support negate pattern (leading "!") in sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("/*", "!uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileNotInWorkingDir(gitClient, file1);
+            assertFileContent(file2, expectedContent2);
+            assertFileContent(file3, expectedContent3);
+            assertFileContent(file4, expectedContent4);
+
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should remove former checked out file when changing sparse checkout paths
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths1 = Lists.newArrayList("uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths1).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+
+            List<String> sparsePaths2 = Lists.newArrayList("uuid2.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths2).execute();
+
+            assertFileNotInWorkingDir(gitClient, file1);
+            assertFileContent(file2, expectedContent2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support switching from non-sparse to sparse checkout
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileContent(file2, expectedContent2);
+            assertFileContent(file3, expectedContent3);
+            assertFileContent(file4, expectedContent4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4);
+        }
+
+        // it should support switching from sparse to non-sparse checkout
+        {
+            setGitClient();
+            String remote = fetchLFSTestRepo(branch);
+            assertEmptyWorkingDir(gitClient);
+
+            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileNotInWorkingDir(gitClient, file2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+
+            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).execute();
+
+            assertFileContent(file1, expectedContent1);
+            assertFileContent(file2, expectedContent2);
+            assertFileContent(file3, expectedContent3);
+            assertFileContent(file4, expectedContent4);
+
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileInWorkingDir(gitClient, lfsObjectFile4);
+        }
     }
 
     @Issue("JENKINS-35687") // Git LFS support - JGit not supported
@@ -852,6 +1141,7 @@ public class GitClientTest {
     public void testCheckoutWithJGitLFS() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);
+
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
@@ -863,6 +1153,7 @@ public class GitClientTest {
     public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, is("git"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);
+
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -874,6 +1165,7 @@ public class GitClientTest {
     public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);
+
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
@@ -884,15 +1176,15 @@ public class GitClientTest {
     @Test
     public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
         assumeFalse(CLI_GIT_HAS_GIT_LFS);
+
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
-        File uuidFile = new File(repoRoot, "uuid.txt");
-        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+
         String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
                 + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
                 + "size 33";
-        assertEquals("Incorrect non-LFS file contents in " + uuidFile, expectedContent, fileContent);
+        assertFileContent("uuid.txt", expectedContent);
     }
 
     /*
