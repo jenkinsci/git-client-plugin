@@ -848,7 +848,7 @@ public class GitClientTest {
     }
 
     @Issue("JENKINS-35687") // Git LFS support - JGit not supported
-    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    @Test(expected = JGitInternalException.class)
     public void testCheckoutWithJGitLFS() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);
@@ -870,7 +870,7 @@ public class GitClientTest {
 
     // If LFS installed and not enabled, throw an exception if branch includes LFS reference
     @Issue("JENKINS-35687") // Git LFS support
-    @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
+    @Test(expected = JGitInternalException.class)
     public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         assumeThat(gitImplName, startsWith("jgit"));
         assumeTrue(CLI_GIT_HAS_GIT_LFS);

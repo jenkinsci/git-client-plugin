@@ -43,6 +43,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -2747,23 +2748,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
-		    for(String path : paths) {
-			writer.println(path);
-		    }
-                } catch (IOException ex){
-                    throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
+                    for (String path : paths) {
+                        writer.println(path);
+                    }
+                } catch (IOException e) {
+                    throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
                 }
 
                 try {
                     launchCommand( "read-tree", "-mu", "HEAD" );
-                } catch (GitException ge) {
-                    // Normal return code if sparse checkout path has never exist on the current checkout branch
-                    String normalReturnCode = "128";
-                    if(ge.getMessage().contains(normalReturnCode)) {
-                        listener.getLogger().println(ge.getMessage());
-                    } else {
-                        throw ge;
+                } catch (GitException e) {
+                    // normal return code if sparse checkout path did never exist on the current checkout branch
+                    if (!e.getMessage().contains("returned status code 128:")) {
+                        throw e;
                     }
                 }
 
