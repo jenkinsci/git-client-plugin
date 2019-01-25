@@ -42,11 +42,11 @@
   </scm>
 
   <properties>
-    <revision>3.0.0-beta6</revision>
+    <revision>3.0.0-beta7</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.60.3</jenkins.version>
+    <jenkins.version>2.107.3</jenkins.version>
     <java.level>8</java.level>
     <jgit.version>5.2.1.201812262042-r</jgit.version>
   </properties>
