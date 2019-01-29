@@ -262,6 +262,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public void remove(String filePattern) throws GitException, InterruptedException {
+        proxy.remove(filePattern);
+    }
+
+    /** {@inheritDoc} */
     public void commit(String message) throws GitException, InterruptedException {
         proxy.commit(message);
     }

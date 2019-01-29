@@ -754,6 +754,21 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
     }
 
+    public void test_remove_file() throws Exception {
+        w.init();
+        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
+        w.touch("file1");
+        w.git.add("file1");
+        w.git.commit("commit1");
+        w.git.remove("file1");
+        w.git.commit("commit2");
+        assertFalse("file1 should not exists", w.exists("file1"));
+        assertTrue("HEAD commit not found", w.git.isCommitInRepo(w.head()));
+        // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
+        assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
+        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
+    }
+
     @Deprecated
     public void test_lsTree_non_recursive() throws IOException, InterruptedException {
         w.init();

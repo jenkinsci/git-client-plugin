@@ -2918,6 +2918,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public void remove(String filePattern) throws GitException, InterruptedException {
+        try {
+            launchCommand("rm", filePattern);
+        } catch (GitException e) {
+            throw new GitException("Cannot add " + filePattern, e);
+        }
+    }
+
+    /** {@inheritDoc} */
     public void branch(String name) throws GitException, InterruptedException {
         try {
             launchCommand("branch", name);

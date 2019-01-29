@@ -446,6 +446,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public void remove(String filePattern) throws GitException {
+        try (Repository repo = getRepository()) {
+            git(repo).rm().addFilepattern(filePattern).call();
+        } catch (GitAPIException e) {
+            throw new GitException(e);
+        }
+    }
+
     private Git git(Repository repo) {
         return Git.wrap(repo);
     }

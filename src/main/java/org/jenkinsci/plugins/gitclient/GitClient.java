@@ -158,6 +158,15 @@ public interface GitClient {
     void add(String filePattern) throws GitException, InterruptedException;
 
     /**
+     * rm.
+     *
+     * @param filePattern a {@link java.lang.String} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void remove(String filePattern) throws GitException, InterruptedException;
+
+    /**
      * commit.
      *
      * @param message a {@link java.lang.String} object.
