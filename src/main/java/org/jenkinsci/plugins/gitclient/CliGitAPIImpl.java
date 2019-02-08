@@ -1941,12 +1941,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         AclFileAttributeView fileAttributeView = Files.getFileAttributeView(file, AclFileAttributeView.class);
         if (fileAttributeView == null) return;
 
-        String username = getWindowsUserName(fileAttributeView);
-        if (StringUtils.isBlank(username)) return;
-
         try {
-            UserPrincipalLookupService userPrincipalLookupService = file.getFileSystem().getUserPrincipalLookupService();
-            UserPrincipal userPrincipal = userPrincipalLookupService.lookupPrincipalByName(username);
+            UserPrincipal userPrincipal = fileAttributeView.getOwner();
             AclEntry aclEntry = AclEntry.newBuilder()
                 .setType(AclEntryType.ALLOW)
                 .setPrincipal(userPrincipal)
@@ -1954,28 +1950,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 .build();
             fileAttributeView.setAcl(Collections.singletonList(aclEntry));
         } catch (IOException | UnsupportedOperationException e) {
-            throw new GitException("Error updating file permission for \"" + key.getAbsolutePath() + "\"");
-        }
-    }
-
-    /* package protected for testability */
-    String getWindowsUserName(AclFileAttributeView aclFileAttributeView) {
-        if (launcher.isUnix()) return "";
-
-        try {
-            return aclFileAttributeView.getOwner().getName();
-        } catch (IOException ignored) {
-            String username = System.getenv("USERNAME");
-            if (StringUtils.isBlank(username)) return "";
-
-            String domain = System.getenv("USERDOMAIN");
-            if (StringUtils.isNotBlank(domain) && !username.endsWith("$")) {
-                username = domain + "\\" + username;
-            } else if (username.endsWith("$")) {
-                username = "BUILTIN\\Administrators";
-            }
-
-            return username;
+            throw new GitException("Error updating file permission for \"" + key.getAbsolutePath() + "\"", e);
         }
     }
 
