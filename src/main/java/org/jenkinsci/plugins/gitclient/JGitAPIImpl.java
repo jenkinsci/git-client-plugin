@@ -1433,9 +1433,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (reference != null && !reference.isEmpty()) {
                         File referencePath = new File(reference);
                         if (!referencePath.exists())
-                            listener.error("Reference path does not exist: " + reference);
+                            listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                         else if (!referencePath.isDirectory())
-                            listener.error("Reference path is not a directory: " + reference);
+                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
                         else {
                             // reference path can either be a normal or a base repository
                             File objectsPath = new File(referencePath, ".git/objects");
@@ -1444,7 +1444,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 objectsPath = new File(referencePath, "objects");
                             }
                             if (!objectsPath.isDirectory())
-                                listener.error("Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                                listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (no git repo?): " + objectsPath);
                             else {
                                 try {
                                     File alternates = new File(workspace, ".git/objects/info/alternates");
@@ -2211,7 +2211,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(Integer threads) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand threads(int threads) {
                 // TODO: I have no idea if JGit can update submodules in parallel
                 // It might work, or it might blow up horribly. This probably depends on
                 // whether JGit relies on any global/shared state. Since I have no
