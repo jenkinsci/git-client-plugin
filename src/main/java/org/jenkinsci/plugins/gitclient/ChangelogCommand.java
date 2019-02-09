@@ -85,14 +85,15 @@ public interface ChangelogCommand extends GitCommand {
     ChangelogCommand includes(ObjectId rev);
 
     /**
-     * Sets the firstParent private variable to true
+     * Limits the changelog to only follow the first parent commit.  If there
+     * are merge commits in the changelog, only follow the first parent.
      */
     ChangelogCommand firstParent();
 
     /**
-     * Sets the firstParent private variable to boolean param
+     * Enable or disable the firstParent option in the calculation of the changelog.
      *
-     * @param firstParent a {@link java.lang.boolean} object.
+     * @param firstParent
      */
     ChangelogCommand firstParent(boolean firstParent);
 

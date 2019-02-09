@@ -1059,10 +1059,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return includes(rev.name());
             }
 
+            @Override
             public ChangelogCommand firstParent() {
                 return firstParent(true);
             }
 
+            @Override
             public ChangelogCommand firstParent(boolean firstParent) {
                 this.firstParent = firstParent;
                 return this;

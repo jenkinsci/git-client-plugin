@@ -4727,6 +4727,7 @@ public abstract class GitAPITestCase extends TestCase {
     /*
      * Verify that .firstParent() shows no changes when doing a merge
      */
+    @NotImplementedInJGit
     public void test_changelog_with_merge_commit_and_first_parent() throws Exception {
         w.init();
         w.commitEmpty("init");
@@ -4744,12 +4745,9 @@ public abstract class GitAPITestCase extends TestCase {
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
 
-        if (w.git instanceof CliGitAPIImpl) {
-            // Only CliGit currently supports firstParent
-            StringWriter writer = new StringWriter();
-            w.git.changelog().firstParent().to(writer).execute();
-            assertThat(writer.toString(),isEmptyString());
-        }
+        StringWriter writer = new StringWriter();
+        w.git.changelog().firstParent().to(writer).execute();
+        assertThat(writer.toString(),isEmptyString());
     }
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */

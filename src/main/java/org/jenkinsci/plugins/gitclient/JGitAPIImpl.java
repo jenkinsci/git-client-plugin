@@ -1974,6 +1974,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public RevListCommand firstParent(boolean firstParent) {
                 this.firstParent = firstParent;
+                if (firstParent) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support --first-parent option. This flag is ignored!");
+                }
                 return this;
             }
 
