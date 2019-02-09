@@ -87,13 +87,15 @@ public interface ChangelogCommand extends GitCommand {
     /**
      * Limits the changelog to only follow the first parent commit.  If there
      * are merge commits in the changelog, only follow the first parent.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand firstParent();
 
     /**
      * Enable or disable the firstParent option in the calculation of the changelog.
      *
-     * @param firstParent
+     * @param firstParent a boolean object determining if the changelog is limited to first parent commits or not
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     ChangelogCommand firstParent(boolean firstParent);
 
