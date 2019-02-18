@@ -204,18 +204,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * as the submodule remote name, instead of taking the longest match.
      * See SubmodulePatternStringTest for test cases.
     */
-    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url";
+    private final static String SUBMODULE_REMOTE_PATTERN_CONFIG_KEY = "^submodule\\.(.+)\\.url\\b";
 
     /* See comments for SUBMODULE_REMOTE_PATTERN_CONFIG_KEY to explain
      * why this regular expression string adds the trailing space
-     * characters and the sequence of non-space characters as part of
-     * its match.  The ending sequence of non-white-space characters
-     * is the repository URL in the output of the 'git config' command.
-     * Relies on repository URL not containing a whitespace character,
-     * per RFC1738.
+     * characters, the word boundary, and the sequence of characters
+     * as part of its match.  The ending sequence of characters is the
+     * repository URL in the output of the 'git config' command.
      */
     /* Package protected for testing */
-    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+[^\\s]+$";
+    final static String SUBMODULE_REMOTE_PATTERN_STRING = SUBMODULE_REMOTE_PATTERN_CONFIG_KEY + "\\s+\\b.+$";
 
     private void warnIfWindowsTemporaryDirNameHasSpaces() {
         if (!isWindows()) {

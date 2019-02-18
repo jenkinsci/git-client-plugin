@@ -7,7 +7,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,6 +44,7 @@ public class SubmodulePatternStringTest {
             "https://github.com/MarkEWaite/JENKINS-46054",
             "https://mark.url:some%20pass.urlify@gitroot/repo",
             "ssh://git.example.com/MarkEWaite/JENKINS-46054",
+            "file://C:/Users/MarkE/AppData/Local/Temp/j h/dir-submodule",
         };
         String[] remoteNames = {
             "has space",
@@ -52,6 +52,8 @@ public class SubmodulePatternStringTest {
             "simple",
             "simple.name",
             "simple.url.name",
+            "ends.with.url",
+            "url",
         };
         String [] suffixes = {
             "",
