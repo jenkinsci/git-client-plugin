@@ -31,6 +31,8 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -436,6 +438,8 @@ public abstract class GitAPITestCase extends TestCase {
 
     protected abstract GitClient setupGitAPI(File ws) throws Exception;
 
+    private List<File> tempDirsToDelete = new ArrayList<>();
+
     @Override
     protected void tearDown() throws Exception {
         try {
@@ -453,6 +457,15 @@ public abstract class GitAPITestCase extends TestCase {
             assertRevParseCalls(revParseBranchName);
         } finally {
             handler.close();
+        }
+        try {
+            for (File tempdir : tempDirsToDelete) {
+                Util.deleteRecursive(tempdir);
+            }
+        } catch (IOException e) {
+            e.printStackTrace(System.err);
+        } finally {
+            tempDirsToDelete = new ArrayList<>();
         }
     }
 
@@ -2358,6 +2371,19 @@ public abstract class GitAPITestCase extends TestCase {
         assertFixSubmoduleUrlsThrows();
     }
 
+    private File createTempDirectoryWithoutSpaces() throws IOException {
+        // JENKINS-56175 notes that the plugin does not support submodule URL's
+        // which contain a space character. Parent pom 3.36 and later use a
+        // temporary directory containing a space to detect these problems.
+        // Not yet ready to solve JENKINS-56175, so this dodges the problem by
+        // creating the submodule repository in a path which does not contain
+        // space characters.
+        Path tempDirWithoutSpaces = Files.createTempDirectory("no-spaces");
+        assertThat(tempDirWithoutSpaces.toString(), not(containsString(" ")));
+        tempDirsToDelete.add(tempDirWithoutSpaces.toFile());
+        return tempDirWithoutSpaces.toFile();
+    }
+
     @NotImplementedInJGit
     public void test_trackingSubmodule() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
@@ -2368,7 +2394,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         // create a new GIT repo.
         //   master -- <file1>C  <file2>C
-        WorkingArea r = new WorkingArea();
+        WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
         r.init();
         r.touch("file1", "content1");
         r.git.add("file1");
@@ -2552,7 +2578,7 @@ public abstract class GitAPITestCase extends TestCase {
         //    master  -- <file1>C
         //    branch1 -- <file1>C <file2>C
         //    branch2 -- <file1>C <file3>C
-        WorkingArea r = new WorkingArea();
+        WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
         r.init();
         r.touch("file1", "content1");
         r.git.add("file1");
@@ -4606,4 +4632,49 @@ public abstract class GitAPITestCase extends TestCase {
         return File.pathSeparatorChar==';';
     }
 
+    private void withSystemLocaleReporting(String fileName, TestedCode code) throws Exception {
+        try {
+            code.run();
+        } catch (GitException ge) {
+            // Exception message should contain the actual file name.
+            // It may just contain ? for characters that are not encoded correctly due to the system locale.
+            // If such a mangled file name is seen instead, throw a clear exception to indicate the root cause.
+            assertTrue("System locale does not support filename '" + fileName + "'", ge.getMessage().contains("?"));
+            // Rethrow exception for all other issues.
+            throw ge;
+        }
+    }
+
+    @FunctionalInterface
+    interface TestedCode {
+        void run() throws Exception;
+    }
+
+    private WorkingArea setupRepositoryWithSubmodule() throws Exception {
+        WorkingArea workingArea = new WorkingArea(createTempDirectoryWithoutSpaces());
+
+        File repositoryDir = workingArea.file("dir-repository");
+        File submoduleDir = workingArea.file("dir-submodule");
+
+        assertTrue("did not create dir " + repositoryDir.getName(), repositoryDir.mkdir());
+        assertTrue("did not create dir " + submoduleDir.getName(), submoduleDir.mkdir());
+
+        WorkingArea submoduleWorkingArea = new WorkingArea(submoduleDir).init();
+
+        for (int commit = 1; commit <= 5; commit++) {
+            submoduleWorkingArea.touch("file", String.format("submodule content-%d", commit));
+            submoduleWorkingArea.cgit().add("file");
+            submoduleWorkingArea.cgit().commit(String.format("submodule commit-%d", commit));
+        }
+
+        WorkingArea repositoryWorkingArea = new WorkingArea(repositoryDir).init();
+
+        repositoryWorkingArea.commitEmpty("init");
+
+        repositoryWorkingArea.cgit().add(".");
+        repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
+        repositoryWorkingArea.cgit().commit("submodule");
+
+        return workingArea;
+    }
 }
