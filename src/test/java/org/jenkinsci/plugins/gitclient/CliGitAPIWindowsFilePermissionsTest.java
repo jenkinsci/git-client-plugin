@@ -25,7 +25,6 @@ public class CliGitAPIWindowsFilePermissionsTest {
     private File file;
     private AclFileAttributeView fileAttributeView;
     private UserPrincipal userPrincipal;
-    private String username;
 
     @Before
     public void beforeEach() throws Exception {
@@ -35,13 +34,8 @@ public class CliGitAPIWindowsFilePermissionsTest {
         Path path = Paths.get(file.toURI());
         fileAttributeView = Files.getFileAttributeView(path, AclFileAttributeView.class);
         assertNotNull(fileAttributeView);
-        UserPrincipalLookupService userPrincipalLookupService = path.getFileSystem().getUserPrincipalLookupService();
-        assertNotNull(userPrincipalLookupService);
-        username = cliGit.getWindowsUserName(fileAttributeView);
-        assertNotNull(username);
-        userPrincipal = userPrincipalLookupService.lookupPrincipalByName(username);
+        userPrincipal = fileAttributeView.getOwner();
         assertNotNull(userPrincipal);
-        assertEquals(userPrincipal, fileAttributeView.getOwner());
     }
 
     @Test
@@ -64,11 +58,6 @@ public class CliGitAPIWindowsFilePermissionsTest {
                 assertNotSame(CliGitAPIImpl.ACL_ENTRY_PERMISSIONS, entry.permissions());
             }
         }
-    }
-
-    @Test
-    public void test_windows_username_lookup() {
-        assertEquals(username, userPrincipal.getName());
     }
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
