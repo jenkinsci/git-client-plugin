@@ -347,7 +347,7 @@ public class CredentialsTest {
      * @return true if another test should be allowed to start
      */
     private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 30) * 1000L);
+        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 130) * 1000L);
     }
 
     @Test
