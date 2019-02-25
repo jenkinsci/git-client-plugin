@@ -1080,7 +1080,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
-                args.add("--format="+RAW);
+                if (isAtLeastVersion(1, 8, 3, 0)) {
+                    args.add("--format="+RAW);
+                } else {
+                    /* Ancient git versions don't support the required format string, use 'raw' and hope it works */
+                    args.add("--format=raw");
+                }
                 if (n!=null)
                     args.add("-n").add(n);
                 for (String rev : this.revs)
