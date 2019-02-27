@@ -45,6 +45,10 @@ public class SubmodulePatternStringTest {
             "https://github.com/MarkEWaite/JENKINS-46054",
             "https://mark.url:some%20pass.urlify@gitroot/repo",
             "ssh://git.example.com/MarkEWaite/JENKINS-46054",
+            // JENKINS-56175 notes that submodule URL's with spaces don't
+            // work in the git plugin. This test shows they don't work at
+            // one level. Other levels also have failures.
+            // "file://gitroot/has space",
         };
         String[] remoteNames = {
             "has space",
@@ -52,12 +56,15 @@ public class SubmodulePatternStringTest {
             "simple",
             "simple.name",
             "simple.url.name",
+            "url",
+            "modules/module.named.url"
         };
         String [] suffixes = {
             "",
             ".git",
             ".url",
             ".url.git",
+            ".git.url",
         };
         for (String repoUrlParam : repoUrls) {
             for (String repoUrlSuffix : suffixes) {
