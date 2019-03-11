@@ -1931,4 +1931,10 @@ public class GitClientTest {
         assertThat(tags, not(hasItems(updatedTag)));
         assertThat(tags, hasItems(tag));
     }
+
+    @Test
+    @Issue("JENKINS-55948")
+    public void testGitClientCalledFromGitParameterPlugin() throws Exception {
+        fail("JENKINS-55948 must be fixed before release of git client plugin 3.0.0");
+    }
 }
