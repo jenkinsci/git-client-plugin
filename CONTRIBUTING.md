@@ -22,8 +22,8 @@ Code coverage reporting is available as a maven target and is actively
 monitored.  Please improve code coverage with tests
 when you submit a pull request.
 
-Before submitting your change, please review the findbugs output to
-assure that you haven't introduced new findbugs warnings.
+Before submitting your change, please review the spotbugs output to
+assure that you haven't introduced new spotbugs warnings.
 
 # Code Style Guidelines
 
