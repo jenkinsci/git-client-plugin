@@ -1,6 +1,5 @@
 #!groovy
 
-// build both versions, retry test failures
-buildPlugin(jenkinsVersions: [null, '2.150.2'],
-            findbugs: [run:true, archive:true, unstableTotalAll: '0'],
+// build recommended configurations
+buildPlugin(configurations: buildPlugin.recommendedConfigurations(),
             failFast: false)
