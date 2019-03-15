@@ -452,8 +452,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) cred = defaultCredentials;
-                args.add(url);
-
+// JENKINS-56257 
+// prevent truncation of passward in the git url				
+				args.add(url.toPrivateString());
+// JENKINS-56257
                 if (refspecs != null)
                     for (RefSpec rs: refspecs)
                         if (rs != null)
@@ -514,7 +516,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String url = getRemoteUrl(remoteName);
         if (url == null)
             throw new GitException("remote." + remoteName + ".url not defined");
+
         args.add(url);
+        
         if (refspec != null && refspec.length > 0)
             for (RefSpec rs: refspec)
                 if (rs != null)
