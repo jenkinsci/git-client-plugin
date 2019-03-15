@@ -453,7 +453,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) cred = defaultCredentials;
 // JENKINS-56257 
-// prevent truncation of passward in the git url				
+// prevent truncation of passward in the git url for clone				
 				args.add(url.toPrivateString());
 // JENKINS-56257
                 if (refspecs != null)
