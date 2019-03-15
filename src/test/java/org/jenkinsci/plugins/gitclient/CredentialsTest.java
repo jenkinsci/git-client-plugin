@@ -76,6 +76,8 @@ public class CredentialsTest {
     private final Boolean useParentCreds;
     private final char specialCharacter;
 
+    private final Boolean credentialsEmbeddedInURL;
+
     private GitClient git;
     private File repo;
     private StandardCredentials testedCredential;
@@ -109,7 +111,7 @@ public class CredentialsTest {
             + (isWindows() ? "" : "*<>:|?");
     private static int specialsIndex = 0;
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds, Boolean credentialsEmbeddedInURL) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -120,6 +122,12 @@ public class CredentialsTest {
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
         this.specialCharacter = SPECIALS_TO_CHECK.charAt(specialsIndex);
+        if(credentialsEmbeddedInURL==null){
+            boolean matches = gitRepoUrl.matches("[a-zA-Z0-9_]*:[a-zA-Z0-9]*@");
+            if(matches) this.credentialsEmbeddedInURL = true;
+        }else {
+            this.credentialsEmbeddedInURL = credentialsEmbeddedInURL;
+        }
         specialsIndex = specialsIndex + 1;
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
@@ -358,6 +366,40 @@ public class CredentialsTest {
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         addCredential();
+        /* Fetch with remote URL */
+        doFetch(gitRepoURL);
+        git.setRemoteUrl("origin", gitRepoURL);
+        /* Fetch with remote name "origin" instead of remote URL */
+        doFetch("origin");
+        ObjectId master = git.getHeadRev(gitRepoURL, "master");
+        git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
+        if (submodules) {
+            git.submoduleInit();
+            SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
+            subcmd.execute();
+        }
+        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
+        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
+        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+        /* prune opens a remote connection to list remote branches */
+        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
+    }
+
+    @Test
+    @Issue("JENKINS-56257")
+    public void testFetchWithURLCredentials() throws Exception {
+        System.out.println("Reached");
+        assumeTrue(testPeriodNotExpired());
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        if(!this.credentialsEmbeddedInURL){
+            addCredential();
+        }else{
+            // not needed to add credential
+        }
+
         /* Fetch with remote URL */
         doFetch(gitRepoURL);
         git.setRemoteUrl("origin", gitRepoURL);
