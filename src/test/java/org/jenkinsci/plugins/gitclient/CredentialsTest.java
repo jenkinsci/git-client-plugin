@@ -75,7 +75,6 @@ public class CredentialsTest {
     private final Boolean submodules;
     private final Boolean useParentCreds;
     private final char specialCharacter;
-
     private final Boolean credentialsEmbeddedInURL;
 
     private GitClient git;
@@ -111,7 +110,7 @@ public class CredentialsTest {
             + (isWindows() ? "" : "*<>:|?");
     private static int specialsIndex = 0;
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds, Boolean credentialsEmbeddedInURL) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds,Boolean credentialsEmbeddedInURL) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -122,12 +121,8 @@ public class CredentialsTest {
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
         this.specialCharacter = SPECIALS_TO_CHECK.charAt(specialsIndex);
-        if(credentialsEmbeddedInURL==null){
-            boolean matches = gitRepoUrl.matches("[a-zA-Z0-9_]*:[a-zA-Z0-9]*@");
-            if(matches) this.credentialsEmbeddedInURL = true;
-        }else {
-            this.credentialsEmbeddedInURL = credentialsEmbeddedInURL;
-        }
+        this.credentialsEmbeddedInURL = credentialsEmbeddedInURL;
+        
         specialsIndex = specialsIndex + 1;
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
@@ -303,10 +298,13 @@ public class CredentialsTest {
                         System.out.println("No repository URL provided.");
                         continue;
                     }
-
+                    Boolean credentialsEmbeddedInURL = (Boolean) entry.get("credentialsEmbeddedInURL");
+                    if (credentialsEmbeddedInURL == null) {
+                        credentialsEmbeddedInURL = false;
+                    }
                     /* Add URL if it matches the pattern */
                     if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
-                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds};
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds,credentialsEmbeddedInURL};
                         repos.add(repo);
                     }
                 }
@@ -419,7 +417,7 @@ public class CredentialsTest {
         /* prune opens a remote connection to list remote branches */
         git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
     }
-
+    
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
