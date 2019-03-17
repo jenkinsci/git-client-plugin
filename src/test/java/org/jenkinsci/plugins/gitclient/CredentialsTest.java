@@ -339,6 +339,10 @@ public class CredentialsTest {
     }
 
     private void addCredential() throws IOException {
+		//Begin - JENKINS-56257
+		//Credential need not be added when suplied in the URL
+		if(this.credentialsEmbeddedInURL) return;
+		//End - JENKINS-56257
         // Always use addDefaultCredentials
         git.addDefaultCredentials(testedCredential);
         // addCredential stops tests to prompt for passphrase
@@ -364,40 +368,6 @@ public class CredentialsTest {
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         addCredential();
-        /* Fetch with remote URL */
-        doFetch(gitRepoURL);
-        git.setRemoteUrl("origin", gitRepoURL);
-        /* Fetch with remote name "origin" instead of remote URL */
-        doFetch("origin");
-        ObjectId master = git.getHeadRev(gitRepoURL, "master");
-        git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
-        if (submodules) {
-            git.submoduleInit();
-            SubmoduleUpdateCommand subcmd = git.submoduleUpdate().parentCredentials(useParentCreds);
-            subcmd.execute();
-        }
-        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
-        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
-        /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
-    }
-
-    @Test
-    @Issue("JENKINS-56257")
-    public void testFetchWithURLCredentials() throws Exception {
-        System.out.println("Reached");
-        assumeTrue(testPeriodNotExpired());
-        File clonedFile = new File(repo, fileToCheck);
-        git.init_().workspace(repo.getAbsolutePath()).execute();
-        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
-        if(!this.credentialsEmbeddedInURL){
-            addCredential();
-        }else{
-            // not needed to add credential
-        }
-
         /* Fetch with remote URL */
         doFetch(gitRepoURL);
         git.setRemoteUrl("origin", gitRepoURL);
