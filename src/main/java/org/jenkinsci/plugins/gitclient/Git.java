@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.FilePath.FileCallable;
+import hudson.Main;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
@@ -13,6 +14,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -122,6 +124,11 @@ public class Git implements Serializable {
                 if (listener == null) listener = TaskListener.NULL;
                 if (env == null) env = new EnvVars();
 
+                if (Main.isUnitTest && System.getProperty(Git.class.getName() + ".mockClient") != null) {
+                    return initMockClient(System.getProperty(Git.class.getName() + ".mockClient"),
+                            exe, env, f, listener);
+                }
+
                 if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
                     return new JGitAPIImpl(f, listener);
                 }
@@ -139,6 +146,16 @@ public class Git implements Serializable {
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;
+    }
+
+    private GitClient initMockClient(String className, String exe, EnvVars env, File f, TaskListener listener) throws RuntimeException {
+        try {
+            final Class<?> it = Class.forName(className);
+            final Constructor<?> constructor = it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
+            return (GitClient)constructor.newInstance(exe, env, f, listener);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to initialize mock GitClient " + className, e);
+        }
     }
 
     /**
