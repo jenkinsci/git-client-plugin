@@ -29,7 +29,7 @@ import org.junit.runners.Parameterized;
 public class GitTest {
 
     /* Default class of GitClient absent other modifiers */
-    private static final Class DEFAULT_CLASS = JGitAPIImpl.class;
+    private static final Class DEFAULT_CLASS = CliGitAPIImpl.class;
 
     /* A known commit from the git-client-plugin repository */
     private static ObjectId expectedCommit = null;
@@ -49,7 +49,7 @@ public class GitTest {
             {"git",           CliGitAPIImpl.class},
             {"jgit",          JGitAPIImpl.class  },
             {"jgitapache",    JGitAPIImpl.class  },
-            // {GitTool.DEFAULT, CliGitAPIImpl.class},
+            {GitTool.DEFAULT, CliGitAPIImpl.class},
         });
     }
 

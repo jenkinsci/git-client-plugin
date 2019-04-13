@@ -5,6 +5,7 @@ import hudson.FilePath;
 import hudson.Main;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
+import hudson.plugins.git.GitTool;
 import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
@@ -155,6 +156,27 @@ public class Git implements Serializable {
             if (Main.isUnitTest && System.getProperty(Git.class.getName() + ".mockClient") != null) {
                 return initMockClient(System.getProperty(Git.class.getName() + ".mockClient"),
                         exe, env, f, listener);
+            }
+
+            if (USE_CLI) {
+                // JENKINS-55655 reports that exe == null did not honor value of USE_CLI
+                // Corrects code to match javadoc and match most user expectations.
+                // Command line is the canonical implementation and should be used if
+                // no value has been assigned to exe.
+                // This change will require command line git be installed on a master
+                // that runs the Blue Ocean user interface when Blue Ocean performs
+                // git operations.  Previously, Blue Ocean would use JGit and did
+                // not require a command line git installation on the master.
+                if (exe == null || GitTool.DEFAULT.equalsIgnoreCase(exe)) {
+                    if (!Main.isUnitTest) {
+                        GitTool defaultInstallation = GitTool.getDefaultInstallation();
+                        exe = defaultInstallation.getGitExe();
+                    } else {
+                        // Don't require JenkinsRule for all unit tests
+                        exe = "git";
+                    }
+                    return new GitAPI(exe, f, listener, env);
+                }
             }
 
             if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
