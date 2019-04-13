@@ -27,9 +27,9 @@ Building the Plugin
 ===================
 
 ```
-  $ java -version # Requires Java 1.8
-  $ mvn -version # Requires Apache Maven 3.5.0 or later
-  $ mvn clean install
+$ java -version # Requires Java 1.8 or Java 11
+$ mvn -version # Requires maven 3.5.4 or newer
+$ mvn clean install
 ```
 
 To Do
