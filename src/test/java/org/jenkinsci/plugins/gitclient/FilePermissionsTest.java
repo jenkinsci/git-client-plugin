@@ -49,6 +49,8 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
         if (isWindows()) return;
+        // Configure git client for unit test execution
+        hudson.Main.isUnitTest = true;
         repo = com.google.common.io.Files.createTempDir();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
