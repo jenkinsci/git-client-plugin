@@ -2107,15 +2107,15 @@ public abstract class GitAPITestCase extends TestCase {
          */
         // w.git.checkout().ref(notSubRefName).execute();
         w.git.checkout().ref(notSubRefName).branch(notSubBranchName).deleteBranchIfExist(true).execute();
+        assertDirExists(ntpDir);
+        assertFileExists(ntpContributingFile);
+        assertFileContains(ntpContributingFile, contributingFileContentFromNonsubmoduleBranch);
         if (w.git instanceof CliGitAPIImpl) {
             /*
              * Transition from "with submodule" to "without submodule"
              * where the "without submodule" case includes the file
              * ntpContributingFile and the directory ntpDir.
              */
-            assertDirExists(ntpDir);
-            assertFileExists(ntpContributingFile);
-            assertFileContains(ntpContributingFile, contributingFileContentFromNonsubmoduleBranch);
             /* submodule dirs exist because git.clean() won't remove untracked submodules */
             assertDirExists(firewallDir);
             assertDirExists(sshkeysDir);
@@ -2126,15 +2126,11 @@ public abstract class GitAPITestCase extends TestCase {
              * where the "without submodule" case includes the file
              * ntpContributingFile and the directory ntpDir.
              *
-             * JGit 5.2.0 handles the transition from "with submodule"
-             * to "without submodule" differently than CLI git and
-             * differently than JGit versions prior to JGit 5.2.0.
-             * It does not checkout ntpDir or the ntpContributingFile.
+             * Prior to JGit 5.3.1 ntpDir was not available at this point.
              *
              * Prior to JGit 5.2.0 and the CheckoutCommand bug fix,
              * the ntpDir would remain along with ntpContributingFile.
              */
-            assertDirNotFound(ntpDir);
             /* firewallDir and sshKeysDir don't exist because JGit submodule update never created them */
             assertDirNotFound(firewallDir);
             assertDirNotFound(sshkeysDir);
