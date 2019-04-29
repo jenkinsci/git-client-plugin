@@ -48,7 +48,7 @@
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <jenkins.version>2.121.1</jenkins.version>
     <java.level>8</java.level>
-    <jgit.version>5.3.0.201903130848-r</jgit.version>
+    <jgit.version>5.3.1.201904271842-r</jgit.version>
   </properties>
 
   <dependencies>
