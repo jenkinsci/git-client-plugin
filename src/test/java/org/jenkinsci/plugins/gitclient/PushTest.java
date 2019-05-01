@@ -229,6 +229,21 @@ public class PushTest {
         bareFirstCommit = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), "master");
     }
 
+    @AfterClass
+    public static void removeBareRepository() throws IOException {
+        /* JGit 5.3.1 has an open file handle leak in this test that does not exist in 5.3.0 and earlier */
+        /* This conditional silences the JGit 5.3.1 failure */
+        if (!isWindows()) {
+            FileUtils.deleteDirectory(bareRepo);
+        } else {
+            try {
+                FileUtils.deleteDirectory(bareRepo);
+            } catch (IOException ioe) {
+                System.err.println("**** Ignored bare repo delete directory cleanup failure:\n" + ioe);
+            }
+        }
+    }
+
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
         previousCommit = checkoutBranch(false);
         workingCommit = commitFileToCurrentBranch();
@@ -277,5 +292,10 @@ public class PushTest {
             ar[index] = ar[i];
             ar[i] = a;
         }
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar==';';
     }
 }
