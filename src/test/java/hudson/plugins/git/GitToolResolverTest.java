@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Collections;
 import static org.junit.Assert.*;
 
+import org.jenkinsci.plugins.gitclient.CLIGitTool;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +44,7 @@ public class GitToolResolverTest {
             installer = new CommandInstaller(label, command, toolHome);
             expectedSubstring = toolHome;
         }
-        GitTool t = new GitTool("myGit", null, Collections.singletonList(
+        GitTool t = new CLIGitTool("myGit", null, Collections.singletonList(
                 new InstallSourceProperty(Collections.singletonList(installer))));
         t.getDescriptor().setInstallations(t);
 
