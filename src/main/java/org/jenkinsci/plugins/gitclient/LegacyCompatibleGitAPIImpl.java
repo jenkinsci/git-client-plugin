@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * Partial implementation of {@link IGitAPI} by delegating to {@link GitClient} APIs.
  *
@@ -170,6 +172,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Deprecated
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
         try (Repository db = getRepository()) {
             final ObjectId commit = db.resolve(revName);
@@ -194,8 +197,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Override
-    protected Object writeReplace() {
-        return remoteProxyFor(Channel.current().export(IGitAPI.class, this));
+    protected Object writeReplace() throws java.io.ObjectStreamException {
+        Channel currentChannel = Channel.current();
+        if (currentChannel == null)
+            throw new java.io.WriteAbortedException("No current channel", new java.lang.NullPointerException());
+        return remoteProxyFor(currentChannel.export(IGitAPI.class, this));
     }
 
     /**
@@ -238,18 +244,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * current use cases are not disrupted by a behavioral change.
      * <br><br>
      * E.g.
-     * <table summary="Branch Spec Normalization Examples">
-     * <tr><th align="left">branch spec</th><th align="left">normalized</th></tr>
-     * <tr><td><tt>master</tt></td><td><tt>master*</tt></td></tr>
-     * <tr><td><tt>feature1</tt></td><td><tt>feature1*</tt></td></tr>
-     * <tr><td><tt>feature1/master</tt></td><td><div style="color:red">master <tt>feature1/master</tt>*</div></td></tr>
-     * <tr><td><tt>origin/master</tt></td><td><tt>master*</tt></td></tr>
-     * <tr><td><tt>repo2/feature1</tt></td><td><tt>feature1*</tt></td></tr>
-     * <tr><td><tt>refs/heads/feature1</tt></td><td><tt>refs/heads/feature1</tt></td></tr>
+     * <table>
+     * <caption>Branch Spec Normalization Examples</caption>
+     * <tr><th>branch spec</th><th>normalized</th></tr>
+     * <tr><td><code>master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>feature1</code></td><td><code>feature1*</code></td></tr>
+     * <tr><td><code>feature1/master</code></td><td><div style="color:red">master <code>feature1/master</code>*</div></td></tr>
+     * <tr><td><code>origin/master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>repo2/feature1</code></td><td><code>feature1*</code></td></tr>
+     * <tr><td><code>refs/heads/feature1</code></td><td><code>refs/heads/feature1</code></td></tr>
      * <tr><td valign="top">origin/namespaceA/fix15</td>
-     *     <td><div style="color:red">fix15 <tt>namespaceA/fix15</tt>*</div></td><td></td></tr>
-     * <tr><td><tt>refs/heads/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
-     * <tr><td><tt>remotes/origin/namespaceA/fix15</tt></td><td><tt>refs/heads/namespaceA/fix15</tt></td></tr>
+     *     <td><div style="color:red">fix15 <code>namespaceA/fix15</code>*</div></td><td></td></tr>
+     * <tr><td><code>refs/heads/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
+     * <tr><td><code>remotes/origin/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
      * </table><br>
      * *) TODO: Normalize to "refs/heads/"
      *
@@ -257,7 +264,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @return normalized branch name
      */
     protected String extractBranchNameFromBranchSpec(String branchSpec) {
-        String branch = branchSpec;
+        String branch;
         String[] branchExploded = branchSpec.split("/");
         if (branchSpec.startsWith("remotes/")) {
             branch = "refs/heads/" + join(copyOfRange(branchExploded, 2, branchExploded.length), "/");
@@ -266,8 +273,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         } else if (branchSpec.startsWith("refs/heads/")) {
             branch = branchSpec;
         } else if (branchSpec.startsWith("refs/tags/")) {
-            //TODO: Discuss if tags shall be allowed.
-            //hudson.plugins.git.util.DefaultBuildChooser.getCandidateRevisions() in git plugin 2.0.1 explicitly allowed it.
+            // Tags are allowed because git plugin 2.0.1
+            // DefaultBuildChooser.getCandidateRevisions() allowed them.
             branch = branchSpec;
         } else {
             /* Old behaviour - retained for compatibility.
