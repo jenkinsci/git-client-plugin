@@ -751,6 +751,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return getRemoteReferences(url, null, true, false);
     }

@@ -1280,6 +1280,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout("master");
         w.launchCommand("git", "branch", "-D", "parent");
         assertThat(getBranchNames(w.git.getBranches()), contains("master"));
+        assertEquals("Wrong branch count", 1, w.git.getBranches().size());
 
         /* Delete parent branch on bare repo*/
         bare.launchCommand("git", "branch", "-D", "parent");
