@@ -8,7 +8,7 @@ or can be submitted directly if you have commit permission to the
 git-client-plugin repository.
 
 Pull requests are evaluated by the
-[Cloudbees Jenkins job](https://jenkins.ci.cloudbees.com/job/plugins/job/git-client-plugin/).
+[ci.jenkins.io Jenkins job](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/).
 You should receive e-mail with the results of the evaluation.
 
 Before submitting your change, please assure that you've added tests
@@ -22,15 +22,17 @@ Code coverage reporting is available as a maven target and is actively
 monitored.  Please improve code coverage with tests
 when you submit a pull request.
 
-Before submitting your change, please review the findbugs output to
-assure that you haven't introduced new findbugs warnings.
+Before submitting your change, please review the spotbugs output to
+assure that you haven't introduced new spotbugs warnings.
 
 # Code Style Guidelines
 
-## Indentation
+Use the [Jenkins SCM API coding style guide](https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines) for new code.
 
-* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency.  Try to maintain reasonable consistency with the existing files.
-* Please don't perform wholesale reformatting of a file without discussing with the current maintainers.
+## Indentation and White Space
+
+* Code formatting in the git client plugin varies between files.  Recent additions have generally used the Netbeans "Format" right-click action to maintain consistency.  Try to maintain reasonable consistency with the existing files
+* Please don't reformat a file without discussing with the current maintainers
 
 ## Maven POM file layout
 
