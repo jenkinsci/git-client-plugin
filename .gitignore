@@ -5,6 +5,7 @@
 
 target/
 work/
+.@tmp/
 
 .project
 .classpath
@@ -22,3 +23,6 @@ tags
 # emacs backup files
 *~
 /nbproject/
+
+# Mac OSX
+.DS_Store
