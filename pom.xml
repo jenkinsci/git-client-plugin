@@ -124,9 +124,6 @@
       <artifactId>git-server</artifactId>
       <version>1.7</version>
       <scope>test</scope>
-      <exclusions>
-
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>com.googlecode.json-simple</groupId>
@@ -139,6 +136,13 @@
       <artifactId>sshd</artifactId>
       <version>2.6</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!-- Jenkins 2.176.1 requires a newer version -->
+          <groupId>org.jenkins-ci.modules</groupId>
+          <artifactId>ssh-cli-auth</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
