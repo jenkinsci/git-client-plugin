@@ -765,7 +765,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 args.add(fastForwardMode);
                 args.add(rev.name());
-                launchCommand(args);
+
+                String repoUrl = getRemoteUrl(getDefaultRemote());
+                StandardCredentials cred = credentials.get(repoUrl);
+                if (cred == null) cred = defaultCredentials;
+
+                launchCommandWithCredentials(args, workspace, cred, repoUrl);
             }
         };
     }
