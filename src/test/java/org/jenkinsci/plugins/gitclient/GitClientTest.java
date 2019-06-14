@@ -6,6 +6,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitObject;
+import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
@@ -1513,6 +1514,34 @@ public class GitClientTest {
             new IndexEntry("160000", "commit", "689c45ed57f0829735f9a2b16760c14236fe21d9", "modules/sshkeys")
         };
         assertThat(submodules, hasItems(expectedSubmodules));
+    }
+
+    @Test
+    public void testFixSubmoduleUrls() throws Exception {
+        assumeThat(gitImplName, is("git")); // CliGit
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        String branchName = "tests/getSubmodules";
+        String upstream = checkoutAndAssertHasGitModules(branchName, true);
+        List<IndexEntry> submodules = gitClient.getSubmodules(branchName);
+
+        gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL);
+    }
+
+    @Test
+    public void testFixSubmoduleUrlsInvalidRemote() throws Exception {
+        assumeThat(gitImplName, is("git")); // CliGit
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        thrown.expect(GitException.class);
+        thrown.expectMessage("Could not determine remote");
+        gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL);
+    }
+
+    @Test
+    public void testFixSubmoduleUrlsJGitUnsupported() throws Exception {
+        assumeThat(gitImplName, not(is("git"))); // JGit does not support fixSubmoduleUrls
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        thrown.expect(UnsupportedOperationException.class);
+        gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL);
     }
 
     private void assertStatusUntrackedContent(GitClient client, boolean expectUntrackedContent) throws Exception {
