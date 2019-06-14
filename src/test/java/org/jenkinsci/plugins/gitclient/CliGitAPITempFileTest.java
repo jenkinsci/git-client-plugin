@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -28,6 +29,8 @@ public class CliGitAPITempFileTest {
 
     private final String workspaceDirName;
     private final boolean mustUseSystemTempDir;
+    private final String filenamePrefix;
+    private final String filenameSuffix;
     /* Should temp folder be in same parent dir as workspace? */
 
     private static final String INVALID_CHARACTERS = "%" + (isWindows() ? " ()" : "`");
@@ -35,16 +38,19 @@ public class CliGitAPITempFileTest {
     @Rule
     public TemporaryFolder workspaceParentFolder = new TemporaryFolder();
 
-    public CliGitAPITempFileTest(String workspaceDirName, boolean mustUseSystemTempDir) {
+    public CliGitAPITempFileTest(String workspaceDirName, boolean mustUseSystemTempDir, String filenamePrefix, String filenameSuffix) {
         this.workspaceDirName = workspaceDirName;
         this.mustUseSystemTempDir = mustUseSystemTempDir;
+        this.filenamePrefix = filenamePrefix;
+        this.filenameSuffix = filenameSuffix;
     }
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection workspaceDirNames() {
+        Random random = new Random();
         List<Object[]> workspaceNames = new ArrayList<>();
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
-            Object[] oneWorkspace = {"use " + INVALID_CHARACTERS.charAt(charIndex) + " dir", true};
+            Object[] oneWorkspace = {"use " + INVALID_CHARACTERS.charAt(charIndex) + " dir", true, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
             workspaceNames.add(oneWorkspace);
         }
         String[] goodNames = {
@@ -54,14 +60,14 @@ public class CliGitAPITempFileTest {
             "mark@home"
         };
         for (String goodName : goodNames) {
-            Object[] oneWorkspace = {goodName, false};
+            Object[] oneWorkspace = {goodName, false, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
             workspaceNames.add(oneWorkspace);
         }
         String[] badNames = {
             "50%off"
         };
         for (String badName : badNames) {
-            Object[] oneWorkspace = {badName, true};
+            Object[] oneWorkspace = {badName, true, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
             workspaceNames.add(oneWorkspace);
         }
         String[] platformNames = {
@@ -70,7 +76,7 @@ public class CliGitAPITempFileTest {
             "shame's own"
         };
         for (String platformName : platformNames) {
-            Object[] oneWorkspace = {platformName, isWindows()};
+            Object[] oneWorkspace = {platformName, isWindows(), random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
             workspaceNames.add(oneWorkspace);
         }
         return workspaceNames;
@@ -95,7 +101,7 @@ public class CliGitAPITempFileTest {
     public void testTempFilePathCharactersValid() throws IOException {
         CliGitAPIImplExtension cliGit = new CliGitAPIImplExtension("git", workspace, null, null);
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
-            File tempFile = cliGit.createTempFile("pre", ".suff");
+            File tempFile = cliGit.createTempFile(filenamePrefix, filenameSuffix);
             assertThat(tempFile.getAbsolutePath(), not(containsString("" + INVALID_CHARACTERS.charAt(charIndex))));
             if (!mustUseSystemTempDir) {
                 File tempParent = tempFile.getParentFile();
