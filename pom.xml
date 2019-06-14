@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.44</version>
+    <version>3.45</version>
     <relativePath />
   </parent>
 
@@ -190,6 +190,13 @@
       <artifactId>commons-text</artifactId>
       <version>1.6</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!-- Jenkins 2.176.1 requires a newer version -->
+          <groupId>org.jenkins-ci.modules</groupId>
+          <artifactId>ssh-cli-auth</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
