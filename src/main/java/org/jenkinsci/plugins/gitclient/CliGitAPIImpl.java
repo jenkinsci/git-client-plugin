@@ -765,12 +765,26 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 args.add(fastForwardMode);
                 args.add(rev.name());
-
-                String repoUrl = getRemoteUrl(getDefaultRemote());
-                StandardCredentials cred = credentials.get(repoUrl);
-                if (cred == null) cred = defaultCredentials;
-
-                launchCommandWithCredentials(args, workspace, cred, repoUrl);
+                
+                /* See JENKINS-45228 */
+                /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
+                String defaultRemote = null;
+                try {
+                    defaultRemote = getDefaultRemote();
+                } catch (GitException e) {
+                    /* Nothing to do, just keeping defaultRemote = null */
+                }
+                
+                if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                    String repoUrl = getRemoteUrl(defaultRemote);
+                    StandardCredentials cred = credentials.get(repoUrl);
+                    if (cred == null) cred = defaultCredentials;
+                    launchCommandWithCredentials(args, workspace, cred, repoUrl);
+                } else {
+                    /* Merge is allowed even if a remote URL is not defined. */
+                    /* If there is no remote URL, there is no need to use credentials in the merge. */
+                    launchCommand(args);
+                }
             }
         };
     }
