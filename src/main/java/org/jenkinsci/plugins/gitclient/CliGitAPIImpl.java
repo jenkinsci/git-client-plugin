@@ -2216,7 +2216,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             //Previous operation failed. Return original file
             return ssh;
         }
-		
         return ssh_copy;
     }
 
