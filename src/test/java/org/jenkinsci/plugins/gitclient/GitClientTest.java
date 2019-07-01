@@ -18,6 +18,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +35,7 @@ import java.util.UUID;
 
 import org.apache.commons.io.FileUtils;
 
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.transport.RefSpec;
@@ -487,6 +489,28 @@ public class GitClientTest {
     }
 
     @Test
+    public void testInitFailureWindows() throws Exception {
+        assumeTrue(isWindows());
+        String badDirName = "CON:";
+        File badDir = new File(badDirName);
+        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
+        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : InvalidPathException.class;
+        thrown.expect(expectedExceptionClass);
+        badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+    }
+
+    @Test
+    public void testInitFailureNotWindows() throws Exception {
+        assumeFalse(isWindows());
+        String badDirName = "/this/directory/is/not/accessible";
+        File badDir = new File(badDirName);
+        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
+        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
+        thrown.expect(expectedExceptionClass);
+        badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+    }
+
+    @Test
     public void testAdd() throws Exception {
         final ObjectId commitA = commitOneFile();
         assertNotNull(commitA);
@@ -766,6 +790,46 @@ public class GitClientTest {
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         assertTrue(src.isDirectory());
+    }
+
+    @Test
+    public void testBranchExistsException() throws Exception {
+        File src = new File(repoRoot, "src");
+        assertFalse(src.isDirectory());
+        String branch = "master";
+        String remote = fetchUpstream(branch);
+        gitClient.checkoutBranch(branch, remote + "/" + branch);
+        /* Check that exception is thrown trying to create an existing branch */
+        thrown.expect(GitException.class);
+        gitClient.branch("master");
+    }
+
+    @Test
+    public void testEmptyCommitException() throws Exception {
+        File src = new File(repoRoot, "src");
+        assertFalse(src.isDirectory());
+        String branch = "master";
+        String remote = fetchUpstream(branch);
+        gitClient.checkoutBranch(branch, remote + "/" + branch);
+        /* Check that exception is thrown trying to commit nothing */
+        if (gitImplName.equals("git")) {
+            thrown.expect(GitException.class);
+        }
+        gitClient.commit("This commit contains no changes");
+    }
+
+    @Test
+    public void testDeleteNonExistingBranchException() throws Exception {
+        File src = new File(repoRoot, "src");
+        assertFalse(src.isDirectory());
+        String branch = "master";
+        String remote = fetchUpstream(branch);
+        gitClient.checkoutBranch(branch, remote + "/" + branch);
+        /* Check that exception is thrown trying to delete non-existent branch */
+        if (gitImplName.equals("git")) {
+            thrown.expect(GitException.class);
+        }
+        gitClient.deleteBranch("ThisBranchDoesNotExist");
     }
 
     @Issue("JENKINS-35687") // Git LFS support
@@ -1959,5 +2023,9 @@ public class GitClientTest {
         tags = gitClient.getTags();
         assertThat(tags, not(hasItems(updatedTag)));
         assertThat(tags, hasItems(tag));
+    }
+
+    private boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }
