@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
@@ -49,6 +50,9 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
         if (isWindows()) return;
+        /* Attempt to empty temporary directories */
+        FileUtils.deleteQuietly(new File("/tmp/"));
+        FileUtils.deleteQuietly(new File("/var/tmp/"));
         repo = com.google.common.io.Files.createTempDir();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
