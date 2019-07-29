@@ -18,6 +18,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 import org.junit.rules.TemporaryFolder;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -55,23 +56,12 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initDefaultImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
-        File badDirectory = new File("/this/is/a/bad/dir");
-        if (isWindows()) {
-            badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
-        }
-        GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("Default").getClient();
-        assertNotNull(defaultClient);
-        thrown.expect(GitException.class);
-        defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
-    }
-
-    @Test
     public void initCliImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
         File badDirectory = new File("/this/is/a/bad/dir");
         if (isWindows()) {
             badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
         }
+        assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("git").getClient();
         assertNotNull(defaultClient);
         thrown.expect(GitException.class);
@@ -84,6 +74,7 @@ public class GitExceptionTest {
         if (isWindows()) {
             badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
         }
+        assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("jgit").getClient();
         assertNotNull(defaultClient);
         thrown.expect(JGitInternalException.class);
