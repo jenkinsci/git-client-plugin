@@ -7,7 +7,7 @@ Includes JGit as a library so that other Jenkins components can rely on
 JGit whenever the git client plugin is available.
 
 * see [Jenkins plugins site](https://plugins.jenkins.io/git-client) for feature descriptions
-* use [JIRA](https://issues.jenkins-ci.org) to report issues / feature requests
+* use [JIRA](https://issues.jenkins-ci.org) to report issues or request features
 
 Contributing to the Plugin
 ==========================
