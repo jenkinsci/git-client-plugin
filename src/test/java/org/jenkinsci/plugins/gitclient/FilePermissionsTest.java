@@ -49,6 +49,9 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
         if (isWindows()) return;
+        /* Attempt to empty temporary directories */
+        FileUtils.deleteQuietly(new File("/tmp/"));
+        FileUtils.deleteQuietly(new File("/var/tmp/"));
         repo = com.google.common.io.Files.createTempDir();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
