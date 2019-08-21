@@ -45,13 +45,20 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.nio.file.attribute.UserPrincipal;
+import java.nio.file.attribute.UserPrincipalLookupService;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -124,6 +131,29 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * ssh configurations).
      */
     private static final boolean CALL_SETSID;
+
+    /**
+     * Needed file permission for OpenSSH client that is made by Windows,
+     * this will remove unwanted users and inherited permissions
+     * which is required when the git client is using the SSH to clone
+     *
+     * The ssh client that the git client ships ignores file permission on Windows
+     * Which the PowerShell team at Microsoft decided to fix in their port of OpenSSH
+     */
+    static final EnumSet<AclEntryPermission> ACL_ENTRY_PERMISSIONS = EnumSet.of(
+        AclEntryPermission.READ_DATA,
+        AclEntryPermission.WRITE_DATA,
+        AclEntryPermission.APPEND_DATA,
+        AclEntryPermission.READ_NAMED_ATTRS,
+        AclEntryPermission.WRITE_NAMED_ATTRS,
+        AclEntryPermission.EXECUTE,
+        AclEntryPermission.READ_ATTRIBUTES,
+        AclEntryPermission.WRITE_ATTRIBUTES,
+        AclEntryPermission.DELETE,
+        AclEntryPermission.READ_ACL,
+        AclEntryPermission.SYNCHRONIZE
+    );
+
     static {
         acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
         CALL_SETSID = setsidExists() && USE_SETSID;
@@ -1777,8 +1807,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 w.println(s);
             }
         }
-        new FilePath(key).chmod(0400);
+        if (launcher.isUnix()) {
+            new FilePath(key).chmod(0400);
+        } else {
+            fixSshKeyOnWindows(key);
+        }
+
         return key;
+    }
+
+    /* package protected for testability */
+    void fixSshKeyOnWindows(File key) throws GitException {
+        if (launcher.isUnix()) return;
+
+        Path file = Paths.get(key.toURI());
+
+        AclFileAttributeView fileAttributeView = Files.getFileAttributeView(file, AclFileAttributeView.class);
+        if (fileAttributeView == null) return;
+
+        try {
+            UserPrincipal userPrincipal = fileAttributeView.getOwner();
+            AclEntry aclEntry = AclEntry.newBuilder()
+                .setType(AclEntryType.ALLOW)
+                .setPrincipal(userPrincipal)
+                .setPermissions(ACL_ENTRY_PERMISSIONS)
+                .build();
+            fileAttributeView.setAcl(Collections.singletonList(aclEntry));
+        } catch (IOException | UnsupportedOperationException e) {
+            throw new GitException("Error updating file permission for \"" + key.getAbsolutePath() + "\"", e);
+        }
     }
 
     /* package protected for testability */
