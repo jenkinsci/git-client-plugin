@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import org.junit.rules.TemporaryFolder;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.*;
 
 public class GitExceptionTest {
 

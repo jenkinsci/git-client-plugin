@@ -500,8 +500,9 @@ public class GitClientTest {
     }
 
     @Test
-    public void testInitFailureNotWindows() throws Exception {
+    public void testInitFailureNotWindowsNotSuperUser() throws Exception {
         assumeFalse(isWindows());
+        assumeFalse("running as root?", new File("/").canWrite());
         String badDirName = "/this/directory/is/not/accessible";
         File badDir = new File(badDirName);
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
