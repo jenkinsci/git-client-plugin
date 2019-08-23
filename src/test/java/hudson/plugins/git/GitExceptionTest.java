@@ -20,6 +20,7 @@ import org.junit.rules.ExpectedException;
 import static org.junit.Assert.*;
 import org.junit.rules.TemporaryFolder;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assume.*;
 
 public class GitExceptionTest {
 
@@ -72,6 +73,7 @@ public class GitExceptionTest {
         if (isWindows()) {
             badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
         }
+        assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("git").getClient();
         assertNotNull(defaultClient);
         thrown.expect(GitException.class);
@@ -84,6 +86,7 @@ public class GitExceptionTest {
         if (isWindows()) {
             badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
         }
+        assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("jgit").getClient();
         assertNotNull(defaultClient);
         thrown.expect(JGitInternalException.class);
