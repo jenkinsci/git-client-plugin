@@ -16,7 +16,7 @@
 
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
-  <url>https://wiki.jenkins.io/display/JENKINS/Git+Client+Plugin</url>
+  <url>https://plugins.jenkins.io/git-client</url>
   <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
