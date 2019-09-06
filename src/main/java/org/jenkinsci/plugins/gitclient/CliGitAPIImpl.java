@@ -382,15 +382,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (isAtLeastVersion(1,7,1,0))
                     args.add("--progress");
 
-                StandardCredentials cred = credentials.get(url.toPrivateString());
-                if (cred == null) cred = defaultCredentials;
-                args.add(url);
-
-                if (refspecs != null)
-                    for (RefSpec rs: refspecs)
-                        if (rs != null)
-                            args.add(rs.toString());
-
                 if (prune) args.add("--prune");
 
                 if (shallow) {
@@ -401,6 +392,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
+
+                StandardCredentials cred = credentials.get(url.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+                addCheckedRemoteUrl(args, url.toPrivateASCIIString());
+
+                if (refspecs != null)
+                    for (RefSpec rs: refspecs)
+                        if (rs != null)
+                            args.add(rs.toString());
 
                 /* If url looks like a remote name reference, convert to remote URL for authentication */
                 /* See JENKINS-50573 for more details */
