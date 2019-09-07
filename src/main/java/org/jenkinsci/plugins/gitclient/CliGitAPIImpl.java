@@ -340,6 +340,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return submodules;
     }
 
+    // Package protected for testing
     /**
      * Constant which disables safety check of remote URL.
      *
@@ -351,7 +352,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL=false'
      * to prevent check of remote URL.
      */
-    private static final boolean CHECK_REMOTE_URL = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
+    static boolean CHECK_REMOTE_URL = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
 
     /**
      * SECURITY-1534 found that arguments
