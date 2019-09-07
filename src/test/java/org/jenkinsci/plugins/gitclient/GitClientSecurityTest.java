@@ -17,6 +17,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -42,6 +43,8 @@ public class GitClientSecurityTest {
 
     /* Test parameter - remote URL that is expected to fail with known exception */
     private final String badRemoteUrl;
+    /* Test parameter - should remote URL check be enabled */
+    private final boolean enableRemoteCheckUrl;
 
     /* Git client plugin repository directory. */
     private static final File SRC_REPO_DIR = new File(".git");
@@ -65,8 +68,9 @@ public class GitClientSecurityTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
     private File repoRoot = null;
 
-    public GitClientSecurityTest(final String badRemoteUrl) throws IOException, InterruptedException {
+    public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) throws IOException, InterruptedException {
         this.badRemoteUrl = badRemoteUrl;
+        this.enableRemoteCheckUrl = enableRemoteCheckUrl;
         this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
 
         CliGitAPIImpl cliGitClient;
@@ -78,29 +82,38 @@ public class GitClientSecurityTest {
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
     }
 
-    @Parameterized.Parameters(name = "{0}")
+    @Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() {
         final Random configRandom = new Random();
         markerFileName = String.format(markerFileName, configRandom.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
-            String formattedPrefix = String.format(prefix, markerFileName);
             /* insert markerFileName into test data */
-            int remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
-            /* Choose a random remote URL */
+            String formattedPrefix = String.format(prefix, markerFileName);
+
+            /* Random remote URL with prefix */
             String firstChar = configRandom.nextBoolean() ? " " : "";
             String middleChar = configRandom.nextBoolean() ? " " : "";
             String lastChar = configRandom.nextBoolean() ? " " : "";
+            int remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
             String remoteUrl = firstChar + formattedPrefix + middleChar + VALID_REMOTES[remoteIndex] + lastChar;
-            remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
-            Object[] remoteUrlItem = {remoteUrl};
+            Object[] remoteUrlItem = {remoteUrl, configRandom.nextBoolean()};
             arguments.add(remoteUrlItem);
-            Object[] remoteUrlItemOneSpace = {formattedPrefix + " " + VALID_REMOTES[remoteIndex]};
+
+            /* Random remote URL with prefix separated by a space */
             remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
+            remoteUrl = formattedPrefix + " " + VALID_REMOTES[remoteIndex];
+            Object[] remoteUrlItemOneSpace = {remoteUrl, configRandom.nextBoolean()};
             arguments.add(remoteUrlItemOneSpace);
-            Object[] noSpaceItem = {formattedPrefix + VALID_REMOTES[remoteIndex]};
+
+            /* Random remote URL with prefix and no separator */
+            remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
+            remoteUrl = formattedPrefix + VALID_REMOTES[remoteIndex];
+            Object[] noSpaceItem = {remoteUrl, configRandom.nextBoolean()};
             arguments.add(noSpaceItem);
-            Object[] prefixItem = {formattedPrefix};
+
+            /* Remote URL with only the prefix */
+            Object[] prefixItem = {formattedPrefix, configRandom.nextBoolean()};
             arguments.add(prefixItem);
         }
         Collections.shuffle(arguments);
@@ -112,6 +125,16 @@ public class GitClientSecurityTest {
         /* Command line git commands fail unless certain default values are set */
         CliGitCommand gitCmd = new CliGitCommand(null);
         gitCmd.setDefaults();
+    }
+
+    @AfterClass
+    public static void resetRemoteCheckUrl() {
+        org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CHECK_REMOTE_URL = true;
+    }
+
+    @Before
+    public void setRemoteCheckUrl() {
+        org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CHECK_REMOTE_URL = enableRemoteCheckUrl;
     }
 
     @Before
@@ -128,7 +151,6 @@ public class GitClientSecurityTest {
     private final Random random = new Random();
 
     private static final String[] BAD_REMOTE_URL_PREFIXES = {
-        "--get-url",
         "--sort version:refname",
         "--upload-pack=/usr/bin/id",
         "--upload-pack=`touch %s`",
@@ -185,15 +207,21 @@ public class GitClientSecurityTest {
 
     @After
     public void checkMarkerFile() {
-        File markerFile = new File(markerFileName);
-        assertThat(markerFileName + " unexpectedly detected after test", markerFile.exists(), is(false));
+        if (enableRemoteCheckUrl) { /* If remote checking is disabled, marker file is expected in several cases */
+            File markerFile = new File(markerFileName);
+            assertFalse("Marker file '" + markerFileName + "' detected after test", markerFile.exists());
+        }
     }
 
     @Test
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_SECURITY_1534() throws Exception {
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        } else {
+            thrown.expectMessage(containsString(badRemoteUrl.trim()));
+        }
         gitClient.getHeadRev(badRemoteUrl);
     }
 
@@ -201,7 +229,11 @@ public class GitClientSecurityTest {
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_String_SECURITY_1534() throws Exception {
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        } else {
+            thrown.expectMessage(containsString(badRemoteUrl.trim()));
+        }
         gitClient.getHeadRev(badRemoteUrl, "master");
     }
 
@@ -211,7 +243,11 @@ public class GitClientSecurityTest {
         boolean headsOnly = random.nextBoolean();
         boolean tagsOnly = random.nextBoolean();
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        } else {
+            thrown.expectMessage(containsString(badRemoteUrl.trim()));
+        }
         gitClient.getRemoteReferences(badRemoteUrl, "*master", headsOnly, tagsOnly);
     }
 
@@ -220,7 +256,11 @@ public class GitClientSecurityTest {
     public void testGetRemoteSymbolicReferences_SECURITY_1534() throws Exception {
         assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl));
+        } else {
+            thrown.expectMessage(containsString(badRemoteUrl.trim()));
+        }
         gitClient.getRemoteSymbolicReferences(badRemoteUrl, "master");
     }
 
@@ -233,7 +273,9 @@ public class GitClientSecurityTest {
         refSpecs.add(refSpec);
         URIish badRepoUrl = new URIish(badRemoteUrl.trim());
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRepoUrl.toPrivateASCIIString()));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRepoUrl.toPrivateASCIIString()));
+        }
         gitClient.fetch_().from(badRepoUrl, refSpecs).execute();
     }
 
@@ -243,7 +285,9 @@ public class GitClientSecurityTest {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl.trim()));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl.trim()));
+        }
         gitClient.fetch("origin", refSpec);
     }
 
@@ -253,7 +297,9 @@ public class GitClientSecurityTest {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
         thrown.expect(GitException.class);
-        thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl.trim()));
+        if (enableRemoteCheckUrl) {
+            thrown.expectMessage(containsString("Invalid remote URL: " + badRemoteUrl.trim()));
+        }
         gitClient.fetch("origin", refSpec, refSpec, refSpec);
     }
 }
