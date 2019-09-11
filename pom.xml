@@ -130,7 +130,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <!-- Include jgit's LFS module for large file support -->
+      <!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
