@@ -78,6 +78,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import org.junit.Ignore;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -3866,6 +3867,17 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
     }
 
+    /*
+    * Test result is intentionally ignored because it depends on the output
+    * order of the `git log --all` command and the JGit equivalent. Output order
+    * of that command is not reliable since it performs a time ordered sort and
+    * the time resolution is only one second.  Commits within the same second
+    * are sometimes ordered differently by JGit than by command line git.
+    * Testing a deprecated method is not important enough to distract with
+    * test failures.
+    */
+    @Ignore
+    @Deprecated
     public void test_getAllLogEntries() throws Exception {
         /* Use original clone source instead of localMirror.  The
          * namespace test modifies the localMirror content by creating
