@@ -508,7 +508,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) cred = defaultCredentials;
-                addCheckedRemoteUrl(args, url.toPrivateASCIIString());
+                if (isAtLeastVersion(1,8,0,0)) {
+                    addCheckedRemoteUrl(args, url.toPrivateASCIIString());
+                } else {
+                    // CLI git 1.7.1 on CentOS 6 rejects URL encoded
+                    // repo URL. This is how git client behaved before
+                    // 2.8.5, with the addition of a safety check for
+                    // the remote URL string contents.
+                    //
+                    // CLI git 1.7.1 is unsupported by the git client
+                    // plugin, but we try to avoid removing
+                    // capabilities that worked previously.
+                    addCheckedRemoteUrl(args, url.toString());
+                }
 
                 if (refspecs != null)
                     for (RefSpec rs: refspecs)
