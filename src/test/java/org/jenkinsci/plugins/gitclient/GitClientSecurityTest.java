@@ -83,8 +83,10 @@ public class GitClientSecurityTest {
     }
 
     @Parameterized.Parameters(name = "{1},{0}")
-    public static Collection testConfiguration() {
+    public static Collection testConfiguration() throws Exception {
         final Random configRandom = new Random();
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
+        boolean operandSeparatorSupported = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         markerFileName = String.format(markerFileName, configRandom.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
@@ -113,7 +115,16 @@ public class GitClientSecurityTest {
             arguments.add(noSpaceItem);
 
             /* Remote URL with only the prefix */
-            Object[] prefixItem = {formattedPrefix, configRandom.nextBoolean()};
+            boolean enableRemoteCheck = configRandom.nextBoolean();
+            if (!enableRemoteCheck &&
+                !operandSeparatorSupported &&
+                (formattedPrefix.equals("-q")
+                 || formattedPrefix.equals("--quiet")
+                 || formattedPrefix.equals("--tags"))) {
+                /* Always check remote in these special cases, won't throw exception when check is disabled */
+                enableRemoteCheck = true;
+            }
+            Object[] prefixItem = {formattedPrefix, enableRemoteCheck};
             arguments.add(prefixItem);
         }
         Collections.shuffle(arguments);
