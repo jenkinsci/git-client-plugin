@@ -49,14 +49,8 @@ public class GitClientSecurityTest {
     /* Git client plugin repository directory. */
     private static final File SRC_REPO_DIR = new File(".git");
 
-    /* GitClient for plugin development repository. */
-    private final GitClient srcGitClient;
-
     /* Instance of object under test */
     private GitClient gitClient = null;
-
-    /* Capabilities of command line git in current environment */
-    private final boolean CLI_GIT_SUPPORTS_SYMREF;
 
     /* Marker file used to check for SECURITY-1534 */
     private static String markerFileName = "/tmp/iwantmore-%d.pizza";
@@ -71,60 +65,101 @@ public class GitClientSecurityTest {
     public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) throws IOException, InterruptedException {
         this.badRemoteUrl = badRemoteUrl;
         this.enableRemoteCheckUrl = enableRemoteCheckUrl;
-        this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
+    }
 
-        CliGitAPIImpl cliGitClient;
-        if (this.srcGitClient instanceof CliGitAPIImpl) {
-            cliGitClient = (CliGitAPIImpl) this.srcGitClient;
-        } else {
-            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
+    /* Capabilities of command line git in current environment */
+    private static final boolean CLI_GIT_SUPPORTS_OPERAND_SEPARATOR;
+    private static final boolean CLI_GIT_SUPPORTS_SYMREF;
+
+    static {
+        CliGitAPIImpl tempGitClient;
+        try {
+            tempGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
+        } catch (Exception e) {
+            tempGitClient = null;
         }
-        CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
+        if (tempGitClient != null) {
+            CLI_GIT_SUPPORTS_OPERAND_SEPARATOR = tempGitClient.isAtLeastVersion(2, 8, 0, 0);
+            CLI_GIT_SUPPORTS_SYMREF = tempGitClient.isAtLeastVersion(2, 8, 0, 0);
+        } else {
+            CLI_GIT_SUPPORTS_OPERAND_SEPARATOR = false;
+            CLI_GIT_SUPPORTS_SYMREF = false;
+        }
+    }
+
+    private static final Random CONFIG_RANDOM = new Random();
+
+    /*
+     * SECURITY-1534 notes that repository URL's provided by the user
+     * were not sanity checked before being passed to git ls-remote
+     * and git fetch. A sanity check is now enabled by default.
+     *
+     * As a backwards compatibility 'escape hatch', a Jenkins command
+     * line argument can disable the sanity checks. Disabling the
+     * checks then relies on command line git to perform the sanity
+     * checks.
+     *
+     * This function returns a randomly selected value to enable or
+     * disable the repository URL check based on the contents of the
+     * attack string. If remote check is selected to be disabled and
+     * the command line git implementation does not have full support
+     * for the '--' separator between options and operands and the
+     * attack is one of a known list of strings, then this function
+     * will always return 'true' so that the remote checks will be
+     * enabled.
+     *
+     * Returning 'false' in those cases on certain older command line
+     * git implementations (git 1.8.3 on CentOS 7, git 2.7.4 on Ubuntu
+     * 16) would cause the tested code to not throw an exception
+     * because those command line git versions do not fully support
+     * '--' to separate options and operands.
+     */
+    private static boolean enableRemoteCheck(String attack) {
+        boolean enabled = CONFIG_RANDOM.nextBoolean();
+        if (!enabled &&
+            !CLI_GIT_SUPPORTS_OPERAND_SEPARATOR &&
+            (attack.equals("-q")
+             || attack.equals("--quiet")
+             || attack.equals("-t")
+             || attack.equals("--tags")
+             || attack.startsWith("--upload-pack=")
+            )) {
+            enabled = true;
+        }
+        return enabled;
     }
 
     @Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() throws Exception {
-        final Random configRandom = new Random();
-        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
-        boolean operandSeparatorSupported = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        markerFileName = String.format(markerFileName, configRandom.nextInt()); // Unique enough file name
+        markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
             /* insert markerFileName into test data */
             String formattedPrefix = String.format(prefix, markerFileName);
 
             /* Random remote URL with prefix */
-            String firstChar = configRandom.nextBoolean() ? " " : "";
-            String middleChar = configRandom.nextBoolean() ? " " : "";
-            String lastChar = configRandom.nextBoolean() ? " " : "";
-            int remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
+            String firstChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
+            String middleChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
+            String lastChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
+            int remoteIndex = CONFIG_RANDOM.nextInt(VALID_REMOTES.length);
             String remoteUrl = firstChar + formattedPrefix + middleChar + VALID_REMOTES[remoteIndex] + lastChar;
-            Object[] remoteUrlItem = {remoteUrl, configRandom.nextBoolean()};
+            Object[] remoteUrlItem = {remoteUrl, enableRemoteCheck(formattedPrefix)};
             arguments.add(remoteUrlItem);
 
             /* Random remote URL with prefix separated by a space */
-            remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
+            remoteIndex = CONFIG_RANDOM.nextInt(VALID_REMOTES.length);
             remoteUrl = formattedPrefix + " " + VALID_REMOTES[remoteIndex];
-            Object[] remoteUrlItemOneSpace = {remoteUrl, configRandom.nextBoolean()};
+            Object[] remoteUrlItemOneSpace = {remoteUrl, enableRemoteCheck(formattedPrefix)};
             arguments.add(remoteUrlItemOneSpace);
 
             /* Random remote URL with prefix and no separator */
-            remoteIndex = configRandom.nextInt(VALID_REMOTES.length);
+            remoteIndex = CONFIG_RANDOM.nextInt(VALID_REMOTES.length);
             remoteUrl = formattedPrefix + VALID_REMOTES[remoteIndex];
-            Object[] noSpaceItem = {remoteUrl, configRandom.nextBoolean()};
+            Object[] noSpaceItem = {remoteUrl, enableRemoteCheck(formattedPrefix)};
             arguments.add(noSpaceItem);
 
             /* Remote URL with only the prefix */
-            boolean enableRemoteCheck = configRandom.nextBoolean();
-            if (!enableRemoteCheck &&
-                !operandSeparatorSupported &&
-                (formattedPrefix.equals("-q")
-                 || formattedPrefix.equals("--quiet")
-                 || formattedPrefix.equals("--tags"))) {
-                /* Always check remote in these special cases, won't throw exception when check is disabled */
-                enableRemoteCheck = true;
-            }
-            Object[] prefixItem = {formattedPrefix, enableRemoteCheck};
+            Object[] prefixItem = {formattedPrefix, enableRemoteCheck(formattedPrefix)};
             arguments.add(prefixItem);
         }
         Collections.shuffle(arguments);
@@ -172,6 +207,7 @@ public class GitClientSecurityTest {
         "`echo %s`",
         "--all",
         "-a",
+        "--append",
         "--depth=1",
         "--shallow-since=2019-09-01",
         "--shallow-exclude=HEAD",
@@ -184,17 +220,30 @@ public class GitClientSecurityTest {
         "--keep",
         "-k",
         "--multiple",
+        "--no-auto-gc",
+        "-p",
         "--prune",
+        "-P",
         "--prune-tags",
+        "-n",
         "--no-tags",
-        "-t",
+        "--ref-map=+refs/heads/abc/*:refs/remotes/origin/abc/*",
         "--tags",
         "--recurse-submodules",
+        "-j",
         "--jobs",
         "--no-recurse-submodules",
+        "--recurse-submodules-default=on-demand",
         "--update-head-ok",
+        "--upload-pack /usr/bin/id",
         "--progress",
-        "--quiet"
+        "--quiet",
+        "-o /usr/bin/id",
+        "--server-option=/usr/bin/id",
+        "--show-forced-updates",
+        "--no-show-forced-updates",
+        "-4",
+        "-6"
     };
 
     private static final String[] VALID_REMOTES = {
