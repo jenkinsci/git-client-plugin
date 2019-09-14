@@ -381,7 +381,7 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
+        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
