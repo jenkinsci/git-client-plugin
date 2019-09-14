@@ -362,7 +362,7 @@ public class CredentialsTest {
 
     @Test
     @Issue("JENKINS-50573")
-    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
+    public void testFetchWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
