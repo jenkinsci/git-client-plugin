@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -74,6 +75,7 @@ public class CredentialsTest {
     private final Boolean submodules;
     private final Boolean useParentCreds;
     private final char specialCharacter;
+    private final Boolean credentialsEmbeddedInURL;
 
     private GitClient git;
     private File repo;
@@ -108,7 +110,7 @@ public class CredentialsTest {
             + (isWindows() ? "" : "*<>:|?");
     private static int specialsIndex = 0;
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds, Boolean credentialsEmbeddedInURL) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -119,6 +121,7 @@ public class CredentialsTest {
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
         this.specialCharacter = SPECIALS_TO_CHECK.charAt(specialsIndex);
+        this.credentialsEmbeddedInURL = credentialsEmbeddedInURL;
         specialsIndex = specialsIndex + 1;
         if (specialsIndex >= SPECIALS_TO_CHECK.length()) {
             specialsIndex = 0;
@@ -158,9 +161,11 @@ public class CredentialsTest {
         if (privateKey != null && privateKey.exists()) {
             testedCredential = newPrivateKeyCredential(username, privateKey);
         }
-        assertThat(testedCredential, notNullValue());
-        Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
-        assertThat("Fingerprint should not be set", fingerprint, nullValue());
+        if (!credentialsEmbeddedInURL) {
+            assertThat(testedCredential, notNullValue());
+            Fingerprint fingerprint = CredentialsProvider.getFingerprintOf(testedCredential);
+            assertThat("Fingerprint should not be set", fingerprint, nullValue());
+        }
     }
 
     @After
@@ -201,7 +206,15 @@ public class CredentialsTest {
         return cli.isAtLeastVersion(1, 7, 9, 0);
     }
 
-    @Parameterized.Parameters(name = "{2}-{1}-{0}-{5}")
+    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) throws IOException, InterruptedException {
+        if (!implementation.equals("git")) {
+            return false;
+        }
+        CliGitAPIImpl cli = (CliGitAPIImpl) gitClient;
+        return cli.isAtLeastVersion(1, 9, 0, 0);
+    }
+
+    @Parameterized.Parameters(name = "Impl:{0} User:{2} Pass:{3} Embed:{9} Phrase:{5} URL:{1}")
     public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
@@ -216,7 +229,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false};
+                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false, false};
                     repos.add(masterRepo);
                 }
             }
@@ -299,8 +312,18 @@ public class CredentialsTest {
 
                     /* Add URL if it matches the pattern */
                     if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
-                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds};
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, false};
                         repos.add(repo);
+                        /* Add embedded credentials test case if valid username, valid password, CLI git, and http protocol */
+                        if (username != null && !username.matches(".*[@:].*") && // Skip special cases of username
+                            password != null && !password.matches(".*[@:].*") && // Skip special cases of password
+                            implementation.equals("git")                      && // Embedded credentials only implemented for CLI git
+                            repoURL.startsWith("http")) {
+                            /* Use existing username and password to create an embedded credentials test case */
+                            String repoURLwithCredentials = repoURL.replaceAll("(https?://)(.*@)?(.*)", "$1" + username + ":" + password + "@$3");
+                            Object[] repoWithCredentials = {implementation, repoURLwithCredentials, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, true};
+                            repos.add(0, repoWithCredentials);
+                        }
                     }
                 }
             }
@@ -310,13 +333,13 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void doFetch(String source) throws InterruptedException, URISyntaxException {
+    private void doFetch(String source) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
         FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
-        if (gitImpl.equals("git")) {
+        if (isShallowCloneSupported(gitImpl, git)) {
             // Reduce network transfer by using shallow clone
             // JGit does not support shallow clone
             cmd.shallow(true).depth(1);
@@ -326,16 +349,20 @@ public class CredentialsTest {
 
     private String listDir(File dir) {
         File[] files = repo.listFiles();
-        StringBuilder fileList = new StringBuilder();
+        StringJoiner joiner = new StringJoiner(",");
         for (File file : files) {
-            fileList.append(file.getName());
-            fileList.append(',');
+            joiner.add(file.getName());
         }
-        fileList.deleteCharAt(fileList.length() - 1);
-        return fileList.toString();
+        return joiner.toString();
     }
 
     private void addCredential() throws IOException {
+        //Begin - JENKINS-56257
+        //Credential need not be added when supplied in the URL
+        if (this.credentialsEmbeddedInURL) {
+            return;
+        }
+        //End - JENKINS-56257
         // Always use addDefaultCredentials
         git.addDefaultCredentials(testedCredential);
         // addCredential stops tests to prompt for passphrase
@@ -355,7 +382,7 @@ public class CredentialsTest {
 
     @Test
     @Issue("JENKINS-50573")
-    public void testFetchWithCredentials() throws URISyntaxException, GitException, InterruptedException, MalformedURLException, IOException {
+    public void testFetchWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
@@ -374,7 +401,7 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().getRef("master").getObjectId());
+        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
         assertEquals("Wrong branch", "master", git.getRepository().getBranch());
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
