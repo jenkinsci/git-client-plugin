@@ -86,9 +86,6 @@ public class CredentialsTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
-    public TestRule timeout = new DisableOnDebug(Timeout.seconds(17));
-
     private int logCount;
     private LogHandler handler;
     private LogTaskListener listener;
