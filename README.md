@@ -1,41 +1,66 @@
-Utility plugin for Git-related support
-======================================
+# Git Client Plugin
 
-Extracted from [git-plugin](https://plugins.jenkins.io/git)
-to make it easier for other plugins to use and contribute new features.
-Includes JGit as a library so that other Jenkins components can rely on
-JGit whenever the git client plugin is available.
+[![Build Status](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/git-client--plugin/job/master/)
+[![Contributors](https://img.shields.io/github/contributors/jenkinsci/git-client-plugin.svg)](https://github.com/jenkinsci/git-client-plugin/graphs/contributors)
+[![GitHub release](https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=release)](https://github.com/jenkinsci/git-client-plugin/releases/latest)
 
-* see [Jenkins plugins site](https://plugins.jenkins.io/git-client) for feature descriptions
-* use [JIRA](https://issues.jenkins-ci.org) to report issues or request features
+<img src="https://git-scm.com/images/logos/downloads/Git-Logo-2Color.png" width="303">
 
-Contributing to the Plugin
-==========================
+## Introduction
 
-Refer to [contributing to the plugin](CONTRIBUTING.md)
-for suggestions to speed the acceptance of your contributions.
+The git client plugin provides git application programming interfaces (APIs) for Jenkins plugins.
+It can fetch, checkout, branch, list, merge, and tag repositories.
+Refer to the [API documentation](https://javadoc.jenkins-ci.org/plugin/git-client/) for specific API details.
 
-Code coverage reporting is available as a maven target and is actively
-monitored.  Please improve code coverage with the tests you submit.
-Code coverage reporting is written to `target/site/jacoco/` by the maven command:
+The [GitClient interface](https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html) provides the primary entry points for git access.
+It support username / password credentials and private key credentials provided by the [Jenkins credentials plugin](https://plugins.jenkins.io/credentials).
 
-```
-  $ mvn -P enable-jacoco clean install jacoco:report
-```
+## Changelog
 
-Building the Plugin
-===================
+Release notes are recorded in [GitHub](https://github.com/jenkinsci/git-client-plugin/releases) beginning with git client plugin 2.8.1.
+Prior release notes are recorded on the [Jenkins wiki](https://wiki.jenkins.io/display/JENKINS/Git+Client+Plugin#GitClientPlugin-ChangeLog-MovedtoGitHub).
 
-```
-$ java -version # Requires Java 1.8 or Java 11
-$ mvn -version # Requires maven 3.5.4 or newer
-$ mvn clean install
-```
+## Implementations
 
-To Do
-=====
+The git client plugin default implementation requires that [command line git](https://git-scm.com/downloads) is installed on the master and on every agent that will use git.
+Command line git implementations working with large files should also install [git LFS](https://git-lfs.github.com/).
+The command line git implementation is the canonical implementation of the git interfaces provided by the git client plugin.
 
-* Evaluate [pull requests](https://github.com/jenkinsci/git-client-plugin/pulls)
-* Fix [bugs](https://issues.jenkins-ci.org/secure/IssueNavigator.jspa?mode=hide&reset=true&jqlQuery=project+%3D+JENKINS+AND+status+in+%28Open%2C+"In+Progress"%2C+Reopened%29+AND+component+%3D+git-client-plugin)
-* Create infrastructure to detect [files opened during a unit test](https://issues.jenkins-ci.org/browse/JENKINS-19994) and left open at exit from test
-* Complete more JGit implementation
+Command line git is **enabled by default** when the git client plugin is installed.
+
+### JGit
+
+The git client plugin also includes two optional implementations that use [Eclipse JGit](https://www.eclipse.org/jgit/).
+Eclipse JGit is a pure Java implementation of git.
+The JGit implementation in the git client plugin provides most of the functionality of the command line git implementation.
+When the JGit implementation is incomplete, the gap is noted in console logs.
+
+JGit is **disabled by default** when the git client plugin is installed.
+
+### Enabling JGit
+
+Click the "**Add Git**" button in the "**Global Tool Configuration**" section under "**Manage Jenkins**" to add JGit or JGit with Apache HTTP Client as a git implementation.
+
+![Enable JGit or JGit with Apache HTTP Client](images/enable-jgit.png)
+
+### JGit with Apache HTTP Client
+
+The original JGit implementation inside the git client plugin had issues with active directory authentication.
+A workaround was implemented to provide JGit but use Apache HTTP client for authentication.
+The issue in JGit has now been resolved and delivered in git client plugin releases.
+JGit with Apache HTTP Client continues to delivered to assure compatibility.
+
+## Windows Credentials Manager
+
+Git for Windows is able to integrate with the Windows Credentials Manager for secure storage of credentials.
+Windows Credentials Manager works very well for interactive users on the Windows desktop.
+Windows Credentials Manager does not work as well for batch processing in the git client plugin.
+It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
+
+## Bug Reports
+
+Report issues and enhancements with the [Jenkins issue tracker](https://issues.jenkins-ci.org).
+
+## Contributing to the Plugin
+
+Refer to [contributing to the plugin](CONTRIBUTING.md) for contribution guidelines.

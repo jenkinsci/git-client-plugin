@@ -53,7 +53,6 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -370,6 +369,68 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return submodules;
     }
 
+    // Package protected for testing
+    /**
+     * Constant which disables safety check of remote URL.
+     *
+     * <code>CHECK_REMOTE_URL=Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"))</code>.
+     *
+     * Refuse unsafe git URL's, including URL's that start with '-'
+     * and URL's that contain space characters.
+     *
+     * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL=false'
+     * to prevent check of remote URL.
+     */
+    static boolean CHECK_REMOTE_URL = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
+
+    /**
+     * SECURITY-1534 found that arguments
+     * added to a git URL from the user interface can allow a user
+     * with job creation permissions to execute an arbitrary program
+     * on the git server if the git server is configured to allow
+     * custom pack programs. Reject a URL if it includes invalid
+     * content.
+     */
+    private void addCheckedRemoteUrl(@NonNull ArgumentListBuilder args, @NonNull String url) {
+        String trimmedUrl = url.trim();
+        /* Don't check for invalid args if URL starts with known good cases.
+         * Known good cases include:
+         * '/' - Unix local file
+         * 'C:' - Windows local file
+         * 'file:', 'git:', 'http:', 'https:', 'ssh:', and 'git@' - known protocols
+         */
+        if (CHECK_REMOTE_URL
+                && !trimmedUrl.startsWith("/")
+                && !trimmedUrl.startsWith("\\\\")
+                && !trimmedUrl.startsWith("file:")
+                && !trimmedUrl.startsWith("git:")
+                && !trimmedUrl.startsWith("git@")
+                && !trimmedUrl.startsWith("http:")
+                && !trimmedUrl.startsWith("https:")
+                && !trimmedUrl.startsWith("ssh:")
+                && !trimmedUrl.matches("^[A-Za-z]:.+")) {
+            /* Not one of the known good cases, check if this could be a bad case
+             * Bad cases include:
+             * '-' - starts with 'dash' as possible argument
+             * '`' - includes backquote in the string (command execution)
+             * ' ' - includes a space (not guaranteed a threat, but threat risk increases)
+             */
+            if (trimmedUrl.startsWith("-")
+                    || trimmedUrl.contains("`")
+                    || trimmedUrl.contains("--upload-pack=")
+                    || trimmedUrl.matches(".*\\s+.*")) {
+                throw new GitException("Invalid remote URL: " + url);
+            }
+        }
+        // Mark the end of options for git versions that support it.
+        // Tells command line git that later arguments are operands, not options.
+        // See POSIX 1-2017 guideline 10.
+        if (isAtLeastVersion(2, 8, 0, 0)) {
+            args.add("--"); // SECURITY-1534 - end of options, causes tests to fail with git 2.7.4 and older
+        }
+        args.add(trimmedUrl);
+    }
+
     /**
      * fetch_.
      *
@@ -434,15 +495,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (isAtLeastVersion(1,7,1,0))
                     args.add("--progress");
 
-                StandardCredentials cred = credentials.get(url.toPrivateString());
-                if (cred == null) cred = defaultCredentials;
-                args.add(url);
-
-                if (refspecs != null)
-                    for (RefSpec rs: refspecs)
-                        if (rs != null)
-                            args.add(rs.toString());
-
                 if (prune) args.add("--prune");
 
                 if (shallow) {
@@ -453,6 +505,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
+
+                StandardCredentials cred = credentials.get(url.toPrivateString());
+                if (cred == null) cred = defaultCredentials;
+                if (isAtLeastVersion(1,8,0,0)) {
+                    addCheckedRemoteUrl(args, url.toPrivateASCIIString());
+                } else {
+                    // CLI git 1.7.1 on CentOS 6 rejects URL encoded
+                    // repo URL. This is how git client behaved before
+                    // 2.8.5, with the addition of a safety check for
+                    // the remote URL string contents.
+                    //
+                    // CLI git 1.7.1 is unsupported by the git client
+                    // plugin, but we try to avoid removing
+                    // capabilities that worked previously.
+                    addCheckedRemoteUrl(args, url.toString());
+                }
+
+                if (refspecs != null)
+                    for (RefSpec rs: refspecs)
+                        if (rs != null)
+                            args.add(rs.toString());
 
                 /* If url looks like a remote name reference, convert to remote URL for authentication */
                 /* See JENKINS-50573 for more details */
@@ -498,7 +571,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String url = getRemoteUrl(remoteName);
         if (url == null)
             throw new GitException("remote." + remoteName + ".url not defined");
-        args.add(url);
+        addCheckedRemoteUrl(args, url);
         if (refspec != null && refspec.length > 0)
             for (RefSpec rs: refspec)
                 if (rs != null)
@@ -2790,7 +2863,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("ls-remote", "--tags");
-            args.add(getRemoteUrl("origin"));
+            String remoteUrl = getRemoteUrl("origin");
+            if (remoteUrl != null) {
+                addCheckedRemoteUrl(args, remoteUrl);
+            }
             if (tagPattern != null)
                 args.add(tagPattern);
             String result = launchCommandIn(args, workspace);
@@ -2892,7 +2968,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
         args.add("-h");
-        args.add(url);
+        addCheckedRemoteUrl(args, url);
 
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
@@ -2922,7 +2998,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
 
-        args.add(url);
+        addCheckedRemoteUrl(args, url);
+
         if (branchName.startsWith("refs/tags/")) {
             args.add(branchName+"^{}"); // JENKINS-23299 - tag SHA1 needs to be converted to commit SHA1
         } else {
@@ -2942,7 +3019,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (tagsOnly) {
             args.add("-t");
         }
-        args.add(url);
+        addCheckedRemoteUrl(args, url);
         if (pattern != null) {
             args.add(pattern);
         }
@@ -2984,7 +3061,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // https://github.com/git/git/blob/afd6726309/Documentation/RelNotes/2.8.0.txt#L72-L73
             ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
             args.add("--symref");
-            args.add(url);
+            addCheckedRemoteUrl(args, url);
             if (pattern != null) {
                 args.add(pattern);
             }
@@ -3033,7 +3110,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         StandardCredentials cred = credentials.get(url);
         if (cred == null) cred = defaultCredentials;
 
-        args.add("push", url);
+        args.add("push");
+        addCheckedRemoteUrl(args, url);
 
         if (refspec != null)
             args.add(refspec);
