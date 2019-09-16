@@ -231,7 +231,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false, false};
+                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false, false, false};
                     repos.add(masterRepo);
                 }
             }
@@ -327,7 +327,7 @@ public class CredentialsTest {
                             repoURL.startsWith("http")) {
                             /* Use existing username and password to create an embedded credentials test case */
                             String repoURLwithCredentials = repoURL.replaceAll("(https?://)(.*@)?(.*)", "$1" + username + ":" + password + "@$3");
-                            Object[] repoWithCredentials = {implementation, repoURLwithCredentials, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, true};
+                            Object[] repoWithCredentials = {implementation, repoURLwithCredentials, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, true, lfsSpecificTest};
                             repos.add(0, repoWithCredentials);
                         }
                     }
@@ -339,11 +339,11 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void doFetch(String source) throws InterruptedException, URISyntaxException {
+    private void doFetch(String source) throws Exception {
         doFetch(source, "master", true);
     }
 
-    private void doFetch(String source, String branch, Boolean allowShallowClone) throws InterruptedException, URISyntaxException {
+    private void doFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
