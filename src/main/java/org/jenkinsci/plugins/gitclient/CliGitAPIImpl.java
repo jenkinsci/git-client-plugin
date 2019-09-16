@@ -838,7 +838,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 args.add(fastForwardMode);
                 args.add(rev.name());
-                
+
                 /* See JENKINS-45228 */
                 /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
                 String defaultRemote = null;
@@ -847,7 +847,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (GitException e) {
                     /* Nothing to do, just keeping defaultRemote = null */
                 }
-                
+
                 if (defaultRemote != null && !defaultRemote.isEmpty()) {
                     String repoUrl = getRemoteUrl(defaultRemote);
                     StandardCredentials cred = credentials.get(repoUrl);
