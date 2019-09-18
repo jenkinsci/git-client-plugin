@@ -1827,8 +1827,17 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_hasGitRepo_with_invalid_git_repo() throws Exception
     {
         // Create an empty directory named .git - "corrupt" git repo
-        assertTrue("mkdir .git failed", w.file(".git").mkdir());
-        assertFalse("Invalid Git repo reported as valid", w.git.hasGitRepo());
+        File emptyDotGitDir = w.file(".git");
+        assertTrue("mkdir .git failed", emptyDotGitDir.mkdir());
+        boolean hasRepo = w.git.hasGitRepo();
+        // Don't assert condition if the temp directory is inside the dev dir.
+        // CLI git searches up the directory tree seeking a '.git' directory.
+        // If it finds such a directory, it uses it.
+        if (emptyDotGitDir.getAbsolutePath().contains("target")
+                && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
+            return; // JUnit 3 replacement for assumeThat
+        }
+        assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasRepo);
     }
 
     public void test_hasGitRepo_with_valid_git_repo() throws Exception {
@@ -4570,33 +4579,6 @@ public abstract class GitAPITestCase extends TestCase {
         commitFile(dirName, fileName, false);
     }
 
-    /**
-     * msysgit prior to 1.9 forbids file names longer than MAXPATH.
-     * msysgit 1.9 and later allows longer paths if core.longpaths is
-     * set to true.
-     *
-     * JGit does not have that limitation.
-     */
-    public void check_longpaths(boolean longpathsEnabled) throws Exception {
-        String shortName = "0123456789abcdef" + "ghijklmnopqrstuv";
-        String longName = shortName + shortName + shortName + shortName;
-
-        String dirName1 = longName;
-        commitFile(dirName1, "file1a", longpathsEnabled);
-
-        String dirName2 = dirName1 + File.separator + longName;
-        commitFile(dirName2, "file2b", longpathsEnabled);
-
-        String dirName3 = dirName2 + File.separator + longName;
-        commitFile(dirName3, "file3c", longpathsEnabled);
-
-        String dirName4 = dirName3 + File.separator + longName;
-        commitFile(dirName4, "file4d", longpathsEnabled);
-
-        String dirName5 = dirName4 + File.separator + longName;
-        commitFile(dirName5, "file5e", longpathsEnabled);
-    }
-
     private String getConfigValue(File workingDir, String name) throws IOException, InterruptedException {
         String[] args = {"git", "config", "--get", name};
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -4610,50 +4592,6 @@ public abstract class GitAPITestCase extends TestCase {
 
     private String getHomeConfigValue(String name) throws IOException, InterruptedException {
         return getConfigValue(new File(System.getProperty("user.home")), name);
-    }
-
-    private void assert_longpaths(boolean expectedLongPathSetting) throws IOException, InterruptedException {
-        String value = getHomeConfigValue("core.longpaths");
-        boolean longPathSetting = Boolean.valueOf(value);
-        assertEquals("Wrong value: '" + value + "'", expectedLongPathSetting, longPathSetting);
-    }
-
-    private void assert_longpaths(WorkingArea workingArea, boolean expectedLongPathSetting) throws IOException, InterruptedException {
-        String value = getConfigValue(workingArea.repo, "core.longpaths");
-        boolean longPathSetting = Boolean.valueOf(value);
-        assertEquals("Wrong value: '" + value + "'", expectedLongPathSetting, longPathSetting);
-    }
-
-    public void test_longpaths_default() throws Exception {
-        assert_longpaths(false);
-        w.init();
-        assert_longpaths(w, false);
-        check_longpaths(false);
-        assert_longpaths(w, false);
-    }
-
-    @NotImplementedInJGit
-    /* Not implemented in JGit because it is not needed there */
-    public void test_longpaths_enabled() throws Exception {
-        assert_longpaths(false);
-        w.init();
-        assert_longpaths(w, false);
-        w.launchCommand("git", "config", "core.longpaths", "true");
-        assert_longpaths(w, true);
-        check_longpaths(true);
-        assert_longpaths(w, true);
-    }
-
-    @NotImplementedInJGit
-    /* Not implemented in JGit because it is not needed there */
-    public void test_longpaths_disabled() throws Exception {
-        assert_longpaths(false);
-        w.init();
-        assert_longpaths(w, false);
-        w.launchCommand("git", "config", "core.longpaths", "false");
-        assert_longpaths(w, false);
-        check_longpaths(false);
-        assert_longpaths(w, false);
     }
 
     /**
