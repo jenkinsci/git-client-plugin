@@ -128,8 +128,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * If the controlling terminal remains attached, then ssh passphrase based
      * private keys cannot be decrypted during authentication (at least in some
      * ssh configurations).
+     *
+     * Package protected so that tests can override it.
      */
-    private static final boolean CALL_SETSID;
+    static boolean CALL_SETSID;
 
     /**
      * Needed file permission for OpenSSH client that is made by Windows,

@@ -168,6 +168,15 @@ public class CredentialsTest {
         }
     }
 
+    @Before
+    public void enableSETSID() throws IOException, InterruptedException {
+        if (gitImpl.equals("git") && privateKey != null && passphrase != null) {
+            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = true;
+        } else {
+            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
+        }
+    }
+
     @After
     public void checkFingerprintNotSet() throws Exception {
         /* Since these are API level tests, they should not track credential usage */
@@ -181,6 +190,11 @@ public class CredentialsTest {
         if (git != null) {
             git.clearCredentials();
         }
+    }
+
+    @After
+    public void disableSETSID() throws IOException, InterruptedException {
+        org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
     }
 
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
