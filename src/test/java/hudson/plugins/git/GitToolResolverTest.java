@@ -34,22 +34,16 @@ public class GitToolResolverTest {
         final String label = "master";
         final String command = "echo Hello";
         final String toolHome = "TOOL_HOME";
-        AbstractCommandInstaller installer;
-        String expectedSubstring;
-        if (isWindows()) {
-            installer = new BatchCommandInstaller(label, command, toolHome);
-            expectedSubstring = System.getProperty("java.io.tmpdir", "C:\\Temp");
-        } else {
-            installer = new CommandInstaller(label, command, toolHome);
-            expectedSubstring = toolHome;
-        }
+        AbstractCommandInstaller installer = isWindows()
+                ? new BatchCommandInstaller(label, command, toolHome)
+                : new CommandInstaller(label, command, toolHome);
         GitTool t = new GitTool("myGit", null, Collections.singletonList(
                 new InstallSourceProperty(Collections.singletonList(installer))));
         t.getDescriptor().setInstallations(t);
 
         GitTool defaultTool = GitTool.getDefaultInstallation();
         GitTool resolved = (GitTool) defaultTool.translate(j.jenkins, new EnvVars(), TaskListener.NULL);
-        assertThat(resolved.getGitExe(), org.hamcrest.CoreMatchers.containsString(expectedSubstring));
+        assertThat(resolved.getGitExe(), org.hamcrest.CoreMatchers.containsString(toolHome));
     }
 
     private boolean isWindows() {
