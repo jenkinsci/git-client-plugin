@@ -1744,8 +1744,17 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_hasGitRepo_with_invalid_git_repo() throws Exception
     {
         // Create an empty directory named .git - "corrupt" git repo
-        assertTrue("mkdir .git failed", w.file(".git").mkdir());
-        assertFalse("Invalid Git repo reported as valid", w.git.hasGitRepo());
+        File emptyDotGitDir = w.file(".git");
+        assertTrue("mkdir .git failed", emptyDotGitDir.mkdir());
+        boolean hasRepo = w.git.hasGitRepo();
+        // Don't assert condition if the temp directory is inside the dev dir.
+        // CLI git searches up the directory tree seeking a '.git' directory.
+        // If it finds such a directory, it uses it.
+        if (emptyDotGitDir.getAbsolutePath().contains("target")
+                && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
+            return; // JUnit 3 replacement for assumeThat
+        }
+        assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasRepo);
     }
 
     public void test_hasGitRepo_with_valid_git_repo() throws Exception {
