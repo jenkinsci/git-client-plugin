@@ -3168,7 +3168,19 @@ public abstract class GitAPITestCase extends TestCase {
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         // Obtain last commit message
-        String resultMessage = w.git.showRevision(w.head()).get(7).trim();
+        String resultMessage = "";
+        final List<String> content = w.git.showRevision(w.head());
+        if ("gpgsig -----BEGIN PGP SIGNATURE-----".equals(content.get(6).trim())) {
+            //Commit is signed so the commit message is after the signature
+            for (int i = 6; i < content.size(); i++) {
+                if(content.get(i).trim().equals("-----END PGP SIGNATURE-----")) {
+                    resultMessage = content.get(i+2).trim();
+                    break;
+                }
+            }
+        } else {
+            resultMessage = content.get(7).trim();
+        }
 
         assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
     }
