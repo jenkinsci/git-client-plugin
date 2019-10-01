@@ -13,7 +13,7 @@ It can fetch, checkout, branch, list, merge, and tag repositories.
 Refer to the [API documentation](https://javadoc.jenkins-ci.org/plugin/git-client/) for specific API details.
 
 The [GitClient interface](https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html) provides the primary entry points for git access.
-It support username / password credentials and private key credentials provided by the [Jenkins credentials plugin](https://plugins.jenkins.io/credentials).
+It support username / password credentials and private key credentials using the [Jenkins credentials plugin](https://plugins.jenkins.io/credentials).
 
 ## Changelog
 
