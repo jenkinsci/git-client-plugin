@@ -49,6 +49,7 @@
     <java.level>8</java.level>
     <jgit.version>4.5.7.201904151645-r</jgit.version>
     <jgit.javadoc.version>4.5.0.201609210915-r</jgit.javadoc.version>
+    <jcasc.version>1.29</jcasc.version>
   </properties>
 
   <repositories>
@@ -174,6 +175,20 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
+    </dependency>
+    <!-- JCasC compatibility -->
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>${jcasc.version}</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>${jcasc.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
