@@ -19,9 +19,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
 
 @Extension(optional = true)
 public class GitToolConfigurator extends BaseConfigurator<GitTool> {
+
+    private static final Logger logger = Logger.getLogger(GitToolConfigurator.class.getName());
 
     @NonNull
     @Override
@@ -71,10 +74,14 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
         final CNode mproperties = mapping.remove("properties");
         final String name = mapping.getScalarValue("name");
         if (JGitTool.MAGIC_EXENAME.equals(name)) {
-            mapping.remove("home"); //Ignored but could be added, so removing to not fail handleUnknown
+            if (mapping.remove("home") != null) { //Ignored but could be added, so removing to not fail handleUnknown
+                logger.warning("property `home` is ignored for `" + JGitTool.MAGIC_EXENAME + "`");
+            }
             return new JGitTool(instantiateProperties(mproperties, context));
         } else if (JGitApacheTool.MAGIC_EXENAME.equals(name)) {
-            mapping.remove("home");  //Ignored but could be added, so removing to not fail handleUnknown
+            if (mapping.remove("home") != null) { //Ignored but could be added, so removing to not fail handleUnknown
+                logger.warning("property `home` is ignored for `" + JGitApacheTool.MAGIC_EXENAME + "`");
+            }
             return new JGitApacheTool(instantiateProperties(mproperties, context));
         } else {
             if (mapping.get("home") == null) {
