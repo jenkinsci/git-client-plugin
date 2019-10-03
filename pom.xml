@@ -49,7 +49,7 @@
     <java.level>8</java.level>
     <jgit.version>4.5.7.201904151645-r</jgit.version>
     <jgit.javadoc.version>4.5.0.201609210915-r</jgit.javadoc.version>
-    <jcasc.version>1.29</jcasc.version>
+    <jcasc.version>1.30</jcasc.version>
   </properties>
 
   <repositories>
