@@ -14,7 +14,6 @@ import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.casc.model.Mapping;
 import io.jenkins.plugins.casc.model.Sequence;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,7 +69,10 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
     }
 
     @Override
-    protected GitTool instance(Mapping mapping, ConfigurationContext context) throws ConfiguratorException {
+    protected GitTool instance(Mapping mapping, @NonNull ConfigurationContext context) throws ConfiguratorException {
+        if (mapping == null) {
+            return new GitTool("Default", "", instantiateProperties(null, context));
+        }
         final CNode mproperties = mapping.remove("properties");
         final String name = mapping.getScalarValue("name");
         if (JGitTool.MAGIC_EXENAME.equals(name)) {
@@ -92,13 +94,13 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
         }
     }
 
-    @Nonnull
-    private List<ToolProperty<?>> instantiateProperties(@CheckForNull CNode props, @Nonnull ConfigurationContext context) throws ConfiguratorException {
-        final Configurator<ToolProperty> configurator = context.lookupOrFail(ToolProperty.class);
+    @NonNull
+    private List<ToolProperty<?>> instantiateProperties(@CheckForNull CNode props, @NonNull ConfigurationContext context) throws ConfiguratorException {
         List<ToolProperty<?>> toolProperties = new ArrayList<>();
         if (props == null) {
             return toolProperties;
         }
+        final Configurator<ToolProperty> configurator = context.lookupOrFail(ToolProperty.class);
         if (props instanceof Sequence) {
             Sequence s = (Sequence) props;
             for (CNode cNode : s) {
@@ -110,6 +112,7 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
         return toolProperties;
     }
 
+    @CheckForNull
     @Override
     public CNode describe(GitTool instance, ConfigurationContext context) throws Exception {
         Mapping mapping = new Mapping();
@@ -117,11 +120,11 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
             mapping.put("name", JGitTool.MAGIC_EXENAME);
         } else if (instance instanceof JGitApacheTool) {
             mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
-        } else {
+        } else if (instance != null) {
             mapping.put("name", instance.getName());
             mapping.put("home", instance.getHome());
         }
-        if (instance.getProperties() != null && !instance.getProperties().isEmpty()) {
+        if (context != null && instance != null && instance.getProperties() != null && !instance.getProperties().isEmpty()) {
             final Configurator<ToolProperty> configurator = context.lookupOrFail(ToolProperty.class);
             Sequence s = new Sequence(instance.getProperties().size());
             for (ToolProperty<?> property : instance.getProperties()) {
