@@ -38,6 +38,7 @@ import static org.junit.Assert.*;
 public class GitToolConfiguratorTest {
 
     private final GitToolConfigurator gitToolConfigurator;
+    private static final ConfigurationContext NULL_CONFIGURATION_CONTEXT = null;
 
     public GitToolConfiguratorTest() {
         gitToolConfigurator = new GitToolConfigurator();
@@ -71,15 +72,13 @@ public class GitToolConfiguratorTest {
 
     @Test
     public void testGetConfigurators() {
-        ConfigurationContext ignoredContext = null;
-        assertThat(gitToolConfigurator.getConfigurators(ignoredContext), contains(gitToolConfigurator));
+        assertThat(gitToolConfigurator.getConfigurators(NULL_CONFIGURATION_CONTEXT), contains(gitToolConfigurator));
     }
 
     @Test
     public void testDescribe() throws Exception {
-        ConfigurationContext ignoredContext = null;
         GitTool nullGitTool = null;
-        assertThat(gitToolConfigurator.describe(nullGitTool, ignoredContext), is(new Mapping()));
+        assertThat(gitToolConfigurator.describe(nullGitTool, NULL_CONFIGURATION_CONTEXT), is(new Mapping()));
     }
 
     @Test
@@ -87,8 +86,7 @@ public class GitToolConfiguratorTest {
         GitTool gitTool = new JGitTool();
         Mapping jgitMapping = new Mapping();
         jgitMapping.put("name", JGitTool.MAGIC_EXENAME);
-        ConfigurationContext ignoredContext = null;
-        CNode cNode = gitToolConfigurator.describe(gitTool, ignoredContext);
+        CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
         Mapping cNodeMapping = cNode.asMapping();
@@ -100,8 +98,7 @@ public class GitToolConfiguratorTest {
         GitTool gitTool = new JGitApacheTool();
         Mapping jgitMapping = new Mapping();
         jgitMapping.put("name", JGitApacheTool.MAGIC_EXENAME);
-        ConfigurationContext ignoredContext = null;
-        CNode cNode = gitToolConfigurator.describe(gitTool, ignoredContext);
+        CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
         Mapping cNodeMapping = cNode.asMapping();
@@ -116,8 +113,7 @@ public class GitToolConfiguratorTest {
         Mapping gitMapping = new Mapping();
         gitMapping.put("name", gitName);
         gitMapping.put("home", gitHome);
-        ConfigurationContext ignoredContext = null;
-        CNode cNode = gitToolConfigurator.describe(gitTool, ignoredContext);
+        CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
         Mapping cNodeMapping = cNode.asMapping();
