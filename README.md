@@ -1,6 +1,6 @@
 # Git Client Plugin
 
-[![Build Status](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/git-client--plugin/job/master/)
+[![Build Status](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon)](https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/)
 [![Contributors](https://img.shields.io/github/contributors/jenkinsci/git-client-plugin.svg)](https://github.com/jenkinsci/git-client-plugin/graphs/contributors)
 [![GitHub release](https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=release)](https://github.com/jenkinsci/git-client-plugin/releases/latest)
 
