@@ -146,9 +146,31 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
+    public void testInstanceJGitToolWithHome() throws Exception {
+        Mapping mapping = new Mapping();
+        mapping.put("name", JGitTool.MAGIC_EXENAME);
+        mapping.put("home", "unused-value-for-home"); // Will log a message
+        ConfigurationContext context = new ConfigurationContext(null);
+        GitTool gitTool = gitToolConfigurator.instance(mapping, context);
+        assertThat(gitTool, is(instanceOf(JGitTool.class)));
+        assertThat(gitTool, is(not(instanceOf(JGitApacheTool.class))));
+    }
+
+    @Test
     public void testInstanceJGitApacheTool() throws Exception {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
+        ConfigurationContext context = new ConfigurationContext(null);
+        GitTool gitTool = gitToolConfigurator.instance(mapping, context);
+        assertThat(gitTool, is(instanceOf(JGitApacheTool.class)));
+        assertThat(gitTool, is(not(instanceOf(JGitTool.class))));
+    }
+
+    @Test
+    public void testInstanceJGitApacheToolWithHome() throws Exception {
+        Mapping mapping = new Mapping();
+        mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
+        mapping.put("home", "unused-value-for-home"); // Will log a message
         ConfigurationContext context = new ConfigurationContext(null);
         GitTool gitTool = gitToolConfigurator.instance(mapping, context);
         assertThat(gitTool, is(instanceOf(JGitApacheTool.class)));
