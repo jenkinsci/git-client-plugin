@@ -32,6 +32,17 @@
       <name>Mark Waite</name>
       <email>mark.earl.waite@gmail.com</email>
     </developer>
+    <developer>
+      <id>rsandell</id>
+      <name>Robert Sandell</name>
+      <email>rsandell@cloudbees.com</email>
+      <url>http://rsandell.com</url>
+    </developer>
+    <developer>
+      <id>fcojfernandez</id>
+      <name>Francisco J. Fernández</name>
+      <email>fjfernandez@cloudbees.com</email>
+    </developer>
   </developers>
 
   <scm>
