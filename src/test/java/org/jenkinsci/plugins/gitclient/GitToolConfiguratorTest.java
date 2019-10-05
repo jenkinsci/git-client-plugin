@@ -84,8 +84,6 @@ public class GitToolConfiguratorTest {
     @Test
     public void testDescribeJGitTool() throws Exception {
         GitTool gitTool = new JGitTool();
-        Mapping jgitMapping = new Mapping();
-        jgitMapping.put("name", JGitTool.MAGIC_EXENAME);
         CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
@@ -96,8 +94,6 @@ public class GitToolConfiguratorTest {
     @Test
     public void testDescribeJGitApacheTool() throws Exception {
         GitTool gitTool = new JGitApacheTool();
-        Mapping jgitMapping = new Mapping();
-        jgitMapping.put("name", JGitApacheTool.MAGIC_EXENAME);
         CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
@@ -110,9 +106,6 @@ public class GitToolConfiguratorTest {
         String gitName = "git-name";
         String gitHome = "/opt/git-2.23.0/bin/git";
         GitTool gitTool = new GitTool(gitName, gitHome, null);
-        Mapping gitMapping = new Mapping();
-        gitMapping.put("name", gitName);
-        gitMapping.put("home", gitHome);
         CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
