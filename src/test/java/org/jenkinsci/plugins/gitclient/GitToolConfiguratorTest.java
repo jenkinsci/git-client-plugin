@@ -198,5 +198,4 @@ public class GitToolConfiguratorTest {
         Attribute<GitTool, ToolProperty> p = new Attribute<>("properties", ToolProperty.class);
         assertThat(gitToolAttributes, containsInAnyOrder(name, home, p));
     }
-
 }
