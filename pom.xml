@@ -32,6 +32,17 @@
       <name>Mark Waite</name>
       <email>mark.earl.waite@gmail.com</email>
     </developer>
+    <developer>
+      <id>rsandell</id>
+      <name>Robert Sandell</name>
+      <email>rsandell@cloudbees.com</email>
+      <url>http://rsandell.com</url>
+    </developer>
+    <developer>
+      <id>fcojfernandez</id>
+      <name>Francisco J. Fernández</name>
+      <email>fjfernandez@cloudbees.com</email>
+    </developer>
   </developers>
 
   <scm>
@@ -52,14 +63,24 @@
     <forkCount>1C</forkCount>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-2.138.x</artifactId>
+        <version>3</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -75,8 +96,7 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit http server so that git-userContent and other
+    <dependency><!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
@@ -84,8 +104,7 @@
       <artifactId>org.eclipse.jgit.http.server</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -101,15 +120,13 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit's Apache HTTP client so that we can avoid
+    <dependency><!-- Include jgit's Apache HTTP client so that we can avoid
            automatic NTLM on Windows. See JENKINS-37934 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -130,14 +147,12 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit's LFS module for eventual large file support -->
+    <dependency><!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -191,8 +206,7 @@
       <version>1.7</version>
       <scope>test</scope>
       <exclusions>
-        <exclusion>
-          <!-- Jenkins 2.176.1 requires a newer version -->
+        <exclusion><!-- Jenkins 2.176.1 requires a newer version -->
           <groupId>org.jenkins-ci.modules</groupId>
           <artifactId>ssh-cli-auth</artifactId>
         </exclusion>
@@ -224,17 +238,29 @@
     <dependency>
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
-      <optional>true</optional>
       <exclusions>
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
         </exclusion>
       </exclusions>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
+    </dependency>
+    <!-- JCasC compatibility -->
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -255,18 +281,6 @@
       <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.138.x</artifactId>
-        <version>3</version>
-        <scope>import</scope>
-        <type>pom</type>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 
   <build>
     <plugins>
@@ -290,6 +304,20 @@
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>tidy-maven-plugin</artifactId>
+        <version>1.1.0</version>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

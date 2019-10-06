@@ -1,0 +1,21 @@
+tool:
+  git:
+    installations:
+      - name: "jgit"
+        home: "jgit"
+      - home: "git"
+        name: "Default"
+      - name: "jgitapache"
+      - home: "/opt/git/git"
+        name: "optional"
+        properties:
+          - installSource:
+              installers:
+                - batchFile:
+                    command: "echo \"got git\""
+                    label: "test"
+                    toolHome: "/opt/git"
+                - zip:
+                    label: "win"
+                    subdir: "/opt/git"
+                    url: "file://some/path.zip"
