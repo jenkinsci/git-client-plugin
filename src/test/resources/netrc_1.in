@@ -16,7 +16,7 @@ login fool
 	login
 		jenk
     password
-      slavepwd
+      somepwd
 	 
 machine 5-sonr-l_.example.com
 	login

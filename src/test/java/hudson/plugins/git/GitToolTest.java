@@ -37,10 +37,10 @@ public class GitToolTest {
 
     @Test
     public void testForNode() throws Exception {
-        DumbSlave slave = j.createSlave();
-        slave.setMode(Node.Mode.EXCLUSIVE);
+        DumbSlave agent = j.createSlave();
+        agent.setMode(Node.Mode.EXCLUSIVE);
         TaskListener log = StreamTaskListener.fromStdout();
-        GitTool newTool = gitTool.forNode(slave, log);
+        GitTool newTool = gitTool.forNode(agent, log);
         assertEquals(gitTool.getGitExe(), newTool.getGitExe());
     }
 
