@@ -287,6 +287,29 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return gitVersion >= requestedVersion;
     }
 
+    /* Version check of Git LFS to decide the value of smudge filter */
+    boolean validGitLfsVersion() {
+        int major  = 0;
+        int minor  = 0;
+        int rev    = 0;
+        int bugfix = 0;
+
+        try {
+
+            String lfsVersion = launchCommand("lfs", "version").trim();
+            String[] fields = lfsVersion.replace("git-lfs/","").split("\\(")[0].split("\\.");
+
+            major = Integer.parseInt(fields[0]);
+            minor = (fields.length > 1) ? Integer.parseInt(fields[1]) : 0;
+            rev = (fields.length > 2) ? Integer.parseInt(fields[2]) : 0;
+            bugfix = (fields.length > 3) ? Integer.parseInt(fields[3]) : 0;
+
+        } catch(Throwable e) {
+
+        }
+        return computeVersionFromBits(2,3,0,0) <= computeVersionFromBits(major, minor, rev, bugfix);
+    }
+
     /**
      * Constructor for CliGitAPIImpl.
      *
@@ -2649,7 +2672,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     sparseCheckout(sparseCheckoutPaths);
 
                     EnvVars checkoutEnv = environment;
-                    if (lfsRemote != null) {
+                    if (lfsRemote != null && (!isAtLeastVersion(2,15,0,0) || !validGitLfsVersion())) {
                         // Disable the git-lfs smudge filter because it is much slower on
                         // certain OSes than doing a single "git lfs pull" after checkout.
                         checkoutEnv = new EnvVars(checkoutEnv);
