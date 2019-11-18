@@ -196,7 +196,7 @@ public class GitClientTest {
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
-        File gitDir = gitClient.getRepository().getDirectory();
+        File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
@@ -483,7 +483,7 @@ public class GitClientTest {
 
     @Test
     public void testInit() throws Exception {
-        File gitDir = gitClient.getRepository().getDirectory();
+        File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         gitClient.init();
         assertTrue("init did not create " + gitDir, gitDir.isDirectory());
     }
@@ -668,10 +668,10 @@ public class GitClientTest {
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
                 break;
             case 1:
-                URIish repoURL = new URIish(client.getRepository().getConfig().getString("remote", remote, "url"));
+                URIish repoURL = new URIish(client.withRepository((repo, channel) -> repo.getConfig()).getString("remote", remote, "url"));
                 boolean pruneBranches = random.nextBoolean();
                 if (pruneBranches) {
-                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune().execute();
+                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune(true).execute();
                 } else {
                     client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
                 }
@@ -1031,7 +1031,7 @@ public class GitClientTest {
         ObjectId commitA = commitOneFile();
 
         List<ObjectId> resultAll = new ArrayList<>();
-        gitClient.revList_().to(resultAll).all().execute();
+        gitClient.revList_().to(resultAll).all(true).execute();
         assertThat(resultAll, contains(commitA));
 
         List<ObjectId> resultRef = new ArrayList<>();
@@ -1045,14 +1045,14 @@ public class GitClientTest {
         assertThat(gitClient.revListAll(), contains(commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultA = new ArrayList<>();
-        gitClient.revList_().to(resultA).all().execute();
+        gitClient.revList_().to(resultA).all(true).execute();
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
         assertThat(gitClient.revListAll(), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultB = new ArrayList<>();
-        gitClient.revList_().to(resultB).all().execute();
+        gitClient.revList_().to(resultB).all(true).execute();
         assertThat(resultB, contains(commitB, commitA));
     }
 
@@ -1208,7 +1208,7 @@ public class GitClientTest {
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
         assertSubmoduleStatus(gitClient, false, "firewall", "ntp", "sshkeys");
         /* Perform the update, then rename the module */
-        gitClient.submoduleUpdate(true);
+        gitClient.submoduleUpdate().recursive(true).execute();
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("mv", "modules/ntp", "modules/ntp-moved");
@@ -1233,7 +1233,7 @@ public class GitClientTest {
         gitCmd.assertOutputContains("^$"); // Empty string
         gitCmd.run("commit", "-a", "-m", "Moved modules/ntp to modules/ntp-moved");
         gitCmd.assertOutputContains(".*modules/ntp.*modules/ntp-moved.*");
-        gitClient.submoduleUpdate(true);
+        gitClient.submoduleUpdate().recursive(true).execute();
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
@@ -1272,8 +1272,8 @@ public class GitClientTest {
         assertNull("Checkout did not revert change in " + lastModifiedFile, lastModifiedFile);
     }
 
-    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) {
-        File myRepoRoot = gitClient.getRepository().getWorkTree();
+    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) throws Exception {
+        File myRepoRoot = gitClient.withRepository((repo, channel) -> repo.getWorkTree());
         for (String expectedDir : expectedDirs) {
             File dir = new File(myRepoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
@@ -1283,7 +1283,7 @@ public class GitClientTest {
     }
 
     private void assertSubmoduleContents(GitClient client, String... directories) throws Exception {
-        File myRepoRoot = client.getRepository().getWorkTree();
+        File myRepoRoot = client.withRepository((repo, channel) -> repo.getWorkTree());
         for (String directory : directories) {
             File licenseDir = new File(myRepoRoot, "modules/" + directory);
             File licenseFile = new File(licenseDir, "LICENSE");
@@ -1320,16 +1320,16 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().execute();
                 break;
             case 1:
-                gitClient.submoduleUpdate(true);
+                gitClient.submoduleUpdate().recursive(true).execute();
                 break;
             case 2:
-                gitClient.submoduleUpdate(false);
+                gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate(false, false);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate(true, false);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
                 break;
         }
     }
@@ -1352,30 +1352,30 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().remoteTracking(remoteTracking).execute();
                 break;
             case 1:
-                gitClient.submoduleUpdate(true);
+                gitClient.submoduleUpdate().recursive(true).execute();
                 break;
             case 2:
-                gitClient.submoduleUpdate(false);
+                gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate(true, remote + "/" + branch);
+                gitClient.submoduleUpdate().recursive(true).ref(remote + "/" + branch).execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate(false, remote + "/" + branch);
+                gitClient.submoduleUpdate().recursive(false).ref(remote + "/" + branch).execute();
                 break;
             case 5:
-                gitClient.submoduleUpdate(false, false);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
                 break;
             case 6:
-                gitClient.submoduleUpdate(true, false);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
                 break;
             case 7:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate(false, remoteTracking);
+                gitClient.submoduleUpdate().recursive(false).remoteTracking(remoteTracking).execute();
                 break;
             case 8:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate(true, remoteTracking);
+                gitClient.submoduleUpdate().recursive(true).remoteTracking(remoteTracking).execute();
                 break;
         }
     }
@@ -1592,7 +1592,7 @@ public class GitClientTest {
         repoHasSubmoduleClient.add(".");
         repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
         repoHasSubmoduleClient.submoduleInit();
-        repoHasSubmoduleClient.submoduleUpdate(false);
+        repoHasSubmoduleClient.submoduleUpdate().recursive(false).execute();
         assertSubmoduleStatus(repoHasSubmoduleClient, true, moduleDirBaseName);
 
         // Clone repoHasSubmodule to new repository with submodule
