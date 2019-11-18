@@ -1374,8 +1374,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand timeout(Integer timeout) {
-            	this.timeout = timeout;
-            	return this;
+                this.timeout = timeout;
+                return this;
             }
 
             @Override
@@ -1473,7 +1473,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setCredentialsProvider(getProvider())
                             .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
                             .setRefSpecs(refspecs);
-                    if (timeout != null) fetch.setTimeout(timeout);
+                    if (timeout != null) {
+                        fetch.setTimeout(timeout * 60);
+                    }
                     fetch.call();
 
                     StoredConfig config = repository.getConfig();
