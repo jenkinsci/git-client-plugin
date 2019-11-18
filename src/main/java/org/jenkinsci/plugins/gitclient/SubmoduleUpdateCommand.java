@@ -54,7 +54,7 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     /**
      * timeout.
      *
-     * @param timeout a {@link java.lang.Integer} object.
+     * @param timeout the timeout (in minutes) used for the command
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand timeout(Integer timeout);

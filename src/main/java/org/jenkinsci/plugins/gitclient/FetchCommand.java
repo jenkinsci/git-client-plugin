@@ -50,7 +50,7 @@ public interface FetchCommand extends GitCommand {
     /**
      * timeout.
      *
-     * @param timeout a {@link java.lang.Integer} object.
+     * @param timeout the timeout (in minutes) used for the command
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
      */
     FetchCommand timeout(Integer timeout);
