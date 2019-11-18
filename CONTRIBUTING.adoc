@@ -44,7 +44,7 @@ Pull request builds merge the most recent changes from their target branch with 
 They can be downloaded from ci.jenkins.io and used to test the pull request.
 Steps to test a pull request build are:
 
-. *Find the pull request on link:https://github.com/jenkinsci/git-client-plugin/pulls[GitHub]* - for example, link:https://github.com/jenkinsci/git-client-plugin/pull/676[pull request 676]
+. *Find the pull request on link:https://github.com/jenkinsci/git-client-plugin/pulls[GitHub]* - for example, link:https://github.com/jenkinsci/git-client-plugin/pull/467[pull request 467]
 . *Find the link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/view/change-requests/[ci.jenkins.io] artifacts for that pull request* from the link to the link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/PR-676/lastSuccessfulBuild/[artifacts in the Jenkins job] in "*Show all checks*"
 . *Download the `hpi` file* (like `git-client-3.0.1-rc3444.b3d767e3d46a.hpi`) to your computer
 . *Upload the `hpi` file* to Jenkins from the Jenkins Plugin Manager
