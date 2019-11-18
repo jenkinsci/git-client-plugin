@@ -553,6 +553,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private List<RefSpec> refspecs;
             private boolean shouldPrune = false;
             private boolean tags = true;
+            private Integer timeout;
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -582,7 +583,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand timeout(Integer timeout) {
-                // noop in jgit
+                this.timeout = timeout;
                 return this;
             }
 
@@ -625,6 +626,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     fetch.setRefSpecs(allRefSpecs);
                     fetch.setRemoveDeletedRefs(shouldPrune);
 
+                    if (timeout != null) {
+                        fetch.setTimeout(timeout * 60);
+                    }
                     fetch.call();
                 } catch (GitAPIException e) {
                     throw new GitException(e);
@@ -1822,6 +1826,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private boolean force;
             private boolean tags;
+            private Integer timeout;
 
             @Override
             public PushCommand to(URIish remote) {
@@ -1854,7 +1859,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public PushCommand timeout(Integer timeout) {
-            	// noop in jgit
+                this.timeout = timeout;
                 return this;
             }
 
@@ -1872,6 +1877,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setForce(force);
                     if(tags) {
                         pc.setPushTags();
+                    }
+                    if (timeout != null) {
+                        pc.setTimeout(timeout * 60);
                     }
                     Iterable<PushResult> results = pc.call();
                     for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
@@ -2162,6 +2170,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean recursive      = false;
             private boolean remoteTracking = false;
             private String  ref            = null;
+            private Integer timeout;
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand recursive(boolean recursive) {
@@ -2189,7 +2198,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand timeout(Integer timeout) {
-            	// noop in jgit
+                this.timeout = timeout;
                 return this;
             }
 
@@ -2239,6 +2248,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     SubmoduleUpdateCommand update = git(repo).submoduleUpdate();
                     update.setCredentialsProvider(getProvider());
+                    if (timeout != null) {
+                        update.setTimeout(timeout * 60);
+                    }
                     update.call();
                     if (recursive) {
                         for (JGitAPIImpl sub : submodules()) {
