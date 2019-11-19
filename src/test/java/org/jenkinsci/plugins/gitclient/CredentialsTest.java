@@ -240,7 +240,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false, false};
+                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.adoc", false, false, false};
                     repos.add(masterRepo);
                 }
             }
@@ -273,7 +273,7 @@ public class CredentialsTest {
                     }
 
                     if (fileToCheck == null) {
-                        fileToCheck = "README.md";
+                        fileToCheck = "README.adoc";
                     }
 
                     Boolean submodules = (Boolean) entry.get("submodules");
