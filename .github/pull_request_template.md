@@ -7,7 +7,7 @@ If it fixes a bug or resolves a feature request, include a link to the issue.
 
 _Put an `x` in the boxes that apply. You can also fill these out after creating the PR. If you're unsure about any of them, don't hesitate to ask. This is simply a reminder of what we are going to look for before merging your code._
 
-- [ ] I have read the [CONTRIBUTING](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.md) doc
+- [ ] I have read the [CONTRIBUTING](https://github.com/jenkinsci/git-client-plugin/blob/master/CONTRIBUTING.adoc) doc
 - [ ] I have referenced the Jira issue related to my changes in one or more commit messages
 - [ ] I have added tests that verify my changes
 - [ ] Unit tests pass locally with my changes
@@ -15,7 +15,6 @@ _Put an `x` in the boxes that apply. You can also fill these out after creating 
 - [ ] No Javadoc warnings were introduced with my changes
 - [ ] No spotbugs warnings were introduced with my changes
 - [ ] I have interactively tested my changes
-- [ ] Any dependent changes have been merged and published in upstream modules (like git-client-plugin)
 
 ## Types of changes
 
