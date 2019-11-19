@@ -2437,7 +2437,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_addSubmodule() throws Exception {
         String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
-        String readme1 = sub1 + File.separator + "README.md";
+        String readme1 = sub1 + File.separator + "README.adoc";
         w.init();
         assertFalse("submodule1 dir found too soon", w.file(sub1).exists());
         assertFalse("submodule1 file found too soon", w.file(readme1).exists());
@@ -3925,6 +3925,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
         assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
         // Previous implementation included other commits, and listed irrelevant changes
+        assertFalse(paths.contains("README.adoc"));
         assertFalse(paths.contains("README.md"));
     }
 
