@@ -20,6 +20,7 @@ import org.junit.rules.ExpectedException;
 import static org.junit.Assert.*;
 import org.junit.rules.TemporaryFolder;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assume.*;
 
 public class GitExceptionTest {
@@ -51,7 +52,7 @@ public class GitExceptionTest {
         String message = "My custom git exception message";
         thrown.expect(GitException.class);
         thrown.expectMessage(is(message));
-        thrown.expectCause(is(IOException.class));
+        thrown.expectCause(instanceOf(IOException.class));
         throw new GitException(message, new IOException("Custom IOException message"));
     }
 
@@ -90,7 +91,7 @@ public class GitExceptionTest {
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("jgit").getClient();
         assertNotNull(defaultClient);
         thrown.expect(JGitInternalException.class);
-        thrown.expectCause(is(IOException.class));
+        thrown.expectCause(instanceOf(IOException.class));
         defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
     }
 
@@ -110,7 +111,7 @@ public class GitExceptionTest {
         File dotGit = folder.newFile(".git");
         Files.write(dotGit.toPath(), "file named .git".getBytes("UTF-8"), APPEND);
         thrown.expect(JGitInternalException.class);
-        thrown.expectCause(is(IOException.class));
+        thrown.expectCause(instanceOf(IOException.class));
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("jgit").getClient();
         defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
     }
