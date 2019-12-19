@@ -1943,7 +1943,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         try {
-            if (credentials instanceof SSHUserPrivateKey) {
+            if (credentials instanceof SSHUserPrivateKey && !("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme()))) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
