@@ -1,10 +1,23 @@
 [[git-client-plugin]]
 = Git Client Plugin
+:toc: macro
+:toc-title:
+
+link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/[image:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon[Build]]
+link:https://github.com/jenkinsci/git-client-plugin/graphs/contributors[image:https://img.shields.io/github/contributors/jenkinsci/git-client-plugin.svg?color=blue[Contributors]]
+link:https://plugins.jenkins.io/git-client[image:https://img.shields.io/jenkins/plugin/i/git-client.svg?color=blue&label=installations[Jenkins Plugin Installs]]
+link:https://github.com/jenkinsci/git-client-plugin/releases/latest[image:https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=changelog[GitHub release]]
 
 [[introduction]]
 == Introduction
 
-image:https://git-scm.com/images/logos/downloads/Git-Logo-2Color.png[Git logo,width=303,role=center,float=right]
+[.float-group]
+--
+[.text-center]
+image:https://jenkins.io/images/logos/jenkins/jenkins.png[Jenkins logo,height=192,role=center,float=right]
+image:images/signe-1923369_640.png[plus,height=64,float=right]
+image:https://git-scm.com/images/logos/downloads/Git-Logo-2Color.png[Git logo,height=128,float=right]
+--
 
 The git client plugin provides git application programming interfaces (APIs) for Jenkins plugins.
 It can fetch, checkout, branch, list, merge, and tag repositories.
@@ -13,8 +26,10 @@ Refer to the https://javadoc.jenkins-ci.org/plugin/git-client/[API documentation
 The https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html[GitClient interface] provides the primary entry points for git access.
 It supports username / password credentials and private key credentials using the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
 
+toc::[]
+
 [[changelog]]
-== Changelog in https://github.com/jenkinsci/git-plugin/releases[GitHub Releases]
+== Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
 
 Release notes are recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] beginning with git client plugin 2.8.1.
 Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
