@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.PrintStream;
@@ -40,7 +40,7 @@ public class GitCommandsExecutorTest {
 
     @After
     public void verifyCorrectExecutorServiceShutdown() {
-        verifyZeroInteractions(listener);
+        verifyNoInteractions(listener);
     }
 
     @Parameters(name = "threads={0}")
@@ -103,7 +103,7 @@ public class GitCommandsExecutorTest {
             if (commands.indexOf(command) < threads) {
                 verify(command).call();
             } else {
-                verifyZeroInteractions(command);
+                verifyNoInteractions(command);
             }
         }
         assertThat(executionStopMillis - executionStartMillis, is(lessThan(commandExecutionTime)));
@@ -187,7 +187,7 @@ public class GitCommandsExecutorTest {
             if (commands.indexOf(command) < threads) {
                 verify(command).call();
             } else {
-                verifyZeroInteractions(command);
+                verifyNoInteractions(command);
             }
         }
         assertThat(callerStopMillis - callerStartMillis, is(lessThan(commandExecutionTime)));
