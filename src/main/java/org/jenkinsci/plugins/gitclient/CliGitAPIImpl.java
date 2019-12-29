@@ -2100,7 +2100,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String unixArgEncodeFileName(String filename) {
         if (filename.contains("'")) {
-            filename = filename.replaceAll("'", "\\'");
+            filename = filename.replaceAll("'", "'\\\\''");
         }
         return "'" + filename + "'";
     }
