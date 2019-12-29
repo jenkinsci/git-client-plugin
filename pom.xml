@@ -297,14 +297,12 @@
         <configuration>
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
-          <!-- <detectLinks>true</detectLinks> -->
           <force>true</force>
           <failOnError>false</failOnError>
           <links>
             <link>http://docs.oracle.com/javase/8/docs/api/</link>
             <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
           </links>
-          <!-- <additionalOptions>-html5</additionalOptions> -->
         </configuration>
       </plugin>
       <plugin>
