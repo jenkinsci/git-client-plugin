@@ -25,7 +25,8 @@ Please don't introduce new spotbugs output.
 
 Code formatting in the git client plugin varies between files.
 Try to maintain reasonable consistency with the existing files where feasible.
-Please don't perform wholesale reformatting of a file without discussing with the current maintainers.
+Please *don't reformat a file* without discussing with the current maintainers.
+There are many closed pull requests with label 'https://github.com/jenkinsci/git-client-plugin/milestone/2?closed=1[Later]' that may develop conflicts due to whitespace changes.
 New code should follow the https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines[SCM API code style guidelines].
 
 [[pull-request-review]]
