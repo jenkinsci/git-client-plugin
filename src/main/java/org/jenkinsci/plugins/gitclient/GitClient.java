@@ -786,6 +786,16 @@ public interface GitClient {
     void submoduleClean(boolean recursive)  throws GitException, InterruptedException;
 
     /**
+     * submoduleClean.
+     *
+     * @param recursive a boolean.
+     * @param cleanSubmodule flag to add extra -f
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void submoduleClean(boolean recursive, boolean cleanSubmodule)  throws GitException, InterruptedException;
+
+    /**
      * submoduleInit.
      *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.

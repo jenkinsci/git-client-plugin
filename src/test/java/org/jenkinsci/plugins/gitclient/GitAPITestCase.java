@@ -906,6 +906,52 @@ public abstract class GitAPITestCase extends TestCase {
 
     }
 
+    public void test_submodule_clean_with_parameter() throws Exception {
+        w = clone(localMirror());
+
+        // Checkout a branch with submodules
+        String subBranch = "tests/getSubmodules";
+        String subRefName = "origin/" + subBranch;
+        String ntpDirName = "modules/ntp";
+        w.git.checkout().ref(subRefName).branch(subBranch).execute();
+        w.git.submoduleUpdate().recursive(true).execute();
+
+        // Create a submodule in the ntp submodule
+        String subSubModuleDirname = ntpDirName + File.separator + "sub";
+        String fileName = "file";
+        String fileLocation = subSubModuleDirname + File.separator + fileName;
+        assertTrue("Did not create dir " + subSubModuleDirname, w.file(subSubModuleDirname).mkdir());
+        w.touch(fileLocation);
+
+        WorkingArea subSubModuleWorkingArea = new WorkingArea(w.file(subSubModuleDirname));
+        subSubModuleWorkingArea.init();
+        subSubModuleWorkingArea.git.add(fileName);
+        subSubModuleWorkingArea.git.commit("init");
+
+        if (w.git instanceof CliGitAPIImpl || !isWindows()) {
+            // JGit 5.6.0 on Windows throws exception trying to clean submodule, even if you haven't asked it to
+            // clean a submodule.
+            // Check that a standard git clean doesn't remove the untracked subsubmodule
+            w.git.clean(false);
+            assertTrue(w.exists(fileLocation));
+
+            // Check that a standard git clean with submodule cleaning doesn't remove the untracked subsubmodule
+            w.git.clean(true);
+            assertTrue(w.exists(fileLocation));
+        }
+
+        // Check that a standard submodule clean doesn't remove the untracked subsubmodule
+        w.git.submoduleClean(true);
+        assertTrue(w.exists(fileLocation));
+
+        if (w.git instanceof CliGitAPIImpl || !isWindows()) {
+            // JGit 5.6.0 on Windows throws exception trying to clean submodule
+            // Check that a submodule clean with submodule cleaning does remove the untracked subsubmodule
+            w.git.submoduleClean(true, true);
+            assertFalse(w.exists(fileLocation));
+        }
+    }
+
     @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
     public void test_clean() throws Exception {
         w.init();

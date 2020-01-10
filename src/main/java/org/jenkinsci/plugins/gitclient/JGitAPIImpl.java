@@ -2136,17 +2136,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    public void submoduleClean(boolean recursive) throws GitException {
+    public void submoduleClean(boolean recursive, boolean cleanSubmodule) throws GitException {
         try {
             for (JGitAPIImpl sub : submodules()) {
-                sub.clean();
+                sub.clean(cleanSubmodule);
                 if (recursive) {
-                    sub.submoduleClean(true);
+                    sub.submoduleClean(true, cleanSubmodule);
                 }
             }
         } catch (IOException e) {
             throw new GitException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void submoduleClean(boolean recursive) throws GitException {
+        this.submoduleClean(recursive, false);
     }
 
     /**

@@ -666,6 +666,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
     }
 
     /** {@inheritDoc} */
+    public void submoduleClean(boolean recursive, boolean cleanSubmodule) throws GitException, InterruptedException {
+        proxy.submoduleClean(recursive, cleanSubmodule);
+    }
+
+    /** {@inheritDoc} */
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException, InterruptedException {
         proxy.setupSubmoduleUrls(rev, listener);
     }
