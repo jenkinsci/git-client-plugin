@@ -61,6 +61,7 @@
     <java.level>8</java.level>
     <jgit.version>5.6.0.201912101111-r</jgit.version>
     <forkCount>1C</forkCount>
+    <configuration-as-code.version>1.35</configuration-as-code.version>
   </properties>
 
   <dependencyManagement>
@@ -261,12 +262,13 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
+      <version>${configuration-as-code.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>io.jenkins</groupId>
-      <artifactId>configuration-as-code</artifactId>
-      <classifier>tests</classifier>
+      <groupId>io.jenkins.configuration-as-code</groupId>
+      <artifactId>test-harness</artifactId>
+      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
