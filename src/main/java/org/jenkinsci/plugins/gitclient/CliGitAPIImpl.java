@@ -2097,7 +2097,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String windowsArgEncodeFileName(String filename) {
         if (filename.contains("\"")) {
-            filename = filename.replaceAll("\"", "^\"");
+            filename = filename.replace("\"", "^\"");
         }
         return "\"" + filename + "\"";
     }
@@ -2108,7 +2108,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // avoid echoing command as part of the password
             w.println("@echo off");
             w.println("type " + windowsArgEncodeFileName(passphrase.getAbsolutePath()));
-            w.flush();
         }
         ssh.setExecutable(true, true);
         return ssh;
@@ -2119,7 +2118,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String unixArgEncodeFileName(String filename) {
         if (filename.contains("'")) {
-            filename = filename.replaceAll("'", "\\'");
+            filename = filename.replace("'", "'\\''");
         }
         return "'" + filename + "'";
     }
