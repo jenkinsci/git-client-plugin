@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.33</version>
+    <version>3.56</version>
     <relativePath />
   </parent>
 
@@ -16,7 +16,8 @@
 
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
-  <url>https://wiki.jenkins.io/display/JENKINS/Git+Client+Plugin</url>
+  <!-- Use documentation from tagged release -->
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin/tree/${project.artifactId}-${revision}/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
@@ -32,6 +33,17 @@
       <name>Mark Waite</name>
       <email>mark.earl.waite@gmail.com</email>
     </developer>
+    <developer>
+      <id>rsandell</id>
+      <name>Robert Sandell</name>
+      <email>rsandell@cloudbees.com</email>
+      <url>http://rsandell.com</url>
+    </developer>
+    <developer>
+      <id>fcojfernandez</id>
+      <name>Francisco J. Fernández</name>
+      <email>fjfernandez@cloudbees.com</email>
+    </developer>
   </developers>
 
   <scm>
@@ -42,23 +54,35 @@
   </scm>
 
   <properties>
-    <revision>3.0.0-beta7</revision>
+    <revision>3.1.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.107.3</jenkins.version>
+    <jenkins.version>2.138.4</jenkins.version>
     <java.level>8</java.level>
-    <jgit.version>5.2.1.201812262042-r</jgit.version>
+    <jgit.version>5.6.0.201912101111-r</jgit.version>
+    <forkCount>1C</forkCount>
+    <configuration-as-code.version>1.35</configuration-as-code.version>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-2.138.x</artifactId>
+        <version>3</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -74,8 +98,7 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit http server so that git-userContent and other
+    <dependency><!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
@@ -83,8 +106,7 @@
       <artifactId>org.eclipse.jgit.http.server</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -100,15 +122,13 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit's Apache HTTP client so that we can avoid
+    <dependency><!-- Include jgit's Apache HTTP client so that we can avoid
            automatic NTLM on Windows. See JENKINS-37934 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -129,14 +149,12 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency>
-      <!-- Include jgit's LFS module for large file support -->
+    <dependency><!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Provided by JSch plugin -->
+        <exclusion><!-- Provided by JSch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
@@ -155,7 +173,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
-      <version>1.10</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
@@ -163,21 +180,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <version>2.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.22.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.1.4</version>
+      <version>3.1.11</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>git-server</artifactId>
-      <version>1.7</version>
+      <version>1.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -189,46 +211,66 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.6</version>
+      <version>1.8</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>jsr305</artifactId>
-      <version>3.0.2</version>
-      <scope>provided</scope>
+      <exclusions>
+        <exclusion><!-- Jenkins 2.176.1 requires a newer version -->
+          <groupId>org.jenkins-ci.modules</groupId>
+          <artifactId>ssh-cli-auth</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>ssh-credentials</artifactId>
-      <version>1.13</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>jsch</artifactId>
-      <version>0.1.54.2</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>apache-httpcomponents-client-4-api</artifactId>
-      <version>4.5.5-3.0</version>
     </dependency>
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
-      <version>3.0.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-      <version>3.0.1u2</version>
-      <scope>provided</scope>
+      <groupId>net.jcip</groupId>
+      <artifactId>jcip-annotations</artifactId>
+      <version>1.0</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.code.findbugs</groupId>
+          <artifactId>jsr305</artifactId>
+        </exclusion>
+      </exclusions>
+      <optional>true</optional>
+      <version>3.1.12</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
-      <version>2.1.13</version>
+    </dependency>
+    <!-- JCasC compatibility -->
+    <dependency>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <version>${configuration-as-code.version}</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.configuration-as-code</groupId>
+      <artifactId>test-harness</artifactId>
+      <version>${configuration-as-code.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -251,22 +293,6 @@
   </pluginRepositories>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.0</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.0.0-M3</version>
-        </plugin>
-        <plugin>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.0.1</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -274,34 +300,18 @@
         <configuration>
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
-          <!-- <detectLinks>true</detectLinks> -->
           <force>true</force>
           <failOnError>false</failOnError>
           <links>
             <link>http://docs.oracle.com/javase/8/docs/api/</link>
             <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
           </links>
-          <!-- <additionalOptions>-html5</additionalOptions> -->
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemProperties>
-            <property>
-              <!-- Prefix git ssh authenticating command line calls with setsid -->
-              <!-- Detaches git from the controlling terminal of the test runner -->
-              <!-- For CredentialsTest with passphrase protected private keys -->
-              <name>org.jenkinsci.plugins.gitclient.CliGitAPIImpl.useSETSID</name>
-              <value>true</value>
-            </property>
-          </systemProperties>
-        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -268,7 +268,9 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
-        proxy.commit(message, author, committer);
+        proxy.setAuthor(author);
+        proxy.setCommitter(committer);
+        proxy.commit(message);
     }
 
     /**
@@ -304,12 +306,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void checkout(String ref) throws GitException, InterruptedException {
-        proxy.checkout(ref);
+        proxy.checkout().ref(ref).execute();
     }
 
     /** {@inheritDoc} */
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        proxy.checkout(ref, branch);
+        proxy.checkout().ref(ref).branch(branch).execute();
     }
 
     /**
@@ -409,7 +411,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        proxy.fetch(url, refspecs);
+        proxy.fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
@@ -434,7 +436,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void merge(ObjectId rev) throws GitException, InterruptedException {
-        proxy.merge(rev);
+        proxy.merge().setRevisionToMerge(rev).execute();
     }
 
     /** {@inheritDoc} */
@@ -624,7 +626,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        proxy.submoduleUpdate(recursive);
+        proxy.submoduleUpdate().recursive(recursive).execute();
     }
 
     /**
@@ -636,17 +638,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void submoduleUpdate(boolean recursive, String ref) throws GitException, InterruptedException {
-        proxy.submoduleUpdate(recursive, ref);
+        proxy.submoduleUpdate().recursive(recursive).ref(ref).execute();
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
-        proxy.submoduleUpdate(recursive, remoteTracking);
+        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
-        proxy.submoduleUpdate(recursive, remoteTracking, reference);
+        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
     }
 
     /**

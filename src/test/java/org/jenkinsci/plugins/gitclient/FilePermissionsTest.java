@@ -92,9 +92,10 @@ public class FilePermissionsTest {
         Set<PosixFilePermission> expected = PosixFilePermissions.fromString(rwx);
         Path path = FileSystems.getDefault().getPath(file.getPath());
         PosixFileAttributes attrs = Files.getFileAttributeView(path, PosixFileAttributeView.class).readAttributes();
-        boolean expectExecutePerm = expected.contains(PosixFilePermission.OWNER_EXECUTE);
-        boolean actualExecutePerm = attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE);
-        assertEquals(fileName + " execute perm mismatch", expectExecutePerm, actualExecutePerm);
+        assertEquals(fileName + " OWNER_EXECUTE (execute) perm mismatch, expected: " + expected + ", was actually: " + attrs.permissions(),
+                     expected.contains(PosixFilePermission.OWNER_EXECUTE),
+                     attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE)
+                     );
     }
 
     @After
@@ -108,8 +109,11 @@ public class FilePermissionsTest {
         /* 0640 and 0740 are the only permissions to be tested */
         Integer[] permissionArray0640 = {0640};
         permissions.add(permissionArray0640);
-        Integer[] permissionArray0740 = {0740};
-        permissions.add(permissionArray0740);
+        /* When running as root, execute permission is NOT preserved, don't test it */
+        if (!(new File("/").canWrite())) {
+            Integer[] permissionArray0740 = {0740};
+            permissions.add(permissionArray0740);
+        }
         return permissions;
     }
 

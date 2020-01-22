@@ -1,0 +1,88 @@
+[[git-client-plugin]]
+= Git Client Plugin
+:toc: macro
+:toc-title:
+
+link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/[image:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon[Build]]
+link:https://github.com/jenkinsci/git-client-plugin/graphs/contributors[image:https://img.shields.io/github/contributors/jenkinsci/git-client-plugin.svg?color=blue[Contributors]]
+link:https://plugins.jenkins.io/git-client[image:https://img.shields.io/jenkins/plugin/i/git-client.svg?color=blue&label=installations[Jenkins Plugin Installs]]
+link:https://github.com/jenkinsci/git-client-plugin/releases/latest[image:https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=changelog[GitHub release]]
+link:https://gitter.im/jenkinsci/git-plugin[image:https://badges.gitter.im/jenkinsci/git-plugin.svg[Gitter]]
+
+[[introduction]]
+== Introduction
+
+[.float-group]
+--
+[.text-center]
+image:https://jenkins.io/images/logos/jenkins/jenkins.png[Jenkins logo,height=192,role=center,float=right]
+image:images/signe-1923369_640.png[plus,height=64,float=right]
+image:https://git-scm.com/images/logos/downloads/Git-Logo-2Color.png[Git logo,height=128,float=right]
+--
+
+The git client plugin provides git application programming interfaces (APIs) for Jenkins plugins.
+It can fetch, checkout, branch, list, merge, and tag repositories.
+Refer to the https://javadoc.jenkins-ci.org/plugin/git-client/[API documentation] for specific API details.
+
+The https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html[GitClient interface] provides the primary entry points for git access.
+It supports username / password credentials and private key credentials using the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
+
+toc::[]
+
+[[changelog]]
+== Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
+
+Release notes are recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] beginning with git client plugin 2.8.1.
+Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
+
+[[implementations]]
+== Implementations
+
+The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the master and on every agent that will use git.
+Command line git implementations working with large files should also install https://git-lfs.github.com/[git LFS].
+The command line git implementation is the canonical implementation of the git interfaces provided by the git client plugin.
+
+Command line git is *enabled by default* when the git client plugin is installed.
+
+[[jgit]]
+=== JGit
+
+The git client plugin also includes two optional implementations that use https://www.eclipse.org/jgit/[Eclipse JGit].
+Eclipse JGit is a pure Java implementation of git.
+The JGit implementation in the git client plugin provides most of the functionality of the command line git implementation.
+When the JGit implementation is incomplete, the gap is noted in console logs.
+
+JGit is *disabled by default* when the git client plugin is installed.
+
+[[enabling-jgit]]
+=== Enabling JGit
+
+Click the "*Add Git*" button in the "*Global Tool Configuration*" section under "*Manage Jenkins*" to add JGit or JGit with Apache HTTP Client as a git implementation.
+
+image::images/enable-jgit.png[Enable JGit or JGit with Apache HTTP Client]
+
+[[jgit-with-apache-http-client]]
+=== JGit with Apache HTTP Client
+
+The original JGit implementation inside the git client plugin had issues with active directory authentication.
+A workaround was implemented to provide JGit but use Apache HTTP client for authentication.
+The issue in JGit has now been resolved and delivered in git client plugin releases.
+JGit with Apache HTTP Client continues to delivered to assure compatibility.
+
+[[windows-credentials-manager]]
+== Windows Credentials Manager
+
+Git for Windows is able to integrate with the Windows Credentials Manager for secure storage of credentials.
+Windows Credentials Manager works very well for interactive users on the Windows desktop.
+Windows Credentials Manager does not work as well for batch processing in the git client plugin.
+It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
+
+[[bug-reports]]
+== Bug Reports
+
+Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins issue tracker].
+
+[[contributing-to-the-plugin]]
+== Contributing to the Plugin
+
+Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.

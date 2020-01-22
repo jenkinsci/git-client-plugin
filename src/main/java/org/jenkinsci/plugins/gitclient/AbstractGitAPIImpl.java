@@ -62,7 +62,9 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     /** {@inheritDoc} */
     public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
         CloneCommand c = clone_().url(url).repositoryName(origin).reference(reference);
-        if (useShallowClone)    c.shallow();
+        if (useShallowClone) {
+            c.shallow(true);
+        }
         c.execute();
     }
 

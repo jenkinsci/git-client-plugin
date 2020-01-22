@@ -33,7 +33,7 @@ public class NetrcTest
         H1_01("1-srvr-lp.example.com", "jenkins", "pw4jenkins"),
         H1_02("2-ldap-lp.example.com", "ldap", "pw4ldap"),
         H1_03("3-jenk-pl.example.com", "jenkins", "jenkinspwd"),
-        H1_04("4-slv1-lp.example.com", "jenk", "slavepwd"),
+        H1_04("4-slv1-lp.example.com", "jenk", "somepwd"),
         H1_05("5-sonr-l_.example.com", "sonar", null),
         H1_06("6-slv2-p_.example.com", null, "passwd"),
         H1_07("7-slv3-lp.example.com", "jenkins", "pw4jenkins"),

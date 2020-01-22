@@ -1,10 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.MIXED;
-import static org.eclipse.jgit.lib.Constants.CHARSET;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import static org.eclipse.jgit.lib.Constants.R_HEADS;
 import static org.eclipse.jgit.lib.Constants.R_REMOTES;
@@ -126,6 +126,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.plugins.git.GitObject;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -749,6 +751,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return getRemoteReferences(url, null, true, false);
     }
@@ -792,6 +795,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Override
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
             throws GitException, InterruptedException {
         Map<String, String> references = new HashMap<>();
@@ -891,6 +895,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try (Repository repo = openDummyRepository();
              final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
@@ -1047,7 +1052,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(),CHARSET),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
                     sw.write("\n");
                     addNote(sw.toString() + normalizeNote(note), namespace);
                 }
@@ -1785,6 +1790,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
@@ -2036,7 +2042,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public List<ObjectId> revListAll() throws GitException {
         List<ObjectId> oidList = new ArrayList<>();
         RevListCommand revListCommand = revList_();
-        revListCommand.all();
+        revListCommand.all(true);
         revListCommand.to(oidList);
         try {
             revListCommand.execute();
@@ -2234,7 +2240,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     update.call();
                     if (recursive) {
                         for (JGitAPIImpl sub : submodules()) {
-                            sub.submoduleUpdate(recursive);
+                            sub.submoduleUpdate().recursive(recursive).execute();
                         }
                     }
                 } catch (IOException | GitAPIException e) {
@@ -2753,6 +2759,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
         try (Repository repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
@@ -2770,6 +2777,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     private StoredConfig getConfig(String GIT_DIR) throws GitException {
         try (Repository repo = isBlank(GIT_DIR) ? getRepository() : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
             return repo.getConfig();
