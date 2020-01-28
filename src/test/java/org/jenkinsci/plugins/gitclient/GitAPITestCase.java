@@ -3553,11 +3553,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
-        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*ast*"); // matches master
+        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/ma*st*r*"); // matches master
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
         ObjectId getSubmodules1 = w.git.getHeadRev(localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*mod*");
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*modul*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
