@@ -37,6 +37,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
+import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
 import java.io.*;
@@ -3474,6 +3475,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * We run git as an external process so can't guarantee it won't hang for whatever reason. Even though the plugin does its
      * best to avoid git interactively asking for credentials, there are many of other cases where git may hang.
      */
+    @Whitelisted
     public static final int TIMEOUT = Integer.getInteger(Git.class.getName() + ".timeOut", 10);
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
