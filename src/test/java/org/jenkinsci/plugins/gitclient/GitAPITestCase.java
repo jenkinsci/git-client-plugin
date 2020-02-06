@@ -2883,36 +2883,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(expected, symlinkValue);
     }
 
-    public void test_init() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
 
-    public void test_init_() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init_().workspace(w.repoPath()).execute();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
-
-    public void test_init_bare() throws Exception {
-        assertFalse(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        w.git.init_().workspace(w.repoPath()).bare(false).execute();
-        assertTrue(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        checkSymlinkSetting(w);
-
-        WorkingArea anotherRepo = new WorkingArea();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertFalse(anotherRepo.file("refs").exists());
-        anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertTrue(anotherRepo.file("refs").exists());
-        checkSymlinkSetting(anotherRepo);
-    }
 
     @NotImplementedInCliGit // Until submodule rename is fixed
     public void test_getSubmoduleUrl() throws Exception {
