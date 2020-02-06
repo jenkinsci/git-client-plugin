@@ -4007,47 +4007,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
-    public void test_branchContaining() throws Exception {
-        /*
-         OLD                                    NEW
-                   -> X
-                  /
-                c1 -> T -> c2 -> Z
-                  \            \
-                   -> c3 --------> Y
-         */
-        w.init();
-
-        w.commitEmpty("c1");
-        ObjectId c1 = w.head();
-
-        w.launchCommand("git", "branch", "Z", c1.name());
-        w.git.checkout().ref("Z").execute();
-        w.commitEmpty("T");
-        ObjectId t = w.head();
-        w.commitEmpty("c2");
-        ObjectId c2 = w.head();
-        w.commitEmpty("Z");
-
-        w.launchCommand("git", "branch", "X", c1.name());
-        w.git.checkout().ref("X").execute();
-        w.commitEmpty("X");
-
-        w.launchCommand("git", "branch", "Y", c1.name());
-        w.git.checkout().ref("Y").execute();
-        w.commitEmpty("c3");
-        ObjectId c3 = w.head();
-        w.launchCommand("git", "merge", "--no-ff", "-m", "Y", c2.name());
-
-        w.git.deleteBranch("master");
-        assertEquals(3,w.git.getBranches().size());     // X, Y, and Z
-
-        assertEquals("X,Y,Z",formatBranches(w.igit().getBranchesContaining(c1.name())));
-        assertEquals("Y,Z",formatBranches(w.igit().getBranchesContaining(t.name())));
-        assertEquals("Y",formatBranches(w.igit().getBranchesContaining(c3.name())));
-        assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
-    }
-
     /**
      * UT for {@link GitClient#getBranchesContaining(String, boolean)}. The main
      * testing case is retrieving remote branches.
