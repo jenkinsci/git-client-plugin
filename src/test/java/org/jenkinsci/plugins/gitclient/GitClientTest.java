@@ -489,6 +489,18 @@ public class GitClientTest {
     }
 
     @Test
+    public void testInit_Bare() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        File tempDir = gitClientTemp.withRepository((repo, channel) -> repo.getDirectory());
+        assertFalse("Missing", tempDir.isDirectory());
+        gitClientTemp.init_().workspace(repoRootTemp.getPath()).bare(true).execute();
+        // Bare git_init contains no working tree file
+        tempDir = gitClientTemp.withRepository((repo, channel) -> repo.getWorkTree());
+        assertFalse(".refs not found", tempDir.isFile());
+    }
+
+    @Test
     public void testInitFailureWindows() throws Exception {
         assumeTrue(isWindows());
         String badDirName = "CON:";
