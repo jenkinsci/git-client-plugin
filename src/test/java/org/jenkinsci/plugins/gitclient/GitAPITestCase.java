@@ -4108,23 +4108,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("lock file '" + lockFile.getCanonicalPath() + " removed by cleanup", lockFile.exists());
     }
 
-    @Issue("JENKINS-19108")
-    public void test_checkoutBranch() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        w.tag("t1");
-        w.commitEmpty("c2");
-
-        w.git.checkoutBranch("foo", "t1");
-
-        assertEquals(w.head(),w.git.revParse("t1"));
-        assertEquals(w.head(),w.git.revParse("foo"));
-
-        Ref head = w.repo().exactRef("HEAD");
-        assertTrue(head.isSymbolic());
-        assertEquals("refs/heads/foo",head.getTarget().getName());
-    }
-
     /**
      * Test case for auto local branch creation behviour.
      * This is essentially a stripped down version of {@link #test_branchContainingRemote()}
