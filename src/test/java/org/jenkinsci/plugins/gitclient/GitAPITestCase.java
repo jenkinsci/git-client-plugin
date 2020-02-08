@@ -865,15 +865,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(originURL));
     }
 
-    public void test_addRemoteUrl_local_clone() throws Exception {
-        w = clone(localMirror());
-        assertEquals("Wrong origin URL before add", localMirror(), w.git.getRemoteUrl("origin"));
-        String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
-        w.git.addRemoteUrl("upstream", upstreamURL);
-        assertEquals("Wrong upstream URL", upstreamURL, w.git.getRemoteUrl("upstream"));
-        assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
-    }
-
     public void test_clean_with_parameter() throws Exception {
         w.init();
         w.commitEmpty("init");
