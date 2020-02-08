@@ -2426,29 +2426,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_addSubmodule() throws Exception {
-        String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
-        String readme1 = sub1 + File.separator + "README.adoc";
-        w.init();
-        assertFalse("submodule1 dir found too soon", w.file(sub1).exists());
-        assertFalse("submodule1 file found too soon", w.file(readme1).exists());
-
-        w.git.addSubmodule(localMirror(), sub1);
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate().recursive(false).execute();
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate().recursive(true).execute();
-        assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
-        assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
-
-        w.igit().submoduleSync();
-        assertFixSubmoduleUrlsThrows();
-    }
-
     private File createTempDirectoryWithoutSpaces() throws IOException {
         // JENKINS-56175 notes that the plugin does not support submodule URL's
         // which contain a space character. Parent pom 3.36 and later use a
@@ -3835,27 +3812,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
 
         check_headRev(w.repoPath(), getMirrorHead());
-    }
-
-    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
-    {
-        ChangelogCommand changelogCommand = w.git.changelog();
-        changelogCommand.max(1);
-        StringWriter writer = new StringWriter();
-        changelogCommand.to(writer);
-        changelogCommand.execute();
-        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
-        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
-    }
-
-    public void test_changelog() throws Exception {
-        w = clone(localMirror());
-        String sha1Prev = w.git.revParse("HEAD").name();
-        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.git.add("changelog-file");
-        w.git.commit("changelog-commit-message");
-        String sha1 = w.git.revParse("HEAD").name();
-        check_changelog_sha1(sha1, "master");
     }
 
     public void test_show_revision_for_merge() throws Exception {
