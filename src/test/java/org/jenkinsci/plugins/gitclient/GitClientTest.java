@@ -66,6 +66,7 @@ import org.jvnet.hudson.test.Issue;
  */
 @RunWith(Parameterized.class)
 public class GitClientTest {
+
     /* Git implementation name, either "git", "jgit", or "jgitapache". */
     private final String gitImplName;
 
@@ -90,8 +91,8 @@ public class GitClientTest {
     /* Instance of object under test */
     private GitClient gitClient = null;
 
-    /* From GitAPITestCase */
-    private boolean timeoutVisibleInCurrentTest;
+    /* Instance of object of another test class*/
+    private CliGitAPIImplTest cliGitAPIImplTest = new CliGitAPIImplTest();
 
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_HAS_GIT_LFS;
@@ -2041,259 +2042,215 @@ public class GitClientTest {
         assertThat(tags, hasItems(tag));
     }
 
-
-
-    /** Tests ported from CliGitAPIImplTest **/
-
-    private class VersionTest {
-
-        private boolean expectedIsAtLeastVersion;
-        private int major;
-        private int minor;
-        private int rev;
-        private int bugfix;
-
-        private VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
-            this.expectedIsAtLeastVersion = assertTrueOrFalse;
-            this.major = major;
-            this.minor = minor;
-            this.rev = rev;
-            this.bugfix = bugfix;
-        }
-    }
-
-    public void doTest(String versionOutput, VersionTest[] versions) {
-        setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
-        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), TaskListener.NULL, new EnvVars());
-        git.computeGitVersion(versionOutput);
-        for (VersionTest version : versions) {
-            String msg = versionOutput + " for " + version.major + version.minor + version.rev + version.bugfix;
-            if (version.expectedIsAtLeastVersion) {
-                assertTrue("Failed " + msg, git.isAtLeastVersion(
-                        version.major,
-                        version.minor,
-                        version.rev,
-                        version.bugfix));
-            } else {
-                assertFalse("Passed " + msg, git.isAtLeastVersion(
-                        version.major,
-                        version.minor,
-                        version.rev,
-                        version.bugfix));
-            }
-        }
-    }
-
+    // Tests ported from CliGitAPIImplTest
     @Test
     public void test_git_version_debian_wheezy() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 7, 10, 4),
-                new VersionTest(true,  1, 7, 10, 3),
-                new VersionTest(false, 1, 7, 10, 5)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 7, 10, 4),
+                cliGitAPIImplTest.new VersionTest(true,  1, 7, 10, 3),
+                cliGitAPIImplTest.new VersionTest(false, 1, 7, 10, 5)
         };
-        doTest("git version 1.7.10.4", versions);
+        cliGitAPIImplTest.doTest("git version 1.7.10.4", versions);
     }
 
     @Test
     public void test_git_version_debian_testing() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 0, 1, 0),
-                new VersionTest(true,  2, 0, 0, 0),
-                new VersionTest(false, 2, 0, 2, 0),
-                new VersionTest(false, 2, 1, 0, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 0, 1, 0),
+                cliGitAPIImplTest.new VersionTest(true,  2, 0, 0, 0),
+                cliGitAPIImplTest.new VersionTest(false, 2, 0, 2, 0),
+                cliGitAPIImplTest.new VersionTest(false, 2, 1, 0, 0)
         };
-        doTest("git version 2.0.1", versions);
+        cliGitAPIImplTest.doTest("git version 2.0.1", versions);
     }
 
     @Test
     public void test_git_version_debian_testing_old() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 0,  0,  0),
-                new VersionTest(true,  1, 9, 99, 99),
-                new VersionTest(false, 2, 0,  1,  0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 0,  0,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 9, 99, 99),
+                cliGitAPIImplTest.new VersionTest(false, 2, 0,  1,  0)
         };
-        doTest("git version 2.0.0.rc0", versions);
-        doTest("git version 2.0.0.rc2", versions);
-        doTest("git version 2.0.0", versions);
-        doTest("git version 2.0", versions); // mythical version
-        doTest("git version 2", versions);   // mythical version
+        cliGitAPIImplTest.doTest("git version 2.0.0.rc0", versions);
+        cliGitAPIImplTest.doTest("git version 2.0.0.rc2", versions);
+        cliGitAPIImplTest.doTest("git version 2.0.0", versions);
+        cliGitAPIImplTest.doTest("git version 2.0", versions); // mythical version
+        cliGitAPIImplTest.doTest("git version 2", versions);   // mythical version
     }
 
     @Test
     public void test_git_version_debian_testing_older() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 9,  0,  0),
-                new VersionTest(true,  1, 8, 99, 99),
-                new VersionTest(false, 1, 9,  1,  0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 9,  0,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 99),
+                cliGitAPIImplTest.new VersionTest(false, 1, 9,  1,  0)
         };
-        doTest("git version 1.9.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.9.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1800() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8,  0, 0),
-                new VersionTest(true,  1, 7, 99, 0),
-                new VersionTest(false, 1, 8,  1, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8,  0, 0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 7, 99, 0),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8,  1, 0)
         };
-        doTest("git version 1.8.0.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.0.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1840() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8, 4,  0),
-                new VersionTest(true,  1, 8, 3, 99),
-                new VersionTest(false, 1, 8, 4,  1)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 4,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 99),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8, 4,  1)
         };
-        doTest("git version 1.8.4.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.4.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1852() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8, 5, 2),
-                new VersionTest(true,  1, 8, 5, 1),
-                new VersionTest(false, 1, 8, 5, 3)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 5, 2),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 5, 1),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8, 5, 3)
         };
-        doTest("git version 1.8.5.2.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.5.2.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1900() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 9,  0, 0),
-                new VersionTest(true,  1, 8, 99, 0),
-                new VersionTest(false, 1, 9,  0, 1)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 9,  0, 0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 0),
+                cliGitAPIImplTest.new VersionTest(false, 1, 9,  0, 1)
         };
-        doTest("git version 1.9.0.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.9.0.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1920() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 9, 2,  0),
-                new VersionTest(true,  1, 9, 1, 99),
-                new VersionTest(false, 1, 9, 2,  1)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 9, 2,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 9, 1, 99),
+                cliGitAPIImplTest.new VersionTest(false, 1, 9, 2,  1)
         };
-        doTest("git version 1.9.2.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.9.2.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_1940() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 9, 4,  0),
-                new VersionTest(true,  1, 9, 3, 99),
-                new VersionTest(false, 1, 9, 4,  1)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 9, 4,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 9, 3, 99),
+                cliGitAPIImplTest.new VersionTest(false, 1, 9, 4,  1)
         };
-        doTest("git version 1.9.4.msysgit.0", versions);
+        cliGitAPIImplTest.doTest("git version 1.9.4.msysgit.0", versions);
     }
 
     @Test
     public void test_git_version_windows_2501() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 5, 0, 1),
-                new VersionTest(true,  2, 5, 0, 0),
-                new VersionTest(false, 2, 5, 0, 2)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 5, 0, 1),
+                cliGitAPIImplTest.new VersionTest(true,  2, 5, 0, 0),
+                cliGitAPIImplTest.new VersionTest(false, 2, 5, 0, 2)
         };
-        doTest("git version 2.5.0.windows.1", versions);
+        cliGitAPIImplTest.doTest("git version 2.5.0.windows.1", versions);
     }
 
     @Test
     public void test_git_version_windows_2_10_1_1() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 10, 1, 1),
-                new VersionTest(true,  2, 10, 1, 0),
-                new VersionTest(true,  2, 10, 0, 1),
-                new VersionTest(false, 2, 10, 1, 2),
-                new VersionTest(false, 2, 10, 2, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 10, 1, 1),
+                cliGitAPIImplTest.new VersionTest(true,  2, 10, 1, 0),
+                cliGitAPIImplTest.new VersionTest(true,  2, 10, 0, 1),
+                cliGitAPIImplTest.new VersionTest(false, 2, 10, 1, 2),
+                cliGitAPIImplTest.new VersionTest(false, 2, 10, 2, 0)
         };
-        doTest("git version 2.10.1.windows.1", versions);
+        cliGitAPIImplTest.doTest("git version 2.10.1.windows.1", versions);
     }
 
     @Test
     public void test_git_version_redhat_5() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8, 2, 1),
-                new VersionTest(true,  1, 8, 2, 0),
-                new VersionTest(false, 1, 8, 2, 2)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 2, 1),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 2, 0),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8, 2, 2)
         };
-        doTest("git version 1.8.2.1", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.2.1", versions);
     }
 
     @Test
     public void test_git_version_redhat_65() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 7, 1,  0),
-                new VersionTest(true,  1, 7, 0, 99),
-                new VersionTest(false, 1, 7, 1,  1),
-                new VersionTest(false, 1, 7, 2,  0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 7, 1,  0),
+                cliGitAPIImplTest.new VersionTest(true,  1, 7, 0, 99),
+                cliGitAPIImplTest.new VersionTest(false, 1, 7, 1,  1),
+                cliGitAPIImplTest.new VersionTest(false, 1, 7, 2,  0)
         };
-        doTest("git version 1.7.1", versions);
+        cliGitAPIImplTest.doTest("git version 1.7.1", versions);
     }
 
     @Test
     public void test_git_version_opensuse_13() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8, 4, 5),
-                new VersionTest(true,  1, 8, 4, 4),
-                new VersionTest(false, 1, 8, 4, 6)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 4, 5),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 4, 4),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8, 4, 6)
         };
-        doTest("git version 1.8.4.5", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.4.5", versions);
     }
 
     @Test
     public void test_git_version_ubuntu_13() {
-        VersionTest[] versions = {
-                new VersionTest(true,  1, 8, 3, 2),
-                new VersionTest(true,  1, 8, 3, 1),
-                new VersionTest(false, 1, 8, 3, 3)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 2),
+                cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 1),
+                cliGitAPIImplTest.new VersionTest(false, 1, 8, 3, 3)
         };
-        doTest("git version 1.8.3.2", versions);
+        cliGitAPIImplTest.doTest("git version 1.8.3.2", versions);
     }
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 2, 2, 0),
-                new VersionTest(true,  2, 2, 1, 0),
-                new VersionTest(false, 2, 2, 3, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 2, 2, 0),
+                cliGitAPIImplTest.new VersionTest(true,  2, 2, 1, 0),
+                cliGitAPIImplTest.new VersionTest(false, 2, 2, 3, 0)
         };
-        doTest("git version 2.2.2", versions);
+        cliGitAPIImplTest.doTest("git version 2.2.2", versions);
     }
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa_2_3_0() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 3, 0, 0),
-                new VersionTest(true,  2, 2, 9, 0),
-                new VersionTest(false, 2, 3, 1, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 3, 0, 0),
+                cliGitAPIImplTest.new VersionTest(true,  2, 2, 9, 0),
+                cliGitAPIImplTest.new VersionTest(false, 2, 3, 1, 0)
         };
-        doTest("git version 2.3.0", versions);
+        cliGitAPIImplTest.doTest("git version 2.3.0", versions);
     }
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa_2_3_5() {
-        VersionTest[] versions = {
-                new VersionTest(true,  2, 3, 5, 0),
-                new VersionTest(true,  2, 2, 9, 9),
-                new VersionTest(false, 2, 3, 5, 1),
-                new VersionTest(false, 2, 4, 0, 0),
-                new VersionTest(false, 3, 0, 0, 0)
+        CliGitAPIImplTest.VersionTest[] versions = {
+                cliGitAPIImplTest.new VersionTest(true,  2, 3, 5, 0),
+                cliGitAPIImplTest.new VersionTest(true,  2, 2, 9, 9),
+                cliGitAPIImplTest.new VersionTest(false, 2, 3, 5, 1),
+                cliGitAPIImplTest.new VersionTest(false, 2, 4, 0, 0),
+                cliGitAPIImplTest.new VersionTest(false, 3, 0, 0, 0)
         };
-        doTest("git version 2.3.5", versions);
+        cliGitAPIImplTest.doTest("git version 2.3.5", versions);
     }
+
     @Test
     public void test_git_ssh_executable_found_on_windows() throws Exception {
-        setTimeoutVisibleInCurrentTest(false);
+        cliGitAPIImplTest.setTimeoutVisibleInCurrentTest(false);
         if (!SystemUtils.IS_OS_WINDOWS) {
             return;
         }
-        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), TaskListener.NULL, new EnvVars());
-        if(git.getSSHExecutable().exists()){
-            System.out.println("yass");
-        }
-        assertTrue("ssh.exe not found", git.getSSHExecutable().exists());
+
+        assertTrue("ssh.exe not found", cliGitAPIImplTest.w.cgit().getSSHExecutable().exists());
     }
 
     @Test
@@ -2303,14 +2260,10 @@ public class GitClientTest {
                         "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n" +
                         "  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message\n";
 
-        setTimeoutVisibleInCurrentTest(false);
-        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), TaskListener.NULL, new EnvVars());
+        cliGitAPIImplTest.setTimeoutVisibleInCurrentTest(false);
+        CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), cliGitAPIImplTest.listener, cliGitAPIImplTest.env);
         Set<Branch> branches = git.parseBranches(gitBranchOutput);
         assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
-    }
-
-    protected void setTimeoutVisibleInCurrentTest(boolean visible) {
-        timeoutVisibleInCurrentTest = visible;
     }
 
     private boolean isWindows() {
