@@ -2883,36 +2883,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(expected, symlinkValue);
     }
 
-    public void test_init() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
 
-    public void test_init_() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init_().workspace(w.repoPath()).execute();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
-
-    public void test_init_bare() throws Exception {
-        assertFalse(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        w.git.init_().workspace(w.repoPath()).bare(false).execute();
-        assertTrue(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        checkSymlinkSetting(w);
-
-        WorkingArea anotherRepo = new WorkingArea();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertFalse(anotherRepo.file("refs").exists());
-        anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertTrue(anotherRepo.file("refs").exists());
-        checkSymlinkSetting(anotherRepo);
-    }
 
     @NotImplementedInCliGit // Until submodule rename is fixed
     public void test_getSubmoduleUrl() throws Exception {
@@ -4034,47 +4005,6 @@ public abstract class GitAPITestCase extends TestCase {
             return; // JUnit 3 does not honor @Ignore annotation
         }
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
-    }
-
-    public void test_branchContaining() throws Exception {
-        /*
-         OLD                                    NEW
-                   -> X
-                  /
-                c1 -> T -> c2 -> Z
-                  \            \
-                   -> c3 --------> Y
-         */
-        w.init();
-
-        w.commitEmpty("c1");
-        ObjectId c1 = w.head();
-
-        w.launchCommand("git", "branch", "Z", c1.name());
-        w.git.checkout().ref("Z").execute();
-        w.commitEmpty("T");
-        ObjectId t = w.head();
-        w.commitEmpty("c2");
-        ObjectId c2 = w.head();
-        w.commitEmpty("Z");
-
-        w.launchCommand("git", "branch", "X", c1.name());
-        w.git.checkout().ref("X").execute();
-        w.commitEmpty("X");
-
-        w.launchCommand("git", "branch", "Y", c1.name());
-        w.git.checkout().ref("Y").execute();
-        w.commitEmpty("c3");
-        ObjectId c3 = w.head();
-        w.launchCommand("git", "merge", "--no-ff", "-m", "Y", c2.name());
-
-        w.git.deleteBranch("master");
-        assertEquals(3,w.git.getBranches().size());     // X, Y, and Z
-
-        assertEquals("X,Y,Z",formatBranches(w.igit().getBranchesContaining(c1.name())));
-        assertEquals("Y,Z",formatBranches(w.igit().getBranchesContaining(t.name())));
-        assertEquals("Y",formatBranches(w.igit().getBranchesContaining(c3.name())));
-        assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
     }
 
     /**
