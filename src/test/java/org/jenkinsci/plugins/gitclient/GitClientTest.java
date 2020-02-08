@@ -2033,9 +2033,7 @@ public class GitClientTest {
     // Tests ported from CliGitAPIImplTest
     @Test
     public void test_git_version_debian_wheezy() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 10, 4),
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 10, 3),
@@ -2046,9 +2044,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_debian_testing() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 0, 1, 0),
                 cliGitAPIImplTest.new VersionTest(true,  2, 0, 0, 0),
@@ -2060,9 +2056,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_debian_testing_old() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 0,  0,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 99, 99),
@@ -2077,9 +2071,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_debian_testing_older() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9,  0,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 99),
@@ -2090,9 +2082,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1800() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8,  0, 0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 99, 0),
@@ -2103,9 +2093,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1840() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 4,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 99),
@@ -2116,9 +2104,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1852() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 5, 2),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 5, 1),
@@ -2129,9 +2115,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1900() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9,  0, 0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 0),
@@ -2142,9 +2126,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1920() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 2,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 1, 99),
@@ -2155,9 +2137,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_1940() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 4,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 3, 99),
@@ -2168,9 +2148,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_2501() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 5, 0, 1),
                 cliGitAPIImplTest.new VersionTest(true,  2, 5, 0, 0),
@@ -2181,9 +2159,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_windows_2_10_1_1() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 10, 1, 1),
                 cliGitAPIImplTest.new VersionTest(true,  2, 10, 1, 0),
@@ -2196,9 +2172,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_redhat_5() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 2, 1),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 2, 0),
@@ -2209,9 +2183,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_redhat_65() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 1,  0),
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 0, 99),
@@ -2223,9 +2195,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_opensuse_13() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 4, 5),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 4, 4),
@@ -2236,9 +2206,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_ubuntu_13() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 2),
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 1),
@@ -2249,9 +2217,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 2, 0),
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 1, 0),
@@ -2262,9 +2228,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa_2_3_0() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 3, 0, 0),
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 9, 0),
@@ -2275,9 +2239,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_version_ubuntu_14_04_ppa_2_3_5() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         CliGitAPIImplTest.VersionTest[] versions = {
                 cliGitAPIImplTest.new VersionTest(true,  2, 3, 5, 0),
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 9, 9),
@@ -2290,9 +2252,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_ssh_executable_found_on_windows() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         cliGitAPIImplTest.setTimeoutVisibleInCurrentTest(false);
         if (!SystemUtils.IS_OS_WINDOWS) {
             return;
@@ -2304,9 +2264,7 @@ public class GitClientTest {
 
     @Test
     public void test_git_branch_with_line_breaks_and_long_strings() {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
+        assumeThat(gitImplName, is("git"));
         String gitBranchOutput =
                 "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n" +
                         "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n" +
