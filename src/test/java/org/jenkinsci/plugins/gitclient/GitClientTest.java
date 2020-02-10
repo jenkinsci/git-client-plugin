@@ -36,8 +36,10 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
@@ -595,6 +597,38 @@ public class GitClientTest {
         gitClient.addRemoteUrl("upstream", upstreamRepoURL);
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
+    }
+
+    @Test
+    public void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init();
+        gitClientTemp.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+
+        try ( // add second remote
+              FileRepository repo = new FileRepository(repoRootTemp)) {
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", "upstream", "url", "file://" + repoRootTemp.getPath());
+            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
+            config.save();
+        }
+
+        // fill both remote branches
+        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        gitClientTemp.fetch_().from(remote, refspecs).execute();
+        refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/upstream/*"));
+        gitClientTemp.fetch_().from(remote, refspecs).execute();
+
+        try {
+            gitClientTemp.checkout().ref(Constants.MASTER).execute();
+            fail("GitException expected");
+        } catch (GitException e) {
+            // expected
+        }
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {

@@ -4085,37 +4085,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(refNames, contains("refs/heads/master"));
     }
 
-    public void test_autocreate_fails_on_multiple_matching_origins() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-
-        try ( // add second remote
-                FileRepository repo = w.repo()) {
-            StoredConfig config = repo.getConfig();
-            config.setString("remote", "upstream", "url", "file://" + r.repoPath());
-            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
-            config.save();
-        }
-
-        // fill both remote branches
-        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/upstream/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-
-        try {
-            w.git.checkout().ref(Constants.MASTER).execute();
-            fail("GitException expected");
-        } catch (GitException e) {
-            // expected
-        }
-    }
 
     public void test_revList_remote_branch() throws Exception {
         w = clone(localMirror());
