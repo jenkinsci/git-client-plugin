@@ -2001,7 +2001,7 @@ public abstract class GitAPITestCase extends TestCase {
             w.git.submoduleUpdate().execute();
             fail("Did not throw expected submodule update exception");
         } catch (GitException e) {
-            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" returned status code 1"));
+            assertThat(e.getMessage(), containsString("Command \"git submodule update --checkout --force modules/ntp\" returned status code 1"));
         }
     }
 
