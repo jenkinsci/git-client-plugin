@@ -1367,7 +1367,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 ArgumentListBuilder args = new ArgumentListBuilder();
 
                 // Force the update, in the same manner we force checkouts
-                args.add("submodule", "update", "--force");
+                args.add("submodule", "update", "--checkout", "--force");
                 if (recursive) {
                     args.add("--init", "--recursive");
                 }
