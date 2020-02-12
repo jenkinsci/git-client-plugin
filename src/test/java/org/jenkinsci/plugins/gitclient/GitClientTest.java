@@ -44,6 +44,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
@@ -599,16 +600,20 @@ public class GitClientTest {
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
     }
 
-    @Test
+    @Test(expected = GitException.class)
     public void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
-        File repoRootTemp = tempFolder.newFolder();
+        final File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
         gitClientTemp.init();
-        gitClientTemp.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree();
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
+        gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
 
         try ( // add second remote
-              FileRepository repo = new FileRepository(repoRootTemp)) {
+              FileRepository repo = new FileRepository(new File(repoRoot, ".git"))) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", "upstream", "url", "file://" + repoRootTemp.getPath());
             config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
@@ -618,17 +623,16 @@ public class GitClientTest {
         // fill both remote branches
         List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
                 "refs/heads/*:refs/remotes/origin/*"));
-        gitClientTemp.fetch_().from(remote, refspecs).execute();
+        gitClient.fetch_().from(remote, refspecs).execute();
         refspecs = Collections.singletonList(new RefSpec(
                 "refs/heads/*:refs/remotes/upstream/*"));
-        gitClientTemp.fetch_().from(remote, refspecs).execute();
+        gitClient.fetch_().from(remote, refspecs).execute();
 
-        try {
-            gitClientTemp.checkout().ref(Constants.MASTER).execute();
-            fail("GitException expected");
-        } catch (GitException e) {
-            // expected
-        }
+        // checkout will fail
+        gitClient.checkout().ref(Constants.MASTER).execute();
+        Set<String> refNames = gitClient.getRefNames("refs/heads/");
+        assertFalse("RefNames will not contain master", refNames.contains("refs/heads/master"));
+
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
