@@ -604,6 +604,10 @@ public class GitClientTest {
         File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
         gitClientTemp.init();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree()
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
         gitClientTemp.clone_().url("file://" + repoRootTemp.getPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
 
