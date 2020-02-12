@@ -4064,28 +4064,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("lock file '" + lockFile.getCanonicalPath() + " removed by cleanup", lockFile.exists());
     }
 
-    /**
-     * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link #test_branchContainingRemote()}
-     * @throws Exception on exceptions occur
-     */
-    public void test_checkout_remote_autocreates_local() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        w.git.checkout().ref(Constants.MASTER).execute();
-
-        Set<String> refNames = w.git.getRefNames("refs/heads/");
-        assertThat(refNames, contains("refs/heads/master"));
-    }
-
-
     public void test_revList_remote_branch() throws Exception {
         w = clone(localMirror());
         List<ObjectId> revList = w.git.revList("origin/1.4.x");
