@@ -865,15 +865,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("remote URL has not been updated", remotes.contains(originURL));
     }
 
-    public void test_addRemoteUrl_local_clone() throws Exception {
-        w = clone(localMirror());
-        assertEquals("Wrong origin URL before add", localMirror(), w.git.getRemoteUrl("origin"));
-        String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
-        w.git.addRemoteUrl("upstream", upstreamURL);
-        assertEquals("Wrong upstream URL", upstreamURL, w.git.getRemoteUrl("upstream"));
-        assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
-    }
-
     public void test_clean_with_parameter() throws Exception {
         w.init();
         w.commitEmpty("init");
@@ -2435,29 +2426,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_addSubmodule() throws Exception {
-        String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
-        String readme1 = sub1 + File.separator + "README.adoc";
-        w.init();
-        assertFalse("submodule1 dir found too soon", w.file(sub1).exists());
-        assertFalse("submodule1 file found too soon", w.file(readme1).exists());
-
-        w.git.addSubmodule(localMirror(), sub1);
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate().recursive(false).execute();
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate().recursive(true).execute();
-        assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
-        assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
-
-        w.igit().submoduleSync();
-        assertFixSubmoduleUrlsThrows();
-    }
-
     private File createTempDirectoryWithoutSpaces() throws IOException {
         // JENKINS-56175 notes that the plugin does not support submodule URL's
         // which contain a space character. Parent pom 3.36 and later use a
@@ -3846,27 +3814,6 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(w.repoPath(), getMirrorHead());
     }
 
-    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
-    {
-        ChangelogCommand changelogCommand = w.git.changelog();
-        changelogCommand.max(1);
-        StringWriter writer = new StringWriter();
-        changelogCommand.to(writer);
-        changelogCommand.execute();
-        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
-        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
-    }
-
-    public void test_changelog() throws Exception {
-        w = clone(localMirror());
-        String sha1Prev = w.git.revParse("HEAD").name();
-        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.git.add("changelog-file");
-        w.git.commit("changelog-commit-message");
-        String sha1 = w.git.revParse("HEAD").name();
-        check_changelog_sha1(sha1, "master");
-    }
-
     public void test_show_revision_for_merge() throws Exception {
         w = clone(localMirror());
         ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
@@ -4115,76 +4062,6 @@ public abstract class GitAPITestCase extends TestCase {
             assertEquals(exceptionMsg, ie.getMessage());
         }
         assertTrue("lock file '" + lockFile.getCanonicalPath() + " removed by cleanup", lockFile.exists());
-    }
-
-    @Issue("JENKINS-19108")
-    public void test_checkoutBranch() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        w.tag("t1");
-        w.commitEmpty("c2");
-
-        w.git.checkoutBranch("foo", "t1");
-
-        assertEquals(w.head(),w.git.revParse("t1"));
-        assertEquals(w.head(),w.git.revParse("foo"));
-
-        Ref head = w.repo().exactRef("HEAD");
-        assertTrue(head.isSymbolic());
-        assertEquals("refs/heads/foo",head.getTarget().getName());
-    }
-
-    /**
-     * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link #test_branchContainingRemote()}
-     * @throws Exception on exceptions occur
-     */
-    public void test_checkout_remote_autocreates_local() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        w.git.checkout().ref(Constants.MASTER).execute();
-
-        Set<String> refNames = w.git.getRefNames("refs/heads/");
-        assertThat(refNames, contains("refs/heads/master"));
-    }
-
-    public void test_autocreate_fails_on_multiple_matching_origins() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-
-        try ( // add second remote
-                FileRepository repo = w.repo()) {
-            StoredConfig config = repo.getConfig();
-            config.setString("remote", "upstream", "url", "file://" + r.repoPath());
-            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
-            config.save();
-        }
-
-        // fill both remote branches
-        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/upstream/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-
-        try {
-            w.git.checkout().ref(Constants.MASTER).execute();
-            fail("GitException expected");
-        } catch (GitException e) {
-            // expected
-        }
     }
 
     public void test_revList_remote_branch() throws Exception {

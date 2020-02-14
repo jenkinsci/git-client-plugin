@@ -37,12 +37,15 @@ import org.apache.commons.io.FileUtils;
 
 import org.apache.commons.lang.SystemUtils;
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
@@ -599,6 +602,70 @@ public class GitClientTest {
         gitClient.addRemoteUrl("upstream", upstreamRepoURL);
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
+    }
+
+    @Test
+    public void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree();
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
+        gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+
+        try ( // add second remote
+              FileRepository repo = new FileRepository(new File(repoRoot, ".git"))) {
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", "upstream", "url", "file://" + repoRootTemp.getPath());
+            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
+            config.save();
+        }
+
+        // fill both remote branches
+        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+        refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/upstream/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+
+        // checkout will fail
+        try {
+            gitClient.checkout().ref(Constants.MASTER).execute();
+        } catch (GitException e) {
+            // expected
+            Set<String> refNames = gitClient.getRefNames("refs/heads/");
+            assertFalse("RefNames will not contain master", refNames.contains("refs/heads/master"));
+        }
+
+    }
+
+    /**
+     * Test case for auto local branch creation behviour.
+     * This is essentially a stripped down version of {@link GitAPITestCase#test_branchContainingRemote()}
+     * @throws Exception on exceptions occur
+     */
+    @Test
+    public void testCheckoutRemoteAutocreatesLocal() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree();
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
+        gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+        gitClient.checkout().ref(Constants.MASTER).execute();
+
+        Set<String> refNames = gitClient.getRefNames("refs/heads/");
+        assertThat(refNames, contains("refs/heads/master"));
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
