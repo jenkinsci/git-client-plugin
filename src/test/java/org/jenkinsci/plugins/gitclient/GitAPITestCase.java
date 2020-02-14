@@ -2209,6 +2209,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @NotImplementedInJGit
+    @Issue("JENKINS-23477")
     public void test_sparse_checkout() throws Exception {
         /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
          * required by the plugin implementation does not work in git 1.7.1.
@@ -2216,6 +2217,7 @@ public abstract class GitAPITestCase extends TestCase {
         if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
             return;
         }
+        env.put("SPARSE_PATH", "dir1");
         // Create a repo for cloning purpose
         w.init();
         w.commitEmpty("init");
@@ -2261,6 +2263,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
+        
+        workingArea.git.checkout().ref("origin/master").branch("master").deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("${SPARSE_PATH}", "dir2")).timeout(checkoutTimeout).execute();
+        assertTrue(workingArea.exists("dir1"));
+        assertTrue(workingArea.exists("dir2"));
+        assertFalse(workingArea.exists("dir3"));
+        env.remove("SPARSE_PATH");
     }
 
     public void test_clone_no_checkout() throws Exception {
