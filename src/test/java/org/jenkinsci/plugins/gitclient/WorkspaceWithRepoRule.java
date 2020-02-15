@@ -4,7 +4,6 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
-import javafx.concurrent.Task;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
