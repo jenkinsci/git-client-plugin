@@ -59,6 +59,7 @@
     <jenkins.version>2.138.4</jenkins.version>
     <java.level>8</java.level>
     <jgit.version>4.5.7.201904151645-r</jgit.version>
+    <forkCount>1</forkCount>
     <jgit.javadoc.version>4.5.0.201609210915-r</jgit.javadoc.version>
   </properties>
 
