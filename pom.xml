@@ -16,7 +16,8 @@
 
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
-  <url>https://github.com/jenkinsci/git-client-plugin/blob/master/README.adoc</url>
+  <!-- Use documentation from tagged release -->
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin/tree/${project.artifactId}-${revision}/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
@@ -53,7 +54,7 @@
   </scm>
 
   <properties>
-    <revision>3.1.1</revision>
+    <revision>3.1.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -69,7 +70,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.138.x</artifactId>
-        <version>3</version>
+        <version>4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -174,6 +175,10 @@
       <artifactId>structs</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>script-security</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
@@ -192,7 +197,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.1.11</version>
+      <version>3.1.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
