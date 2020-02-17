@@ -257,7 +257,7 @@
         </exclusion>
       </exclusions>
       <optional>true</optional>
-      <version>3.1.12</version>
+      <version>4.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
