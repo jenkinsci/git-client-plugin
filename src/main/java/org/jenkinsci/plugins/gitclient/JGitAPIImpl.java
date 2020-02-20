@@ -2792,18 +2792,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
                 String tagName = entry.getKey();
                 Ref tagRef = entry.getValue();
-                if (!entry.getValue().isPeeled()) {
+                if (!tagRef.isPeeled()) {
                     Ref peeledRef = repo.peel(tagRef);
                     if (peeledRef.getPeeledObjectId() != null) {
                         tagRef = peeledRef; // Use peeled ref instead of annotated ref
                     }
                 }
-                if (tagRef.isPeeled()) {
+                /* Packed lightweight (non-annotated) tags can wind up peeled with no peeled obj ID */
+                if (tagRef.isPeeled() && tagRef.getPeeledObjectId() != null) {
                     peeledTags.add(new GitObject(tagName, tagRef.getPeeledObjectId()));
                 } else if (!tagNames.contains(tagName)) {
                     peeledTags.add(new GitObject(tagName, tagRef.getObjectId()));
                 }
-                tagNames.add(entry.getKey());
+                tagNames.add(tagName);
             }
         }
         return peeledTags;
