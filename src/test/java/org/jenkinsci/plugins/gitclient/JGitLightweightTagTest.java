@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitObject;
 
@@ -14,50 +13,37 @@ import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Set;
 
-// Collides with implicit org.jenkinsci.plugins.gitclient.Git.
-//import org.eclipse.jgit.api.Git;
 import static org.eclipse.jgit.lib.Constants.HEAD;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.internal.storage.file.GC;
 import org.eclipse.jgit.lib.ObjectId;
 
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import org.jvnet.hudson.test.Issue;
 
 /**
- * JGit Client-specific tests. In their own Test file to ward off bloat in 
- * GitClient and minimized parameterized and other test logic conditional 
- * on Git implementation.
+ * JGit Client-specific test of lightweight tag. In their own test file to
+ * simplify the test.
  *
  * @author Brian Ray
  */
-public class JGitClientTest {
+public class JGitLightweightTagTest {
     /* These tests are only for the JGit client. */
     private static final String GIT_IMPL_NAME = "jgit";
 
     /* Instance under test. */
     private GitClient gitClient;
 
-    /* Lower level "porcelain" API when gitClient can't do something. */
-    private org.eclipse.jgit.api.Git gitAPI;
-
-    /* Repo garbage collector. */
-    private GC gc;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-    private File repoRoot;
+    private File repoRoot;       // root directory of temporary repository
+    private File repoRootGitDir; // .git directory in temporary repository
 
     @Before
     public void setGitClientEtc() throws IOException, InterruptedException {
@@ -66,16 +52,11 @@ public class JGitClientTest {
                        .in(repoRoot)
                        .using(GIT_IMPL_NAME)
                        .getClient();
-        FileRepository repo = (FileRepository) gitClient.getRepository();
-        // See comment up in imports as to why this is fully qualified.
-        gitAPI = org.eclipse.jgit.api.Git.wrap(repo);
-        gc = new GC(repo);
-
-        File gitDir = gitClient.withRepository((r, channel) -> r.getDirectory());
+        repoRootGitDir = gitClient.withRepository((r, channel) -> r.getDirectory());
         gitClient.init_()
                  .workspace(repoRoot.getAbsolutePath())
                  .execute();
-        assertTrue("Missing " + gitDir, gitDir.isDirectory());
+        assertThat(repoRootGitDir, is(anExistingDirectory()));
     }
 
     private ObjectId commitFile(final String path, final String content, final String commitMessage) throws Exception {
@@ -96,22 +77,24 @@ public class JGitClientTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
             writer.printf(content);
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
-            throw new GitException(ex);
         }
     }
 
     private void packRefs() throws IOException {
-        gc.packRefs();
+        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
+            org.eclipse.jgit.internal.storage.file.GC gc;
+            gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
+            gc.packRefs();
+        }
     }
 
-    // No flavor of GitClient has a tag(String) API, only tag(String,String). 
+    // No flavor of GitClient has a tag(String) API, only tag(String,String).
     // But sometimes we want a lightweight a.k.a. non-annotated tag.
-    private void tag(String name) throws GitException {
-        try {
-            gitAPI.tag().setName(name).setAnnotated(false).call();
-        } catch (GitAPIException e) {
-            throw new GitException(e);
+    private void lightweightTag(String tagName) throws Exception {
+        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
+            // Collides with implicit org.jenkinsci.plugins.gitclient.Git.
+            org.eclipse.jgit.api.Git jgitAPI = org.eclipse.jgit.api.Git.wrap(repo);
+            jgitAPI.tag().setName(tagName).setAnnotated(false).call();
         }
     }
 
@@ -125,7 +108,7 @@ public class JGitClientTest {
             "First commit"
         );
         String lightweightTagName = "lightweight_tag";
-        tag(lightweightTagName);
+        lightweightTag(lightweightTagName);
 
         // But throw in an annotated tag for symmetry and coverage
         ObjectId secondCommit = commitFile(
