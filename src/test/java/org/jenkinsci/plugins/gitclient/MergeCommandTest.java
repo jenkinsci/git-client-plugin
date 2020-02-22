@@ -73,11 +73,11 @@ public class MergeCommandTest {
 
         // Create a master branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
-        readme = new File(repo, "README.md");
+        readme = new File(repo, "README.adoc");
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Master Branch README " + randomChar);
         }
-        git.add("README.md");
+        git.add("README.adoc");
         git.commit("Commit README on master branch");
         commit1Master = git.revParse("HEAD");
         assertTrue("master commit 1 missing on master branch", git.revList("master").contains(commit1Master));
@@ -118,20 +118,20 @@ public class MergeCommandTest {
             writer.println("");
             writer.println("Changed on branch commit");
         }
-        git.add("README.md");
+        git.add("README.adoc");
         git.commit("Commit README change on branch 2");
         commit1Branch2 = git.revParse("HEAD");
         assertTrue("Change README commit not on branch 2", git.revListAll().contains(commit1Branch2));
         assertFalse("Change README commit on master branch unexpectedly", git.revList("master").contains(commit1Branch2));
 
         // Commit a second change to master branch
-        git.checkout("master");
+        git.checkout().ref("master").execute();
         try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
             writer.println("# Master Branch README " + randomChar);
             writer.println("");
             writer.println("Second commit");
         }
-        git.add("README.md");
+        git.add("README.adoc");
         git.commit("Commit 2nd README change on master branch");
         commit2Master = git.revParse("HEAD");
         assertTrue("commit 2 not on master branch", git.revListAll().contains(commit2Master));
@@ -147,9 +147,9 @@ public class MergeCommandTest {
     private void createConflictingCommit() throws Exception {
         assertNotNull(git);
         // Create branch-conflict
-        git.checkout("master");
+        git.checkout().ref("master").execute();
         git.branch("branch-conflict");
-        git.checkout("branch-conflict");
+        git.checkout().ref("branch-conflict").execute();
         try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
             writer.println("# branch-conflict README with conflicting change");
         }
@@ -159,7 +159,7 @@ public class MergeCommandTest {
         assertFalse("branch branch-conflict on master branch", git.revList("master").contains(commitConflict));
         assertTrue("commit commitConflict missing on branch branch-conflict", git.revList("branch-conflict").contains(commitConflict));
         assertTrue("Conflicting README missing on branch branch-conflict", readmeOne.exists());
-        git.checkout("master");
+        git.checkout().ref("master").execute();
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -249,9 +249,9 @@ public class MergeCommandTest {
     public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, FileNotFoundException, IOException {
         mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
         assertTrue("branch 2 commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch2));
-        assertTrue("README.md is missing on master", readme.exists());
+        assertTrue("README.adoc is missing on master", readme.exists());
         try(FileReader reader = new FileReader(readme); BufferedReader br = new BufferedReader(reader)) {
-            assertTrue("README.md does not contain expected content", br.readLine().startsWith(BRANCH_2_README_CONTENT));
+            assertTrue("README.adoc does not contain expected content", br.readLine().startsWith(BRANCH_2_README_CONTENT));
         }
     }
 

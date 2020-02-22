@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.50</version>
+    <version>3.56</version>
     <relativePath />
   </parent>
 
@@ -16,7 +16,8 @@
 
   <name>Jenkins Git client plugin</name>
   <description>Utility plugin for Git support in Jenkins</description>
-  <url>https://github.com/jenkinsci/git-client-plugin</url>
+  <!-- Use documentation from tagged release -->
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin/tree/${project.artifactId}-${revision}/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
   <licenses>
     <license>
@@ -53,14 +54,15 @@
   </scm>
 
   <properties>
-    <revision>3.0.1</revision>
+    <revision>3.1.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <jenkins.version>2.138.4</jenkins.version>
     <java.level>8</java.level>
-    <jgit.version>5.5.1.201910021850-r</jgit.version>
+    <jgit.version>5.6.1.202002131546-r</jgit.version>
     <forkCount>1C</forkCount>
+    <configuration-as-code.version>1.35</configuration-as-code.version>
   </properties>
 
   <dependencyManagement>
@@ -68,7 +70,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.138.x</artifactId>
-        <version>3</version>
+        <version>4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -173,8 +175,18 @@
       <artifactId>structs</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>script-security</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <version>2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -185,13 +197,13 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.1.9</version>
+      <version>3.1.12</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>git-server</artifactId>
-      <version>1.8</version>
+      <version>1.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -203,7 +215,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.7</version>
+      <version>1.8</version>
       <scope>test</scope>
       <exclusions>
         <exclusion><!-- Jenkins 2.176.1 requires a newer version -->
@@ -245,6 +257,7 @@
         </exclusion>
       </exclusions>
       <optional>true</optional>
+      <version>4.0.0</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -254,12 +267,13 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
+      <version>${configuration-as-code.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>io.jenkins</groupId>
-      <artifactId>configuration-as-code</artifactId>
-      <classifier>tests</classifier>
+      <groupId>io.jenkins.configuration-as-code</groupId>
+      <artifactId>test-harness</artifactId>
+      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -290,14 +304,12 @@
         <configuration>
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
-          <!-- <detectLinks>true</detectLinks> -->
           <force>true</force>
           <failOnError>false</failOnError>
           <links>
             <link>http://docs.oracle.com/javase/8/docs/api/</link>
             <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
           </links>
-          <!-- <additionalOptions>-html5</additionalOptions> -->
         </configuration>
       </plugin>
       <plugin>

@@ -101,7 +101,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     private void createRevParseBranch() throws GitException, InterruptedException {
         revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
-        w.git.checkout("origin/master", revParseBranchName);
+        w.git.checkout().ref("origin/master").branch(revParseBranchName).execute();
     }
 
     private void assertCheckoutTimeout() {
@@ -568,7 +568,7 @@ public abstract class GitAPITestCase extends TestCase {
         cloneTimeout = 1 + random.nextInt(60 * 24);
         w.git.clone_().timeout(cloneTimeout).url(localMirror()).repositoryName("origin").execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -579,10 +579,10 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_checkout_exception() throws Exception {
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         createRevParseBranch();
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedbeefbeaded";
         try {
-            w.git.checkout(SHA1, "master");
+            w.git.checkout().ref(SHA1).branch("master").execute();
             fail("Expected checkout exception not thrown");
         } catch (GitException ge) {
             assertEquals("Could not checkout master with start point " + SHA1, ge.getMessage());
@@ -592,7 +592,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_repositoryName() throws IOException, InterruptedException
     {
         w.git.clone_().url(localMirror()).repositoryName("upstream").execute();
-        w.git.checkout("upstream/master", "master");
+        w.git.checkout().ref("upstream/master").branch("master").execute();
         check_remote_url("upstream");
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -603,7 +603,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow(true).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternatesFileNotFound();
@@ -617,7 +617,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_clone_shallow_with_depth() throws Exception
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow(true).depth(2).execute();
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternatesFileNotFound();
@@ -630,9 +630,9 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_shared() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared(true).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
@@ -641,9 +641,9 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_clone_null_branch() throws IOException, InterruptedException
     {
-        w.git.clone_().url(localMirror()).repositoryName("origin").shared().execute();
+        w.git.clone_().url(localMirror()).repositoryName("origin").shared(true).execute();
         createRevParseBranch();
-        w.git.checkout("origin/master", null);
+        w.git.checkout().ref("origin/master").branch(null).execute();
         check_remote_url("origin");
         assertAlternateFilePointsToLocalMirror();
         assertNoObjectsInRepository();
@@ -653,7 +653,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shared(false).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternatesFileNotFound();
@@ -663,7 +663,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(localMirror()).execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         assertAlternateFilePointsToLocalMirror();
@@ -710,7 +710,7 @@ public abstract class GitAPITestCase extends TestCase {
             return; /* Reference repository pointing to a shallow checkout is nonsense */
         }
         w.git.clone_().url(localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
-        w.git.checkout("origin/master", "master");
+        w.git.checkout().ref("origin/master").branch("master").execute();
         check_remote_url("origin");
         assertBranchesExist(w.git.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
@@ -863,15 +863,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong origin URL", originURL, w.git.getRemoteUrl("origin"));
         String remotes = w.launchCommand("git", "remote", "-v");
         assertTrue("remote URL has not been updated", remotes.contains(originURL));
-    }
-
-    public void test_addRemoteUrl_local_clone() throws Exception {
-        w = clone(localMirror());
-        assertEquals("Wrong origin URL before add", localMirror(), w.git.getRemoteUrl("origin"));
-        String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
-        w.git.addRemoteUrl("upstream", upstreamURL);
-        assertEquals("Wrong upstream URL", upstreamURL, w.git.getRemoteUrl("upstream"));
-        assertEquals("Wrong origin URL after add", localMirror(), w.git.getRemoteUrl("origin"));
     }
 
     public void test_clean_with_parameter() throws Exception {
@@ -1252,7 +1243,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Create a branch in working repo named "parent" */
         w.git.branch("parent");
-        w.git.checkout("parent");
+        w.git.checkout().ref("parent").execute();
         w.touch("file2", "file2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file2");
         w.git.commit("commit2");
@@ -1275,12 +1266,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/parent", "origin/HEAD"));
 
         /* Checkout parent in new working repo */
-        newArea.git.checkout("origin/parent", "parent");
+        newArea.git.checkout().ref("origin/parent").branch("parent").execute();
         ObjectId newAreaParent = newArea.head();
         assertEquals("parent1 != newAreaParent", commit2, newAreaParent);
 
         /* Delete parent branch from w */
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.launchCommand("git", "branch", "-D", "parent");
         assertThat(getBranchNames(w.git.getBranches()), contains("master"));
         assertEquals("Wrong branch count", 1, w.git.getBranches().size());
@@ -1291,7 +1282,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         /* Create parent/a branch in working repo */
         w.git.branch("parent/a");
-        w.git.checkout("parent/a");
+        w.git.checkout().ref("parent/a").execute();
         w.touch("file3", "file3 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file3");
         w.git.commit("commit3");
@@ -1356,7 +1347,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong branch count", 1, w.git.getBranches().size());
         w.git.push("origin", "master"); /* master branch is now on bare repo */
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch1");
         w.touch("file-branch1", "file branch1 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch1");
@@ -1364,7 +1355,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(getBranchNames(w.git.getBranches()), containsInAnyOrder("master", "branch1"));
         w.git.push("origin", "branch1"); /* branch1 is now on bare repo */
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
         w.touch("file-branch2", "file branch2 content " + java.util.UUID.randomUUID().toString());
         w.git.add("file-branch2");
@@ -1391,7 +1382,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Fetch with prune should remove branch1 from newArea */
-        newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).prune().execute();
+        newArea.git.fetch_().from(new URIish(bare.repo.toString()), refSpecs).prune(true).execute();
         remoteBranches = newArea.git.getRemoteBranches();
 
         /* Git older than 1.7.9 (like 1.7.1 on Red Hat 6) does not prune branch1, don't fail the test
@@ -2005,7 +1996,7 @@ public abstract class GitAPITestCase extends TestCase {
          * reference is ambiguous, it is safe to assume that
          * resolution of the ambiguous reference is an implementation
          * specific detail. */
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         String messageDetails =
             ", head=" + w.head().name() +
             ", masterTip=" + masterTip.name() +
@@ -2416,8 +2407,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit1");
         w.igit().submoduleClean(false);
         w.igit().submoduleClean(true);
-        w.igit().submoduleUpdate(false);
-        w.igit().submoduleUpdate(true);
+        w.igit().submoduleUpdate().recursive(false).execute();
+        w.igit().submoduleUpdate().recursive(true).execute();
         w.igit().submoduleSync();
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
     }
@@ -2433,29 +2424,6 @@ public abstract class GitAPITestCase extends TestCase {
             assertTrue("Wrong message in " + ge.getMessage(), ge.getMessage().startsWith("Could not determine remote"));
             assertExceptionMessageContains(ge, "origin");
         }
-    }
-
-    public void test_addSubmodule() throws Exception {
-        String sub1 = "sub1-" + java.util.UUID.randomUUID().toString();
-        String readme1 = sub1 + File.separator + "README.md";
-        w.init();
-        assertFalse("submodule1 dir found too soon", w.file(sub1).exists());
-        assertFalse("submodule1 file found too soon", w.file(readme1).exists());
-
-        w.git.addSubmodule(localMirror(), sub1);
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate(false);
-        assertTrue("submodule1 dir not found after add", w.file(sub1).exists());
-        assertTrue("submodule1 file not found after add", w.file(readme1).exists());
-
-        w.igit().submoduleUpdate(true);
-        assertTrue("submodule1 dir not found after recursive update", w.file(sub1).exists());
-        assertTrue("submodule1 file found after recursive update", w.file(readme1).exists());
-
-        w.igit().submoduleSync();
-        assertFixSubmoduleUrlsThrows();
     }
 
     private File createTempDirectoryWithoutSpaces() throws IOException {
@@ -2499,11 +2467,11 @@ public abstract class GitAPITestCase extends TestCase {
 
         // Make sure that the new file doesn't exist in the repo with remoteTracking
         String subFile = subModDir + File.separator + "file2";
-        w.git.submoduleUpdate(true, false);
+        w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
         assertFalse("file2 exists and should not because we didn't update to the tip of the branch (master).", w.exists(subFile));
 
         // Run submodule update with remote tracking
-        w.git.submoduleUpdate(true, true);
+        w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
         assertTrue("file2 does not exist and should because we updated to the top of the branch (master).", w.exists(subFile));
         assertFixSubmoduleUrlsThrows();
     }
@@ -2515,7 +2483,7 @@ public abstract class GitAPITestCase extends TestCase {
      */
     private void base_checkout_replaces_tracked_changes(boolean defineBranch) throws Exception {
         w.git.clone_().url(localMirror()).repositoryName("JENKINS-23424").execute();
-        w.git.checkout("JENKINS-23424/master", "master");
+        w.git.checkout().ref("JENKINS-23424/master").branch("master").execute();
         if (defineBranch) {
             w.git.checkout().branch("master").ref("JENKINS-23424/master").deleteBranchIfExist(true).execute();
         } else {
@@ -2614,7 +2582,7 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getSubmodules() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub_origin").execute();
-        w.git.checkout("sub_origin/tests/getSubmodules", "tests/getSubmodules");
+        w.git.checkout().ref("sub_origin/tests/getSubmodules").branch("tests/getSubmodules").execute();
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
                 "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], " +
@@ -2741,18 +2709,18 @@ public abstract class GitAPITestCase extends TestCase {
         r.git.commit("submod-commit1");
 
         r.git.branch("branch1");
-        r.git.checkout("branch1");
+        r.git.checkout().ref("branch1").execute();
         r.touch("file2", "content2");
         r.git.add("file2");
         r.git.commit("submod-commit2");
-        r.git.checkout("master");
+        r.git.checkout().ref("master").execute();
 
         r.git.branch("branch2");
-        r.git.checkout("branch2");
+        r.git.checkout().ref("branch2").execute();
         r.touch("file3", "content3");
         r.git.add("file3");
         r.git.commit("submod-commit3");
-        r.git.checkout("master");
+        r.git.checkout().ref("master").execute();
 
         // Setup variables for use in tests
         String submodDir = "submod1" + java.util.UUID.randomUUID().toString();
@@ -2857,11 +2825,11 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
 
         w.launchCommand("git", "fetch", localMirror(), "tests/getSubmodules:t");
-        w.git.checkout("t");
+        w.git.checkout().ref("t").execute();
         assertTrue(w.git.hasGitModules());
 
         w.launchCommand("git", "fetch", localMirror(), "master:t2");
-        w.git.checkout("t2");
+        w.git.checkout().ref("t2").execute();
         assertFalse(w.git.hasGitModules());
         assertFixSubmoduleUrlsThrows();
     }
@@ -2883,36 +2851,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(expected, symlinkValue);
     }
 
-    public void test_init() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
 
-    public void test_init_() throws Exception {
-        assertFalse(w.file(".git").exists());
-        w.git.init_().workspace(w.repoPath()).execute();
-        assertTrue(w.file(".git").exists());
-        checkSymlinkSetting(w);
-    }
-
-    public void test_init_bare() throws Exception {
-        assertFalse(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        w.git.init_().workspace(w.repoPath()).bare(false).execute();
-        assertTrue(w.file(".git").exists());
-        assertFalse(w.file("refs").exists());
-        checkSymlinkSetting(w);
-
-        WorkingArea anotherRepo = new WorkingArea();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertFalse(anotherRepo.file("refs").exists());
-        anotherRepo.git.init_().workspace(anotherRepo.repoPath()).bare(true).execute();
-        assertFalse(anotherRepo.file(".git").exists());
-        assertTrue(anotherRepo.file("refs").exists());
-        checkSymlinkSetting(anotherRepo);
-    }
 
     @NotImplementedInCliGit // Until submodule rename is fixed
     public void test_getSubmoduleUrl() throws Exception {
@@ -2991,7 +2930,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.launchCommand("git", "pull", localMirror());
 
         RevListCommand revListCommand = w.git.revList_();
-        revListCommand.all();
+        revListCommand.all(true);
         revListCommand.to(oidList);
         revListCommand.execute();
 
@@ -3012,7 +2951,7 @@ public abstract class GitAPITestCase extends TestCase {
             List<ObjectId> oidList = new ArrayList<>();
 
             RevListCommand revListCommand = w.git.revList_();
-            revListCommand.firstParent();
+            revListCommand.firstParent(true);
             revListCommand.to(oidList);
             revListCommand.reference(b.getName());
             revListCommand.execute();
@@ -3044,13 +2983,13 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file", "content1");
         w.git.add("file");
         w.git.commit("commit1");
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         File f = w.touch("file", "content2");
         w.git.add("file");
         w.git.commit("commit2");
@@ -3062,13 +3001,13 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file", "content1");
         w.git.add("file");
         w.git.commit("commit1");
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         w.touch("file", "content2");
         w.git.add("file");
         w.git.commit("commit2");
@@ -3087,21 +3026,21 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.commitEmpty("init");
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
         final ObjectId branch1 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         w.touch("file2", "content2");
         w.git.add("file2");
         w.git.commit("commit2");
         final ObjectId branch2 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
 
         // The first merge is a fast-forward, master moves to branch1
         w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
@@ -3122,21 +3061,21 @@ public abstract class GitAPITestCase extends TestCase {
         w.init();
         w.commitEmpty("init");
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
         final ObjectId branch1 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         w.touch("file2", "content2");
         w.git.add("file2");
         w.git.commit("commit2");
         final ObjectId branch2 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final ObjectId master = w.head();
 
         // The first merge is a fast-forward, master moves to branch1
@@ -3158,21 +3097,21 @@ public abstract class GitAPITestCase extends TestCase {
         w.commitEmpty("init");
         final ObjectId base = w.head();
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
         final ObjectId branch1 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.branch("branch2");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         w.touch("file2", "content2");
         w.git.add("file2");
         w.git.commit("commit2");
         final ObjectId branch2 = w.head();
 
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final ObjectId master = w.head();
 
         // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
@@ -3202,7 +3141,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.branch("branch1");
 
         //First commit to branch1
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
@@ -3213,7 +3152,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("commit2");
 
         //Merge branch1 with master, squashing both commits
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.git.merge().setSquash(true).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
 
         //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
@@ -3230,7 +3169,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         //First commit to branch1
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
@@ -3242,7 +3181,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         //Merge branch1 with master, without squashing commits.
         //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final int commitCountBefore = w.git.revList("HEAD").size();
         w.git.merge().setSquash(false).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         final int commitCountAfter = w.git.revList("HEAD").size();
@@ -3256,14 +3195,14 @@ public abstract class GitAPITestCase extends TestCase {
 
         //Create branch1 and commit a file
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
 
         //Merge branch1 with master, without committing the merge.
         //Compare commit counts of before and after the merge, should be zero due to the lack of autocommit.
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final int commitCountBefore = w.git.revList("HEAD").size();
         w.git.merge().setCommit(false).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         final int commitCountAfter = w.git.revList("HEAD").size();
@@ -3277,14 +3216,14 @@ public abstract class GitAPITestCase extends TestCase {
 
         //Create branch1 and commit a file
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
 
         //Merge branch1 with master, without committing the merge.
         //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final int commitCountBefore = w.git.revList("HEAD").size();
         w.git.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         final int commitCountAfter = w.git.revList("HEAD").size();
@@ -3298,13 +3237,13 @@ public abstract class GitAPITestCase extends TestCase {
 
         // First commit to branch1
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1");
 
         // Merge branch1 into master
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
         // Obtain last commit message
@@ -3335,14 +3274,14 @@ public abstract class GitAPITestCase extends TestCase {
         final ObjectId base = w.head();
 
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.launchCommand("git", "branch", "branch2", "master");
-        w.git.checkout("branch2");
+        w.git.checkout().ref("branch2").execute();
         File f = w.touch("file2", "content2");
         w.git.add("file2");
         w.git.commit("commit2-branch2");
@@ -3400,19 +3339,19 @@ public abstract class GitAPITestCase extends TestCase {
 
         // Create a feature branch and make a commit
         w.git.branch("feature1");
-        w.git.checkout("feature1");
+        w.git.checkout().ref("feature1").execute();
         w.touch("feature_file", "feature1");
         w.git.add("feature_file");
         w.git.commit("commit-feature1");
 
         // Second commit to master
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.touch("master_file", "master2");
         w.git.add("master_file");
         w.git.commit("commit-master2");
 
         // Rebase feature commit onto master
-        w.git.checkout("feature1");
+        w.git.checkout().ref("feature1").execute();
         w.git.rebase().setUpstream("master").execute();
 
         assertThat("Should've rebased feature1 onto master", w.git.revList("feature1").contains(w.git.revParse("master")));
@@ -3431,19 +3370,19 @@ public abstract class GitAPITestCase extends TestCase {
 
         // Create a feature branch and make a commit
         w.git.branch("feature1");
-        w.git.checkout("feature1");
+        w.git.checkout().ref("feature1").execute();
         w.touch("file", "feature1");
         w.git.add("file");
         w.git.commit("commit-feature1");
 
         // Second commit to master
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         w.touch("file", "master2");
         w.git.add("file");
         w.git.commit("commit-master2");
 
         // Rebase feature commit onto master
-        w.git.checkout("feature1");
+        w.git.checkout().ref("feature1").execute();
         try {
             w.git.rebase().setUpstream("master").execute();
             fail("Rebase did not throw expected GitException");
@@ -3553,11 +3492,11 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
-        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/*ast*"); // matches master
+        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
         ObjectId getSubmodules1 = w.git.getHeadRev(localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*mod*");
+        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*modul*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
@@ -3824,11 +3763,11 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getHeadRev_current_directory() throws Exception {
         w = clone(localMirror());
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final ObjectId master = w.head();
 
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "branch1 contents " + java.util.UUID.randomUUID().toString());
         w.git.add("file1");
         w.git.commit("commit1-branch1");
@@ -3847,18 +3786,18 @@ public abstract class GitAPITestCase extends TestCase {
          * which matched the key.
          */
         w = clone(localMirror());
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         final ObjectId master = w.head();
 
         w.git.branch("branch1");
-        w.git.checkout("branch1");
+        w.git.checkout().ref("branch1").execute();
         w.touch("file1", "content1");
         w.git.add("file1");
         w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
 
         w.launchCommand("git", "branch", "branch.2", "master");
-        w.git.checkout("branch.2");
+        w.git.checkout().ref("branch.2").execute();
         File f = w.touch("file.2", "content2");
         w.git.add("file.2");
         w.git.commit("commit2-branch.2");
@@ -3873,27 +3812,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
 
         check_headRev(w.repoPath(), getMirrorHead());
-    }
-
-    private void check_changelog_sha1(final String sha1, final String branchName) throws InterruptedException
-    {
-        ChangelogCommand changelogCommand = w.git.changelog();
-        changelogCommand.max(1);
-        StringWriter writer = new StringWriter();
-        changelogCommand.to(writer);
-        changelogCommand.execute();
-        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
-        assertEquals("Wrong changelog line 1 on branch " + branchName, "commit " + sha1, splitLog[0]);
-    }
-
-    public void test_changelog() throws Exception {
-        w = clone(localMirror());
-        String sha1Prev = w.git.revParse("HEAD").name();
-        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.git.add("changelog-file");
-        w.git.commit("changelog-commit-message");
-        String sha1 = w.git.revParse("HEAD").name();
-        check_changelog_sha1(sha1, "master");
     }
 
     public void test_show_revision_for_merge() throws Exception {
@@ -3925,6 +3843,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
         assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
         // Previous implementation included other commits, and listed irrelevant changes
+        assertFalse(paths.contains("README.adoc"));
         assertFalse(paths.contains("README.md"));
     }
 
@@ -4035,47 +3954,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
-    public void test_branchContaining() throws Exception {
-        /*
-         OLD                                    NEW
-                   -> X
-                  /
-                c1 -> T -> c2 -> Z
-                  \            \
-                   -> c3 --------> Y
-         */
-        w.init();
-
-        w.commitEmpty("c1");
-        ObjectId c1 = w.head();
-
-        w.launchCommand("git", "branch", "Z", c1.name());
-        w.git.checkout("Z");
-        w.commitEmpty("T");
-        ObjectId t = w.head();
-        w.commitEmpty("c2");
-        ObjectId c2 = w.head();
-        w.commitEmpty("Z");
-
-        w.launchCommand("git", "branch", "X", c1.name());
-        w.git.checkout("X");
-        w.commitEmpty("X");
-
-        w.launchCommand("git", "branch", "Y", c1.name());
-        w.git.checkout("Y");
-        w.commitEmpty("c3");
-        ObjectId c3 = w.head();
-        w.launchCommand("git", "merge", "--no-ff", "-m", "Y", c2.name());
-
-        w.git.deleteBranch("master");
-        assertEquals(3,w.git.getBranches().size());     // X, Y, and Z
-
-        assertEquals("X,Y,Z",formatBranches(w.igit().getBranchesContaining(c1.name())));
-        assertEquals("Y,Z",formatBranches(w.igit().getBranchesContaining(t.name())));
-        assertEquals("Y",formatBranches(w.igit().getBranchesContaining(c3.name())));
-        assertEquals("X",formatBranches(w.igit().getBranchesContaining("X")));
-    }
-
     /**
      * UT for {@link GitClient#getBranchesContaining(String, boolean)}. The main
      * testing case is retrieving remote branches.
@@ -4117,7 +3995,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String branchName = "test-checkout-null-ref-branch-" + java.util.UUID.randomUUID().toString();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
-        w.git.checkout(null, branchName);
+        w.git.checkout().ref(null).branch(branchName).execute();
         branches = w.launchCommand("git", "branch", "-l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
     }
@@ -4129,7 +4007,7 @@ public abstract class GitAPITestCase extends TestCase {
         final String branchName = "test-checkout-branch-" + java.util.UUID.randomUUID().toString();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
-        w.git.checkout("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea", branchName); // git-client-1.6.0
+        w.git.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").branch(branchName).execute(); // git-client-1.6.0
         branches = w.launchCommand("git", "branch", "-l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
         String sha1 = w.git.revParse("HEAD").name();
@@ -4184,76 +4062,6 @@ public abstract class GitAPITestCase extends TestCase {
             assertEquals(exceptionMsg, ie.getMessage());
         }
         assertTrue("lock file '" + lockFile.getCanonicalPath() + " removed by cleanup", lockFile.exists());
-    }
-
-    @Issue("JENKINS-19108")
-    public void test_checkoutBranch() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        w.tag("t1");
-        w.commitEmpty("c2");
-
-        w.git.checkoutBranch("foo", "t1");
-
-        assertEquals(w.head(),w.git.revParse("t1"));
-        assertEquals(w.head(),w.git.revParse("foo"));
-
-        Ref head = w.repo().exactRef("HEAD");
-        assertTrue(head.isSymbolic());
-        assertEquals("refs/heads/foo",head.getTarget().getName());
-    }
-
-    /**
-     * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link #test_branchContainingRemote()}
-     * @throws Exception on exceptions occur
-     */
-    public void test_checkout_remote_autocreates_local() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        w.git.checkout().ref(Constants.MASTER).execute();
-
-        Set<String> refNames = w.git.getRefNames("refs/heads/");
-        assertThat(refNames, contains("refs/heads/master"));
-    }
-
-    public void test_autocreate_fails_on_multiple_matching_origins() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("c1");
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-
-        try ( // add second remote
-                FileRepository repo = w.repo()) {
-            StoredConfig config = repo.getConfig();
-            config.setString("remote", "upstream", "url", "file://" + r.repoPath());
-            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
-            config.save();
-        }
-
-        // fill both remote branches
-        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-        refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/upstream/*"));
-        w.git.fetch_().from(remote, refspecs).execute();
-
-        try {
-            w.git.checkout().ref(Constants.MASTER).execute();
-            fail("GitException expected");
-        } catch (GitException e) {
-            // expected
-        }
     }
 
     public void test_revList_remote_branch() throws Exception {
@@ -4328,85 +4136,9 @@ public abstract class GitAPITestCase extends TestCase {
         w.touch("foo","new");
 
         // this should overwrite foo
-        w.git.checkout("t1");
+        w.git.checkout().ref("t1").execute();
 
         assertEquals("old",FileUtils.readFileToString(w.file("foo")));
-    }
-
-    public void test_bare_repo_init() throws IOException, InterruptedException {
-        w.init(true);
-        assertFalse(".git exists unexpectedly", w.file(".git").exists());
-        assertFalse(".git/objects exists unexpectedly", w.file(".git/objects").exists());
-        assertTrue("objects is not a directory", w.file("objects").isDirectory());
-    }
-
-    /* The most critical use cases of isBareRepository respond the
-     * same for both the JGit implementation and the CliGit
-     * implementation.  Those are asserted first in this section of
-     * assertions.
-     */
-
-    @Deprecated
-    public void test_isBareRepository_working_repoPath_dot_git() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-false-repoPath-dot-git");
-        assertFalse("repoPath/.git is a bare repository", w.igit().isBareRepository(w.repoPath() + File.separator + ".git"));
-    }
-
-    @Deprecated
-    public void test_isBareRepository_working_null() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-working-null");
-        try {
-            assertFalse("null is a bare repository", w.igit().isBareRepository(null));
-            fail("Did not throw expected exception");
-        } catch (GitException ge) {
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_null() throws IOException, InterruptedException {
-        w.init(true);
-        try {
-            assertTrue("null is not a bare repository", w.igit().isBareRepository(null));
-            fail("Did not throw expected exception");
-        } catch (GitException ge) {
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
-        w.init(true);
-        assertTrue("repoPath is not a bare repository", w.igit().isBareRepository(w.repoPath()));
-        assertTrue("abs(.) is not a bare repository", w.igit().isBareRepository(w.file(".").getAbsolutePath()));
-    }
-
-    @Deprecated
-    public void test_isBareRepository_working_no_arg() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-no-arg");
-        assertFalse("no arg is a bare repository", w.igit().isBareRepository());
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_no_arg() throws IOException, InterruptedException {
-        w.init(true);
-        assertTrue("no arg is not a bare repository", w.igit().isBareRepository());
-    }
-
-    @Deprecated
-    public void test_isBareRepository_working_empty_string() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-empty-string");
-        assertFalse("empty string is a bare repository", w.igit().isBareRepository(""));
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_empty_string() throws IOException, InterruptedException {
-        w.init(true);
-        assertTrue("empty string is not a bare repository", w.igit().isBareRepository(""));
     }
 
     /* The less critical assertions do not respond the same for the
@@ -4424,86 +4156,6 @@ public abstract class GitAPITestCase extends TestCase {
     //     assertFalse("repoPath is a bare repository", w.igit().isBareRepository(w.repoPath()));
     //     assertFalse("abs(.) is a bare repository", w.igit().isBareRepository(w.file(".").getAbsolutePath()));
     // }
-
-    @Deprecated
-    public void test_isBareRepository_working_dot() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-working-dot");
-        try {
-            assertFalse(". is a bare repository", w.igit().isBareRepository("."));
-            if (w.git instanceof CliGitAPIImpl) {
-                /* No exception from JGit */
-                fail("Did not throw expected exception");
-            }
-        } catch (GitException ge) {
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_dot() throws IOException, InterruptedException {
-        w.init(true);
-        assertTrue(". is not a bare repository", w.igit().isBareRepository("."));
-    }
-
-    @Deprecated
-    public void test_isBareRepository_working_dot_git() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-dot-git");
-        assertFalse(".git is a bare repository", w.igit().isBareRepository(".git"));
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_dot_git() throws IOException, InterruptedException {
-        w.init(true);
-        /* Bare repository does not have a .git directory.  This is
-         * another no-such-location test but is included here for
-         * consistency.
-         */
-        try {
-            /* JGit knows that w.igit() has a workspace, and asks the workspace
-             * if it is bare.  That seems more correct than relying on testing
-             * a specific file that the repository is bare.  JGit behaves better
-             * than CliGit in this case.
-             */
-            assertTrue("non-existent .git is in a bare repository", w.igit().isBareRepository(".git"));
-            /* JGit will not throw an exception - it knows the repo is bare */
-            /* CliGit throws an exception so should not reach the next assertion */
-            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
-        } catch (GitException ge) {
-            /* Only enters this path for CliGit */
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
-
-    @Deprecated
-    public void test_isBareRepository_working_no_such_location() throws IOException, InterruptedException {
-        w.init();
-        w.commitEmpty("Not-a-bare-repository-working-no-such-location");
-        try {
-            assertFalse("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
-            /* JGit will not throw an exception - it knows the repo is not bare */
-            /* CliGit throws an exception so should not reach the next assertion */
-            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
-        } catch (GitException ge) {
-            /* Only enters this path for CliGit */
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
-
-    @Deprecated
-    public void test_isBareRepository_bare_no_such_location() throws IOException, InterruptedException {
-        w.init(true);
-        try {
-            assertTrue("non-existent location is in a bare repository", w.igit().isBareRepository("no-such-location"));
-            /* JGit will not throw an exception - it knows the repo is not bare */
-            /* CliGit throws an exception so should not reach the next assertion */
-            assertFalse("CliGitAPIImpl did not throw expected exception", w.igit() instanceof CliGitAPIImpl);
-        } catch (GitException ge) {
-            /* Only enters this path for CliGit */
-            assertExceptionMessageContains(ge, "not a git repository");
-        }
-    }
 
     public void test_checkoutBranchFailure() throws Exception {
         w = clone(localMirror());
@@ -4669,14 +4321,14 @@ public abstract class GitAPITestCase extends TestCase {
 
         // First commit to branch-1
         w.git.branch("branch-1");
-        w.git.checkout("branch-1");
+        w.git.checkout().ref("branch-1").execute();
         w.touch("file-1", "content-1");
         w.git.add("file-1");
         w.git.commit("commit-1");
         String commitSha1 = w.git.revParse("HEAD").name();
 
         // Merge branch-1 into master
-        w.git.checkout("master");
+        w.git.checkout().ref("master").execute();
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
 

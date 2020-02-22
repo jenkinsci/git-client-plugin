@@ -167,14 +167,14 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /*
-    public void submoduleUpdate(boolean recursive) throws GitException {
-        if (Git.USE_CLI) super.submoduleUpdate(recursive); else  jgit.submoduleUpdate(recursive);
+    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).execute(); else  jgit.submoduleUpdate().recursive(recursive).execute();
     }
     */
 
     /*
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
-        if (Git.USE_CLI) super.submoduleUpdate(recursive, String reference); else  jgit.submoduleUpdate(recursive, String reference);
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
+        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).ref(reference).execute(); else  jgit.submoduleUpdate().recursive(recursive).ref(reference).execute();
     }
     */
 
@@ -224,7 +224,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
+        if (Git.USE_CLI) super.checkout().ref(ref).branch(branch).execute(); else  jgit.checkout().ref(ref).branch(branch).execute();
     }
 
     /** {@inheritDoc} */
@@ -250,12 +250,20 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.commit(message, author, committer); else  jgit.commit(message, author, committer);
+        if (Git.USE_CLI) {
+            super.setAuthor(author);
+            super.setCommitter(committer);
+            super.commit(message);
+        } else {
+            jgit.setAuthor(author);
+            jgit.setCommitter(committer);
+            jgit.commit(message);
+        }
     }
 
     /** {@inheritDoc} */
     public void checkout(String ref) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
+        if (Git.USE_CLI) super.checkout().ref(ref).execute(); else  jgit.checkout().ref(ref).execute();
     }
 
     /** {@inheritDoc} */
@@ -282,7 +290,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
+        if (Git.USE_CLI) super.fetch_().from(url, refspecs).execute(); else  jgit.fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */

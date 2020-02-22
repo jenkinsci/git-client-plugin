@@ -102,7 +102,7 @@ public class PushTest {
         if (expectedException != null) {
             thrown.expect(expectedException);
         }
-        workingGitClient.push().to(bareURI).ref(refSpec).force().execute();
+        workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
     }
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")

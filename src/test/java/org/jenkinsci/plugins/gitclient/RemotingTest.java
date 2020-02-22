@@ -34,11 +34,11 @@ public class RemotingTest {
      */
     @Test
     public void testRemotability() throws Exception {
-        DumbSlave s = j.createSlave();
+        DumbSlave agent = j.createSlave();
 
         GitClient jgit = new JGitAPIImpl(tempFolder.getRoot(), StreamBuildListener.fromStdout());
 
-        Computer c = s.toComputer();
+        Computer c = agent.toComputer();
         c.connect(false).get();
         VirtualChannel channel = c.getChannel();
         channel.call(new Work(jgit));

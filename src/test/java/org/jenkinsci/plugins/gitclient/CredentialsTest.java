@@ -74,6 +74,7 @@ public class CredentialsTest {
     private final String fileToCheck;
     private final Boolean submodules;
     private final Boolean useParentCreds;
+    private final Boolean lfsSpecificTest;
     private final char specialCharacter;
     private final Boolean credentialsEmbeddedInURL;
 
@@ -107,7 +108,7 @@ public class CredentialsTest {
             + (isWindows() ? "" : "*<>:|?");
     private static int specialsIndex = 0;
 
-    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds, Boolean credentialsEmbeddedInURL) {
+    public CredentialsTest(String gitImpl, String gitRepoUrl, String username, String password, File privateKey, String passphrase, String fileToCheck, Boolean submodules, Boolean useParentCreds, Boolean credentialsEmbeddedInURL, Boolean lfsSpecificTest) {
         this.gitImpl = gitImpl;
         this.gitRepoURL = gitRepoUrl;
         this.privateKey = privateKey;
@@ -117,6 +118,7 @@ public class CredentialsTest {
         this.fileToCheck = fileToCheck;
         this.submodules = submodules;
         this.useParentCreds = useParentCreds;
+        this.lfsSpecificTest = lfsSpecificTest;
         this.specialCharacter = SPECIALS_TO_CHECK.charAt(specialsIndex);
         this.credentialsEmbeddedInURL = credentialsEmbeddedInURL;
         specialsIndex = specialsIndex + 1;
@@ -240,7 +242,7 @@ public class CredentialsTest {
                 String url = "https://github.com/jenkinsci/git-client-plugin.git";
                 /* Add URL if it matches the pattern */
                 if (URL_MUST_MATCH_PATTERN.matcher(url).matches()) {
-                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.md", false, false, false};
+                    Object[] masterRepo = {implementation, url, username, null, DEFAULT_PRIVATE_KEY, null, "README.adoc", false, false, false, false};
                     repos.add(masterRepo);
                 }
             }
@@ -253,7 +255,6 @@ public class CredentialsTest {
             if (authDataDefinitions.exists()) {
                 JSONParser parser = new JSONParser();
                 Object obj = parser.parse(new FileReader(authDataDefinitions));
-
                 JSONArray authEntries = (JSONArray) obj;
 
                 for (Object entryObj : authEntries) {
@@ -273,7 +274,7 @@ public class CredentialsTest {
                     }
 
                     if (fileToCheck == null) {
-                        fileToCheck = "README.md";
+                        fileToCheck = "README.adoc";
                     }
 
                     Boolean submodules = (Boolean) entry.get("submodules");
@@ -284,6 +285,11 @@ public class CredentialsTest {
                     Boolean useParentCreds = (Boolean) entry.get("parentcreds");
                     if (useParentCreds == null) {
                         useParentCreds = false;
+                    }
+
+                    Boolean lfsSpecificTest = (Boolean) entry.get("lfsSpecificTest");
+                    if (lfsSpecificTest == null) {
+                        lfsSpecificTest = false;
                     }
 
                     String keyfile = (String) entry.get("keyfile");
@@ -313,7 +319,7 @@ public class CredentialsTest {
 
                     /* Add URL if it matches the pattern */
                     if (URL_MUST_MATCH_PATTERN.matcher(repoURL).matches()) {
-                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, false};
+                        Object[] repo = {implementation, repoURL, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, false, lfsSpecificTest};
                         repos.add(repo);
                         /* Add embedded credentials test case if valid username, valid password, CLI git, and http protocol */
                         if (username != null && !username.matches(".*[@:].*") && // Skip special cases of username
@@ -322,7 +328,7 @@ public class CredentialsTest {
                             repoURL.startsWith("http")) {
                             /* Use existing username and password to create an embedded credentials test case */
                             String repoURLwithCredentials = repoURL.replaceAll("(https?://)(.*@)?(.*)", "$1" + username + ":" + password + "@$3");
-                            Object[] repoWithCredentials = {implementation, repoURLwithCredentials, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, true};
+                            Object[] repoWithCredentials = {implementation, repoURLwithCredentials, username, password, privateKey, passphrase, fileToCheck, submodules, useParentCreds, true, lfsSpecificTest};
                             repos.add(0, repoWithCredentials);
                         }
                     }
@@ -335,10 +341,14 @@ public class CredentialsTest {
     }
 
     private void doFetch(String source) throws Exception {
+        doFetch(source, "master", true);
+    }
+
+    private void doFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
-        refSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+        refSpecs.add(new RefSpec("+refs/heads/"+branch+":refs/remotes/origin/"+branch+""));
         FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
         if (isShallowCloneSupported(gitImpl, git)) {
             // Reduce network transfer by using shallow clone
@@ -385,6 +395,7 @@ public class CredentialsTest {
     @Issue("JENKINS-50573")
     public void testFetchWithCredentials() throws Exception {
         assumeTrue(testPeriodNotExpired());
+        assumeFalse(lfsSpecificTest);
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
@@ -402,11 +413,11 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
-        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertEquals("Master != HEAD", master, git.withRepository((repo, channel) -> repo.findRef("master").getObjectId()));
+        assertEquals("Wrong branch", "master", git.withRepository((repo, channel) -> repo.getBranch()));
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.getRepository().getConfig(), "origin"));
+        git.prune(new RemoteConfig(git.withRepository((repo, channel) -> repo.getConfig()), "origin"));
     }
 
     @Test
@@ -437,6 +448,31 @@ public class CredentialsTest {
     public void isURIishRemote() throws Exception {
         URIish uri = new URIish(gitRepoURL);
         assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
+    }
+
+    @Test
+    @Issue("JENKINS-45228")
+    public void testLfsMergeWithCredentials() throws Exception {
+        assumeTrue(testPeriodNotExpired());
+        assumeTrue(lfsSpecificTest);
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
+        addCredential();
+
+        /* Fetch with remote name "origin" instead of remote URL */
+        git.setRemoteUrl("origin", gitRepoURL);
+        doFetch("origin", "*", false);
+        ObjectId master = git.getHeadRev(gitRepoURL, "master");
+        git.checkout().branch("master").ref(master.getName()).lfsRemote("origin").deleteBranchIfExist(true).execute();
+        assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
+        assertEquals("Master != HEAD", master, git.getRepository().findRef("master").getObjectId());
+        assertEquals("Wrong branch", "master", git.getRepository().getBranch());
+        assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
+
+        ObjectId modified_lfs = git.getHeadRev(gitRepoURL, "modified_lfs");
+        git.merge().setStrategy(MergeCommand.Strategy.DEFAULT).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(modified_lfs).execute();
+        assertEquals("Fast-forward merge failed. master and modified_lfs should be the same.", git.revParse("HEAD"), modified_lfs);
     }
 
     private boolean isWindows() {

@@ -16,7 +16,7 @@ login fool
 	login
 		jenk
     password
-      slavepwd
+      somepwd
 	 
 machine 6-slv2-p_.example.com	password passwd login builduser
 
