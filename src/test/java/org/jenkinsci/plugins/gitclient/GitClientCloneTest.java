@@ -142,6 +142,7 @@ public class GitClientCloneTest {
         List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
         fetchTimeout = 1 + random.nextInt(24 * 60);
         testGitClient.fetch_().from(new URIish("origin"), refspecs).timeout(fetchTimeout).execute();
+        assertFetchTimeout(testGitClient);
     }
 
     @Test
