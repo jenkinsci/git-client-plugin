@@ -28,6 +28,7 @@ import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -160,7 +161,7 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
         assertFalse("Unexpected shallow clone", workspace.cgit().isShallowRepository());
     }
 
@@ -185,7 +186,7 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "upstream");
         assertBranchesExist(testGitClient.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
     }
 
     @Test
@@ -200,7 +201,7 @@ public class GitClientCloneTest {
         boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowCloneSupport, workspace.cgit().isShallowRepository());
         String shallow = ".git" + File.separator + "shallow";
-        assertEquals("shallow file existence: " + shallow, hasShallowCloneSupport, new File(testGitDir, shallow).exists());
+        assertThat(new File(testGitDir, shallow), is(anExistingFile()));
     }
 
     @Test
@@ -214,7 +215,11 @@ public class GitClientCloneTest {
         boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowCloneSupport, workspace.cgit().isShallowRepository());
         String shallow = ".git" + File.separator + "shallow";
-        assertEquals("shallow file existence: " + shallow, hasShallowCloneSupport, new File(testGitDir, shallow).exists());
+        if (hasShallowCloneSupport) {
+            assertThat(new File(testGitDir, shallow), is(anExistingFile()));
+        } else {
+            assertThat(new File(testGitDir, shallow), is(not(anExistingFile())));
+        }
     }
 
     @Test
@@ -276,7 +281,7 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        TestCase.assertTrue("Alternates file not found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(anExistingFile()));
         final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
         final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
         assertEquals("Alternates file wrong content", expectedContent, actualContent);
@@ -348,7 +353,7 @@ public class GitClientCloneTest {
 
     private void assertAlternatesFileNotFound() {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
     }
 
     private void assertNoObjectsInRepository() {
@@ -367,12 +372,12 @@ public class GitClientCloneTest {
     private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
 
-        TestCase.assertTrue("Alternates file not found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(anExistingFile()));
         final String expectedContent = workspace.localMirror().replace("\\", "/") + "/objects";
         final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
         assertEquals("Alternates file wrong content", expectedContent, actualContent);
         final File alternatesDir = new File(actualContent);
-        TestCase.assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
+        assertThat(alternatesDir, is(anExistingDirectory()));
     }
 
     protected void createRevParseBranch() throws GitException, InterruptedException {
