@@ -4,7 +4,6 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
-import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -25,13 +24,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.stream.Collectors.toList;
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -265,7 +264,7 @@ public class GitClientCloneTest {
         assertNoObjectsInRepository();
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
-        TestCase.assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
+        assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
     }
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
@@ -366,7 +365,7 @@ public class GitClientCloneTest {
         List<String> objectsDir = new ArrayList<>(Arrays.asList(new File(testGitDir, ".git/objects").list()));
         objectsDir.remove("info");
         objectsDir.remove("pack");
-        TestCase.assertTrue("Objects directory must not contain anything but 'info' and 'pack' folders", objectsDir.isEmpty());
+        assertThat(objectsDir, is(empty()));
 
         File packDir = new File(testGitDir, ".git/objects/pack");
         if (packDir.isDirectory()) {
