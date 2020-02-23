@@ -130,6 +130,9 @@ public class GitClientCloneTest {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
         testGitClient.checkout().ref("origin/tests/getSubmodules").execute();
 
+        checkoutTimeout = CliGitAPIImpl.TIMEOUT;
+        assertCheckoutTimeout(testGitClient);
+
         testGitClient.submoduleUpdate().execute();
 
         submoduleUpdateTimeout = CliGitAPIImpl.TIMEOUT;
