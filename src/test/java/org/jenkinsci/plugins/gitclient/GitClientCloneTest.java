@@ -89,6 +89,11 @@ public class GitClientCloneTest {
         workspace = new WorkspaceWithRepoRule(repo, gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
+
+        cloneTimeout = -1;
+        checkoutTimeout = -1;
+        fetchTimeout = -1;
+        submoduleUpdateTimeout = -1;
     }
 
     @Test
@@ -138,14 +143,14 @@ public class GitClientCloneTest {
         testGitClient.init();
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
-        fetchTimeout = 1 + random.nextInt(24 * 60);
+        fetchTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(24 * 60);
         testGitClient.fetch_().from(new URIish("origin"), refspecs).timeout(fetchTimeout).execute();
         assertFetchTimeout(testGitClient);
     }
 
     @Test
     public void test_clone() throws Exception {
-        cloneTimeout = 1 + random.nextInt(60 * 24);
+        cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
         testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin").execute();
         assertCloneTimeout(testGitClient);
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
