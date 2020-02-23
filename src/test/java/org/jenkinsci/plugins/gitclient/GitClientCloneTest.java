@@ -94,7 +94,6 @@ public class GitClientCloneTest {
     }
 
     @Test
-    @NotImplementedInJGit
     public void test_clone_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
@@ -103,7 +102,6 @@ public class GitClientCloneTest {
     }
 
     @Test()
-    @NotImplementedInJGit
     public void test_fetch_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
@@ -114,7 +112,6 @@ public class GitClientCloneTest {
     }
 
     @Test()
-    @NotImplementedInJGit
     public void test_checkout_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
@@ -125,7 +122,6 @@ public class GitClientCloneTest {
     }
 
     @Test()
-    @NotImplementedInJGit
     public void test_submodule_update_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
         testGitClient.checkout().ref("origin/tests/getSubmodules").execute();
