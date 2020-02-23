@@ -3,60 +3,36 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IGitAPI;
-import hudson.plugins.git.IndexEntry;
-import hudson.plugins.git.Revision;
-import java.io.File;
-import java.io.IOException;
-import java.io.FileNotFoundException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
-
+import hudson.plugins.git.*;
 import org.apache.commons.io.FileUtils;
-
 import org.apache.commons.lang.SystemUtils;
+
 import org.eclipse.jgit.api.errors.JGitInternalException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.lib.Constants;
-
-import static org.hamcrest.Matchers.*;
-import org.junit.AfterClass;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import org.jvnet.hudson.test.Issue;
+
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
+import java.util.*;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 /**
  * Git Client tests, intended as an eventual replacement for CliGitAPIImplTest,
@@ -493,6 +469,18 @@ public class GitClientTest {
     }
 
     @Test
+    public void testInit_Bare() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        File tempDir = gitClientTemp.withRepository((repo, channel) -> repo.getDirectory());
+        assertFalse("Missing", tempDir.isDirectory());
+        gitClientTemp.init_().workspace(repoRootTemp.getPath()).bare(true).execute();
+        // Bare git_init contains no working tree file
+        tempDir = gitClientTemp.withRepository((repo, channel) -> repo.getWorkTree());
+        assertFalse(".refs not found", tempDir.isFile());
+    }
+
+    @Test
     public void testInitFailureWindows() throws Exception {
         assumeTrue(isWindows());
         String badDirName = "CON:";
@@ -570,6 +558,204 @@ public class GitClientTest {
         assertFalse(gitClient.isCommitInRepo(upstreamCommit));
     }
 
+    private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
+        String actual = ge.getMessage().toLowerCase();
+        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+    }
+
+    private IGitAPI IGitAPIForTrueBareRepositoryTests() throws IOException, InterruptedException {
+        // provides iGitAPI with bare repository initialization
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL,new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init_().workspace(repoRootTemp.getAbsolutePath()).bare(true).execute();
+        return (IGitAPI) gitClientTemp;
+    }
+
+    @Test
+    @Deprecated
+    public void testIsBareRepositoryBareDot() throws InterruptedException, IOException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        assertTrue(". is not a bare repository", gitAPI.isBareRepository("."));
+    }
+
+    @Test
+    @Deprecated
+    public void testIsBareRepositoryWorkingDotGit() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-dot-git");
+        assertFalse(".git is a bare repository", gitAPI.isBareRepository(".git"));
+    }
+
+    @Test
+    @Deprecated
+    public void testIsBareRepositoryBareDotGit() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        /* Bare repository does not have a .git directory.  This is
+         * another no-such-location test but is included here for
+         * consistency.
+         */
+        try {
+            /* JGit knows that w.igit() has a workspace, and asks the workspace
+             * if it is bare.  That seems more correct than relying on testing
+             * a specific file that the repository is bare.  JGit behaves better
+             * than CliGit in this case.
+             */
+            assertTrue("non-existent .git is in a bare repository", gitAPI.isBareRepository(".git"));
+            /* JGit will not throw an exception - it knows the repo is bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", gitAPI instanceof CliGitAPIImpl);
+        } catch (GitException ge) {
+            /* Only enters this path for CliGit */
+            assertExceptionMessageContains(ge, "not a git repository");
+        }
+    }
+
+    @Test
+    @Deprecated
+    public void testIsBareRepositoryWorkingNoSuchLocation() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-working-no-such-location");
+        try {
+            assertFalse("non-existent location is in a bare repository", gitAPI.isBareRepository("no-such-location"));
+            /* JGit will not throw an exception - it knows the repo is not bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", gitAPI instanceof CliGitAPIImpl);
+        } catch (GitException ge) {
+            /* Only enters this path for CliGit */
+            assertExceptionMessageContains(ge, "not a git repository");
+        }
+    }
+
+    @Test
+    @Deprecated
+    public void testIsBareRepositoryBareNoSuchLocation() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        try {
+            assertTrue("non-existent location is in a bare repository", gitAPI.isBareRepository("no-such-location"));
+            /* JGit will not throw an exception - it knows the repo is not bare */
+            /* CliGit throws an exception so should not reach the next assertion */
+            assertFalse("CliGitAPIImpl did not throw expected exception", gitAPI instanceof CliGitAPIImpl);
+        } catch (GitException ge) {
+            /* Only enters this path for CliGit */
+            assertExceptionMessageContains(ge, "not a git repository");
+        }
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryBareEmptyString() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        assertTrue("empty string is not a bare repository", gitAPI.isBareRepository(""));
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryWorkingEmptyString() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-empty-string");
+        assertFalse("empty string is a bare repository", gitAPI.isBareRepository(""));
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryBareNoArg() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        assertTrue("no arg is not a bare repository", gitAPI.isBareRepository());
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryWorkingNoArg() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-no-arg");
+        assertFalse("no arg is a bare repository", gitAPI.isBareRepository());
+    }
+
+    @Test
+    public void testBareRepoInit() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        File tempDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
+        File gitFile = new File(tempDir,".git");
+        File gitObjFile = new File(tempDir,".git/objects");
+        File objFile = new File(tempDir,"objects");
+        assertFalse(".git exists unexpectedly", gitFile.exists());
+        assertFalse(".git/objects exists unexpectedly", gitObjFile.exists());
+        assertTrue("objects is not a directory", objFile.isDirectory());
+    }
+
+    /* The most critical use cases of isBareRepository respond the
+     * same for both the JGit implementation and the CliGit
+     * implementation.  Those are asserted first in this section of
+     * assertions.
+     */
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryWorkingRepoPathDotGit() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-false-repoPath-dot-git");
+        assertFalse("repoPath/.git is a bare repository", gitAPI.isBareRepository(repoRoot.getPath() + File.separator + ".git"));
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryWorkingNull() throws IOException, InterruptedException {
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
+        IGitAPI gitAPI = (IGitAPI) gitClient;
+        FilePath gitClientFilePath = gitClient.getWorkTree();
+        gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClient.add(".");
+        gitClient.commit("Not-a-bare-repository-working-null");
+        try {
+            assertFalse("null is a bare repository", gitAPI.isBareRepository(null));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertExceptionMessageContains(ge, "not a git repository");
+        }
+    }
+
+    @Deprecated
+    @Test
+    public void testIsBareRepositoryBareNull() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        try {
+            assertTrue("null is not a bare repository", gitAPI.isBareRepository(null));
+            fail("Did not throw expected exception");
+        } catch (GitException ge) {
+            assertExceptionMessageContains(ge, "not a git repository");
+        }
+    }
+
+    @Deprecated
+    @Test
+    public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
+        IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
+        File tempRepoDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
+        File dotFile = new File(tempRepoDir,".");
+        assertTrue("repoPath is not a bare repository", gitAPI.isBareRepository(tempRepoDir.getPath()));
+        assertTrue("abs(.) is not a bare repository",gitAPI.isBareRepository(dotFile.getAbsolutePath()));
+    }
+
     @Test
     public void testGetRemoteUrl() throws Exception {
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
@@ -587,6 +773,70 @@ public class GitClientTest {
         gitClient.addRemoteUrl("upstream", upstreamRepoURL);
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         assertEquals(upstreamRepoURL, gitClient.getRemoteUrl("upstream"));
+    }
+
+    @Test
+    public void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree();
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
+        gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+
+        try ( // add second remote
+              FileRepository repo = new FileRepository(new File(repoRoot, ".git"))) {
+            StoredConfig config = repo.getConfig();
+            config.setString("remote", "upstream", "url", "file://" + repoRootTemp.getPath());
+            config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
+            config.save();
+        }
+
+        // fill both remote branches
+        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+        refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/upstream/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+
+        // checkout will fail
+        try {
+            gitClient.checkout().ref(Constants.MASTER).execute();
+        } catch (GitException e) {
+            // expected
+            Set<String> refNames = gitClient.getRefNames("refs/heads/");
+            assertFalse("RefNames will not contain master", refNames.contains("refs/heads/master"));
+        }
+
+    }
+
+    /**
+     * Test case for auto local branch creation behviour.
+     * This is essentially a stripped down version of {@link GitAPITestCase#test_branchContainingRemote()}
+     * @throws Exception on exceptions occur
+     */
+    @Test
+    public void testCheckoutRemoteAutocreatesLocal() throws Exception {
+        File repoRootTemp = tempFolder.newFolder();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        gitClientTemp.init();
+        FilePath gitClientFilePath = gitClientTemp.getWorkTree();
+        FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
+        gitClientTemp.add(".");
+        gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
+        gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        gitClient.fetch_().from(remote, refspecs).execute();
+        gitClient.checkout().ref(Constants.MASTER).execute();
+
+        Set<String> refNames = gitClient.getRefNames("refs/heads/");
+        assertThat(refNames, contains("refs/heads/master"));
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
