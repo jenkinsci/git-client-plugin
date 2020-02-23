@@ -272,7 +272,7 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_reference_working_repo() throws IOException, InterruptedException {
-        TestCase.assertTrue("SRC_DIR " + SRC_DIR + " has no .git subdir", (new File(SRC_DIR + File.separator + ".git").isDirectory()));
+        assertThat(new File(SRC_DIR + File.separator + ".git"), is(anExistingDirectory()));
         final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
         if (shallowFile.exists()) {
             return; /* Reference repository pointing to a shallow checkout is nonsense */
