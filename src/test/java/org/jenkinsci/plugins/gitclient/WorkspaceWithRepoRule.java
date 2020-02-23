@@ -62,7 +62,7 @@ public class WorkspaceWithRepoRule {
             if (new File(f,"target").exists()) {
                 File clone = new File(f, "target/clone.git");
                 if (!clone.exists()) {  // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    cliGitCommand.run("git", "clone", "--mirror", repoURL, clone.getAbsolutePath());
+                    cliGitCommand.run("clone", "--mirror", repoURL, clone.getAbsolutePath());
                 }
                 return clone.getPath();
             }
