@@ -54,7 +54,6 @@ public class GitClientCloneTest {
 
     private GitClient testGitClient;
     private File testGitDir;
-    private CliGitCommand cliGitCommand;
 
     private int cloneTimeout = -1;
     private int checkoutTimeout = -1;
@@ -90,7 +89,6 @@ public class GitClientCloneTest {
         workspace = new WorkspaceWithRepoRule(repo, gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
-        cliGitCommand = workspace.getCliGitCommand();
     }
 
     @Test
