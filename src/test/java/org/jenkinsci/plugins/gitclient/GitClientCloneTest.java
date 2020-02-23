@@ -28,10 +28,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -163,7 +159,7 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
-        assertFalse("Unexpected shallow clone", workspace.cgit().isShallowRepository());
+        assertThat("Shallow clone", workspace.cgit().isShallowRepository(), is(false));
     }
 
     @Test
@@ -196,7 +192,7 @@ public class GitClientCloneTest {
         assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
         boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertEquals("isShallow?", hasShallowCloneSupport, workspace.cgit().isShallowRepository());
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
         String shallow = ".git" + File.separator + "shallow";
         if (hasShallowCloneSupport) {
             assertThat(new File(testGitDir, shallow), is(anExistingFile()));
@@ -214,7 +210,7 @@ public class GitClientCloneTest {
         assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
         boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertEquals("isShallow?", hasShallowCloneSupport, workspace.cgit().isShallowRepository());
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
         String shallow = ".git" + File.separator + "shallow";
         if (hasShallowCloneSupport) {
             assertThat(new File(testGitDir, shallow), is(anExistingFile()));
@@ -265,7 +261,7 @@ public class GitClientCloneTest {
         assertNoObjectsInRepository();
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
-        assertTrue("Reference repo not logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "));
+        assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
     }
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
@@ -285,7 +281,7 @@ public class GitClientCloneTest {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
         final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
-        assertEquals("Alternates file wrong content", expectedContent, actualContent);
+        assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
     }
@@ -299,7 +295,7 @@ public class GitClientCloneTest {
         anotherWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
             final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
             final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-            assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
+            assertThat("Refspecs vs. original clone", implRefspec, is(realRefspec));
             return null;
         }));
     }
@@ -311,25 +307,25 @@ public class GitClientCloneTest {
                 new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
         );
         testGitClient.clone_().url(workspace.localMirror()).refspecs(refspecs).repositoryName("origin").execute();
-        testGitClient.withRepository((Repository repo, VirtualChannel channel) -> {
-            String[] fetchRefSpecs = repo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-            assertEquals("Expected 2 refspecs", 2, fetchRefSpecs.length);
-            assertEquals("Incorrect refspec 1", "+refs/heads/master:refs/remotes/origin/master", fetchRefSpecs[0]);
-            assertEquals("Incorrect refspec 2", "+refs/heads/1.4.x:refs/remotes/origin/1.4.x", fetchRefSpecs[1]);
+        testGitClient.withRepository((Repository workRepo, VirtualChannel channel) -> {
+            String[] fetchRefSpecs = workRepo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            assertThat(fetchRefSpecs.length, is(2));
+            assertThat(fetchRefSpecs[0], is("+refs/heads/master:refs/remotes/origin/master"));
+            assertThat(fetchRefSpecs[1], is("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
             return null;
         });
         Set<Branch> remoteBranches = testGitClient.getRemoteBranches();
         assertBranchesExist(remoteBranches, "origin/master");
         assertBranchesExist(remoteBranches, "origin/1.4.x");
-        assertEquals(2, remoteBranches.size());
+        assertThat(remoteBranches.size(), is(2));
     }
 
     @Test
     public void test_getRemoteURL_local_clone() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
-        assertEquals("Wrong origin URL", workspace.localMirror(), testGitClient.getRemoteUrl("origin"));
+        assertThat("Origin URL", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
-        assertTrue("remote URL has not been updated", remotes.contains(workspace.localMirror()));
+        assertThat("Remote URL", remotes, containsString(workspace.localMirror()));
     }
 
     @Test
@@ -337,19 +333,19 @@ public class GitClientCloneTest {
         workspace.cloneRepo(workspace, workspace.localMirror());
         String originURL = "https://github.com/jenkinsci/git-client-plugin.git";
         testGitClient.setRemoteUrl("origin", originURL);
-        assertEquals("Wrong origin URL", originURL, testGitClient.getRemoteUrl("origin"));
+        assertThat("Origin URL", testGitClient.getRemoteUrl("origin"), is(originURL));
         String remotes = workspace.launchCommand("git", "remote", "-v");
-        assertTrue("remote URL has not been updated", remotes.contains(originURL));
+        assertThat("Remote URL", remotes, containsString(originURL));
     }
 
     @Test
     public void test_addRemoteUrl_local_clone() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
-        assertEquals("Wrong origin URL before add", workspace.localMirror(), testGitClient.getRemoteUrl("origin"));
+        assertThat("Origin URL before add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
         String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
         testGitClient.addRemoteUrl("upstream", upstreamURL);
-        assertEquals("Wrong upstream URL", upstreamURL, testGitClient.getRemoteUrl("upstream"));
-        assertEquals("Wrong origin URL after add", workspace.localMirror(), testGitClient.getRemoteUrl("origin"));
+        assertThat("Upstream URL", testGitClient.getRemoteUrl("upstream"), is(upstreamURL));
+        assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
     }
 
     private void assertAlternatesFileExists() {
@@ -370,7 +366,7 @@ public class GitClientCloneTest {
 
         File packDir = new File(testGitDir, ".git/objects/pack");
         if (packDir.isDirectory()) {
-            assertEquals("Pack dir must noct contain anything", 0, packDir.list().length);
+            assertThat("Pack directory", packDir.list(), is(emptyArray()));
         }
 
     }
@@ -381,7 +377,7 @@ public class GitClientCloneTest {
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
         final String expectedContent = workspace.localMirror().replace("\\", "/") + "/objects";
         final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
-        assertEquals("Alternates file wrong content", expectedContent, actualContent);
+        assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
     }
@@ -448,13 +444,13 @@ public class GitClientCloneTest {
         assertThat(messages, is(not(empty())));
         assertThat(substringMessages, is(not(empty())));
         assertThat(substringTimeoutMessages, is(not(empty())));
-        assertEquals(substringMessages, substringTimeoutMessages);
+        assertThat("Timeout messages", substringTimeoutMessages, is(substringMessages));
     }
 
     private void check_remote_url(WorkspaceWithRepoRule workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
-        assertEquals("Wrong remote URL", workspace.localMirror(), gitClient.getRemoteUrl(repositoryName));
+        assertThat("Remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
-        assertTrue("remote URL has not been updated", remotes.contains(workspace.localMirror()));
+        assertThat("Updated URL", remotes, containsString(workspace.localMirror()));
     }
 
 }
