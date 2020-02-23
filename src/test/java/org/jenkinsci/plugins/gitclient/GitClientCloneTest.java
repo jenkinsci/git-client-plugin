@@ -154,7 +154,9 @@ public class GitClientCloneTest {
         testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin").execute();
         assertCloneTimeout(testGitClient);
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
-        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        testGitClient.checkout().timeout(checkoutTimeout).ref("origin/master").branch("master").execute();
+        assertCheckoutTimeout(testGitClient);
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
