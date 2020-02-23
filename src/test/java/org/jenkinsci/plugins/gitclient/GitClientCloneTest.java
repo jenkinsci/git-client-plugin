@@ -149,6 +149,7 @@ public class GitClientCloneTest {
     public void test_clone() throws Exception {
         cloneTimeout = 1 + random.nextInt(60 * 24);
         testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin").execute();
+        assertCloneTimeout(testGitClient);
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
