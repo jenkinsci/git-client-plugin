@@ -28,6 +28,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
+import static org.junit.Assert.assertFalse;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -148,6 +149,16 @@ public class GitClientCloneTest {
         assertFetchTimeout(testGitClient);
     }
 
+    /** Clone arguments include:
+     *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
+     *   shallow() - no relevant assertion of success or failure of this argument
+     *   shared() - not implemented on CliGit, not verified on JGit
+     *   reference() - implemented on JGit, not verified on either JGit or CliGit
+     *
+     * CliGit and JGit both require the w.git.checkout() call
+     * otherwise no branch is checked out. That is different than the
+     * command line git program, but consistent within the git API.
+     */
     @Test
     public void test_clone() throws Exception {
         cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
@@ -345,6 +356,21 @@ public class GitClientCloneTest {
         testGitClient.addRemoteUrl("upstream", upstreamURL);
         assertThat("Upstream URL", testGitClient.getRemoteUrl("upstream"), is(upstreamURL));
         assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
+    }
+
+    @Test
+    public void test_clone_no_checkout() throws Exception {
+        // Create a repo for cloning purpose
+        WorkspaceWithRepoRule repoToClone = new WorkspaceWithRepoRule(secondRepo, "git", listener);
+        repoToClone.getGitClient().init();
+        repoToClone.commitEmpty("init");
+        secondRepo.write("file1", "");
+        repoToClone.getGitClient().add("file1");
+        repoToClone.getGitClient().commit("commit1");
+
+        // Clone it with no checkout
+        workspace.getGitClient().clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
+        assertFalse(new File(workspace.getGitFileDir(), "file1").exists());
     }
 
     private void assertAlternatesFileExists() {
