@@ -14,6 +14,7 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -40,6 +41,9 @@ public class GitClientCloneTest {
 
     @Rule
     public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -168,12 +172,9 @@ public class GitClientCloneTest {
         createRevParseBranch();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedbeefbeaded";
-        try {
-            testGitClient.checkout().ref(SHA1).branch("master").execute();
-            fail("Expected checkout exception not thrown");
-        } catch (GitException ge) {
-            assertEquals("Could not checkout master with start point " + SHA1, ge.getMessage());
-        }
+        thrown.expect(GitException.class);
+        thrown.expectMessage(is("Could not checkout master with start point " + SHA1));
+        testGitClient.checkout().ref(SHA1).branch("master").execute();
     }
 
     @Test
