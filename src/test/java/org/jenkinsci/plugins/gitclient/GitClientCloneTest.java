@@ -294,9 +294,9 @@ public class GitClientCloneTest {
     public void test_clone_refspec() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
-        WorkspaceWithRepoRule secondWorkspace = new WorkspaceWithRepoRule(secondRepo, "git", listener);
-        secondWorkspace.launchCommand("git", "clone", secondWorkspace.localMirror(), "./");
-        secondWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> secondWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
+        WorkspaceWithRepoRule anotherWorkspace = new WorkspaceWithRepoRule(secondRepo, "git", listener);
+        anotherWorkspace.launchCommand("git", "clone", anotherWorkspace.localMirror(), "./");
+        anotherWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
             final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
             final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
             assertEquals("Refspec not as git-clone", realRefspec, implRefspec);
