@@ -27,8 +27,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class GitClientFetchTest {
@@ -95,30 +93,30 @@ public class GitClientFetchTest {
         assertThat(remoteBranchesEmpty, is(empty()));
         testGitClient.push("origin", "master");
         ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare != working", commit1, bareCommit1);
-        assertEquals(commit1, bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"));
+        assertThat("bare != working", bareCommit1, is(commit1));
+        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(commit1));
 
         /* Clone new working repo from bare repo */
         newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, gitImplName, TaskListener.NULL);
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
-        assertEquals("bare != newArea", bareCommit1, newAreaHead);
+        assertThat("bare != newArea", newAreaHead, is(bareCommit1));
         Set<Branch> remoteBranches1 = newAreaWorkspace.getGitClient().getRemoteBranches();
         assertThat(getBranchNames(remoteBranches1), hasItems("origin/master"));
-        assertEquals(bareCommit1, newAreaWorkspace.getGitClient().getHeadRev(newAreaWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"));
+        assertThat(newAreaWorkspace.getGitClient().getHeadRev(newAreaWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(bareCommit1));
 
         /* Commit a new change to the original repo */
         workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID().toString());
         testGitClient.add("file2");
         testGitClient.commit("commit2");
         ObjectId commit2 = testGitClient.revParse("HEAD");
-        assertEquals(commit2, testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "refs/heads/master"));
+        assertThat(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "refs/heads/master"), is(commit2));
 
         /* Push the new change to the bare repo */
         testGitClient.push("origin", "master");
         ObjectId bareCommit2 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare2 != working2", commit2, bareCommit2);
-        assertEquals(commit2, bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"));
+        assertThat("bare2 != working2", bareCommit2, is(commit2));
+        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(commit2));
 
         /* Fetch new change into newArea repo */
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
@@ -128,11 +126,11 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs);
 
         /* Confirm the fetch did not alter working branch */
-        assertEquals("beforeMerge != commit1", commit1, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("beforeMerge != commit1", newAreaWorkspace.getGitClient().revParse("HEAD"), is(commit1));
 
         /* Merge the fetch results into working branch */
         newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit2).execute();
-        assertEquals("bare2 != newArea2", bareCommit2, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("bare2 != newArea2", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit2));
 
         /* Commit a new change to the original repo */
         workspace.touch(testGitDir, "file3", "file3 content " + UUID.randomUUID().toString());
@@ -143,7 +141,7 @@ public class GitClientFetchTest {
         /* Push the new change to the bare repo */
         testGitClient.push("origin", "master");
         ObjectId bareCommit3 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare3 != working3", commit3, bareCommit3);
+        assertThat("bare3 != working3", bareCommit3, is(commit3));
 
         /* Fetch new change into newArea repo using different argument forms */
         newAreaWorkspace.getGitClient().fetch(null, defaultRefSpec);
@@ -151,7 +149,7 @@ public class GitClientFetchTest {
 
         /* Merge the fetch results into working branch */
         newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit3).execute();
-        assertEquals("bare3 != newArea3", bareCommit3, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("bare3 != newArea3", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit3));
 
         /* Commit a new change to the original repo */
         workspace.touch(testGitDir, "file4", "file4 content " + UUID.randomUUID().toString());
@@ -162,7 +160,7 @@ public class GitClientFetchTest {
         /* Push the new change to the bare repo */
         testGitClient.push("origin", "master");
         ObjectId bareCommit4 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare4 != working4", commit4, bareCommit4);
+        assertThat("bare4 != working4", bareCommit4, is(commit4));
 
         /* Fetch new change into newArea repo using a different argument form */
         RefSpec[] refSpecArray = {defaultRefSpec, defaultRefSpec};
@@ -170,7 +168,7 @@ public class GitClientFetchTest {
 
         /* Merge the fetch results into working branch */
         newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit4).execute();
-        assertEquals("bare4 != newArea4", bareCommit4, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("bare4 != newArea4", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit4));
 
         /* Commit a new change to the original repo */
         workspace.touch(testGitDir, "file5", "file5 content " + UUID.randomUUID().toString());
@@ -181,13 +179,13 @@ public class GitClientFetchTest {
         /* Push the new change to the bare repo */
         testGitClient.push("origin", "master");
         ObjectId bareCommit5 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare5 != working5", commit5, bareCommit5);
+        assertThat("bare5 != working5", bareCommit5, is(commit5));
 
         /* Fetch into newArea repo with null RefSpec - should only
          * pull tags, not commits in git versions prior to git 1.9.0.
          * In git 1.9.0, fetch -t pulls tags and versions. */
         newAreaWorkspace.getGitClient().fetch("origin", null, null);
-        assertEquals("null refSpec fetch modified local repo", bareCommit4, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("null refSpec fetch modified local repo", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit4));
         ObjectId expectedHead = bareCommit4;
         try {
             /* Assert that change did not arrive in repo if git
@@ -197,20 +195,19 @@ public class GitClientFetchTest {
             // JGit 4.9.0 and later copy the revision, JGit 4.8.0 and earlier did not
             // assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
             if (newAreaWorkspace.getGitClient() instanceof CliGitAPIImpl) {
-                assertTrue("Wrong git version", workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
+                assertThat("Wrong git version", workspace.cgit().isAtLeastVersion(1, 9, 0, 0), is(true));
             }
             expectedHead = bareCommit5;
         } catch (GitException ge) {
-            assertTrue("Wrong cli git message :" + ge.getMessage(),
-                    ge.getMessage().contains("Could not merge") ||
-                            ge.getMessage().contains("not something we can merge") ||
-                            ge.getMessage().contains("does not point to a commit"));
+            assertThat("Wrong cli git message :" + ge.getMessage(), ge.getMessage().contains("Could not merge") ||
+                    ge.getMessage().contains("not something we can merge") ||
+                    ge.getMessage().contains("does not point to a commit"), is(true));
             assertExceptionMessageContains(ge, bareCommit5.name());
         }
         /* Assert that expected change is in repo after merge.  With
          * git 1.7 and 1.8, it should be bareCommit4.  With git 1.9
          * and later, it should be bareCommit5. */
-        assertEquals("null refSpec fetch modified local repo", expectedHead, newAreaWorkspace.getGitClient().revParse("HEAD"));
+        assertThat("null refSpec fetch modified local repo", newAreaWorkspace.getGitClient().revParse("HEAD"), is(expectedHead));
         thrown.expect(GitException.class);
         thrown.expectMessage("invalid-remote-name");
         newAreaWorkspace.getGitClient().fetch("invalid-remote-name");
@@ -244,7 +241,7 @@ public class GitClientFetchTest {
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
         testGitClient.push("origin", "master");
         ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
-        assertEquals("bare != working", commit1, bareCommit1);
+        assertThat("bare != working", bareCommit1, is(commit1));
         assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
@@ -261,7 +258,7 @@ public class GitClientFetchTest {
         /* Push branch named "parent" to bare repo */
         testGitClient.push("origin", "parent");
         ObjectId bareCommit2 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "parent");
-        assertEquals("working parent != bare parent", commit2, bareCommit2);
+        assertThat("working parent != bare parent", bareCommit2, is(commit2));
         assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder("master", "parent"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
@@ -269,20 +266,20 @@ public class GitClientFetchTest {
         newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, TaskListener.NULL);
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
-        assertEquals("bare != newArea", bareCommit1, newAreaHead);
+        assertThat("bare != newArea", newAreaHead, is(bareCommit1));
         Set<Branch> remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/parent", "origin/HEAD"));
 
         /* Checkout parent in new working repo */
         newAreaWorkspace.getGitClient().checkout().ref("origin/parent").branch("parent").execute();
         ObjectId newAreaParent = newAreaWorkspace.getGitClient().revParse("HEAD");
-        assertEquals("parent1 != newAreaParent", commit2, newAreaParent);
+        assertThat("parent1 != newAreaParent", newAreaParent, is(commit2));
 
         /* Delete parent branch from w */
         testGitClient.checkout().ref("master").execute();
         cliGitCommand.run("branch", "-D", "parent");
         assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
-        assertEquals("Wrong branch count", 1, testGitClient.getBranches().size());
+        assertThat("Wrong branch count", testGitClient.getBranches().size(), is(1));
 
         /* Delete parent branch on bare repo*/
         bareWorkspace.launchCommand("git", "branch", "-D", "parent");
@@ -299,7 +296,7 @@ public class GitClientFetchTest {
         /* Push parent/a branch to bare repo */
         testGitClient.push("origin", "parent/a");
         ObjectId bareCommit3 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "parent/a");
-        assertEquals("parent/a != bare", commit3, bareCommit3);
+        assertThat("parent/a != bare", bareCommit3, is(commit3));
         remoteBranches = bareWorkspace.getGitClient().getRemoteBranches();
         assertThat(remoteBranches, is(empty()));
 
@@ -320,7 +317,7 @@ public class GitClientFetchTest {
         thrown.expectMessage("error: cannot lock ref ");
         newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
         newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
-        assertTrue("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl);
+        assertThat("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl, is(true));
 
         /* Use git remote prune origin to remove obsolete branch named "parent" */
         newAreaWorkspace.getGitClient().prune(new RemoteConfig(new Config(), "origin"));
@@ -349,7 +346,7 @@ public class GitClientFetchTest {
         workspace.touch(testGitDir, "file-master", "file master content " + UUID.randomUUID().toString());
         testGitClient.add("file-master");
         testGitClient.commit("master-commit");
-        assertEquals("Wrong branch count", 1, testGitClient.getBranches().size());
+        assertThat("Wrong branch count", testGitClient.getBranches().size(), is(1));
         testGitClient.push("origin", "master"); /* master branch is now on bare repo */
 
         testGitClient.checkout().ref("master").execute();
@@ -411,7 +408,7 @@ public class GitClientFetchTest {
         testGitClient.init();
         cliGitCommand.run("remote", "add", "origin", newAreaWorkspace.getGitFileDir().getAbsolutePath());
         testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.<RefSpec>emptyList());
-        assertTrue(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")));
+        assertThat(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")), is(true));
     }
 
     @Test
@@ -424,9 +421,9 @@ public class GitClientFetchTest {
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
         String shallow = ".git" + File.separator + "shallow";
-        assertEquals("shallow file existence: " + shallow, hasShallowFetchSupport, new File(testGitDir, shallow).exists());
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
     }
 
     @Test
@@ -439,9 +436,9 @@ public class GitClientFetchTest {
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
         String shallow = ".git" + File.separator + "shallow";
-        assertEquals("shallow file existence: " + shallow, hasShallowFetchSupport, new File(testGitDir, shallow).exists());
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
     }
 
     @Test
@@ -452,18 +449,18 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
         Set<String> tags = testGitClient.getTagNames("");
-        assertTrue("Tags have been found : " + tags, tags.isEmpty());
+        assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
 
     private void check_remote_url(WorkspaceWithRepoRule workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
-        assertEquals("Wrong remote URL", workspace.localMirror(), gitClient.getRemoteUrl(repositoryName));
+        assertThat("Wrong remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
-        Assert.assertTrue("remote URL has not been updated", remotes.contains(workspace.localMirror()));
+        assertThat("remote URL has not been updated", remotes.contains(workspace.localMirror()), is(true));
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
-        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+        assertThat("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring), is(true));
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
