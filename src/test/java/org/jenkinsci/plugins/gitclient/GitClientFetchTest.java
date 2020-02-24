@@ -23,12 +23,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static java.util.stream.Collectors.toList;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class GitClientFetchTest {
@@ -422,8 +422,7 @@ public class GitClientFetchTest {
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
+        assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
@@ -438,8 +437,7 @@ public class GitClientFetchTest {
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
+        assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
@@ -478,6 +476,11 @@ public class GitClientFetchTest {
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
         }
+    }
+
+    private void assertAlternatesFileExists(File gitDir) {
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertThat(new File(gitDir, alternates), is(anExistingFile()));
     }
 
 }
