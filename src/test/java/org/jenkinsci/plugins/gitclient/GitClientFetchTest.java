@@ -480,7 +480,7 @@ public class GitClientFetchTest {
 
     private void assertAlternatesFileExists(File gitDir) {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertThat(new File(gitDir, alternates), is(anExistingFile()));
+        assertThat(new File(gitDir, alternates), is(not(anExistingFile())));
     }
 
 }
