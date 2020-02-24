@@ -25,10 +25,10 @@ import java.util.logging.Logger;
 import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
+import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 @RunWith(Parameterized.class)
 public class GitClientFetchTest {
@@ -423,7 +423,7 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
@@ -439,7 +439,7 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, new File(testGitDir, alternates).exists());
+        assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
         assertEquals("isShallow?", hasShallowFetchSupport, workspace.cgit().isShallowRepository());
