@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
@@ -28,7 +29,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class GitClientFetchTest {
@@ -41,6 +41,9 @@ public class GitClientFetchTest {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     WorkspaceWithRepoRule workspace;
     WorkspaceWithRepoRule bareWorkspace;
@@ -208,14 +211,9 @@ public class GitClientFetchTest {
          * git 1.7 and 1.8, it should be bareCommit4.  With git 1.9
          * and later, it should be bareCommit5. */
         assertEquals("null refSpec fetch modified local repo", expectedHead, newAreaWorkspace.getGitClient().revParse("HEAD"));
-
-        try {
-            /* Fetch into newArea repo with invalid repo name and no RefSpec */
-            newAreaWorkspace.getGitClient().fetch("invalid-remote-name");
-            fail("Should have thrown an exception");
-        } catch (GitException ge) {
-            assertExceptionMessageContains(ge, "invalid-remote-name");
-        }
+        thrown.expect(GitException.class);
+        thrown.expectMessage("invalid-remote-name");
+        newAreaWorkspace.getGitClient().fetch("invalid-remote-name");
     }
 
     @Test
@@ -233,14 +231,10 @@ public class GitClientFetchTest {
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Prune when a remote is not yet defined */
-        try {
-            testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
-            fail("Should have thrown an exception");
-        } catch (GitException ge) {
-            String expected = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
-            final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains(expected));
-        }
+        String expected = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
+        thrown.expect(GitException.class);
+        thrown.expectMessage(expected);
+        testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
 
         /* Clone working repo into a bare repo */
         //WorkingArea bare = new WorkingArea();
@@ -312,16 +306,21 @@ public class GitClientFetchTest {
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
-        try {
-            /* Fetch parent/a into newArea repo - fails for
-             * CliGitAPIImpl, succeeds for JGitAPIImpl */
-            newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
-            newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
-            assertTrue("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated") || msg.contains("error: cannot lock ref "));
-        }
+//        try {
+//            /* Fetch parent/a into newArea repo - fails for
+//             * CliGitAPIImpl, succeeds for JGitAPIImpl */
+//            newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+//            newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
+//            assertTrue("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl);
+//        } catch (GitException ge) {
+//            final String msg = ge.getMessage();
+//            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated") || msg.contains("error: cannot lock ref "));
+//        }
+        thrown.expectMessage("some local refs could not be updated");
+        thrown.expectMessage("error: cannot lock ref ");
+        newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+        newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
+        assertTrue("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl);
 
         /* Use git remote prune origin to remove obsolete branch named "parent" */
         newAreaWorkspace.getGitClient().prune(new RemoteConfig(new Config(), "origin"));
