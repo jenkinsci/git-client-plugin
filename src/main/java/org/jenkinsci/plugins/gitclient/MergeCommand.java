@@ -26,6 +26,14 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setMessage(String message);
 
     /**
+     * setTimeout.
+     *
+     * @param timeout the desired timeout for the merge command.
+     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     */
+    MergeCommand setTimeout(String timeout);
+
+    /**
      * setStrategy.
      *
      * @param strategy a {@link org.jenkinsci.plugins.gitclient.MergeCommand.Strategy} object.
