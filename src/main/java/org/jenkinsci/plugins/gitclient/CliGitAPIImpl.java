@@ -2013,6 +2013,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
                 if (proxy != null) {
+                    List<String>listOfConfiguredNoProxyHosts = new ArrayList<String>();
+                    listOfConfiguredNoProxyHosts.add("169.254.169.254");
                     boolean shouldProxy = true;
                     for(Pattern p : proxy.getNoProxyHostPatterns()) {
                         if(p.matcher(url.getHost()).matches()) {
@@ -2034,6 +2036,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
                             env.put("http_proxy", http_proxy.toString());
                             env.put("https_proxy", http_proxy.toString());
+                            env.put("NO_PROXY", String.join(", ",listOfConfiguredNoProxyHosts));
                         } catch (URISyntaxException ex) {
                             throw new GitException("Failed to create http proxy uri", ex);
                         }
