@@ -1943,6 +1943,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     		@NonNull URIish url) throws GitException, InterruptedException {
     	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
     }
+
+    /**
+     * Provides all the no proxy hosts from proxy object
+     * of ProxyConfiguration
+     * @return proxy hosts concatenated by commas
+     */
+    private String getNoProxyHosts(){
+        String noProxyHost = proxy.noProxyHost;
+        List <String> noProxyHosts = Lists.newArrayList(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
+        return String.join(",",noProxyHosts);
+    }
+
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
                                                 @NonNull URIish url,
@@ -2013,8 +2025,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
                 if (proxy != null) {
-                    List<String>listOfConfiguredNoProxyHosts = new ArrayList<String>();
-                    listOfConfiguredNoProxyHosts.add("169.254.169.254");
                     boolean shouldProxy = true;
                     for(Pattern p : proxy.getNoProxyHostPatterns()) {
                         if(p.matcher(url.getHost()).matches()) {
@@ -2036,7 +2046,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
                             env.put("http_proxy", http_proxy.toString());
                             env.put("https_proxy", http_proxy.toString());
-                            env.put("NO_PROXY", String.join(", ",listOfConfiguredNoProxyHosts));
+                            env.put("no_proxy", getNoProxyHosts());
                         } catch (URISyntaxException ex) {
                             throw new GitException("Failed to create http proxy uri", ex);
                         }
