@@ -91,5 +91,3 @@ public class GitClientFetchBenchmark {
         blackhole.consume(fetch);
     }
 }
-
-
