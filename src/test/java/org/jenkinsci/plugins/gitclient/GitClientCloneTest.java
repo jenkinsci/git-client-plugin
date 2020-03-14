@@ -87,7 +87,7 @@ public class GitClientCloneTest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-        workspace = new WorkspaceWithRepoRule(repo, gitImplName, listener);
+        workspace = new WorkspaceWithRepoRule(repo.getRoot(), gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
 
@@ -149,7 +149,7 @@ public class GitClientCloneTest {
         assertFetchTimeout(testGitClient);
     }
 
-    /** Clone arguments include:
+    /* Clone arguments include:
      *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
      *   shallow() - no relevant assertion of success or failure of this argument
      *   shared() - not implemented on CliGit, not verified on JGit
@@ -300,7 +300,7 @@ public class GitClientCloneTest {
     public void test_clone_refspec() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
-        WorkspaceWithRepoRule anotherWorkspace = new WorkspaceWithRepoRule(secondRepo, "git", listener);
+        WorkspaceWithRepoRule anotherWorkspace = new WorkspaceWithRepoRule(secondRepo.getRoot(), "git", listener);
         anotherWorkspace.launchCommand("git", "clone", anotherWorkspace.localMirror(), "./");
         anotherWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
             final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
@@ -361,7 +361,7 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_no_checkout() throws Exception {
         // Create a repo for cloning purpose
-        WorkspaceWithRepoRule repoToClone = new WorkspaceWithRepoRule(secondRepo, "git", listener);
+        WorkspaceWithRepoRule repoToClone = new WorkspaceWithRepoRule(secondRepo.getRoot(), "git", listener);
         repoToClone.getGitClient().init();
         repoToClone.commitEmpty("init");
         secondRepo.write("file1", "");

@@ -33,19 +33,14 @@ public class WorkspaceWithRepoRule {
     protected TaskListener listener;
     private final String repoURL = "https://github.com/jenkinsci/git-client-plugin.git";
 
-    public WorkspaceWithRepoRule(GitClientSampleRepoRule repo, TaskListener listener) throws Exception {
-        createEnv(repo, null, listener);
+    public WorkspaceWithRepoRule(File gitDir, String gitImplName, TaskListener listener) throws Exception {
+        createEnv(gitDir, gitImplName, listener);
         this.listener = listener;
     }
 
-    public WorkspaceWithRepoRule(GitClientSampleRepoRule repo, String gitImplName, TaskListener listener) throws Exception {
-        createEnv(repo, gitImplName, listener);
-        this.listener = listener;
-    }
-
-    private void createEnv(GitClientSampleRepoRule rule, String gitImplName, TaskListener listener) throws Exception {
-        gitClient = setupGitClient(rule.getRoot(), gitImplName, listener);
-        gitFileDir = rule.getRoot();
+    private void createEnv(File gitDir, String gitImplName, TaskListener listener) throws Exception {
+        gitClient = setupGitClient(gitDir, gitImplName, listener);
+        gitFileDir = gitDir;
         cliGitCommand = new CliGitCommand(gitClient);
     }
 
