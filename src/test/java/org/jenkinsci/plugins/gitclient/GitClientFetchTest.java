@@ -24,6 +24,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
 public class GitClientFetchTest {
@@ -184,30 +185,23 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch("origin", null, null);
         assertThat("null refSpec fetch modified local repo", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit4));
         ObjectId expectedHead = bareCommit4;
-        try {
-            /* Assert that change did not arrive in repo if git
-             * command line less than 1.9.  Assert that change arrives in
-             * repo if git command line 1.9 or later. */
+        if (gitImplName.startsWith("jgit") || workspace.cgit().isAtLeastVersion(1, 9, 0, 0)) {
             newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
-            // JGit 4.9.0 and later copy the revision, JGit 4.8.0 and earlier did not
-            // assertTrue("JGit should not have copied the revision", newArea.git instanceof CliGitAPIImpl);
-            if (newAreaWorkspace.getGitClient() instanceof CliGitAPIImpl) {
-                assertThat("Wrong git version", workspace.cgit().isAtLeastVersion(1, 9, 0, 0), is(true));
-            }
             expectedHead = bareCommit5;
-        } catch (GitException ge) {
-            assertThat("Wrong cli git message :" + ge.getMessage(), ge.getMessage().contains("Could not merge") ||
-                    ge.getMessage().contains("not something we can merge") ||
-                    ge.getMessage().contains("does not point to a commit"), is(true));
-            assertExceptionMessageContains(ge, bareCommit5.name());
+        } else {
+            GitException gitException = assertThrows(GitException.class, () -> {
+                newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
+            });
+            assertThat(gitException.getMessage(), anyOf(
+                    containsString("Could not merge"),
+                    containsString("not something we can merge"),
+                    containsString("does not point to a commit")
+            ));
         }
         /* Assert that expected change is in repo after merge.  With
          * git 1.7 and 1.8, it should be bareCommit4.  With git 1.9
          * and later, it should be bareCommit5. */
         assertThat("null refSpec fetch modified local repo", newAreaWorkspace.getGitClient().revParse("HEAD"), is(expectedHead));
-        thrown.expect(GitException.class);
-        thrown.expectMessage("invalid-remote-name");
-        newAreaWorkspace.getGitClient().fetch("invalid-remote-name");
     }
 
     @Test
