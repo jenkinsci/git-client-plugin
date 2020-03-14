@@ -25,7 +25,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 
-public class WorkspaceWithRepoRule {
+public class WorkspaceWithRepo {
 
     private GitClient gitClient;
     private File gitFileDir;
@@ -33,7 +33,7 @@ public class WorkspaceWithRepoRule {
     protected TaskListener listener;
     private final String repoURL = "https://github.com/jenkinsci/git-client-plugin.git";
 
-    public WorkspaceWithRepoRule(File gitDir, String gitImplName, TaskListener listener) throws Exception {
+    public WorkspaceWithRepo(File gitDir, String gitImplName, TaskListener listener) throws Exception {
         createEnv(gitDir, gitImplName, listener);
         this.listener = listener;
     }
@@ -87,7 +87,7 @@ public class WorkspaceWithRepoRule {
         gitClient.init_().workspace(gitFileDir.getAbsolutePath()).bare(bare).execute();
     }
 
-    void cloneRepo(WorkspaceWithRepoRule workspace, String src) throws Exception {
+    void cloneRepo(WorkspaceWithRepo workspace, String src) throws Exception {
         workspace.launchCommand("git", "clone", src, workspace.getGitFileDir().getAbsolutePath());
     }
 

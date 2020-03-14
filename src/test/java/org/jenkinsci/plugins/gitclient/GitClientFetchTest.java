@@ -41,9 +41,9 @@ public class GitClientFetchTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    WorkspaceWithRepoRule workspace;
-    WorkspaceWithRepoRule bareWorkspace;
-    WorkspaceWithRepoRule newAreaWorkspace;
+    WorkspaceWithRepo workspace;
+    WorkspaceWithRepo bareWorkspace;
+    WorkspaceWithRepo newAreaWorkspace;
 
     private GitClient testGitClient;
     private File testGitDir;
@@ -67,7 +67,7 @@ public class GitClientFetchTest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        workspace = new WorkspaceWithRepoRule(repo, gitImplName, TaskListener.NULL);
+        workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, TaskListener.NULL);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
@@ -84,7 +84,7 @@ public class GitClientFetchTest {
         ObjectId commit1 = testGitClient.revParse("HEAD");
 
         /* Clone working repo into a bare repo */
-        bareWorkspace = new WorkspaceWithRepoRule(secondRepo, gitImplName, TaskListener.NULL);
+        bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
         Set<Branch> remoteBranchesEmpty = testGitClient.getRemoteBranches();
@@ -95,7 +95,7 @@ public class GitClientFetchTest {
         assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(commit1));
 
         /* Clone new working repo from bare repo */
-        newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, gitImplName, TaskListener.NULL);
+        newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         assertThat("bare != newArea", newAreaHead, is(bareCommit1));
@@ -225,8 +225,7 @@ public class GitClientFetchTest {
         testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
 
         /* Clone working repo into a bare repo */
-        //WorkingArea bare = new WorkingArea();
-        bareWorkspace = new WorkspaceWithRepoRule(secondRepo, gitImplName, TaskListener.NULL);
+        bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         //bare.init(true);
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
@@ -254,7 +253,7 @@ public class GitClientFetchTest {
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Clone new working repo from bare repo */
-        newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, TaskListener.NULL);
+        newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         assertThat("bare != newArea", newAreaHead, is(bareCommit1));
@@ -339,7 +338,7 @@ public class GitClientFetchTest {
     @Test
     @Issue("JENKINS-26197")
     public void test_fetch_with_prune() throws Exception {
-        bareWorkspace = new WorkspaceWithRepoRule(secondRepo, TaskListener.NULL);
+        bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         /* Create a working repo containing three branches */
         /* master -> branch1 */
@@ -370,7 +369,7 @@ public class GitClientFetchTest {
         testGitClient.push("origin", "branch2"); /* branch2 is now on bare repo */
 
         /* Clone new working repo from bare repo */
-        newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, TaskListener.NULL);
+        newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         Set<Branch> remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
@@ -403,7 +402,7 @@ public class GitClientFetchTest {
 
     @Test
     public void test_fetch_from_url() throws Exception {
-        newAreaWorkspace = new WorkspaceWithRepoRule(thirdRepo, gitImplName, TaskListener.NULL);
+        newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.getGitClient().init();
         newAreaWorkspace.launchCommand("git", "commit", "--allow-empty", "-m", "init");
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
@@ -455,7 +454,7 @@ public class GitClientFetchTest {
         assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
 
-    private void check_remote_url(WorkspaceWithRepoRule workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
+    private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
         assertThat("Wrong remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("remote URL has not been updated", remotes.contains(workspace.localMirror()), is(true));

@@ -50,8 +50,8 @@ public class GitClientCloneTest {
     private TaskListener listener;
     private final String gitImplName;
 
-    WorkspaceWithRepoRule workspace;
-    WorkspaceWithRepoRule secondWorkspace;
+    WorkspaceWithRepo workspace;
+    WorkspaceWithRepo secondWorkspace;
 
     private GitClient testGitClient;
     private File testGitDir;
@@ -87,7 +87,7 @@ public class GitClientCloneTest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-        workspace = new WorkspaceWithRepoRule(repo.getRoot(), gitImplName, listener);
+        workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
 
@@ -300,7 +300,7 @@ public class GitClientCloneTest {
     public void test_clone_refspec() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
 
-        WorkspaceWithRepoRule anotherWorkspace = new WorkspaceWithRepoRule(secondRepo.getRoot(), "git", listener);
+        WorkspaceWithRepo anotherWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
         anotherWorkspace.launchCommand("git", "clone", anotherWorkspace.localMirror(), "./");
         anotherWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
             final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
@@ -361,7 +361,7 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_no_checkout() throws Exception {
         // Create a repo for cloning purpose
-        WorkspaceWithRepoRule repoToClone = new WorkspaceWithRepoRule(secondRepo.getRoot(), "git", listener);
+        WorkspaceWithRepo repoToClone = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
         repoToClone.getGitClient().init();
         repoToClone.commitEmpty("init");
         secondRepo.write("file1", "");
@@ -472,7 +472,7 @@ public class GitClientCloneTest {
         assertThat("Timeout messages", substringTimeoutMessages, is(substringMessages));
     }
 
-    private void check_remote_url(WorkspaceWithRepoRule workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
+    private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
         assertThat("Remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("Updated URL", remotes, containsString(workspace.localMirror()));
