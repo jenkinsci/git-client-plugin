@@ -323,6 +323,18 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).execute();
     }
 
+    @Test
+    public void test_prune_without_remote() throws Exception {
+        /* Create an empty working repo */
+        testGitClient.init();
+        /* Prune when a remote is not yet defined */
+        String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
+        GitException gitException = assertThrows(GitException.class, () -> {
+            testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
+        });
+        assertThat(gitException.getMessage(), containsString(expectedMessage));
+    }
+
     /**
      * JGit 3.3.0 thru 4.5.4 "prune during fetch" prunes more remote
      * branches than command line git prunes during fetch.  JGit 5.0.2
