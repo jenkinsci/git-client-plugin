@@ -215,9 +215,7 @@ public class GitClientFetchTest {
     public void test_fetch_needs_preceding_prune() throws Exception {
         /* Create a working repo containing a commit */
         testGitClient.init();
-        //w.init();
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
-        //w.touch("file1", "file1 content " + java.util.UUID.randomUUID().toString());
         testGitClient.add("file1");
         testGitClient.commit("commit1");
         ObjectId commit1 = testGitClient.revParse("HEAD");
@@ -227,7 +225,6 @@ public class GitClientFetchTest {
         /* Clone working repo into a bare repo */
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
-        //bare.init(true);
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
         testGitClient.push("origin", "master");
         ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
@@ -265,7 +262,7 @@ public class GitClientFetchTest {
         ObjectId newAreaParent = newAreaWorkspace.getGitClient().revParse("HEAD");
         assertThat("parent1 != newAreaParent", newAreaParent, is(commit2));
 
-        /* Delete parent branch from w */
+        /* Delete parent branch from testGitClient */
         testGitClient.checkout().ref("master").execute();
         cliGitCommand.run("branch", "-D", "parent");
         assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
