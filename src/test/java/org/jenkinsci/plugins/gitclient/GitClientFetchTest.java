@@ -287,21 +287,21 @@ public class GitClientFetchTest {
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
-//        try {
-//            /* Fetch parent/a into newArea repo - fails for
-//             * CliGitAPIImpl, succeeds for JGitAPIImpl */
-//            newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
-//            newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
-//            assertTrue("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl);
-//        } catch (GitException ge) {
-//            final String msg = ge.getMessage();
-//            assertTrue("Wrong exception: " + msg, msg.contains("some local refs could not be updated") || msg.contains("error: cannot lock ref "));
-//        }
-        thrown.expectMessage("some local refs could not be updated");
-        thrown.expectMessage("error: cannot lock ref ");
-        newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
-        newAreaWorkspace.getGitClient().fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), refSpecs);
-        assertThat("CliGit should have thrown an exception", newAreaWorkspace.getGitClient() instanceof JGitAPIImpl, is(true));
+        try {
+            /* Fetch parent/a into newArea repo - fails for
+             * CliGitAPIImpl, succeeds for JGitAPIImpl */
+            newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+            newAreaWorkspace.getGitClient().fetch(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs);
+            assertThat("CliGit did not throw an expected exception", newAreaWorkspace.getGitClient(), instanceOf(JGitAPIImpl.class));
+        } catch (GitException ge) {
+            final String msg = ge.getMessage();
+            assertThat("Wrong exception: " + msg, msg,
+                    anyOf(
+                            containsString("some local refs could not be updated"),
+                            containsString("error: cannot lock ref ")
+                    )
+            );
+        }
 
         /* Use git remote prune origin to remove obsolete branch named "parent" */
         newAreaWorkspace.getGitClient().prune(new RemoteConfig(new Config(), "origin"));
