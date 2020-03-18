@@ -35,7 +35,6 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
-import static org.junit.Assert.assertFalse;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -117,7 +116,11 @@ public class GitClientCloneTest {
     @Test
     public void test_clone() throws Exception {
         cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
-        testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin").execute();
+        CloneCommand cmd = testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin");
+        if (random.nextBoolean()) {
+            cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
+        }
+        cmd.execute();
         assertSubstringTimeout(testGitClient, "git fetch", cloneTimeout);
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
@@ -129,7 +132,11 @@ public class GitClientCloneTest {
 
     @Test
     public void test_checkout_exception() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin");
+        if (random.nextBoolean()) {
+            cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
+        }
+        cmd.execute();
         createRevParseBranch();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedbeefbeaded";
@@ -140,7 +147,11 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_repositoryName() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("upstream").execute();
+        CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("upstream");
+        if (random.nextBoolean()) {
+            cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
+        }
+        cmd.execute();
         testGitClient.checkout().ref("upstream/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "upstream");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -149,7 +160,11 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_shallow() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shallow(true).execute();
+        CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shallow(true);
+        if (random.nextBoolean()) {
+            cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
+        }
+        cmd.execute();
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
@@ -311,22 +326,6 @@ public class GitClientCloneTest {
         testGitClient.addRemoteUrl("upstream", upstreamURL);
         assertThat("Upstream URL", testGitClient.getRemoteUrl("upstream"), is(upstreamURL));
         assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
-    }
-
-    @Test
-    @Deprecated // noCheckout() is a no-op - this test is a waste of time
-    public void test_clone_no_checkout() throws Exception {
-        // Create a repo for cloning purpose
-        WorkspaceWithRepo repoToClone = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
-        repoToClone.getGitClient().init();
-        repoToClone.commitEmpty("init");
-        secondRepo.write("file1", "");
-        repoToClone.getGitClient().add("file1");
-        repoToClone.getGitClient().commit("commit1");
-
-        // Clone it with no checkout
-        workspace.getGitClient().clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
-        assertThat(new File(workspace.getGitFileDir(), "file1"), is(aReadableFile()));
     }
 
     private void assertAlternatesFileExists() {
