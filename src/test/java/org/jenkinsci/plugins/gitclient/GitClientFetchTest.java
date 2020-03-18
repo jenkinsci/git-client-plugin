@@ -218,12 +218,6 @@ public class GitClientFetchTest {
         assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
-        /* Prune when a remote is not yet defined */
-        String expected = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
-        thrown.expect(GitException.class);
-        thrown.expectMessage(expected);
-        testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
-
         /* Clone working repo into a bare repo */
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
