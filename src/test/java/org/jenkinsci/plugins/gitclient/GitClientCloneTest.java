@@ -14,7 +14,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -35,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
+import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -44,9 +44,6 @@ public class GitClientCloneTest {
 
     @Rule
     public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -139,10 +136,11 @@ public class GitClientCloneTest {
         cmd.execute();
         createRevParseBranch();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
-        final String SHA1 = "feedbeefbeaded";
-        thrown.expect(GitException.class);
-        thrown.expectMessage(is("Could not checkout master with start point " + SHA1));
-        testGitClient.checkout().ref(SHA1).branch("master").execute();
+        final String SHA1 = "feedabeefabeadeddeedaccede";
+        GitException gitException = assertThrows(GitException.class, () -> {
+            testGitClient.checkout().ref(SHA1).branch("master").execute();
+        });
+        assertThat(gitException.getMessage(), is("Could not checkout master with start point " + SHA1));
     }
 
     @Test
