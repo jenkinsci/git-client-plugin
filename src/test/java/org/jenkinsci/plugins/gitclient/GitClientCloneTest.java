@@ -104,58 +104,6 @@ public class GitClientCloneTest {
         submoduleUpdateTimeout = -1;
     }
 
-    @Test
-    public void test_clone_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-
-        cloneTimeout = CliGitAPIImpl.TIMEOUT;
-        assertCloneTimeout(testGitClient);
-    }
-
-    @Test()
-    public void test_fetch_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-
-        testGitClient.fetch_().from(new URIish("origin"), null).execute();
-
-        fetchTimeout = CliGitAPIImpl.TIMEOUT;
-        assertFetchTimeout(testGitClient);
-    }
-
-    @Test()
-    public void test_checkout_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-
-        testGitClient.checkout().ref("origin/master").execute();
-
-        checkoutTimeout = CliGitAPIImpl.TIMEOUT;
-        assertCheckoutTimeout(testGitClient);
-    }
-
-    @Test()
-    public void test_submodule_update_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        testGitClient.checkout().ref("origin/tests/getSubmodules").execute();
-
-        checkoutTimeout = CliGitAPIImpl.TIMEOUT;
-        assertCheckoutTimeout(testGitClient);
-
-        testGitClient.submoduleUpdate().execute();
-
-        submoduleUpdateTimeout = CliGitAPIImpl.TIMEOUT;
-        assertSubmoduleUpdateTimeout(testGitClient);
-    }
-
-    @Test
-    public void test_fetch_timeout() throws Exception {
-        testGitClient.init();
-        testGitClient.setRemoteUrl("origin", workspace.localMirror());
-        List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
-        fetchTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(24 * 60);
-        testGitClient.fetch_().from(new URIish("origin"), refspecs).timeout(fetchTimeout).execute();
-        assertFetchTimeout(testGitClient);
-    }
-
     /* Clone arguments include:
      *   repositoryName(String) - if omitted, CliGit does not set a remote repo name
      *   shallow() - no relevant assertion of success or failure of this argument
@@ -170,7 +118,7 @@ public class GitClientCloneTest {
     public void test_clone() throws Exception {
         cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
         testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin").execute();
-        assertCloneTimeout(testGitClient);
+        assertSubstringTimeout(testGitClient, "git fetch", cloneTimeout);
         createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
@@ -377,7 +325,7 @@ public class GitClientCloneTest {
 
         // Clone it with no checkout
         workspace.getGitClient().clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
-        assertFalse(new File(workspace.getGitFileDir(), "file1").exists());
+        assertThat(new File(workspace.getGitFileDir(), "file1"), is(aReadableFile()));
     }
 
     private void assertAlternatesFileExists() {
@@ -417,31 +365,6 @@ public class GitClientCloneTest {
     protected void createRevParseBranch() throws GitException, InterruptedException {
         revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
         testGitClient.checkout().ref("origin/master").branch(revParseBranchName).execute();
-    }
-
-    protected void assertCloneTimeout(GitClient gitClient) {
-        if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout(gitClient, "git fetch", cloneTimeout);
-        }
-    }
-
-    protected void assertCheckoutTimeout(GitClient gitClient) {
-        if (checkoutTimeout > 0) {
-            assertSubstringTimeout(gitClient, "git checkout", checkoutTimeout);
-        }
-    }
-
-    protected void assertFetchTimeout(GitClient gitClient) {
-        if (fetchTimeout > 0) {
-            assertSubstringTimeout(gitClient, "git fetch", fetchTimeout);
-        }
-    }
-
-    protected void assertSubmoduleUpdateTimeout(GitClient gitClient) {
-        if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout(gitClient, "git submodule update", submoduleUpdateTimeout);
-        }
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
