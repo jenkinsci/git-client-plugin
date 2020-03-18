@@ -314,6 +314,7 @@ public class GitClientCloneTest {
     }
 
     @Test
+    @Deprecated // noCheckout() is a no-op - this test is a waste of time
     public void test_clone_no_checkout() throws Exception {
         // Create a repo for cloning purpose
         WorkspaceWithRepo repoToClone = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
