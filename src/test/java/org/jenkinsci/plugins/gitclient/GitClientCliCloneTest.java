@@ -1,17 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
