@@ -15,6 +15,9 @@ import java.util.logging.Logger;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
+/*
+ * Tests that are specific to command line git.
+ */
 public class GitClientCliCloneTest {
 
     @Rule
