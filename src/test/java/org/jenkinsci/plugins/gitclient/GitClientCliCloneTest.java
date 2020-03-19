@@ -20,7 +20,7 @@ public class GitClientCliCloneTest {
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
-    private Random random = new Random();
+    private final Random random = new Random();
     private LogHandler handler = null;
     private TaskListener listener;
 
