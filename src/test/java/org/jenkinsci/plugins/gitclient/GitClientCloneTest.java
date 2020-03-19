@@ -57,11 +57,6 @@ public class GitClientCloneTest {
     private GitClient testGitClient;
     private File testGitDir;
 
-    private int cloneTimeout = -1;
-    private int checkoutTimeout = -1;
-    private int fetchTimeout = -1;
-    private int submoduleUpdateTimeout = -1;
-
     public GitClientCloneTest(final String gitImplName) {
         this.gitImplName = gitImplName;
     }
@@ -91,11 +86,6 @@ public class GitClientCloneTest {
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
-
-        cloneTimeout = -1;
-        checkoutTimeout = -1;
-        fetchTimeout = -1;
-        submoduleUpdateTimeout = -1;
     }
 
     /* Clone arguments include:
@@ -110,7 +100,7 @@ public class GitClientCloneTest {
      */
     @Test
     public void test_clone() throws Exception {
-        cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
+        int cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
         CloneCommand cmd = testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin");
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
