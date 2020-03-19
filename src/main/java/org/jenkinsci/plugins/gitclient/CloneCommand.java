@@ -115,4 +115,11 @@ public interface CloneCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
      */
     CloneCommand depth(Integer depth);
+
+    /**
+     * For Windows systems with msys, surpass the 260 character limit for a filename by enabling core.longpaths
+     * @param enableLongPath boolean value to set core.longpaths to true in git.config
+     * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     */
+    CloneCommand longPath(boolean enableLongPath);
 }

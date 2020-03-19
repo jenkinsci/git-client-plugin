@@ -647,6 +647,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String origin = "origin";
             private String reference;
             private boolean shallow,shared;
+            private boolean longPath;
             private Integer timeout;
             private boolean tags = true;
             private List<RefSpec> refspecs;
@@ -699,6 +700,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public CloneCommand longPath(boolean longPath) {
+                this.longPath = longPath;
+                return this;
+            }
+
+            @Override
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
@@ -746,6 +753,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
                 init_().workspace(workspace.getAbsolutePath()).execute();
+
+                if (longPath) {
+                    launchCommand("config", "core.longpaths", "true");
+                }
 
                 if (shared) {
                     if (reference == null || reference.isEmpty()) {

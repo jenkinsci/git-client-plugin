@@ -1321,6 +1321,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String reference;
             private Integer timeout;
             private boolean shared;
+            private boolean longPath;
             private boolean tags = true;
             private List<RefSpec> refspecs;
 
@@ -1385,6 +1386,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public CloneCommand longPath(boolean longPath) {
+                this.longPath = longPath;
+                return this;
+            }
+
+            @Override
             public CloneCommand noCheckout() {
                 // this.noCheckout = true; ignored, we never do a checkout
                 return this;
@@ -1425,6 +1432,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     repository = builder.build();
                     repository.create();
+
+                    if (longPath) {
+                        StoredConfig config = repository.getConfig();
+                        config.setString("core", null,"longpaths","true");
+                        config.save();
+                    }
 
                     // the repository builder does not create the alternates file
                     if (reference != null && !reference.isEmpty()) {
