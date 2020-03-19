@@ -89,15 +89,6 @@ public class GitClientCliCloneTest {
     }
 
     @Test
-    public void test_submodule_update_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        testGitClient.checkout().ref("origin/tests/getSubmodules").execute();
-        assertTimeout(testGitClient, "git checkout", CliGitAPIImpl.TIMEOUT);
-        testGitClient.submoduleUpdate().execute();
-        assertTimeout(testGitClient, "git submodule update", CliGitAPIImpl.TIMEOUT);
-    }
-
-    @Test
     public void test_submodule_update_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
