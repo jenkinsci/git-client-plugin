@@ -599,6 +599,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Alternates file found: " + alternates, w.exists(alternates));
     }
 
+    public void test_clone_longPath() throws IOException, InterruptedException
+    {
+        w.git.clone_().url(localMirror()).repositoryName("upstream").longPath(true).execute();
+        assertThat("true", is(getConfigValue(w.repo, "core.longpaths")));
+    }
+
     public void test_clone_shallow() throws Exception
     {
         w.git.clone_().url(localMirror()).repositoryName("origin").shallow(true).execute();
