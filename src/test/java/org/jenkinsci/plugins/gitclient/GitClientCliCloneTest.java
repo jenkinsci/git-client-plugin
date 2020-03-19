@@ -1,8 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.util.StreamTaskListener;
+import java.io.File;
+import java.nio.file.Files;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -30,6 +35,16 @@ public class GitClientCliCloneTest {
     private WorkspaceWithRepo workspace;
 
     private GitClient testGitClient;
+
+    @BeforeClass
+    public static void loadLocalMirror() throws Exception {
+        /* Prime the local mirror cache before other tests run */
+        TaskListener mirrorListener = StreamTaskListener.fromStdout();
+        File tempDir = Files.createTempDirectory("PrimeCliCloneTest").toFile();
+        WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
+        cache.localMirror();
+        Util.deleteRecursive(tempDir);
+    }
 
     @Before
     public void setUpRepositories() throws Exception {

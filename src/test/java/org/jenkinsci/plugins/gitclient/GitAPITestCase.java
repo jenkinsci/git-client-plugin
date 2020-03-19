@@ -61,12 +61,10 @@ import org.apache.commons.lang.SystemUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -75,6 +73,9 @@ import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
 import com.google.common.collect.Collections2;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.StandardCopyOption;
 
 /**
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
@@ -90,7 +91,6 @@ public abstract class GitAPITestCase extends TestCase {
     private int logCount = 0;
     private static final String LOGGING_STARTED = "Logging started";
 
-    private static final String SRC_DIR = (new File(".")).getAbsolutePath();
     private String revParseBranchName = null;
 
     private int checkoutTimeout = -1;
@@ -98,11 +98,6 @@ public abstract class GitAPITestCase extends TestCase {
     private int fetchTimeout = -1;
     private int submoduleUpdateTimeout = -1;
     private final Random random = new Random();
-
-    private void createRevParseBranch() throws GitException, InterruptedException {
-        revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
-        w.git.checkout().ref("origin/master").branch(revParseBranchName).execute();
-    }
 
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
@@ -405,15 +400,47 @@ public abstract class GitAPITestCase extends TestCase {
     protected String localMirror() throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
         for (File f=base; f!=null; f=f.getParentFile()) {
-            if (new File(f,"target").exists()) {
-                File clone = new File(f, "target/clone.git");
-                if (!clone.exists()) {  // TODO: perhaps some kind of quick timestamp-based up-to-date check?
-                    w.launchCommand("git", "clone", "--mirror", "https://github.com/jenkinsci/git-client-plugin.git", clone.getAbsolutePath());
+            File targetDir = new File(f, "target");
+            if (targetDir.exists()) {
+                String cloneDirName = "clone.git";
+                File clone = new File(targetDir, cloneDirName);
+                if (!clone.exists()) {
+                    Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
+                    w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", "https://github.com/jenkinsci/git-client-plugin", tempClonePath.toFile().getAbsolutePath());
+                    if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
+                        renameAndDeleteDir(tempClonePath, cloneDirName);
+                    } else {
+                        Util.deleteRecursive(tempClonePath.toFile());
+                    }
                 }
                 return clone.getPath();
             }
         }
         throw new IllegalStateException();
+    }
+
+    private void renameAndDeleteDir(Path srcDir, String destDirName) {
+        try {
+            // Try an atomic move first
+            Files.move(srcDir, srcDir.resolveSibling(destDirName), StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            // If Atomic move is not supported, try a move, display exception on failure
+            try {
+                Files.move(srcDir, srcDir.resolveSibling(destDirName));
+            } catch (IOException ioe) {
+                Util.displayIOException(ioe, listener);
+            }
+        } catch (FileAlreadyExistsException ignored) {
+            // Intentionally ignore FileAlreadyExists, another thread or process won the race
+        } catch (IOException ioe) {
+            Util.displayIOException(ioe, listener);
+        } finally {
+            try {
+                Util.deleteRecursive(srcDir.toFile());
+            } catch (IOException ioe) {
+                Util.displayIOException(ioe, listener);
+            }
+        }
     }
 
     /* JENKINS-33258 detected many calls to git rev-parse. This checks

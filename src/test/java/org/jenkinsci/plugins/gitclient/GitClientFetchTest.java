@@ -1,14 +1,17 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.util.StreamTaskListener;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -18,11 +21,13 @@ import org.jvnet.hudson.test.Issue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -69,6 +74,21 @@ public class GitClientFetchTest {
 
     public GitClientFetchTest(final String gitImplName) {
         this.gitImplName = gitImplName;
+    }
+
+    @BeforeClass
+    public static void loadLocalMirror() throws Exception {
+        /* Prime the local mirror cache before other tests run */
+        /* Allow 2-5 second delay before priming the cache */
+        /* Allow other tests a better chance to prime the cache */
+        /* 2-5 second delay is small compared to execution time of this test */
+        Random random = new Random();
+        Thread.sleep((2 + random.nextInt(4)) * 1000L); // Wait 2-5 seconds before priming the cache
+        TaskListener mirrorListener = StreamTaskListener.fromStdout();
+        File tempDir = Files.createTempDirectory("PrimeFetchTest").toFile();
+        WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
+        cache.localMirror();
+        Util.deleteRecursive(tempDir);
     }
 
     @Before
