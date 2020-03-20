@@ -68,7 +68,8 @@ public class WorkspaceWithRepo {
     }
 
     /**
-     * Populate the local mirror of the repository.
+     * Populate the local mirror of the git client plugin repository.
+     * Returns path to the local mirror directory.
      *
      * @return path to the local mirrror directory
      * @throws IOException on I/O error
