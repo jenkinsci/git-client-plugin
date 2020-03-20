@@ -395,7 +395,12 @@ public abstract class GitAPITestCase extends TestCase {
     private final String remoteSshURL = "git@github.com:ndeloof/git-client-plugin.git";
 
     /**
-     * Obtains the local mirror of https://github.com/jenkinsci/git-client-plugin.git and return URLish to it.
+     * Populate the local mirror of the git client plugin repository.
+     * Returns path to the local mirror directory.
+     *
+     * @return path to the local mirrror directory
+     * @throws IOException on I/O error
+     * @throws InterruptedException when execption is interrupted
      */
     protected String localMirror() throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
@@ -405,11 +410,41 @@ public abstract class GitAPITestCase extends TestCase {
                 String cloneDirName = "clone.git";
                 File clone = new File(targetDir, cloneDirName);
                 if (!clone.exists()) {
+                    /* Clone to a temporary directory then move the
+                     * temporary directory to the final destination
+                     * directory. The temporary directory prevents
+                     * collision with other tests running in parallel.
+                     * The atomic move after clone completion assures
+                     * that only one of the parallel processes creates
+                     * the final destination directory.
+                     */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
                     w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", "https://github.com/jenkinsci/git-client-plugin", tempClonePath.toFile().getAbsolutePath());
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
+                        /*
+                         * If many unit tests run at the same time and
+                         * are using the localMirror, multiple clones
+                         * will happen.  All but one of the clones
+                         * will be discarded.  The tests reduce the
+                         * likelihood of multiple concurrent clones by
+                         * adding a random delay to the start of
+                         * longer running tests that use the local
+                         * mirror.  The delay was enough in my tests
+                         * to prevent the duplicate clones and the
+                         * resulting discard of the results of the
+                         * clone.
+                         *
+                         * Different processor configurations with
+                         * different performance characteristics may
+                         * still have parallel tests which attempt to
+                         * clone the local mirror concurrently. If
+                         * parallel clones happen, only one of the
+                         * parallel clones will 'win the race'.  The
+                         * deleteRecursive() will discard a clone that
+                         * 'lost the race'.
+                         */
                         Util.deleteRecursive(tempClonePath.toFile());
                     }
                 }
