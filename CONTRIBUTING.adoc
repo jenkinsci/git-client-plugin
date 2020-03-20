@@ -1,13 +1,13 @@
 [[contributing-to-the-git-client-plugin]]
 = Contributing to the Git Client Plugin
 
-The git client plugin implements the https://plugins.jenkins.io/scm-api[Jenkins SCM API].
-Refer to the SCM API documentation for https://github.com/jenkinsci/scm-api-plugin/blob/master/docs/implementation.adoc#naming-your-plugin[plugin naming conventions]
-and for the https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#add-to-core-or-create-extension-plugin[preferred locations of new functionality].
+The git client plugin implements the link:https://plugins.jenkins.io/scm-api[Jenkins SCM API].
+Refer to the SCM API documentation for link:https://github.com/jenkinsci/scm-api-plugin/blob/master/docs/implementation.adoc#naming-your-plugin[plugin naming conventions]
+and for the link:https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#add-to-core-or-create-extension-plugin[preferred locations of new functionality].
 
-Plugin source code is hosted on https://github.com/jenkinsci/git-client-plugin[GitHub].
-New feature proposals and bug fix proposals should be submitted as https://help.github.com/articles/creating-a-pull-request[GitHub pull requests].
-Your pull request will be evaluated by the https://ci.jenkins.io/job/Plugins/job/git-client-plugin/[Jenkins job].
+Plugin source code is hosted on link:https://github.com/jenkinsci/git-client-plugin[GitHub].
+New feature proposals and bug fix proposals should be submitted as link:https://help.github.com/articles/creating-a-pull-request[GitHub pull requests].
+Your pull request will be evaluated by the link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/[Jenkins job].
 
 Before submitting your change, please assure that you've added tests which verify your change.
 There have been many developers involved in the git client plugin and there are many, many users who depend on the git client plugin.
@@ -20,14 +20,14 @@ Please improve code coverage with tests when you submit.
 
 Please don't introduce new spotbugs output.
 
-* `mvn spotbugs:check` to analyze project using https://spotbugs.github.io/[Spotbugs].
+* `mvn spotbugs:check` to analyze project using link:https://spotbugs.github.io/[Spotbugs].
 * `mvn spotbugs:gui` to review Spotbugs report using GUI
 
 Code formatting in the git client plugin varies between files.
 Try to maintain reasonable consistency with the existing files where feasible.
 Please *don't reformat a file* without discussing with the current maintainers.
-There are many closed pull requests with label 'https://github.com/jenkinsci/git-client-plugin/milestone/2?closed=1[Later]' that may develop conflicts due to whitespace changes.
-New code should follow the https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines[SCM API code style guidelines].
+There are many closed pull requests with label 'link:https://github.com/jenkinsci/git-client-plugin/milestone/2?closed=1[Later]' that may develop conflicts due to whitespace changes.
+New code should follow the link:https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines[SCM API code style guidelines].
 
 [[pull-request-review]]
 == Reviewing Pull Requests

@@ -1,4 +1,4 @@
-[[git-client-plugin]]
+[#git-client-plugin]
 = Git Client Plugin
 :toc: macro
 :toc-title:
@@ -9,7 +9,7 @@ link:https://plugins.jenkins.io/git-client[image:https://img.shields.io/jenkins/
 link:https://github.com/jenkinsci/git-client-plugin/releases/latest[image:https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=changelog[GitHub release]]
 link:https://gitter.im/jenkinsci/git-plugin[image:https://badges.gitter.im/jenkinsci/git-plugin.svg[Gitter]]
 
-[[introduction]]
+[#introduction]
 == Introduction
 
 [.float-group]
@@ -29,13 +29,13 @@ It supports username / password credentials and private key credentials using th
 
 toc::[]
 
-[[changelog]]
+[#changelog]
 == Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
 
 Release notes are recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] beginning with git client plugin 2.8.1.
 Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
 
-[[implementations]]
+[#implementations]
 == Implementations
 
 The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the master and on every agent that will use git.
@@ -44,7 +44,7 @@ The command line git implementation is the canonical implementation of the git i
 
 Command line git is *enabled by default* when the git client plugin is installed.
 
-[[jgit]]
+[#jgit]
 === JGit
 
 The git client plugin also includes two optional implementations that use https://www.eclipse.org/jgit/[Eclipse JGit].
@@ -54,14 +54,14 @@ When the JGit implementation is incomplete, the gap is noted in console logs.
 
 JGit is *disabled by default* when the git client plugin is installed.
 
-[[enabling-jgit]]
+[#enabling-jgit]
 === Enabling JGit
 
 Click the "*Add Git*" button in the "*Global Tool Configuration*" section under "*Manage Jenkins*" to add JGit or JGit with Apache HTTP Client as a git implementation.
 
 image::images/enable-jgit.png[Enable JGit or JGit with Apache HTTP Client]
 
-[[jgit-with-apache-http-client]]
+[#jgit-with-apache-http-client]
 === JGit with Apache HTTP Client
 
 The original JGit implementation inside the git client plugin had issues with active directory authentication.
@@ -69,7 +69,7 @@ A workaround was implemented to provide JGit but use Apache HTTP client for auth
 The issue in JGit has now been resolved and delivered in git client plugin releases.
 JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
-[[windows-credentials-manager]]
+[#windows-credentials-manager]
 == Windows Credentials Manager
 
 Git for Windows is able to integrate with the Windows Credentials Manager for secure storage of credentials.
@@ -77,12 +77,12 @@ Windows Credentials Manager works very well for interactive users on the Windows
 Windows Credentials Manager does not work as well for batch processing in the git client plugin.
 It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
 
-[[bug-reports]]
+[#bug-reports]
 == Bug Reports
 
 Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins issue tracker].
 
-[[contributing-to-the-plugin]]
+[#contributing-to-the-plugin]
 == Contributing to the Plugin
 
 Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.
