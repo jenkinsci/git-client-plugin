@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,9 +44,7 @@ public class GitClientCloneTest {
 
     private int logCount = 0;
     private final Random random = new Random();
-    private String revParseBranchName = null;
     private LogHandler handler = null;
-    private static final String LOGGING_STARTED = "Logging started";
     private TaskListener listener;
     private final String gitImplName;
 
@@ -81,7 +78,6 @@ public class GitClientCloneTest {
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
-        listener.getLogger().println(LOGGING_STARTED);
 
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
         testGitClient = workspace.getGitClient();
@@ -107,7 +103,6 @@ public class GitClientCloneTest {
         }
         cmd.execute();
         assertSubstringTimeout(testGitClient, "git fetch", cloneTimeout);
-        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -122,7 +117,6 @@ public class GitClientCloneTest {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
         }
         cmd.execute();
-        createRevParseBranch();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedabeefabeadeddeedaccede";
         GitException gitException = assertThrows(GitException.class, () -> {
@@ -151,7 +145,6 @@ public class GitClientCloneTest {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
         }
         cmd.execute();
-        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -188,7 +181,6 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_shared() throws IOException, InterruptedException {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(true).execute();
-        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -199,7 +191,6 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_null_branch() throws IOException, InterruptedException {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(true).execute();
-        createRevParseBranch();
         testGitClient.checkout().ref("origin/master").branch(null).execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertAlternateFilePointsToLocalMirror();
@@ -209,7 +200,6 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_unshared() throws IOException, InterruptedException {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(false).execute();
-        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -219,7 +209,6 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_reference() throws Exception, IOException, InterruptedException {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror()).execute();
-        createRevParseBranch(); // Verify JENKINS-32258 is fixed
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -346,11 +335,6 @@ public class GitClientCloneTest {
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
-    }
-
-    protected void createRevParseBranch() throws GitException, InterruptedException {
-        revParseBranchName = "rev-parse-branch-" + UUID.randomUUID().toString();
-        testGitClient.checkout().ref("origin/master").branch(revParseBranchName).execute();
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
