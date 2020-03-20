@@ -78,6 +78,12 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.StandardCopyOption;
 
 /**
+ * JUnit 3 based tests inherited by CliGitAPIImplTest, JGitAPIImplTest, and JGitApacheAPIImplTest.
+ * Tests are expected to run in ALL git implementations in the git client plugin.
+ *
+ * Tests in this class are being migrated to JUnit 4 in other classes.
+ * Refer to GitClientTest, GitClientCliTest, GitClientCloneTest, and GitClientFetchTest for examples.
+ *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public abstract class GitAPITestCase extends TestCase {
