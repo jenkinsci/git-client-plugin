@@ -1,6 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
@@ -9,8 +11,11 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
@@ -45,6 +50,19 @@ public class GitClientCliCloneTest {
         testGitClient = workspace.getGitClient();
     }
 
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The checkoutRandomBranch call
+     * creates a branch with a random name. The later assertion checks that
+     * the random branch name is not mentioned in a call to git rev-parse.
+     */
+    private String checkoutRandomBranch() throws GitException, InterruptedException {
+        String branchName = "rev-parse-branch-" + UUID.randomUUID().toString();
+        testGitClient.checkout().ref("origin/master").branch(branchName).execute();
+        Set<String> branchNames = testGitClient.getBranches().stream().map(Branch::getName).collect(Collectors.toSet());
+        assertThat(branchNames, hasItem(branchName));
+        return branchName;
+    }
+
     @Test
     public void test_clone_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
@@ -61,16 +79,20 @@ public class GitClientCliCloneTest {
     @Test
     public void test_fetch_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        testGitClient.fetch_().from(new URIish("origin"), null).execute();
+        String randomBranchName = checkoutRandomBranch();
+        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).execute();
         assertTimeout(testGitClient, "git fetch", CliGitAPIImpl.TIMEOUT);
+        assertRevParseNotCalled(testGitClient, randomBranchName);
     }
 
     @Test
     public void test_fetch_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        testGitClient.fetch_().from(new URIish("origin"), null).timeout(largerTimeout).execute();
+        String randomBranchName = checkoutRandomBranch(); // Check that prune(true) does not call git rev-parse
+        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).timeout(largerTimeout).execute();
         assertTimeout(testGitClient, "git fetch .* origin", largerTimeout);
+        assertRevParseNotCalled(testGitClient, randomBranchName);
     }
 
     @Test
@@ -98,24 +120,41 @@ public class GitClientCliCloneTest {
         assertTimeout(testGitClient, "git submodule update", largerTimeout);
     }
 
-    protected void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
+    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
         List<String> messages = handler.getMessages();
-        List<String> substringMessages = new ArrayList<>();
-        List<String> substringTimeoutMessages = new ArrayList<>();
-        final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
-        final String timeoutRegEx = messageRegEx
-                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
+        List<String> candidateMessages = new ArrayList<>();
+        List<String> matchedMessages = new ArrayList<>();
+        final String messageRegEx = ".*\\b" + candidateSubstring + "\\b.*"; // the expected substring
+        final String timeoutRegEx = messageRegEx + expectedValue + "\\b.*"; // # timeout=<value>
         for (String message : messages) {
             if (message.matches(messageRegEx)) {
-                substringMessages.add(message);
+                candidateMessages.add(message);
             }
             if (message.matches(timeoutRegEx)) {
-                substringTimeoutMessages.add(message);
+                matchedMessages.add(message);
             }
         }
         assertThat("No messages logged", messages, is(not(empty())));
-        assertThat("No messages matched substring '" + substring + "'", substringMessages, is(not(empty())));
-        assertThat("Messages matched substring '" + substring + "', found: " + substringMessages + "\nExpected timeout: " + expectedTimeout, substringTimeoutMessages, is(not(empty())));
-        assertThat("Timeout messages", substringTimeoutMessages, is(substringMessages));
+        if (expectToFindMatch) {
+            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
+        } else {
+            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+        }
+    }
+
+    private void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
+        assertLoggedMessage(gitClient, substring, " [#] timeout=" + expectedTimeout, true);
+    }
+
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The createRevParseBranch call
+     * creates a branch whose name is unknown to the tests. This
+     * checks that the branch name is not mentioned in a call to
+     * git rev-parse.
+     */
+    private void assertRevParseNotCalled(GitClient gitClient, String unexpectedBranchName) {
+        assertLoggedMessage(gitClient, "git rev-parse ", unexpectedBranchName, false);
     }
 }
