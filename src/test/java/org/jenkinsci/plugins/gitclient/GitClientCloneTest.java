@@ -1,9 +1,11 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
+import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -11,6 +13,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +21,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +71,21 @@ public class GitClientCloneTest {
             arguments.add(item);
         }
         return arguments;
+    }
+
+    @BeforeClass
+    public static void loadLocalMirror() throws Exception {
+        /* Prime the local mirror cache before other tests run */
+        /* Allow 3-7 second delay before priming the cache */
+        /* Allow other tests a better chance to prime the cache */
+        /* 3-7 second delay is small compared to execution time of this test */
+        Random random = new Random();
+        Thread.sleep((3 + random.nextInt(5)) * 1000L); // Wait 3-7 seconds before priming the cache
+        TaskListener mirrorListener = StreamTaskListener.fromStdout();
+        File tempDir = Files.createTempDirectory("PrimeCloneTest").toFile();
+        WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
+        cache.localMirror();
+        Util.deleteRecursive(tempDir);
     }
 
     @Before
@@ -226,7 +245,8 @@ public class GitClientCloneTest {
         assertThat(new File(SRC_DIR + File.separator + ".git"), is(anExistingDirectory()));
         final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
         if (shallowFile.exists()) {
-            return; /* Reference repository pointing to a shallow checkout is nonsense */
+            return;
+            /* Reference repository pointing to a shallow checkout is nonsense */
         }
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
