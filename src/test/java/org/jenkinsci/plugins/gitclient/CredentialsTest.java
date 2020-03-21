@@ -84,7 +84,6 @@ public class CredentialsTest {
     private int logCount;
     private LogHandler handler;
     private LogTaskListener listener;
-    private static final String LOGGING_STARTED = "*** Logging started ***";
 
     private final static File HOME_DIR = new File(System.getProperty("user.home"));
     private final static File SSH_DIR = new File(HOME_DIR, ".ssh");
