@@ -46,12 +46,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.ClassRule;
-import org.junit.rules.DisableOnDebug;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
 
 /**
- *
+ * Test authenticated operations with the git implementations.
+ * Uses contents of ~/.ssh/auth-data for parameterized tests.
  * @author Mark Waite
  */
 @RunWith(Parameterized.class)
