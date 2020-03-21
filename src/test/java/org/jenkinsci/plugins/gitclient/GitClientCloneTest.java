@@ -1,32 +1,34 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.Launcher;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
+import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,7 +37,6 @@ import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -71,6 +72,21 @@ public class GitClientCloneTest {
             arguments.add(item);
         }
         return arguments;
+    }
+
+    @BeforeClass
+    public static void loadLocalMirror() throws Exception {
+        /* Prime the local mirror cache before other tests run */
+        /* Allow 3-7 second delay before priming the cache */
+        /* Allow other tests a better chance to prime the cache */
+        /* 3-7 second delay is small compared to execution time of this test */
+        Random random = new Random();
+        Thread.sleep((3 + random.nextInt(5)) * 1000L); // Wait 3-7 seconds before priming the cache
+        TaskListener mirrorListener = StreamTaskListener.fromStdout();
+        File tempDir = Files.createTempDirectory("PrimeCloneTest").toFile();
+        WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
+        cache.localMirror();
+        Util.deleteRecursive(tempDir);
     }
 
     @Before
@@ -230,7 +246,8 @@ public class GitClientCloneTest {
         assertThat(new File(SRC_DIR + File.separator + ".git"), is(anExistingDirectory()));
         final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
         if (shallowFile.exists()) {
-            return; /* Reference repository pointing to a shallow checkout is nonsense */
+            return;
+            /* Reference repository pointing to a shallow checkout is nonsense */
         }
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
@@ -310,16 +327,20 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_longPath() throws IOException, InterruptedException {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").longPath(true).execute();
-        assertThat("true", is(getConfigValue(workspace.getGitFileDir(), "core.longpaths")));
+        CliGitCommand cmd = new CliGitCommand(testGitClient);
+
+        // check if git config contains core.longpaths set as true
+        assertThat((getConfigValue(cmd, "core.longpaths"))[0], is("true"));
     }
 
     @Test
     public void testLongPathWithoutCloneOption() throws Exception {
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('a', 'z').build();
-        String fileName = generator.generate(200);
+        String fileName = generator.generate(230);
 
-        File tempDir = Files.createTempDirectory(fileName).toFile(); // 267 characters
+        File tempDir = Files.createTempDirectory(fileName).toFile();
+        assertThat(tempDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
         if (isWindows()) {
             GitException gitException = assertThrows(GitException.class, () -> {
@@ -328,7 +349,7 @@ public class GitClientCloneTest {
                     cmd.execute();
                 }
             });
-            assertThat(gitException.getMessage().contains("FileName too long"), is(true));
+            assertThat(gitException.getMessage(), containsString("FileName too long"));
         }
     }
 
@@ -336,15 +357,17 @@ public class GitClientCloneTest {
     public void testLongPathWithCloneOption() throws Exception {
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('a', 'z').build();
-        String fileName = generator.generate(200);
+        String fileName = generator.generate(230);
 
-        File tempDir = Files.createTempDirectory(fileName).toFile(); // 267 characters
+        File tempDir = Files.createTempDirectory(fileName).toFile();
+        assertThat(tempDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+
         if (isWindows()) {
             if (workspace.getGitFileDir().renameTo(tempDir)) {
                 CloneCommand cmd = workspace.getGitClient().clone_().url(workspace.localMirror()).repositoryName("origin").longPath(true);
                 cmd.execute();
             }
-            // Test git clone works with a directory of absolute path of 267 chars (>260 chars) with a msysgit
+            // Test git clone works with a directory of absolute path of 260+ chars
             testGitClient.checkout().ref("origin/master").branch("master").execute();
             check_remote_url(workspace, testGitClient, "origin");
             assertBranchesExist(testGitClient.getBranches(), "master");
@@ -355,15 +378,8 @@ public class GitClientCloneTest {
         return File.pathSeparatorChar==';';
     }
 
-    private String getConfigValue(File workingDir, String name) throws IOException, InterruptedException {
-        String[] args = {"git", "config", "--get", name};
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int st = new Launcher.LocalLauncher(listener).launch().pwd(workingDir).cmds(args).stdout(out).join();
-        String result = out.toString();
-        if (st != 0 && result != null && !result.isEmpty()) {
-            fail("git config --get " + name + " failed with result: " + result);
-        }
-        return out.toString().trim();
+    private String[] getConfigValue(CliGitCommand command, String name) throws IOException, InterruptedException {
+        return command.run("config", "--get", name);
     }
 
     private void assertAlternatesFileExists() {
