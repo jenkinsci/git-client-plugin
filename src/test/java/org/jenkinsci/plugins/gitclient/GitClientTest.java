@@ -72,6 +72,7 @@ public class GitClientTest {
 
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_HAS_GIT_LFS;
+    private final boolean CLI_GIT_HAS_GIT_LFS_CONFIGURED;
     private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
@@ -111,6 +112,16 @@ public class GitClientTest {
             gitLFSExists = false;
         }
         CLI_GIT_HAS_GIT_LFS = gitLFSExists;
+
+        boolean gitLFSConfigured;
+        try {
+            // If git-lfs is configured then the smudge filter will not be empty
+            gitLFSConfigured = cliGitClient.launchCommand("config", "filter.lfs.smudge").contains("git-lfs");
+        } catch (GitException exception) {
+            // This is expected when git-lfs is not installed.
+            gitLFSConfigured = false;
+        }
+        CLI_GIT_HAS_GIT_LFS_CONFIGURED = gitLFSConfigured;
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -1131,11 +1142,12 @@ public class GitClientTest {
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
     }
 
-    // If LFS installed and not enabled, checkout content without download
+    // If LFS not installed and not enabled, checkout content without download
     @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
         assumeFalse(CLI_GIT_HAS_GIT_LFS);
+        assumeFalse(CLI_GIT_HAS_GIT_LFS_CONFIGURED); // MinGit on Windows may have git lfs configured but not installed
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
