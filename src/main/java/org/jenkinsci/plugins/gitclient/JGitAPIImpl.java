@@ -43,8 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
@@ -1206,7 +1204,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          */
         @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
                 justification = "Windows git implementation requires specific line termination")
-        void format(RevCommit commit, @Nullable RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
+        void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
             if (parent!=null)
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
             else
