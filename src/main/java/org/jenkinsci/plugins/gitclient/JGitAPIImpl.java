@@ -321,6 +321,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    /* Separate method call for benefit of spotbugs */
+    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Spotbugs and Netbeans disagree on potential for null")
+    private void closeRepo(Repository repo) {
+        if (repo != null) {
+            repo.close();
+        }
+    }
+
     private void doCheckoutWithResetAndRetry(String ref) throws GitException {
         boolean retried = false;
         Repository repo = null;
@@ -375,10 +383,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     .setStartPoint(matchingRemoteBranch).call();
                 return;
             } catch (CheckoutConflictException e) {
-                if (repo != null) {
-                    repo.close(); /* Close and null for immediate reuse */
-                    repo = null;
-                }
+                closeRepo(repo); /* Ready to reuse repo */
                 // "git checkout -f" seems to overwrite local untracked files but git CheckoutCommand doesn't.
                 // see the test case GitAPITestCase.test_localCheckoutConflict. so in this case we manually
                 // clean up the conflicts and try it again
