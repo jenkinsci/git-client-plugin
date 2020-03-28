@@ -1780,7 +1780,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     RefUpdate update = gitRepo.updateRef(r.getName());
                     update.setRefLogMessage("remote branch pruned", false);
                     update.setForceUpdate(true);
-                    Result res = update.delete();
+                    update.delete();
                 }
             }
         } catch (URISyntaxException | IOException e) {
