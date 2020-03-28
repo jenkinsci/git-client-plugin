@@ -2683,12 +2683,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private void interruptThisCheckout() throws InterruptedException {
                 final File indexFile = new File(workspace.getPath() + File.separator
                         + INDEX_LOCK_FILE_PATH);
+                boolean created = false;
                 try {
-                    indexFile.createNewFile();
+                    created = indexFile.createNewFile();
                 } catch (IOException ex) {
                     throw new InterruptedException(ex.getMessage());
                 }
-                throw new InterruptedException(interruptMessage);
+                throw new InterruptedException(created ? interruptMessage : (interruptMessage + " " + INDEX_LOCK_FILE_PATH + " not created"));
             }
 
             @Override
