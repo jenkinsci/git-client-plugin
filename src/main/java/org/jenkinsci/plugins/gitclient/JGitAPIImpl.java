@@ -928,17 +928,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private Repository openDummyRepository() throws IOException {
         final File tempDir = Util.createTempDir();
-        return new FileRepository(tempDir) {
-            @Override
-            public void close() {
-                super.close();
-                try {
-                    Util.deleteRecursive(tempDir);
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-        };
+        return new FileRepositoryImpl(tempDir, tempDir);
     }
 
     /** {@inheritDoc} */
@@ -2836,5 +2826,25 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         return peeledTags;
+    }
+
+    private static class FileRepositoryImpl extends FileRepository {
+
+        private final File tempDir;
+
+        public FileRepositoryImpl(File gitDir, File tempDir) throws IOException {
+            super(gitDir);
+            this.tempDir = tempDir;
+        }
+
+        @Override
+        public void close() {
+            super.close();
+            try {
+                Util.deleteRecursive(tempDir);
+            } catch (IOException e) {
+                // ignore
+            }
+        }
     }
 }
