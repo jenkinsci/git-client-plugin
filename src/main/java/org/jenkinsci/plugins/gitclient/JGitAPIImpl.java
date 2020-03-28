@@ -2564,7 +2564,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * Tracks the depth of each tag as we find them.
              */
             class Candidate {
-                final RevCommit commit;
                 final Ref tag;
                 final RevFlag flag;
 
@@ -2575,7 +2574,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 int depth;
 
                 Candidate(RevCommit commit, Ref tag) {
-                    this.commit = commit;
                     this.tag = tag;
                     this.flag = w.newFlag(tag.getName());
                     // we'll mark all the nodes reachable from this tag accordingly
