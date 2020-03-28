@@ -431,27 +431,40 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     }
 
     public void setHostnameVerifier(final HostnameVerifier hostnameverifier) {
-        this.hostnameverifier = new X509HostnameVerifier() {
-            public boolean verify(String hostname, SSLSession session) {
-                return hostnameverifier.verify(hostname, session);
-            }
+        this.hostnameverifier = new X509HostnameVerifierImpl(hostnameverifier);
+    }
 
-            public void verify(String host, String[] cns, String[] subjectAlts)
-                    throws SSLException {
-                throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host);
-            }
+    private static class X509HostnameVerifierImpl implements X509HostnameVerifier {
 
-            public void verify(String host, X509Certificate cert)
-                    throws SSLException {
-                throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host + " with X.509 certificate");
-            }
+        private final HostnameVerifier hostnameverifier;
 
-            public void verify(String host, SSLSocket ssl) throws IOException {
-                if (!hostnameverifier.verify(host, ssl.getSession())) {
-                    throw new IOException();
-                }
+        public X509HostnameVerifierImpl(HostnameVerifier hostnameverifier) {
+            this.hostnameverifier = hostnameverifier;
+        }
+
+        @Override
+        public boolean verify(String hostname, SSLSession session) {
+            return hostnameverifier.verify(hostname, session);
+        }
+
+        @Override
+        public void verify(String host, String[] cns, String[] subjectAlts)
+                throws SSLException {
+            throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host);
+        }
+
+        @Override
+        public void verify(String host, X509Certificate cert)
+                throws SSLException {
+            throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host + " with X.509 certificate");
+        }
+
+        @Override
+        public void verify(String host, SSLSocket ssl) throws IOException {
+            if (!hostnameverifier.verify(host, ssl.getSession())) {
+                throw new IOException();
             }
-        };
+        }
     }
 
     public void configure(KeyManager[] km, TrustManager[] tm,
