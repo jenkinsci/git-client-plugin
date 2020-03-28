@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -129,7 +130,7 @@ public class Git implements Serializable {
             final Class<?> it = Class.forName(className);
             final Constructor<?> constructor = it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
             return (GitClient)constructor.newInstance(exe, env, f, listener);
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
             throw new RuntimeException("Unable to initialize mock GitClient " + className, e);
         }
     }

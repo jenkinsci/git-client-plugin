@@ -3168,7 +3168,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 tags.add(tag.replaceFirst(".*refs/tags/", ""));
             }
             return tags;
-        } catch (Exception e) {
+        } catch (GitException | IOException | InterruptedException e) {
             throw new GitException("Error retrieving remote tag names", e);
         }
     }
@@ -3190,7 +3190,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 tags.add(tag);
             }
             return tags;
-        } catch (Exception e) {
+        } catch (GitException | IOException | InterruptedException e) {
             throw new GitException("Error retrieving tag names", e);
         }
     }
