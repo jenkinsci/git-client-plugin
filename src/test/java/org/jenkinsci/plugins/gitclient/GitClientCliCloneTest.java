@@ -162,8 +162,8 @@ public class GitClientCliCloneTest {
         File lockFile = new File(workspace.getGitFileDir(), "index.lock");
         boolean created = lockFile.createNewFile();
         assertThat("Lock file creation failed " + lockFile.getAbsolutePath(), created, is(true));
-        assertThat("Lock file", lockFile, is(not(aReadableFile())));
-        Thread.sleep(1500); // Wait 1.5 seconds to "age" the lock file - lock created before checkout
+        assertThat("Lock file", lockFile, is(aReadableFile()));
+        Thread.sleep(1800); // Wait 1.8 seconds to "age" the lock file - lock created before checkout
         String exceptionMsg = "test checkout intentionally interrupted";
         /* Configure next checkout to fail with an exception */
         CliGitAPIImpl cli = workspace.cgit();
