@@ -886,6 +886,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 args.add(fastForwardMode);
+                if (rev == null) {
+                    throw new GitException("MergeCommand requires a revision to merge");
+                }
                 args.add(rev.name());
 
                 /* See JENKINS-45228 */
@@ -2491,6 +2494,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
+                if (remote == null) {
+                    throw new GitException("PushCommand requires a 'remote'");
+                }
                 args.add("push", remote.toPrivateASCIIString());
 
                 if (refspec != null) {
@@ -2969,6 +2975,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 BufferedReader rdr = new BufferedReader(new StringReader(result));
                 String line;
 
+                if (out == null) {
+                    throw new GitException("RevListCommand requires a value for 'to'");
+                }
                 try {
                     while ((line = rdr.readLine()) != null) {
                         // Add the SHA1
