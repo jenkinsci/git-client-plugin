@@ -50,7 +50,7 @@ public class TrileadSession implements RemoteSession {
 
             @Override
             public int waitFor() throws InterruptedException {
-                int r = s.waitForCondition(EXIT_STATUS, timeout * 1000);
+                int r = s.waitForCondition(EXIT_STATUS, timeout * 1000L);
                 if ((r&EXIT_STATUS)!=0)
                     return exitValue();
 
