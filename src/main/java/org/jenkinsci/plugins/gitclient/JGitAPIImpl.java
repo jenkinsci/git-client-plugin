@@ -617,6 +617,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (allRefSpecs.isEmpty() && tags) {
                         allRefSpecs.add(new RefSpec("+refs/tags/*:refs/tags/*"));
                     }
+                    if (url == null) {
+                        throw new GitException("FetchCommand requires a valid repository url in remote config");
+                    }
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
 
@@ -1857,10 +1860,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 try (Repository repo = getRepository()) {
-                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(repo)) : Transport.REFSPEC_PUSH_ALL;
+                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
                     listener.getLogger().println("RefSpec is \""+ref+"\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
+                    if (remote == null) {
+                        throw new GitException("PushCommand requires a remote repository URL");
+                    }
                     config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
                     org.eclipse.jgit.api.PushCommand pc = g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
@@ -1890,9 +1896,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              *
              * @return a (hopefully) fixed refspec string.
              */
-            private String fixRefSpec(Repository repository) throws IOException {
-                int colon = refspec.indexOf(':');
-                String[] specs = new String[]{(colon != -1 ? refspec.substring(0, colon) : refspec).trim(), refspec.substring(colon + 1).trim()};
+            private String fixRefSpec(@NonNull String srcRefspec, Repository repository) throws IOException {
+                int colon = srcRefspec.indexOf(':');
+                String[] specs = new String[]{(colon != -1 ? srcRefspec.substring(0, colon) : srcRefspec).trim(), srcRefspec.substring(colon + 1).trim()};
                 for (int spec = 0; spec < specs.length; spec++) {
                     if (specs[spec].isEmpty() || "HEAD".equalsIgnoreCase(specs[spec])) {
                         switch (spec) {
@@ -1996,6 +2002,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                      RevWalk walk = new RevWalk(or)) {
 
                     if (nowalk) {
+                        if (out == null) {
+                            throw new GitException("RevListCommand requires a 'to' value");
+                        }
                         RevCommit c = walk.parseCommit(repo.resolve(refspec));
                         out.add(c.copy());
 
@@ -2020,6 +2029,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     walk.setRetainBody(false);
                     walk.sort(RevSort.COMMIT_TIME_DESC);
 
+                    if (out == null) {
+                        throw new GitException("RevListCommand requires a 'to' value");
+                    }
                     for (RevCommit c : walk) {
                         out.add(c.copy());
                     }
