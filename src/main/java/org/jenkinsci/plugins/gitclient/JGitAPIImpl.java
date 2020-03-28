@@ -955,6 +955,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     @NonNull
     @Override
     public Repository getRepository() throws GitException {
@@ -1402,6 +1404,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                                justification = "JGit interaction with spotbugs")
+            private RepositoryBuilder newRepositoryBuilder() {
+                RepositoryBuilder builder = new RepositoryBuilder();
+                builder.setGitDir(new File(workspace, Constants.DOT_GIT)).readEnvironment();
+                return builder;
+            }
+
             @Override
             public void execute() throws GitException, InterruptedException {
                 Repository repository = null;
@@ -1414,8 +1424,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // since jgit clone/init commands do not support object references (e.g. alternates),
                     // we build the repository directly using the RepositoryBuilder
 
-                    RepositoryBuilder builder = new RepositoryBuilder();
-                    builder.readEnvironment().setGitDir(new File(workspace, Constants.DOT_GIT));
+                    RepositoryBuilder builder = newRepositoryBuilder();
 
                     if (shared) {
                         if (reference == null || reference.isEmpty()) {
@@ -2728,6 +2737,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     @Deprecated
     @Override
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
@@ -2767,7 +2778,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
+    @SuppressFBWarnings(value = { "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
+                                  "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE" },
+                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
         try (Repository repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
@@ -2785,7 +2798,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
+    @SuppressFBWarnings(value = {"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
+                                 "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"},
+                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
     private StoredConfig getConfig(String GIT_DIR) throws GitException {
         try (Repository repo = isBlank(GIT_DIR) ? getRepository() : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
             return repo.getConfig();
