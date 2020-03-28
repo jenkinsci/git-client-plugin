@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.util.Locale;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
@@ -38,7 +39,7 @@ public interface MergeCommand extends GitCommand {
 
         @Override
         public String toString() {
-            return name().toLowerCase();
+            return name().toLowerCase(Locale.ENGLISH); // Avoid Turkish 'i' conversion
         }
     }
 
@@ -59,7 +60,7 @@ public interface MergeCommand extends GitCommand {
 
         @Override
         public String toString() {
-            return "--"+name().toLowerCase().replace("_","-");
+            return "--"+name().toLowerCase(Locale.ENGLISH).replace("_","-"); // Avoid Turkish 'i' issue
         }
     }
 

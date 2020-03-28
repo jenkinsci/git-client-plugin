@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -2183,7 +2184,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String getPathToExe(String userGitExe) {
-        userGitExe = userGitExe.toLowerCase();
+        userGitExe = userGitExe.toLowerCase(Locale.ENGLISH); // Avoid the Turkish 'i' conversion
 
         String cmd;
         String exe;
