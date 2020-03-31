@@ -64,6 +64,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -885,6 +886,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 args.add(fastForwardMode);
+                if (rev == null) {
+                    throw new GitException("MergeCommand requires a revision to merge");
+                }
                 args.add(rev.name());
 
                 /* See JENKINS-45228 */
@@ -2183,7 +2187,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private String getPathToExe(String userGitExe) {
-        userGitExe = userGitExe.toLowerCase();
+        userGitExe = userGitExe.toLowerCase(Locale.ENGLISH); // Avoid the Turkish 'i' conversion
 
         String cmd;
         String exe;
@@ -2490,6 +2494,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder();
+                if (remote == null) {
+                    throw new GitException("PushCommand requires a 'remote'");
+                }
                 args.add("push", remote.toPrivateASCIIString());
 
                 if (refspec != null) {
@@ -2683,12 +2690,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private void interruptThisCheckout() throws InterruptedException {
                 final File indexFile = new File(workspace.getPath() + File.separator
                         + INDEX_LOCK_FILE_PATH);
+                boolean created = false;
                 try {
-                    indexFile.createNewFile();
+                    created = indexFile.createNewFile();
                 } catch (IOException ex) {
                     throw new InterruptedException(ex.getMessage());
                 }
-                throw new InterruptedException(interruptMessage);
+                throw new InterruptedException(created ? interruptMessage : (interruptMessage + " " + INDEX_LOCK_FILE_PATH + " not created"));
             }
 
             @Override
@@ -2967,6 +2975,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 BufferedReader rdr = new BufferedReader(new StringReader(result));
                 String line;
 
+                if (out == null) {
+                    throw new GitException("RevListCommand requires a value for 'to'");
+                }
                 try {
                     while ((line = rdr.readLine()) != null) {
                         // Add the SHA1
@@ -3115,6 +3126,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     @NonNull
     @Override
     public Repository getRepository() throws GitException {
@@ -3157,7 +3170,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 tags.add(tag.replaceFirst(".*refs/tags/", ""));
             }
             return tags;
-        } catch (Exception e) {
+        } catch (GitException | IOException | InterruptedException e) {
             throw new GitException("Error retrieving remote tag names", e);
         }
     }
@@ -3179,7 +3192,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 tags.add(tag);
             }
             return tags;
-        } catch (Exception e) {
+        } catch (GitException | IOException | InterruptedException e) {
             throw new GitException("Error retrieving tag names", e);
         }
     }
