@@ -337,12 +337,14 @@ public class GitClientCloneTest {
     public void testLongPathWithoutCloneOption() throws Exception {
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('a', 'z').build();
-        String fileName = generator.generate(230);
+        String fileName = generator.generate(133); //230 - current
+        String subDirName = generator.generate(80);
 
         File tempDir = Files.createTempDirectory(fileName).toFile();
-        assertThat(tempDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+        File tempSubDir = new File(tempDir, subDirName);
+        assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
-        WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempDir, gitImplName, listener);
+        WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
         if (isWindows()) {
             GitException gitException = assertThrows(GitException.class, () -> {
@@ -357,12 +359,14 @@ public class GitClientCloneTest {
     public void testLongPathWithCloneOption() throws Exception {
         RandomStringGenerator generator = new RandomStringGenerator.Builder()
                 .withinRange('a', 'z').build();
-        String fileName = generator.generate(230);
+        String fileName = generator.generate(133);
+        String subDirName = generator.generate(80);
 
         File tempDir = Files.createTempDirectory(fileName).toFile();
-        assertThat(tempDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+        File tempSubDir = new File(tempDir, subDirName);
+        assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
-        WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempDir, gitImplName, listener);
+        WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
         if (isWindows()) {
                 CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin").longPath(true);
