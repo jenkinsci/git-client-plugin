@@ -344,10 +344,11 @@ public class GitClientCloneTest {
 
         File tempDir = Files.createTempDirectory(fileName).toFile();
         File tempSubDir = new File(tempDir, subDirName);
-        Path validPath = Paths.get(tempSubDir.getAbsolutePath());
+        Path subDirectory = Paths.get(tempSubDir.getAbsolutePath());
+        Files.createDirectories(subDirectory);
         assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
-        if (Files.isDirectory(validPath)) {
+        if (Files.isDirectory(subDirectory)) {
             WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
             if (isWindows()) {
@@ -369,17 +370,21 @@ public class GitClientCloneTest {
 
         File tempDir = Files.createTempDirectory(fileName).toFile();
         File tempSubDir = new File(tempDir, subDirName);
+        Path subDirectory = Paths.get(tempSubDir.getAbsolutePath());
+        Files.createDirectories(subDirectory);
         assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
         WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
-        if (isWindows()) {
+        if (Files.isDirectory(subDirectory)) {
+            if (isWindows()) {
                 CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin").longPath(true);
                 cmd.execute();
-            // Test git clone works with a directory of absolute path of 260+ chars
-            tempRepo.getGitClient().checkout().ref("origin/master").branch("master").execute();
-            check_remote_url(tempRepo, tempRepo.getGitClient(), "origin");
-            assertBranchesExist(tempRepo.getGitClient().getBranches(), "master");
+                // Test git clone works with a directory of absolute path of 260+ chars
+                tempRepo.getGitClient().checkout().ref("origin/master").branch("master").execute();
+                check_remote_url(tempRepo, tempRepo.getGitClient(), "origin");
+                assertBranchesExist(tempRepo.getGitClient().getBranches(), "master");
+            }
         }
     }
 
