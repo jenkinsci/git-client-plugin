@@ -23,6 +23,8 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -342,16 +344,19 @@ public class GitClientCloneTest {
 
         File tempDir = Files.createTempDirectory(fileName).toFile();
         File tempSubDir = new File(tempDir, subDirName);
+        Path validPath = Paths.get(tempSubDir.getAbsolutePath());
         assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
-        WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
+        if (Files.isDirectory(validPath)) {
+            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
-        if (isWindows()) {
-            GitException gitException = assertThrows(GitException.class, () -> {
+            if (isWindows()) {
+                GitException gitException = assertThrows(GitException.class, () -> {
                     CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin");
                     cmd.execute();
-            });
-            assertThat(gitException.getMessage(), containsString("FileName too long"));
+                });
+                assertThat(gitException.getMessage(), containsString("FileName too long"));
+            }
         }
     }
 
