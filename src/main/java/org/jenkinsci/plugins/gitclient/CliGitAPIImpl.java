@@ -749,14 +749,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("Failed to delete workspace", e);
                 }
 
-                if (longPath) {
-                    launchCommand("config", "core.longpaths", "true");
-                }
-
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
                 init_().workspace(workspace.getAbsolutePath()).execute();
+
+                if (longPath) {
+                    launchCommand("config", "core.longpaths", "true");
+                }
 
                 if (shared) {
                     if (reference == null || reference.isEmpty()) {
