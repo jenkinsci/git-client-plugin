@@ -8,6 +8,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.text.RandomStringGenerator;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -22,6 +23,8 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -321,6 +324,76 @@ public class GitClientCloneTest {
         testGitClient.addRemoteUrl("upstream", upstreamURL);
         assertThat("Upstream URL", testGitClient.getRemoteUrl("upstream"), is(upstreamURL));
         assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
+    }
+
+    @Test
+    public void test_clone_longPath() throws IOException, InterruptedException {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").longPath(true).execute();
+        CliGitCommand cmd = new CliGitCommand(testGitClient);
+
+        // check if git config contains core.longpaths set as true
+        assertThat((getConfigValue(cmd, "core.longpaths"))[0], is("true"));
+    }
+
+    @Test
+    public void testLongPathWithoutCloneOption() throws Exception {
+        RandomStringGenerator generator = new RandomStringGenerator.Builder()
+                .withinRange('a', 'z').build();
+        String fileName = generator.generate(133); //230 - current
+        String subDirName = generator.generate(80);
+
+        File tempDir = Files.createTempDirectory(fileName).toFile();
+        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
+        subDirectory = Files.createDirectories(subDirectory);
+        File subDir = subDirectory.toFile();
+        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+
+        if (Files.isDirectory(subDirectory)) {
+            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
+
+            if (isWindows()) {
+                GitException gitException = assertThrows(GitException.class, () -> {
+                    CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin");
+                    cmd.execute();
+                });
+                assertThat(gitException.getMessage(), containsString("Filename too long"));
+            }
+        }
+    }
+
+    @Test
+    public void testLongPathWithCloneOption() throws Exception {
+        RandomStringGenerator generator = new RandomStringGenerator.Builder()
+                .withinRange('a', 'z').build();
+        String fileName = generator.generate(133);
+        String subDirName = generator.generate(80);
+
+        File tempDir = Files.createTempDirectory(fileName).toFile();
+        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
+        subDirectory = Files.createDirectories(subDirectory);
+        File subDir = subDirectory.toFile();
+        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+
+        if (Files.isDirectory(subDirectory)) {
+            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
+
+            if (isWindows()) {
+                CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin").longPath(true);
+                cmd.execute();
+                // Test git clone works with a directory of absolute path of 260+ chars
+                tempRepo.getGitClient().checkout().ref("origin/master").branch("master").execute();
+                check_remote_url(tempRepo, tempRepo.getGitClient(), "origin");
+                assertBranchesExist(tempRepo.getGitClient().getBranches(), "master");
+            }
+        }
+    }
+
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
+    }
+
+    private String[] getConfigValue(CliGitCommand command, String name) throws IOException, InterruptedException {
+        return command.run("config", "--get", name);
     }
 
     private void assertAlternatesFileExists() {
