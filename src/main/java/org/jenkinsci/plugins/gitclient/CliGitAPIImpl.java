@@ -648,6 +648,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String origin = "origin";
             private String reference;
             private boolean shallow,shared;
+            private boolean longPath;
             private Integer timeout;
             private boolean tags = true;
             private List<RefSpec> refspecs;
@@ -700,6 +701,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public CloneCommand longPath(boolean longPath) {
+                this.longPath = longPath;
+                return this;
+            }
+
+            @Override
             public CloneCommand reference(String reference) {
                 this.reference = reference;
                 return this;
@@ -741,6 +748,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (Exception e) {
                     e.printStackTrace(listener.error("Failed to clean the workspace"));
                     throw new GitException("Failed to delete workspace", e);
+                }
+
+                if (longPath) {
+                    launchCommand("config", "--global", "core.longpaths", "true");
                 }
 
                 // we don't run a 'git clone' command but git init + git fetch
