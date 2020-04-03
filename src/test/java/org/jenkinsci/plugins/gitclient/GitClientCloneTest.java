@@ -349,6 +349,10 @@ public class GitClientCloneTest {
         assertThat(tempSubDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
 
         if (Files.isDirectory(subDirectory)) {
+            File[] files = subDirectory.toFile().listFiles();
+        }
+
+        if (Files.isDirectory(subDirectory)) {
             WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(tempSubDir, gitImplName, listener);
 
             if (isWindows()) {
