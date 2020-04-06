@@ -100,6 +100,11 @@
           <groupId>com.jcraft</groupId>
           <artifactId>jzlib</artifactId>
         </exclusion>
+        <exclusion>
+          <!-- Provided by Jenkins core -->
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency><!-- Include jgit http server so that git-userContent and other
