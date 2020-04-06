@@ -44,6 +44,7 @@ import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -71,6 +72,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.stream.Collectors;
 
 
 /**
@@ -2817,28 +2819,62 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), "UTF-8"))) {
-		    for(String path : paths) {
-			writer.println(path);
-		    }
-                } catch (IOException ex){
-                    throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), ex);
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
+                    for (String path : paths) {
+                        writer.println(path);
+                    }
+                } catch (IOException e) {
+                    throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
+                }
+
+                if (lfsRemote != null) {
+                    // Currently git-lfs doesn't support commas in "fetchinclude" and "fetchexclude".
+                    // (see https://github.com/git-lfs/git-lfs/issues/2264)
+                    // Therefore selective fetching is disabled in this case.
+                    if (paths.stream().anyMatch(path -> path.contains(","))) {
+                        setLfsFetchOption("lfs.fetchinclude", "");
+                        setLfsFetchOption("lfs.fetchexclude", "");
+                    } else {
+                        String lfsIncludePaths = paths.stream()
+                                .filter(path -> !path.startsWith("!"))
+                                .collect(Collectors.joining(","));
+
+                        String lfsExcludePaths = paths.stream()
+                                .filter(path -> path.startsWith("!"))
+                                .map(path -> path.substring(1))
+                                .collect(Collectors.joining(","));
+
+                        setLfsFetchOption("lfs.fetchinclude", lfsIncludePaths);
+                        setLfsFetchOption("lfs.fetchexclude", lfsExcludePaths);
+                    }
                 }
 
                 try {
                     launchCommand( "read-tree", "-mu", "HEAD" );
-                } catch (GitException ge) {
-                    // Normal return code if sparse checkout path has never exist on the current checkout branch
-                    String normalReturnCode = "128";
-                    if(ge.getMessage().contains(normalReturnCode)) {
-                        listener.getLogger().println(ge.getMessage());
-                    } else {
-                        throw ge;
+                } catch (GitException e) {
+                    // normal return code if sparse checkout path did never exist on the current checkout branch
+                    if (!e.getMessage().contains("returned status code 128:")) {
+                        throw e;
                     }
                 }
 
                 if(deactivatingSparseCheckout) {
                     launchCommand( "config", "core.sparsecheckout", "false" );
+                }
+            }
+
+            private void setLfsFetchOption(String key, String value) throws GitException, InterruptedException {
+                if (value.isEmpty() || value.equals("/*")) {
+                    try {
+                        launchCommand("config", "--unset", key);
+                    } catch (GitException e) {
+                        // normal return code if the option was not set before
+                        if (!e.getMessage().contains("returned status code 5:")) {
+                            throw e;
+                        }
+                    }
+                } else {
+                    launchCommand("config", key, value);
                 }
             }
         };
