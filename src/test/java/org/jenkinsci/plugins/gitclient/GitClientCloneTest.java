@@ -335,58 +335,63 @@ public class GitClientCloneTest {
         assertThat((getConfigValue(cmd, "core.longpaths"))[0], is("true"));
     }
 
-    @Test
-    public void testLongPathWithoutCloneOption() throws Exception {
-        RandomStringGenerator generator = new RandomStringGenerator.Builder()
-                .withinRange('a', 'z').build();
-        String fileName = generator.generate(133); //230 - current
-        String subDirName = generator.generate(80);
+    /*
+     * This test is commented until cli git-for-windows issue: https://github.com/git-for-windows/git/issues/2576 is fixed
+     */
+//    @Test
+//    public void testLongPathWithoutCloneOption() throws Exception {
+//        RandomStringGenerator generator = new RandomStringGenerator.Builder()
+//                .withinRange('a', 'z').build();
+//        String fileName = generator.generate(133); //230 - current
+//        String subDirName = generator.generate(80);
+//
+//        File tempDir = Files.createTempDirectory(fileName).toFile();
+//        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
+//        File subDir = Files.createDirectory(subDirectory).toFile();
+//        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+//
+//        if (Files.isDirectory(subDirectory)) {
+//            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
+//
+//            if (isWindows()) {
+//                GitException gitException = assertThrows(GitException.class, () -> {
+//                    CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin");
+//                    cmd.execute();
+//                });
+//                assertThat(gitException.getMessage(), containsString("Filename too long"));
+//            }
+//        }
+//    }
 
-        File tempDir = Files.createTempDirectory(fileName).toFile();
-        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
-        subDirectory = Files.createDirectories(subDirectory);
-        File subDir = subDirectory.toFile();
-        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
-
-        if (Files.isDirectory(subDirectory)) {
-            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
-
-            if (isWindows()) {
-                GitException gitException = assertThrows(GitException.class, () -> {
-                    CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin");
-                    cmd.execute();
-                });
-                assertThat(gitException.getMessage(), containsString("Filename too long"));
-            }
-        }
-    }
-
-    @Test
-    public void testLongPathWithCloneOption() throws Exception {
-        RandomStringGenerator generator = new RandomStringGenerator.Builder()
-                .withinRange('a', 'z').build();
-        String fileName = generator.generate(133);
-        String subDirName = generator.generate(80);
-
-        File tempDir = Files.createTempDirectory(fileName).toFile();
-        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
-        subDirectory = Files.createDirectories(subDirectory);
-        File subDir = subDirectory.toFile();
-        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
-
-        if (Files.isDirectory(subDirectory)) {
-            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
-
-            if (isWindows()) {
-                CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin").longPath(true);
-                cmd.execute();
-                // Test git clone works with a directory of absolute path of 260+ chars
-                tempRepo.getGitClient().checkout().ref("origin/master").branch("master").execute();
-                check_remote_url(tempRepo, tempRepo.getGitClient(), "origin");
-                assertBranchesExist(tempRepo.getGitClient().getBranches(), "master");
-            }
-        }
-    }
+     /*
+      * This test is commented until cli git-for-windows issue: https://github.com/git-for-windows/git/issues/2576 is fixed
+      */
+//    @Test
+//    public void testLongPathWithCloneOption() throws Exception {
+//        RandomStringGenerator generator = new RandomStringGenerator.Builder()
+//                .withinRange('a', 'z').build();
+//        String fileName = generator.generate(133);
+//        String subDirName = generator.generate(80);
+//
+//        File tempDir = Files.createTempDirectory(fileName).toFile();
+//        Path subDirectory = Paths.get(tempDir.getAbsolutePath() + "/" + subDirName);
+//        subDirectory = Files.createDirectory(subDirectory);
+//        File subDir = subDirectory.toFile();
+//        assertThat(subDir.getAbsolutePath().length(), greaterThan(259)); // Assure test case is testing long path
+//
+//        if (Files.isDirectory(subDirectory)) {
+//            WorkspaceWithRepo tempRepo = new WorkspaceWithRepo(subDir, gitImplName, listener);
+//
+//            if (isWindows()) {
+//                CloneCommand cmd = tempRepo.getGitClient().clone_().url(tempRepo.localMirror()).repositoryName("origin").longPath(true);
+//                cmd.execute();
+//                // Test git clone works with a directory of absolute path of 260+ chars
+//                tempRepo.getGitClient().checkout().ref("origin/master").branch("master").execute();
+//                check_remote_url(tempRepo, tempRepo.getGitClient(), "origin");
+//                assertBranchesExist(tempRepo.getGitClient().getBranches(), "master");
+//            }
+//        }
+//    }
 
     private boolean isWindows() {
         return File.pathSeparatorChar==';';
