@@ -68,7 +68,7 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.176.x</artifactId>
+        <artifactId>bom-2.190.x</artifactId>
         <version>7</version>
         <type>pom</type>
         <scope>import</scope>
@@ -79,7 +79,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>trilead-api</artifactId>
-      <version>1.0.5</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -197,10 +196,17 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!-- Hamcrest 2.x bundles all hamcrest-core functionality in the hamcrest artifact -->
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest-core</artifactId>
+      <artifactId>hamcrest</artifactId>
       <version>2.2</version>
       <scope>test</scope>
     </dependency>
@@ -218,7 +224,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>git-server</artifactId>
-      <version>1.9</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -232,12 +237,6 @@
       <artifactId>commons-text</artifactId>
       <version>1.8</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion><!-- Jenkins 2.176.1 requires a newer version -->
-          <groupId>org.jenkins-ci.modules</groupId>
-          <artifactId>ssh-cli-auth</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -259,7 +258,6 @@
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
-      <version>1.0</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -357,7 +355,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-project-info-reports-plugin</artifactId>
-        <version>3.0.0</version>
       </plugin>
     </plugins>
   </reporting>
