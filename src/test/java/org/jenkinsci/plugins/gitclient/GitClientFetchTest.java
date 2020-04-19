@@ -49,9 +49,6 @@ public class GitClientFetchTest {
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     WorkspaceWithRepo workspace;
     WorkspaceWithRepo bareWorkspace;
     WorkspaceWithRepo newAreaWorkspace;
