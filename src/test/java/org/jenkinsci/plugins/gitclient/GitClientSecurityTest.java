@@ -280,7 +280,7 @@ public class GitClientSecurityTest {
                                       () -> {
                                           gitClient.getHeadRev(badRemoteUrl);
                                       });
-        assertThat(e.getMessage(), is(expectedMessage));
+        assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
@@ -291,7 +291,7 @@ public class GitClientSecurityTest {
                                       () -> {
                                           gitClient.getHeadRev(badRemoteUrl, "master");
                                       });
-        assertThat(e.getMessage(), is(expectedMessage));
+        assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
@@ -304,7 +304,7 @@ public class GitClientSecurityTest {
                                       () -> {
                                           gitClient.getRemoteReferences(badRemoteUrl, "*master", headsOnly, tagsOnly);
                                       });
-        assertThat(e.getMessage(), is(expectedMessage));
+        assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
@@ -316,7 +316,7 @@ public class GitClientSecurityTest {
                                       () -> {
                                           gitClient.getRemoteSymbolicReferences(badRemoteUrl, "master");
                                       });
-        assertThat(e.getMessage(), is(expectedMessage));
+        assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test

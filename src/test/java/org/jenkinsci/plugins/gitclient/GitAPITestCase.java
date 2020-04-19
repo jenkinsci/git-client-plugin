@@ -3763,7 +3763,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         StringWriter writer = new StringWriter();
         w.git.changelog().max(maxlimit).to(writer).execute();
-        assertThat(writer.toString(),not(isEmptyString()));
+        assertThat(writer.toString(), is(not("")));
     }
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
