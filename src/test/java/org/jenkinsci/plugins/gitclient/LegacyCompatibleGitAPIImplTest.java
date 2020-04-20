@@ -26,16 +26,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class LegacyCompatibleGitAPIImplTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private LegacyCompatibleGitAPIImpl git;
     private File repo;
@@ -162,8 +158,10 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
         File trackedFile = commitTrackedFile();
-        thrown.expect(GitException.class);
-        git.showRevision(new Revision(gitClientCommit));
+        assertThrows(GitException.class,
+                     () -> {
+                         git.showRevision(new Revision(gitClientCommit));
+                     });
     }
 
     @Test
@@ -226,8 +224,11 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     public void testLsTreeThrows() throws Exception {
-        thrown.expect(git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class);
-        git.lsTree("HEAD");
+        Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
+        assertThrows(expectedExceptionClass,
+                     () -> {
+                         git.lsTree("HEAD");
+                     });
     }
 
     @Test

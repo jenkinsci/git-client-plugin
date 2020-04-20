@@ -47,6 +47,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
+import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertTrue;
@@ -54,6 +55,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import org.junit.AfterClass;
 import static org.junit.Assume.*;
@@ -61,7 +63,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -112,9 +113,6 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
     private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -385,8 +383,10 @@ public class GitClientTest {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
         changelog.includes(commitA);
-        thrown.expect(IllegalStateException.class);
-        changelog.execute();
+        assertThrows(IllegalStateException.class,
+                     () -> {
+                         changelog.execute();
+                     });
     }
 
     @Test
@@ -394,8 +394,10 @@ public class GitClientTest {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
         changelog.excludes(commitA);
-        thrown.expect(IllegalStateException.class);
-        changelog.execute();
+        assertThrows(IllegalStateException.class,
+                     () -> {
+                         changelog.execute();
+                     });
     }
 
     @Test
@@ -530,8 +532,10 @@ public class GitClientTest {
         File badDir = new File(badDirName);
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : InvalidPathException.class;
-        thrown.expect(expectedExceptionClass);
-        badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+        assertThrows(expectedExceptionClass,
+                     () -> {
+                         badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+                     });
     }
 
     @Test
@@ -542,8 +546,10 @@ public class GitClientTest {
         File badDir = new File(badDirName);
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
-        thrown.expect(expectedExceptionClass);
-        badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+        assertThrows(expectedExceptionClass,
+                     () -> {
+                         badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
+                     });
     }
 
     @Test
@@ -884,12 +890,12 @@ public class GitClientTest {
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
         File fileInRepo = new File(repoRoot, fileName);
-        assertTrue(fileInRepo.getAbsolutePath() + " not found", fileInRepo.isFile());
+        assertThat(fileInRepo, is(anExistingFile()));
     }
 
     private void assertFileNotInWorkingDir(GitClient client, String fileName) {
         File fileInRepo = new File(repoRoot, fileName);
-        assertFalse(fileInRepo.getAbsolutePath() + " found", fileInRepo.isFile());
+        assertThat(fileInRepo, is(not(anExistingFile())));
     }
 
     private void assertFileContent(String fileName, String expectedContent) throws IOException {
@@ -900,12 +906,12 @@ public class GitClientTest {
 
     private void assertDirInWorkingDir(GitClient client, String dirName) {
         File dirInRepo = new File(repoRoot, dirName);
-        assertTrue(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
+        assertThat(dirInRepo, is(anExistingDirectory()));
     }
 
     private void assertDirNotInWorkingDir(GitClient client, String dirName) {
         File dirInRepo = new File(repoRoot, dirName);
-        assertFalse(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
+        assertThat(dirInRepo, is(not(anExistingDirectory())));
     }
 
     private boolean removeMatchingBranches(Set<Branch> filtered, Set<Branch> toRemove) {
@@ -1104,8 +1110,10 @@ public class GitClientTest {
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         /* Check that exception is thrown trying to create an existing branch */
-        thrown.expect(GitException.class);
-        gitClient.branch("master");
+        assertThrows(GitException.class,
+                     () -> {
+                         gitClient.branch("master");
+                     });
     }
 
     @Test
@@ -1115,11 +1123,16 @@ public class GitClientTest {
         String branch = "master";
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
-        /* Check that exception is thrown trying to commit nothing */
         if (gitImplName.equals("git")) {
-            thrown.expect(GitException.class);
+            /* Check that exception is thrown trying to commit nothing */
+            assertThrows(GitException.class,
+                         () -> {
+                             gitClient.commit("This commit contains no changes");
+                         });
+        } else {
+            /* Check that JGit does not throw an exception trying to commit nothing */
+            gitClient.commit("This commit contains no changes");
         }
-        gitClient.commit("This commit contains no changes");
     }
 
     @Test
@@ -1129,11 +1142,16 @@ public class GitClientTest {
         String branch = "master";
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
-        /* Check that exception is thrown trying to delete non-existent branch */
         if (gitImplName.equals("git")) {
-            thrown.expect(GitException.class);
+            /* Check that exception is thrown trying to delete non-existent branch */
+            assertThrows(GitException.class,
+                         () -> {
+                             gitClient.deleteBranch("ThisBranchDoesNotExist");
+                         });
+        } else {
+            /* Check that JGit does not throw an exception trying to delete non-existent branch */
+            gitClient.deleteBranch("ThisBranchDoesNotExist");
         }
-        gitClient.deleteBranch("ThisBranchDoesNotExist");
     }
 
     @Issue("JENKINS-35687") // Git LFS support
@@ -2221,17 +2239,21 @@ public class GitClientTest {
     public void testFixSubmoduleUrlsInvalidRemote() throws Exception {
         assumeThat(gitImplName, is("git")); // CliGit
         IGitAPI gitAPI = (IGitAPI) gitClient;
-        thrown.expect(GitException.class);
-        thrown.expectMessage("Could not determine remote");
-        gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL);
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL);
+                                      });
+        assertThat(e.getMessage(), containsString("Could not determine remote"));
     }
 
     @Test
     public void testFixSubmoduleUrlsJGitUnsupported() throws Exception {
         assumeThat(gitImplName, not(is("git"))); // JGit does not support fixSubmoduleUrls
         IGitAPI gitAPI = (IGitAPI) gitClient;
-        thrown.expect(UnsupportedOperationException.class);
-        gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL);
+        assertThrows(UnsupportedOperationException.class,
+                     () -> {
+                         gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL);
+                     });
     }
 
     private void assertStatusUntrackedContent(GitClient client, boolean expectUntrackedContent) throws Exception {
