@@ -47,6 +47,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.lib.Constants;
 
+import static org.hamcrest.io.FileMatchers.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertTrue;
@@ -889,12 +890,12 @@ public class GitClientTest {
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
         File fileInRepo = new File(repoRoot, fileName);
-        assertTrue(fileInRepo.getAbsolutePath() + " not found", fileInRepo.isFile());
+        assertThat(fileInRepo, is(anExistingFile()));
     }
 
     private void assertFileNotInWorkingDir(GitClient client, String fileName) {
         File fileInRepo = new File(repoRoot, fileName);
-        assertFalse(fileInRepo.getAbsolutePath() + " found", fileInRepo.isFile());
+        assertThat(fileInRepo, is(not(anExistingFile())));
     }
 
     private void assertFileContent(String fileName, String expectedContent) throws IOException {
@@ -905,12 +906,12 @@ public class GitClientTest {
 
     private void assertDirInWorkingDir(GitClient client, String dirName) {
         File dirInRepo = new File(repoRoot, dirName);
-        assertTrue(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
+        assertThat(dirInRepo, is(anExistingDirectory()));
     }
 
     private void assertDirNotInWorkingDir(GitClient client, String dirName) {
         File dirInRepo = new File(repoRoot, dirName);
-        assertFalse(dirInRepo.getAbsolutePath() + " found", dirInRepo.isDirectory());
+        assertThat(dirInRepo, is(not(anExistingDirectory())));
     }
 
     private boolean removeMatchingBranches(Set<Branch> filtered, Set<Branch> toRemove) {
