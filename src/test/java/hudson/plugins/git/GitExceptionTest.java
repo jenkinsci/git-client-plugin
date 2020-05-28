@@ -16,71 +16,73 @@ import org.eclipse.jgit.api.errors.JGitInternalException;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.*;
 import org.junit.rules.TemporaryFolder;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 public class GitExceptionTest {
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
     public void throwsGitException() {
-        String message = null;
-        thrown.expect(GitException.class);
-        thrown.expectMessage(is(message));
-        throw new GitException();
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          throw new GitException();
+                                      });
+        assertThat(e.getMessage(), is(nullValue()));
     }
 
     @Test
     public void throwsGitExceptionExpectedMessage() {
         String message = "My custom git exception message";
-        thrown.expect(GitException.class);
-        thrown.expectMessage(is(message));
-        throw new GitException(message);
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          throw new GitException(message);
+                                      });
+        assertThat(e.getMessage(), is(message));
     }
 
     @Test
     public void throwsGitExceptionExpectedMessageWithCause() {
         String message = "My custom git exception message";
-        thrown.expect(GitException.class);
-        thrown.expectMessage(is(message));
-        thrown.expectCause(isA(IOException.class));
-        throw new GitException(message, new IOException("Custom IOException message"));
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          throw new GitException(message, new IOException("Custom IOException message"));
+                                      });
+        assertThat(e.getMessage(), is(message));
+        assertThat(e.getCause(), isA(IOException.class));
     }
 
     @Test
     public void initCliImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
-        File badDirectory = new File("/this/is/a/bad/dir");
-        if (isWindows()) {
-            badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
-        }
+        String fileName = isWindows() ? "\\\\badserver\\badshare\\bad\\dir" : "/this/is/a/bad/dir";
+        final File badDirectory = new File(fileName);
         assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("git").getClient();
         assertNotNull(defaultClient);
-        thrown.expect(GitException.class);
-        defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
+        assertThrows(GitException.class,
+                     () -> {
+                         defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
+                     });
     }
 
     @Test
     public void initJGitImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
-        File badDirectory = new File("/this/is/a/bad/dir");
-        if (isWindows()) {
-            badDirectory = new File("\\\\badserver\\badshare\\bad\\dir");
-        }
+        String fileName = isWindows() ? "\\\\badserver\\badshare\\bad\\dir" : "/this/is/a/bad/dir";
+        final File badDirectory = new File(fileName);
         assumeFalse("running as root?", new File("/").canWrite());
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("jgit").getClient();
         assertNotNull(defaultClient);
-        thrown.expect(JGitInternalException.class);
-        thrown.expectCause(isA(IOException.class));
-        defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
+        JGitInternalException e = assertThrows(JGitInternalException.class,
+                                               () -> {
+                                                   defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
+                                               });
+        assertThat(e.getCause(), isA(IOException.class));
     }
 
     @Test
@@ -88,9 +90,11 @@ public class GitExceptionTest {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
         Files.write(dotGit.toPath(), "file named .git".getBytes("UTF-8"), APPEND);
-        thrown.expect(GitException.class);
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("git").getClient();
-        defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
+        assertThrows(GitException.class,
+                     () -> {
+                         defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
+                     });
     }
 
     @Test
@@ -98,10 +102,12 @@ public class GitExceptionTest {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
         Files.write(dotGit.toPath(), "file named .git".getBytes("UTF-8"), APPEND);
-        thrown.expect(JGitInternalException.class);
-        thrown.expectCause(isA(IOException.class));
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("jgit").getClient();
-        defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
+        JGitInternalException e = assertThrows(JGitInternalException.class,
+                                               () -> {
+                                                   defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
+                                               });
+        assertThat(e.getCause(), isA(IOException.class));
     }
 
     /**

@@ -9,11 +9,11 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -32,7 +32,6 @@ import java.lang.reflect.Constructor;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class Git implements Serializable {
-    @Nullable
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
@@ -131,7 +130,7 @@ public class Git implements Serializable {
             final Class<?> it = Class.forName(className);
             final Constructor<?> constructor = it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
             return (GitClient)constructor.newInstance(exe, env, f, listener);
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
             throw new RuntimeException("Unable to initialize mock GitClient " + className, e);
         }
     }

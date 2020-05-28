@@ -23,14 +23,18 @@ import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
@@ -67,9 +71,6 @@ public class PushTest {
     private ObjectId workingCommit;
 
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Rule
     public TestName name = new TestName();
 
     @ClassRule
@@ -90,9 +91,13 @@ public class PushTest {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
-            thrown.expect(expectedException);
+            assertThrows(expectedException,
+                         () -> {
+                             workingGitClient.push().to(bareURI).ref(refSpec).execute();
+                         });
+        } else {
+            workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
-        workingGitClient.push().to(bareURI).ref(refSpec).execute();
     }
 
     @Test
@@ -100,9 +105,13 @@ public class PushTest {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
-            thrown.expect(expectedException);
+            assertThrows(expectedException,
+                         () -> {
+                             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
+                         });
+        } else {
+            workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
-        workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
     }
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")

@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
@@ -35,6 +36,7 @@ public class GitObject implements Serializable {
      *
      * @return {@link org.eclipse.jgit.lib.ObjectId} SHA1 of the object.
      */
+    @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
     public ObjectId getSHA1() {
         return sha1;
     }
@@ -54,6 +56,7 @@ public class GitObject implements Serializable {
      *
      * @return {@link java.lang.String} SHA1 of the object.
      */
+    @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
     @Exported(name="SHA1")
     public String getSHA1String() {
         return sha1 != null ? sha1.name() : null;

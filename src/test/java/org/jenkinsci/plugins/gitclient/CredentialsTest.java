@@ -8,16 +8,12 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.model.Fingerprint;
-import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
-import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,9 +29,12 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,12 +49,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.ClassRule;
-import org.junit.rules.DisableOnDebug;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
 
 /**
- *
+ * Test authenticated operations with the git implementations.
+ * Uses contents of ~/.ssh/auth-data for parameterized tests.
  * @author Mark Waite
  */
 @RunWith(Parameterized.class)
@@ -90,7 +87,6 @@ public class CredentialsTest {
     private int logCount;
     private LogHandler handler;
     private LogTaskListener listener;
-    private static final String LOGGING_STARTED = "*** Logging started ***";
 
     private final static File HOME_DIR = new File(System.getProperty("user.home"));
     private final static File SSH_DIR = new File(HOME_DIR, ".ssh");
@@ -413,11 +409,11 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.withRepository((repo, channel) -> repo.findRef("master").getObjectId()));
-        assertEquals("Wrong branch", "master", git.withRepository((repo, channel) -> repo.getBranch()));
+        assertEquals("Master != HEAD", master, git.withRepository((gitRepo, unusedChannel)-> gitRepo.findRef("master").getObjectId()));
+        assertEquals("Wrong branch", "master", git.withRepository((gitRepo, unusedChanel) -> gitRepo.getBranch()));
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.withRepository((repo, channel) -> repo.getConfig()), "origin"));
+        git.prune(new RemoteConfig(git.withRepository((gitRepo, unusedChannel) -> gitRepo.getConfig()), "origin"));
     }
 
     @Test

@@ -17,7 +17,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
-import javax.annotation.CheckForNull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
@@ -866,10 +866,19 @@ public interface GitClient {
     void addNote(String note, String namespace ) throws GitException, InterruptedException;
 
     /**
-     * showRevision.
+     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * can be parsed by GitChangeLogParser.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * For merge commit, this method reports one diff per each parent. This makes this method
+     * behave differently from {@link #changelog()}.
      *
      * @param r a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return a {@link java.util.List} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -887,9 +896,9 @@ public interface GitClient {
      * For merge commit, this method reports one diff per each parent. This makes this method
      * behave differently from {@link #changelog()}.
      *
-     * @return The git show output, in <code>raw</code> format.
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -911,10 +920,10 @@ public interface GitClient {
      * For merge commit, this method reports one diff per each parent. This makes this method
      * behave differently from {@link #changelog()}.
      *
-     * @return The git show output, in <code>raw</code> format.
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param useRawOutput a {java.lang.Boolean} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
