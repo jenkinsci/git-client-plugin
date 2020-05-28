@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * A runner class which finds benchmark tests annotated with @JmhBenchmark and launches them with the selected options
- * provided by JMH.
+ * provided by JMH
  */
 public class BenchmarkRunner {
     @Test
