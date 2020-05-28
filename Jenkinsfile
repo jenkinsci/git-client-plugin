@@ -12,4 +12,3 @@ subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: null         
                       ]
 
 buildPlugin(configurations: subsetConfiguration, failFast: false)
-runBenchmarks('jmh-report.json')
