@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 @JmhBenchmark
 public class GitClientFetchBenchmark {
 
-    @State(Scope.Thread)
+    @State(Scope.Benchmark)
     public static class JenkinsState {
 
         @Param({"git", "jgit"})
@@ -63,7 +63,7 @@ public class GitClientFetchBenchmark {
         }
 
         /**
-         * We want to create a temporary local git repository after each iteration of the benchmark, works just like
+         * We want to create a temporary local git repository after each iteration of the benchmark, similar to
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
