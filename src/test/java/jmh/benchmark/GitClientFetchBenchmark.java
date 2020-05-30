@@ -41,7 +41,8 @@ public class GitClientFetchBenchmark {
         @Param({"https://github.com/stephenc/java-logging-benchmarks.git",
                 "https://github.com/uutils/coreutils.git",
                 "https://github.com/freedesktop/cairo.git",
-                "https://github.com/samba-team/samba.git"})
+                // "https://github.com/samba-team/samba.git",
+               })
         String repoUrl;
 
         final FolderForBenchmark tmp = new FolderForBenchmark();
