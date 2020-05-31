@@ -21,7 +21,7 @@ import static org.junit.Assert.assertTrue;
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"
  * implementations represented by CliGitAPIImpl and JGitAPIImpl respectively.
  */
-@JmhBenchmark
+//@JmhBenchmark
 public class GitClientFetchBenchmark {
 
     @State(Scope.Benchmark)
