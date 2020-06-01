@@ -64,3 +64,11 @@ Typical bug review tasks include:
 * Review summary and description
 * Attempt to duplicate the issue
 * Add a comment with results of the attempt to duplicate the issue
+
+[[jmh-benchmarks]]
+== Java Microbenchmark Harness
+
+Git client plugin includes link:https://openjdk.java.net/projects/code-tools/jmh/[Java Microbenchmark Harness (JMH)] benchmark tests to compare the performance of command line git and JGit.
+Run the benchmarks with the command:
+
+* `mvn -P jmh-benchmark test`

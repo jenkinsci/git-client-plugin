@@ -21,10 +21,10 @@ import static org.junit.Assert.assertTrue;
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"
  * implementations represented by CliGitAPIImpl and JGitAPIImpl respectively.
  */
-@JmhBenchmark
+//@JmhBenchmark
 public class GitClientFetchBenchmark {
 
-    @State(Scope.Thread)
+    @State(Scope.Benchmark)
     public static class JenkinsState {
 
         @Param({"git", "jgit"})
@@ -63,7 +63,7 @@ public class GitClientFetchBenchmark {
         }
 
         /**
-         * We want to create a temporary local git repository after each iteration of the benchmark, works just like
+         * We want to create a temporary local git repository after each iteration of the benchmark, similar to
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
