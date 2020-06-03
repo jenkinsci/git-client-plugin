@@ -26,8 +26,9 @@ public class BenchmarkRunner {
                 .forks(2)   // Need to increase more forks to get more observations, increases precision.
                 .shouldFailOnError(true) // Will stop forking of JVM as soon as there is a compilation error
                 .shouldDoGC(true) // do GC between measurement iterations
-                .resultFormat(ResultFormatType.JSON) // store the results in a file called jmh-report.json
-                .result("jmh-report.json");
+                .output("jmh-readable-report.json");
+//                .resultFormat(ResultFormatType.JSON) // store the results in a file called jmh-report.json
+//                .result("jmh-report.json");
 
         BenchmarkFinder bf = new BenchmarkFinder(getClass());
         bf.findBenchmarks(options);
