@@ -21,15 +21,62 @@ import static org.junit.Assert.assertTrue;
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"
  * implementations represented by CliGitAPIImpl and JGitAPIImpl respectively.
  */
-//@JmhBenchmark
+@JmhBenchmark
 public class GitClientFetchBenchmark {
 
-    @State(Scope.Benchmark)
-    public static class JenkinsState {
+    @State(Scope.Thread)
+    public static class ClientState {
 
         @Param({"git", "jgit"})
         String gitExe;
 
+        final FolderForBenchmark tmp = new FolderForBenchmark();
+        File gitDir;
+        GitClient gitClient;
+        List<RefSpec> refSpecs = new ArrayList<>();
+
+        /**
+         * We want to create a temporary local git repository after each iteration of the benchmark, works just like
+         * "before" and "after" JUnit annotations.
+         */
+        @Setup(Level.Iteration)
+        public void doSetup() throws Exception {
+            tmp.before();
+            gitDir = tmp.newFolder();
+
+            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
+
+            // fetching all branches
+            refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+
+            // initialize the test folder for git fetch
+            gitClient.init();
+
+            System.out.println("Do Setup for: " + gitExe);
+        }
+
+        @TearDown(Level.Iteration)
+        public void doTearDown() {
+            try {
+                // making sure that git init made a git an empty repository
+                File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
+                System.out.println(gitDir.isDirectory());
+            } catch (Exception e) {
+                e.getMessage();
+            }
+            tmp.after();
+            System.out.println("Do TearDown for: " + gitExe);
+        }
+    }
+
+    @State(Scope.Thread)
+    public static class CloneRepoState {
+
+        final FolderForBenchmark tmp = new FolderForBenchmark();
+
+        File localRemoteDir;
+        File remoteRepoDir;
+        URIish urIish;
         /**
          * We test the performance of git fetch on four repositories, varying them on the basis of their
          * commit history size, number of branches and ultimately their overall size.
@@ -44,66 +91,36 @@ public class GitClientFetchBenchmark {
                 "https://github.com/samba-team/samba.git"})
         String repoUrl;
 
-        final FolderForBenchmark tmp = new FolderForBenchmark();
-        File gitDir;
-        File localRemoteDir;
-        File remoteRepoDir;
-        GitClient gitClient;
-        List<RefSpec> refSpecs  = new ArrayList<>();
-        URIish urIish;
-
         private File cloneUpstreamRepositoryLocally(File parentDir, String repoUrl) throws Exception {
             String repoName = repoUrl.split("/")[repoUrl.split("/").length - 1];
             File gitRepoDir = new File(parentDir, repoName);
             gitRepoDir.mkdir();
-            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitRepoDir).using(gitExe).getClient();
+            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitRepoDir).using("git").getClient();
             cloningGitClient.clone_().url(repoUrl).execute();
-            assertTrue("Unable to create git repo", gitRepoDir.exists());
+//            assertTrue("Unable to create git repo", gitRepoDir.exists());
             return gitRepoDir;
         }
 
-        /**
-         * We want to create a temporary local git repository after each iteration of the benchmark, similar to
-         * "before" and "after" JUnit annotations.
-         */
-        @Setup(Level.Iteration)
-        public void doSetup() throws Exception {
+        @Setup(Level.Trial)
+        public void cloneUpstreamRepo() throws Exception {
             tmp.before();
-            gitDir = tmp.newFolder();
             localRemoteDir = tmp.newFolder();
             remoteRepoDir = cloneUpstreamRepositoryLocally(localRemoteDir, repoUrl);
-
-            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
-
             // Coreutils is a repo sized 4.58 MiB, Cairo is 93.64 MiB and samba is 324.26 MiB
             urIish = new URIish("file://" + remoteRepoDir.getAbsolutePath());
-
-            // fetching all branches
-            refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
-
-            // initialize the test folder for git fetch
-            gitClient.init();
-
-            System.out.println("Do Setup");
+            System.out.println("Created local upstream directory for: " + repoUrl);
         }
 
-        @TearDown(Level.Iteration)
+        @TearDown(Level.Trial)
         public void doTearDown() {
-            try {
-                // making sure that git init made a git an empty repository
-                File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
-                System.out.println(gitDir.isDirectory());
-            } catch (Exception e){
-                e.getMessage();
-            }
             tmp.after();
-            System.out.println("Do TearDown");
+            System.out.println("Removed local upstream directory for: " + repoUrl);
         }
     }
 
     @Benchmark
-    public void gitFetchBenchmark(JenkinsState jenkinsState, Blackhole blackhole) throws Exception {
-        FetchCommand fetch = jenkinsState.gitClient.fetch_().from(jenkinsState.urIish, jenkinsState.refSpecs);
+    public void gitFetchBenchmark(ClientState gitClientState, CloneRepoState cloneRepoState, Blackhole blackhole) throws Exception {
+        FetchCommand fetch = gitClientState.gitClient.fetch_().from(cloneRepoState.urIish, gitClientState.refSpecs);
         fetch.execute();
         blackhole.consume(fetch);
     }

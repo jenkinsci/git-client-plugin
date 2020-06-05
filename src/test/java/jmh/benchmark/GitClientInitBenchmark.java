@@ -11,7 +11,7 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.File;
 
-@JmhBenchmark
+//@JmhBenchmark
 public class GitClientInitBenchmark {
 
     @State(Scope.Thread)
