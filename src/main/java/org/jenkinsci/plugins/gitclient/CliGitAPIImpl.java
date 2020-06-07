@@ -1922,6 +1922,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (workspaceTmp.getAbsolutePath().matches(".*[ ()|?*].*")) {
                 return createTempFileInSystemDir(prefix, suffix);
             }
+            /* JENKINS-62579 - Windows git fails its call to GIT_SSH and GIT_ASKPASS if the
+             * temporary directory path contains Cyrillic characters.
+             * This tests that all components of the temporary path can be
+             * encoded in ISO 8859-1 character set (latin-1).
+             * See JENKINS-62579 for details.
+             */
+            if (!Charset.forName("ISO_8859_1").newEncoder().canEncode(workspaceTmp.getAbsolutePath())) {
+                return createTempFileInSystemDir(prefix, suffix);
+            }
             return Files.createTempFile(tmpPath, prefix, suffix).toFile();
         } else if (workspaceTmp.getAbsolutePath().contains("%")) {
             /* Avoid Linux expansion of % in ssh arguments */
