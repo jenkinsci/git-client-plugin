@@ -1,14 +1,15 @@
 #!groovy
 
-Random random = new Random() // Randomize which Jenkins version is selected for more testing
-def use_newer_jenkins = random.nextBoolean() // Use newer Jenkins on one build but slightly older on other
+import java.util.Collections
 
-// Test plugin compatibility to recommended configurations
-subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: null                      ],
-                        // Compile with Java 8, test 2.204.6 or 2.222.1 depending on random use_newer_jenkins
-                        [ jdk: '8',  platform: 'linux',   jenkins: !use_newer_jenkins ? '2.204.6' : '2.222.1', javaLevel: '8' ],
-                        // Compile with Java 11, test the Jenkins version that Java 8 did *not* test
-                        [ jdk: '11', platform: 'linux',   jenkins:  use_newer_jenkins ? '2.204.6' : '2.222.1', javaLevel: '8' ]
+// Valid Jenkins versions for test
+def testJenkinsVersions = [ '2.204.1', '2.204.6', '2.222.1', '2.222.4', '2.235', '2.240' ]
+Collections.shuffle(testJenkinsVersions)
+
+// Test plugin compatibility to subset of Jenkins versions
+subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: testJenkinsVersions[0], javaLevel: '8' ],
+                        [ jdk: '8',  platform: 'linux',   jenkins: testJenkinsVersions[1], javaLevel: '8' ],
+                        [ jdk: '11', platform: 'linux',   jenkins: testJenkinsVersions[2], javaLevel: '8' ]
                       ]
 
 buildPlugin(configurations: subsetConfiguration, failFast: false)
