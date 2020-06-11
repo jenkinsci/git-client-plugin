@@ -12,4 +12,8 @@ subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: null         
                       ]
 
 buildPlugin(configurations: subsetConfiguration, failFast: false)
-runBenchmarks('jmh-report.json')
+
+def branchName = "${env.BRANCH_NAME}"
+if (branchName ==~ /master/ || branchName =~ /gsoc-*/) {
+	runBenchmarks('jmh-report.json')
+}
