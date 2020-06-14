@@ -72,3 +72,10 @@ Git client plugin includes link:https://openjdk.java.net/projects/code-tools/jmh
 Run the benchmarks with the command:
 
 * `mvn -P jmh-benchmark test`
+
+
+> Note: The corresponding test files would be stored in `git-client-plugin/target/surefire-reports` directory.
+>
+> * `jmh.benchmark.BenchmarkRunner.txt`
+> * `TEST-jmh.benchmark.BenchmarkRunner.xml`
+> * `jmh.benchmark.BenchmarkRunner-output.txt`
