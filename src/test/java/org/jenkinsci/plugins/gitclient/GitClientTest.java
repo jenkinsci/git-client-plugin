@@ -113,6 +113,7 @@ public class GitClientTest {
     private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
     private final boolean CLI_GIT_SUPPORTS_SYMREF;
     private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
+    private final boolean LFS_SUPPORTS_SPARSE_CHECKOUT;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -154,6 +155,7 @@ public class GitClientTest {
             gitLFSConfigured = false;
         }
         CLI_GIT_HAS_GIT_LFS_CONFIGURED = gitLFSConfigured;
+        LFS_SUPPORTS_SPARSE_CHECKOUT = CLI_GIT_HAS_GIT_LFS_CONFIGURED && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -1369,18 +1371,20 @@ public class GitClientTest {
             assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
             assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
 
-            List<String> sparsePaths2 = Lists.newArrayList("uuid2.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths2).execute();
+	    if (LFS_SUPPORTS_SPARSE_CHECKOUT) {
+		List<String> sparsePaths2 = Lists.newArrayList("uuid2.txt");
+		gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths2).execute();
 
-            assertFileNotInWorkingDir(gitClient, file1);
-            assertFileContent(file2, expectedContent2);
-            assertFileNotInWorkingDir(gitClient, file3);
-            assertFileNotInWorkingDir(gitClient, file4);
+		assertFileNotInWorkingDir(gitClient, file1);
+		assertFileContent(file2, expectedContent2);
+		assertFileNotInWorkingDir(gitClient, file3);
+		assertFileNotInWorkingDir(gitClient, file4);
 
-            assertFileInWorkingDir(gitClient, lfsObjectFile1);
-            assertFileInWorkingDir(gitClient, lfsObjectFile2);
-            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
-            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+		assertFileInWorkingDir(gitClient, lfsObjectFile1);
+		assertFileInWorkingDir(gitClient, lfsObjectFile2);
+		assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+		assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+	    }
         }
 
         // it should support switching from non-sparse to sparse checkout
