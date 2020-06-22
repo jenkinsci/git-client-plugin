@@ -58,6 +58,10 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
      * @return {@link java.lang.String} that will be used to execute git (e.g. "git" or "/usr/bin/git")
      */
     public String getGitExe() {
+        File gitHome = new File(getHome());
+        if(gitHome.isDirectory() && new File(gitHome.getAbsolutePath() + File.separator + "bin" + File.separator + "git.exe").exists()) {
+        	return new File(gitHome.getAbsolutePath() + File.separator + "bin" + File.separator + "git.exe").getAbsolutePath();
+        }
         return getHome();
     }
 
