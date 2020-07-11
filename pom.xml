@@ -53,7 +53,7 @@
   </scm>
 
   <properties>
-    <revision>3.3.1</revision>
+    <revision>3.3.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -88,10 +88,6 @@
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by JSch plugin -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
-        </exclusion>
         <exclusion>
           <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
@@ -117,10 +113,6 @@
       <artifactId>org.eclipse.jgit.http.server</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by JSch plugin -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
-        </exclusion>
         <exclusion>
           <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
@@ -139,10 +131,6 @@
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by JSch plugin -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
-        </exclusion>
         <exclusion>
           <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
@@ -165,10 +153,6 @@
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by JSch plugin -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
-        </exclusion>
         <exclusion>
           <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
@@ -178,6 +162,25 @@
           <!-- Provided by Jenkins core -->
           <groupId>com.jcraft</groupId>
           <artifactId>jzlib</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
+      <version>${jgit.version}</version>
+      <exclusions>
+        <exclusion> <!-- provided by jenkins-core -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jzlib</artifactId>
+        </exclusion>
+        <exclusion> <!-- Provided by jsch plugin -->
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+        <exclusion> <!-- provided by jenkins-core -->
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -268,7 +271,7 @@
         </exclusion>
       </exclusions>
       <optional>true</optional>
-      <version>4.0.5</version>
+      <version>4.0.6</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -336,7 +339,7 @@
           <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs</artifactId>
-            <version>4.0.5</version>
+            <version>4.0.6</version>
           </dependency>
         </dependencies>
       </plugin>
