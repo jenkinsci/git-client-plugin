@@ -15,6 +15,6 @@ subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: testJenkinsVe
 buildPlugin(configurations: subsetConfiguration, failFast: false)
 
 def branchName = "${env.BRANCH_NAME}"
-if (branchName ==~ /master/ || branchName =~ /gsoc-*/) {
+if (branchName ==~ /master/ || branchName ==~ /gsoc-.*/) {
 	runBenchmarks('jmh-report.json')
 }
