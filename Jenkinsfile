@@ -2,7 +2,6 @@
 
 buildPlugin(failFast: false)
 
-def branchName = "${env.BRANCH_NAME}"
-if (branchName ==~ /master/ || branchName =~ /gsoc-*/) {
-	runBenchmarks('jmh-report.json')
+if (env.BRANCH_NAME == 'master' || env.BRANCH_NAME.startsWith('gsoc-')) {
+    runBenchmarks('jmh-report.json')
 }
