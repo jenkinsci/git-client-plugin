@@ -9,10 +9,10 @@ boolean shouldRunBenchmarks(String branchName) {
     if (branchName.endsWith('master')) { // accept both origin/master and master
         return true;
     }
-    def gitLog = 'git log -n 3'
     def recentCommitMessages
     node('linux') {
-        recentCommitMessages = sh(script: gitLog, returnStdout: true)
+        checkout scm
+        recentCommitMessages = sh(script: 'git log -n 3', returnStdout: true)
     }
     return recentCommitMessages =~ /.*[Bb]enchmark.*/
 }
