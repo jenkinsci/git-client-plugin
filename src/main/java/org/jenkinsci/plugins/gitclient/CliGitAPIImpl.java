@@ -2165,8 +2165,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
+        String charset = "UTF-8";
+        if (isZos() && System.getProperty("ibm.system.encoding") != null) {
+            charset = Charset.forName(System.getProperty("ibm.system.encoding")).toString();
+        }
         File passphraseFile = createTempFile("phrase", ".txt");
-        try (PrintWriter w = new PrintWriter(passphraseFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
             w.println(Secret.toString(sshUser.getPassphrase()));
         }
         return passphraseFile;
