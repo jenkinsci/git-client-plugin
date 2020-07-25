@@ -2168,6 +2168,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String charset = "UTF-8";
         if (isZos() && System.getProperty("ibm.system.encoding") != null) {
             charset = Charset.forName(System.getProperty("ibm.system.encoding")).toString();
+	    listener.getLogger().println("Using passphrase charset '" + charset + "'");
         }
         File passphraseFile = createTempFile("phrase", ".txt");
         try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
