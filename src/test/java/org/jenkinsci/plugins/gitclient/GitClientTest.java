@@ -607,6 +607,9 @@ public class GitClientTest {
     public void testIsCommitInRepo() throws Exception {
         assertTrue(srcGitClient.isCommitInRepo(upstreamCommit));
         assertFalse(gitClient.isCommitInRepo(upstreamCommit));
+        assertFalse(gitClient.isCommitInRepo(null)); // NPE safety check
+        // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
+        assertFalse(gitClient.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
