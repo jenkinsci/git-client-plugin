@@ -816,6 +816,15 @@ public class GitClientTest {
     }
 
     @Test
+    @Deprecated
+    public void testGetRemoteUrl_two_args() throws Exception {
+        IGitAPI iGitAPI = (IGitAPI) gitClient;
+        String originUrl = gitClient.getRemoteUrl("origin");
+        assertThat("Null URL arg", iGitAPI.getRemoteUrl("origin", null), is(originUrl));
+        assertThat("Empty string URL arg", iGitAPI.getRemoteUrl("origin", ""), is(originUrl));
+    }
+
+    @Test
     public void testSetRemoteUrl() throws Exception {
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
         gitClient.setRemoteUrl("origin", upstreamRepoURL);

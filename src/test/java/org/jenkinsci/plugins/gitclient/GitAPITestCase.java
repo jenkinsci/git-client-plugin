@@ -583,25 +583,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
-    public void test_getRemoteURL_two_args() throws Exception {
-        w.init();
-        String originUrl = "https://github.com/bogus/bogus.git";
-        w.git.setRemoteUrl("origin", originUrl);
-        assertEquals("Wrong remote URL", originUrl, w.git.getRemoteUrl("origin"));
-        assertEquals("Wrong null remote URL", originUrl, w.igit().getRemoteUrl("origin", null));
-        assertEquals("Wrong blank remote URL", originUrl, w.igit().getRemoteUrl("origin", ""));
-        if (w.igit() instanceof CliGitAPIImpl) {
-            String gitDir = w.repoPath() + File.separator + ".git";
-            assertEquals("Wrong repoPath/.git remote URL for " + gitDir, originUrl, w.igit().getRemoteUrl("origin", gitDir));
-            assertEquals("Wrong .git remote URL", originUrl, w.igit().getRemoteUrl("origin", ".git"));
-        } else {
-            assertEquals("Wrong repoPath remote URL", originUrl, w.igit().getRemoteUrl("origin", w.repoPath()));
-        }
-        // Fails on both JGit and CliGit, though with different failure modes in each
-        // assertEquals("Wrong . remote URL", originUrl, w.igit().getRemoteUrl("origin", "."));
-    }
-
-    @Deprecated
     public void test_getDefaultRemote() throws Exception {
         w.init();
         w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
