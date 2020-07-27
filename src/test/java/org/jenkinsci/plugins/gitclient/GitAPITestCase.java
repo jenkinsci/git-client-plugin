@@ -545,18 +545,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_setAuthor() throws Exception {
-        final String authorName = "Test Author";
-        final String authorEmail = "jenkins@example.com";
-        w.init();
-        w.touch("file1", "Varying content " + java.util.UUID.randomUUID().toString());
-        w.git.add("file1");
-        w.git.setAuthor(authorName, authorEmail);
-        w.git.commit("Author was set explicitly on this commit");
-        List<String> revision = w.git.showRevision(w.head());
-        assertTrue("Wrong author in " + revision, revision.get(2).startsWith("author " + authorName + " <" + authorEmail +"> "));
-    }
-
     public void test_setCommitter() throws Exception {
         final String committerName = "Test Commiter";
         final String committerEmail = "jenkins.plugin@example.com";
