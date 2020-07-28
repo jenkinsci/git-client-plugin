@@ -306,12 +306,12 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void checkout(String ref) throws GitException, InterruptedException {
-        proxy.checkout().ref(ref).execute();
+        proxy.checkout(ref);
     }
 
     /** {@inheritDoc} */
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        proxy.checkout().ref(ref).branch(branch).execute();
+        proxy.checkout(ref, branch);
     }
 
     /**

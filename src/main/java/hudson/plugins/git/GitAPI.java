@@ -224,7 +224,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout().ref(ref).branch(branch).execute(); else  jgit.checkout().ref(ref).branch(branch).execute();
+        if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
     }
 
     /** {@inheritDoc} */
@@ -263,7 +263,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public void checkout(String ref) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout().ref(ref).execute(); else  jgit.checkout().ref(ref).execute();
+        if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
     }
 
     /** {@inheritDoc} */
