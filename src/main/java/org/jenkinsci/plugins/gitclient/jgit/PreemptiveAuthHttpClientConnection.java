@@ -59,7 +59,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.SystemDefaultCredentialsProvider;
@@ -127,7 +126,8 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
 
     private Boolean followRedirects;
 
-    private X509HostnameVerifier hostnameverifier;
+    @Deprecated
+    private org.apache.http.conn.ssl.X509HostnameVerifier hostnameverifier;
 
     SSLContext ctx;
 
@@ -434,7 +434,8 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this.hostnameverifier = new X509HostnameVerifierImpl(hostnameverifier);
     }
 
-    private static class X509HostnameVerifierImpl implements X509HostnameVerifier {
+    @Deprecated
+    private static class X509HostnameVerifierImpl implements org.apache.http.conn.ssl.X509HostnameVerifier {
 
         private final HostnameVerifier hostnameverifier;
 
