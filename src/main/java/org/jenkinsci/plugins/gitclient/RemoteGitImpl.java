@@ -626,7 +626,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).execute();
+        proxy.submoduleUpdate(recursive);
     }
 
     /**
@@ -638,17 +638,17 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void submoduleUpdate(boolean recursive, String ref) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).ref(ref).execute();
+        proxy.submoduleUpdate(recursive, ref);
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
+        proxy.submoduleUpdate(recursive, remoteTracking);
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
+        proxy.submoduleUpdate(recursive, remoteTracking, reference);
     }
 
     /**
