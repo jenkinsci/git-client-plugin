@@ -223,7 +223,9 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
         if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
     }
 
@@ -262,7 +264,9 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void checkout(String ref) throws GitException, InterruptedException {
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
         if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
     }
 
@@ -289,7 +293,9 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
         if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
     }
 
