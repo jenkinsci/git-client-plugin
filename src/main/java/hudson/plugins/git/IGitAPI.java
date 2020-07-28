@@ -16,6 +16,7 @@ import java.util.List;
  *
  * @deprecated methods here are deprecated until proven useful by a plugin
  */
+@Deprecated
 public interface IGitAPI extends GitClient {
 
     /**
