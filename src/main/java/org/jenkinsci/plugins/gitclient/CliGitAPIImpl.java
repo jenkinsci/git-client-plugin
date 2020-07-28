@@ -1821,7 +1821,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return Files.createTempFile(prefix, suffix).toFile();
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
-        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
         return Files.createTempFile(prefix, suffix, fileAttribute).toFile();
     }
 
@@ -1887,7 +1887,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return createTempFileInSystemDir(prefix, suffix);
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
-        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
         return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute).toFile();
     }
 
