@@ -11,7 +11,6 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
@@ -44,7 +43,8 @@ import java.util.Set;
  *
  * @author Kohsuke Kawaguchi
  */
-class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
+@SuppressWarnings("deprecation") // Suppressing deprecation warnings intentionally
+class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializable {
     private final GitClient proxy;
     private transient Channel channel;
 
@@ -52,8 +52,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         this.proxy = proxy;
     }
 
-    private IGitAPI getGitAPI() {
-        return (IGitAPI)proxy;
+    private hudson.plugins.git.IGitAPI getGitAPI() {
+        return (hudson.plugins.git.IGitAPI)proxy;
     }
 
     private Object readResolve() {
