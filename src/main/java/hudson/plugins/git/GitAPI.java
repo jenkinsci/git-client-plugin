@@ -27,6 +27,7 @@ import java.util.Set;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  * @deprecated
  */
+@Deprecated
 public class GitAPI extends CliGitAPIImpl {
     private static final long serialVersionUID = 1L;
     private final GitClient jgit;

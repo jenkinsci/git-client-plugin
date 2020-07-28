@@ -120,6 +120,7 @@ public interface GitClient {
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
+    @Deprecated
     Repository getRepository() throws GitException;
 
     /**
@@ -178,6 +179,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
 
     /**
@@ -238,6 +240,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void checkout(String ref) throws GitException, InterruptedException;
 
     /**
@@ -252,6 +255,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void checkout(String ref, String branch) throws GitException, InterruptedException;
 
     /**
@@ -322,6 +326,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException;
 
     /**
@@ -333,6 +338,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
     /**
@@ -344,6 +350,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
 
     /**
@@ -362,6 +369,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
     /**
@@ -373,6 +381,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void push(URIish url, String refspec) throws GitException, InterruptedException;
 
     /**
@@ -391,6 +400,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
     /**
@@ -729,6 +739,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
 
     /**
@@ -742,6 +753,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException;
 
     /**
@@ -754,6 +766,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException;
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking, with a specific
@@ -767,6 +780,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException;
 
     /**
@@ -817,6 +831,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException;
 
     /**
