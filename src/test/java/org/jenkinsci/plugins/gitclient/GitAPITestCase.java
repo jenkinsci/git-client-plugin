@@ -534,12 +534,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    private void check_remote_url(final String repositoryName) throws InterruptedException, IOException {
-        assertEquals("Wrong remote URL", localMirror(), w.git.getRemoteUrl(repositoryName));
-        String remotes = w.launchCommand("git", "remote", "-v");
-        assertTrue("remote URL has not been updated", remotes.contains(localMirror()));
-    }
-
     private Collection<String> getBranchNames(Collection<Branch> branches) {
         return branches.stream().map(Branch::getName).collect(toList());
     }
@@ -549,78 +543,6 @@ public abstract class GitAPITestCase extends TestCase {
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
         }
-    }
-
-    private void assertBranchesNotExist(Set<Branch> branches, String ... names) throws InterruptedException {
-        Collection<String> branchNames = getBranchNames(branches);
-        for (String name : names) {
-            assertThat(branchNames, not(hasItem(name)));
-        }
-    }
-
-    public void test_setAuthor() throws Exception {
-        final String authorName = "Test Author";
-        final String authorEmail = "jenkins@example.com";
-        w.init();
-        w.touch("file1", "Varying content " + java.util.UUID.randomUUID().toString());
-        w.git.add("file1");
-        w.git.setAuthor(authorName, authorEmail);
-        w.git.commit("Author was set explicitly on this commit");
-        List<String> revision = w.git.showRevision(w.head());
-        assertTrue("Wrong author in " + revision, revision.get(2).startsWith("author " + authorName + " <" + authorEmail +"> "));
-    }
-
-    public void test_setCommitter() throws Exception {
-        final String committerName = "Test Commiter";
-        final String committerEmail = "jenkins.plugin@example.com";
-        w.init();
-        w.touch("file1", "Varying content " + java.util.UUID.randomUUID().toString());
-        w.git.add("file1");
-        w.git.setCommitter(committerName, committerEmail);
-        w.git.commit("Committer was set explicitly on this commit");
-        List<String> revision = w.git.showRevision(w.head());
-        assertTrue("Wrong committer in " + revision, revision.get(3).startsWith("committer " + committerName + " <" + committerEmail + "> "));
-    }
-
-    private void assertNoObjectsInRepository() {
-        List<String> objectsDir = new ArrayList<>(Arrays.asList(w.file(".git/objects").list()));
-        objectsDir.remove("info");
-        objectsDir.remove("pack");
-        assertTrue("Objects directory must not contain anything but 'info' and 'pack' folders", objectsDir.isEmpty());
-
-        File packDir = w.file(".git/objects/pack");
-        if (packDir.isDirectory()) {
-            assertEquals("Pack dir must noct contain anything", 0, packDir.list().length);
-        }
-
-    }
-
-    private void assertAlternatesFileNotFound() {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-        assertFalse("Alternates file found: " + alternates, w.exists(alternates));
-    }
-
-    private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
-
-        assertTrue("Alternates file not found: " + alternates, w.exists(alternates));
-        final String expectedContent = localMirror().replace("\\", "/") + "/objects";
-        final String actualContent = w.contentOf(alternates);
-        assertEquals("Alternates file wrong content", expectedContent, actualContent);
-        final File alternatesDir = new File(actualContent);
-        assertTrue("Alternates destination " + actualContent + " missing", alternatesDir.isDirectory());
-    }
-
-    public void test_detect_commit_in_repo() throws Exception {
-        w.init();
-        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
-        w.touch("file1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        assertTrue("HEAD commit not found", w.git.isCommitInRepo(w.head()));
-        // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
-        assertFalse(w.git.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
-        assertFalse(w.git.isCommitInRepo(null)); // NPE safety check
     }
 
     @Deprecated
@@ -658,25 +580,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.setRemoteUrl("origin", remoteUrl);
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
-    }
-
-    @Deprecated
-    public void test_getRemoteURL_two_args() throws Exception {
-        w.init();
-        String originUrl = "https://github.com/bogus/bogus.git";
-        w.git.setRemoteUrl("origin", originUrl);
-        assertEquals("Wrong remote URL", originUrl, w.git.getRemoteUrl("origin"));
-        assertEquals("Wrong null remote URL", originUrl, w.igit().getRemoteUrl("origin", null));
-        assertEquals("Wrong blank remote URL", originUrl, w.igit().getRemoteUrl("origin", ""));
-        if (w.igit() instanceof CliGitAPIImpl) {
-            String gitDir = w.repoPath() + File.separator + ".git";
-            assertEquals("Wrong repoPath/.git remote URL for " + gitDir, originUrl, w.igit().getRemoteUrl("origin", gitDir));
-            assertEquals("Wrong .git remote URL", originUrl, w.igit().getRemoteUrl("origin", ".git"));
-        } else {
-            assertEquals("Wrong repoPath remote URL", originUrl, w.igit().getRemoteUrl("origin", w.repoPath()));
-        }
-        // Fails on both JGit and CliGit, though with different failure modes in each
-        // assertEquals("Wrong . remote URL", originUrl, w.igit().getRemoteUrl("origin", "."));
     }
 
     @Deprecated

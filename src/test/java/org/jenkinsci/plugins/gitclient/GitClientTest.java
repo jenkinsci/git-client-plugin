@@ -607,6 +607,9 @@ public class GitClientTest {
     public void testIsCommitInRepo() throws Exception {
         assertTrue(srcGitClient.isCommitInRepo(upstreamCommit));
         assertFalse(gitClient.isCommitInRepo(upstreamCommit));
+        assertFalse(gitClient.isCommitInRepo(null)); // NPE safety check
+        // this MAY fail if commit has this exact sha1, but please admit this would be unlucky
+        assertFalse(gitClient.isCommitInRepo(ObjectId.fromString("1111111111111111111111111111111111111111")));
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
@@ -810,6 +813,15 @@ public class GitClientTest {
     @Test
     public void testGetRemoteUrl() throws Exception {
         assertEquals(srcRepoDir.getAbsolutePath(), gitClient.getRemoteUrl("origin"));
+    }
+
+    @Test
+    @Deprecated
+    public void testGetRemoteUrl_two_args() throws Exception {
+        IGitAPI iGitAPI = (IGitAPI) gitClient;
+        String originUrl = gitClient.getRemoteUrl("origin");
+        assertThat("Null URL arg", iGitAPI.getRemoteUrl("origin", null), is(originUrl));
+        assertThat("Empty string URL arg", iGitAPI.getRemoteUrl("origin", ""), is(originUrl));
     }
 
     @Test
