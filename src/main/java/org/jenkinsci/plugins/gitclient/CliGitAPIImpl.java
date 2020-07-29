@@ -249,6 +249,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String version = "";
         try {
             version = launchCommand("--version").trim();
+            listener.getLogger().println(" > git --version # '" + version + "'");
         } catch (Throwable e) {
         }
 
