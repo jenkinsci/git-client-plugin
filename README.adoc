@@ -86,3 +86,47 @@ Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins is
 == Contributing to the Plugin
 
 Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.
+
+==  Plugin Properties
+
+Some plugin settings are controlled by Java system properties.
+The properties are often used to override a standard behavior or to revert to previous behavior.
+Refer to link:https://www.jenkins.io/doc/book/managing/system-properties/[Jenkins Features Controlled with System Properties] for more details on system properties and how to set them.
+
+checkRemoteURL::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL` is set to `false` it disables the safety checking of repository URLs.
++
+Default is `true` so that repository URL's are rejected if they start with `-` or contain space characters.
+
+forceFetch::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.forceFetch` is set to `false` it allows command line git versions 2.20 and later to not update tags which have already been fetched into the workspace.
++
+Command line git 2.20 and later have changed behavior when fetching remote tags that already exist in the repository.
+Command line git before 2.20 silently updates an existing tag if the remote tag points to a different SHA1 than the local tag.
+Command line git 2.20 and later do not update an existing tag if the remote tag points to a different SHA1 than the local tag unless the `--force` option is passed to `git fetch`.
++
+Default is `true` so that newer command line git versions behave the same as older versions.
+
+promptForAuthentication::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.promptForAuthentication` is set to `true` it allows command line git versions 2.3 and later to prompt the user for authentication.
+Command line git prompting for authentication should be rare, since Jenkins credentials should be managed through the credentials plugin.
++
+Credential prompting could happen on multiple platforms, but is more common on Windows computers because many Windows agents run from the desktop environment.
+Agents running on the desktop are much less common in Unix environments.
++
+Default is `false` so that command line git does not prompt for interactive authentication.
+
+useCLI::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.useCLI` is set to `false`, it will use JGit as the default implementation instead of command line git.
++
+Default is `true` so that command line git is chosen as the default implementation.
+
+useSETSID::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.useSETSID` is set to `true` and the `setsid` command is available, the git client process on non-Windows computers will be started with the `setsid` command so that they are detached from any controlling terminal.
+Most agents are run without a controlling terminal and the `useSETSID` setting is not needed.
+Enable `useSETSID` only in those rare cases where the agent is running with a controlling terminal.
+If it is not used in those cases, the agent may block on some authenticated git operations.
++
+This setting can be helpful with link:https://plugins.jenkins.io/swarm/[Jenkins swarm agents] and inbound agents started from a terminal emulator.
++
+Default is `false` so that `setsid` is not used.
