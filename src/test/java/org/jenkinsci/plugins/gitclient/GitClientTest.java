@@ -2116,6 +2116,23 @@ public class GitClientTest {
         assertThat(branchNames, containsInAnyOrder(expectedBranchNames));
     }
 
+    /* Enable long paths in gitClient workspace if running on Windows.
+     * Assumes that the repository is at a directory path that is less
+     * than 256 characters and that the checkout operation will
+     * attempt to create a directory path greater than 256 characters.
+     */
+    private void enableLongPaths(GitClient gitClient) throws InterruptedException, IOException {
+        CliGitAPIImpl cliGitClient;
+        if (gitClient instanceof CliGitAPIImpl && isWindows()) {
+            /* Enable core.longpaths prior to fetch on Windows -
+             * testSubmodulesUsedFromOtherBranches submodule test will
+             * fail with default Windows location otherwise
+             */
+            cliGitClient = (CliGitAPIImpl) gitClient;
+            cliGitClient.launchCommand("config", "core.longpaths", "true");
+        }
+    }
+
     @Issue("JENKINS-37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
@@ -2123,6 +2140,8 @@ public class GitClientTest {
         assumeThat(gitImplName, is("git")); // JGit implementation doesn't handle renamed submodules
         String oldBranchName = "tests/getSubmodules";
         String upstream = fetchUpstream(oldBranchName);
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(gitClient);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
