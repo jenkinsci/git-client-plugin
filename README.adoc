@@ -114,6 +114,13 @@ Command line git 2.20 and later do not update an existing tag if the remote tag 
 +
 Default is `true` so that newer command line git versions behave the same as older versions.
 
+password.file.encoding::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.password.file.encoding` is set to a non-empty value (like `IBM-1047`) and the agent is running on IBM zOS, the password file is written using that character set.
+The character sets of other credential files are not changed.
+The character sets on other operating systems are not changed.
++
+Default is empty so that zOS file encoding behaves as it did previously.
+
 promptForAuthentication::
 When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.promptForAuthentication` is set to `true` it allows command line git versions 2.3 and later to prompt the user for authentication.
 Command line git prompting for authentication should be rare, since Jenkins credentials should be managed through the credentials plugin.
