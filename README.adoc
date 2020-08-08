@@ -98,6 +98,13 @@ When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL` is set to `f
 +
 Default is `true` so that repository URL's are rejected if they start with `-` or contain space characters.
 
+credentials.file.encoding::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.credentials.file.encoding` is set to a non-empty value (like `IBM-1047`) and the agent is running on IBM zOS, the ssh passphrase file is written using that character set.
+The character sets of other credential files are not changed.
+The character sets on other operating systems are not changed.
++
+Default is empty so that zOS file encoding behaves as it did previously.
+
 forceFetch::
 When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.forceFetch` is set to `false` it allows command line git versions 2.20 and later to not update tags which have already been fetched into the workspace.
 +
@@ -106,6 +113,13 @@ Command line git before 2.20 silently updates an existing tag if the remote tag 
 Command line git 2.20 and later do not update an existing tag if the remote tag points to a different SHA1 than the local tag unless the `--force` option is passed to `git fetch`.
 +
 Default is `true` so that newer command line git versions behave the same as older versions.
+
+password.file.encoding::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.password.file.encoding` is set to a non-empty value (like `IBM-1047`) and the agent is running on IBM zOS, the password file is written using that character set.
+The character sets of other credential files are not changed.
+The character sets on other operating systems are not changed.
++
+Default is empty so that zOS file encoding behaves as it did previously.
 
 promptForAuthentication::
 When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.promptForAuthentication` is set to `true` it allows command line git versions 2.3 and later to prompt the user for authentication.

@@ -2166,8 +2166,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
+        String charset = "UTF-8";
+        if (isZos() && System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding") != null) {
+            charset = Charset.forName(System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding")).toString();
+	    listener.getLogger().println("Using passphrase charset '" + charset + "'");
+        }
         File passphraseFile = createTempFile("phrase", ".txt");
-        try (PrintWriter w = new PrintWriter(passphraseFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
             w.println(Secret.toString(sshUser.getPassphrase()));
         }
         return passphraseFile;
@@ -2182,8 +2187,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createPasswordFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        String charset = "UTF-8";
+        if (isZos() && System.getProperty(CliGitAPIImpl.class.getName() + ".password.file.encoding") != null) {
+            charset = Charset.forName(System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding")).toString();
+	    listener.getLogger().println("Using password charset '" + charset + "'");
+        }
         File passwordFile = createTempFile("password", ".txt");
-        try (PrintWriter w = new PrintWriter(passwordFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(passwordFile, charset)) {
             w.println(Secret.toString(userPass.getPassword()));
         }
         return passwordFile;
