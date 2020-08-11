@@ -2166,11 +2166,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
-        String charset = "UTF-8";
-        if (isZos() && System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding") != null) {
-            charset = Charset.forName(System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding")).toString();
-	    listener.getLogger().println("Using passphrase charset '" + charset + "'");
-        }
+        String charset = computeCredentialFileCharset("passphrase", "UTF-8");
         File passphraseFile = createTempFile("phrase", ".txt");
         try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
             w.println(Secret.toString(sshUser.getPassphrase()));
@@ -2179,24 +2175,31 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private File createUsernameFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        String charset = computeCredentialFileCharset("name", "UTF-8");
         File usernameFile = createTempFile("username", ".txt");
-        try (PrintWriter w = new PrintWriter(usernameFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(usernameFile, charset)) {
             w.println(userPass.getUsername());
         }
         return usernameFile;
     }
 
     private File createPasswordFile(StandardUsernamePasswordCredentials userPass) throws IOException {
-        String charset = "UTF-8";
-        if (isZos() && System.getProperty(CliGitAPIImpl.class.getName() + ".password.file.encoding") != null) {
-            charset = Charset.forName(System.getProperty(CliGitAPIImpl.class.getName() + ".credentials.file.encoding")).toString();
-	    listener.getLogger().println("Using password charset '" + charset + "'");
-        }
+        String charset = computeCredentialFileCharset("password", "UTF-8");
         File passwordFile = createTempFile("password", ".txt");
         try (PrintWriter w = new PrintWriter(passwordFile, charset)) {
             w.println(Secret.toString(userPass.getPassword()));
         }
         return passwordFile;
+    }
+
+    private String computeCredentialFileCharset(String context, String defaultValue) {
+        String property = CliGitAPIImpl.class.getName() + ".user." + context + ".file.encoding";
+        if (isZos() && System.getProperty(property) != null) {
+            String charset = Charset.forName(property).toString();
+	    listener.getLogger().println("Using " + context + " charset '" + charset + "'");
+            return charset;
+        }
+        return defaultValue;
     }
 
     private String getPathToExe(String userGitExe) {
