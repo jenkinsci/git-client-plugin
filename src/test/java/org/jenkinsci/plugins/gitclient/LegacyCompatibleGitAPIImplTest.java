@@ -47,13 +47,6 @@ public class LegacyCompatibleGitAPIImplTest {
         gitImpl = "git";
     }
 
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @Before
     public void setUp() throws IOException, InterruptedException {
         repo = tempFolder.newFolder();
@@ -61,6 +54,9 @@ public class LegacyCompatibleGitAPIImplTest {
         git = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         assertNotGitRepo(repo);
         git.init();
+        CliGitCommand gitCmd = new CliGitCommand(git);
+        gitCmd.run("config", "user.name", "Vojtěch legacy Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client.test@example.com");
         assertIsGitRepo(repo);
     }
 

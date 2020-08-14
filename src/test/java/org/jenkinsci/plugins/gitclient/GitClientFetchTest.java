@@ -94,13 +94,15 @@ public class GitClientFetchTest {
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
+        testGitClient.init();
+        cliGitCommand.run("config", "user.name", "Vojtěch GitClientFetchTest Zweibrücken-Šafařík");
+        cliGitCommand.run("config", "user.email", "email.by.git.client.test@example.com");
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
     @Test
     public void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
-        testGitClient.init();
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
         testGitClient.add("file1");
         testGitClient.commit("commit1");
@@ -231,7 +233,6 @@ public class GitClientFetchTest {
     @Issue("JENKINS-19591")
     public void test_fetch_needs_preceding_prune() throws Exception {
         /* Create a working repo containing a commit */
-        testGitClient.init();
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
         testGitClient.add("file1");
         testGitClient.commit("commit1");
@@ -332,8 +333,6 @@ public class GitClientFetchTest {
 
     @Test
     public void test_prune_without_remote() throws Exception {
-        /* Create an empty working repo */
-        testGitClient.init();
         /* Prune when a remote is not yet defined */
         String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
         GitException gitException = assertThrows(GitException.class, () -> {
@@ -357,7 +356,6 @@ public class GitClientFetchTest {
         /* Create a working repo containing three branches */
         /* master -> branch1 */
         /*        -> branch2 */
-        testGitClient.init();
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
         workspace.touch(testGitDir, "file-master", "file master content " + UUID.randomUUID().toString());
         testGitClient.add("file-master");
@@ -418,10 +416,11 @@ public class GitClientFetchTest {
     public void test_fetch_from_url() throws Exception {
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.getGitClient().init();
+        newAreaWorkspace.launchCommand("git", "config", "user.name", "Vojtěch fetch from URL Zweibrücken-Šafařík");
+        newAreaWorkspace.launchCommand("git", "config", "user.email", "email.by.git.fetch.test@example.com");
         newAreaWorkspace.launchCommand("git", "commit", "--allow-empty", "-m", "init");
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 
-        testGitClient.init();
         cliGitCommand.run("remote", "add", "origin", newAreaWorkspace.getGitFileDir().getAbsolutePath());
         testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.<RefSpec>emptyList());
         assertThat(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")), is(true));
@@ -429,7 +428,6 @@ public class GitClientFetchTest {
 
     @Test
     public void test_fetch_shallow() throws Exception {
-        testGitClient.init();
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
@@ -444,7 +442,6 @@ public class GitClientFetchTest {
 
     @Test
     public void test_fetch_shallow_depth() throws Exception {
-        testGitClient.init();
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
@@ -459,7 +456,6 @@ public class GitClientFetchTest {
 
     @Test
     public void test_fetch_noTags() throws Exception {
-        testGitClient.init();
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).tags(false).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
