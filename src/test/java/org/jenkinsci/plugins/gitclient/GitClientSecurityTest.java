@@ -165,13 +165,6 @@ public class GitClientSecurityTest {
         return arguments.subList(0, 25);
     }
 
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @AfterClass
     public static void resetRemoteCheckUrl() {
         org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CHECK_REMOTE_URL = true;

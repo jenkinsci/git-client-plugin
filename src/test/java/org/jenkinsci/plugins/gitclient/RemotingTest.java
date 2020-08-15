@@ -51,18 +51,7 @@ public class RemotingTest {
 
         private final GitClient git;
 
-        private static boolean cliGitDefaultsSet = false;
-
-        private void setCliGitDefaults() throws Exception {
-            if (!cliGitDefaultsSet) {
-                CliGitCommand gitCmd = new CliGitCommand(null);
-                gitCmd.setDefaults();
-            }
-            cliGitDefaultsSet = true;
-        }
-
         private Work(GitClient git) throws Exception {
-            setCliGitDefaults();
             this.git = git;
         }
 

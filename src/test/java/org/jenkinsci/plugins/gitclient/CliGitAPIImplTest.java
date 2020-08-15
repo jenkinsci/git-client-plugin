@@ -27,7 +27,6 @@ public class CliGitAPIImplTest extends GitAPITestCase {
     private void setCliGitDefaults() throws Exception {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
-            gitCmd.setDefaults();
         }
         cliGitDefaultsSet = true;
     }

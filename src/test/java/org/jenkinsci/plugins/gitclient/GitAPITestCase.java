@@ -237,8 +237,13 @@ public abstract class GitAPITestCase extends TestCase {
 
         WorkingArea init() throws IOException, InterruptedException {
             git.init();
-            git.setAuthor("root", "root@mydomain.com");
-            git.setCommitter("root", "root@domain.com");
+            String userName = "root";
+            String emailAddress = "root@mydomain.com";
+            CliGitCommand gitCmd = new CliGitCommand(git);
+            gitCmd.run("config", "user.name", userName);
+            gitCmd.run("config", "user.email", emailAddress);
+            git.setAuthor(userName, emailAddress);
+            git.setCommitter(userName, emailAddress);
             return this;
         }
 
@@ -339,7 +344,10 @@ public abstract class GitAPITestCase extends TestCase {
     protected WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
         x.launchCommand("git", "clone", src, x.repoPath());
-        return new WorkingArea(x.repo);
+        WorkingArea clonedArea = new WorkingArea(x.repo);
+        clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
+        clonedArea.launchCommand("git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
+        return clonedArea;
     }
 
     private boolean timeoutVisibleInCurrentTest;

@@ -2195,7 +2195,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private String computeCredentialFileCharset(String context, String defaultValue) {
         String property = CliGitAPIImpl.class.getName() + ".user." + context + ".file.encoding";
         if (isZos() && System.getProperty(property) != null) {
-            String charset = Charset.forName(property).toString();
+            String charset = Charset.forName(System.getProperty(property)).toString();
 	    listener.getLogger().println("Using " + context + " charset '" + charset + "'");
             return charset;
         }

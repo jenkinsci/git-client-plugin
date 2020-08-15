@@ -169,13 +169,6 @@ public class GitClientTest {
         return arguments;
     }
 
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     /**
      * Mirror the git-client-plugin repo so that the tests have a reasonable and
      * repeatable set of commits, tags, and branches.
@@ -224,6 +217,9 @@ public class GitClientTest {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
     }
 
     private static final String COMMITTED_ONE_TEXT_FILE = "Committed one text file";
@@ -843,6 +839,9 @@ public class GitClientTest {
         File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
         gitClientTemp.init();
+        CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
+        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClientTemp.add(".");
@@ -887,6 +886,9 @@ public class GitClientTest {
         File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
         gitClientTemp.init();
+        CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
+        gitCmd.run("config", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.by.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClientTemp.add(".");
@@ -2206,6 +2208,9 @@ public class GitClientTest {
         assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
         GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
         urlRepoClient.init();
+        CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
+        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         File readme = new File(urlRepoDir, "readme");
         String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
@@ -2217,6 +2222,9 @@ public class GitClientTest {
         assertTrue("Failed to create repo dir that will have submodule", repoHasSubmodule.mkdir());
         GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoHasSubmodule).using(gitImplName).getClient();
         repoHasSubmoduleClient.init();
+        gitCmd = new CliGitCommand(repoHasSubmoduleClient);
+        gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());

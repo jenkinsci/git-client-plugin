@@ -193,6 +193,9 @@ public class RemoteGitImplTest {
 
     private ObjectId firstCommit(String fileName) throws Exception {
         firstAdd(fileName);
+        CliGitCommand gitCmd = new CliGitCommand(defaultClient);
+        gitCmd.run("config", "user.name", "Vojtěch remote Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.remote.test@example.com");
         remoteGit.commit("Adding the " + fileName + " file");
         return remoteGit.revParse("HEAD");
     }
