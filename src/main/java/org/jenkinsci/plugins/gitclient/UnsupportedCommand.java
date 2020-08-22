@@ -118,8 +118,8 @@ public class UnsupportedCommand {
      * @param threads count of threads to use for parallel submodule update
      * @return this for chaining
      */
-    public UnsupportedCommand threads(int threads) {
-        if (threads != 0) {
+    public UnsupportedCommand threads(Integer threads) {
+        if (threads != null && threads != 0) {
             useJGit = false;
         }
         return this;

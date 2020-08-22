@@ -141,6 +141,12 @@ public class UnsupportedCommandTest {
     }
 
     @Test
+    public void testThreadsNull() {
+        unsupportedCommand.threads(null);
+        assertTrue(unsupportedCommand.determineSupportForJGit());
+    }
+
+    @Test
     public void testThreadsZero() {
         unsupportedCommand.threads(0);
         assertTrue(unsupportedCommand.determineSupportForJGit());
