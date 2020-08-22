@@ -119,7 +119,7 @@ public class UnsupportedCommand {
      * @return this for chaining
      */
     public UnsupportedCommand threads(Integer threads) {
-        if (threads != 0) {
+        if (threads != null && threads != 0) {
             useJGit = false;
         }
         return this;
