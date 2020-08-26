@@ -2005,33 +2005,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    @NotImplementedInJGit
-    public void test_submodule_update_with_dirty_index() throws Exception {
-        w.git.clone_().url(localMirror()).execute();
-        w.git.checkout().ref("origin/tests/getSubmodules").execute();
-        // fetch the submodules a first time to initialize the directories.
-        w.git.submoduleUpdate().execute();
-        // create a new file and commit the submodule
-        File ntpRepo = w.file("modules/ntp");
-        WorkingArea submoduleWorkingArea = new WorkingArea(ntpRepo).init();
-        submoduleWorkingArea.touch("test_file");
-        submoduleWorkingArea.git.add("test_file");
-        submoduleWorkingArea.git.commit("submod-commit1");
-        // add the changed submodule to the repo
-        w.git.add("modules/ntp");
-        w.git.commit("commit1");
-        String head = w.git.revParse("HEAD").name();
-        // revert to the previous commit and clean the submodule
-        w.launchCommand("git", "reset", "HEAD~");
-        w.git.submoduleUpdate().execute();
-        // manually create the test_file again, which does not exist in this revision of the submodule
-        submoduleWorkingArea.touch("test_file");
-        // revert back to the previous HEAD
-        w.launchCommand("git", "reset", head);
-        // Now try and launch the submodule update again. Without --force, this will fail.
-        w.git.submoduleUpdate().execute();
-    }
-
     public void test_submodule_update_shallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();

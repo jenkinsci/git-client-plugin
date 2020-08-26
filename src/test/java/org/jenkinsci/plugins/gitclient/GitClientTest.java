@@ -2381,6 +2381,55 @@ public class GitClientTest {
         assertStatusUntrackedContent(gitClient, false);
     }
 
+    @Test
+    public void testSubmoduleUpdateWithDirtyIndex() throws Exception {
+        CliGitAPIImpl cliGitClient;
+        if (gitClient instanceof CliGitAPIImpl) {
+            cliGitClient = (CliGitAPIImpl) gitClient;
+        }
+        else {
+            // this test is only available for CLIGit
+            return;
+        }
+        final String branchName = "tests/getSubmodules";
+        final String ntpSubmodulePath = "modules/ntp";
+        final String testFileName = "test_file.txt";
+        final String testFilePath = new File(ntpSubmodulePath, testFileName).getPath();
+        checkoutAndAssertHasGitModules(branchName, true);
+        gitClient.submoduleInit();
+        gitClient.submoduleUpdate().execute();
+        // create a new file and commit the submodule
+        createFile(testFilePath, "test");
+        final GitClient subGitClient = gitClient.subGit(ntpSubmodulePath);
+        final String originalSubmoduleRevision = subGitClient.revParse("HEAD").name();
+        subGitClient.add("test_file.txt");
+        subGitClient.commit("submod-commit1");
+        final String updatedSubmoduleRevision = subGitClient.revParse("HEAD").name();
+        // add the changed submodule to the repo
+        gitClient.add(ntpSubmodulePath);
+        gitClient.commit("commit1");
+        final String head = gitClient.revParse("HEAD").name();
+        // revert to the previous commit and clean the submodule
+        cliGitClient.launchCommand("reset", "HEAD~");
+        gitClient.submoduleUpdate().execute();
+        assertFileNotInWorkingDir(gitClient, testFilePath);
+        // manually create the test_file again, which does not exist in this revision of the submodule
+        createFile(testFilePath, "test");
+        // revert back to the previous HEAD
+        cliGitClient.launchCommand("reset", head);
+        // Now try and launch the submodule update again. Without --force, this will fail.
+        try {
+            gitClient.submoduleUpdate().execute();
+            fail("Did not throw expected exception");
+        }
+        catch (GitException ge) {
+            assertThat(ge.getMessage(), containsString("The following untracked working tree files would be overwritten by checkout"));
+        }
+        assertEquals(subGitClient.revParse("HEAD").name(), originalSubmoduleRevision);
+        gitClient.submoduleUpdate().forceUpdate(true).execute();
+        assertEquals(subGitClient.revParse("HEAD").name(), updatedSubmoduleRevision);
+    }
+
     // @Issue("JENKINS-14083") // build can't recover from broken submodule path
     // @Issue("JENKINS-15399") // changing submodule URL does not update repository
     // @Issue("JENKINS-27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
