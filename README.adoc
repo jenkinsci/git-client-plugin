@@ -71,7 +71,17 @@ JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
 [#installing-portablegit-automatically]
 === Installing PortableGit Automatically
-The git client plugin supports installing PortableGit automatically from a zip or tar.gz file. First follow PortableGit's installation instructions and then repack so that the git executable is at `<zipname>.zip\bin\git.exe`. Leave Path to Git executable as git.exe and specify `bin\git.exe` for the Subdirectory of extracted archive. PortableGit will be installed to `$JENKINS_HOME\tools\git.exe` and the fully qualified path to the git exe will be `$JENKINS_HOME\tools\git.exe\bin\git.exe`
+The git client plugin can install link:https://git-scm.com/download/win[Git for Windows Portable] automatically from a zip file.
+
+* Download and install link:https://github.com/git-for-windows/git/releases/[Git for Windows Portable] from its 7z.exe file
+* Create a zip file of the installation as `PortableGit-a.bb.c.zip`
+* Upload that zip file to an HTTP server
+* Set the `Download URL for binary archive` as the URL of the uploaded zip file
+* Leave `Path to Git` executable as `git`
+* Specify `PortableGit-a.bb.c\bin\git.exe` for the `Subdirectory of extracted archive
+
+Git for Windows Portable will be installed on each agent in `tools\git\PortableGit-a.bb.c`.
+The path to the git executable will be `tools\git\PortableGit-a.bb.c\bin\git.exe`.
 
 [#windows-credentials-manager]
 == Windows Credentials Manager
