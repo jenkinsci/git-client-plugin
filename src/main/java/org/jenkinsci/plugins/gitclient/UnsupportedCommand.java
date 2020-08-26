@@ -191,6 +191,19 @@ public class UnsupportedCommand {
     }
 
     /**
+     * JGit is unsupported if forceUpdate is true.
+     *
+     * @param forceUpdate submodule update uses force checkout flag
+     * @return this for chaining
+     */
+    public UnsupportedCommand forceUpdate(boolean forceUpdate) {
+        if (forceUpdate) {
+            useJGit = false;
+        }
+        return this;
+    }
+
+    /**
      * Returns true if JGit is supported based on previously passed values.
      *
      * @return true if JGit is supported based on previously passed values

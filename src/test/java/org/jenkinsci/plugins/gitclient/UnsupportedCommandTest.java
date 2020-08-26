@@ -239,6 +239,18 @@ public class UnsupportedCommandTest {
     }
 
     @Test
+    public void testNotForceUpdate() {
+        unsupportedCommand.forceUpdate(false);
+        assertTrue(unsupportedCommand.determineSupportForJGit());
+    }
+
+    @Test
+    public void testForceUpdate() {
+        unsupportedCommand.forceUpdate(true);
+        assertFalse(unsupportedCommand.determineSupportForJGit());
+    }
+
+    @Test
     public void testDetermineSupportForJGit() {
         /* Confirm default is true */
         assertTrue(unsupportedCommand.determineSupportForJGit());

@@ -1294,6 +1294,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean remoteTracking                 = false;
             private boolean parentCredentials              = false;
             private boolean shallow                        = false;
+            private boolean forceUpdate                    = false;
             private String  ref                            = null;
             private Map<String, String> submodBranch   = new HashMap<>();
             private Integer timeout;
@@ -1343,6 +1344,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public SubmoduleUpdateCommand forceUpdate(boolean forceUpdate) {
+                this.forceUpdate = forceUpdate;
+                return this;
+            }
+
+            @Override
             public SubmoduleUpdateCommand depth(Integer depth) {
                 this.depth = depth;
                 return this;
@@ -1366,8 +1373,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
 
+                args.add("submodule", "update");
                 // Force the update, in the same manner we force checkouts
-                args.add("submodule", "update", "--checkout", "--force");
+                if (forceUpdate) {
+                    args.add("--checkout", "--force");
+                }
                 if (recursive) {
                     args.add("--init", "--recursive");
                 }

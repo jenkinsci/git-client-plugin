@@ -2214,6 +2214,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand forceUpdate(boolean forceUpdate) {
+                if (forceUpdate) {
+                    listener.getLogger().println("[WARNING] JGit doesn't support forceUpdate clone. This flag is ignored");
+                }
+                return this;
+            }
+
+            @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
                 listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
