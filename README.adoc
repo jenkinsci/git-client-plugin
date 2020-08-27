@@ -71,7 +71,10 @@ JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
 [#installing-portablegit-automatically]
 === Installing PortableGit Automatically
+
 The git client plugin can install link:https://git-scm.com/download/win[Git for Windows Portable] automatically from a zip file.
+
+image::images/portable-git-for-windows-as-a-tool.png[Configure Git for Windows Portable to install automatically]
 
 * Download and install link:https://github.com/git-for-windows/git/releases/[Git for Windows Portable] from its 7z.exe file.
 * Create a zip file of the installation as `PortableGit-a.bb.c.zip`.
