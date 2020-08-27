@@ -69,6 +69,21 @@ A workaround was implemented to provide JGit but use Apache HTTP client for auth
 The issue in JGit has now been resolved and delivered in git client plugin releases.
 JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
+[#installing-portablegit-automatically]
+=== Installing PortableGit Automatically
+The git client plugin can install link:https://git-scm.com/download/win[Git for Windows Portable] automatically from a zip file.
+
+* Download and install link:https://github.com/git-for-windows/git/releases/[Git for Windows Portable] from its 7z.exe file.
+* Create a zip file of the installation as `PortableGit-a.bb.c.zip`.
+* Upload that zip file to an HTTP server.
+* Set the `Download URL for binary archive` as the URL of the uploaded zip file.
+* Leave `Path to Git` executable as `git`.
+* Specify `PortableGit-a.bb.c\bin\git.exe` for the `Subdirectory of extracted archive`.
+  This points to the git.exe in the archive relative to the root of the archive.
+
+Git for Windows Portable will be installed on each agent in `tools\git\PortableGit-a.bb.c`.
+The path to the git executable will be `tools\git\PortableGit-a.bb.c\bin\git.exe`.
+
 [#windows-credentials-manager]
 == Windows Credentials Manager
 
