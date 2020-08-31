@@ -2172,6 +2172,10 @@ public class GitClientTest {
         assertBranches(gitClient, oldBranchName);
         assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys"); // No submodule init or update yet
 
+        if (isWindows() && repoRoot.getAbsolutePath().length() > 120) {
+            // Skip the test when long paths would break the test
+            return;
+        }
         /* Create tests/addSubmodules branch with one more module */
         String newBranchName = "tests/addSubmodules";
         String newDirName = "git-client-plugin-" + (10 + random.nextInt(90));
