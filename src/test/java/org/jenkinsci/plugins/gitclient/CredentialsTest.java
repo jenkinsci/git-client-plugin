@@ -35,7 +35,6 @@ import org.junit.After;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
@@ -378,20 +377,21 @@ public class CredentialsTest {
     }
 
     /**
-     * Returns true if another test should be allowed to start.
+     * Returns true if another test should not be allowed to start.
      * JenkinsRule test timeout defaults to 180 seconds.
      *
-     * @return true if another test should be allowed to start
+     * @return true if another test should not be allowed to start
      */
-    private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 70) * 1000L);
+    private boolean testPeriodExpired() {
+        return (System.currentTimeMillis() - firstTestStartTime) > ((180 - 70) * 1000L);
     }
 
     @Test
     @Issue("JENKINS-50573")
     public void testFetchWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
-        assumeFalse(lfsSpecificTest);
+        if (testPeriodExpired() || lfsSpecificTest) {
+            return;
+        }
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
@@ -418,7 +418,9 @@ public class CredentialsTest {
 
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
+        if (testPeriodExpired()) {
+            return;
+        }
         addCredential();
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
@@ -449,8 +451,9 @@ public class CredentialsTest {
     @Test
     @Issue("JENKINS-45228")
     public void testLfsMergeWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
-        assumeTrue(lfsSpecificTest);
+        if (testPeriodExpired() || !lfsSpecificTest) {
+            return;
+        }
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());

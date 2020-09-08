@@ -22,7 +22,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -119,7 +118,9 @@ public class FilePermissionsTest {
 
     @Test
     public void posixPermissionTest() throws IOException, GitException, InterruptedException {
-        Assume.assumeFalse(isWindows());
+        if (isWindows()) {
+            return;
+        }
         addFile();
         modifyFile();
     }

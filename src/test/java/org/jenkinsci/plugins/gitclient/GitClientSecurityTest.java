@@ -33,7 +33,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.*;
 
 /**
  * Git client security tests,
@@ -303,7 +302,9 @@ public class GitClientSecurityTest {
     @Test
     @Issue("SECURITY-1534")
     public void testGetRemoteSymbolicReferences_SECURITY_1534() throws Exception {
-        assumeTrue(CLI_GIT_SUPPORTS_SYMREF);
+        if (!CLI_GIT_SUPPORTS_SYMREF) {
+            return;
+        }
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
                                       () -> {
