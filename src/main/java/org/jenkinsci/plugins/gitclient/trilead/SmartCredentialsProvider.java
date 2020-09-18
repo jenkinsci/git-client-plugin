@@ -7,6 +7,9 @@ import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import hudson.model.TaskListener;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -24,6 +27,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     private StandardCredentials defaultCredentials;
 
     private Map<String, StandardCredentials> specificCredentials = new HashMap<>();
+    private static final Logger LOGGER = Logger.getLogger(SmartCredentialsProvider.class.getName());
 
     /**
      * Constructor for SmartCredentialsProvider.
@@ -52,7 +56,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
      * @since 1.2.0
      */
     public synchronized void addCredentials(String url, StandardCredentials credentials) {
-        specificCredentials.put(url, credentials);
+        specificCredentials.put(normalizeURI(url), credentials);
     }
 
     /**
@@ -109,11 +113,14 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     /** {@inheritDoc} */
     @Override
     public synchronized boolean get(URIish uri, CredentialItem... credentialItems) throws UnsupportedCredentialItem {
-        StandardCredentials c = specificCredentials.get(uri == null ? null : uri.toString());
+        StandardCredentials c = specificCredentials.get(uri == null ? null : normalizeURI(uri.toString()));
         if (c == null) {
             c = defaultCredentials;
         }
         if (c == null) {
+            if (uri != null) {
+                LOGGER.log(Level.FINE, () -> "No credentials provided for " + uri);
+            }
             return false;
         }
         for (CredentialItem i : credentialItems) {
@@ -143,5 +150,9 @@ public class SmartCredentialsProvider extends CredentialsProvider {
             throw new UnsupportedCredentialItem(uri, i.getClass().getName() + ":" + i.getPromptText());
         }
         return true;
+    }
+
+    private String normalizeURI(String uri) {
+        return StringUtils.removeEnd(StringUtils.removeEnd(uri, "/"), ".git");
     }
 }
