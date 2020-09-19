@@ -3,12 +3,12 @@
 buildPlugin(failFast: false)
 
 // Return true if benchmarks should be run
-// Benchmarks run on the master branch always
 // Benchmarks run if any of the most recent 3 commits includes the word 'benchmark'
 boolean shouldRunBenchmarks(String branchName) {
-    if (branchName.endsWith('master')) { // accept both origin/master and master
-        return true;
-    }
+    // Disable benchmarks on master branch for speed
+    // if (branchName.endsWith('master')) { // accept both origin/master and master
+    //     return true;
+    // }
     def recentCommitMessages
     node('linux') {
         checkout scm
