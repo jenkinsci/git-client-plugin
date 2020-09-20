@@ -179,6 +179,16 @@ public class UnsupportedCommand {
     }
 
     /**
+     * JGit doesn't support Git Publisher
+     */
+    public UnsupportedCommand gitPublisher(boolean isEnabled) {
+        if (isEnabled) {
+            useJGit = false;
+        }
+        return this;
+    }
+
+    /**
      * Returns true if JGit is supported based on previously passed values.
      *
      * @return true if JGit is supported based on previously passed values
