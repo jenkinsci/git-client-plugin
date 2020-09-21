@@ -179,7 +179,9 @@ public class UnsupportedCommand {
     }
 
     /**
-     * JGit doesn't support Git Publisher
+     * JGit doesn't support Git Publisher.
+     * @param isEnabled if true, then git publisher post-build action is enabled in this context
+     * @return this for chaining
      */
     public UnsupportedCommand gitPublisher(boolean isEnabled) {
         if (isEnabled) {
