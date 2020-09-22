@@ -225,6 +225,20 @@ public class UnsupportedCommandTest {
     }
 
     @Test
+    public void testGitPublisherDisabled() {
+        /* Disabled git publisher is allowed to use JGit */
+        unsupportedCommand.gitPublisher(false);
+        assertTrue(unsupportedCommand.determineSupportForJGit());
+    }
+
+    @Test
+    public void testGitPublisher() {
+        /* Enabled git publisher must not use JGit */
+        unsupportedCommand.gitPublisher(true);
+        assertFalse(unsupportedCommand.determineSupportForJGit());
+    }
+
+    @Test
     public void testDetermineSupportForJGit() {
         /* Confirm default is true */
         assertTrue(unsupportedCommand.determineSupportForJGit());
