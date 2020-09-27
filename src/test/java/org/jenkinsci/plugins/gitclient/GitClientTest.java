@@ -2569,7 +2569,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
         if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
+            throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax");
         }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
     }
