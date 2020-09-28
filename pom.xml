@@ -385,6 +385,12 @@
         <configuration>
           <forkCount>0.8C</forkCount>
           <reuseForks>true</reuseForks>
+          <systemProperties>
+            <property>
+              <name>surefire.profile</name>
+              <value>${project.activeProfiles[0].id}</value>
+            </property>
+          </systemProperties>
         </configuration>
       </plugin>
     </plugins>

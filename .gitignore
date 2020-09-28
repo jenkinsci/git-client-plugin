@@ -13,6 +13,9 @@ work/
 .classpath
 .settings/
 
+# Java microbenchmark harness results file
+/jmh-report.json
+
 /nb-configuration.xml
 
 # Vim
