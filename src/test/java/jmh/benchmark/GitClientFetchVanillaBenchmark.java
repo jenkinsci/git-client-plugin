@@ -92,7 +92,7 @@
 //    }
 //
 //    @After
-//    public void doTearDown() {
+//    public void tearDown() {
 //        try {
 //            File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
 //            System.out.println(gitDir.isDirectory());

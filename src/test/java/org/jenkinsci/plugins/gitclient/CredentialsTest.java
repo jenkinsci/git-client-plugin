@@ -335,11 +335,11 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void doFetch(String source) throws Exception {
-        doFetch(source, "master", true);
+    private void gitFetch(String source) throws Exception {
+        gitFetch(source, "master", true);
     }
 
-    private void doFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
+    private void gitFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
@@ -397,10 +397,10 @@ public class CredentialsTest {
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         addCredential();
         /* Fetch with remote URL */
-        doFetch(gitRepoURL);
+        gitFetch(gitRepoURL);
         git.setRemoteUrl("origin", gitRepoURL);
         /* Fetch with remote name "origin" instead of remote URL */
-        doFetch("origin");
+        gitFetch("origin");
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         if (submodules) {
@@ -461,7 +461,7 @@ public class CredentialsTest {
 
         /* Fetch with remote name "origin" instead of remote URL */
         git.setRemoteUrl("origin", gitRepoURL);
-        doFetch("origin", "*", false);
+        gitFetch("origin", "*", false);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         git.checkout().branch("master").ref(master.getName()).lfsRemote("origin").deleteBranchIfExist(true).execute();
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));

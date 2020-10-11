@@ -29,7 +29,7 @@ public class GitClientInitBenchmark {
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
-        public void doSetup() throws Exception {
+        public void setup() throws Exception {
             tmp.before();
             gitDir = tmp.newFolder();
 
@@ -39,7 +39,7 @@ public class GitClientInitBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void doTearDown() {
+        public void tearDown() {
             try {
                 // making sure that git init made a git an empty repository
                 File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
