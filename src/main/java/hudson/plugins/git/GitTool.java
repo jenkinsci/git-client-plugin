@@ -17,6 +17,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.File;
 import java.io.IOException;
@@ -151,6 +152,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return true;
         }
 
+        @RequirePOST
         public FormValidation doCheckHome(@QueryParameter File value) {
             Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
             String path = value.getPath();
