@@ -4,7 +4,7 @@
         <f:textbox />
     </f:entry>
     <f:entry title="${%Path to Git executable}" field="home">
-        <f:textbox />
+        <f:textbox checkMethod="post"/>
     </f:entry>
     <j:set var="toolDescriptor" value="${descriptor}" /><!-- to make this descriptor accessible from properties -->
     <f:descriptorList descriptors="${descriptor.propertyDescriptors}" field="properties"/>
