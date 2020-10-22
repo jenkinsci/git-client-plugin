@@ -1235,7 +1235,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m");
+        ArgumentListBuilder args = new ArgumentListBuilder("log", "--first-parent", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m");
         if (useRawOutput) {
             args.add("--raw");
         }
