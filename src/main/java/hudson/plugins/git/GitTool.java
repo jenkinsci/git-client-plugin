@@ -95,11 +95,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     public GitTool forNode(Node node, TaskListener log) throws IOException, InterruptedException {
-        return new GitTool(getName(), translateFor(node, log), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
     public GitTool forEnvironment(EnvVars environment) {
-        return new GitTool(getName(), environment.expand(getHome()), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
     }
 
     @Override
@@ -126,7 +126,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         String defaultGitExe = isWindows() ? "git.exe" : "git";
-        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
+        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.emptyList());
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
     }

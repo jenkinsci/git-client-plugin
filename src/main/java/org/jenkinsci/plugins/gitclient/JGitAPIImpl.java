@@ -278,7 +278,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
                 return this;
             }
 
@@ -2442,7 +2442,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Adds all the refs as start commits.
      */
     private void markAllRefs(RevWalk walk) throws IOException {
-        markRefs(walk, Predicates.<Ref>alwaysTrue());
+        markRefs(walk, Predicates.alwaysTrue());
     }
 
     /**

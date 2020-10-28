@@ -2680,7 +2680,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
                 return this;
             }
 
@@ -3584,7 +3584,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          */
         String[] output = result.split("[\\n\\r]+");
         if (output.length == 0 || (output.length == 1 && output[0].isEmpty())) {
-            return Collections.<GitObject>emptySet();
+            return Collections.emptySet();
         }
         Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^^]+)(\\^\\{\\})?");
         Map<String, ObjectId> tagMap = new HashMap<>();
