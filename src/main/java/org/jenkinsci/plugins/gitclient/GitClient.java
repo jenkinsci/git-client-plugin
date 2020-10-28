@@ -147,7 +147,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void init() throws GitException, InterruptedException;
+    void init() throws GitException, InterruptedException;
 
     /**
      * add.
@@ -897,7 +897,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
+    List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
