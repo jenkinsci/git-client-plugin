@@ -131,7 +131,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException;
+    void fetch(String repository, String refspec) throws GitException, InterruptedException;
 
     /**
      * Retrieve commits from RemoteConfig.

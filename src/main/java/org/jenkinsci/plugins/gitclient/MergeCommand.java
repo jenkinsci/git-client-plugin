@@ -34,7 +34,7 @@ public interface MergeCommand extends GitCommand {
      */
     MergeCommand setStrategy(Strategy strategy);
 
-    public enum Strategy {
+    enum Strategy {
         DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE, RECURSIVE_THEIRS;
 
         @Override
@@ -53,7 +53,7 @@ public interface MergeCommand extends GitCommand {
      */
     MergeCommand setGitPluginFastForwardMode(GitPluginFastForwardMode fastForwardMode);
 
-    public enum GitPluginFastForwardMode {
+    enum GitPluginFastForwardMode {
         FF,        // Default option, fast forward update the branch pointer only
         FF_ONLY,   // Create a merge commit even for a fast forward
         NO_FF;     // Abort unless the merge is a fast forward

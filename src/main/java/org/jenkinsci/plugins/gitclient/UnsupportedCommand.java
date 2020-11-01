@@ -22,7 +22,7 @@ public class UnsupportedCommand {
      * @return this for chaining
      */
     public UnsupportedCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-        List<String> sparseList = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+        List<String> sparseList = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
         if (!sparseList.isEmpty()) {
             useJGit = false;
         }
