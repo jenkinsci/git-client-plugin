@@ -610,7 +610,37 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
 
-    public void test_clean_with_parameter() throws Exception {
+    public void test_clean_keeping_ignored() throws Exception {
+        w.init();
+
+        String unignoredDirName1 = "unignored-dir";
+        String unignoredFileName1 = unignoredDirName1 + File.separator + "unignored-file-in-dir";
+        String unignoredFileName2 = "unignored-file-in-root";
+        assertTrue("Did not create dir " + unignoredDirName1, w.file(unignoredDirName1).mkdir());
+        w.touch(unignoredFileName1);
+        w.touch(unignoredFileName2);
+
+        String ignoredDirName1 = "ignored-dir";
+        String ignoredFileName1 = ignoredDirName1 + File.separator + "ignored-file-in-dir";
+        String ignoredFileName2 = "ignored-file-in-root";
+        assertTrue("Did not create dir " + ignoredDirName1, w.file(ignoredDirName1).mkdir());
+        w.touch(ignoredFileName1);
+        w.touch(ignoredFileName2);
+
+        w.touch(".gitignore", ignoredDirName1 + '\n' + ignoredFileName2 + '\n');
+        w.git.add(".gitignore");
+        w.git.commit("Add .gitignore");
+
+        w.git.clean(false, true);
+        assertFalse(w.exists(unignoredDirName1));
+        assertFalse(w.exists(unignoredFileName1));
+        assertFalse(w.exists(unignoredFileName2));
+        assertTrue(w.exists(ignoredDirName1));
+        assertTrue(w.exists(ignoredFileName1));
+        assertTrue(w.exists(ignoredFileName2));
+    }
+
+    public void test_clean_with_submodules() throws Exception {
         w.init();
         w.commitEmpty("init");
 
