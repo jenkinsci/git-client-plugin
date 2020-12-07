@@ -1406,6 +1406,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // the repository builder does not create the alternates file
                     if (reference != null && !reference.isEmpty()) {
                         File referencePath = new File(reference);
+                        if (!referencePath.exists()) {
+                            if (reference.endsWith("/${GIT_URL}")) {
+                                // See comments in CliGitAPIImpl.java for details
+                                // Keep the two blocks in sync (refactor into method?)
+                                reference = reference.replaceAll("\\$\\{GIT_URL\\}$", url).replaceAll("/*$", "").replaceAll(".git$", "");
+                                referencePath = new File(reference);
+                                if (!referencePath.exists()) {
+                                    // Normalize the URLs with or without .git suffix to
+                                    // be served by same dir with the refrepo contents
+                                    reference += ".git";
+                                    referencePath = new File(reference);
+                                }
+                                // Note: both these logs are needed, they are used in selftest
+                                if (referencePath.exists()) {
+                                    listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference);
+                                } else {
+                                    listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference + " was not found");
+                                }
+                            }
+                        }
+
                         if (!referencePath.exists())
                             listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                         else if (!referencePath.isDirectory())

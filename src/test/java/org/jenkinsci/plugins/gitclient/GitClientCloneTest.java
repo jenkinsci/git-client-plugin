@@ -238,6 +238,21 @@ public class GitClientCloneTest {
         assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
     }
 
+    @Test
+    public void test_clone_reference_parameterized() throws Exception, IOException, InterruptedException {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL}").execute();
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertThat("Reference repo name-parsing logged in: " + messages, handler.containsMessageSubstring("Parameterized reference path replaced with: "), is(true));
+        // Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
+        //assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+        //assertAlternateFilePointsToLocalMirror();
+        //assertBranchesExist(testGitClient.getBranches(), "master");
+        //assertNoObjectsInRepository();
+    }
+
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
 
     @Test

@@ -762,6 +762,39 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (reference != null && !reference.isEmpty()) {
                     File referencePath = new File(reference);
+                    if (!referencePath.exists()) {
+                        if (reference.endsWith("/${GIT_URL}")) {
+                            // See also JGitAPIImpl.java and keep the two blocks in
+                            // sync (TODO: refactor into a method both would use?)
+                            // For mass-configured jobs, like Organization Folders,
+                            // allow to support parameterized paths to many refrepos.
+                            // End-users can set up webs of symlinks to same repos
+                            // known by different URLs (and/or including their forks
+                            // also cached in same index). Luckily all URL chars are
+                            // valid parts of path name... in Unix... Maybe parse or
+                            // escape chars for URLs=>paths with Windows in mind?
+                            // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+                            // Further ideas: beside "GIT_URL" other meta variables
+                            // can be introduced, e.g. to escape non-ascii chars for
+                            // portability? Support SHA or MD5 hashes of URLs as
+                            // pathnames?
+                            reference = reference.replaceAll("\\$\\{GIT_URL\\}$", url).replaceAll("/*$", "").replaceAll(".git$", "");
+                            referencePath = new File(reference);
+                            if (!referencePath.exists()) {
+                                // Normalize the URLs with or without .git suffix to
+                                // be served by same dir with the refrepo contents
+                                reference += ".git";
+                                referencePath = new File(reference);
+                            }
+                            // Note: both these logs are needed, they are used in selftest
+                            if (referencePath.exists()) {
+                                listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference);
+                            } else {
+                                listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference + " was not found");
+                            }
+                        }
+                    }
+
                     if (!referencePath.exists())
                         listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                     else if (!referencePath.isDirectory())
