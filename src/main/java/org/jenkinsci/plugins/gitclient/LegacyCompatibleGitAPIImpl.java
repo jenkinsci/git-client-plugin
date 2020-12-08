@@ -188,7 +188,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         File referencePath = new File(reference);
-        if (!referencePath.exists()) {
+        if (!referencePath.exists() && url != null && !url.isEmpty()) {
             if (reference.endsWith("/${GIT_URL}")) {
                 // For mass-configured jobs, like Organization Folders,
                 // allow to support parameterized paths to many refrepos.
