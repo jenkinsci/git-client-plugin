@@ -451,8 +451,8 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     /**
      * clean.
      *
-     * @param cleanSubmodule flag to add extra -f
-     * @param keepIgnored flag to remove -x
+     * @param cleanSubmodule Remove files in submodules using the same rules as are used in the base repository
+     * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */

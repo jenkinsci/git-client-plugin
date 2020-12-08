@@ -458,12 +458,12 @@ public interface GitClient {
 
     /**
      * Fully revert working copy to a clean state, i.e. run both
-     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-reset.html">git-reset(1) --hard</a> then
-     * <a href="https://www.kernel.org/pub/software/scm/git/docs/git-clean.html">git-clean(1)</a> for working copy to
+     * <a href="https://git-scm.com/docs/git-reset">git-reset(1) --hard</a> then
+     * <a href="https://git-scm.com/docs/git-clean">git-clean(1)</a> for working copy to
      * match a fresh clone.
      *
-     * @param cleanSubmodule flag to add extra -f
-     * @param keepIgnored flag to remove -x
+     * @param cleanSubmodule Remove files in submodules using the same rules as are used in the base repository
+     * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
