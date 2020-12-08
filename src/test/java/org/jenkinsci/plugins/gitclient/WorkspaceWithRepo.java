@@ -76,11 +76,14 @@ public class WorkspaceWithRepo {
      * @throws InterruptedException when execption is interrupted
      */
     String localMirror() throws IOException, InterruptedException {
+        return localMirror("clone.git");
+    }
+
+    String localMirror(String cloneDirName) throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
         for (File f = base; f != null; f = f.getParentFile()) {
             File targetDir = new File(f, "target");
             if (targetDir.exists()) {
-                String cloneDirName = "clone.git";
                 File clone = new File(targetDir, cloneDirName);
                 if (!clone.exists()) {
                     /* Clone to a temporary directory then move the
