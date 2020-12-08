@@ -245,7 +245,10 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
-        assertThat("Reference repo name-parsing logged in: " + messages, handler.containsMessageSubstring("Parameterized reference path replaced with: "), is(true));
+        assertThat("Reference repo name-parsing logged in: " + messages,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: "),
+            is(true));
         // Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
         //assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
         //assertAlternateFilePointsToLocalMirror();

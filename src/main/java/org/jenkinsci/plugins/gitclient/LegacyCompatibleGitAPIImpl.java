@@ -158,6 +158,56 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         clone(source, rc.getName(), useShallowClone, null);
     }
 
+    /** Yield the File object for the reference repository local filesystem
+     * pathname. Note that the provided string may be suffixed with expandable
+     * tokens which allow to store a filesystem structure of multiple small
+     * reference repositories instead of a big combined repository, while
+     * providing a single inheritable configuration string value. Callers
+     * can check whether the original path was used or mangled into another
+     * by comparing their "reference" with returned object's File.getName().
+     *
+     * At some point this plugin might also maintain that filesystem structure.
+     */
+    public File findParameterizedReferenceRepository(String reference, String url) {
+        if (reference == null || reference.isEmpty()) {
+            return null;
+        }
+
+        File referencePath = new File(reference);
+        if (!referencePath.exists()) {
+            if (reference.endsWith("/${GIT_URL}")) {
+                // For mass-configured jobs, like Organization Folders,
+                // allow to support parameterized paths to many refrepos.
+                // End-users can set up webs of symlinks to same repos
+                // known by different URLs (and/or including their forks
+                // also cached in same index). Luckily all URL chars are
+                // valid parts of path name... in Unix... Maybe parse or
+                // escape chars for URLs=>paths with Windows in mind?
+                // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
+                // Further ideas: beside "GIT_URL" other meta variables
+                // can be introduced, e.g. to escape non-ascii chars for
+                // portability? Support base64, SHA or MD5 hashes of URLs
+                // as pathnames? Normalize first (lowercase, .git, ...)?
+                reference = reference.replaceAll("\\$\\{GIT_URL\\}$", url).replaceAll("/*$", "").replaceAll(".git$", "");
+                referencePath = null; // GC
+                referencePath = new File(reference);
+            }
+        }
+
+        if (!referencePath.exists()) {
+            // Normalize the URLs with or without .git suffix to
+            // be served by same dir with the refrepo contents
+            reference += ".git";
+            referencePath = null; // GC
+            referencePath = new File(reference);
+        }
+
+        // Note that the referenced path may exist or not exist, in the
+        // latter case it is up to the caller to decide on course of action.
+        // Maybe create this dir to begin a reference repo (given the options)?
+        return referencePath;
+    }
+
     /** {@inheritDoc} */
     @Deprecated
     public List<ObjectId> revListBranch(String branchId) throws GitException, InterruptedException {

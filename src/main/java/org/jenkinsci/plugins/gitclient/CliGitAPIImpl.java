@@ -761,64 +761,50 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (reference != null && !reference.isEmpty()) {
-                    File referencePath = new File(reference);
-                    if (!referencePath.exists()) {
-                        if (reference.endsWith("/${GIT_URL}")) {
-                            // See also JGitAPIImpl.java and keep the two blocks in
-                            // sync (TODO: refactor into a method both would use?)
-                            // For mass-configured jobs, like Organization Folders,
-                            // allow to support parameterized paths to many refrepos.
-                            // End-users can set up webs of symlinks to same repos
-                            // known by different URLs (and/or including their forks
-                            // also cached in same index). Luckily all URL chars are
-                            // valid parts of path name... in Unix... Maybe parse or
-                            // escape chars for URLs=>paths with Windows in mind?
-                            // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
-                            // Further ideas: beside "GIT_URL" other meta variables
-                            // can be introduced, e.g. to escape non-ascii chars for
-                            // portability? Support SHA or MD5 hashes of URLs as
-                            // pathnames?
-                            reference = reference.replaceAll("\\$\\{GIT_URL\\}$", url).replaceAll("/*$", "").replaceAll(".git$", "");
-                            referencePath = new File(reference);
-                            if (!referencePath.exists()) {
-                                // Normalize the URLs with or without .git suffix to
-                                // be served by same dir with the refrepo contents
-                                reference += ".git";
-                                referencePath = new File(reference);
-                            }
+                    File referencePath = findParameterizedReferenceRepository(reference, url);
+                    if (referencePath == null) {
+                        listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
+                    } else {
+                        if (!referencePath.getName().equals(reference)) {
                             // Note: both these logs are needed, they are used in selftest
+                            String msg = "Parameterized reference path ";
+                            msg += "'" + reference + "'";
+                            msg += " replaced with: ";
+                            msg += "'" + referencePath.getName() + "'";
                             if (referencePath.exists()) {
-                                listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference);
+                                listener.getLogger().println("[WARNING] " + msg);
                             } else {
-                                listener.getLogger().println("[WARNING] Parameterized reference path replaced with: " + reference + " was not found");
+                                listener.getLogger().println("[WARNING] " + msg + " does not exist");
                             }
+                            reference = referencePath.getName();
                         }
-                    }
 
-                    if (!referencePath.exists())
-                        listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                    else if (!referencePath.isDirectory())
-                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                    else {
-                        // reference path can either be a normal or a base repository
-                        File objectsPath = new File(referencePath, ".git/objects");
-                        if (!objectsPath.isDirectory()) {
-                            // reference path is bare repo
-                            objectsPath = new File(referencePath, "objects");
-                        }
-                        if (!objectsPath.isDirectory())
-                            listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
+                        if (!referencePath.exists())
+                            listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
+                        else if (!referencePath.isDirectory())
+                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
                         else {
-                            File alternates = new File(workspace, ".git/objects/info/alternates");
-                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
-                                String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
-                                listener.getLogger().println("Using reference repository: " + reference);
-                                // git implementations on windows also use
-                                w.print(absoluteReference);
-                            } catch (UnsupportedEncodingException ex) {
-                                listener.error("Default character set is an unsupported encoding");
-                            } catch (FileNotFoundException e) {
-                                listener.error("Failed to setup reference");
+                            // reference path can either be a normal or a base repository
+                            File objectsPath = new File(referencePath, ".git/objects");
+                            if (!objectsPath.isDirectory()) {
+                                // reference path is bare repo
+                                objectsPath = new File(referencePath, "objects");
+                            }
+                            if (!objectsPath.isDirectory())
+                                listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
+                            else {
+                                // Go behind git's back to write a meta file in new workspace
+                                File alternates = new File(workspace, ".git/objects/info/alternates");
+                                try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                                    String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                    listener.getLogger().println("Using reference repository: " + reference);
+                                    // git implementations on windows also use
+                                    w.print(absoluteReference);
+                                } catch (UnsupportedEncodingException ex) {
+                                    listener.error("Default character set is an unsupported encoding");
+                                } catch (FileNotFoundException e) {
+                                    listener.error("Failed to setup reference");
+                                }
                             }
                         }
                     }
