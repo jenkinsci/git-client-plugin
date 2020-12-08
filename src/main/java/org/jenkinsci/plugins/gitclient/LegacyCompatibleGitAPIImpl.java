@@ -198,6 +198,26 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
         File referencePath = new File(reference);
         if (!referencePath.exists() && url != null && !url.isEmpty()) {
+            // Note: this normalization might crush several URLs into one,
+            // and as far as is known this would be the goal - people tend
+            // to use or omit .git suffix, or spell with varied case, while
+            // it means the same thing to known Git platforms.
+            // The actual reference repository directory may choose to have
+            // original URL strings added as remotes (in case some are case
+            // sensitive and different).
+            String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+            if (!url.contains("://") &&
+                !url.startsWith("/") &&
+                !url.startsWith(".")
+            ) {
+                // Not an URL with schema, not an absolute or relative pathname
+                File urlPath = new File(url);
+                if (!urlPath.exists()) {
+                    // Also not a subdirectory without "./" prefix...
+                    urlNormalized = "ssh://" + urlNormalized;
+                }
+            }
+
             if (reference.endsWith("/${GIT_URL}")) {
                 // For mass-configured jobs, like Organization Folders,
                 // allow to support parameterized paths to many refrepos.
@@ -211,7 +231,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // can be introduced, e.g. to escape non-ascii chars for
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
-                reference = reference.replaceAll("\\$\\{GIT_URL\\}$", url).replaceAll("/*$", "").replaceAll(".git$", "");
+                reference = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
                 referencePath = null; // GC
                 referencePath = new File(reference);
             }
