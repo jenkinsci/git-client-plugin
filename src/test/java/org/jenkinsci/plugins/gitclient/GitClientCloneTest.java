@@ -6,6 +6,7 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -254,6 +255,53 @@ public class GitClientCloneTest {
         //assertAlternateFilePointsToLocalMirror();
         //assertBranchesExist(testGitClient.getBranches(), "master");
         //assertNoObjectsInRepository();
+    }
+
+    @Test
+    public void test_clone_reference_parameterized_sha256() throws Exception, IOException, InterruptedException {
+        String wsMirror = workspace.localMirror();
+        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java */
+        String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
+
+        /* Make a new repo replica to use as refrepo, in specified location */
+        // Start of the path to pass into `git clone` call
+        File fRefrepoBase = new File("refrepo.git").getAbsoluteFile();
+        String wsRefrepoBase = fRefrepoBase.getName(); // String with full pathname
+        String wsRefrepo = null;
+        try {
+            if (fRefrepoBase.mkdirs()) {
+            /* Note: per parser of magic suffix, use slash - not OS separator char
+             * And be sure to use relative paths here (see
+             * WorkspaceWithRepo.java::localMirror()):
+             */
+                wsRefrepo = workspace.localMirror("refrepo.git/" + wsMirrorHash);
+            }
+        } catch (RuntimeException e) {
+            wsRefrepo = null;
+            Util.deleteRecursive(fRefrepoBase);
+            // At worst, the test would log that it mangled and parsed
+            // the provided string, as we check in log below
+        }
+
+        testGitClient.clone_().url(wsMirror).repositoryName("origin").reference(wsRefrepoBase + "/${GIT_URL_SHA256}").execute();
+
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertThat("Reference repo name-parsing logged in: " + messages,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: ") &&
+            (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)) ,
+            is(true));
+
+        if (wsRefrepo != null) {
+            assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+            assertAlternateFilePointsToLocalMirror();
+            assertBranchesExist(testGitClient.getBranches(), "master");
+            assertNoObjectsInRepository();
+        } // else Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
     }
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
