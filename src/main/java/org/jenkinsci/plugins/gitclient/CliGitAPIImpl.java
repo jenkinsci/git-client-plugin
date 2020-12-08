@@ -1396,13 +1396,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
                 if ((ref != null) && !ref.isEmpty()) {
-                    File referencePath = new File(ref);
-                    if (!referencePath.exists())
-                        listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
-                    else if (!referencePath.isDirectory())
-                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
-                    else
-                        args.add("--reference", ref);
+                    if (!isParameterizedReferenceRepository(ref)) {
+                        File referencePath = new File(ref);
+                        if (!referencePath.exists())
+                            listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
+                        else if (!referencePath.isDirectory())
+                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
+                        else
+                            args.add("--reference", ref);
+                    } // else handled below in per-module loop
                 }
                 if (shallow) {
                     if (depth == null) {
@@ -1451,6 +1453,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } catch (URISyntaxException e) {
                         listener.error("Invalid repository for " + sModuleName);
                         throw new GitException("Invalid repository for " + sModuleName);
+                    }
+
+                    if (isParameterizedReferenceRepository(ref)) {
+                        File referencePath = findParameterizedReferenceRepository(ref, urIish);
+                        if (referencePath == null) {
+                            listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + ref);
+                        } else {
+                            String expRef = null;
+                            if (referencePath.getName().equals(ref)) {
+                                expRef = ref;
+                            } else {
+                                expRef = referencePath.getName();
+                                expRef += " (expanded from " + ref + ")";
+                            }
+                            if (!referencePath.exists())
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + expRef);
+                            else if (!referencePath.isDirectory())
+                                listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
+                            else
+                                args.add("--reference", referencePath.getName());
+                        }
                     }
 
                     // Find credentials for this URL

@@ -158,6 +158,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         clone(source, rc.getName(), useShallowClone, null);
     }
 
+    /** Handle magic strings in the reference pathname to sort out patterns
+     * classified as evaluated by parametrization, as handled below */
+    public Boolean isParameterizedReferenceRepository(String reference) {
+        if (reference == null || reference.isEmpty()) {
+            return false;
+        }
+
+        if (reference.endsWith("/${GIT_URL}")) {
+            return true;
+        }
+
+        return false;
+    }
+
     /** Yield the File object for the reference repository local filesystem
      * pathname. Note that the provided string may be suffixed with expandable
      * tokens which allow to store a filesystem structure of multiple small
