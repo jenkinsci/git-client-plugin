@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static java.util.Arrays.copyOfRange;
+import org.apache.commons.codec.digest.DigestUtils;
 import static org.apache.commons.lang.StringUtils.join;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
@@ -173,6 +174,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return true;
         }
 
+        if (reference.endsWith("/${GIT_URL_SHA256}")) {
+            return true;
+        }
+
         return false;
     }
 
@@ -232,6 +237,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
                 reference = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
+                referencePath = null; // GC
+                referencePath = new File(reference);
+            } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
+                // This may be the more portable solution with regard to filesystems
+                reference = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
+                    org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
                 referencePath = null; // GC
                 referencePath = new File(reference);
             }
