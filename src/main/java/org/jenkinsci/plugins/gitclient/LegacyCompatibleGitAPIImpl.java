@@ -159,7 +159,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
 
     /** Handle magic strings in the reference pathname to sort out patterns
-     * classified as evaluated by parametrization, as handled below */
+     * classified as evaluated by parametrization, as handled below
+     *
+     * @params
+     * reference    Pathname (maybe with magic suffix) to reference repo
+     */
     public Boolean isParameterizedReferenceRepository(String reference) {
         if (reference == null || reference.isEmpty()) {
             return false;
@@ -181,6 +185,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * by comparing their "reference" with returned object's File.getName().
      *
      * At some point this plugin might also maintain that filesystem structure.
+     *
+     * @params
+     * reference    Pathname (maybe with magic suffix) to reference repo
+     * url          URL of the repository being cloned, to help choose a
+     *              suitable parameterized reference repo subdirectory.
      */
     public File findParameterizedReferenceRepository(String reference, String url) {
         if (reference == null || reference.isEmpty()) {
