@@ -1003,8 +1003,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Remove files and directories.
      *
-     * @param cleanSubmodule flag to add extra -f
-     * @param keepIgnored  flag to remove -x
+     * @param cleanSubmodule Remove files in submodules using the same rules as are used in the base repository
+     * @param keepIgnored  Do not delete files and directories that are ignored by the git configuration of the repository
      * @throws GitException         if underlying git operation fails.
      * @throws InterruptedException if interrupted.
      */
