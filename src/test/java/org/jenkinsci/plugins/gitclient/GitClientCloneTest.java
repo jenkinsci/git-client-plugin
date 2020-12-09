@@ -265,8 +265,10 @@ public class GitClientCloneTest {
         String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
 
         /* Make a new repo replica to use as refrepo, in specified location */
-        // Start of the path to pass into `git clone` call
-        File fRefrepoBase = new File("refrepo.git").getAbsoluteFile();
+        // Start of the path to pass into `git clone` call; note that per
+        // WorkspaceWithRepo.java the test workspaces are under target/
+        // where the executed test binaries live
+        File fRefrepoBase = new File("target/refrepo.git").getAbsoluteFile();
         String wsRefrepoBase = fRefrepoBase.getName(); // String with full pathname
         String wsRefrepo = null;
         try {
