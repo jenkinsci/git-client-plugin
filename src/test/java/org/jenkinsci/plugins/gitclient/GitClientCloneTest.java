@@ -268,16 +268,16 @@ public class GitClientCloneTest {
         // Start of the path to pass into `git clone` call; note that per
         // WorkspaceWithRepo.java the test workspaces are under target/
         // where the executed test binaries live
-        File fRefrepoBase = new File("target/refrepo.git").getAbsoluteFile();
+        File fRefrepoBase = new File("target/refrepo256.git").getAbsoluteFile();
         String wsRefrepoBase = fRefrepoBase.getName(); // String with full pathname
         String wsRefrepo = null;
         try {
-            if (fRefrepoBase.mkdirs()) {
+            if (fRefrepoBase.exists() || fRefrepoBase.mkdirs()) {
             /* Note: per parser of magic suffix, use slash - not OS separator char
              * And be sure to use relative paths here (see
              * WorkspaceWithRepo.java::localMirror()):
              */
-                wsRefrepo = workspace.localMirror("refrepo.git/" + wsMirrorHash);
+                wsRefrepo = workspace.localMirror("refrepo256.git/" + wsMirrorHash);
             }
         } catch (RuntimeException e) {
             wsRefrepo = null;
