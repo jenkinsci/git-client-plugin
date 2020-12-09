@@ -202,7 +202,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         File referencePath = new File(reference);
-        if (!referencePath.exists() && url != null && !url.isEmpty()) {
+        if (!referencePath.exists() &&
+            isParameterizedReferenceRepository(reference) &&
+            url != null && !url.isEmpty()
+        ) {
             // Note: this normalization might crush several URLs into one,
             // and as far as is known this would be the goal - people tend
             // to use or omit .git suffix, or spell with varied case, while
