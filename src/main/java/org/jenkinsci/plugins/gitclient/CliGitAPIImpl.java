@@ -765,18 +765,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (referencePath == null) {
                         listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
                     } else {
-                        if (!referencePath.getName().equals(reference)) {
+                        if (!referencePath.getPath().equals(reference)) {
                             // Note: both these logs are needed, they are used in selftest
                             String msg = "Parameterized reference path ";
                             msg += "'" + reference + "'";
                             msg += " replaced with: ";
-                            msg += "'" + referencePath.getName() + "'";
+                            msg += "'" + referencePath.getPath() + "'";
                             if (referencePath.exists()) {
                                 listener.getLogger().println("[WARNING] " + msg);
                             } else {
                                 listener.getLogger().println("[WARNING] " + msg + " does not exist");
                             }
-                            reference = referencePath.getName();
+                            reference = referencePath.getPath();
                         }
 
                         if (!referencePath.exists())
@@ -1465,10 +1465,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + ref);
                         } else {
                             String expRef = null;
-                            if (referencePath.getName().equals(ref)) {
+                            if (referencePath.getPath().equals(ref)) {
                                 expRef = ref;
                             } else {
-                                expRef = referencePath.getName();
+                                expRef = referencePath.getPath();
                                 expRef += " (expanded from " + ref + ")";
                             }
                             if (!referencePath.exists())
@@ -1476,7 +1476,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             else if (!referencePath.isDirectory())
                                 listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
                             else
-                                args.add("--reference", referencePath.getName());
+                                args.add("--reference", referencePath.getPath());
                         }
                     }
 
