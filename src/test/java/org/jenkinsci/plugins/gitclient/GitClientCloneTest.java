@@ -269,7 +269,7 @@ public class GitClientCloneTest {
         // WorkspaceWithRepo.java the test workspaces are under target/
         // where the executed test binaries live
         File fRefrepoBase = new File("target/refrepo256.git").getAbsoluteFile();
-        String wsRefrepoBase = fRefrepoBase.getName(); // String with full pathname
+        String wsRefrepoBase = fRefrepoBase.getPath(); // String with full pathname
         String wsRefrepo = null;
         try {
             if (fRefrepoBase.exists() || fRefrepoBase.mkdirs()) {
@@ -300,7 +300,7 @@ public class GitClientCloneTest {
 
         if (wsRefrepo != null) {
             assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
-            assertAlternateFilePointsToLocalMirror();
+            assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir.getPath(), wsRefrepo);
             assertBranchesExist(testGitClient.getBranches(), "master");
             assertNoObjectsInRepository();
         } // else Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
