@@ -159,6 +159,53 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         clone(source, rc.getName(), useShallowClone, null);
     }
 
+    /** For referenced directory check if it is a full or bare git repo
+     * and return the File object for its "objects" sub-directory.
+     * If there is nothing to find, or inputs are bad, returns null.
+     * The idea is that checking for null allows to rule out non-git
+     * paths, while a not-null return value is instantly usable by
+     * some code which plays with git under its hood.
+     */
+    public File getObjectPath(String reference) {
+        if (reference == null || reference.isEmpty()) {
+            return null;
+        }
+        return getObjectPath(new File(reference));
+    }
+
+    public File getObjectPath(File referencePath) {
+        if (referencePath == null) {
+            return referencePath;
+        }
+
+        if (!referencePath.exists())
+            return null;
+
+        if (!referencePath.isDirectory())
+            return null;
+
+        // reference path can either be a normal or a base repository
+        File objectsPath = new File(referencePath, ".git/objects");
+        if (objectsPath == null) {
+            return objectsPath; // Some Java error, could not make object from the paths involved
+        }
+
+        if (!objectsPath.isDirectory()) {
+            // reference path is bare repo
+            objectsPath = new File(referencePath, "objects");
+            if (objectsPath == null) {
+                return objectsPath; // Some Java error, could not make object from the paths involved
+            }
+        }
+
+        if (!objectsPath.isDirectory())
+            return null;
+
+        // If we get here, we have a non-null File referencing a
+        // "(.git/)objects" subdir under original referencePath
+        return objectsPath;
+    }
+
     /** Handle magic strings in the reference pathname to sort out patterns
      * classified as evaluated by parametrization, as handled below
      *
