@@ -286,12 +286,19 @@ public class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
+        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" +
+            "wsRefrepo='" + wsRefrepo);
+
         testGitClient.clone_().url(wsMirror).repositoryName("origin").reference(wsRefrepoBase + "/${GIT_URL_SHA256}").execute();
 
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
+
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
+
+        System.err.println("clone output:\n======\n" + messages + "\n======\n");
+
         assertThat("Reference repo name-parsing logged in: " + messages,
             handler.containsMessageSubstring("Parameterized reference path ") &&
             handler.containsMessageSubstring(" replaced with: ") &&

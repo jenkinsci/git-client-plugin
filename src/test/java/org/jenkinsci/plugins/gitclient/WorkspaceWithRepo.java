@@ -82,10 +82,13 @@ public class WorkspaceWithRepo {
 
     String localMirror(String cloneDirName) throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
+        System.err.println("=== Beginning to search for cloneDirName='" + cloneDirName + "' from " + base.getPath());
         for (File f = base; f != null; f = f.getParentFile()) {
+            System.err.println("Looking for 'target' in " + f.getPath());
             File targetDir = new File(f, "target");
             if (targetDir.exists()) {
                 File clone = new File(targetDir, cloneDirName);
+                System.err.println("Looking for cloneDirName " + cloneDirName + " in " + targetDir.getPath());
                 if (!clone.exists()) {
                     /* Clone to a temporary directory then move the
                      * temporary directory to the final destination
@@ -96,8 +99,10 @@ public class WorkspaceWithRepo {
                      * the final destination directory.
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
+                    System.err.println("tempClonePath=" + tempClonePath + " => (FQPN)" + tempClonePath.toFile().getAbsolutePath());
                     cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, tempClonePath.toFile().getAbsolutePath());
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
+                        System.err.println("moving tempClonePath to cloneDirName=" + cloneDirName);
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
                         /*
@@ -122,8 +127,11 @@ public class WorkspaceWithRepo {
                          * deleteRecursive() will discard a clone that
                          * 'lost the race'.
                          */
+                        System.err.println("removing extra tempClonePath, we already (race?) have cloneDirName=" + cloneDirName);
                         Util.deleteRecursive(tempClonePath.toFile());
                     }
+                } else {
+                    System.err.println("FOUND cloneDirName " + cloneDirName + " in " + targetDir.getPath());
                 }
                 // Strip away the "/./" in "...git-client-plugin/./target/..."
                 return Paths.get(clone.getPath()).normalize().toString();
