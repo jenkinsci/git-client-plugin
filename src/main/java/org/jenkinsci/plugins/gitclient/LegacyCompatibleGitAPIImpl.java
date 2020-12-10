@@ -291,6 +291,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 "url='" + url + "'\n" +
                 "urlNormalized='" + urlNormalized + "'\n");
 
+            String referenceExpanded = null;
             if (reference.endsWith("/${GIT_URL}")) {
                 // For mass-configured jobs, like Organization Folders,
                 // allow to support parameterized paths to many refrepos.
@@ -304,13 +305,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // can be introduced, e.g. to escape non-ascii chars for
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
-                reference = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
-                referencePath = null; // GC
-                referencePath = new File(reference);
+                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
             } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
-                reference = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
+                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                }
+            }
+
+            if (referenceExpanded != null) {
+                reference = referenceExpanded;
                 referencePath = null; // GC
                 referencePath = new File(reference);
             }
