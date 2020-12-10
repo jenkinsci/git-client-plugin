@@ -212,6 +212,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * @params
      * reference    Pathname (maybe with magic suffix) to reference repo
      */
+    public Boolean isParameterizedReferenceRepository(File reference) {
+        if (reference == null) {
+            return false;
+        }
+        return isParameterizedReferenceRepository(reference.getPath());
+    }
+
     public Boolean isParameterizedReferenceRepository(String reference) {
         if (reference == null || reference.isEmpty()) {
             return false;
@@ -243,6 +250,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * url          URL of the repository being cloned, to help choose a
      *              suitable parameterized reference repo subdirectory.
      */
+    public File findParameterizedReferenceRepository(File reference, String url) {
+        if (reference == null) {
+            return reference;
+        }
+        return findParameterizedReferenceRepository(reference.getPath(), url);
+    }
+
     public File findParameterizedReferenceRepository(String reference, String url) {
         if (reference == null || reference.isEmpty()) {
             return null;
