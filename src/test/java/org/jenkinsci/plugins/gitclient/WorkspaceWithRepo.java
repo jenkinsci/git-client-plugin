@@ -16,6 +16,7 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -124,7 +125,8 @@ public class WorkspaceWithRepo {
                         Util.deleteRecursive(tempClonePath.toFile());
                     }
                 }
-                return clone.getPath();
+                // Strip away the "/./" in "...git-client-plugin/./target/..."
+                return Paths.get(clone.getPath()).normalize().toString();
             }
         }
         throw new IllegalStateException();
