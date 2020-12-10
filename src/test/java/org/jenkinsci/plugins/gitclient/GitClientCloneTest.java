@@ -414,12 +414,51 @@ public class GitClientCloneTest {
 
     }
 
+    // Most tests use this method, expecting a non-bare repo
     private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
+    }
 
-        assertThat(new File(testGitDir, alternates), is(anExistingFile()));
-        final String expectedContent = workspace.localMirror().replace("\\", "/") + "/objects";
-        final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
+    private void assertAlternateFilePointsToLocalWorkspaceMirror() throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(File _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir.getPath());
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir, workspace.localMirror());
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir, String _testAltDir) throws IOException, InterruptedException {
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalMirror(_testGitDir, _testAltDir, alternates);
+    }
+
+    // Similar for bare repos, without ".git/" dir
+    private void assertAlternateFilePointsToLocalBareMirror() throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(testGitDir);
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(File _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(_testGitDir.getPath());
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(_testGitDir, workspace.localMirror());
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir, String _testAltDir) throws IOException, InterruptedException {
+        final String alternates = "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalMirror(_testGitDir, _testAltDir, alternates);
+    }
+
+    private void assertAlternateFilePointsToLocalMirror(String _testGitDir, String _testAltDir, String alternates) throws IOException, InterruptedException {
+        assertThat("Did not find '" + alternates + "' under '" + _testGitDir + "'",
+            new File(_testGitDir, alternates), is(anExistingFile()));
+        final String expectedContent = _testAltDir.replace("\\", "/") + "/objects";
+        final String actualContent = FileUtils.readFileToString(new File(_testGitDir, alternates), "UTF-8");
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
