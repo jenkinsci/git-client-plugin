@@ -232,6 +232,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return true;
         }
 
+        if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
+            return true;
+        }
+
+        if (reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")) {
+            return true;
+        }
+
         return false;
     }
 
@@ -305,11 +313,50 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // can be introduced, e.g. to escape non-ascii chars for
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
+
+                // TODO: employ git submodules - there we can reliably match
+                // remote URLs (easily multiple) to particular modules, and
+                // yet keep separate git index directories per module with
+                // smaller scopes - much quicker to check out from than one
+                // huge combined repo. It would also be much more native to
+                // tools and custom scriptware that can be involved.
+
+                // TODO: Config option whether to populate absent reference
+                // repos (If the expanded path does not have git repo data
+                // right now, populate it in the location expanded below)
+                // or update existing ones before pulling commits, and how
+                // to achieve that. Note that this is done by caller with
+                // their implementation of git, or in case of a build farm it
+                // is more likely to be a shared path only readable to Jenkins
+                // and its agents, so write-operations would be done by helper
+                // scripts that log into the shared storage server to populate
+                // or update reference repositories. Note that users may also
+                // want to run their own scripts to "populate" reference repos
+                // as symlinks to existing other repos, to support combined
+                // repo setup for different URLs pointing to same upstream,
+                // or storing multiple closely related forks together.
+
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
             } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+            } else if (reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")) {
+                // The safest option - fall back to parent directory if
+                // the expanded one does not have git repo data right now:
+                // it allows to gradually convert a big combined reference
+                // repository into smaller chunks without breaking builds.
+                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256_FALLBACK\\}$",
+                    org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                if (getObjectPath(referenceExpanded) == null) {
+                    // chop it off, use main directory
+                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
+                }
+            } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
+                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
+                if (getObjectPath(referenceExpanded) == null) {
+                    // chop it off, use main directory
+                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
                 }
             }
 
