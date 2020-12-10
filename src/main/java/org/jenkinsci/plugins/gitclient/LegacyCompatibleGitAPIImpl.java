@@ -287,6 +287,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
             }
 
+            System.err.println("reference='" + reference + "'\n" +
+                "url='" + url + "'\n" +
+                "urlNormalized='" + urlNormalized + "'\n");
+
             if (reference.endsWith("/${GIT_URL}")) {
                 // For mass-configured jobs, like Organization Folders,
                 // allow to support parameterized paths to many refrepos.
@@ -310,6 +314,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 referencePath = null; // GC
                 referencePath = new File(reference);
             }
+            System.err.println("reference after='" + reference + "'\n");
         }
 
         if (!referencePath.exists()) {
