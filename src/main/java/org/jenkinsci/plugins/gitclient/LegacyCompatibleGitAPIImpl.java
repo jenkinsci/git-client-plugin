@@ -243,6 +243,32 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return false;
     }
 
+    /** There are many ways to spell an URL to the same repository even if
+     * using the same access protocol. This routine converts the "url" string
+     * in a way that helps us confirm whether two spellings mean same thing.
+     */
+    public String normalizeGitUrl(String url, Boolean checkLocalPaths) {
+        String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        if (!url.contains("://") &&
+            !url.startsWith("/") &&
+            !url.startsWith(".")
+        ) {
+            // Not an URL with schema, not an absolute or relative pathname
+            if (checkLocalPaths) {
+                File urlPath = new File(url);
+                if (!urlPath.exists()) {
+                    // Also not a subdirectory of current dir without "./" prefix...
+                    urlNormalized = "ssh://" + urlNormalized;
+                }
+            } else {
+                // Assume it is not a path
+                urlNormalized = "ssh://" + urlNormalized;
+            }
+        }
+
+        return urlNormalized;
+    }
+
     /** Yield the File object for the reference repository local filesystem
      * pathname. Note that the provided string may be suffixed with expandable
      * tokens which allow to store a filesystem structure of multiple small
@@ -282,18 +308,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // The actual reference repository directory may choose to have
             // original URL strings added as remotes (in case some are case
             // sensitive and different).
-            String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
-            if (!url.contains("://") &&
-                !url.startsWith("/") &&
-                !url.startsWith(".")
-            ) {
-                // Not an URL with schema, not an absolute or relative pathname
-                File urlPath = new File(url);
-                if (!urlPath.exists()) {
-                    // Also not a subdirectory without "./" prefix...
-                    urlNormalized = "ssh://" + urlNormalized;
-                }
-            }
+            String urlNormalized = normalizeGitUrl(url, true);
 
             System.err.println("reference='" + reference + "'\n" +
                 "url='" + url + "'\n" +
