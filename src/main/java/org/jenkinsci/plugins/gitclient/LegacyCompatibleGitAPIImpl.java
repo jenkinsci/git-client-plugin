@@ -240,6 +240,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return true;
         }
 
+        if (reference.endsWith("/${GIT_SUBMODULES}")) {
+            return true;
+        }
+
+        if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
+            return true;
+        }
+
         return false;
     }
 
@@ -373,6 +381,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
                 }
+            } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") ) {
+                // Assuming the provided "reference" directory already hosts
+                // submodules, we use git tools to find the one subdir which
+                // has a registered remote URL equivalent (per normalization)
+                // to the provided "url". If there is no hit, the non-fallback
+                // mode suggests a new directory name to host the submodule
+                // (via same rules as for SHA256), and the fallback mode would
+                // return the main directory.
             }
 
             if (referenceExpanded != null) {
