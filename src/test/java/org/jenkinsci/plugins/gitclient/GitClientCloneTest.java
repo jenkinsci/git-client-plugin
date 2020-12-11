@@ -332,7 +332,8 @@ public class GitClientCloneTest {
 
         System.err.println("clone output:\n======\n" + messages + "\n======\n");
 
-        assertThat("Reference repo name-parsing logged in: " + messages,
+        assertThat("Reference repo name-parsing logged in: " + messages +
+                (wsRefrepo == null ? "" : ("\n...and replaced with: '" + wsRefrepo + "'")) ,
             handler.containsMessageSubstring("Parameterized reference path ") &&
             handler.containsMessageSubstring(" replaced with: ") &&
             (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)) ,
@@ -388,7 +389,8 @@ public class GitClientCloneTest {
 
         System.err.println("clone output:\n======\n" + messages + "\n======\n");
 
-        assertThat("Reference repo name-parsing logged in: " + messages,
+        assertThat("Reference repo name-parsing logged in: " + messages +
+                (wsRefrepo == null ? "" : ("\n...and replaced with: '" + wsRefrepo + "'")) ,
             handler.containsMessageSubstring("Parameterized reference path ") &&
             handler.containsMessageSubstring(" replaced with: ") &&
             (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)) ,
