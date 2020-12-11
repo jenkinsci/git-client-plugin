@@ -401,6 +401,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // mode suggests a new directory name to host the submodule
                 // (via same rules as for SHA256), and the fallback mode would
                 // return the main directory.
+                // For each current workspace (recurse):
+                // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for "commit" items
+                // getRemoteUrls() => Map <url, remoteName>
             }
 
             if (referenceExpanded != null) {
