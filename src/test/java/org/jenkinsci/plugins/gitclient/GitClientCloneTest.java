@@ -293,8 +293,10 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_reference_parameterized_sha256() throws Exception, IOException, InterruptedException {
         String wsMirror = workspace.localMirror();
-        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java */
-        String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java
+         * should be okay for network URLs but are too complex for local pathnames */
+        //String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String wsMirrorNormalized = LegacyCompatibleGitAPIImpl.normalizeGitUrl(wsMirror, true);
         String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
 
         /* Make a new repo replica to use as refrepo, in specified location */
@@ -350,8 +352,10 @@ public class GitClientCloneTest {
     @Test
     public void test_clone_reference_parameterized_sha256_fallback() throws Exception, IOException, InterruptedException {
         String wsMirror = workspace.localMirror();
-        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java */
-        String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java
+         * should be okay for network URLs but are too complex for local pathnames */
+        //String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String wsMirrorNormalized = LegacyCompatibleGitAPIImpl.normalizeGitUrl(wsMirror, true);
         String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
 
         /* Make a new repo replica to use as refrepo, in specified location */
