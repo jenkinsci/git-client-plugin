@@ -393,10 +393,12 @@ public class GitClientCloneTest {
 
         System.err.println("clone output:\n======\n" + messages + "\n======\n");
 
+        // Note: we do not expect the closing single quote after wsRefrepoBase
+        // because other tests might pollute our test area, and SHA dir is there
         assertThat("Reference repo name-parsing logged in: " + messages +
-                "\n...and replaced with: '" + wsRefrepoBase + "'",
+                "\n...and replaced with: '" + wsRefrepoBase,
             handler.containsMessageSubstring("Parameterized reference path ") &&
-            handler.containsMessageSubstring(" replaced with: '" + wsRefrepoBase + "'"),
+            handler.containsMessageSubstring(" replaced with: '" + wsRefrepoBase),
             is(true));
 
         // Barring filesystem errors, if we have the "custom" refrepo
