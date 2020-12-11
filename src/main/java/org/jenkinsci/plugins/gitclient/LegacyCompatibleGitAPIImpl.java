@@ -21,6 +21,8 @@ import org.eclipse.jgit.transport.URIish;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -257,20 +259,30 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      */
     public String normalizeGitUrl(String url, Boolean checkLocalPaths) {
         String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
-        if (!url.contains("://") &&
-            !url.startsWith("/") &&
-            !url.startsWith(".")
-        ) {
-            // Not an URL with schema, not an absolute or relative pathname
-            if (checkLocalPaths) {
-                File urlPath = new File(url);
-                if (!urlPath.exists()) {
-                    // Also not a subdirectory of current dir without "./" prefix...
+        if (!url.contains("://")) {
+            if (!url.startsWith("/") &&
+                !url.startsWith(".")
+            ) {
+                // Not an URL with schema, not an absolute or relative pathname
+                if (checkLocalPaths) {
+                    File urlPath = new File(url);
+                    if (urlPath.exists()) {
+                        urlNormalized = "file://" + Paths.get( Paths.get("").toAbsolutePath().toString() + "/" + urlNormalized ).normalize().toString();;
+                    } else {
+                        // Also not a subdirectory of current dir without "./" prefix...
+                        urlNormalized = "ssh://" + urlNormalized;
+                    }
+                } else {
+                    // Assume it is not a path
                     urlNormalized = "ssh://" + urlNormalized;
                 }
             } else {
-                // Assume it is not a path
-                urlNormalized = "ssh://" + urlNormalized;
+                // Looks like a local path
+                if (url.startsWith("/")) {
+                    urlNormalized = "file://" + urlNormalized;
+                } else {
+                    urlNormalized = "file://" + Paths.get( Paths.get("").toAbsolutePath().toString() + "/" + urlNormalized ).normalize().toString();;
+                }
             }
         }
 
