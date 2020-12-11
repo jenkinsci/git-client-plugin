@@ -1584,6 +1584,48 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return StringUtils.trim(firstLine(result));
     }
 
+    /** {@inheritDoc}
+     *
+     * Note: unlike the version in JGitAPIImpl, this one does not filter
+     * ASCII or Private URLs, and just conveys what git config contains.
+     */
+    @Override
+    public @CheckForNull Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
+        String result = launchCommand( "config", "--local", "--list" );
+        Map<String, String> uriNames = new HashMap<>();
+        for (String line : result.split("\\R+")) {
+            line = StringUtils.trim(line);
+            if (!line.startsWith("remote.") || !line.contains(".url=")) {
+                continue;
+            }
+
+            String remoteName = StringUtils.substringBetween(line, "remote.", ".url=");
+            String remoteUri = StringUtils.substringAfter(line, ".url=");
+
+            // If uri String values end up identical, Map only stores one entry
+            uriNames.put(remoteUri, remoteName);
+        }
+        return uriNames;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @CheckForNull Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        String result = launchCommand( "config", "--local", "--list" );
+        Map<String, String> uriNames = new HashMap<>();
+        for (String line : result.split("\\R+")) {
+            line = StringUtils.trim(line);
+            if (!line.startsWith("remote.") || !line.contains(".pushurl=")) {
+                continue;
+            }
+
+            String remoteName = StringUtils.substringBetween(line, "remote.", ".pushurl=");
+            String remoteUri = StringUtils.substringAfter(line, ".pushurl=");
+            uriNames.put(remoteUri, remoteName);
+        }
+        return uriNames;
+    }
+
     /** {@inheritDoc} */
     @Override
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {

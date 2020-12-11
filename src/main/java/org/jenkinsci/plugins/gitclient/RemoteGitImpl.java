@@ -295,6 +295,16 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     }
 
     /** {@inheritDoc} */
+    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
+        return proxy.getRemoteUrls();
+    }
+
+    /** {@inheritDoc} */
+    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        return proxy.getRemotePushUrls();
+    }
+
+    /** {@inheritDoc} */
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
         proxy.setRemoteUrl(name, url);
     }

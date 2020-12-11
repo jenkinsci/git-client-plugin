@@ -212,6 +212,28 @@ public interface GitClient {
     String getRemoteUrl(String name) throws GitException, InterruptedException;
 
     /**
+     * getRemoteUrls.
+     *
+     * @return a Map where String keys represent URIs (with and
+     *         without passwords, if any; ASCII or not, if
+     *         applicable) for all remotes configured in this
+     *         repository/workspace, and values represent names.
+     *         There may be several URIs corresponding to same name.
+     */
+    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException;
+
+    /**
+     * getRemotePushUrls.
+     *
+     * @return a Map where String keys represent push-only URIs
+     *         (with and without passwords, if any; ASCII or not,
+     *         if applicable) for all remotes configured in this
+     *         repository/workspace, and values represent names.
+     *         There may be several URIs corresponding to same name.
+     */
+    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException;
+
+    /**
      * For a given repository, set a remote's URL
      *
      * @param name The name of the remote (e.g. origin)
