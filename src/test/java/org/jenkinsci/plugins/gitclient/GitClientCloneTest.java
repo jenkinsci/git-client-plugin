@@ -390,10 +390,9 @@ public class GitClientCloneTest {
         System.err.println("clone output:\n======\n" + messages + "\n======\n");
 
         assertThat("Reference repo name-parsing logged in: " + messages +
-                (wsRefrepo == null ? "" : ("\n...and replaced with: '" + wsRefrepo + "'")) ,
+                "\n...and replaced with: '" + wsRefrepoBase + "'",
             handler.containsMessageSubstring("Parameterized reference path ") &&
-            handler.containsMessageSubstring(" replaced with: ") &&
-            (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)) ,
+            handler.containsMessageSubstring(" replaced with: '" + wsRefrepoBase + "'"),
             is(true));
 
         // Barring filesystem errors, if we have the "custom" refrepo
