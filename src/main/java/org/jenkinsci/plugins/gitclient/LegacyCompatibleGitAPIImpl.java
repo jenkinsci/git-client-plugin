@@ -24,8 +24,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -289,6 +291,45 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return urlNormalized;
     }
 
+    /** Find referenced URLs in this repo and its submodules, recursively.
+     * Current primary use is for parameterized refrepo/${GIT_SUBMODULES}
+     *
+     * @return a Set of (unique) String arrays, representing:
+     * [0] directory of nested submodule (relative to current workspace root)
+     * The current workspace would be listed as directory "" and consumers
+     * should check these entries last if they care for most-specific hits
+     * with smaller-scope reference repositories.
+     * [1] url as returned by getRemoteUrls() - fetch URLs, maybe several entries per remote
+     * [2] urlNormalized from normalizeGitUrl(url, true) (local pathnames fully qualified)
+     * [3] remoteName as defined in that nested submodule
+     *
+     * @param needle - a normalized URL (coming from normalizeGitUrl(url, true))
+     *                 which we want to find if it is not null - so stop and
+     *                 return just hits for it as soon as we have something.
+     */
+    public Set<String[]> getSubmodulesUrls(String needle) {
+        Set<String[]> result = new HashSet<>();
+        // For each current workspace (recurse?):
+        // subGit(subdir)
+        // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for "commit" items
+        // getRemoteUrls() => Map <url, remoteName>
+
+        // If needle is not null, look in SHA256 named dir that can match it;
+        // note that this use-case might pan out also if "this" repo is bare
+        // and can not have "proper" git submodules. If it is bare, look at
+        // remote URLs in current dir after the guessed subdir and return then.
+
+        // Otherwise first dig into submodules, when there is no deeper to drill,
+        // report remote URLs and step back from recursion.
+        return result;
+    }
+
+    /** See above. With null, returns all we can find (slower) for the caller
+     * to parse */
+    public Set<String[]> getSubmodulesUrls() {
+        return getSubmodulesUrls(null);
+    }
+
     /** Yield the File object for the reference repository local filesystem
      * pathname. Note that the provided string may be suffixed with expandable
      * tokens which allow to store a filesystem structure of multiple small
@@ -397,13 +438,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Assuming the provided "reference" directory already hosts
                 // submodules, we use git tools to find the one subdir which
                 // has a registered remote URL equivalent (per normalization)
-                // to the provided "url". If there is no hit, the non-fallback
-                // mode suggests a new directory name to host the submodule
-                // (via same rules as for SHA256), and the fallback mode would
-                // return the main directory.
-                // For each current workspace (recurse):
-                // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for "commit" items
-                // getRemoteUrls() => Map <url, remoteName>
+                // to the provided "url".
+                // If there is no hit, the non-fallback mode suggests a new
+                // directory name to host the submodule (same rules as SHA),
+                // and the fallback mode would return the main directory.
+
+                // getSubmodulesUrls(urlNormalized) => dirname if any
             }
 
             if (referenceExpanded != null) {
