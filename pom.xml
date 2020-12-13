@@ -59,7 +59,7 @@
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <jenkins.version>2.204.1</jenkins.version>
     <java.level>8</java.level>
-    <jgit.version>5.9.0.202009080501-r</jgit.version>
+    <jgit.version>5.10.0.202012080955-r</jgit.version>
     <configuration-as-code.version>1.36</configuration-as-code.version>
     <slf4jVersion>1.7.26</slf4jVersion>
     <spotbugs.effort>Max</spotbugs.effort>
