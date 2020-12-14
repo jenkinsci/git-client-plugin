@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -313,7 +314,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
-        Set<String[]> result = new HashSet<>();
+        Set<String[]> result = new LinkedHashSet<>(); // Retain order of insertion
+        File f = null;
+
+        Boolean isBare = false;
+        try {
+            isBare = this.isBareRepository();
+        } catch (InterruptedException e) {
+            isBare = false; // At least try to look into submodules...
+        }
 
         // For each current workspace (recurse or big loop in same context?):
         // public GitClient subGit(String subdir) => would this.subGit(...)
@@ -326,12 +335,119 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // in SHA256 named dir that can match it; note that this use-case
         // might pan out also if "this" repo is bare and can not have "proper"
         // git submodules - but was prepared for our other options.
+        if (needle != null && !needle.isEmpty()) {
+            int sep = needle.lastIndexOf("/");
+            String needleNorm = normalizeGitUrl(needle, true);
+            String needleBasename;
+            if (sep < 0) {
+                needleBasename = needle;
+            } else {
+                needleBasename = needle.substring(sep + 1);
+            }
+            needleBasename = needleBasename.replaceAll(".git$", "");
 
-        // If current repo *is* bare (can't have proper submodules) and the
-        // needle is not null, follow up with:
-        // * Maybe also direct child dirs that have a ".git" FS object inside?..
-        // * Look at remote URLs in current dir after the guessed subdir and
-        // return then.
+            // Try with the basename without .git extension, and then with one.
+            ArrayList<String> arrDirnames = new ArrayList<String>();
+            arrDirnames.add(needleBasename);
+            arrDirnames.add(needleBasename + ".git");
+            String needleBasenameLC = needleBasename.toLowerCase();
+            if (!needleBasenameLC.equals(needleBasename)) {
+                // Retry with lowercased dirname
+                arrDirnames.add(needleBasenameLC);
+                arrDirnames.add(needleBasenameLC + ".git");
+            }
+            String needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
+            arrDirnames.add(needleSha);
+            arrDirnames.add(needleSha + ".git");
+
+            for (String dirname : arrDirnames) {
+                f = new File(".", dirname);
+                if (f.exists() && f.isDirectory()) {
+                    try {
+                        //LegacyCompatibleGitAPIImpl?
+                        GitClient g = this.subGit(needleBasename);
+                        Map <String, String> uriNames = g.getRemoteUrls();
+                        for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                            String uri = pair.getKey();
+                            String uriNorm = normalizeGitUrl(uri, true);
+                            if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                                result = new HashSet<>();
+                                result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                                return result;
+                            }
+                            // Cache the finding to avoid the dirname later, if we
+                            // get to that; but no checks are needed in this loop
+                            // which by construct looks at different dirs so far.
+                            result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                        }
+                    } catch (Exception e) {
+                        // ignore, go to next slide
+                    }
+                }
+            }
+
+            // If current repo *is* bare (can't have proper submodules) and the
+            // needle is not null, follow up with:
+            // * Maybe also direct child dirs that have a ".git" FS object inside?..
+            // * Look at remote URLs in current dir after the guessed subdir and
+            // return then.
+            if (isBare) {
+                arrDirnames.clear();
+
+                // Check subdirs that are git workspaces
+                Set<String> checkedDirs = new HashSet<>();
+                for (String[] resultEntry : result) {
+                    checkedDirs.add(resultEntry[0]);
+                }
+                File[] directories = new File(".").listFiles(File::isDirectory);
+                for (File dir : directories) {
+                    f = new File(dir, ".git");
+                    if (f.exists()) { // May be a file or directory... or symlink to those...
+                        String dirname = dir.getPath().replaceAll("/*$", "");
+                        if (!checkedDirs.contains(dirname)) {
+                            arrDirnames.add(dirname);
+                        }
+                    }
+                }
+
+                // Finally check parent dir
+                arrDirnames.add(".");
+
+                for (String dirname : arrDirnames) {
+                    f = new File(".", dirname);
+                    if (f.exists() && f.isDirectory()) {
+                        try {
+                            //LegacyCompatibleGitAPIImpl?
+                            GitClient g = this.subGit(needleBasename);
+                            Map <String, String> uriNames = g.getRemoteUrls();
+                            for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                                String uri = pair.getKey();
+                                String uriNorm = normalizeGitUrl(uri, true);
+                                if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                                    result = new HashSet<>();
+                                    result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                                    return result;
+                                }
+                                // Cache the finding to avoid the dirname later, if we
+                                // get to that; but no checks are needed in this loop
+                                // which by construct looks at different dirs so far.
+                                // Commented away: currently we exit after this loop.
+                                //result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                            }
+                        } catch (Exception e) {
+                            // ignore, go to next slide
+                        }
+                    }
+                }
+
+                // Nothing found, and for bare top-level repo not much to search for
+                return new HashSet<>();
+            }
+        } else {
+            // ...and if there is no needle?
+            /* if (isBare) { ... } */
+            // fall through currently, let git decide if it has submodules here and now
+        }
 
         // If current dir does have submodules, first dig into submodules,
         // when there is no deeper to drill, report remote URLs and step
