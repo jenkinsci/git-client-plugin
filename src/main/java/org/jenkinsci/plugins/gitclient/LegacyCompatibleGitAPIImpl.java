@@ -299,8 +299,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * The current workspace would be listed as directory "" and consumers
      * should check these entries last if they care for most-specific hits
      * with smaller-scope reference repositories.
-     * [1] url as returned by getRemoteUrls() - fetch URLs, maybe several entries per remote
-     * [2] urlNormalized from normalizeGitUrl(url, true) (local pathnames fully qualified)
+     * [1] url as returned by getRemoteUrls() - fetch URLs, maybe several
+     *                 entries per remote
+     * [2] urlNormalized from normalizeGitUrl(url, true) (local pathnames
+     *                 fully qualified)
      * [3] remoteName as defined in that nested submodule
      *
      * @param needle - a normalized URL (coming from normalizeGitUrl(url, true))
@@ -308,19 +310,34 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 return just hits for it as soon as we have something.
      */
     public Set<String[]> getSubmodulesUrls(String needle) {
+        // Keep track of where we've already looked in the "result" Set, to
+        // avoid looking in same places (different strategies below) twice.
+        // And eventually return this Set or part of it as the answer.
         Set<String[]> result = new HashSet<>();
-        // For each current workspace (recurse?):
-        // subGit(subdir)
+
+        // For each current workspace (recurse or big loop in same context?):
+        // public GitClient subGit(String subdir) => would this.subGit(...)
+        //   give us a copy of this applied class instance (CLI Git vs jGit)?
         // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for "commit" items
         // getRemoteUrls() => Map <url, remoteName>
 
-        // If needle is not null, look in SHA256 named dir that can match it;
-        // note that this use-case might pan out also if "this" repo is bare
-        // and can not have "proper" git submodules. If it is bare, look at
-        // remote URLs in current dir after the guessed subdir and return then.
+        // If needle is not null, first look perhaps in the subdir(s) named
+        // with base-name of the URL with and without a ".git" suffix, then
+        // in SHA256 named dir that can match it; note that this use-case
+        // might pan out also if "this" repo is bare and can not have "proper"
+        // git submodules - but was prepared for our other options.
 
-        // Otherwise first dig into submodules, when there is no deeper to drill,
-        // report remote URLs and step back from recursion.
+        // If current repo *is* bare (can't have proper submodules) and the
+        // needle is not null, follow up with:
+        // * Maybe also direct child dirs that have a ".git" FS object inside?..
+        // * Look at remote URLs in current dir after the guessed subdir and
+        // return then.
+
+        // If current dir does have submodules, first dig into submodules,
+        // when there is no deeper to drill, report remote URLs and step
+        // back from recursion. This way we have least specific repo last,
+        // if several have the replica (assuming the first hits are smaller
+        // scopes).
         return result;
     }
 
