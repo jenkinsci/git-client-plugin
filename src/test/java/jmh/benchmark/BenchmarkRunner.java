@@ -19,11 +19,11 @@ public class BenchmarkRunner {
     public void runJmhBenchmarks() throws Exception {
         ChainedOptionsBuilder options = new OptionsBuilder()
                 .mode(Mode.AverageTime) // Performance metric is Average time (ms per operation)
-                .warmupIterations(5) // Used to warm JVM before executing benchmark tests
-                .measurementIterations(5)
+                .warmupIterations(1) // Used to warm JVM before executing benchmark tests
+                .measurementIterations(3)
                 .timeUnit(TimeUnit.MILLISECONDS)
                 .threads(2) // TODO: Increase the number of threads and measure performance
-                .forks(2)   // Need to increase more forks to get more observations, increases precision.
+                .forks(1)   // Need to increase more forks to get more observations, increases precision.
                 .shouldFailOnError(true) // Will stop forking of JVM as soon as there is a compilation error
                 .shouldDoGC(true) // do GC between measurement iterations
                 .output("jmh-report.json");
