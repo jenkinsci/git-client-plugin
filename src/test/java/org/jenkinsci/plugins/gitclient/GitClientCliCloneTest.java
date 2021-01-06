@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.aReadableFile;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 import org.jvnet.hudson.test.Issue;
 
