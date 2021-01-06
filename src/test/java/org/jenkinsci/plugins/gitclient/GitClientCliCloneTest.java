@@ -155,8 +155,7 @@ public class GitClientCliCloneTest {
         assertThat("Lock file removed by checkout", lockFile, is(not(aReadableFile())));
     }
 
-    @Test
-	@Issue("JENKINS-25353")
+    @Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted_with_existing_lock() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
