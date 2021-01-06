@@ -138,8 +138,7 @@ public class GitClientCliCloneTest {
         assertTimeout(testGitClient, "git submodule update", largerTimeout);
     }
 
-    @Test
-	@Issue("JENKINS-25353")
+    @Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
