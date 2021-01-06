@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.aReadableFile;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 import org.jvnet.hudson.test.Issue;
 
@@ -138,7 +139,8 @@ public class GitClientCliCloneTest {
         assertTimeout(testGitClient, "git submodule update", largerTimeout);
     }
 
-    @Issue("JENKINS-25353")
+    @Test
+	@Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
@@ -155,7 +157,8 @@ public class GitClientCliCloneTest {
         assertThat("Lock file removed by checkout", lockFile, is(not(aReadableFile())));
     }
 
-    @Issue("JENKINS-25353")
+    @Test
+	@Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted_with_existing_lock() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();

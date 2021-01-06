@@ -31,6 +31,7 @@ import org.jvnet.hudson.test.Issue;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -127,7 +128,8 @@ public class GitClientSecurityTest {
         return enabled;
     }
 
-    @Parameterized.Parameters(name = "{1},{0}")
+    @Test
+	@Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() throws Exception {
         markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();

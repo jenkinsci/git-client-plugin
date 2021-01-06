@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.io.FileMatchers.*;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)

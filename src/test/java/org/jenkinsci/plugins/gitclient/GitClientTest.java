@@ -54,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import org.junit.AfterClass;
@@ -700,14 +701,16 @@ public class GitClientTest {
         }
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryBareEmptyString() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("empty string is not a bare repository", gitAPI.isBareRepository(""));
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryWorkingEmptyString() throws IOException, InterruptedException {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
@@ -719,14 +722,16 @@ public class GitClientTest {
         assertFalse("empty string is a bare repository", gitAPI.isBareRepository(""));
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryBareNoArg() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("no arg is not a bare repository", gitAPI.isBareRepository());
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryWorkingNoArg() throws IOException, InterruptedException {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
@@ -756,7 +761,8 @@ public class GitClientTest {
      * assertions.
      */
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryWorkingRepoPathDotGit() throws IOException, InterruptedException {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
@@ -768,7 +774,8 @@ public class GitClientTest {
         assertFalse("repoPath/.git is a bare repository", gitAPI.isBareRepository(repoRoot.getPath() + File.separator + ".git"));
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryWorkingNull() throws IOException, InterruptedException {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
@@ -785,7 +792,8 @@ public class GitClientTest {
         }
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void testIsBareRepositoryBareNull() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
@@ -797,7 +805,8 @@ public class GitClientTest {
         }
     }
 
-    @Deprecated
+    @Test
+	@Deprecated
     @Test
     public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
@@ -1171,7 +1180,8 @@ public class GitClientTest {
         }
     }
 
-    @Issue("JENKINS-35687") // Git LFS support
+    @Test
+	@Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithCliGitLFS() throws Exception {
         if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
@@ -1184,7 +1194,8 @@ public class GitClientTest {
         assertFileContent("uuid.txt", "5e7733d8acc94636850cb466aec524e4");
     }
 
-    @Issue("JENKINS-43427") // Git LFS sparse checkout support
+    @Test
+	@Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
         if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
@@ -1469,7 +1480,8 @@ public class GitClientTest {
         }
     }
 
-    @Issue("JENKINS-35687") // Git LFS support - JGit not supported
+    @Test
+	@Issue("JENKINS-35687") // Git LFS support - JGit not supported
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testCheckoutWithJGitLFS() throws Exception {
         if (!gitImplName.startsWith("jgit") || !CLI_GIT_HAS_GIT_LFS) {
@@ -1481,7 +1493,8 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception
-    @Issue("JENKINS-35687") // Git LFS support
+    @Test
+	@Issue("JENKINS-35687") // Git LFS support
     @Test(expected = GitException.class)
     public void testCLICheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
@@ -1493,7 +1506,8 @@ public class GitClientTest {
     }
 
     // If LFS installed and not enabled, throw an exception if branch includes LFS reference
-    @Issue("JENKINS-35687") // Git LFS support
+    @Test
+	@Issue("JENKINS-35687") // Git LFS support
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testJGitCheckoutWithoutLFSWhenLFSAvailable() throws Exception {
         if (!gitImplName.startsWith("jgit") || !CLI_GIT_HAS_GIT_LFS) {
@@ -1505,7 +1519,8 @@ public class GitClientTest {
     }
 
     // If LFS not installed and not enabled, checkout content without download
-    @Issue("JENKINS-35687") // Git LFS support
+    @Test
+	@Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithoutLFSWhenLFSNotAvailable() throws Exception {
         if (CLI_GIT_HAS_GIT_LFS || CLI_GIT_HAS_GIT_LFS_CONFIGURED) {
@@ -1611,7 +1626,8 @@ public class GitClientTest {
     }
 
     // @Test
-    public void testGetRemoteReferences() throws Exception {
+    @Test
+	public void testGetRemoteReferences() throws Exception {
         String url = repoRoot.getAbsolutePath();
         String pattern = null;
         boolean headsOnly = false; // Need variations here
@@ -1620,7 +1636,8 @@ public class GitClientTest {
         assertNull(result);
     }
 
-    @Issue("JENKINS-30589")
+    @Test
+	@Issue("JENKINS-30589")
     @Test
     public void testGetRemoteReferences_ReturnsEmptyMapIfNoTags() throws Exception {
         String url = repoRoot.getAbsolutePath();
@@ -1722,7 +1739,8 @@ public class GitClientTest {
     }
 
     // @Test
-    public void testSubGit() throws Exception {
+    @Test
+	public void testSubGit() throws Exception {
         // Tested in assertSubmoduleContents
     }
 
@@ -1829,7 +1847,8 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, initialized);
     }
 
-    @Issue("JENKINS-37495") // submodule update fails if path and name differ
+    @Test
+	@Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         // JGit implementation doesn't handle renamed submodules
@@ -1851,7 +1870,8 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp-moved", "sshkeys");
     }
 
-    @Issue("JENKINS-37495") // submodule update fails if path and name differ
+    @Test
+	@Issue("JENKINS-37495") // submodule update fails if path and name differ
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         // JGit implementation doesn't handle renamed submodules
@@ -2016,7 +2036,8 @@ public class GitClientTest {
     }
 
     // @Issue("JENKINS-8053")  // outdated submodules not removed by checkout
-    @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
+    @Test
+	@Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
         if (!CLI_GIT_SUPPORTS_SUBMODULE_DEINIT) {
@@ -2152,7 +2173,8 @@ public class GitClientTest {
         }
     }
 
-    @Issue("JENKINS-37419") // Submodules from other branches are used in checkout
+    @Test
+	@Issue("JENKINS-37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
@@ -2223,7 +2245,8 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
     }
 
-    @Issue("JENKINS-46054")
+    @Test
+	@Issue("JENKINS-46054")
     @Test
     public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
         // Create a new repository that includes ".url" in directory name
@@ -2399,7 +2422,8 @@ public class GitClientTest {
     // Recursive submodule update
     // Recursive submodule update to latest commit
     // @Test
-    public void testSetupSubmoduleUrls() throws Exception {
+    @Test
+	public void testSetupSubmoduleUrls() throws Exception {
         System.out.println("setupSubmoduleUrls");
         Revision rev = null;
         TaskListener listener = null;
