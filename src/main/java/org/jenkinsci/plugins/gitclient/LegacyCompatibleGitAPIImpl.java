@@ -406,7 +406,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                 }
 
-                // Finally check parent dir
+                // Finally check pattern's parent dir
                 arrDirnames.add(".");
 
                 for (String dirname : arrDirnames) {
@@ -583,11 +583,32 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // submodules, we use git tools to find the one subdir which
                 // has a registered remote URL equivalent (per normalization)
                 // to the provided "url".
-                // If there is no hit, the non-fallback mode suggests a new
-                // directory name to host the submodule (same rules as SHA),
-                // and the fallback mode would return the main directory.
 
-                // getSubmodulesUrls(urlNormalized) => dirname if any
+                Set<String[]> subEntries = getSubmodulesUrls(urlNormalized);
+                if (!subEntries.isEmpty()) {
+                    // Normally we should only have one entry here, as sorted by the routine
+                    referenceExpanded = subEntries.iterator().next()[0];
+                    if (getObjectPath(referenceExpanded) == null) {
+                        // chop it off, use main directory
+                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "").replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
+                    }
+                } else {
+                    // If there is no hit, the non-fallback mode suggests a new
+                    // directory name to host the submodule (same rules as SHA),
+                    // and the fallback mode would return the main directory.
+                    if (reference.endsWith("/${GIT_SUBMODULES}")) {
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
+                            org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                        if (getObjectPath(referenceExpanded) == null) {
+                            // chop it off, use main directory
+                            referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
+                        }
+                    }
+                    else if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
+                        // chop it off, use main directory
+                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "");
+                    }
+                }
             }
 
             if (referenceExpanded != null) {
