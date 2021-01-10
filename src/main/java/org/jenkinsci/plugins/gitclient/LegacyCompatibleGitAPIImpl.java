@@ -316,6 +316,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // And eventually return this Set or part of it as the answer.
         Set<String[]> result = new LinkedHashSet<>(); // Retain order of insertion
         File f = null;
+        // Helper list storage in loops below
+        ArrayList<String> arrDirnames = new ArrayList<String>();
 
         Boolean isBare = false;
         try {
@@ -347,7 +349,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             needleBasename = needleBasename.replaceAll(".git$", "");
 
             // Try with the basename without .git extension, and then with one.
-            ArrayList<String> arrDirnames = new ArrayList<String>();
             arrDirnames.add(needleBasename);
             arrDirnames.add(needleBasename + ".git");
             String needleBasenameLC = needleBasename.toLowerCase();
