@@ -390,12 +390,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // If current repo *is* bare (can't have proper submodules) and the
             // needle is not null, follow up with:
             // * Maybe also direct child dirs that have a ".git" FS object inside?..
-            // * Look at remote URLs in current dir after the guessed subdir and
-            // return then.
+            // * Look at remote URLs in current dir after the guessed subdirs failed,
+            //   and return then.
             if (isBare) {
                 arrDirnames.clear();
 
                 // Check subdirs that are git workspaces
+                // TODO: Refactor to avoid lookups of dirs that may prove not
+                // needed in the end (aim for less I/Os to find the goal)
                 Set<String> checkedDirs = new HashSet<>();
                 for (String[] resultEntry : result) {
                     checkedDirs.add(resultEntry[0]);
@@ -442,6 +444,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
 
                 // Nothing found, and for bare top-level repo not much to search for
+                // Or maybe also fall through to let git decide?
                 return new HashSet<>();
             }
         } else {
