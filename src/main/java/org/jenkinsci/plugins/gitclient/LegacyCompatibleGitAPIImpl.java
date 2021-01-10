@@ -587,6 +587,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 LinkedHashSet<String[]> subEntries = getSubmodulesUrls(urlNormalized);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted by the routine
+                    // TODO: If several entries are present after all, iterate until first existing hit
                     referenceExpanded = subEntries.iterator().next()[0];
                     if (getObjectPath(referenceExpanded) == null) {
                         // chop it off, use main directory
