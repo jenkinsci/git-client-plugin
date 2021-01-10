@@ -326,12 +326,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             isBare = false; // At least try to look into submodules...
         }
 
-        // For each current workspace (recurse or big loop in same context?):
-        // public GitClient subGit(String subdir) => would this.subGit(...)
-        //   give us a copy of this applied class instance (CLI Git vs jGit)?
-        // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for "commit" items
-        // getRemoteUrls() => Map <url, remoteName>
-
         // If needle is not null, first look perhaps in the subdir(s) named
         // with base-name of the URL with and without a ".git" suffix, then
         // in SHA256 named dir that can match it; note that this use-case
@@ -451,6 +445,22 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // ...and if there is no needle?
             /* if (isBare) { ... } */
             // fall through currently, let git decide if it has submodules here and now
+        }
+
+        // For each current workspace (recurse or big loop in same context?):
+        // public GitClient subGit(String subdir) => would this.subGit(...)
+        //   give us a copy of this applied class instance (CLI Git vs jGit)?
+        // get submodule name-vs-one-url from .gitmodules if present, for a
+        //   faster possible answer (only bother if needle is not null?)
+        // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for
+        //  "commit" items
+        // getRemoteUrls() => Map <url, remoteName>
+        arrDirnames.clear();
+
+        // Check subdirs that are git workspaces
+        Set<String> checkedDirs = new HashSet<>();
+        for (String[] resultEntry : result) {
+            checkedDirs.add(resultEntry[0]);
         }
 
         // If current dir does have submodules, first dig into submodules,
