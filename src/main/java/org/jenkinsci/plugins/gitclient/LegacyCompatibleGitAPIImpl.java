@@ -309,11 +309,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 which we want to find if it is not null - so stop and
      *                 return just hits for it as soon as we have something.
      */
-    public Set<String[]> getSubmodulesUrls(String needle) {
+    public LinkedHashSet<String[]> getSubmodulesUrls(String needle) {
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
-        Set<String[]> result = new LinkedHashSet<>(); // Retain order of insertion
+        LinkedHashSet<String[]> result = new LinkedHashSet<>(); // Retain order of insertion
         File f = null;
         // Helper list storage in loops below
         ArrayList<String> arrDirnames = new ArrayList<String>();
@@ -365,7 +365,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             String uri = pair.getKey();
                             String uriNorm = normalizeGitUrl(uri, true);
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                result = new HashSet<>();
+                                result = new LinkedHashSet<>();
                                 result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
                                 return result;
                             }
@@ -391,7 +391,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Check subdirs that are git workspaces
                 // TODO: Refactor to avoid lookups of dirs that may prove not
                 // needed in the end (aim for less I/Os to find the goal)
-                Set<String> checkedDirs = new HashSet<>();
+                LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
                 for (String[] resultEntry : result) {
                     checkedDirs.add(resultEntry[0]);
                 }
@@ -420,7 +420,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
                                 if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                    result = new HashSet<>();
+                                    result = new LinkedHashSet<>();
                                     result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
                                     return result;
                                 }
@@ -437,7 +437,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
                 // Nothing found, and for bare top-level repo not much to search for
                 // Or maybe also fall through to let git decide?
-                return new HashSet<>();
+                return new LinkedHashSet<>();
             }
         } else {
             // ...and if there is no needle?
@@ -456,7 +456,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         arrDirnames.clear();
 
         // Check subdirs that are git workspaces
-        Set<String> checkedDirs = new HashSet<>();
+        LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
         for (String[] resultEntry : result) {
             checkedDirs.add(resultEntry[0]);
         }
@@ -471,7 +471,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** See above. With null, returns all we can find (slower) for the caller
      * to parse */
-    public Set<String[]> getSubmodulesUrls() {
+    public LinkedHashSet<String[]> getSubmodulesUrls() {
         return getSubmodulesUrls(null);
     }
 
@@ -584,7 +584,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // has a registered remote URL equivalent (per normalization)
                 // to the provided "url".
 
-                Set<String[]> subEntries = getSubmodulesUrls(urlNormalized);
+                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(urlNormalized);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted by the routine
                     referenceExpanded = subEntries.iterator().next()[0];
