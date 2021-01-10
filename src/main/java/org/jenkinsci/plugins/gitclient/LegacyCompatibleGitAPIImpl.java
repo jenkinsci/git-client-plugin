@@ -428,8 +428,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 // Cache the finding to avoid the dirname later, if we
                                 // get to that; but no checks are needed in this loop
                                 // which by construct looks at different dirs so far.
-                                // Commented away: currently we exit after this loop.
-                                //result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                                result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
                             }
                         } catch (Exception e) {
                             // ignore, go to next slide
