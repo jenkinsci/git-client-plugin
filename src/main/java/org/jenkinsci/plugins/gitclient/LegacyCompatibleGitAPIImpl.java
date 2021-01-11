@@ -313,9 +313,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 fully qualified)
      * [3] remoteName as defined in that nested submodule
      *
-     * @param needle - a normalized URL (coming from normalizeGitUrl(url, true))
-     *                 which we want to find if it is not null - so stop and
-     *                 return just hits for it as soon as we have something.
+     * @param needle - an URL which (or its normalized variant coming from
+     *                 normalizeGitUrl(url, true)) we want to find:
+     *                 if it is not null - then stop and return just hits
+     *                 for it as soon as we have something.
      */
     public LinkedHashSet<String[]> getSubmodulesUrls(String needle) {
         // Keep track of where we've already looked in the "result" Set, to
@@ -340,16 +341,26 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // git submodules - but was prepared for our other options.
         if (needle != null && !needle.isEmpty()) {
             int sep = needle.lastIndexOf("/");
-            String needleNorm = normalizeGitUrl(needle, true);
             String needleBasename;
             if (sep < 0) {
                 needleBasename = needle;
             } else {
                 needleBasename = needle.substring(sep + 1);
             }
-            needleBasename = needleBasename.replaceAll(".git$", "");
+            needleBasename = needleBasename.replaceAll(".[Gg][Ii][Tt]$", "");
+
+            String needleNorm = normalizeGitUrl(needle, true);
+            sep = needleNorm.lastIndexOf("/");
+            String needleNormBasename;
+            if (sep < 0) {
+                needleNormBasename = needleNorm;
+            } else {
+                needleNormBasename = needleNorm.substring(sep + 1);
+            }
+            needleNormBasename = needleNormBasename.replaceAll(".git$", "");
 
             // Try with the basename without .git extension, and then with one.
+            // First we try the caller-provided string casing, then normalized.
             arrDirnames.add(needleBasename);
             arrDirnames.add(needleBasename + ".git");
             String needleBasenameLC = needleBasename.toLowerCase();
@@ -358,6 +369,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 arrDirnames.add(needleBasenameLC);
                 arrDirnames.add(needleBasenameLC + ".git");
             }
+            if (!needleNormBasename.equals(needleBasenameLC)) {
+                arrDirnames.add(needleNormBasename);
+                arrDirnames.add(needleNormBasename + ".git");
+            }
+
             String needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
@@ -622,7 +638,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // has a registered remote URL equivalent (per normalization)
                 // to the provided "url".
 
-                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(urlNormalized);
+                // Note: we pass "url" here, the routine differentiates original
+                // naming vs. normalization.
+                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(url);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
                     // by the routine, and prefer that first option if a new
