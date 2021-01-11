@@ -624,13 +624,24 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
                 LinkedHashSet<String[]> subEntries = getSubmodulesUrls(urlNormalized);
                 if (!subEntries.isEmpty()) {
-                    // Normally we should only have one entry here, as sorted by the routine
-                    // TODO: If several entries are present after all, iterate until first existing hit
-                    referenceExpanded = subEntries.iterator().next()[0];
+                    // Normally we should only have one entry here, as sorted
+                    // by the routine, and prefer that first option if a new
+                    // reference repo would have to be made (and none exists).
+                    // If several entries are present after all, iterate until
+                    // first existing hit and return the first entry otherwise.
+                    for (String[] subEntry : subEntries) {
+                        if (getObjectsFile(subEntry[0]) != null || getObjectsFile(subEntry[0] + ".git") != null) {
+                            referenceExpanded = subEntry[0];
+                            break;
+                        }
+                    }
+                    if (referenceExpanded == null) {
+                        referenceExpanded = subEntries.iterator().next()[0];
+                    }
                     System.err.println("findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded + "' from subEntries\n");
-                    if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                    if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory
-                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "").replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
+                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "");
                     }
                 } else {
                     System.err.println("findParameterizedReferenceRepository(): got no subEntries\n");
@@ -640,12 +651,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
                             org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
-                        if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
-                            // chop it off, use main directory
-                            referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
-                        }
                     }
-                    else if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
+                    else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
                         // chop it off, use main directory
                         referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "");
                     }
