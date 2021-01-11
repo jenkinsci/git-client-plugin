@@ -551,7 +551,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // Note: this normalization might crush several URLs into one,
             // and as far as is known this would be the goal - people tend
             // to use or omit .git suffix, or spell with varied case, while
-            // it means the same thing to known Git platforms.
+            // it means the same thing to known Git platforms, except local
+            // dirs on case-sensitive filesystems.
             // The actual reference repository directory may choose to have
             // original URL strings added as remotes (in case some are case
             // sensitive and different).
@@ -576,13 +577,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // can be introduced, e.g. to escape non-ascii chars for
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
-
-                // TODO: employ git submodules - there we can reliably match
-                // remote URLs (easily multiple) to particular modules, and
-                // yet keep separate git index directories per module with
-                // smaller scopes - much quicker to check out from than one
-                // huge combined repo. It would also be much more native to
-                // tools and custom scriptware that can be involved.
 
                 // TODO: Config option whether to populate absent reference
                 // repos (If the expanded path does not have git repo data
@@ -669,6 +663,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                 }
             } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") ) {
+                // Here we employ git submodules - so we can reliably match
+                // remote URLs (easily multiple) to particular modules, and
+                // yet keep separate git index directories per module with
+                // smaller scopes - much quicker to check out from than one
+                // huge combined repo. It would also be much more native to
+                // tools and custom scriptware that can be involved.
+
                 // Assuming the provided "reference" directory already hosts
                 // submodules, we use git tools to find the one subdir which
                 // has a registered remote URL equivalent (per normalization)
