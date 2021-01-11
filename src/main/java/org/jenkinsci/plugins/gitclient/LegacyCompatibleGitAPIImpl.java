@@ -392,9 +392,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => file '" + f.getAbsolutePath().toString() + "'");
                 if (f.exists() && f.isDirectory()) {
                     try {
+                        String fAbs = f.getAbsolutePath().toString();
                         //LegacyCompatibleGitAPIImpl?
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + f.getAbsolutePath().toString() + "'");
-                        GitClient g = this.subGit(needleBasename); //FIXME? needle or f?
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + fAbs + "'");
+                        GitClient g = this.subGit(fAbs);
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                         Map <String, String> uriNames = g.getRemoteUrls();
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
@@ -453,9 +454,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     f = new File(referenceBaseDir, dirname);
                     if (f.exists() && f.isDirectory()) {
                         try {
+
+                            String fAbs = f.getAbsolutePath().toString();
                             //LegacyCompatibleGitAPIImpl?
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + f.getAbsolutePath().toString() + "'");
-                            GitClient g = this.subGit(needleBasename); // needle or f?
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + fAbs + "'");
+                            GitClient g = this.subGit(fAbs);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
