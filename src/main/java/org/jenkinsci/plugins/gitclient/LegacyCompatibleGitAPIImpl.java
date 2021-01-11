@@ -576,13 +576,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // repository into smaller chunks without breaking builds.
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256_FALLBACK\\}$",
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
-                if (getObjectsFile(referenceExpanded) == null) {
+                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
                 }
             } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
-                if (getObjectPath(referenceExpanded) == null) {
+                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
                 }
@@ -598,7 +598,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // TODO: If several entries are present after all, iterate until first existing hit
                     referenceExpanded = subEntries.iterator().next()[0];
                     System.err.println("findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded + "' from subEntries\n");
-                    if (getObjectsFile(referenceExpanded) == null) {
+                    if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory
                         referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "").replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
                     }
@@ -610,7 +610,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
                             org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
-                        if (getObjectsFile(referenceExpanded) == null) {
+                        if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                             // chop it off, use main directory
                             referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
                         }
