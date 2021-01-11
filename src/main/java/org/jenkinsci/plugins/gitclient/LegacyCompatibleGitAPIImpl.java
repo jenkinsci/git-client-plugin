@@ -710,7 +710,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             System.err.println("reference after='" + reference + "'\n");
         }
 
-        if (!referencePath.exists()) {
+        if (!referencePath.exists() && !reference.endsWith(".git")) {
             // Normalize the URLs with or without .git suffix to
             // be served by same dir with the refrepo contents
             reference += ".git";
