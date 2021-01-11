@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import static java.util.Arrays.copyOfRange;
 import org.apache.commons.codec.digest.DigestUtils;
 import static org.apache.commons.lang.StringUtils.join;
+import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
@@ -393,6 +394,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         //LegacyCompatibleGitAPIImpl?
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in dir '" + dirname + "'");
                         GitClient g = this.subGit(needleBasename); //FIXME? needle or f?
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                         Map <String, String> uriNames = g.getRemoteUrls();
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                             String uri = pair.getKey();
@@ -453,6 +455,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             //LegacyCompatibleGitAPIImpl?
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'");
                             GitClient g = this.subGit(needleBasename); // needle or f?
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String uri = pair.getKey();
