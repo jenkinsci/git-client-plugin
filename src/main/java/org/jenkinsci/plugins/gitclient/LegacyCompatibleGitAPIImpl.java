@@ -558,6 +558,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // sensitive and different).
             String urlNormalized = normalizeGitUrl(url, true);
 
+            // Drop the trailing keyword to know the root refrepo dirname
+            String referenceBaseDir = reference.replaceAll("/\\$\\{GIT_[^\\}]*\\}$", "");
+
             // Note: currently unit-tests expect this markup on stderr:
             System.err.println("reference='" + reference + "'\n" +
                 "url='" + url + "'\n" +
@@ -598,7 +601,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
                 if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
-                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
+                    referenceExpanded = referenceBaseDir;
                 }
             } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
@@ -613,7 +616,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
                 if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
-                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
+                    referenceExpanded = referenceBaseDir;
                 }
             } else if (reference.endsWith("/${GIT_URL_BASENAME}") || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
                 // This may be the more portable solution with regard to filesystems
@@ -636,7 +639,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         needleBasename);
                     if (url.equals(urlNormalized) && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory (only if we do not check urlNormalized separately below)
-                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", "");
+                        referenceExpanded = referenceBaseDir;
                     }
                 }
 
@@ -658,7 +661,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             needleBasename);
                         if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                             // chop it off, use main directory
-                            referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", "");
+                            referenceExpanded = referenceBaseDir;
                         }
                     }
                 }
@@ -696,7 +699,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     LOGGER.log(Level.FINE, "findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded + "' from subEntries");
                     if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory
-                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "");
+                        referenceExpanded = referenceBaseDir;
                     }
                 } else {
                     LOGGER.log(Level.FINE, "findParameterizedReferenceRepository(): got no subEntries");
@@ -709,7 +712,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                     else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
                         // chop it off, use main directory
-                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "");
+                        referenceExpanded = referenceBaseDir;
                     }
                 }
             }
