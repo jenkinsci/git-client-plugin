@@ -359,11 +359,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (f.exists() && f.isDirectory()) {
                     try {
                         //LegacyCompatibleGitAPIImpl?
+                        System.err.println("getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'\n");
                         GitClient g = this.subGit(needleBasename);
                         Map <String, String> uriNames = g.getRemoteUrls();
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                             String uri = pair.getKey();
                             String uriNorm = normalizeGitUrl(uri, true);
+                            System.err.println("getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')\n");
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 result = new LinkedHashSet<>();
                                 result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
@@ -414,11 +416,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (f.exists() && f.isDirectory()) {
                         try {
                             //LegacyCompatibleGitAPIImpl?
+                            System.err.println("getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'\n");
                             GitClient g = this.subGit(needleBasename);
                             Map <String, String> uriNames = g.getRemoteUrls();
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
+                                System.err.println("getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')\n");
                                 if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                     result = new LinkedHashSet<>();
                                     result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
@@ -589,11 +593,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // Normally we should only have one entry here, as sorted by the routine
                     // TODO: If several entries are present after all, iterate until first existing hit
                     referenceExpanded = subEntries.iterator().next()[0];
+                    System.err.println("findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded + "' from subEntries\n");
                     if (getObjectPath(referenceExpanded) == null) {
                         // chop it off, use main directory
                         referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "").replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
                     }
                 } else {
+                    System.err.println("findParameterizedReferenceRepository(): got no subEntries\n");
                     // If there is no hit, the non-fallback mode suggests a new
                     // directory name to host the submodule (same rules as SHA),
                     // and the fallback mode would return the main directory.
