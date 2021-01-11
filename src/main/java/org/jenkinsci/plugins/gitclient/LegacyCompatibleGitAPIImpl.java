@@ -612,12 +612,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
             } else if (reference.endsWith("/${GIT_URL_BASENAME}") || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
                 // This may be the more portable solution with regard to filesystems
-                int sep = urlNormalized.lastIndexOf("/");
+                // First try with original user-provided casing of the URL (if local
+                // dirs were cloned manually)
+                int sep = url.lastIndexOf("/");
                 String needleBasename;
                 if (sep < 0) {
-                    needleBasename = urlNormalized;
+                    needleBasename = url;
                 } else {
-                    needleBasename = urlNormalized.substring(sep + 1);
+                    needleBasename = url.substring(sep + 1);
                 }
                 needleBasename = needleBasename.replaceAll(".git$", "");
 
@@ -627,9 +629,32 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
                     referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$",
                         needleBasename);
-                    if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
-                        // chop it off, use main directory
+                    if (url.equals(urlNormalized) && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                        // chop it off, use main directory (only if we do not check urlNormalized separately below)
                         referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", "");
+                    }
+                }
+
+                if (!url.equals(urlNormalized) && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                    // Retry with automation-ready normalized URL
+                    sep = urlNormalized.lastIndexOf("/");
+                    if (sep < 0) {
+                        needleBasename = urlNormalized;
+                    } else {
+                        needleBasename = urlNormalized.substring(sep + 1);
+                    }
+                    needleBasename = needleBasename.replaceAll(".git$", "");
+
+                    if (reference.endsWith("/${GIT_URL_BASENAME}")) {
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$",
+                            needleBasename);
+                    } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$",
+                            needleBasename);
+                        if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                            // chop it off, use main directory
+                            referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", "");
+                        }
                     }
                 }
             } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") ) {
