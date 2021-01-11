@@ -171,44 +171,44 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * paths, while a not-null return value is instantly usable by
      * some code which plays with git under its hood.
      */
-    public File getObjectPath(String reference) {
+    public File getObjectsFile(String reference) {
         if (reference == null || reference.isEmpty()) {
             return null;
         }
-        return getObjectPath(new File(reference));
+        return getObjectsFile(new File(reference));
     }
 
-    public File getObjectPath(File referencePath) {
-        if (referencePath == null) {
-            return referencePath;
+    public File getObjectsFile(File reference) {
+        if (reference == null) {
+            return reference;
         }
 
-        if (!referencePath.exists())
+        if (!reference.exists())
             return null;
 
-        if (!referencePath.isDirectory())
+        if (!reference.isDirectory())
             return null;
 
-        // reference path can either be a normal or a base repository
-        File objectsPath = new File(referencePath, ".git/objects");
-        if (objectsPath == null) {
-            return objectsPath; // Some Java error, could not make object from the paths involved
+        // reference pathname can either point to a normal or a base repository
+        File objects = new File(reference, ".git/objects");
+        if (objects == null) {
+            return objects; // Some Java error, could not make object from the paths involved
         }
 
-        if (!objectsPath.isDirectory()) {
+        if (!objects.isDirectory()) {
             // reference path is bare repo
-            objectsPath = new File(referencePath, "objects");
-            if (objectsPath == null) {
-                return objectsPath; // Some Java error, could not make object from the paths involved
+            objects = new File(reference, "objects");
+            if (objects == null) {
+                return objects; // Some Java error, could not make object from the paths involved
             }
         }
 
-        if (!objectsPath.isDirectory())
+        if (!objects.isDirectory())
             return null;
 
         // If we get here, we have a non-null File referencing a
         // "(.git/)objects" subdir under original referencePath
-        return objectsPath;
+        return objects;
     }
 
     /** Handle magic strings in the reference pathname to sort out patterns
@@ -576,7 +576,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // repository into smaller chunks without breaking builds.
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256_FALLBACK\\}$",
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
-                if (getObjectPath(referenceExpanded) == null) {
+                if (getObjectsFile(referenceExpanded) == null) {
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
                 }
@@ -598,7 +598,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // TODO: If several entries are present after all, iterate until first existing hit
                     referenceExpanded = subEntries.iterator().next()[0];
                     System.err.println("findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded + "' from subEntries\n");
-                    if (getObjectPath(referenceExpanded) == null) {
+                    if (getObjectsFile(referenceExpanded) == null) {
                         // chop it off, use main directory
                         referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES_FALLBACK\\}$", "").replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
                     }
@@ -610,7 +610,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
                             org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
-                        if (getObjectPath(referenceExpanded) == null) {
+                        if (getObjectsFile(referenceExpanded) == null) {
                             // chop it off, use main directory
                             referenceExpanded = reference.replaceAll("/\\$\\{GIT_SUBMODULES\\}$", "");
                         }

@@ -784,7 +784,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         else if (!referencePath.isDirectory())
                             listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
                         else {
-                            File objectsPath = getObjectPath(referencePath);
+                            File objectsPath = getObjectsFile(referencePath);
                             if (objectsPath == null || !objectsPath.isDirectory())
                                 listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
                             else {
