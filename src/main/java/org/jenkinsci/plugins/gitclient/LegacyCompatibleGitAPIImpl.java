@@ -244,6 +244,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return true;
         }
 
+        if (reference.endsWith("/${GIT_URL_BASENAME}")) {
+            return true;
+        }
+
+        if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
+            return true;
+        }
+
         if (reference.endsWith("/${GIT_SUBMODULES}")) {
             return true;
         }
@@ -585,6 +593,28 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
+                }
+            } else if (reference.endsWith("/${GIT_URL_BASENAME}") || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
+                // This may be the more portable solution with regard to filesystems
+                int sep = urlNormalized.lastIndexOf("/");
+                String needleBasename;
+                if (sep < 0) {
+                    needleBasename = urlNormalized;
+                } else {
+                    needleBasename = urlNormalized.substring(sep + 1);
+                }
+                needleBasename = needleBasename.replaceAll(".git$", "");
+
+                if (reference.endsWith("/${GIT_URL_BASENAME}")) {
+                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$",
+                        needleBasename);
+                } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
+                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$",
+                        needleBasename);
+                    if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                        // chop it off, use main directory
+                        referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", "");
+                    }
                 }
             } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") ) {
                 // Assuming the provided "reference" directory already hosts
