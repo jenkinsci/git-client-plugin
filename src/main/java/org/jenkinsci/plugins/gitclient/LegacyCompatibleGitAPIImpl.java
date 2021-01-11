@@ -319,12 +319,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 fully qualified)
      * [3] remoteName as defined in that nested submodule
      *
+     * @param referenceBaseDir - the reference repository, or container thereof
      * @param needle - an URL which (or its normalized variant coming from
      *                 normalizeGitUrl(url, true)) we want to find:
      *                 if it is not null - then stop and return just hits
      *                 for it as soon as we have something.
      */
-    public LinkedHashSet<String[]> getSubmodulesUrls(String needle) {
+    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir, String needle) {
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
@@ -384,15 +385,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
 
-            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like arrDirnames: " + arrDirnames.toString() + " under " + Paths.get("").toAbsolutePath().toString());
+            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
 
             for (String dirname : arrDirnames) {
-                f = new File(".", dirname);
+                f = new File(referenceBaseDir, dirname);
                 LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => file '" + f.getAbsolutePath().toString() + "'");
                 if (f.exists() && f.isDirectory()) {
                     try {
                         //LegacyCompatibleGitAPIImpl?
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in dir '" + dirname + "'");
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + f.getAbsolutePath().toString() + "'");
                         GitClient g = this.subGit(needleBasename); //FIXME? needle or f?
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                         Map <String, String> uriNames = g.getRemoteUrls();
@@ -446,14 +447,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Finally check pattern's parent dir
                 arrDirnames.add(".");
 
-                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) per arrDirnames: " + arrDirnames.toString() + " under " + Paths.get("").toAbsolutePath().toString());
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) under '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
 
                 for (String dirname : arrDirnames) {
-                    f = new File(".", dirname);
+                    f = new File(referenceBaseDir, dirname);
                     if (f.exists() && f.isDirectory()) {
                         try {
                             //LegacyCompatibleGitAPIImpl?
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'");
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + f.getAbsolutePath().toString() + "'");
                             GitClient g = this.subGit(needleBasename); // needle or f?
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
@@ -516,9 +517,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** See above. With null, returns all we can find (slower) for the caller
      * to parse */
-    public LinkedHashSet<String[]> getSubmodulesUrls() {
-        return getSubmodulesUrls(null);
+    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir) {
+        return getSubmodulesUrls(referenceBaseDir, null);
     }
+    /* Do we need a parameter-less variant to look under current work dir
+     * aka Paths.get("").toAbsolutePath().toString() ?.. */
 
     /** Yield the File object for the reference repository local filesystem
      * pathname. Note that the provided string may be suffixed with expandable
@@ -682,8 +685,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // to the provided "url".
 
                 // Note: we pass "url" here, the routine differentiates original
-                // naming vs. normalization.
-                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(url);
+                // naming vs. normalization while looking for its needle in the
+                // haystack.
+                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(referenceBaseDir, url);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
                     // by the routine, and prefer that first option if a new
