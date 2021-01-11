@@ -387,7 +387,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // * Maybe also direct child dirs that have a ".git" FS object inside?..
             // * Look at remote URLs in current dir after the guessed subdirs failed,
             //   and return then.
-            if (isBare) {
+            // TODO: Remove "|| true" when other logic fo look for real submodules is complete
+            if (isBare || true) {
                 arrDirnames.clear();
 
                 // Check subdirs that are git workspaces
@@ -441,7 +442,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
                 // Nothing found, and for bare top-level repo not much to search for
                 // Or maybe also fall through to let git decide?
-                return new LinkedHashSet<>();
+                if (isBare) {
+                    return new LinkedHashSet<>();
+                }
             }
         } else {
             // ...and if there is no needle?
@@ -459,7 +462,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // getRemoteUrls() => Map <url, remoteName>
         arrDirnames.clear();
 
-        // Check subdirs that are git workspaces
+        // TODO: Check subdirs that are git workspaces, and remove "|| true" above
         LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
         for (String[] resultEntry : result) {
             checkedDirs.add(resultEntry[0]);
