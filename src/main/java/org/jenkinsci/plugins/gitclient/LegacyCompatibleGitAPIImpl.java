@@ -232,11 +232,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return true;
         }
 
-        if (reference.endsWith("/${GIT_URL_SHA256}")) {
+        if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
             return true;
         }
 
-        if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
+        if (reference.endsWith("/${GIT_URL_SHA256}")) {
             return true;
         }
 
@@ -565,6 +565,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // or storing multiple closely related forks together.
 
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
+            } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
+                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
+                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                    // chop it off, use main directory
+                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
+                }
             } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
@@ -579,12 +585,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
                     referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_SHA256_FALLBACK\\}$", "");
-                }
-            } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
-                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
-                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
-                    // chop it off, use main directory
-                    referenceExpanded = reference.replaceAll("/\\$\\{GIT_URL_FALLBACK\\}$", "");
                 }
             } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") ) {
                 // Assuming the provided "reference" directory already hosts
