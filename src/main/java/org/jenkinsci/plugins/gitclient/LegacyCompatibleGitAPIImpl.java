@@ -447,7 +447,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
             }
         } else {
-            // ...and if there is no needle?
+            // ...and if there is no needle? Return info on all git remotes
+            // found under this directory...
             /* if (isBare) { ... } */
             // fall through currently, let git decide if it has submodules here and now
         }
