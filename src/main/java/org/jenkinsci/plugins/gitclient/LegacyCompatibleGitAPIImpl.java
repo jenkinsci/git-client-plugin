@@ -383,13 +383,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
 
+            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like arrDirnames: " + arrDirnames.toString() + " under " + Paths.get("").toAbsolutePath().toString());
+
             for (String dirname : arrDirnames) {
                 f = new File(".", dirname);
+                LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => file '" + f.getAbsolutePath().toString() + "'");
                 if (f.exists() && f.isDirectory()) {
                     try {
                         //LegacyCompatibleGitAPIImpl?
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'");
-                        GitClient g = this.subGit(needleBasename);
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in dir '" + dirname + "'");
+                        GitClient g = this.subGit(needleBasename); //FIXME? needle or f?
                         Map <String, String> uriNames = g.getRemoteUrls();
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                             String uri = pair.getKey();
@@ -441,13 +444,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Finally check pattern's parent dir
                 arrDirnames.add(".");
 
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) per arrDirnames: " + arrDirnames.toString() + " under " + Paths.get("").toAbsolutePath().toString());
+
                 for (String dirname : arrDirnames) {
                     f = new File(".", dirname);
                     if (f.exists() && f.isDirectory()) {
                         try {
                             //LegacyCompatibleGitAPIImpl?
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for needle='" + needle + "' in dir '" + dirname + "'");
-                            GitClient g = this.subGit(needleBasename);
+                            GitClient g = this.subGit(needleBasename); // needle or f?
                             Map <String, String> uriNames = g.getRemoteUrls();
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String uri = pair.getKey();
