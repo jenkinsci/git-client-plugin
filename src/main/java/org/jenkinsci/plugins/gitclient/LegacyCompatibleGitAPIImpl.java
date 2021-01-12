@@ -492,7 +492,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (isBare) {
                     return new LinkedHashSet<>();
                 }
+                // else... ||true above :)
             }
+            // else: look for needle in submodules defined in current non-bare refrepo
         } else {
             // ...and if there is no needle? Return info on all git remotes
             // found under this directory...
