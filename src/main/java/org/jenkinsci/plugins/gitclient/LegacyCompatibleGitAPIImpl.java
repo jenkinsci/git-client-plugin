@@ -472,7 +472,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 // same arrDirnames with different values and check remotes listed
 // in those repos.
         // If current repo *is NOT* bare - check its submodules
-        if (!isBare || true) {
+        // (the .gitmodules => submodule.MODNAME.{url,path} mapping)
+        // but this essentially does not look into any subdirectory
+        if (!isBare) {
             try {
                 // For each current workspace (recurse or big loop in same context?):
                 // public GitClient subGit(String subdir) => would this.subGit(...)
@@ -481,6 +483,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 //   faster possible answer (only bother if needle is not null?)
                 // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for
                 //  "commit" items
+                // * if we are recursed into a "leaf" project and inspect ITS
+                //   submodules, look at all git tips or even commits, to find
+                //   and inspect all unique (by hash) .gitmodule objects, since
+                //   over time or in different branches a "leaf" project could
+                //   reference different subs?
                 // getRemoteUrls() => Map <url, remoteName>
 //                arrDirnames.clear();
 
