@@ -457,9 +457,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // if several have the replica (assuming the first hits are smaller
         // scopes).
 
-        // Will build a new shopping list to browse
-        arrDirnames.clear();
-
         // Track where we have looked already; note that values in result[]
         // (if any from needle-search above) are absolute pathnames
         LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
@@ -522,7 +519,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // follow up with direct child dirs that have a ".git" FS object inside:
 
         // Check subdirs that are git workspaces; note that values in checkedDirs
-        // are absolute pathnames
+        // are absolute pathnames. If we did look for the needle, array already
+        // starts with some "prioritized" pathnames which we should not directly
+        // inspect again... but should recurse into first anyhow.
         File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
         for (File dir : directories) {
             f = new File(dir, ".git");
@@ -551,33 +550,41 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             f = new File(dirname);
             LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
             if (f.exists() && f.isDirectory()) {
-                try {
-                    String fAbs = f.getAbsolutePath().toString();
-                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo dir '" + dirname + "' => '" + fAbs + "'");
-                    GitClient g = this.newGit(dirname);
-                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
-                    Map <String, String> uriNames = g.getRemoteUrls();
-                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
-                    for (Map.Entry<String, String> pair : uriNames.entrySet()) {
-                        String remoteName = pair.getValue(); // whatever the git workspace config calls it
-                        String uri = pair.getKey();
-                        String uriNorm = normalizeGitUrl(uri, true);
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
-                        if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
-                            result = new LinkedHashSet<>();
+                if (!checkedDirs.contains(dirname)) {
+                    try {
+                        String fAbs = f.getAbsolutePath().toString();
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking " + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ") + "in existing refrepo dir '" + dirname + "' => '" + fAbs + "'");
+                        GitClient g = this.newGit(dirname);
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
+                        Map <String, String> uriNames = g.getRemoteUrls();
+                        LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
+                        for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                            String remoteName = pair.getValue(); // whatever the git workspace config calls it
+                            String uri = pair.getKey();
+                            String uriNorm = normalizeGitUrl(uri, true);
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
+                            if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
+                                result = new LinkedHashSet<>();
+                                result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                                return result;
+                            }
+                            // Cache the finding to return eventually, for each remote:
+                            // * absolute dirname of a Git workspace
+                            // * original remote URI from that workspace's config
+                            // * normalized remote URI
+                            // * name of the remote from that workspace's config ("origin" etc)
                             result.add(new String[]{fAbs, uri, uriNorm, remoteName});
-                            return result;
                         }
-                        // Cache the finding to return eventually.
-                        result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                    } catch (Exception e) {
+                        // ignore, go to next slide
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
                     }
-                    // TODO: Here is a good spot to recurse this routine into
-                    // a subdir that is a known git workspace, to add its data
-                    // and/or return a found needle.
-                } catch (Exception e) {
-                    // ignore, go to next slide
-                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
                 }
+
+                // TODO: Here is a good spot to recurse this routine into
+                // a subdir that is a known git workspace, to add its data
+                // and/or return a found needle.
+
             }
         }
 
