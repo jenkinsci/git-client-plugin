@@ -497,6 +497,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) that have a .git, under refrepo '" + referenceBaseDirAbs + "' per absolute arrDirnames: " + arrDirnames.toString());
 
                 for (String dirname : arrDirnames) {
+                    // Note that here dirnames deal in absolutes
                     f = new File(dirname);
                     LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
                     if (f.exists() && f.isDirectory()) {
