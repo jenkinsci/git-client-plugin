@@ -399,7 +399,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (f.exists() && f.isDirectory()) {
                     try {
                         String fAbs = f.getAbsolutePath().toString();
-                        if (getObjectsFile(fAbs) != null) {
+                        File fGit = new File(f, ".git");
+                        if (fGit.exists()) { // file, dir or symlink to those
                             //LegacyCompatibleGitAPIImpl?
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "' => '" + fAbs + "'");
                             GitClient g = referenceGit.subGit(dirname);
