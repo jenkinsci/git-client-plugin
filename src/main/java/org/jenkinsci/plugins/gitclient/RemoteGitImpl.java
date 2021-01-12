@@ -617,6 +617,11 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
         return proxy.subGit(subdir);
     }
 
+    /** {@inheritDoc} */
+    public GitClient newGit(String somedir) {
+        return proxy.newGit(somedir);
+    }
+
     /**
      * hasGitModules.
      *

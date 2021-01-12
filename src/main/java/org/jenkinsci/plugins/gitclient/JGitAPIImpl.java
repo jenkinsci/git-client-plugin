@@ -216,6 +216,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    public GitClient newGit(String somedir) {
+        return new JGitAPIImpl(new File(somedir), listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setAuthor(String name, String email) throws GitException {
         author = new PersonIdent(name,email);
     }

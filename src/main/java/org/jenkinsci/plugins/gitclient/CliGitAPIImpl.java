@@ -321,6 +321,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public GitClient newGit(String somedir) {
+        return new CliGitAPIImpl(gitExe, new File(somedir), listener, environment);
+    }
+
     /**
      * Initialize an empty repository for further git operations.
      *

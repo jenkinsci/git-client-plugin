@@ -713,6 +713,17 @@ public interface GitClient {
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
 
+    // --- new instance of same applied class
+
+    /**
+     * newGit.
+     *
+     * @return a IGitAPI implementation to manage another git repository
+     *   with same general settings and implementation as the current one.
+     * @param somedir a {@link java.lang.String} object.
+     */
+    GitClient newGit(String somedir);
+
     // --- submodules
 
     /**
