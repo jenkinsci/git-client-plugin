@@ -406,6 +406,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             GitClient g = referenceGit.subGit(dirname);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
+                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
@@ -471,6 +472,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             GitClient g = referenceGit.subGit(dirname);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
+                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
