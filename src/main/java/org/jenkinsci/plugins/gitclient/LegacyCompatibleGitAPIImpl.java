@@ -347,14 +347,25 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             isBare = false; // At least try to look into submodules...
         }
 
+        // Simplify checks below by stating a useless needle is null
+        if (needle != null && needle.isEmpty()) {
+            needle = null;
+        }
+        // This is only used and populated if needle is not null
+        String needleNorm = null;
+
         // If needle is not null, first look perhaps in the subdir(s) named
         // with base-name of the URL with and without a ".git" suffix, then
         // in SHA256 named dir that can match it; note that this use-case
         // might pan out also if "this" repo is bare and can not have "proper"
         // git submodules - but was prepared for our other options.
-        if (needle != null && !needle.isEmpty()) {
-            int sep = needle.lastIndexOf("/");
+        if (needle != null) {
             String needleBasename;
+            String needleBasenameLC;
+            String needleNormBasename;
+            String needleSha;
+
+            int sep = needle.lastIndexOf("/");
             if (sep < 0) {
                 needleBasename = needle;
             } else {
@@ -362,9 +373,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             }
             needleBasename = needleBasename.replaceAll(".[Gg][Ii][Tt]$", "");
 
-            String needleNorm = normalizeGitUrl(needle, true);
+            needleNorm = normalizeGitUrl(needle, true);
             sep = needleNorm.lastIndexOf("/");
-            String needleNormBasename;
             if (sep < 0) {
                 needleNormBasename = needleNorm;
             } else {
@@ -376,7 +386,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // First we try the caller-provided string casing, then normalized.
             arrDirnames.add(needleBasename);
             arrDirnames.add(needleBasename + ".git");
-            String needleBasenameLC = needleBasename.toLowerCase();
+            needleBasenameLC = needleBasename.toLowerCase();
             if (!needleBasenameLC.equals(needleBasename)) {
                 // Retry with lowercased dirname
                 arrDirnames.add(needleBasenameLC);
@@ -387,7 +397,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 arrDirnames.add(needleNormBasename + ".git");
             }
 
-            String needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
+            needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
 
