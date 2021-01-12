@@ -424,6 +424,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         }
                     } catch (Exception e) {
                         // ignore, go to next slide
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
                     }
                 }
             }
@@ -522,6 +523,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             }
                         } catch (Exception e) {
                             // ignore, go to next slide
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
                         }
                     }
                 }
