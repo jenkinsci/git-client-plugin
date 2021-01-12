@@ -418,18 +418,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             Map <String, String> uriNames = g.getRemoteUrls();
                             LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                                String remoteName = pair.getValue(); // whatever the git workspace config calls it
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
                                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
                                 if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                     result = new LinkedHashSet<>();
-                                    result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                                    result.add(new String[]{fAbs, uri, uriNorm, remoteName});
                                     return result;
                                 }
                                 // Cache the finding to avoid the dirname later, if we
                                 // get to that; but no checks are needed in this loop
                                 // which by construct looks at different dirs so far.
-                                result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                                result.add(new String[]{fAbs, uri, uriNorm, remoteName});
                             }
                         }
                     } catch (Exception e) {
@@ -558,16 +559,17 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     Map <String, String> uriNames = g.getRemoteUrls();
                     LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
                     for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                        String remoteName = pair.getValue(); // whatever the git workspace config calls it
                         String uri = pair.getKey();
                         String uriNorm = normalizeGitUrl(uri, true);
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
                         if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
                             result = new LinkedHashSet<>();
-                            result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                            result.add(new String[]{fAbs, uri, uriNorm, remoteName});
                             return result;
                         }
                         // Cache the finding to return eventually.
-                        result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                        result.add(new String[]{fAbs, uri, uriNorm, remoteName});
                     }
                     // TODO: Here is a good spot to recurse this routine into
                     // a subdir that is a known git workspace, to add its data
