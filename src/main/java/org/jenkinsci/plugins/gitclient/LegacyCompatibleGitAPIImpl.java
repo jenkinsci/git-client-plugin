@@ -603,6 +603,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         File referencePath = new File(reference);
+        // Note: Initially we expect the reference to be a realistic dirname
+        // with a special suffix to substitute after the logic below, so the
+        // referencePath for that verbatim funny string should not exist now:
         if (!referencePath.exists() &&
             isParameterizedReferenceRepository(reference) &&
             url != null && !url.isEmpty()
@@ -624,6 +627,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             System.err.println("reference='" + reference + "'\n" +
                 "url='" + url + "'\n" +
                 "urlNormalized='" + urlNormalized + "'\n");
+
+            // Let users know why there are many "git config --list" lines in their build log:
+            LOGGER.log(Level.INFO, "Trying to resolve parameterized Git reference repository '" +
+                reference + "' into a specific (sub-)directory to use for URL '" + url + "' ...");
 
             String referenceExpanded = null;
             if (reference.endsWith("/${GIT_URL}")) {
@@ -785,7 +792,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             // Note: currently unit-tests expect this markup on stderr:
             System.err.println("reference after='" + reference + "'\n");
-        }
+
+            LOGGER.log(Level.INFO, "After resolving the parameterized Git reference repository, " +
+                "decided to use '" + reference + "' directory for URL '" + url + "'");
+        } // if referencePath is the replaceable token and not existing directory
 
         if (!referencePath.exists() && !reference.endsWith(".git")) {
             // Normalize the URLs with or without .git suffix to
