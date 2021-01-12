@@ -333,11 +333,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         File f = null;
         // Helper list storage in loops below
         ArrayList<String> arrDirnames = new ArrayList<String>();
+        String referenceBaseDirAbs = Paths.get(referenceBaseDir).toAbsolutePath().toString();
 
         // "this" during a checkout typically represents the job workspace,
         // but we want to inspect the reference repository located elsewhere
         // with the same implementation as the end-user set up (CliGit/jGit)
-        GitClient referenceGit = this.newGit(referenceBaseDir);
+        GitClient referenceGit = this.newGit(referenceBaseDirAbs);
 
         Boolean isBare = false;
         try {
@@ -390,10 +391,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
 
-            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under refrepo '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
+            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under refrepo '" + referenceBaseDirAbs + "' per arrDirnames: " + arrDirnames.toString());
 
             for (String dirname : arrDirnames) {
-                f = new File(referenceBaseDir, dirname);
+                f = new File(referenceBaseDirAbs, dirname);
                 LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
                 if (f.exists() && f.isDirectory()) {
                     try {
@@ -439,7 +440,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 for (String[] resultEntry : result) {
                     checkedDirs.add(resultEntry[0]);
                 }
-                File[] directories = new File(".").listFiles(File::isDirectory);
+                File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
                 for (File dir : directories) {
                     f = new File(dir, ".git");
                     if (f.exists()) { // May be a file or directory... or symlink to those...
@@ -453,10 +454,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Finally check pattern's parent dir
                 arrDirnames.add(".");
 
-                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) under refrepo '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) under refrepo '" + referenceBaseDirAbs + "' per arrDirnames: " + arrDirnames.toString());
 
                 for (String dirname : arrDirnames) {
-                    f = new File(referenceBaseDir, dirname);
+                    f = new File(referenceBaseDirAbs, dirname);
                     LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
                     if (f.exists() && f.isDirectory()) {
                         try {
