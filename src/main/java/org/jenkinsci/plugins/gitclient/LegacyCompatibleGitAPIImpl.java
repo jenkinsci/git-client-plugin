@@ -428,6 +428,39 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
             }
 
+/*
+// TBD: Needs a way to list submodules in given workspace and convert
+// that into (relative) subdirs, possibly buried some levels deep, for
+// cases where the submodule is defined in parent with the needle URL.
+// Maybe merge with current "if isBare" below, to optionally seed
+// same arrDirnames with different values and check remotes listed
+// in those repos.
+            // If current repo *is NOT* bare - check its submodules
+            if (!isBare || true) {
+                try {
+                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in submodules of refrepo, if any");
+                    Map <String, String> uriNames = referenceGit.getRemoteUrls();
+                    for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                        String uri = pair.getKey();
+                        String uriNorm = normalizeGitUrl(uri, true);
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
+                        LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
+                        if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                            result = new LinkedHashSet<>();
+                            result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                            return result;
+                        }
+                        // Cache the finding to avoid the dirname later, if we
+                        // get to that; but no checks are needed in this loop
+                        // which by construct looks at different dirs so far.
+                        result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                    }
+                } catch (Exception e) {
+                    // ignore, go to next slide
+                }
+            }
+*/
+
             // If current repo *is* bare (can't have proper submodules) and the
             // needle is not null, follow up with:
             // * Maybe also direct child dirs that have a ".git" FS object inside?..
