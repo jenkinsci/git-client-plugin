@@ -409,7 +409,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 result = new LinkedHashSet<>();
-                                result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                                result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
                                 return result;
                             }
                             // Cache the finding to avoid the dirname later, if we
@@ -472,7 +472,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
                                 if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                     result = new LinkedHashSet<>();
-                                    result.add(new String[]{needleBasename, uri, uriNorm, pair.getValue()});
+                                    result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
                                     return result;
                                 }
                                 // Cache the finding to avoid the dirname later, if we
