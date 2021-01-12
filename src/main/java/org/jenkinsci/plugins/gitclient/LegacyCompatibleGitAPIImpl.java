@@ -390,16 +390,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             arrDirnames.add(needleSha);
             arrDirnames.add(needleSha + ".git");
 
-            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
+            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under refrepo '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
 
             for (String dirname : arrDirnames) {
                 f = new File(referenceBaseDir, dirname);
-                LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => file '" + f.getAbsolutePath().toString() + "'");
+                LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
                 if (f.exists() && f.isDirectory()) {
                     try {
                         String fAbs = f.getAbsolutePath().toString();
                         //LegacyCompatibleGitAPIImpl?
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + fAbs + "'");
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "' => '" + fAbs + "'");
                         GitClient g = referenceGit.subGit(dirname);
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                         Map <String, String> uriNames = g.getRemoteUrls();
@@ -453,16 +453,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Finally check pattern's parent dir
                 arrDirnames.add(".");
 
-                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) under '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) under refrepo '" + referenceBaseDir + "' per arrDirnames: " + arrDirnames.toString());
 
                 for (String dirname : arrDirnames) {
                     f = new File(referenceBaseDir, dirname);
+                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
                     if (f.exists() && f.isDirectory()) {
                         try {
-
                             String fAbs = f.getAbsolutePath().toString();
                             //LegacyCompatibleGitAPIImpl?
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing dir '" + dirname + "' => '" + fAbs + "'");
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "' => '" + fAbs + "'");
                             GitClient g = referenceGit.subGit(dirname);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
