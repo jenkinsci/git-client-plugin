@@ -438,6 +438,33 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                 }
             }
+        } // if needle, look in basename-like and SHA dirs first
+
+        // Needle or not, the rest of directory walk to collect data is the
+        // same, so follow a list of whom we want to visit in likely-quickest
+        // hit order. Note that if needle is null, we walk over everything
+        // that makes sense to visit, to return info on all git remotes found
+        // in or under this directory; however if it is not-null, we still
+        // try to have minimal overhead to complete as soon as we match it.
+        // TODO: Refactor to avoid lookups of dirs that may prove not needed
+        // in the end (aim for less I/Os to find the goal)... or is one dir
+        // listing a small price to pay for maintaining one unified logic?
+
+        // If current dir does have submodules, first dig into submodules,
+        // when there is no deeper to drill, report remote URLs and step
+        // back from recursion. This way we have least specific repo last,
+        // if several have the replica (assuming the first hits are smaller
+        // scopes).
+
+        // Will build a new shopping list to browse
+        arrDirnames.clear();
+
+        // Track where we have looked already; note that values in result[]
+        // (if any from needle-search above) are absolute pathnames
+        LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
+        for (String[] resultEntry : result) {
+            checkedDirs.add(resultEntry[0]);
+        }
 
 /*
 // TBD: Needs a way to list submodules in given workspace and convert
@@ -446,135 +473,117 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 // Maybe merge with current "if isBare" below, to optionally seed
 // same arrDirnames with different values and check remotes listed
 // in those repos.
-            // If current repo *is NOT* bare - check its submodules
-            if (!isBare || true) {
+        // If current repo *is NOT* bare - check its submodules
+        if (!isBare || true) {
+            try {
+                // For each current workspace (recurse or big loop in same context?):
+                // public GitClient subGit(String subdir) => would this.subGit(...)
+                //   give us a copy of this applied class instance (CLI Git vs jGit)?
+                // get submodule name-vs-one-url from .gitmodules if present, for a
+                //   faster possible answer (only bother if needle is not null?)
+                // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for
+                //  "commit" items
+                // getRemoteUrls() => Map <url, remoteName>
+//                arrDirnames.clear();
+
+                // TODO: Check subdirs that are git workspaces, and remove "|| true" above
+//                LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
+//                for (String[] resultEntry : result) {
+//                    checkedDirs.add(resultEntry[0]);
+//                }
+
+
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in submodules of refrepo, if any");
+                Map <String, String> uriNames = referenceGit.getRemoteUrls();
+                for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                    String uri = pair.getKey();
+                    String uriNorm = normalizeGitUrl(uri, true);
+                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
+                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
+                    if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                        result = new LinkedHashSet<>();
+                        result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                        return result;
+                    }
+                    // Cache the finding to avoid the dirname later, if we
+                    // get to that; but no checks are needed in this loop
+                    // which by construct looks at different dirs so far.
+                    result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
+                }
+            } catch (Exception e) {
+                // ignore, go to next slide
+            }
+        }
+*/
+
+        // If current repo *is* bare (can't have proper submodules), or if the
+        // end-users just cloned or linked some more repos into this container,
+        // follow up with direct child dirs that have a ".git" FS object inside:
+
+        // Check subdirs that are git workspaces; note that values in checkedDirs
+        // are absolute pathnames
+        File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
+        for (File dir : directories) {
+            f = new File(dir, ".git");
+            if (f.exists()) { // May be a file or directory... or symlink to those...
+                String dirname = dir.getPath().replaceAll("/*$", "");
+                if (!checkedDirs.contains(dirname)) {
+                    arrDirnames.add(dirname);
+                }
+            }
+        }
+
+        // Finally check pattern's parent dir
+        // * Look at remote URLs in current dir after the guessed subdirs failed,
+        //   and return then.
+        if (new File(referenceBaseDirAbs, ".git").exists()) {
+            arrDirnames.add(referenceBaseDirAbs);
+        }
+
+        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at " +
+            ((isBare ? "" : "submodules first, then ")) +
+            "all subdirs that have a .git, under refrepo '" + referenceBaseDirAbs +
+            "' per absolute arrDirnames: " + arrDirnames.toString());
+
+        for (String dirname : arrDirnames) {
+            // Note that here dirnames deal in absolutes
+            f = new File(dirname);
+            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
+            if (f.exists() && f.isDirectory()) {
                 try {
-                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in submodules of refrepo, if any");
-                    Map <String, String> uriNames = referenceGit.getRemoteUrls();
+                    String fAbs = f.getAbsolutePath().toString();
+                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo dir '" + dirname + "' => '" + fAbs + "'");
+                    GitClient g = this.newGit(dirname);
+                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
+                    Map <String, String> uriNames = g.getRemoteUrls();
+                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
                     for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                         String uri = pair.getKey();
                         String uriNorm = normalizeGitUrl(uri, true);
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
-                        LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
-                        if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                        if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
                             result = new LinkedHashSet<>();
                             result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
                             return result;
                         }
-                        // Cache the finding to avoid the dirname later, if we
-                        // get to that; but no checks are needed in this loop
-                        // which by construct looks at different dirs so far.
+                        // Cache the finding to return eventually.
                         result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
                     }
+                    // TODO: Here is a good spot to recurse this routine into
+                    // a subdir that is a known git workspace, to add its data
+                    // and/or return a found needle.
                 } catch (Exception e) {
                     // ignore, go to next slide
+                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
                 }
             }
-*/
-
-            // If current repo *is* bare (can't have proper submodules) and the
-            // needle is not null, follow up with:
-            // * Maybe also direct child dirs that have a ".git" FS object inside?..
-            // * Look at remote URLs in current dir after the guessed subdirs failed,
-            //   and return then.
-            // TODO: Remove "|| true" when other logic fo look for real submodules is complete
-            if (isBare || true) {
-                arrDirnames.clear();
-
-                // Check subdirs that are git workspaces; note these are absolute pathnames
-                // TODO: Refactor to avoid lookups of dirs that may prove not
-                // needed in the end (aim for less I/Os to find the goal)
-                LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
-                for (String[] resultEntry : result) {
-                    checkedDirs.add(resultEntry[0]);
-                }
-                File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
-                for (File dir : directories) {
-                    f = new File(dir, ".git");
-                    if (f.exists()) { // May be a file or directory... or symlink to those...
-                        String dirname = dir.getPath().replaceAll("/*$", "");
-                        if (!checkedDirs.contains(dirname)) {
-                            arrDirnames.add(dirname);
-                        }
-                    }
-                }
-
-                // Finally check pattern's parent dir
-                if (new File(referenceBaseDirAbs, ".git").exists()) {
-                    arrDirnames.add(referenceBaseDirAbs);
-                }
-
-                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) that have a .git, under refrepo '" + referenceBaseDirAbs + "' per absolute arrDirnames: " + arrDirnames.toString());
-
-                for (String dirname : arrDirnames) {
-                    // Note that here dirnames deal in absolutes
-                    f = new File(dirname);
-                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
-                    if (f.exists() && f.isDirectory()) {
-                        try {
-                            String fAbs = f.getAbsolutePath().toString();
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "' => '" + fAbs + "'");
-                            GitClient g = this.newGit(dirname);
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
-                            Map <String, String> uriNames = g.getRemoteUrls();
-                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
-                            for (Map.Entry<String, String> pair : uriNames.entrySet()) {
-                                String uri = pair.getKey();
-                                String uriNorm = normalizeGitUrl(uri, true);
-                                LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
-                                if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                    result = new LinkedHashSet<>();
-                                    result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
-                                    return result;
-                                }
-                                // Cache the finding to avoid the dirname later, if we
-                                // get to that; but no checks are needed in this loop
-                                // which by construct looks at different dirs so far.
-                                result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
-                            }
-                        } catch (Exception e) {
-                            // ignore, go to next slide
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
-                        }
-                    }
-                }
-
-                // Nothing found, and for bare top-level repo not much to search for
-                // Or maybe also fall through to let git decide?
-                if (isBare) {
-                    return new LinkedHashSet<>();
-                }
-                // else... ||true above :)
-            }
-            // else: look for needle in submodules defined in current non-bare refrepo
-        } else {
-            // ...and if there is no needle? Return info on all git remotes
-            // found under this directory...
-            /* if (isBare) { ... } */
-            // fall through currently, let git decide if it has submodules here and now
         }
 
-        // For each current workspace (recurse or big loop in same context?):
-        // public GitClient subGit(String subdir) => would this.subGit(...)
-        //   give us a copy of this applied class instance (CLI Git vs jGit)?
-        // get submodule name-vs-one-url from .gitmodules if present, for a
-        //   faster possible answer (only bother if needle is not null?)
-        // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for
-        //  "commit" items
-        // getRemoteUrls() => Map <url, remoteName>
-        arrDirnames.clear();
-
-        // TODO: Check subdirs that are git workspaces, and remove "|| true" above
-        LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
-        for (String[] resultEntry : result) {
-            checkedDirs.add(resultEntry[0]);
+        // Nothing found, so if we had a needle - report there are no hits
+        if (needle != null) {
+            return new LinkedHashSet<>();
         }
 
-        // If current dir does have submodules, first dig into submodules,
-        // when there is no deeper to drill, report remote URLs and step
-        // back from recursion. This way we have least specific repo last,
-        // if several have the replica (assuming the first hits are smaller
-        // scopes).
         return result;
     }
 
