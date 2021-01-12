@@ -455,7 +455,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
 
                 // Finally check pattern's parent dir
-                arrDirnames.add(referenceBaseDirAbs);
+                if (new File(referenceBaseDirAbs, ".git").exists()) {
+                    arrDirnames.add(referenceBaseDirAbs);
+                }
 
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at all subdirs (bare repo) that have a .git, under refrepo '" + referenceBaseDirAbs + "' per absolute arrDirnames: " + arrDirnames.toString());
 
