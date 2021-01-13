@@ -324,8 +324,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 normalizeGitUrl(url, true)) we want to find:
      *                 if it is not null - then stop and return just hits
      *                 for it as soon as we have something.
+     * @param checkRemotesInReferenceBaseDir - if true (reasonable default for
+     *                 external callers), the referenceBaseDir would be added
+     *                 to the list of dirs for listing known remotes in search
+     *                 for a needle match or for the big listing. Set to false
+     *                 when recursing, since this directory was checked already
+     *                 as part of parent directory inspection.
      */
-    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir, String needle) {
+    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir, String needle, Boolean checkRemotesInReferenceBaseDir) {
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
@@ -548,7 +554,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // Finally check pattern's parent dir
         // * Look at remote URLs in current dir after the guessed subdirs failed,
         //   and return then.
-        if (new File(referenceBaseDirAbs, ".git").exists()) {
+        if (checkRemotesInReferenceBaseDir && new File(referenceBaseDirAbs, ".git").exists()) {
             arrDirnames.add(referenceBaseDirAbs);
         }
 
@@ -592,10 +598,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                 }
 
-                // TODO: Here is a good spot to recurse this routine into
-                // a subdir that is a known git workspace, to add its data
-                // and/or return a found needle.
-
+                // Here is a good spot to recurse this routine into a
+                // subdir that is already a a known git workspace, to
+                // add its data to list and/or return a found needle.
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
+                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(dirname, needle, false);
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): returned from recursing into dir '" + dirname + "' with " + subEntries.size() + " found mappings");
+                if (!subEntries.isEmpty()) {
+                    if (needle != null) {
+                        // We found nothing... until now! Bubble it up!
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): got a needle match from recursing into dir '" + dirname + "': " + subEntries.iterator().next()[0]);
+                        return subEntries;
+                    }
+                    result.addAll(subEntries);
+                }
             }
         }
 
@@ -787,7 +803,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Note: we pass "url" here, the routine differentiates original
                 // naming vs. normalization while looking for its needle in the
                 // haystack.
-                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(referenceBaseDir, url);
+                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(referenceBaseDir, url, true);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
                     // by the routine, and prefer that first option if a new
