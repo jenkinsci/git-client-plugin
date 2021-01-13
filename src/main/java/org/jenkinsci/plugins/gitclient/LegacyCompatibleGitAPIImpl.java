@@ -603,13 +603,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return result;
     }
 
-    /** See above. With null, returns all we can find (slower) for the caller
-     * to parse */
+    /** See above. With null needle, returns all data we can find under the
+     * referenceBaseDir tree (can take a while) for the caller to parse */
     public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir) {
-        return getSubmodulesUrls(referenceBaseDir, null);
+        return getSubmodulesUrls(referenceBaseDir, null, true);
     }
-    /* Do we need a parameter-less variant to look under current work dir
-     * aka Paths.get("").toAbsolutePath().toString() ?.. */
+    /* Do we need a completely parameter-less variant to look under current
+     * work dir aka Paths.get("").toAbsolutePath().toString(), or under "this"
+     * GitClient workspace ?.. */
 
     /** Yield the File object for the reference repository local filesystem
      * pathname. Note that the provided string may be suffixed with expandable
