@@ -475,7 +475,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 // in those repos.
         // If current repo *is NOT* bare - check its submodules
         // (the .gitmodules => submodule.MODNAME.{url,path} mapping)
-        // but this essentially does not look into any subdirectory
+        // but this essentially does not look into any subdirectory.
+        // But we can add at higher priority submodule path(s) whose
+        // basename of the URL matches the needleBasename. And then
+        // other submodule paths to inspect before arbitrary subdirs.
         if (!isBare) {
             try {
                 // For each current workspace (recurse or big loop in same context?):
