@@ -384,53 +384,55 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             // Try with the basename without .git extension, and then with one.
             // First we try the caller-provided string casing, then normalized.
-            arrDirnames.add(needleBasename);
-            arrDirnames.add(needleBasename + ".git");
+            // Note that only after this first smaller pass which we hope to
+            // succeed quickly, we engage in heavier (by I/O and computation)
+            // investigation of submodules, and then similar loop against any
+            // remaining direct subdirs that contain a ".git" FS object.
+            arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename);
+            arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename + ".git");
             needleBasenameLC = needleBasename.toLowerCase();
             if (!needleBasenameLC.equals(needleBasename)) {
                 // Retry with lowercased dirname
-                arrDirnames.add(needleBasenameLC);
-                arrDirnames.add(needleBasenameLC + ".git");
+                arrDirnames.add(referenceBaseDirAbs + "/" + needleBasenameLC);
+                arrDirnames.add(referenceBaseDirAbs + "/" + needleBasenameLC + ".git");
             }
             if (!needleNormBasename.equals(needleBasenameLC)) {
-                arrDirnames.add(needleNormBasename);
-                arrDirnames.add(needleNormBasename + ".git");
+                arrDirnames.add(referenceBaseDirAbs + "/" + needleNormBasename);
+                arrDirnames.add(referenceBaseDirAbs + "/" + needleNormBasename + ".git");
             }
 
             needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
-            arrDirnames.add(needleSha);
-            arrDirnames.add(needleSha + ".git");
+            arrDirnames.add(referenceBaseDirAbs + "/" + needleSha);
+            arrDirnames.add(referenceBaseDirAbs + "/" + needleSha + ".git");
 
-            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under refrepo '" + referenceBaseDirAbs + "' per arrDirnames: " + arrDirnames.toString());
+            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at basename-like subdirs under base refrepo '" + referenceBaseDirAbs + "', per arrDirnames: " + arrDirnames.toString());
 
             for (String dirname : arrDirnames) {
-                f = new File(referenceBaseDirAbs, dirname);
-                LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
+                f = new File(dirname);
+                LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir at abs pathname '" + dirname + "' if it exists");
                 if (f.exists() && f.isDirectory()) {
                     try {
-                        String fAbs = f.getAbsolutePath().toString();
                         File fGit = new File(f, ".git");
                         if (fGit.exists()) { // file, dir or symlink to those
-                            //LegacyCompatibleGitAPIImpl?
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "' => '" + fAbs + "'");
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "'");
                             GitClient g = referenceGit.subGit(dirname);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                             Map <String, String> uriNames = g.getRemoteUrls();
-                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
+                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
                             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                                 String remoteName = pair.getValue(); // whatever the git workspace config calls it
                                 String uri = pair.getKey();
                                 String uriNorm = normalizeGitUrl(uri, true);
-                                LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
+                                LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "') vs needle");
                                 if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                     result = new LinkedHashSet<>();
-                                    result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                                    result.add(new String[]{dirname, uri, uriNorm, remoteName});
                                     return result;
                                 }
                                 // Cache the finding to avoid the dirname later, if we
                                 // get to that; but no checks are needed in this loop
                                 // which by construct looks at different dirs so far.
-                                result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                                result.add(new String[]{dirname, uri, uriNorm, remoteName});
                             }
                         }
                     } catch (Exception e) {
@@ -555,12 +557,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         for (String dirname : arrDirnames) {
             // Note that here dirnames deal in absolutes
             f = new File(dirname);
-            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' => abs pathname '" + f.getAbsolutePath().toString() + "'");
+            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' if it exists");
             if (f.exists() && f.isDirectory()) {
                 if (!checkedDirs.contains(dirname)) {
                     try {
-                        String fAbs = f.getAbsolutePath().toString();
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking " + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ") + "in existing refrepo dir '" + dirname + "' => '" + fAbs + "'");
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking " + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ") + "in existing refrepo dir '" + dirname + "'");
                         GitClient g = this.newGit(dirname);
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
                         Map <String, String> uriNames = g.getRemoteUrls();
@@ -569,10 +570,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             String remoteName = pair.getValue(); // whatever the git workspace config calls it
                             String uri = pair.getKey();
                             String uriNorm = normalizeGitUrl(uri, true);
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "') vs needle");
                             if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
                                 result = new LinkedHashSet<>();
-                                result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                                result.add(new String[]{dirname, uri, uriNorm, remoteName});
                                 return result;
                             }
                             // Cache the finding to return eventually, for each remote:
@@ -580,7 +581,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             // * original remote URI from that workspace's config
                             // * normalized remote URI
                             // * name of the remote from that workspace's config ("origin" etc)
-                            result.add(new String[]{fAbs, uri, uriNorm, remoteName});
+                            result.add(new String[]{dirname, uri, uriNorm, remoteName});
                         }
                     } catch (Exception e) {
                         // ignore, go to next slide
