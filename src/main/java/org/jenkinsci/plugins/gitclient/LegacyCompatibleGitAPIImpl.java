@@ -393,7 +393,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // Note that only after this first smaller pass which we hope to
             // succeed quickly, we engage in heavier (by I/O and computation)
             // investigation of submodules, and then similar loop against any
-            // remaining direct subdirs that contain a ".git" FS object.
+            // remaining direct subdirs that contain a ".git" (or "objects")
+            // FS object.
             arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename);
             arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename + ".git");
             needleBasenameLC = needleBasename.toLowerCase();
@@ -418,8 +419,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir at abs pathname '" + dirname + "' if it exists");
                 if (f.exists() && f.isDirectory()) {
                     try {
-                        File fGit = new File(f, ".git");
-                        if (fGit.exists()) { // file, dir or symlink to those
+                        File fGit = new File(f, ".git"); // workspace - file, dir or symlink to those
+                        File fObj = new File(f, "objects"); // bare
+                        if (fGit.exists() || fObj.exists()) {
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "'");
                             GitClient g = referenceGit.subGit(dirname);
                             LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
@@ -534,7 +536,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
         // If current repo *is* bare (can't have proper submodules), or if the
         // end-users just cloned or linked some more repos into this container,
-        // follow up with direct child dirs that have a ".git" FS object inside:
+        // follow up with direct child dirs that have a ".git" (or "objects")
+        // FS object inside:
 
         // Check subdirs that are git workspaces; note that values in checkedDirs
         // are absolute pathnames. If we did look for the needle, array already
@@ -542,8 +545,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // inspect again... but should recurse into first anyhow.
         File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
         for (File dir : directories) {
-            f = new File(dir, ".git");
-            if (f.exists()) { // May be a file or directory... or symlink to those...
+            File fGit = new File(f, ".git"); // workspace - file, dir or symlink to those
+            File fObj = new File(f, "objects"); // bare
+            if (fGit.exists() || fObj.exists()) {
                 String dirname = dir.getPath().replaceAll("/*$", "");
                 if (!checkedDirs.contains(dirname)) {
                     arrDirnames.add(dirname);
@@ -554,8 +558,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // Finally check pattern's parent dir
         // * Look at remote URLs in current dir after the guessed subdirs failed,
         //   and return then.
-        if (checkRemotesInReferenceBaseDir && new File(referenceBaseDirAbs, ".git").exists()) {
-            arrDirnames.add(referenceBaseDirAbs);
+        if (checkRemotesInReferenceBaseDir) {
+            File fGit = new File(referenceBaseDirAbs, ".git"); // workspace - file, dir or symlink to those
+            File fObj = new File(referenceBaseDirAbs, "objects"); // bare
+            if (fGit.exists() || fObj.exists()) {
+                arrDirnames.add(referenceBaseDirAbs);
+            }
         }
 
         LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking at " +
@@ -568,6 +576,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             f = new File(dirname);
             LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' if it exists");
             if (f.exists() && f.isDirectory()) {
+                // No checks for ".git" or "objects" this time, already checked above
                 if (!checkedDirs.contains(dirname)) {
                     try {
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking " + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ") + "in existing refrepo dir '" + dirname + "'");
