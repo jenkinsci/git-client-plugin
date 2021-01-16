@@ -19,7 +19,9 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -184,6 +186,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
 
     public File getObjectsFile(File reference) {
+        // reference pathname can either point to a "normal" workspace
+        // checkout or a bare repository
+
         if (reference == null) {
             return reference;
         }
@@ -194,14 +199,63 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         if (!reference.isDirectory())
             return null;
 
-        // reference pathname can either point to a normal or a base repository
-        File objects = new File(reference, ".git/objects");
-        if (objects == null) {
-            return objects; // Some Java error, could not make object from the paths involved
+        File fGit = new File(reference, ".git"); // workspace - file, dir or symlink to those
+        //File fObj = new File(f, "objects"); // bare
+        File objects = null;
+
+        if (fGit.exists()) {
+            if (fGit.isDirectory()) {
+                objects = new File(fGit, "objects");
+                if (objects == null) {
+                    return objects; // Some Java error, could not make object from the paths involved
+                }
+            } else {
+                // If ".git" FS object exists and is a not-empty file (and
+                // is not a dir), then its content may point to some other
+                // filesystem location for the Git-internal data.
+                // For example, a checked-out submodule workspace can point
+                // to the index and other metadata stored in its "parent"
+                // repository's directory:
+                //   "gitdir: ../.git/modules/childRepoName"
+                BufferedReader reader = null;
+                try {
+                    String line;
+                    reader = new BufferedReader(new FileReader(fGit));
+                    while ((line = reader.readLine()) != null)
+                    {
+                        String[] parts = line.split(":", 2);
+                        if (parts.length >= 2)
+                        {
+                            String key = parts[0].trim();
+                            String value = parts[1].trim();
+                            if (key.equals("gitdir")) {
+                                objects = new File(reference, value);
+                                LOGGER.log(Level.FINE, "getObjectsFile(): while looking for 'gitdir:' in '" +
+                                    fGit.getAbsolutePath().toString() + "', found reference to objects " +
+                                    "which should be at: '" + objects.getAbsolutePath().toString() + "'");
+                                break;
+                            }
+                            LOGGER.log(Level.FINEST, "getObjectsFile(): while looking for 'gitdir:' in '" +
+                                fGit.getAbsolutePath().toString() + "', ignoring line: " + line);
+                        }
+                    }
+                    if (objects == null) {
+                        LOGGER.log(Level.WARNING, "getObjectsFile(): failed to parse '" + fGit.getAbsolutePath().toString() + "': did not contain a 'gitdir:' entry");
+                    }
+                } catch (IOException e) {
+                    LOGGER.log(Level.SEVERE, "getObjectsFile(): failed to parse '" + fGit.getAbsolutePath().toString() + "': " + e.toString());
+                    objects = null;
+                }
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                } catch (IOException e) {}
+            }
         }
 
-        if (!objects.isDirectory()) {
-            // reference path is bare repo
+        if (objects == null || !objects.isDirectory()) {
+            // reference path is bare repo (no .git inside) or failed interpreting ".git" contents
             objects = new File(reference, "objects");
             if (objects == null) {
                 return objects; // Some Java error, could not make object from the paths involved
