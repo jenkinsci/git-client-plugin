@@ -471,31 +471,27 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             for (String dirname : arrDirnames) {
                 f = new File(dirname);
                 LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir at abs pathname '" + dirname + "' if it exists");
-                if (f.exists() && f.isDirectory()) {
+                if (getObjectsFile(f) != null) {
                     try {
-                        File fGit = new File(f, ".git"); // workspace - file, dir or symlink to those
-                        File fObj = new File(f, "objects"); // bare
-                        if (fGit.exists() || fObj.exists()) {
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "'");
-                            GitClient g = referenceGit.subGit(dirname);
-                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
-                            Map <String, String> uriNames = g.getRemoteUrls();
-                            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
-                            for (Map.Entry<String, String> pair : uriNames.entrySet()) {
-                                String remoteName = pair.getValue(); // whatever the git workspace config calls it
-                                String uri = pair.getKey();
-                                String uriNorm = normalizeGitUrl(uri, true);
-                                LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "') vs needle");
-                                if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                    result = new LinkedHashSet<>();
-                                    result.add(new String[]{dirname, uri, uriNorm, remoteName});
-                                    return result;
-                                }
-                                // Cache the finding to avoid the dirname later, if we
-                                // get to that; but no checks are needed in this loop
-                                // which by construct looks at different dirs so far.
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in existing refrepo subdir '" + dirname + "'");
+                        GitClient g = referenceGit.subGit(dirname);
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking git workspace in dir '" + g.getWorkTree().absolutize().toString() + "'");
+                        Map <String, String> uriNames = g.getRemoteUrls();
+                        LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: " + uriNames.toString());
+                        for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                            String remoteName = pair.getValue(); // whatever the git workspace config calls it
+                            String uri = pair.getKey();
+                            String uriNorm = normalizeGitUrl(uri, true);
+                            LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "') vs needle");
+                            if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                                result = new LinkedHashSet<>();
                                 result.add(new String[]{dirname, uri, uriNorm, remoteName});
+                                return result;
                             }
+                            // Cache the finding to avoid the dirname later, if we
+                            // get to that; but no checks are needed in this loop
+                            // which by construct looks at different dirs so far.
+                            result.add(new String[]{dirname, uri, uriNorm, remoteName});
                         }
                     } catch (Exception e) {
                         // ignore, go to next slide
@@ -599,9 +595,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // inspect again... but should recurse into first anyhow.
         File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
         for (File dir : directories) {
-            File fGit = new File(f, ".git"); // workspace - file, dir or symlink to those
-            File fObj = new File(f, "objects"); // bare
-            if (fGit.exists() || fObj.exists()) {
+            if (getObjectsFile(dir) != null) {
                 String dirname = dir.getPath().replaceAll("/*$", "");
                 if (!checkedDirs.contains(dirname)) {
                     arrDirnames.add(dirname);
@@ -613,9 +607,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // * Look at remote URLs in current dir after the guessed subdirs failed,
         //   and return then.
         if (checkRemotesInReferenceBaseDir) {
-            File fGit = new File(referenceBaseDirAbs, ".git"); // workspace - file, dir or symlink to those
-            File fObj = new File(referenceBaseDirAbs, "objects"); // bare
-            if (fGit.exists() || fObj.exists()) {
+            if (getObjectsFile(referenceBaseDirAbs) != null) {
                 arrDirnames.add(referenceBaseDirAbs);
             }
         }
@@ -631,6 +623,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' if it exists");
             if (f.exists() && f.isDirectory()) {
                 // No checks for ".git" or "objects" this time, already checked above
+                // by getObjectsFile(). Probably should not check exists/dir either,
+                // but better be on the safe side :)
                 if (!checkedDirs.contains(dirname)) {
                     try {
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking " + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ") + "in existing refrepo dir '" + dirname + "'");
@@ -662,7 +656,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 }
 
                 // Here is a good spot to recurse this routine into a
-                // subdir that is already a a known git workspace, to
+                // subdir that is already a known git workspace, to
                 // add its data to list and/or return a found needle.
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
                 LinkedHashSet<String[]> subEntries = getSubmodulesUrls(dirname, needle, false);
