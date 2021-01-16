@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -359,10 +360,13 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return urlNormalized;
     }
 
-    /** Find referenced URLs in this repo and its submodules, recursively.
-     * Current primary use is for parameterized refrepo/${GIT_SUBMODULES}
+    /** Find referenced URLs in this repo and its submodules (or other
+     * subdirs with git repos), recursively. Current primary use is for
+     * parameterized refrepo/${GIT_SUBMODULES} handling.
      *
-     * @return a Set of (unique) String arrays, representing:
+     * @return an AbstractMap.SimpleEntry, containing a Boolean to denote
+     * an exact match (or lack thereof) for the needle (if searched for),
+     * and a Set of (unique) String arrays, representing:
      * [0] directory of nested submodule (relative to current workspace root)
      * The current workspace would be listed as directory "" and consumers
      * should check these entries last if they care for most-specific hits
@@ -372,6 +376,17 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * [2] urlNormalized from normalizeGitUrl(url, true) (local pathnames
      *                 fully qualified)
      * [3] remoteName as defined in that nested submodule
+     *
+     * If the returned SimpleEntry has the Boolean flag as False but also
+     * a Set which is not empty, and a search for "needle" was requested,
+     * then that Set lists some not-exact matches for existing sub-dirs
+     * with repositories that seem likely to be close hits (e.g. remotes
+     * there *probably* point to other URLs of same repo as the needle,
+     * or its forks - so these directories are more likely than others to
+     * contain the reference commits needed for the faster git checkouts).
+     *
+     * For a search with needle==null, the Boolean flag would be False too,
+     * and the Set would just detail all found sub-repositories.
      *
      * @param referenceBaseDir - the reference repository, or container thereof
      * @param needle - an URL which (or its normalized variant coming from
@@ -385,7 +400,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 when recursing, since this directory was checked already
      *                 as part of parent directory inspection.
      */
-    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir, String needle, Boolean checkRemotesInReferenceBaseDir) {
+    public SimpleEntry<Boolean, LinkedHashSet<String[]>> getSubmodulesUrls(String referenceBaseDir, String needle, Boolean checkRemotesInReferenceBaseDir) {
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
@@ -486,7 +501,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 result = new LinkedHashSet<>();
                                 result.add(new String[]{dirname, uri, uriNorm, remoteName});
-                                return result;
+                                return new SimpleEntry<>(true, result);
                             }
                             // Cache the finding to avoid the dirname later, if we
                             // get to that; but no checks are needed in this loop
@@ -640,7 +655,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             if (needle != null && needleNorm != null && (needleNorm.equals(uriNorm) || needle.equals(uri)) ) {
                                 result = new LinkedHashSet<>();
                                 result.add(new String[]{dirname, uri, uriNorm, remoteName});
-                                return result;
+                                return new SimpleEntry<>(true, result);
                             }
                             // Cache the finding to return eventually, for each remote:
                             // * absolute dirname of a Git workspace
@@ -659,30 +674,40 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // subdir that is already a known git workspace, to
                 // add its data to list and/or return a found needle.
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
-                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(dirname, needle, false);
+                SimpleEntry <Boolean, LinkedHashSet<String[]>> subEntriesRet = getSubmodulesUrls(dirname, needle, false);
+                Boolean subEntriesExactMatched = subEntriesRet.getKey();
+                LinkedHashSet<String[]> subEntries = subEntriesRet.getValue();
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): returned from recursing into dir '" + dirname + "' with " + subEntries.size() + " found mappings");
                 if (!subEntries.isEmpty()) {
-                    if (needle != null) {
+                    if (needle != null && subEntriesExactMatched) {
                         // We found nothing... until now! Bubble it up!
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): got a needle match from recursing into dir '" + dirname + "': " + subEntries.iterator().next()[0]);
-                        return subEntries;
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): got an exact needle match from recursing into dir '" + dirname + "': " + subEntries.iterator().next()[0]);
+                        return subEntriesRet;
                     }
                     result.addAll(subEntries);
                 }
             }
         }
 
-        // Nothing found, so if we had a needle - report there are no hits
+        // Nothing found, if we had a needle - so report there are no hits
         if (needle != null) {
-            return new LinkedHashSet<>();
+            // TODO: Handle suggestions (not-exact matches) if something from
+            // results looks like it is related to the needle.
+/*
+            if (checkRemotesInReferenceBaseDir) {
+                // Overload the flag's meaning to only parse results once?
+            }
+*/
+            return new SimpleEntry<>(false, new LinkedHashSet<>());
         }
 
-        return result;
+        // Did not look for anything in particular
+        return new SimpleEntry<>(false, result);
     }
 
     /** See above. With null needle, returns all data we can find under the
      * referenceBaseDir tree (can take a while) for the caller to parse */
-    public LinkedHashSet<String[]> getSubmodulesUrls(String referenceBaseDir) {
+    public SimpleEntry<Boolean, LinkedHashSet<String[]>> getSubmodulesUrls(String referenceBaseDir) {
         return getSubmodulesUrls(referenceBaseDir, null, true);
     }
     /* Do we need a completely parameter-less variant to look under current
@@ -865,17 +890,21 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Note: we pass the unmodified "url" value here, the routine
                 // differentiates original spelling vs. normalization while
                 // looking for its needle in the haystack.
-                LinkedHashSet<String[]> subEntries = getSubmodulesUrls(referenceBaseDir, url, true);
+                SimpleEntry <Boolean, LinkedHashSet<String[]>> subEntriesRet = getSubmodulesUrls(referenceBaseDir, url, true);
+                Boolean subEntriesExactMatched = subEntriesRet.getKey();
+                LinkedHashSet<String[]> subEntries = subEntriesRet.getValue();
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
                     // by the routine, and prefer that first option if a new
                     // reference repo would have to be made (and none exists).
                     // If several entries are present after all, iterate until
                     // first existing hit and return the first entry otherwise.
-                    for (String[] subEntry : subEntries) {
-                        if (getObjectsFile(subEntry[0]) != null || getObjectsFile(subEntry[0] + ".git") != null) {
-                            referenceExpanded = subEntry[0];
-                            break;
+                    if (!subEntriesExactMatched) { // else look at first entry below
+                        for (String[] subEntry : subEntries) {
+                            if (getObjectsFile(subEntry[0]) != null || getObjectsFile(subEntry[0] + ".git") != null) {
+                                referenceExpanded = subEntry[0];
+                                break;
+                            }
                         }
                     }
                     if (referenceExpanded == null) {
