@@ -803,15 +803,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // smaller scopes - much quicker to check out from than one
                 // huge combined repo. It would also be much more native to
                 // tools and custom scriptware that can be involved.
+                // Beside git-submodule parsing (that only points to one URL
+                // at a time) his also covers a search for subdirectories
+                // that host a git repository whose remotes match the URL,
+                // to handle co-hosting of several remotes (different URLs
+                // to same repository, e.g. SSH and HTTPS; mirrors; forks).
 
                 // Assuming the provided "reference" directory already hosts
                 // submodules, we use git tools to find the one subdir which
                 // has a registered remote URL equivalent (per normalization)
                 // to the provided "url".
 
-                // Note: we pass "url" here, the routine differentiates original
-                // naming vs. normalization while looking for its needle in the
-                // haystack.
+                // Note: we pass the unmodified "url" value here, the routine
+                // differentiates original spelling vs. normalization while
+                // looking for its needle in the haystack.
                 LinkedHashSet<String[]> subEntries = getSubmodulesUrls(referenceBaseDir, url, true);
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
@@ -836,15 +841,29 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 } else {
                     LOGGER.log(Level.FINE, "findParameterizedReferenceRepository(): got no subEntries");
                     // If there is no hit, the non-fallback mode suggests a new
-                    // directory name to host the submodule (same rules as SHA),
+                    // directory name to host the submodule (same rules as for
+                    // the refrepo forks' co-hosting friendly basename search),
                     // and the fallback mode would return the main directory.
+                    int sep = url.lastIndexOf("/");
+                    String needleBasename;
+                    if (sep < 0) {
+                        needleBasename = url;
+                    } else {
+                        needleBasename = url.substring(sep + 1);
+                    }
+                    needleBasename = needleBasename.replaceAll(".git$", "");
+
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
-                            org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                            needleBasename);
                     }
                     else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
-                        // chop it off, use main directory
-                        referenceExpanded = referenceBaseDir;
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$",
+                            needleBasename);
+                        if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}") && getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
+                            // chop it off, use main directory
+                            referenceExpanded = referenceBaseDir;
+                        }
                     }
                 }
             }
