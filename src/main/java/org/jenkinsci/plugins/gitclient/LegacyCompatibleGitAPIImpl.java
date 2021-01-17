@@ -210,6 +210,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (objects == null) {
                     return objects; // Some Java error, could not make object from the paths involved
                 }
+                LOGGER.log(Level.FINEST, "getObjectsFile(): found an fGit '" +
+                    fGit.getAbsolutePath().toString() + "' which is a directory");
             } else {
                 // If ".git" FS object exists and is a not-empty file (and
                 // is not a dir), then its content may point to some other
@@ -218,6 +220,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // to the index and other metadata stored in its "parent"
                 // repository's directory:
                 //   "gitdir: ../.git/modules/childRepoName"
+                LOGGER.log(Level.FINEST, "getObjectsFile(): found an fGit '" +
+                    fGit.getAbsolutePath().toString() + "' which is NOT a directory");
                 BufferedReader reader = null;
                 try {
                     String line;
@@ -253,6 +257,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                 } catch (IOException e) {}
             }
+        } else {
+            LOGGER.log(Level.FINEST, "getObjectsFile(): did not find any checked-out '" +
+                fGit.getAbsolutePath().toString() + "'");
         }
 
         if (objects == null || !objects.isDirectory()) {
@@ -260,6 +267,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             objects = new File(reference, "objects");
             if (objects == null) {
                 return objects; // Some Java error, could not make object from the paths involved
+            }
+            // This clause below is redundant for production, but useful for troubleshooting
+            if (objects.exists()) {
+                if (objects.isDirectory()) {
+                    LOGGER.log(Level.FINEST, "getObjectsFile(): found a bare '" +
+                        objects.getAbsolutePath().toString() + "' which is a directory");
+                } else {
+                    LOGGER.log(Level.FINEST, "getObjectsFile(): found a bare '" +
+                        objects.getAbsolutePath().toString() + "' which is NOT a directory");
+                }
+            } else {
+                LOGGER.log(Level.FINEST, "getObjectsFile(): did not find any bare '" +
+                    objects.getAbsolutePath().toString() + "'");
             }
         }
 
