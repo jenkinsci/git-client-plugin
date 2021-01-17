@@ -238,6 +238,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 LOGGER.log(Level.FINE, "getObjectsFile(): while looking for 'gitdir:' in '" +
                                     fGit.getAbsolutePath().toString() + "', found reference to objects " +
                                     "which should be at: '" + objects.getAbsolutePath().toString() + "'");
+                                // Note: we don't use getCanonicalPath() here to avoid further filesystem
+                                // access and possible exceptions (the getAbsolutePath() is about string
+                                // processing), but callers might benefit from canonicising and ensuring
+                                // unique pathnames (for equality checks etc.) with relative components
+                                // and symlinks resolved.
+                                // On another hand, keeping the absolute paths, possibly, relative to a
+                                // parent directory as prefix, allows callers to match/compare such parent
+                                // prefixes for the contexts the callers would define for themselves.
                                 break;
                             }
                             LOGGER.log(Level.FINEST, "getObjectsFile(): while looking for 'gitdir:' in '" +
