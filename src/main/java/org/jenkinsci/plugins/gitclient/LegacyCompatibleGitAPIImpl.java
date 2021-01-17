@@ -203,7 +203,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return null;
 
         File fGit = new File(reference, ".git"); // workspace - file, dir or symlink to those
-        //File fObj = new File(f, "objects"); // bare
         File objects = null;
 
         if (fGit.exists()) {
@@ -273,8 +272,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         if (objects == null || !objects.isDirectory()) {
-            // reference path is bare repo (no .git inside) or failed interpreting ".git" contents
-            objects = new File(reference, "objects");
+            // either reference path is bare repo (no ".git" inside),
+            // or we have failed interpreting ".git" contents above
+            objects = new File(reference, "objects"); // bare
             if (objects == null) {
                 return objects; // Some Java error, could not make object from the paths involved
             }
