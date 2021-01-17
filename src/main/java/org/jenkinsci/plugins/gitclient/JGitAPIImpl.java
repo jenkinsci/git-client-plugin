@@ -1456,6 +1456,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // the repository builder does not create the alternates file
                     if (reference != null && !reference.isEmpty()) {
                         // Note: keep in sync with similar logic in CliGitAPIImpl.java
+                        if (isParameterizedReferenceRepository(reference)) {
+                            // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
+                            listener.getLogger().println("[INFO] The git reference repository path is parameterized, " +
+                                "it may take a few git queries logged below to resolve it into a particular directory name");
+                        }
                         File referencePath = findParameterizedReferenceRepository(reference, url);
                         if (referencePath == null) {
                             listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);

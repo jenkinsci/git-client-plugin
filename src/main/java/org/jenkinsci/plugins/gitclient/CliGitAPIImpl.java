@@ -767,6 +767,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (reference != null && !reference.isEmpty()) {
+                    if (isParameterizedReferenceRepository(reference)) {
+                        // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
+                        listener.getLogger().println("[INFO] The git reference repository path is parameterized, " +
+                            "it may take a few git queries logged below to resolve it into a particular directory name");
+                    }
                     File referencePath = findParameterizedReferenceRepository(reference, url);
                     if (referencePath == null) {
                         listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
