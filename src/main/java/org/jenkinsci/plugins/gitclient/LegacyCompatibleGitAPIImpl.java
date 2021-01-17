@@ -438,7 +438,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         File f = null;
         // Helper list storage in loops below
         ArrayList<String> arrDirnames = new ArrayList<String>();
-        String referenceBaseDirAbs = Paths.get(referenceBaseDir).toAbsolutePath().toString();
+
+        // Note: an absolute path is not necessarily the canonical one
+        // We want to hit same dirs only once, so canonicize paths below
+        String referenceBaseDirAbs;
+        try {
+            referenceBaseDirAbs = new File(referenceBaseDir).getAbsoluteFile().getCanonicalPath().toString();
+        } catch (IOException e) {
+            // Access error while dereferencing some parent?..
+            referenceBaseDirAbs = new File(referenceBaseDir).getAbsoluteFile().toString();
+            LOGGER.log(Level.SEVERE, "getSubmodulesUrls(): failed to canonicize '" +
+                referenceBaseDir + "' => '" + referenceBaseDirAbs + "': " + e.toString());
+            //return new SimpleEntry<>(false, result);
+        }
 
         // "this" during a checkout typically represents the job workspace,
         // but we want to inspect the reference repository located elsewhere
