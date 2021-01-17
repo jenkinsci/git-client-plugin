@@ -174,6 +174,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** For referenced directory check if it is a full or bare git repo
      * and return the File object for its "objects" sub-directory.
+     * (Note that for submodules and other cases with externalized Git
+     * metadata, the "objects" directory may be NOT under "reference").
      * If there is nothing to find, or inputs are bad, returns null.
      * The idea is that checking for null allows to rule out non-git
      * paths, while a not-null return value is instantly usable by
