@@ -471,17 +471,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // This is only used and populated if needle is not null
         String needleNorm = null;
 
+        // This is only used and populated if needle is not null, and
+        // can be used in the end to filter not-exact match suggestions
+        String needleBasename = null;
+        String needleBasenameLC = null;
+        String needleNormBasename = null;
+        String needleSha = null;
+
         // If needle is not null, first look perhaps in the subdir(s) named
         // with base-name of the URL with and without a ".git" suffix, then
         // in SHA256 named dir that can match it; note that this use-case
         // might pan out also if "this" repo is bare and can not have "proper"
         // git submodules - but was prepared for our other options.
         if (needle != null) {
-            String needleBasename;
-            String needleBasenameLC;
-            String needleNormBasename;
-            String needleSha;
-
             int sep = needle.lastIndexOf("/");
             if (sep < 0) {
                 needleBasename = needle;
@@ -726,21 +728,97 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         LOGGER.log(Level.FINE, "getSubmodulesUrls(): got an exact needle match from recursing into dir '" + dirname + "': " + subEntries.iterator().next()[0]);
                         return subEntriesRet;
                     }
+                    // ...else collect results to inspect and/or propagate later
                     result.addAll(subEntries);
                 }
             }
         }
 
         // Nothing found, if we had a needle - so report there are no hits
+        // If we did not have a needle, we did not search for it - return
+        // below whatever result we have, then.
         if (needle != null) {
-            // TODO: Handle suggestions (not-exact matches) if something from
+            if (result.size() == 0) {
+                // Completely nothing git-like found here, return quickly
+                return new SimpleEntry<>(false, result);
+            }
+
+            // Handle suggestions (not-exact matches) if something from
             // results looks like it is related to the needle.
+            LinkedHashSet<String[]> resultFiltered = new LinkedHashSet<>();
+
 /*
-            if (checkRemotesInReferenceBaseDir) {
-                // Overload the flag's meaning to only parse results once?
+            if (!checkRemotesInReferenceBaseDir) {
+                // Overload the flag's meaning to only parse results once,
+                // in the parent dir?
+                return new SimpleEntry<>(false, resultFiltered);
             }
 */
-            return new SimpleEntry<>(false, new LinkedHashSet<>());
+
+            // Separate lists by suggestion priority:
+            // 1) URI basename similarity
+            // 2) Directory basename similarity
+            LinkedHashSet<String[]> resultFiltered1 = new LinkedHashSet<>();
+            LinkedHashSet<String[]> resultFiltered2 = new LinkedHashSet<>();
+
+            LinkedHashSet<String> suggestedDirs = new LinkedHashSet<>();
+            for (String[] resultEntry : result) {
+                checkedDirs.add(resultEntry[0]);
+            }
+
+            for (String[] subEntry : result) {
+                // Iterating to filter suggestions in order of original
+                // directory-walk prioritization under current reference
+                String dirName =    subEntry[0];
+                String uri =        subEntry[1];
+                String uriNorm =    subEntry[2];
+                String remoteName = subEntry[3];
+                Integer sep;
+                String uriNormBasename;
+                String dirBasename;
+
+                // Match basename of needle vs. a remote tracked by an
+                // existing git directory (automation-ready normalized URL)
+                sep = uriNorm.lastIndexOf("/");
+                if (sep < 0) {
+                    uriNormBasename = uriNorm;
+                } else {
+                    uriNormBasename = uriNorm.substring(sep + 1);
+                }
+                uriNormBasename = uriNormBasename.replaceAll(".git$", "");
+
+                if (uriNormBasename.equals(needleNormBasename)) {
+                    resultFiltered1.add(subEntry);
+                }
+
+                if (!suggestedDirs.contains(dirName)) {
+                    // Here just match basename of needle vs. an existing
+                    // sub-git directory base name
+                    suggestedDirs.add(dirName);
+
+                    sep = dirName.lastIndexOf("/");
+                    if (sep < 0) {
+                        dirBasename = dirName;
+                    } else {
+                        dirBasename = dirName.substring(sep + 1);
+                    }
+                    dirBasename = dirBasename.replaceAll(".git$", "");
+
+                    if (dirBasename.equals(needleNormBasename)) {
+                        resultFiltered2.add(subEntry);
+                    }
+                }
+            }
+
+            // Concatenate suggestions in order of priority.
+            // Hopefully the Set should deduplicate entries
+            // if something matched twice :)
+            resultFiltered.addAll(resultFiltered1); // URLs
+            resultFiltered.addAll(resultFiltered2); // Dirnames
+
+            // Note: flag is false since matches (if any) are
+            // not exactly for the Git URL requested by caller
+            return new SimpleEntry<>(false, resultFiltered);
         }
 
         // Did not look for anything in particular
