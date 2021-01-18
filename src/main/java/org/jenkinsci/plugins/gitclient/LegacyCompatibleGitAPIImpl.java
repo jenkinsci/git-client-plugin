@@ -181,14 +181,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * paths, while a not-null return value is instantly usable by
      * some code which plays with git under its hood.
      */
-    public File getObjectsFile(String reference) {
+    public static File getObjectsFile(String reference) {
         if (reference == null || reference.isEmpty()) {
             return null;
         }
         return getObjectsFile(new File(reference));
     }
 
-    public File getObjectsFile(File reference) {
+    public static File getObjectsFile(File reference) {
         // reference pathname can either point to a "normal" workspace
         // checkout or a bare repository
 
@@ -306,14 +306,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *
      * @param reference    Pathname (maybe with magic suffix) to reference repo
      */
-    public Boolean isParameterizedReferenceRepository(File reference) {
+    public static Boolean isParameterizedReferenceRepository(File reference) {
         if (reference == null) {
             return false;
         }
         return isParameterizedReferenceRepository(reference.getPath());
     }
 
-    public Boolean isParameterizedReferenceRepository(String reference) {
+    public static Boolean isParameterizedReferenceRepository(String reference) {
         if (reference == null || reference.isEmpty()) {
             return false;
         }
