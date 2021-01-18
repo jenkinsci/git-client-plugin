@@ -868,6 +868,19 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             isParameterizedReferenceRepository(reference) &&
             url != null && !url.isEmpty()
         ) {
+            // Drop the trailing keyword to know the root refrepo dirname
+            String referenceBaseDir = reference.replaceAll("/\\$\\{GIT_[^\\}]*\\}$", "");
+
+            File referenceBaseDirFile = new File(referenceBaseDir);
+            if (!referenceBaseDirFile.exists()) {
+                LOGGER.log(Level.WARNING, "Base Git reference directory " + referenceBaseDir + " does not exist");
+                return null;
+            }
+            if (!referenceBaseDirFile.isDirectory()) {
+                LOGGER.log(Level.WARNING, "Base Git reference directory " + referenceBaseDir + " is not a directory");
+                return null;
+            }
+
             // Note: this normalization might crush several URLs into one,
             // and as far as is known this would be the goal - people tend
             // to use or omit .git suffix, or spell with varied case, while
@@ -877,9 +890,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // original URL strings added as remotes (in case some are case
             // sensitive and different).
             String urlNormalized = normalizeGitUrl(url, true);
-
-            // Drop the trailing keyword to know the root refrepo dirname
-            String referenceBaseDir = reference.replaceAll("/\\$\\{GIT_[^\\}]*\\}$", "");
 
             // Note: currently unit-tests expect this markup on stderr:
             System.err.println("reference='" + reference + "'\n" +
