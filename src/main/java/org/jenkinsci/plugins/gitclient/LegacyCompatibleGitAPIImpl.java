@@ -544,9 +544,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             // which by construct looks at different dirs so far.
                             result.add(new String[]{dirname, uri, uriNorm, remoteName});
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         // ignore, go to next slide
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception or error (will go to next item):\n" + t.toString());
                     }
                 }
             }
@@ -704,9 +704,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             // * name of the remote from that workspace's config ("origin" etc)
                             result.add(new String[]{dirname, uri, uriNorm, remoteName});
                         }
-                    } catch (Exception e) {
+                    } catch (Throwable t) {
                         // ignore, go to next slide
-                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception (will go to next item):\n" + e.toString());
+                        LOGGER.log(Level.FINE, "getSubmodulesUrls(): probing dir '" + dirname + "' resulted in an exception or error (will go to next item):\n" + t.toString());
                     }
                 }
 
