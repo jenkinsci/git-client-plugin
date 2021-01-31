@@ -240,8 +240,8 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_reference_parameterized() throws Exception, IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL}").execute();
+    public void test_clone_reference_parameterized_basename() throws Exception, IOException, InterruptedException {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL_BASENAME}").execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         // Verify JENKINS-46737 expected log message is written
@@ -251,13 +251,10 @@ public class GitClientCloneTest {
             handler.containsMessageSubstring(" replaced with: "),
             is(true));
         // TODO: Actually construct the local filesystem path to match
-        // the literally substituted URL. Note this may not work for
-        // filesystems and operating systems that constrain character
-        // ranges usable for filenames (Windows at least) so failure
-        // to create the paths is an option to handle in test.
-        // Be sure to clean away this path at end of test, so that the
-        // test_clone_reference_parameterized_fallback() below is not
-        // confused - it expects this location to not exist.
+        // the last pathname component from the URL (plus/minus ".git"
+        // extension). Be sure to clean away this path at end of test,
+        // so that the test_clone_reference_parameterized_basename_fallback()
+        // below is not confused - it expects this location to not exist.
         // Skip: Missing if clone failed - currently would, with bogus
         // path above and not yet pre-created path structure.
         //assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
@@ -267,10 +264,10 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_reference_parameterized_fallback() throws Exception, IOException, InterruptedException {
+    public void test_clone_reference_parameterized_basename_fallback() throws Exception, IOException, InterruptedException {
         // TODO: Currently we do not make paths which would invalidate
         // this test, but note the test above might do just that later.
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL_FALLBACK}").execute();
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL_BASENAME_FALLBACK}").execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         // Verify JENKINS-46737 expected log message is written
@@ -281,9 +278,9 @@ public class GitClientCloneTest {
             is(true));
         // With fallback mode, and nonexistent parameterized reference
         // repository, and a usable repository in the common path (what
-        // remains if the parameterizing suffix is just discarded),
-        // this common path should be used. So it should overall behave
-        // same as the non-parameterized test_clone_reference() above.
+        // remains if the parameterizing suffix is just discarded), this
+        // common path should be used. So it should overall behave same
+        // as the non-parameterized test_clone_reference_basename() above.
         assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
         assertAlternateFilePointsToLocalMirror();
         assertBranchesExist(testGitClient.getBranches(), "master");
