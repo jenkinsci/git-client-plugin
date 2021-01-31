@@ -861,6 +861,36 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         File referencePath = new File(reference);
+        // For mass-configured jobs, like Organization Folders, which inherit
+        // a refrepo setting (String) into generated MultiBranch Pipelines and
+        // leaf jobs made for each repo branch and PR, the code below allows
+        // us to support parameterized paths, with one string leading to many
+        // reference repositories fanned out under a common location.
+        // This also works for legacy jobs using a Git SCM.
+
+        // TODO: Consider a config option whether to populate absent reference
+        // repos (If the expanded path does not have git repo data right now,
+        // should we populate it into the location expanded by logic below),
+        // or update existing ones before pulling commits, and how to achieve
+        // that. Currently this is something that comments elsewhere in the
+        // git-client-plugin and/or articles on reference repository setup
+        // considered to be explicitly out of scope of the plugin.
+        // Note that this pre-population (or update) is done by caller with
+        // their implementation of git and site-specific connectivity and
+        // storage desigh, e.g. in case of a build farm it is more likely
+        // to be a shared path from a common storage server only readable to
+        // Jenkins and its agents, so write-operations would be done by helper
+        // scripts that log into the shared storage server to populate or
+        // update the reference repositories. Note that users may also
+        // want to run their own scripts to "populate" reference repos
+        // as symlinks to existing other repos, to support combined
+        // repo setup for different URLs pointing to same upstream,
+        // or storing multiple closely related forks together.
+        // This feature was developed along with a shell script to manage
+        // reference repositories, both in original combined-monolith layout,
+        // and in the subdirectory fanout compatible with plugin code below:
+        // https://github.com/jimklimov/git-scripts/blob/master/register-git-cache.sh
+
         // Note: Initially we expect the reference to be a realistic dirname
         // with a special suffix to substitute after the logic below, so the
         // referencePath for that verbatim funny string should not exist now:
@@ -902,8 +932,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             String referenceExpanded = null;
             if (reference.endsWith("/${GIT_URL}")) {
-                // For mass-configured jobs, like Organization Folders,
-                // allow to support parameterized paths to many refrepos.
                 // End-users can set up webs of symlinks to same repos
                 // known by different URLs (and/or including their forks
                 // also cached in same index). Luckily all URL chars are
@@ -914,21 +942,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // can be introduced, e.g. to escape non-ascii chars for
                 // portability? Support base64, SHA or MD5 hashes of URLs
                 // as pathnames? Normalize first (lowercase, .git, ...)?
-
-                // TODO: Config option whether to populate absent reference
-                // repos (If the expanded path does not have git repo data
-                // right now, populate it in the location expanded below)
-                // or update existing ones before pulling commits, and how
-                // to achieve that. Note that this is done by caller with
-                // their implementation of git, or in case of a build farm it
-                // is more likely to be a shared path only readable to Jenkins
-                // and its agents, so write-operations would be done by helper
-                // scripts that log into the shared storage server to populate
-                // or update reference repositories. Note that users may also
-                // want to run their own scripts to "populate" reference repos
-                // as symlinks to existing other repos, to support combined
-                // repo setup for different URLs pointing to same upstream,
-                // or storing multiple closely related forks together.
 
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
             } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
