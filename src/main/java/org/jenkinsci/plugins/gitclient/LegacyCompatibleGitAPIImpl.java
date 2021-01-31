@@ -645,11 +645,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // starts with some "prioritized" pathnames which we should not directly
         // inspect again... but should recurse into first anyhow.
         File[] directories = new File(referenceBaseDirAbs).listFiles(File::isDirectory);
-        for (File dir : directories) {
-            if (getObjectsFile(dir) != null) {
-                String dirname = dir.getPath().replaceAll("/*$", "");
-                if (!checkedDirs.contains(dirname)) {
-                    arrDirnames.add(dirname);
+        if (directories != null) {
+            // listFiles() "...returns null if this abstract pathname
+            // does not denote a directory, or if an I/O error occurs"
+            for (File dir : directories) {
+                if (getObjectsFile(dir) != null) {
+                    String dirname = dir.getPath().replaceAll("/*$", "");
+                    if (!checkedDirs.contains(dirname)) {
+                        arrDirnames.add(dirname);
+                    }
                 }
             }
         }
