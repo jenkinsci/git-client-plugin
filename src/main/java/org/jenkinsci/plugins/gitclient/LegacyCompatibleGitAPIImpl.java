@@ -207,10 +207,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
         if (fGit.exists()) {
             if (fGit.isDirectory()) {
-                objects = new File(fGit, "objects");
-                if (objects == null) {
+                objects = new File(fGit, "objects"); // this might not exist or not be a dir - checked below
+/*
+                if (objects == null) { // spotbugs dislikes this, since "new File()" should not return null
                     return objects; // Some Java error, could not make object from the paths involved
                 }
+*/
                 LOGGER.log(Level.FINEST, "getObjectsFile(): found an fGit '" +
                     fGit.getAbsolutePath().toString() + "' which is a directory");
             } else {
@@ -277,9 +279,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // either reference path is bare repo (no ".git" inside),
             // or we have failed interpreting ".git" contents above
             objects = new File(reference, "objects"); // bare
+/*
             if (objects == null) {
                 return objects; // Some Java error, could not make object from the paths involved
             }
+*/
             // This clause below is redundant for production, but useful for troubleshooting
             if (objects.exists()) {
                 if (objects.isDirectory()) {
@@ -294,6 +298,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     objects.getAbsolutePath().toString() + "'");
             }
         }
+
+        if (!objects.exists())
+            return null;
 
         if (!objects.isDirectory())
             return null;
