@@ -21,8 +21,9 @@ import org.eclipse.jgit.transport.URIish;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -228,7 +229,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 BufferedReader reader = null;
                 try {
                     String line;
-                    reader = new BufferedReader(new FileReader(fGit));
+                    reader = new BufferedReader(new InputStreamReader(new FileInputStream(fGit), "UTF-8"));
                     while ((line = reader.readLine()) != null)
                     {
                         String[] parts = line.split(":", 2);
