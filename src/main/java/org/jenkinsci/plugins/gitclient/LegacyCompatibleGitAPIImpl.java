@@ -264,7 +264,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (reader != null) {
                         reader.close();
                     }
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                    LOGGER.log(Level.SEVERE, "getObjectsFile(): failed to close file after parsing '" + fGit.getAbsolutePath().toString() + "': " + e.toString());
+                }
             }
         } else {
             LOGGER.log(Level.FINEST, "getObjectsFile(): did not find any checked-out '" +
