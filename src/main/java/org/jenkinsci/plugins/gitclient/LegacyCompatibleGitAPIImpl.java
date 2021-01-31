@@ -318,14 +318,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return false;
         }
 
-        if (reference.endsWith("/${GIT_URL}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
-            return true;
-        }
-
         if (reference.endsWith("/${GIT_URL_SHA256}")) {
             return true;
         }
@@ -931,26 +923,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 reference + "' into a specific (sub-)directory to use for URL '" + url + "' ...");
 
             String referenceExpanded = null;
-            if (reference.endsWith("/${GIT_URL}")) {
-                // End-users can set up webs of symlinks to same repos
-                // known by different URLs (and/or including their forks
-                // also cached in same index). Luckily all URL chars are
-                // valid parts of path name... in Unix... Maybe parse or
-                // escape chars for URLs=>paths with Windows in mind?
-                // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#naming-conventions
-                // Further ideas: beside "GIT_URL" other meta variables
-                // can be introduced, e.g. to escape non-ascii chars for
-                // portability? Support base64, SHA or MD5 hashes of URLs
-                // as pathnames? Normalize first (lowercase, .git, ...)?
-
-                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL\\}$", urlNormalized);
-            } else if (reference.endsWith("/${GIT_URL_FALLBACK}")) {
-                referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_FALLBACK\\}$", urlNormalized);
-                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
-                    // chop it off, use main directory
-                    referenceExpanded = referenceBaseDir;
-                }
-            } else if (reference.endsWith("/${GIT_URL_SHA256}")) {
+            if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
                 referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$",
                     org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
