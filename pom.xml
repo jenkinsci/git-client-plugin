@@ -60,7 +60,7 @@
     <jenkins.version>2.222.4</jenkins.version> <!-- Required for git plugin 4.5.0 -->
     <java.level>8</java.level>
     <jgit.version>5.10.0.202012080955-r</jgit.version>
-    <configuration-as-code.version>1.36</configuration-as-code.version>
+    <configuration-as-code.version>1.47</configuration-as-code.version>
     <slf4jVersion>1.7.26</slf4jVersion>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.failOnError>true</spotbugs.failOnError>
