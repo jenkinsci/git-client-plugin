@@ -3,10 +3,6 @@
 :toc: macro
 :toc-title:
 
-link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/[image:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon[Build]]
-link:https://github.com/jenkinsci/git-client-plugin/releases/latest[image:https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=changelog[GitHub release]]
-link:https://gitter.im/jenkinsci/git-plugin[image:https://badges.gitter.im/jenkinsci/git-plugin.svg[Gitter]]
-
 [#introduction]
 == Introduction
 
