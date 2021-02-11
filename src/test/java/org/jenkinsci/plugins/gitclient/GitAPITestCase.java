@@ -887,7 +887,7 @@ public abstract class GitAPITestCase extends TestCase {
         String output = w.launchCommand("git", "branch", "-v", "--no-abbrev");
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
-        if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
+        if (w.cgit().isAtLeastVersion(2, 13, 0, 0) && !w.cgit().isAtLeastVersion(2, 30, 0, 0)) {
             assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
             assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
             assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
