@@ -29,6 +29,7 @@ public class JGitAPIImplTest extends GitAPITestCase {
     /**
      * Override to run the test and assert its state.
      *
+     *
      * @throws Throwable if any exception is thrown
      */
     protected void runTest() throws Throwable {

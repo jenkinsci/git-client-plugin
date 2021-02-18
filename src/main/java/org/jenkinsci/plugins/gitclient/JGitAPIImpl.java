@@ -306,17 +306,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
 
-                if(! sparseCheckoutPaths.isEmpty()) {
-                    listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
-                    throw new UnsupportedOperationException("not implemented yet");
-                }
 
                 if (branch == null)
-                    doCheckoutWithResetAndRetry(ref);
+                    doCheckoutWithResetAndRetry(ref,sparseCheckoutPaths);
                 else if (deleteBranch)
-                    doCheckoutWithResetAndRetryAndCleanBranch(branch, ref);
+                    doCheckoutWithResetAndRetryAndCleanBranch(branch, ref,sparseCheckoutPaths);
                 else
-                    doCheckout(ref, branch);
+                    doCheckout(ref, branch,sparseCheckoutPaths);
             }
         };
     }
@@ -329,7 +325,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private void doCheckoutWithResetAndRetry(String ref) throws GitException {
+    private void doCheckoutWithResetAndRetry(String ref,List<String> sparseCheckoutPaths) throws GitException {
         boolean retried = false;
         Repository repo = null;
         while (true) {
@@ -353,7 +349,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (repo.resolve(ref) != null) {
                     // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/)
-                    git(repo).checkout().setName(ref).setForce(true).call();
+                    git(repo).checkout().setName(ref).setForce(true).addPaths(sparseCheckoutPaths).call();
                     return;
                 }
 
@@ -377,10 +373,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger().format("[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'", ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
 
                 git(repo).checkout()
-                    .setCreateBranch(true)
-                    .setName(ref)
-                    .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
-                    .setStartPoint(matchingRemoteBranch).call();
+                        .setCreateBranch(true)
+                        .setName(ref)
+                        .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+                        .setStartPoint(matchingRemoteBranch).addPaths(sparseCheckoutPaths).call();
                 return;
             } catch (CheckoutConflictException e) {
                 closeRepo(repo); /* Ready to reuse repo */
@@ -412,29 +408,29 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private void doCheckout(String ref, String branch) throws GitException {
+    private void doCheckout(String ref, String branch,List<String> sparseCheckoutPaths) throws GitException {
         try (Repository repo = getRepository()) {
-            git(repo).checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
+            git(repo).checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).addPaths(sparseCheckoutPaths).call();
         } catch (GitAPIException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }
     }
 
-    private void doCheckoutWithResetAndRetryAndCleanBranch(String branch, String ref) throws GitException {
+    private void doCheckoutWithResetAndRetryAndCleanBranch(String branch, String ref,List<String> sparseCheckoutPaths) throws GitException {
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(repo.resolve(ref));
             switch (refUpdate.forceUpdate()) {
-            case NOT_ATTEMPTED:
-            case LOCK_FAILURE:
-            case REJECTED:
-            case REJECTED_CURRENT_BRANCH:
-            case IO_FAILURE:
-            case RENAMED:
-                throw new GitException("Could not update " + branch + " to " + ref);
+                case NOT_ATTEMPTED:
+                case LOCK_FAILURE:
+                case REJECTED:
+                case REJECTED_CURRENT_BRANCH:
+                case IO_FAILURE:
+                case RENAMED:
+                    throw new GitException("Could not update " + branch + " to " + ref);
             }
 
-            doCheckoutWithResetAndRetry(branch);
+            doCheckoutWithResetAndRetry(branch,sparseCheckoutPaths);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch +  " with start point " + ref, e);
         }

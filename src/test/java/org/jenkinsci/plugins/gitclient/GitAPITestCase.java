@@ -2119,7 +2119,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
-    @NotImplementedInJGit
     public void test_sparse_checkout() throws Exception {
         /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
          * required by the plugin implementation does not work in git 1.7.1.
