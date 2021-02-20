@@ -164,6 +164,18 @@ public class GitAPITest {
     }
 
     @Test
+    public void testListTagsWithFilter() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        workspace.tag("another_test");
+        workspace.tag("yet_another");
+        Set<String> tags = workspace.getGitClient().getTagNames("*test");
+        assertTrue("expected tag test not listed", tags.contains("test"));
+        assertTrue("expected tag another_tag not listed", tags.contains("another_test"));
+        assertFalse("unexpected tag yet_another listed", tags.contains("yet_another"));
+    }
+
+    @Test
     public void testListTagsWithoutFilter() throws Exception {
         workspace.commitEmpty("init");
         workspace.tag("test");
