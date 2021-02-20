@@ -602,14 +602,6 @@ public abstract class GitAPITestCase extends TestCase {
                      w.igit().getDefaultRemote("invalid"));
     }
 
-    public void test_getRemoteURL() throws Exception {
-        w.init();
-        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
-        w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
-        String remoteUrl = w.git.getRemoteUrl("origin");
-        assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
-    }
-
     public void test_clean_with_parameter() throws Exception {
         w.init();
         w.commitEmpty("init");
