@@ -2,7 +2,6 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import jenkins.benchmark.jmh.JmhBenchmark;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.InitCommand;

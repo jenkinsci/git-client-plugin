@@ -9,7 +9,6 @@ import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
