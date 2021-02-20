@@ -13,7 +13,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Rule;
 
 public class CredentialsProviderImplTest {
 
