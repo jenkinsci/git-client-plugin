@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -160,6 +161,18 @@ public class GitAPITest {
         } catch (GitException ge) {
             assertEquals("Could not delete tag test", ge.getMessage());
         }
+    }
+
+    @Test
+    public void testListTagsWithoutFilter() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        workspace.tag("another_test");
+        workspace.tag("yet_another");
+        Set<String> allTags = workspace.getGitClient().getTagNames(null);
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
     /**
