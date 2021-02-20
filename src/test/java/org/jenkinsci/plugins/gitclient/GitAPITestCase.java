@@ -832,7 +832,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
         }
     }
-    
+
     @Issue("JENKINS-34309")
     public void test_list_branches() throws Exception {
         w.init();
@@ -930,22 +930,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
     }
-
-    public void test_delete_branch() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        w.git.deleteBranch("test");
-        String branches = w.launchCommand("git", "branch", "-l");
-        assertFalse("deleted test branch still present", branches.contains("test"));
-        try {
-            w.git.deleteBranch("test");
-            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete branch test", ge.getMessage());
-        }
-    }
-
+    
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();

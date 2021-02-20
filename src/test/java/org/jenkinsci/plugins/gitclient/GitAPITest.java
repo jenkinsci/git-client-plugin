@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -17,6 +18,7 @@ import java.util.logging.Logger;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -105,7 +107,8 @@ public class GitAPITest {
         workspace.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
         workspace.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = workspace.getGitClient().getRemoteUrl("origin");
-        assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
+        assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git",
+                remoteUrl);
     }
 
     @Test
@@ -127,9 +130,26 @@ public class GitAPITest {
         assertTrue("test branch not listed", branches.contains("test"));
     }
 
-    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    @Test
+    public void testDeleteBranch() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().branch("test");
+        workspace.getGitClient().deleteBranch("test");
+        String branches = workspace.launchCommand("git", "branch", "-l");
+        assertFalse("deleted test branch still present", branches.contains("test"));
+        try {
+            workspace.getGitClient().deleteBranch("test");
+            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof  JGitAPIImpl);
+        } catch (GitException ge) {
+            assertEquals("Could not delete branch test", ge.getMessage());
+        }
+    }
+
+    /**
+     * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
+     */
     private boolean isWindows() {
-        return File.pathSeparatorChar==';';
+        return File.pathSeparatorChar == ';';
     }
 
 }
