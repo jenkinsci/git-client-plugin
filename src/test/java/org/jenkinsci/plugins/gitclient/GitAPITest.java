@@ -145,6 +145,23 @@ public class GitAPITest {
         }
     }
 
+    @Test
+    public void testDeleteTag() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        workspace.tag("another");
+        workspace.getGitClient().deleteTag("test");
+        String tags = workspace.launchCommand("git", "tag");
+        assertFalse("deleted test tag still present", tags.contains("test"));
+        assertTrue("expected tag not listed", tags.contains("another"));
+        try {
+            workspace.getGitClient().deleteTag("test");
+            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            assertEquals("Could not delete tag test", ge.getMessage());
+        }
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */

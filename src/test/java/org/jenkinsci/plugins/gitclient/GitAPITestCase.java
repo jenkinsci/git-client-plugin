@@ -930,7 +930,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertBranchesExist(branches, "master", "test", "another");
         assertEquals(3, branches.size());
     }
-    
+
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();
@@ -976,23 +976,6 @@ public abstract class GitAPITestCase extends TestCase {
 
         ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
-    }
-
-    public void test_delete_tag() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        w.tag("another");
-        w.git.deleteTag("test");
-        String tags = w.launchCommand("git", "tag");
-        assertFalse("deleted test tag still present", tags.contains("test"));
-        assertTrue("expected tag not listed", tags.contains("another"));
-        try {
-            w.git.deleteTag("test");
-            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete tag test", ge.getMessage());
-        }
     }
 
     public void test_list_tags_with_filter() throws Exception {
