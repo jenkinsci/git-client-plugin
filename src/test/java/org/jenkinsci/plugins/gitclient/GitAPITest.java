@@ -107,4 +107,20 @@ public class GitAPITest {
         assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
 
+    @Test
+    public void testEmptyComment() throws Exception {
+        workspace.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
+        if (isWindows()) {
+            workspace.getGitClient().tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
+        } else {
+            workspace.getGitClient().tag("empty-comment", "");
+        }
+    }
+
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private boolean isWindows() {
+        return File.pathSeparatorChar==';';
+    }
+
 }
