@@ -14,7 +14,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
-import java.io.File;
 import java.io.IOException;
 import org.jenkinsci.remoting.RoleChecker;
 
