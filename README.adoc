@@ -32,7 +32,7 @@ Prior release notes are recorded in the git client plugin repository link:CHANGE
 [#implementations]
 == Implementations
 
-The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the master and on every agent that will use git.
+The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the controller and on every agent that will use git.
 Command line git implementations working with large files should also install https://git-lfs.github.com/[git LFS].
 The command line git implementation is the canonical implementation of the git interfaces provided by the git client plugin.
 
