@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Git API Tests, eventual replacement for GitAPITestCase,
@@ -117,6 +118,14 @@ public class GitAPITest {
         }
     }
 
+    @Test
+    public void testCreateBranch() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().branch("test");
+        String branches = workspace.launchCommand("git", "branch", "-l");
+        assertTrue("master branch not listed", branches.contains("master"));
+        assertTrue("test branch not listed", branches.contains("test"));
+    }
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {

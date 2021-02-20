@@ -833,15 +833,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
     
-    public void test_create_branch() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        String branches = w.launchCommand("git", "branch", "-l");
-        assertTrue("master branch not listed", branches.contains("master"));
-        assertTrue("test branch not listed", branches.contains("test"));
-    }
-
     @Issue("JENKINS-34309")
     public void test_list_branches() throws Exception {
         w.init();
