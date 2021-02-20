@@ -832,17 +832,7 @@ public abstract class GitAPITestCase extends TestCase {
             assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
         }
     }
-
-    public void test_empty_comment() throws Exception {
-        w.init();
-        w.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
-        if (isWindows()) {
-            w.git.tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
-        } else {
-            w.git.tag("empty-comment", "");
-        }
-    }
-
+    
     public void test_create_branch() throws Exception {
         w.init();
         w.commitEmpty("init");
