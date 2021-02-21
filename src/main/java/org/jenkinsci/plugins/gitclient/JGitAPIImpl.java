@@ -29,7 +29,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +77,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -94,7 +92,6 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
-import org.eclipse.jgit.transport.BasePackFetchConnection;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.HttpTransport;
@@ -801,7 +798,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
             throws GitException, InterruptedException {
         Map<String, String> references = new HashMap<>();
@@ -813,48 +809,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return references;
         }
         try (Repository repo = openDummyRepository()) {
-            try {
-                // HACK HACK HACK
-                // The symref info is advertised as a capability starting from git 1.8.5
-                // So all we need to do is ask JGit to fetch the refs and then (because JGit adds all capabilities
-                // into a Set) we iterate the resulting set to find any that matching symref=$symref:$realref
-                // of course JGit does not expose a way to iterate the capabilities, so instead we have to hack
-                // and peek inside
-                // TODO if JGit implement https://bugs.eclipse.org/bugs/show_bug.cgi?id=514052 we should switch to that
-                Class<?> basePackConnection = BasePackFetchConnection.class.getSuperclass();
-                Field remoteCapablities = basePackConnection.getDeclaredField("remoteCapablities");
-                remoteCapablities.setAccessible(true);
-                try (Transport transport = Transport.open(repo, url)) {
-                    transport.setCredentialsProvider(getProvider());
-                    try (FetchConnection fc = transport.openFetch()) {
-                        fc.getRefs();
-                        if (fc instanceof BasePackFetchConnection) {
-                            Object o = remoteCapablities.get(fc);
-                            if (o instanceof Set) {
-                                boolean hackWorked = false;
-                                @SuppressWarnings("unchecked") /* compile-time type erasure causes this */
-                                Set<String> capabilities = (Set<String>)o;
-                                for (String capability: capabilities) {
-                                    if (capability.startsWith("symref=")) {
-                                        hackWorked = true;
-                                        int index = capability.indexOf(':', 7);
-                                        if (index != -1) {
-                                            references.put(capability.substring(7, index), capability.substring(index+1));
-                                        }
-                                    }
-                                }
-                                if (hackWorked) {
-                                    return references;
-                                }
-                            }
-                        }
-                    }
-                    // ignore this is a total hack
+            LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
+            lsRemote.setRemote(url);
+            lsRemote.setCredentialsProvider(getProvider());
+            Collection<Ref> refs = lsRemote.call();
+            for (final Ref r : refs) {
+                if (!r.isSymbolic()) { // Skip reference if it is not symbolic
+                    continue;
                 }
-            } catch (IllegalAccessException | NoSuchFieldException e) {
-                // ignore, caller will just have to try it the Git 1.8.4 way, we'll return an empty map
+                if (regexPattern == null) {
+                    references.put(r.getName(), r.getTarget().getName());
+                } else if (r.getName().matches(regexPattern)) {
+                    references.put(r.getName(), r.getTarget().getName());
+                } // else do not return symbolic references with names that do not match pattern
             }
-        } catch (IOException | URISyntaxException e) {
+        } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }
         return references;

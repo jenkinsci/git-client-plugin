@@ -56,7 +56,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
         return (hudson.plugins.git.IGitAPI)proxy;
     }
 
-    private Object readResolve() {
+    protected Object readResolve() {
         channel = Channel.current();
         return this;
     }

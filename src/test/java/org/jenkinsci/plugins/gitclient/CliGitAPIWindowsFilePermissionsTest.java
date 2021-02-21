@@ -11,7 +11,6 @@ import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

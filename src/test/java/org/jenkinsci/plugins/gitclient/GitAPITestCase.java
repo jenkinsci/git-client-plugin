@@ -602,14 +602,6 @@ public abstract class GitAPITestCase extends TestCase {
                      w.igit().getDefaultRemote("invalid"));
     }
 
-    public void test_getRemoteURL() throws Exception {
-        w.init();
-        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
-        w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
-        String remoteUrl = w.git.getRemoteUrl("origin");
-        assertEquals("unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
-    }
-
     public void test_clean_keeping_ignored() throws Exception {
         w.init();
 
@@ -640,7 +632,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(w.exists(ignoredFileName2));
     }
 
-    public void test_clean_with_submodules() throws Exception {
+    public void test_clean_with_parameter() throws Exception {
         w.init();
         w.commitEmpty("init");
 
@@ -871,25 +863,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_empty_comment() throws Exception {
-        w.init();
-        w.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
-        if (isWindows()) {
-            w.git.tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
-        } else {
-            w.git.tag("empty-comment", "");
-        }
-    }
-
-    public void test_create_branch() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        String branches = w.launchCommand("git", "branch", "-l");
-        assertTrue("master branch not listed", branches.contains("master"));
-        assertTrue("test branch not listed", branches.contains("test"));
-    }
-
     @Issue("JENKINS-34309")
     public void test_list_branches() throws Exception {
         w.init();
@@ -917,7 +890,7 @@ public abstract class GitAPITestCase extends TestCase {
         String output = w.launchCommand("git", "branch", "-v", "--no-abbrev");
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
         assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
-        if (w.cgit().isAtLeastVersion(2, 13, 0, 0)) {
+        if (w.cgit().isAtLeastVersion(2, 13, 0, 0) && !w.cgit().isAtLeastVersion(2, 30, 0, 0)) {
             assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
             assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
             assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
@@ -988,21 +961,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(3, branches.size());
     }
 
-    public void test_delete_branch() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        w.git.deleteBranch("test");
-        String branches = w.launchCommand("git", "branch", "-l");
-        assertFalse("deleted test branch still present", branches.contains("test"));
-        try {
-            w.git.deleteBranch("test");
-            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete branch test", ge.getMessage());
-        }
-    }
-
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();
@@ -1048,47 +1006,6 @@ public abstract class GitAPITestCase extends TestCase {
 
         ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
-    }
-
-    public void test_delete_tag() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        w.tag("another");
-        w.git.deleteTag("test");
-        String tags = w.launchCommand("git", "tag");
-        assertFalse("deleted test tag still present", tags.contains("test"));
-        assertTrue("expected tag not listed", tags.contains("another"));
-        try {
-            w.git.deleteTag("test");
-            assertTrue("cgit did not throw an exception", w.git instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete tag test", ge.getMessage());
-        }
-    }
-
-    public void test_list_tags_with_filter() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        w.tag("another_test");
-        w.tag("yet_another");
-        Set<String> tags = w.git.getTagNames("*test");
-        assertTrue("expected tag test not listed", tags.contains("test"));
-        assertTrue("expected tag another_test not listed", tags.contains("another_test"));
-        assertFalse("unexpected yet_another tag listed", tags.contains("yet_another"));
-    }
-
-    public void test_list_tags_without_filter() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        w.tag("another_test");
-        w.tag("yet_another");
-        Set<String> allTags = w.git.getTagNames(null);
-        assertTrue("tag 'test' not listed", allTags.contains("test"));
-        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
-        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
     public void test_list_tags_star_filter() throws Exception {

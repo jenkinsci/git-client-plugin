@@ -2240,6 +2240,8 @@ public class GitClientTest {
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
         urlRepoClient.add("readme");
         urlRepoClient.commit("Added README to repo used as a submodule");
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(urlRepoClient);
 
         // Add new repository as submodule to repository that ends in .url
         File repoHasSubmodule = new File(baseDir, "has-submodule.url");
@@ -2249,6 +2251,8 @@ public class GitClientTest {
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(repoHasSubmoduleClient);
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
@@ -2272,6 +2276,8 @@ public class GitClientTest {
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
         String branch = "master";
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(cloneGitClient);
         cloneGitClient.submoduleInit();
         cloneGitClient.submoduleUpdate().recursive(false).execute();
         assertSubmoduleStatus(cloneGitClient, true, moduleDirBaseName);

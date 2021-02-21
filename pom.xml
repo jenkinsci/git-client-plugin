@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.13</version>
+    <version>4.16</version>
     <relativePath />
   </parent>
 
@@ -53,14 +53,13 @@
   </scm>
 
   <properties>
-    <revision>3.5.2</revision>
+    <revision>3.6.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.204.1</jenkins.version>
+    <jenkins.version>2.222.4</jenkins.version> <!-- Required for git plugin 4.5.0 -->
     <java.level>8</java.level>
-    <jgit.version>5.9.0.202009080501-r</jgit.version>
-    <configuration-as-code.version>1.36</configuration-as-code.version>
+    <jgit.version>5.10.0.202012080955-r</jgit.version>
     <slf4jVersion>1.7.26</slf4jVersion>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.failOnError>true</spotbugs.failOnError>
@@ -71,8 +70,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.204.x</artifactId>
-        <version>18</version>
+        <artifactId>bom-2.222.x</artifactId>
+        <version>23</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -229,7 +228,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.5</version>
+      <version>3.5.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -276,7 +275,7 @@
         </exclusion>
       </exclusions>
       <optional>true</optional>
-      <version>4.2.0</version>
+      <version>4.2.1</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -286,13 +285,11 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
-      <version>${configuration-as-code.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
       <artifactId>test-harness</artifactId>
-      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -339,12 +336,12 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.1.4</version>
+        <version>4.2.0</version>
         <dependencies>
           <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs</artifactId>
-            <version>4.2.0</version>
+            <version>4.2.1</version>
           </dependency>
         </dependencies>
       </plugin>
