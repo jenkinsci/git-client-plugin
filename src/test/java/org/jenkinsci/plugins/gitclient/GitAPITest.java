@@ -308,6 +308,18 @@ public class GitAPITest {
         assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
     }
 
+    @Test
+    public void testListRefsWithoutPrefix() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/nested/anotherref");
+        workspace.getGitClient().ref("refs/testing/nested/yetanotherref");
+        Set<String> allRefs = workspace.getGitClient().getRefNames("");
+        assertTrue("ref testref not listed", allRefs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", allRefs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", allRefs.contains("refs/testing/nested/yetanotherref"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
