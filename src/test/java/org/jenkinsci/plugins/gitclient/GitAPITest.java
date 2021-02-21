@@ -6,9 +6,11 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -140,7 +142,7 @@ public class GitAPITest {
         assertFalse("deleted test branch still present", branches.contains("test"));
         try {
             workspace.getGitClient().deleteBranch("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof  JGitAPIImpl);
+            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
         } catch (GitException ge) {
             assertEquals("Could not delete branch test", ge.getMessage());
         }
@@ -185,6 +187,33 @@ public class GitAPITest {
         assertTrue("tag 'test' not listed", allTags.contains("test"));
         assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
+    @Issue("JENKINS-37794")
+    @Test
+    public void testGetTagNamesSupportsSlashesInTagNames() throws Exception {
+        workspace.commitEmpty("init-getTagNames-supports-slashes");
+        workspace.getGitClient().tag("no-slash", "Tag without a /");
+        Set<String> tags = workspace.getGitClient().getTagNames(null);
+        assertThat(tags, hasItem("no-slash"));
+        assertThat(tags, not(hasItem("slashed/sample")));
+        assertThat(tags, not(hasItem("slashed/sample-with-short-comment")));
+
+        workspace.getGitClient().tag("slashed/sample", "Tag slashed/sample includes a /");
+        workspace.getGitClient().tag("slashed/sample-with-short-comment", "short comment");
+
+        for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
+            Set<String> latestTags = workspace.getGitClient().getTagNames(matchPattern);
+            assertThat(tags, hasItem("no-slash"));
+            assertThat(latestTags, not(hasItem("slashed/sample")));
+            assertThat(latestTags, not(hasItem("slashed/sample-with-short-comment")));
+        }
+
+        for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
+            Set<String> latestTags = workspace.getGitClient().getTagNames(matchPattern);
+            assertThat(latestTags, hasItem("slashed/sample"));
+            assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
+        }
     }
 
     /**
