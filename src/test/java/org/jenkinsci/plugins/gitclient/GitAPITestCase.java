@@ -941,14 +941,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
-    public void test_tag_exists() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        assertTrue(w.git.tagExists("test"));
-        assertFalse(w.git.tagExists("unknown"));
-    }
-
     public void test_get_tag_message() throws Exception {
         w.init();
         w.commitEmpty("init");

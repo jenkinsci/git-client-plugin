@@ -251,6 +251,14 @@ public class GitAPITest {
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
+    @Test
+    public void testTagExists() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        assertTrue(workspace.getGitClient().tagExists("test"));
+        assertFalse(workspace.getGitClient().tagExists("unknown"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
