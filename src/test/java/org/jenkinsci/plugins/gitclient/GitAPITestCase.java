@@ -941,18 +941,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
-    public void test_list_refs_with_prefix() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        w.git.ref("refs/testing/nested/anotherref");
-        w.git.ref("refs/testing/nested/yetanotherref");
-        Set<String> refs = w.git.getRefNames("refs/testing/nested/");
-        assertFalse("ref testref listed", refs.contains("refs/testing/testref"));
-        assertTrue("ref anotherref not listed", refs.contains("refs/testing/nested/anotherref"));
-        assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
-    }
-
     public void test_list_refs_without_prefix() throws Exception {
         w.init();
         w.commitEmpty("init");

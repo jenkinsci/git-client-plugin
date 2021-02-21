@@ -296,6 +296,18 @@ public class GitAPITest {
         workspace.getGitClient().deleteRef("refs/testing/testref"); //Double-deletes do nothing.
     }
 
+    @Test
+    public void testListRefsWithPrefix() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/nested/anotherref");
+        workspace.getGitClient().ref("refs/testing/nested/yetanotherref");
+        Set<String> refs = workspace.getGitClient().getRefNames("refs/testing/nested/");
+        assertFalse("ref testref listed", refs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", refs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
