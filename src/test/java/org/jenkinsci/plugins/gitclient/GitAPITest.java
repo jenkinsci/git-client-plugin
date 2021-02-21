@@ -239,6 +239,18 @@ public class GitAPITest {
         assertEquals(3, branches.size());
     }
 
+    @Test
+    public void testListTagsStarFilter() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        workspace.tag("another_test");
+        workspace.tag("yet_another");
+        Set<String> allTags = workspace.getGitClient().getTagNames("*");
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
