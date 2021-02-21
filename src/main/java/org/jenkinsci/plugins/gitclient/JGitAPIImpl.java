@@ -1248,7 +1248,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * clean.
+     * Remove untracked files and directories, with option to also
+     * remove untracked files and directories in submodules and other
+     * nested git repositories.
      *
      * @param cleanSubmodule Remove files in nested git repositories (submodules, etc.) using the same rules as are used in the base repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -1259,7 +1261,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * clean.
+     * Remove untracked files and directories, with option to also
+     * remove untracked files and directories in submodules and other
+     * nested git repositories and to remove files ignored by the
+     * '.gitignore' file.
      *
      * @param cleanSubmodule flag to add extra -f
      * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
@@ -1277,7 +1282,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * clean.
+     * Remove untracked files and directories. Does not remove
+     * untracked files in submodules and other nested git
+     * repositories.  Does not remove files ignored by the
+     * '.gitignore' file.
      *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
