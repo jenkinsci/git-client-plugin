@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
@@ -18,6 +19,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
@@ -70,6 +72,17 @@ public class GitAPITest {
             arguments.add(item);
         }
         return arguments;
+    }
+
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
+    }
+
+    private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
+        Collection<String> branchNames = getBranchNames(branches);
+        for (String name : names) {
+            assertThat(branchNames, hasItem(name));
+        }
     }
 
     @Before
@@ -214,6 +227,16 @@ public class GitAPITest {
             assertThat(latestTags, hasItem("slashed/sample"));
             assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
         }
+    }
+
+    @Test
+    public void testListBranchesContainingRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().branch("test");
+        workspace.getGitClient().branch("another");
+        Set<Branch> branches = workspace.getGitClient().getBranches();
+        assertBranchesExist(branches, "master", "test", "another");
+        assertEquals(3, branches.size());
     }
 
     /**

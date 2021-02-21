@@ -894,16 +894,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
-    public void test_list_branches_containing_ref() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        w.git.branch("another");
-        Set<Branch> branches = w.git.getBranches();
-        assertBranchesExist(branches, "master", "test", "another");
-        assertEquals(3, branches.size());
-    }
-
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();
