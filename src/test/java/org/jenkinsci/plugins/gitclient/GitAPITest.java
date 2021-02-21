@@ -284,6 +284,18 @@ public class GitAPITest {
         assertTrue("test ref not created", workspace.launchCommand("git", "show-ref").contains("refs/testing/testref"));
     }
 
+    @Test
+    public void testDeleteRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/anotherref");
+        workspace.getGitClient().deleteRef("refs/testing/testref");
+        String refs = workspace.launchCommand("git", "show-ref");
+        assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
+        assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
+        workspace.getGitClient().deleteRef("refs/testing/testref"); //Double-deletes do nothing.
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */

@@ -941,18 +941,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
-    public void test_delete_ref() throws Exception {
-        w.init();
-            w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        w.git.ref("refs/testing/anotherref");
-        w.git.deleteRef("refs/testing/testref");
-        String refs = w.launchCommand("git", "show-ref");
-        assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
-        assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
-        w.git.deleteRef("refs/testing/testref");  // Double-deletes do nothing.
-    }
-
     public void test_list_refs_with_prefix() throws Exception {
         w.init();
         w.commitEmpty("init");
