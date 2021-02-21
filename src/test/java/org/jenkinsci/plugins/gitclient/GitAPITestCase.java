@@ -940,7 +940,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
-
+    
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
         w.init();
         w.commitEmpty("init");
