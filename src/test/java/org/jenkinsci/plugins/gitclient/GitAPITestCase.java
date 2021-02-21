@@ -941,13 +941,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
-    public void test_create_ref() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        assertTrue("test ref not created", w.launchCommand("git", "show-ref").contains("refs/testing/testref"));
-    }
-
     public void test_delete_ref() throws Exception {
         w.init();
             w.commitEmpty("init");

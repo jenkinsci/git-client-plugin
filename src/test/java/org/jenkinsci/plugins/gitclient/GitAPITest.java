@@ -277,6 +277,13 @@ public class GitAPITest {
         assertEquals("test 123!\n* multi-line tag message\n padded", workspace.getGitClient().getTagMessage("test"));
     }
 
+    @Test
+    public void testCreateRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        assertTrue("test ref not created", workspace.launchCommand("git", "show-ref").contains("refs/testing/testref"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
