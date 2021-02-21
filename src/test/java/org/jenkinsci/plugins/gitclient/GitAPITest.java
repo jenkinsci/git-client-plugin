@@ -1,14 +1,17 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -16,6 +19,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
@@ -68,6 +72,17 @@ public class GitAPITest {
             arguments.add(item);
         }
         return arguments;
+    }
+
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
+    }
+
+    private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
+        Collection<String> branchNames = getBranchNames(branches);
+        for (String name : names) {
+            assertThat(branchNames, hasItem(name));
+        }
     }
 
     @Before
@@ -140,7 +155,7 @@ public class GitAPITest {
         assertFalse("deleted test branch still present", branches.contains("test"));
         try {
             workspace.getGitClient().deleteBranch("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof  JGitAPIImpl);
+            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
         } catch (GitException ge) {
             assertEquals("Could not delete branch test", ge.getMessage());
         }
@@ -185,6 +200,133 @@ public class GitAPITest {
         assertTrue("tag 'test' not listed", allTags.contains("test"));
         assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
+    @Issue("JENKINS-37794")
+    @Test
+    public void testGetTagNamesSupportsSlashesInTagNames() throws Exception {
+        workspace.commitEmpty("init-getTagNames-supports-slashes");
+        workspace.getGitClient().tag("no-slash", "Tag without a /");
+        Set<String> tags = workspace.getGitClient().getTagNames(null);
+        assertThat(tags, hasItem("no-slash"));
+        assertThat(tags, not(hasItem("slashed/sample")));
+        assertThat(tags, not(hasItem("slashed/sample-with-short-comment")));
+
+        workspace.getGitClient().tag("slashed/sample", "Tag slashed/sample includes a /");
+        workspace.getGitClient().tag("slashed/sample-with-short-comment", "short comment");
+
+        for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
+            Set<String> latestTags = workspace.getGitClient().getTagNames(matchPattern);
+            assertThat(tags, hasItem("no-slash"));
+            assertThat(latestTags, not(hasItem("slashed/sample")));
+            assertThat(latestTags, not(hasItem("slashed/sample-with-short-comment")));
+        }
+
+        for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
+            Set<String> latestTags = workspace.getGitClient().getTagNames(matchPattern);
+            assertThat(latestTags, hasItem("slashed/sample"));
+            assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
+        }
+    }
+
+    @Test
+    public void testListBranchesContainingRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().branch("test");
+        workspace.getGitClient().branch("another");
+        Set<Branch> branches = workspace.getGitClient().getBranches();
+        assertBranchesExist(branches, "master", "test", "another");
+        assertEquals(3, branches.size());
+    }
+
+    @Test
+    public void testListTagsStarFilter() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        workspace.tag("another_test");
+        workspace.tag("yet_another");
+        Set<String> allTags = workspace.getGitClient().getTagNames("*");
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
+    @Test
+    public void testTagExists() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.tag("test");
+        assertTrue(workspace.getGitClient().tagExists("test"));
+        assertFalse(workspace.getGitClient().tagExists("unknown"));
+    }
+
+    @Test
+    public void testGetTagMessage() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
+        assertEquals("this-is-a-test", workspace.getGitClient().getTagMessage("test"));
+    }
+
+    @Test
+    public void testGetTagMessageMultiLine() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
+
+        // Leading four spaces from each line should be stripped,
+        // but not the explicit single space before "padded",
+        // and the final errant space at the end should be trimmed
+        assertEquals("test 123!\n* multi-line tag message\n padded", workspace.getGitClient().getTagMessage("test"));
+    }
+
+    @Test
+    public void testCreateRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        assertTrue("test ref not created", workspace.launchCommand("git", "show-ref").contains("refs/testing/testref"));
+    }
+
+    @Test
+    public void testDeleteRef() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/anotherref");
+        workspace.getGitClient().deleteRef("refs/testing/testref");
+        String refs = workspace.launchCommand("git", "show-ref");
+        assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
+        assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
+        workspace.getGitClient().deleteRef("refs/testing/testref"); //Double-deletes do nothing.
+    }
+
+    @Test
+    public void testListRefsWithPrefix() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/nested/anotherref");
+        workspace.getGitClient().ref("refs/testing/nested/yetanotherref");
+        Set<String> refs = workspace.getGitClient().getRefNames("refs/testing/nested/");
+        assertFalse("ref testref listed", refs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", refs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
+    }
+
+    @Test
+    public void testListRefsWithoutPrefix() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        workspace.getGitClient().ref("refs/testing/nested/anotherref");
+        workspace.getGitClient().ref("refs/testing/nested/yetanotherref");
+        Set<String> allRefs = workspace.getGitClient().getRefNames("");
+        assertTrue("ref testref not listed", allRefs.contains("refs/testing/testref"));
+        assertTrue("ref anotherref not listed", allRefs.contains("refs/testing/nested/anotherref"));
+        assertTrue("ref yetanotherref not listed", allRefs.contains("refs/testing/nested/yetanotherref"));
+    }
+
+    @Test
+    public void testRefExists() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.getGitClient().ref("refs/testing/testref");
+        assertTrue(workspace.getGitClient().refExists("refs/testing/testref"));
+        assertFalse(workspace.getGitClient().refExists("refs/testing/testref_notfound"));
+        assertFalse(workspace.getGitClient().refExists("refs/testing2/yetanother"));
     }
 
     /**

@@ -806,33 +806,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("tag3 wasn't pushed", bare.launchCommand("git", "tag").contains("tag3"));
     }
 
-    @Issue("JENKINS-37794")
-    public void test_getTagNames_supports_slashes_in_tag_names() throws Exception {
-        w.init();
-        w.commitEmpty("init-getTagNames-supports-slashes");
-        w.git.tag("no-slash", "Tag without a /");
-        Set<String> tags = w.git.getTagNames(null);
-        assertThat(tags, hasItem("no-slash"));
-        assertThat(tags, not(hasItem("slashed/sample")));
-        assertThat(tags, not(hasItem("slashed/sample-with-short-comment")));
-
-        w.git.tag("slashed/sample", "Tag slashed/sample includes a /");
-        w.git.tag("slashed/sample-with-short-comment", "short comment");
-
-        for (String matchPattern : Arrays.asList("n*", "no-*", "*-slash", "*/sl*sa*", "*/sl*/sa*")) {
-            Set<String> latestTags = w.git.getTagNames(matchPattern);
-            assertThat(tags, hasItem("no-slash"));
-            assertThat(latestTags, not(hasItem("slashed/sample")));
-            assertThat(latestTags, not(hasItem("slashed/sample-with-short-comment")));
-        }
-
-        for (String matchPattern : Arrays.asList("s*", "slashed*", "sl*sa*", "slashed/*", "sl*/sa*", "slashed/sa*")) {
-            Set<String> latestTags = w.git.getTagNames(matchPattern);
-            assertThat(latestTags, hasItem("slashed/sample"));
-            assertThat(latestTags, hasItem("slashed/sample-with-short-comment"));
-        }
-    }
-
     @Issue("JENKINS-34309")
     public void test_list_branches() throws Exception {
         w.init();
@@ -921,16 +894,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
-    public void test_list_branches_containing_ref() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("test");
-        w.git.branch("another");
-        Set<Branch> branches = w.git.getBranches();
-        assertBranchesExist(branches, "master", "test", "another");
-        assertEquals(3, branches.size());
-    }
-
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();
@@ -977,97 +940,7 @@ public abstract class GitAPITestCase extends TestCase {
         ObjectId invalidTagId = w.git.getHeadRev(gitDir, "not-a-valid-tag");
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
-
-    public void test_list_tags_star_filter() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        w.tag("another_test");
-        w.tag("yet_another");
-        Set<String> allTags = w.git.getTagNames("*");
-        assertTrue("tag 'test' not listed", allTags.contains("test"));
-        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
-        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
-    }
-
-    public void test_tag_exists() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.tag("test");
-        assertTrue(w.git.tagExists("test"));
-        assertFalse(w.git.tagExists("unknown"));
-    }
-
-    public void test_get_tag_message() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
-        assertEquals("this-is-a-test", w.git.getTagMessage("test"));
-    }
-
-    public void test_get_tag_message_multi_line() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
-
-        // Leading four spaces from each line should be stripped,
-        // but not the explicit single space before "padded",
-        // and the final errant space at the end should be trimmed
-        assertEquals("test 123!\n* multi-line tag message\n padded", w.git.getTagMessage("test"));
-    }
-
-    public void test_create_ref() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        assertTrue("test ref not created", w.launchCommand("git", "show-ref").contains("refs/testing/testref"));
-    }
-
-    public void test_delete_ref() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        w.git.ref("refs/testing/anotherref");
-        w.git.deleteRef("refs/testing/testref");
-        String refs = w.launchCommand("git", "show-ref");
-        assertFalse("deleted test tag still present", refs.contains("refs/testing/testref"));
-        assertTrue("expected tag not listed", refs.contains("refs/testing/anotherref"));
-        w.git.deleteRef("refs/testing/testref");  // Double-deletes do nothing.
-    }
-
-    public void test_list_refs_with_prefix() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        w.git.ref("refs/testing/nested/anotherref");
-        w.git.ref("refs/testing/nested/yetanotherref");
-        Set<String> refs = w.git.getRefNames("refs/testing/nested/");
-        assertFalse("ref testref listed", refs.contains("refs/testing/testref"));
-        assertTrue("ref anotherref not listed", refs.contains("refs/testing/nested/anotherref"));
-        assertTrue("ref yetanotherref not listed", refs.contains("refs/testing/nested/yetanotherref"));
-    }
-
-    public void test_list_refs_without_prefix() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        w.git.ref("refs/testing/nested/anotherref");
-        w.git.ref("refs/testing/nested/yetanotherref");
-        Set<String> allRefs = w.git.getRefNames("");
-        assertTrue("ref testref not listed", allRefs.contains("refs/testing/testref"));
-        assertTrue("ref anotherref not listed", allRefs.contains("refs/testing/nested/anotherref"));
-        assertTrue("ref yetanotherref not listed", allRefs.contains("refs/testing/nested/yetanotherref"));
-    }
-
-    public void test_ref_exists() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.ref("refs/testing/testref");
-        assertTrue(w.git.refExists("refs/testing/testref"));
-        assertFalse(w.git.refExists("refs/testing/testref_notfound"));
-        assertFalse(w.git.refExists("refs/testing2/yetanother"));
-    }
-
+    
     public void test_revparse_sha1_HEAD_or_tag() throws Exception {
         w.init();
         w.commitEmpty("init");
