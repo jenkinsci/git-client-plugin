@@ -941,24 +941,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
-    public void test_get_tag_message() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
-        assertEquals("this-is-a-test", w.git.getTagMessage("test"));
-    }
-
-    public void test_get_tag_message_multi_line() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
-
-        // Leading four spaces from each line should be stripped,
-        // but not the explicit single space before "padded",
-        // and the final errant space at the end should be trimmed
-        assertEquals("test 123!\n* multi-line tag message\n padded", w.git.getTagMessage("test"));
-    }
-
     public void test_create_ref() throws Exception {
         w.init();
         w.commitEmpty("init");
@@ -968,7 +950,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_delete_ref() throws Exception {
         w.init();
-        w.commitEmpty("init");
+            w.commitEmpty("init");
         w.git.ref("refs/testing/testref");
         w.git.ref("refs/testing/anotherref");
         w.git.deleteRef("refs/testing/testref");

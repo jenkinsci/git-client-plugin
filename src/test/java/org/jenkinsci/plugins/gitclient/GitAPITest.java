@@ -259,6 +259,24 @@ public class GitAPITest {
         assertFalse(workspace.getGitClient().tagExists("unknown"));
     }
 
+    @Test
+    public void testGetTagMessage() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
+        assertEquals("this-is-a-test", workspace.getGitClient().getTagMessage("test"));
+    }
+
+    @Test
+    public void testGetTagMessageMultiLine() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
+
+        // Leading four spaces from each line should be stripped,
+        // but not the explicit single space before "padded",
+        // and the final errant space at the end should be trimmed
+        assertEquals("test 123!\n* multi-line tag message\n padded", workspace.getGitClient().getTagMessage("test"));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
