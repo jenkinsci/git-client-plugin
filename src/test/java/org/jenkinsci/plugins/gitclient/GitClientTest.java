@@ -3016,6 +3016,55 @@ public class GitClientTest {
         assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
     }
 
+    @Test
+    public void test_clean_keeping_ignored() throws Exception {
+        gitClient.init();
+
+        String unignoredDirName1 = "unignored-dir";
+        String unignoredFileName1 = unignoredDirName1 + File.separator + "unignored-file-in-dir";
+        createFile(unignoredFileName1, "Contents of unignoredFileName1");
+
+        String unignoredFileName2 = "unignored-file-in-root";
+        createFile(unignoredFileName2, "Contents of unignoredFileName2");
+
+        String ignoredDirName1 = "ignored-dir";
+        String ignoredFileName1 = ignoredDirName1 + File.separator + "ignored-file-in-dir";
+        createFile(ignoredFileName1, "Contents of ignoredFileName1");
+
+        String ignoredFileName2 = "ignored-file-in-root";
+        createFile(ignoredFileName2, "Contents of ignoredFileName2");
+
+        commitFile(".gitignore", ignoredDirName1 + '\n' + ignoredFileName2 + '\n', "Add .gitignore");
+
+        assertDirInWorkingDir(gitClient, unignoredDirName1);
+        assertFileInWorkingDir(gitClient, unignoredFileName1);
+        assertFileInWorkingDir(gitClient, unignoredFileName2);
+
+        assertDirInWorkingDir(gitClient, ignoredDirName1);
+        assertFileInWorkingDir(gitClient, ignoredFileName1);
+        assertFileInWorkingDir(gitClient, ignoredFileName2);
+
+        gitClient.clean(false, true);
+
+        assertDirNotInWorkingDir(gitClient, unignoredDirName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, unignoredFileName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, unignoredFileName2); // Expected to be deleted by clean
+
+        assertDirInWorkingDir(gitClient, ignoredDirName1); // Expected to NOT be deleted by clean
+        assertFileInWorkingDir(gitClient, ignoredFileName1); // Expected to NOT be deleted by clean
+        assertFileInWorkingDir(gitClient, ignoredFileName2); // Expected to NOT be deleted by clean
+
+        gitClient.clean(false, false);
+
+        assertDirNotInWorkingDir(gitClient, unignoredDirName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, unignoredFileName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, unignoredFileName2); // Expected to be deleted by clean
+
+        assertDirNotInWorkingDir(gitClient, ignoredDirName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, ignoredFileName1); // Expected to be deleted by clean
+        assertFileNotInWorkingDir(gitClient, ignoredFileName2); // Expected to be deleted by clean
+    }
+
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
