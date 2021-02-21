@@ -1250,6 +1250,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * clean.
      *
+     * @param cleanSubmodule Remove files in nested git repositories (submodules, etc.) using the same rules as are used in the base repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    @Override
+    public void clean(boolean cleanSubmodule) throws GitException {
+        this.clean(cleanSubmodule, false);
+    }
+
+    /**
+     * clean.
+     *
      * @param cleanSubmodule flag to add extra -f
      * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -1263,17 +1274,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
-    }
-
-    /**
-     * clean.
-     *
-     * @param cleanSubmodule Remove files in submodules using the same rules as are used in the base repository
-     * @throws hudson.plugins.git.GitException if underlying git operation fails.
-     */
-    @Override
-    public void clean(boolean cleanSubmodule) throws GitException {
-        this.clean(cleanSubmodule, false);
     }
 
     /**
