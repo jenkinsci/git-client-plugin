@@ -2394,7 +2394,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
         ssh.setExecutable(true, true);
-        fixSELinuxLabel(key, "ssh_exec_t");
+        fixSELinuxLabel(ssh, "ssh_exec_t");
         //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         //The following creates a copy of the generated file and deletes the original
         //In case of a failure return the original and delete the copy
