@@ -2071,6 +2071,39 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         if (launcher.isUnix()) {
             new FilePath(key).chmod(0400);
+            if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
+                // JENKINS-64913: SELinux Enforced forbids SSH client to read
+                // untrusted key files. Here we assume a SELinux capable system
+                // if the tool exists, so label the key file for SSH to use.
+                // TOTHINK: Should this be further riddled with sanity checks
+                // (uname, PATH leading to "chcon", etc)?
+                ArgumentListBuilder args = new ArgumentListBuilder();
+                args.add("/usr/bin/chcon");
+                args.add("-R");
+                args.add("--type=ssh_home_t");
+                args.add(key.getPath());
+                Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray());
+                int status;
+                String stdout;
+                String stderr;
+                String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
+
+                try {
+                    // JENKINS-13356: capture stdout and stderr separately
+                    ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
+                    ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
+
+                    p.stdout(stdoutStream).stderr(stderrStream);
+                    listener.getLogger().println(" > " + command);
+                    // Should be much faster than 1 min :)
+                    status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
+
+                    stdout = stdoutStream.toString(encoding);
+                    stderr = stderrStream.toString(encoding);
+                } catch (Throwable e) {
+                    listener.getLogger().println("Error performing chcon helper command: " + command + " :\n" + e.toString());
+                }
+            }
         } else {
             fixSshKeyOnWindows(key);
         }
