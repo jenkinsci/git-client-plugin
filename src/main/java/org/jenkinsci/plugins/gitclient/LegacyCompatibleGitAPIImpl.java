@@ -359,6 +359,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * using the same access protocol. This routine converts the "url" string
      * in a way that helps us confirm whether two spellings mean same thing.
      */
+    @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+        justification = "Path operations below intentionally use absolute '/' in some cases"
+        )
     public static String normalizeGitUrl(String url, Boolean checkLocalPaths) {
         String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
         if (!url.contains("://")) {
