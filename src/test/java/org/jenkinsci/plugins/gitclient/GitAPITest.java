@@ -334,6 +334,43 @@ public class GitAPITest {
         assertTrue("Valid Git repo reported as invalid", workspace.getGitClient().hasGitRepo());
     }
 
+    @Test
+    public void testCleanWithParameter() throws Exception {
+        workspace.commitEmpty("init");
+
+        final String dirName1 = "dir1";
+        final String fileName1 = dirName1 + File.separator + "fileName1";
+        final String fileName2 = "fileName2";
+        assertTrue("Did not create dir " + dirName1, workspace.file(dirName1).mkdir());
+        workspace.touch(workspace.getGitFileDir(), fileName1, "");
+        workspace.touch(workspace.getGitFileDir(), fileName2, "");
+
+        final String dirName3 = "dir-with-submodule";
+        File submodule = workspace.file(dirName3);
+        assertTrue("Did not create dir " + dirName3, submodule.mkdir());
+        WorkspaceWithRepo workspace1 = new WorkspaceWithRepo(submodule, gitImplName, TaskListener.NULL);
+        workspace1.getGitClient().init();
+        final String userName = "root";
+        final String emailAddress = "root@mydomain.com";
+        workspace1.getCliGitCommand().run("config", "user.name", userName);
+        workspace1.getCliGitCommand().run("config", "user.email", emailAddress);
+        workspace1.getGitClient().setAuthor(userName, emailAddress);
+        workspace1.getGitClient().setCommitter(userName, emailAddress);
+        workspace1.commitEmpty("init");
+
+        workspace.getGitClient().clean();
+        assertFalse(workspace.exists(dirName1));
+        assertFalse(workspace.exists(fileName1));
+        assertFalse(workspace.exists(fileName2));
+        assertTrue(workspace.exists(dirName3));
+
+        if (workspace1.getGitClient() instanceof CliGitAPIImpl || !isWindows()) {
+            // JGit 5.4.0 on Windows throws exception trying to clean submodule
+            workspace.getGitClient().clean(true);
+            assertFalse(workspace.exists(dirName3));
+        }
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */

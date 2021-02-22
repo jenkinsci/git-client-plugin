@@ -196,6 +196,14 @@ public class WorkspaceWithRepo {
         return this.gitFileDir;
     }
 
+    File file(String path) {
+        return new File(getGitFileDir(), path);
+    }
+
+    boolean exists(String path) {
+        return file(path).exists();
+    }
+
     CliGitCommand getCliGitCommand() {
         return this.cliGitCommand;
     }
