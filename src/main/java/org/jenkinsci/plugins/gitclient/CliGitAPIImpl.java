@@ -2061,6 +2061,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+        justification = "Path operations below intentionally use absolute '/usr/bin/chcon' at this time (as delivered in relevant popular Linux distros)"
+        )
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         File key = createTempFile("ssh", ".key");
         try (PrintWriter w = new PrintWriter(key, encoding)) {
