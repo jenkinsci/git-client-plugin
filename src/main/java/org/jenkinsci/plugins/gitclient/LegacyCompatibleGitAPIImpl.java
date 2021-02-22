@@ -369,7 +369,21 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 if (checkLocalPaths) {
                     File urlPath = new File(url);
                     if (urlPath.exists()) {
-                        urlNormalized = "file://" + Paths.get( Paths.get("").toAbsolutePath().toString() + "/" + urlNormalized ).normalize().toString();;
+                        try {
+                            // Check if the string in urlNormalized is a valid
+                            // relative path (subdir) in current working directory
+                            urlNormalized = "file://" + Paths.get( Paths.get("").toAbsolutePath().toString() + "/" + urlNormalized ).normalize().toString();
+                        } catch (java.nio.file.InvalidPathException ipe1) {
+                            // e.g. Illegal char <:> at index 30: C:\jenkins\git-client-plugin/c:\jenkins\git-client-plugin\target\clone
+                            try {
+                                // Re-check in another manner
+                                urlNormalized = "file://" + Paths.get( Paths.get("", urlNormalized).toAbsolutePath().toString() ).normalize().toString();
+                            } catch (java.nio.file.InvalidPathException ipe2) {
+                                // Finally, fall back to checking the originally
+                                // fully-qualified path
+                                urlNormalized = "file://" + Paths.get( Paths.get("/", urlNormalized).toAbsolutePath().toString() ).normalize().toString();
+                            }
+                        }
                     } else {
                         // Also not a subdirectory of current dir without "./" prefix...
                         urlNormalized = "ssh://" + urlNormalized;
