@@ -2074,7 +2074,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // (uname, PATH leading to "chcon", etc)?
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("/usr/bin/chcon");
-            args.add("-R");
             args.add("--type=" + label);
             args.add(key.getPath());
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray());
