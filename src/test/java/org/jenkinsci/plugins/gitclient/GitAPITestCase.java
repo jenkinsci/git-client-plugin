@@ -626,12 +626,8 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(w.exists(fileName2));
         assertTrue(w.exists(dirName3));
 
-        if (workingArea.git instanceof CliGitAPIImpl || !isWindows()) {
-            // JGit 5.4.0 on Windows throws exception trying to clean submodule
-            w.git.clean(true);
-            assertFalse(w.exists(dirName3));
-        }
-
+        w.git.clean(true);
+        assertFalse(w.exists(dirName3));
     }
 
     @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
