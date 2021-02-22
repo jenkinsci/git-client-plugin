@@ -988,11 +988,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasRepo);
     }
 
-    public void test_hasGitRepo_with_valid_git_repo() throws Exception {
-        w.init();
-        assertTrue("Valid Git repo reported as invalid", w.git.hasGitRepo());
-    }
-
     public void test_push() throws Exception {
         w.init();
         w.commitEmpty("init");

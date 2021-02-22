@@ -329,6 +329,11 @@ public class GitAPITest {
         assertFalse(workspace.getGitClient().refExists("refs/testing2/yetanother"));
     }
 
+    @Test
+    public void testHasGitRepoWithValidGitRepo() throws Exception {
+        assertTrue("Valid Git repo reported as invalid", workspace.getGitClient().hasGitRepo());
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
