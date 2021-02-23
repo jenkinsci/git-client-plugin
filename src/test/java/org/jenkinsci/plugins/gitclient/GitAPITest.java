@@ -615,6 +615,32 @@ public class GitAPITest {
         assertEquals(3, branches.size());
     }
 
+    @Test
+    public void testRemoteListTagsWithFilter() throws Exception {
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        remote.getGitClient().init();
+        final String userName = "root";
+        final String emailAddress = "root@mydomain.com";
+        remote.getCliGitCommand().run("config", "user.name", userName);
+        remote.getCliGitCommand().run("config", "user.email", emailAddress);
+        remote.getGitClient().setAuthor(userName, emailAddress);
+        remote.getGitClient().setCommitter(userName, emailAddress);
+
+        remote.commitEmpty("init");
+        remote.tag("test");
+        remote.tag("another_test");
+        remote.tag("yet_another");
+
+        workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
+        workspace.launchCommand("git", "fetch", "origin");
+        Set<String> local_tags = testGitClient.getTagNames("*test");
+        Set<String> tags = testGitClient.getRemoteTagNames("*test");
+        assertTrue("expected tag test not listed", tags.contains("test"));
+        assertTrue("expected tag another_test not listed", tags.contains("another_test"));
+        assertFalse("unexpected yet_another tag listed", tags.contains("yet_another"));
+
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
