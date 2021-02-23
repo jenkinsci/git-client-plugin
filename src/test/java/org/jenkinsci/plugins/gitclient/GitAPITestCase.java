@@ -607,21 +607,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
-    public void test_list_remote_branches() throws Exception {
-        WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("init");
-        r.git.branch("test");
-        r.git.branch("another");
-
-        w.init();
-        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
-        w.launchCommand("git", "fetch", "origin");
-        Set<Branch> branches = w.git.getRemoteBranches();
-        assertBranchesExist(branches, "origin/master", "origin/test", "origin/another");
-        assertEquals(3, branches.size());
-    }
-
     public void test_remote_list_tags_with_filter() throws Exception {
         WorkingArea r = new WorkingArea();
         r.init();

@@ -593,6 +593,28 @@ public class GitAPITest {
         }
     }
 
+    @Test
+    public void testListRemoteBranches() throws Exception {
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        remote.getGitClient().init();
+        final String userName = "root";
+        final String emailAddress = "root@mydomain.com";
+        remote.getCliGitCommand().run("config", "user.name", userName);
+        remote.getCliGitCommand().run("config", "user.email", emailAddress);
+        remote.getGitClient().setAuthor(userName, emailAddress);
+        remote.getGitClient().setCommitter(userName, emailAddress);
+
+        remote.commitEmpty("init");
+        remote.getGitClient().branch("test");
+        remote.getGitClient().branch("another");
+
+        workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
+        workspace.launchCommand("git", "fetch", "origin");
+        Set<Branch> branches = testGitClient.getRemoteBranches();
+        assertBranchesExist(branches, "origin/master", "origin/test", "origin/another");
+        assertEquals(3, branches.size());
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
