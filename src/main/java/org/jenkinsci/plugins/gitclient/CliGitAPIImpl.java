@@ -2064,8 +2064,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
         justification = "Path operations below intentionally use absolute '/usr/bin/chcon' at this time (as delivered in relevant popular Linux distros)"
         )
-    private void fixSELinuxLabel(File key, String label) {
-        if (!launcher.isUnix()) return;
+    private Boolean fixSELinuxLabel(File key, String label) {
+        // returning false means chcon was tried and failed,
+        // maybe caller needs to retry with other logic
+        // true means all ok, including nothing needs to be done
+        if (!launcher.isUnix()) return true;
+
         if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
             // JENKINS-64913: SELinux Enforced forbids SSH client to read
             // untrusted key files. Here we assume a SELinux capable system
@@ -2096,14 +2100,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 stderr = stderrStream.toString(encoding);
             } catch (Throwable e) {
                 listener.getLogger().println("Error performing chcon helper command: " + command + " :\n" + e.toString());
+                if (status <= 0) { status = 126; } // cause the message and false return below
             }
             if (status > 0) {
                 listener.getLogger().println("[WARNING] Failed (" + status + ") performing chcon helper command: " + command + ":\n" +
                     (stdout.equals("") ? "" : ( "=== STDOUT:\n" + stdout + "\n====\n" )) +
                     (stderr.equals("") ? "" : ( "=== STDERR:\n" + stderr + "\n====\n" )) +
                     "IMPACT: if SELinux is enabled, access to temporary key file may be denied for git+ssh below");
+                return false;
             }
         }
+        return true;
     }
 
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
