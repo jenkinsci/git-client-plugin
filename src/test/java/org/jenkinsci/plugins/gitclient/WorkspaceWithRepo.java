@@ -39,7 +39,8 @@ public class WorkspaceWithRepo {
         cliGitCommand = new CliGitCommand(gitClient);
     }
 
-    private GitClient setupGitClient(File gitFileDir, @NonNull String gitImplName, TaskListener listener) throws Exception {
+    private GitClient setupGitClient(File gitFileDir, @NonNull String gitImplName, TaskListener listener)
+            throws Exception {
         return Git.with(listener, new EnvVars()).in(gitFileDir).using(gitImplName).getClient();
     }
 
@@ -72,7 +73,7 @@ public class WorkspaceWithRepo {
      * Returns path to the local mirror directory.
      *
      * @return path to the local mirrror directory
-     * @throws IOException on I/O error
+     * @throws IOException          on I/O error
      * @throws InterruptedException when execption is interrupted
      */
     String localMirror() throws IOException, InterruptedException {
@@ -92,7 +93,8 @@ public class WorkspaceWithRepo {
                      * the final destination directory.
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
-                    cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, tempClonePath.toFile().getAbsolutePath());
+                    cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL,
+                            tempClonePath.toFile().getAbsolutePath());
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
@@ -202,6 +204,10 @@ public class WorkspaceWithRepo {
 
     boolean exists(String path) {
         return file(path).exists();
+    }
+
+    String contentOf(String path) throws IOException {
+        return FileUtils.readFileToString(file(path), "UTF-8");
     }
 
     CliGitCommand getCliGitCommand() {

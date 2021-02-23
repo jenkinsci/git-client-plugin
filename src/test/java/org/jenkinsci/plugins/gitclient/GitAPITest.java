@@ -1,14 +1,24 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
 
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,13 +28,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Git API Tests, eventual replacement for GitAPITestCase,
@@ -369,11 +372,119 @@ public class GitAPITest {
 
     }
 
+    @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
+    @Test
+    public void testClean() throws Exception {
+        workspace.commitEmpty("init");
+
+        /* String starts with a surrogate character, mathematical
+         * double struck small t as the first character of the file
+         * name. The last three characters of the file name are three
+         * different forms of the a-with-ring character. Refer to
+         * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
+         * for the source of those example characters.
+         */
+        final String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
+        workspace.touch(testGitDir, fileName, "content " + fileName);
+        withSystemLocaleReporting(fileName, () -> {
+            testGitClient.add(fileName);
+            testGitClient.commit(fileName);
+        });
+
+        /* JENKINS-27910 reported that certain cyrillic file names
+         * failed to delete if the encoding was not UTF-8.
+         */
+        final String fileNameSwim =
+                "\u00d0\u00bf\u00d0\u00bb\u00d0\u00b0\u00d0\u00b2\u00d0\u00b0\u00d0\u00bd\u00d0\u00b8\u00d0\u00b5-swim.png";
+        workspace.touch(testGitDir, fileNameSwim, "content " + fileNameSwim);
+        withSystemLocaleReporting(fileNameSwim, () -> {
+            testGitClient.add(fileNameSwim);
+            testGitClient.commit(fileNameSwim);
+        });
+
+        final String fileNameFace = "\u00d0\u00bb\u00d0\u00b8\u00d1\u2020\u00d0\u00be-face.png";
+        workspace.touch(testGitDir, fileNameFace, "content " + fileNameFace);
+        withSystemLocaleReporting(fileNameFace, () -> {
+            testGitClient.add(fileNameFace);
+            testGitClient.commit(fileNameFace);
+        });
+
+        workspace.touch(testGitDir, ".gitignore", ".test");
+        testGitClient.add(".gitignore");
+        testGitClient.commit("ignore");
+
+        final String dirName1 = "\u5c4f\u5e55\u622a\u56fe-dir-not-added";
+        final String fileName1 = dirName1 + File.separator + "\u5c4f\u5e55\u622a\u56fe-fileName1-not-added.xml";
+        final String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-fileName2-not-added";
+        assertTrue("Did not create dir " + dirName1, workspace.file(dirName1).mkdir());
+        workspace.touch(testGitDir, fileName1, "");
+        workspace.touch(testGitDir, fileName2, "");
+        workspace.touch(testGitDir, fileName, "new content");
+
+        testGitClient.clean();
+        assertFalse(workspace.exists(dirName1));
+        assertFalse(workspace.exists(fileName1));
+        assertFalse(workspace.exists(fileName2));
+        assertEquals("content " + fileName, workspace.contentOf(fileName));
+        assertEquals("content " + fileNameFace, workspace.contentOf(fileNameFace));
+        assertEquals("content " + fileNameSwim, workspace.contentOf(fileNameSwim));
+        String status = workspace.launchCommand("git", "status");
+        assertTrue("unexpected status " + status,
+                status.contains("working directory clean") || status.contains("working tree clean"));
+
+        /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
+        FilePath fp = new FilePath(workspace.file(fileName));
+        assertTrue(fp + " missing", fp.exists());
+
+        assertTrue("mkdir " + dirName1 + " failed", workspace.file(dirName1).mkdir());
+        assertTrue("dir " + dirName1 + " missing", workspace.file(dirName1).isDirectory());
+        FilePath dir1 = new FilePath(workspace.file(dirName1));
+        workspace.touch(testGitDir, fileName1, "");
+        assertTrue("Did not create file " + fileName1, workspace.file(fileName1).exists());
+
+        assertTrue(dir1 + " missing", dir1.exists());
+        dir1.deleteRecursive(); /* Fails on Linux JDK 7 with LANG=C, ok with LANG=en_US.UTF-8 */
+        /* Java reports "Malformed input or input contains unmappable characters" */
+        assertFalse("Did not delete file " + fileName1, workspace.file(fileName1).exists());
+        assertFalse(dir1 + " not deleted", dir1.exists());
+
+        workspace.touch(testGitDir, fileName2, "");
+        FilePath fp2 = new FilePath(workspace.file(fileName2));
+
+        assertTrue(fp2 + " missing", fp2.exists());
+        fp2.delete();
+        assertFalse(fp2 + " not deleted", fp2.exists());
+
+        String dirContents = Arrays.toString((new File(testGitDir.getAbsolutePath())).listFiles());
+        String finalStatus = workspace.launchCommand("git", "status");
+        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents,
+                finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
+
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
+    }
+
+    private void withSystemLocaleReporting(String fileName, GitAPITestCase.TestedCode code) throws Exception {
+        try {
+            code.run();
+        } catch (GitException ge) {
+            // Exception message should contain the actual file name.
+            // It may just contain ? for characters that are not encoded correctly due to the system locale.
+            // If such a mangled file name is seen instead, throw a clear exception to indicate the root cause.
+            assertTrue("System locale does not support filename '" + fileName + "'", ge.getMessage().contains("?"));
+            // Rethrow exception for all other issues.
+            throw ge;
+        }
+    }
+
+    @FunctionalInterface
+    interface TestedCode {
+        void run() throws Exception;
     }
 
 }
