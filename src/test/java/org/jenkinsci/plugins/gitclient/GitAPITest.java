@@ -78,7 +78,7 @@ public class GitAPITest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -364,11 +364,9 @@ public class GitAPITest {
         assertFalse(workspace.exists(fileName2));
         assertTrue(workspace.exists(dirName3));
 
-        if (workspace1.getGitClient() instanceof CliGitAPIImpl || !isWindows()) {
-            // JGit 5.4.0 on Windows throws exception trying to clean submodule
-            testGitClient.clean(true);
-            assertFalse(workspace.exists(dirName3));
-        }
+        testGitClient.clean(true);
+        assertFalse(workspace.exists(dirName3));
+
     }
 
     /**
