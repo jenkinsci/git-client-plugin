@@ -4,6 +4,8 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -11,14 +13,19 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +46,7 @@ public class GitAPITest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-    private File repoRoot = null;
+    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -90,7 +97,7 @@ public class GitAPITest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        File repoRootTemp = tempFolder.newFolder();
+        final File repoRoot = tempFolder.newFolder();
 
         revParseBranchName = null;
         checkoutTimeout = -1;
@@ -107,7 +114,8 @@ public class GitAPITest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-        workspace = new WorkspaceWithRepo(repoRootTemp, gitImplName, listener);
+//        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
+        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
@@ -460,6 +468,91 @@ public class GitAPITest {
         assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents,
                 finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
 
+    }
+
+    @Test
+    public void testPushTags() throws Exception {
+        /* Working Repo with commit */
+        final String fileName1 = "file1";
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        testGitClient.add(fileName1);
+        testGitClient.commit("commit1");
+        ObjectId commit1 = workspace.head();
+
+        /* Clone working repo to bare repo */
+        WorkspaceWithRepo bare = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        bare.initBareRepo(testGitClient, true);
+        testGitClient.setRemoteUrl("origin", bare.getGitFileDir().getAbsolutePath());
+        Set<Branch> remoteBranchesEmpty = testGitClient.getRemoteBranches();
+        assertThat(remoteBranchesEmpty, is(empty()));
+//        testGitClient.push().ref("master").to(new URIish("origin")).execute();
+        testGitClient.push("origin", "master");
+        ObjectId bareCommit1 = bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), "master");
+        assertEquals("bare != working", commit1, bareCommit1);
+        assertEquals(commit1, bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), "refs/heads/master"));
+
+        /* Add tag1 to working repo without pushing it to bare repo */
+        workspace.tag("tag1");
+        assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
+        assertEquals("tag1 points to wrong commit", commit1, testGitClient.revParse("tag1"));
+        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(false).execute();
+        assertFalse("tag1 pushed unexpectedly", bare.launchCommand("git", "tag").contains("tag1"));
+
+        /* Push tag1 to bare repo */
+        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+        assertTrue("tag1 not pushed", bare.launchCommand("git", "tag").contains("tag1"));
+
+        /* Create a new commit, move tag1 to that commit, attempt push */
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        testGitClient.add(fileName1);
+        testGitClient.commit("commit2");
+        ObjectId commit2 = workspace.head();
+        workspace.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
+        assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
+        assertEquals("tag1 points to wrong commit", commit2, testGitClient.revParse("tag1"));
+        try {
+            testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+            /* JGit does not throw exception updating existing tag - ugh */
+            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
+            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
+                fail("Modern CLI git should throw exception pushing a change to existing tag");
+            }
+        } catch (GitException ge) {
+            assertThat(ge.getMessage(), containsString("already exists"));
+        }
+
+        try {
+            testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+            /* JGit does not throw exception updating existing tag - ugh */
+            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
+            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
+                fail("Modern CLI git should throw exception pushing a change to existing tag");
+            }
+        } catch (GitException ge) {
+            assertThat(ge.getMessage(), containsString("already exists"));
+        }
+        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(true).execute();
+
+        /* Add tag to working repo without pushing it to the bare
+         * repo, tests the default behavior when tags() is not added
+         * to PushCommand.
+         */
+        workspace.tag("tag3");
+        assertTrue("tag3 wasn't created", testGitClient.tagExists("tag3"));
+        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).execute();
+        assertFalse("tag3 was pushed", bare.launchCommand("git", "tag").contains("tag3"));
+
+        /* Add another tag to working repo and push tags to the bare repo */
+        final String fileName2 = "file2";
+        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID().toString());
+        testGitClient.add(fileName2);
+        testGitClient.commit("commit2");
+        workspace.tag("tag2");
+        assertTrue("tag2 wasn't created", testGitClient.tagExists("tag2"));
+        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+        assertTrue("tag1 wasn't pushed", bare.launchCommand("git", "tag").contains("tag1"));
+        assertTrue("tag2 wasn't pushed", bare.launchCommand("git", "tag").contains("tag2"));
+        assertTrue("tag3 wasn't pushed", bare.launchCommand("git", "tag").contains("tag3"));
     }
 
     /**
