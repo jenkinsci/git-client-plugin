@@ -555,6 +555,44 @@ public class GitAPITest {
         assertTrue("tag3 wasn't pushed", bare.launchCommand("git", "tag").contains("tag3"));
     }
 
+    @Issue("JENKINS-34309")
+    @Test
+    public void testListBranches() throws Exception {
+        Set<Branch> branches = testGitClient.getBranches();
+        assertEquals(0, branches.size()); // empty repo should have 0 branches
+        workspace.commitEmpty("init");
+
+        testGitClient.branch("test");
+        workspace.touch(testGitDir, "test-branch.txt", "");
+        testGitClient.add("test-branch.txt");
+        // JGit commit doesn't end commit message with Ctrl-M, even when passed
+        final String testBranchCommitMessage = "test branch commit ends in Ctrl-M";
+        workspace.jgit().commit(testBranchCommitMessage + "\r");
+
+        testGitClient.branch("another");
+        workspace.touch(testGitDir, "another-branch.txt", "");
+        testGitClient.add("another-branch.txt");
+        // CliGit commit doesn't end commit message with Ctrl-M, even when passed
+        final String anotherBranchCommitMessage = "test branch commit ends in Ctrl-M";
+        workspace.cgit().commit(anotherBranchCommitMessage + "\r");
+
+        branches = testGitClient.getBranches();
+        assertBranchesExist(branches, "master", "test", "another");
+        assertEquals(3, branches.size());
+        String output = workspace.launchCommand("git", "branch", "-v", "--no-abbrev");
+        assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
+        assertTrue("git branch -v --no-abbrev missing another commit msg: '" + output + "'", output.contains(anotherBranchCommitMessage));
+        if (workspace.cgit().isAtLeastVersion(2, 13, 0, 0) && !workspace.cgit().isAtLeastVersion(2, 30, 0, 0)) {
+            assertTrue("git branch -v --no-abbrev missing Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertTrue("git branch -v --no-abbrev missing test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertTrue("git branch -v --no-abbrev missing another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        } else {
+            assertFalse("git branch -v --no-abbrev contains Ctrl-M: '" + output + "'", output.contains("\r"));
+            assertFalse("git branch -v --no-abbrev contains test commit msg Ctrl-M: '" + output + "'", output.contains(testBranchCommitMessage + "\r"));
+            assertFalse("git branch -v --no-abbrev contains another commit msg Ctrl-M: '" + output + "'", output.contains(anotherBranchCommitMessage + "\r"));
+        }
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
