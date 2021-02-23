@@ -648,7 +648,7 @@ public class GitAPITest {
         return File.pathSeparatorChar == ';';
     }
 
-    private void withSystemLocaleReporting(String fileName, GitAPITestCase.TestedCode code) throws Exception {
+    private void withSystemLocaleReporting(String fileName, TestedCode code) throws Exception {
         try {
             code.run();
         } catch (GitException ge) {
