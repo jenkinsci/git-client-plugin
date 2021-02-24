@@ -602,120 +602,6 @@ public abstract class GitAPITestCase extends TestCase {
                      w.igit().getDefaultRemote("invalid"));
     }
 
-    public void test_clean_with_parameter() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        String dirName1 = "dir1";
-        String fileName1 = dirName1 + File.separator + "fileName1";
-        String fileName2 = "fileName2";
-        assertTrue("Did not create dir " + dirName1, w.file(dirName1).mkdir());
-        w.touch(fileName1);
-        w.touch(fileName2);
-
-        String dirName3 = "dir-with-submodule";
-        File submodule = w.file(dirName3);
-        assertTrue("Did not create dir " + dirName3, submodule.mkdir());
-        WorkingArea workingArea = new WorkingArea(submodule);
-        workingArea.init();
-        workingArea.commitEmpty("init");
-
-        w.git.clean(false);
-        assertFalse(w.exists(dirName1));
-        assertFalse(w.exists(fileName1));
-        assertFalse(w.exists(fileName2));
-        assertTrue(w.exists(dirName3));
-
-        w.git.clean(true);
-        assertFalse(w.exists(dirName3));
-    }
-
-    @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
-    public void test_clean() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        /* String starts with a surrogate character, mathematical
-         * double struck small t as the first character of the file
-         * name. The last three characters of the file name are three
-         * different forms of the a-with-ring character. Refer to
-         * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
-         * for the source of those example characters.
-         */
-        String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
-        w.touch(fileName, "content " + fileName);
-        withSystemLocaleReporting(fileName, () -> {
-            w.git.add(fileName);
-            w.git.commit(fileName);
-        });
-
-        /* JENKINS-27910 reported that certain cyrillic file names
-         * failed to delete if the encoding was not UTF-8.
-         */
-        String fileNameSwim = "\u00d0\u00bf\u00d0\u00bb\u00d0\u00b0\u00d0\u00b2\u00d0\u00b0\u00d0\u00bd\u00d0\u00b8\u00d0\u00b5-swim.png";
-        w.touch(fileNameSwim, "content " + fileNameSwim);
-        withSystemLocaleReporting(fileNameSwim, () -> {
-            w.git.add(fileNameSwim);
-            w.git.commit(fileNameSwim);
-        });
-
-        String fileNameFace = "\u00d0\u00bb\u00d0\u00b8\u00d1\u2020\u00d0\u00be-face.png";
-        w.touch(fileNameFace, "content " + fileNameFace);
-        withSystemLocaleReporting(fileNameFace, () -> {
-            w.git.add(fileNameFace);
-            w.git.commit(fileNameFace);
-        });
-
-        w.touch(".gitignore", ".test");
-        w.git.add(".gitignore");
-        w.git.commit("ignore");
-
-        String dirName1 = "\u5c4f\u5e55\u622a\u56fe-dir-not-added";
-        String fileName1 = dirName1 + File.separator + "\u5c4f\u5e55\u622a\u56fe-fileName1-not-added.xml";
-        String fileName2 = ".test-\u00f8\u00e4\u00fc\u00f6-fileName2-not-added";
-        assertTrue("Did not create dir " + dirName1, w.file(dirName1).mkdir());
-        w.touch(fileName1);
-        w.touch(fileName2);
-        w.touch(fileName, "new content");
-
-        w.git.clean();
-        assertFalse(w.exists(dirName1));
-        assertFalse(w.exists(fileName1));
-        assertFalse(w.exists(fileName2));
-        assertEquals("content " + fileName, w.contentOf(fileName));
-        assertEquals("content " + fileNameFace, w.contentOf(fileNameFace));
-        assertEquals("content " + fileNameSwim, w.contentOf(fileNameSwim));
-        String status = w.launchCommand("git", "status");
-        assertTrue("unexpected status " + status, status.contains("working directory clean") || status.contains("working tree clean"));
-
-        /* A few poorly placed tests of hudson.FilePath - testing JENKINS-22434 */
-        FilePath fp = new FilePath(w.file(fileName));
-        assertTrue(fp + " missing", fp.exists());
-
-        assertTrue("mkdir " + dirName1 + " failed", w.file(dirName1).mkdir());
-        assertTrue("dir " + dirName1 + " missing", w.file(dirName1).isDirectory());
-        FilePath dir1 = new FilePath(w.file(dirName1));
-        w.touch(fileName1);
-        assertTrue("Did not create file " + fileName1, w.file(fileName1).exists());
-
-        assertTrue(dir1 + " missing", dir1.exists());
-        dir1.deleteRecursive(); /* Fails on Linux JDK 7 with LANG=C, ok with LANG=en_US.UTF-8 */
-                                /* Java reports "Malformed input or input contains unmappable chacraters" */
-        assertFalse("Did not delete file " + fileName1, w.file(fileName1).exists());
-        assertFalse(dir1 + " not deleted", dir1.exists());
-
-        w.touch(fileName2);
-        FilePath fp2 = new FilePath(w.file(fileName2));
-
-        assertTrue(fp2 + " missing", fp2.exists());
-        fp2.delete();
-        assertFalse(fp2 + " not deleted", fp2.exists());
-
-        String dirContents = Arrays.toString((new File(w.repoPath())).listFiles());
-        String finalStatus = w.launchCommand("git", "status");
-        assertTrue("unexpected final status " + finalStatus + " dir contents: " + dirContents, finalStatus.contains("working directory clean") || finalStatus.contains("working tree clean"));
-    }
-
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
@@ -982,11 +868,6 @@ public abstract class GitAPITestCase extends TestCase {
             return; // JUnit 3 replacement for assumeThat
         }
         assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasRepo);
-    }
-
-    public void test_hasGitRepo_with_valid_git_repo() throws Exception {
-        w.init();
-        assertTrue("Valid Git repo reported as invalid", w.git.hasGitRepo());
     }
 
     public void test_push() throws Exception {
