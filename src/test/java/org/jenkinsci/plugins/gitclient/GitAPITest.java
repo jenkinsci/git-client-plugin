@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
@@ -670,6 +671,53 @@ public class GitAPITest {
         assertTrue("tag 'test' not listed", allTags.contains("test"));
         assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
         assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
+    }
+
+    @Issue("JENKINS-23299")
+    @Test
+    public void testCreateTag() throws Exception {
+        final String gitDir = testGitDir.getAbsolutePath() + File.separator + ".git";
+        workspace.commitEmpty("init");
+        ObjectId commitId = testGitClient.revParse("HEAD");
+        testGitClient.tag("test", "this is an annotated tag");
+
+        /*
+         * Spec: "test" (short tag syntax)
+         * CliGit does not support this syntax for remotes.
+         * JGit fully supports this syntax.
+         *
+         * JGit seems to have the better behavior in this case, always
+         * returning the SHA1 of the commit. Most users are using
+         * command line git, so the difference is retained in command
+         * line git for compatibility with any legacy command line git
+         * use cases which depend on returning null rather than the
+         * SHA-1 of the commit to which the annotated tag points.
+         */
+        final String shortTagRef = "test";
+        ObjectId tagHeadIdByShortRef = testGitClient.getHeadRev(gitDir, shortTagRef);
+        if (testGitClient instanceof JGitAPIImpl) {
+            assertEquals("annotated tag does not match commit SHA1", commitId, tagHeadIdByShortRef);
+        } else {
+            assertNull("annotated tag unexpectedly not null", tagHeadIdByShortRef);
+        }
+        assertEquals("annotated tag does not match commit SHA1", commitId, testGitClient.revParse(shortTagRef));
+
+        /*
+         * Spec: "refs/tags/test" (more specific tag syntax)
+         * CliGit and JGit fully support this syntax.
+         */
+        final String longTagRef = "refs/tags/test";
+        assertEquals("annotated tag does not match commit SHA1", commitId, testGitClient.getHeadRev(gitDir, longTagRef));
+        assertEquals("annotated tag does not match commit SHA1", commitId, testGitClient.revParse(longTagRef));
+
+        final String tagNames = workspace.launchCommand("git", "tag", "-l").trim();
+        assertEquals("tag not created", "test", tagNames);
+
+        final String tagNamesWithMessages = workspace.launchCommand("git", "tag", "-l", "-n1");
+        assertTrue("unexpected tag message : " + tagNamesWithMessages, tagNamesWithMessages.contains("this is an annotated tag"));
+
+        ObjectId invalidTagId = testGitClient.getHeadRev(gitDir, "not-a-valid-tag");
+        assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
     /**
