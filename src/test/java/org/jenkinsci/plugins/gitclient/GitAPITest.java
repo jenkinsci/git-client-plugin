@@ -46,6 +46,13 @@ public class GitAPITest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Rule
+    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+
+    @Rule
+    public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+
     private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
     private int logCount = 0;
@@ -115,7 +122,8 @@ public class GitAPITest {
         listener.getLogger().println(LOGGING_STARTED);
 
 //        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
-        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
+//        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
+        workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
@@ -480,7 +488,7 @@ public class GitAPITest {
         ObjectId commit1 = workspace.head();
 
         /* Clone working repo to bare repo */
-        WorkspaceWithRepo bare = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        WorkspaceWithRepo bare = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bare.initBareRepo(testGitClient, true);
         testGitClient.setRemoteUrl("origin", bare.getGitFileDir().getAbsolutePath());
         Set<Branch> remoteBranchesEmpty = testGitClient.getRemoteBranches();
@@ -595,7 +603,7 @@ public class GitAPITest {
 
     @Test
     public void testListRemoteBranches() throws Exception {
-        WorkspaceWithRepo remote = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         remote.getGitClient().init();
         final String userName = "root";
         final String emailAddress = "root@mydomain.com";
@@ -617,7 +625,7 @@ public class GitAPITest {
 
     @Test
     public void testRemoteListTagsWithFilter() throws Exception {
-        WorkspaceWithRepo remote = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, TaskListener.NULL);
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         remote.getGitClient().init();
         final String userName = "root";
         final String emailAddress = "root@mydomain.com";
@@ -638,7 +646,30 @@ public class GitAPITest {
         assertTrue("expected tag test not listed", tags.contains("test"));
         assertTrue("expected tag another_test not listed", tags.contains("another_test"));
         assertFalse("unexpected yet_another tag listed", tags.contains("yet_another"));
+    }
 
+    @Test
+    public void testRemoteListTagsWithoutFilter() throws Exception {
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        remote.getGitClient().init();
+        final String userName = "root";
+        final String emailAddress = "root@mydomain.com";
+        remote.getCliGitCommand().run("config", "user.name", userName);
+        remote.getCliGitCommand().run("config", "user.email", emailAddress);
+        remote.getGitClient().setAuthor(userName, emailAddress);
+        remote.getGitClient().setCommitter(userName, emailAddress);
+
+        remote.commitEmpty("init");
+        remote.tag("test");
+        remote.tag("another_test");
+        remote.tag("yet_another");
+
+        workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
+        workspace.launchCommand("git", "fetch",  "origin");
+        Set<String> allTags = workspace.getGitClient().getRemoteTagNames(null);
+        assertTrue("tag 'test' not listed", allTags.contains("test"));
+        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
+        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
     }
 
     /**

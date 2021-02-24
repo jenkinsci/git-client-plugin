@@ -607,23 +607,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
-    public void test_remote_list_tags_without_filter() throws Exception {
-        WorkingArea r = new WorkingArea();
-        r.init();
-        r.commitEmpty("init");
-        r.tag("test");
-        r.tag("another_test");
-        r.tag("yet_another");
-
-        w.init();
-        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
-        w.launchCommand("git", "fetch",  "origin");
-        Set<String> allTags = w.git.getRemoteTagNames(null);
-        assertTrue("tag 'test' not listed", allTags.contains("test"));
-        assertTrue("tag 'another_test' not listed", allTags.contains("another_test"));
-        assertTrue("tag 'yet_another' not listed", allTags.contains("yet_another"));
-    }
-
     @Issue("JENKINS-23299")
     public void test_create_tag() throws Exception {
         w.init();
