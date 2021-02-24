@@ -1612,24 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_revList_() throws Exception {
-        List<ObjectId> oidList = new ArrayList<>();
-        w.init();
-        w.launchCommand("git", "pull", localMirror());
-
-        RevListCommand revListCommand = w.git.revList_();
-        revListCommand.all(true);
-        revListCommand.to(oidList);
-        revListCommand.execute();
-
-        StringBuilder out = new StringBuilder();
-        for (ObjectId id : oidList) {
-            out.append(id.name()).append('\n');
-        }
-        String all = w.launchCommand("git", "rev-list", "--all");
-        assertEquals(all,out.toString());
-    }
-
     public void test_revListFirstParent() throws Exception {
         w.init();
         w.launchCommand("git", "pull", localMirror());

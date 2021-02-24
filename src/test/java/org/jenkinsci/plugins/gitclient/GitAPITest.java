@@ -882,6 +882,25 @@ public class GitAPITest {
         assertEquals(all, out.toString());
     }
 
+    @Test
+    public void testRevList_() throws Exception {
+        List<ObjectId> oidList = new ArrayList<>();
+        initializeWorkspace(workspace);
+        workspace.launchCommand("git", "pull", workspace.localMirror());
+
+        RevListCommand revListCommand = testGitClient.revList_();
+        revListCommand.all(true);
+        revListCommand.to(oidList);
+        revListCommand.execute();
+
+        final StringBuilder out = new StringBuilder();
+        for (ObjectId id : oidList) {
+            out.append(id.name()).append('\n');
+        }
+        final String all = workspace.launchCommand("git", "rev-list", "--all");
+        assertEquals(all, out.toString());
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
