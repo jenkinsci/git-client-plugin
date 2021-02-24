@@ -1,14 +1,17 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.FilePath;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.util.StreamTaskListener;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -30,6 +33,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -97,15 +101,19 @@ public class GitAPITest {
         return arguments;
     }
 
-    private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
-    }
-
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
-        Collection<String> branchNames = getBranchNames(branches);
-        for (String name : names) {
-            assertThat(branchNames, hasItem(name));
-        }
+    @BeforeClass
+    public static void loadLocalMirror() throws Exception {
+        /* Prime the local mirror cache before other tests run */
+        /* Allow 2-5 second delay before priming the cache */
+        /* Allow other tests a better chance to prime the cache */
+        /* 2-5 second delay is small compared to execution time of this test */
+        Random random = new Random();
+        Thread.sleep((2 + random.nextInt(4)) * 1000L); // Wait 2-5 seconds before priming the cache
+        TaskListener mirrorListener = StreamTaskListener.fromStdout();
+        File tempDir = Files.createTempDirectory("PrimeGITAPITest").toFile();
+        WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
+        cache.localMirror();
+        Util.deleteRecursive(tempDir);
     }
 
     @Before
@@ -134,6 +142,17 @@ public class GitAPITest {
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
+    }
+
+    private Collection<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).collect(toList());
+    }
+
+    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+        Collection<String> branchNames = getBranchNames(branches);
+        for (String name : names) {
+            assertThat(branchNames, hasItem(name));
+        }
     }
 
     @Test
@@ -848,6 +867,19 @@ public class GitAPITest {
         assertFalse(workspace2.exists(".git/refs/remotes/origin/b1"));
         assertTrue( workspace2.exists(".git/refs/remotes/origin/b2"));
         assertFalse(workspace2.exists(".git/refs/remotes/origin/b3"));
+    }
+
+    @Test
+    public void testRevListAll() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.launchCommand("git", "pull", workspace.localMirror());
+
+        final StringBuilder out = new StringBuilder();
+        for (ObjectId id : testGitClient.revListAll()) {
+            out.append(id.name()).append('\n');
+        }
+        final String all = workspace.launchCommand("git", "rev-list", "--all");
+        assertEquals(all, out.toString());
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
