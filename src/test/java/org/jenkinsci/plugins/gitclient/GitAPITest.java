@@ -20,6 +20,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -759,6 +760,25 @@ public class GitAPITest {
             return;
         }
         assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasGitRepo);
+    }
+
+    @Test
+    public void testPush() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.commitEmpty("init");
+        workspace.touch(testGitDir, "file1", "");
+        workspace.tag("file1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        ObjectId sha1 = workspace.head();
+
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        remote.initBareRepo(remote.getGitClient(), true);
+        workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
+
+        testGitClient.push("origin", "master");
+        String remoteSha1 = remote.launchCommand("git", "rev-parse", "master").substring(0, 40);
+        assertEquals(sha1.name(), remoteSha1);
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {

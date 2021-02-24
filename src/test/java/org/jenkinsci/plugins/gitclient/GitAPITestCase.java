@@ -613,23 +613,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
     }
 
-    public void test_push() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.touch("file1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        ObjectId sha1 = w.head();
-
-        WorkingArea r = new WorkingArea();
-        r.init(true);
-        w.launchCommand("git", "remote", "add", "origin", r.repoPath());
-
-        w.git.push("origin", "master");
-        String remoteSha1 = r.launchCommand("git", "rev-parse", "master").substring(0, 40);
-        assertEquals(sha1.name(), remoteSha1);
-    }
-
     @Deprecated
     public void test_push_deprecated_signature() throws Exception {
         /* Make working repo a remote of the bare repo */
