@@ -901,6 +901,30 @@ public class GitAPITest {
         assertEquals(all, out.toString());
     }
 
+    @Test
+    public void testRevListFirstParent() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.launchCommand("git", "pull", workspace.localMirror());
+
+        for (Branch b : testGitClient.getRemoteBranches()) {
+            final StringBuilder out = new StringBuilder();
+            List<ObjectId> oidList = new ArrayList<>();
+
+            RevListCommand revListCommand = testGitClient.revList_();
+            revListCommand.firstParent(true);
+            revListCommand.to(oidList);
+            revListCommand.reference(b.getName());
+            revListCommand.execute();
+
+            for (ObjectId id : oidList) {
+                out.append(id.name()).append('\n');
+            }
+
+            final String all = workspace.launchCommand("git", "rev-list", "--first-parent",  b.getName());
+            assertEquals(all, out.toString());
+        }
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
