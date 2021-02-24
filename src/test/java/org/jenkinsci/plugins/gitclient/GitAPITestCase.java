@@ -1611,44 +1611,6 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea subModuleVerify = new WorkingArea(w.repo);
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
-    
-
-    @Issue("JENKINS-12402")
-    public void test_merge_fast_forward_mode_ff() throws Exception {
-        w.init();
-
-        w.commitEmpty("init");
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        final ObjectId branch1 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-        final ObjectId branch2 = w.head();
-
-        w.git.checkout().ref("master").execute();
-
-        // The first merge is a fast-forward, master moves to branch1
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        assertEquals("Fast-forward merge failed. master and branch1 should be the same.",w.head(),branch1);
-
-        // The second merge calls for fast-forward (FF), but a merge commit will result
-        // This tests that calling for FF gracefully falls back to a commit merge
-        // master moves to a new commit ahead of branch1 and branch2
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
-        // The merge commit (head) should have branch2 and branch1 as parents
-        List<ObjectId> revList = w.git.revList("HEAD^1");
-        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
-        revList = w.git.revList("HEAD^2");
-        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
-    }
 
     public void test_merge_fast_forward_mode_ff_only() throws Exception {
         w.init();

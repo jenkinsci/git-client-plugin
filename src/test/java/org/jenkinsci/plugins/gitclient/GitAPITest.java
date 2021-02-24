@@ -984,6 +984,43 @@ public class GitAPITest {
         }
     }
 
+    @Issue("JENKINS-12402")
+    @Test
+    public void testMergeFastForwardModeFF() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.commitEmpty("init");
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        final ObjectId branch1 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.branch("branch2");
+        testGitClient.checkout().ref("branch2").execute();
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+        final ObjectId branch2 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+
+        // The first merge is a fast-forward, master moves to branch1
+        testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        assertEquals("Fast-forward merge failed. master and branch1 should be the same.", workspace.head(), branch1);
+
+        // The second merge calls for fast-forward (FF), but a merge commit will result
+        // This tests that calling for FF gracefully falls back to a commit merge
+        // master moves to a new commit ahead of branch1 and branch2
+        testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
+        // The merge commit (head) should have branch2 and branch1 as parents
+        List<ObjectId> revList = testGitClient.revList("HEAD^1");
+        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
+        revList = testGitClient.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
