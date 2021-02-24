@@ -1611,29 +1611,7 @@ public abstract class GitAPITestCase extends TestCase {
         WorkingArea subModuleVerify = new WorkingArea(w.repo);
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
-
-    public void test_merge_strategy_correct_fail() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file", "content1");
-        w.git.add("file");
-        w.git.commit("commit1");
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        w.touch("file", "content2");
-        w.git.add("file");
-        w.git.commit("commit2");
-        try {
-            w.git.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-            fail();
-        }
-        catch (GitException e) {
-            // expected
-        }
-    }
+    
 
     @Issue("JENKINS-12402")
     public void test_merge_fast_forward_mode_ff() throws Exception {

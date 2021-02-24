@@ -961,6 +961,29 @@ public class GitAPITest {
         assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f, "UTF-8"));
     }
 
+    @Test
+    public void testMergeStrategyCorrectFail() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.commitEmpty("init");
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file", "content1");
+        testGitClient.add("file");
+        testGitClient.commit("commit1");
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.branch("branch2");
+        testGitClient.checkout().ref("branch2").execute();
+        workspace.touch(testGitDir, "file", "content2");
+        testGitClient.add("file");
+        testGitClient.commit("commit2");
+        try {
+            testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+            fail();
+        } catch (GitException ge) {
+            //expected
+        }
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
