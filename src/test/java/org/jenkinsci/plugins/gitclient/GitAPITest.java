@@ -4,7 +4,9 @@ import hudson.FilePath;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,6 +55,9 @@ public class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+
+    @Rule
+    public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
 
     private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
@@ -810,6 +815,39 @@ public class GitAPITest {
         // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
         // note that CR itself is left as is
         assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", workspace.launchCommand("git", "notes", "show"));
+    }
+
+    @Test
+    public void testPrune() throws Exception {
+        // pretend that 'teamWorkspace' is a team repository and workspace1 and workspace2 are team members
+        WorkspaceWithRepo teamWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        teamWorkspace.initBareRepo(teamWorkspace.getGitClient(), true);
+
+        WorkspaceWithRepo workspace1 = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
+        initializeWorkspace(workspace1);
+        initializeWorkspace(workspace);
+        WorkspaceWithRepo workspace2 = workspace;
+
+        workspace1.commitEmpty("c");
+        workspace1.launchCommand("git", "remote", "add", "origin", teamWorkspace.getGitFileDir().getAbsolutePath());
+
+        workspace1.launchCommand("git", "push", "origin", "master:b1");
+        workspace1.launchCommand("git", "push", "origin", "master:b2");
+        workspace1.launchCommand("git", "push", "origin", "master");
+
+        workspace2.launchCommand("git", "remote", "add", "origin", teamWorkspace.getGitFileDir().getAbsolutePath());
+        workspace2.launchCommand("git", "fetch", "origin");
+
+        // at this point both ws1&ws2 have several remote tracking branches
+
+        workspace1.launchCommand("git", "push", "origin", ":b1");
+        workspace1.launchCommand("git", "push", "origin", "master:b3");
+
+        workspace2.getGitClient().prune(new RemoteConfig(new Config(),"origin"));
+
+        assertFalse(workspace2.exists(".git/refs/remotes/origin/b1"));
+        assertTrue( workspace2.exists(".git/refs/remotes/origin/b2"));
+        assertFalse(workspace2.exists(".git/refs/remotes/origin/b3"));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
