@@ -925,6 +925,21 @@ public class GitAPITest {
         }
     }
 
+    @Test
+    public void testRevList() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.launchCommand("git", "pull", workspace.localMirror());
+
+        for (Branch b : testGitClient.getRemoteBranches()) {
+            final StringBuilder out = new StringBuilder();
+            for (ObjectId id : testGitClient.revList(b.getName())) {
+                out.append(id.name()).append('\n');
+            }
+            String all = workspace.launchCommand("git", "rev-list", b.getName());
+            assertEquals(all, out.toString());
+        }
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();

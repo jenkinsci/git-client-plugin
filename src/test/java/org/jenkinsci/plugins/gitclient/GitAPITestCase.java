@@ -1612,20 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_revList() throws Exception {
-        w.init();
-        w.launchCommand("git", "pull", localMirror());
-
-        for (Branch b : w.git.getRemoteBranches()) {
-            StringBuilder out = new StringBuilder();
-            for (ObjectId id : w.git.revList(b.getName())) {
-                out.append(id.name()).append('\n');
-            }
-            String all = w.launchCommand("git", "rev-list", b.getName());
-            assertEquals(all,out.toString());
-        }
-    }
-
     public void test_merge_strategy() throws Exception {
         w.init();
         w.commitEmpty("init");
