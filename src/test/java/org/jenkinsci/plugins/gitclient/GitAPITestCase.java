@@ -607,18 +607,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
-    public void test_revparse_throws_expected_exception() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        try {
-            w.git.revParse("unknown-rev-to-parse");
-            fail("Did not throw exception");
-        } catch (GitException ge) {
-            final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains("unknown-rev-to-parse"));
-        }
-    }
-
     public void test_hasGitRepo_without_git_directory() throws Exception
     {
         setTimeoutVisibleInCurrentTest(false);

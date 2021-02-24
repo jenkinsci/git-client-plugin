@@ -721,7 +721,7 @@ public class GitAPITest {
     }
 
     @Test
-    public void testRevParseSHA1HEADorTag() throws Exception {
+    public void testRevparseSHA1HEADorTag() throws Exception {
         workspace.commitEmpty("init");
         workspace.touch(testGitDir, "file1", "");
         testGitClient.add("file1");
@@ -731,6 +731,18 @@ public class GitAPITest {
         assertEquals(sha1, testGitClient.revParse(sha1).name());
         assertEquals(sha1, testGitClient.revParse("HEAD").name());
         assertEquals(sha1, testGitClient.revParse("test").name());
+    }
+
+    @Test
+    public void testRevparseThrowsExpectedException() throws Exception {
+        workspace.commitEmpty("init");
+        try {
+            testGitClient.revParse("unknown-rev-to-parse");
+            fail("Did not throw exception");
+        } catch (GitException ge) {
+            final String msg = ge.getMessage();
+            assertTrue("Wrong exception: " + msg, msg.contains("unknown-rev-to-parse"));
+        }
     }
 
     /**
