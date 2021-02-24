@@ -1612,41 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_fast_forward_mode_ff_only() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        final ObjectId branch1 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-        final ObjectId branch2 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        final ObjectId master = w.head();
-
-        // The first merge is a fast-forward, master moves to branch1
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        assertEquals("Fast-forward merge failed. master and branch1 should be the same but aren't.",w.head(),branch1);
-
-        // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
-        try {
-            w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
-            fail("Exception not thrown: the fast-forward only mode should have failed");
-        } catch (GitException e) {
-            // expected
-            assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",w.head(),branch1);
-        }
-    }
-
     public void test_merge_fast_forward_mode_no_ff() throws Exception {
         w.init();
         w.commitEmpty("init");

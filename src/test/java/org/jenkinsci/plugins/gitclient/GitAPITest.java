@@ -1021,6 +1021,41 @@ public class GitAPITest {
         assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
     }
 
+    @Test
+    public void testMergeFastForwardModeFFOnly() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.commitEmpty("init");
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        final ObjectId branch1 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.branch("branch2");
+        testGitClient.checkout().ref("branch2").execute();
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+        final ObjectId branch2 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+
+        // The first merge is a fast-forward only (FF_ONLY), master moves to branch1
+        testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        assertEquals("Fast-forward merge failed. master and branch1 should be the same but aren't.", workspace.head(), branch1);
+
+        // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
+        try {
+            testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
+            fail("Exception not thrown: the fast-forward only mode should have failed");
+        } catch (GitException ge) {
+            // expected
+            assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",workspace.head(),branch1);
+        }
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
