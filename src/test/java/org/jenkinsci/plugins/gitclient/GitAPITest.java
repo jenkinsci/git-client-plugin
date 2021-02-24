@@ -20,7 +20,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -780,6 +779,24 @@ public class GitAPITest {
         String remoteSha1 = remote.launchCommand("git", "rev-parse", "master").substring(0, 40);
         assertEquals(sha1.name(), remoteSha1);
     }
+
+    @Test
+    public void testNotesAddFirstNote() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.touch(testGitDir, "file1", "");
+        testGitClient.add("file1");
+        workspace.commitEmpty("init");
+
+        testGitClient.addNote("foo", "commits");
+        assertEquals("foo\n", workspace.launchCommand("git", "notes", "show"));
+        testGitClient.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
+        // cgit normalizes CR+LF aggressively
+        // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
+        // note that CR itself is left as is
+        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", workspace.launchCommand("git", "notes", "show"));
+    }
+
+
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();

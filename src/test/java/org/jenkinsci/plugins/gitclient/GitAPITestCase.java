@@ -684,21 +684,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_notes_add_first_note() throws Exception {
-        w.init();
-        w.touch("file1");
-        w.git.add("file1");
-        w.commitEmpty("init");
-
-        w.git.addNote("foo", "commits");
-        assertEquals("foo\n", w.launchCommand("git", "notes", "show"));
-        w.git.appendNote("alpha\rbravo\r\ncharlie\r\n\r\nbar\n\n\nzot\n\n", "commits");
-        // cgit normalizes CR+LF aggressively
-        // it appears to be collpasing CR+LF to LF, then truncating duplicate LFs down to 2
-        // note that CR itself is left as is
-        assertEquals("foo\n\nalpha\rbravo\ncharlie\n\nbar\n\nzot\n", w.launchCommand("git", "notes", "show"));
-    }
-
     public void test_notes_append_first_note() throws Exception {
         w.init();
         w.touch("file1");
