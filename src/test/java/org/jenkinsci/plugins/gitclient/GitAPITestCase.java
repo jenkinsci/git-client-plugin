@@ -1612,24 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_strategy() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file", "content1");
-        w.git.add("file");
-        w.git.commit("commit1");
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        File f = w.touch("file", "content2");
-        w.git.add("file");
-        w.git.commit("commit2");
-        w.git.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f));
-    }
-
     public void test_merge_strategy_correct_fail() throws Exception {
         w.init();
         w.commitEmpty("init");

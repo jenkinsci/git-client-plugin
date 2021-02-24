@@ -6,6 +6,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -938,6 +939,26 @@ public class GitAPITest {
             String all = workspace.launchCommand("git", "rev-list", b.getName());
             assertEquals(all, out.toString());
         }
+    }
+
+    @Test
+    public void testMergeStrategy() throws Exception {
+        initializeWorkspace(workspace);
+        workspace.commitEmpty("init");
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file", "content1");
+        testGitClient.add("file");
+        testGitClient.commit("commit1");
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.branch("branch2");
+        testGitClient.checkout().ref("branch2").execute();
+        workspace.touch(testGitDir,"file", "content2");
+        File f = workspace.file("file");
+        testGitClient.add("file");
+        testGitClient.commit("commit2");
+        testGitClient.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f, "UTF-8"));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
