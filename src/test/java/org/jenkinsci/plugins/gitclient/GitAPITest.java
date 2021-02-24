@@ -64,8 +64,6 @@ public class GitAPITest {
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
 
-    private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
-
     private int logCount = 0;
     private final Random random = new Random();
     private static final String LOGGING_STARTED = "Logging started";
@@ -143,6 +141,7 @@ public class GitAPITest {
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
+        initializeWorkspace(workspace);
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
@@ -158,7 +157,6 @@ public class GitAPITest {
 
     @Test
     public void testGetRemoteUrl() throws Exception {
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
         workspace.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = workspace.getGitClient().getRemoteUrl("origin");
@@ -168,7 +166,6 @@ public class GitAPITest {
 
     @Test
     public void testEmptyComment() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init-empty-comment-to-tag-fails-on-windows");
         if (isWindows()) {
             testGitClient.tag("non-empty-comment", "empty-tag-comment-fails-on-windows");
@@ -179,7 +176,6 @@ public class GitAPITest {
 
     @Test
     public void testCreateBranch() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("test");
         String branches = workspace.launchCommand("git", "branch", "-l");
@@ -189,7 +185,6 @@ public class GitAPITest {
 
     @Test
     public void testDeleteBranch() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("test");
         testGitClient.deleteBranch("test");
@@ -205,7 +200,6 @@ public class GitAPITest {
 
     @Test
     public void testDeleteTag() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.tag("test");
         workspace.tag("another");
@@ -223,7 +217,6 @@ public class GitAPITest {
 
     @Test
     public void testListTagsWithFilter() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.tag("test");
         workspace.tag("another_test");
@@ -236,7 +229,6 @@ public class GitAPITest {
 
     @Test
     public void testListTagsWithoutFilter() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.tag("test");
         workspace.tag("another_test");
@@ -250,7 +242,6 @@ public class GitAPITest {
     @Issue("JENKINS-37794")
     @Test
     public void testGetTagNamesSupportsSlashesInTagNames() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init-getTagNames-supports-slashes");
         testGitClient.tag("no-slash", "Tag without a /");
         Set<String> tags = testGitClient.getTagNames(null);
@@ -277,7 +268,6 @@ public class GitAPITest {
 
     @Test
     public void testListBranchesContainingRef() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("test");
         testGitClient.branch("another");
@@ -288,7 +278,6 @@ public class GitAPITest {
 
     @Test
     public void testListTagsStarFilter() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.tag("test");
         workspace.tag("another_test");
@@ -301,7 +290,6 @@ public class GitAPITest {
 
     @Test
     public void testTagExists() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.tag("test");
         assertTrue(testGitClient.tagExists("test"));
@@ -310,7 +298,6 @@ public class GitAPITest {
 
     @Test
     public void testGetTagMessage() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.launchCommand("git", "tag", "test", "-m", "this-is-a-test");
         assertEquals("this-is-a-test", testGitClient.getTagMessage("test"));
@@ -318,7 +305,6 @@ public class GitAPITest {
 
     @Test
     public void testGetTagMessageMultiLine() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.launchCommand("git", "tag", "test", "-m", "test 123!\n* multi-line tag message\n padded ");
 
@@ -330,7 +316,6 @@ public class GitAPITest {
 
     @Test
     public void testCreateRef() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
         assertTrue("test ref not created", workspace.launchCommand("git", "show-ref").contains("refs/testing/testref"));
@@ -338,7 +323,6 @@ public class GitAPITest {
 
     @Test
     public void testDeleteRef() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
         testGitClient.ref("refs/testing/anotherref");
@@ -351,7 +335,6 @@ public class GitAPITest {
 
     @Test
     public void testListRefsWithPrefix() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
         testGitClient.ref("refs/testing/nested/anotherref");
@@ -364,7 +347,6 @@ public class GitAPITest {
 
     @Test
     public void testListRefsWithoutPrefix() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
         testGitClient.ref("refs/testing/nested/anotherref");
@@ -377,7 +359,6 @@ public class GitAPITest {
 
     @Test
     public void testRefExists() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
         assertTrue(testGitClient.refExists("refs/testing/testref"));
@@ -387,13 +368,11 @@ public class GitAPITest {
 
     @Test
     public void testHasGitRepoWithValidGitRepo() throws Exception {
-        initializeWorkspace(workspace);
         assertTrue("Valid Git repo reported as invalid", testGitClient.hasGitRepo());
     }
 
     @Test
     public void testCleanWithParameter() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
 
         final String dirName1 = "dir1";
@@ -430,7 +409,6 @@ public class GitAPITest {
     @Issue({"JENKINS-20410", "JENKINS-27910", "JENKINS-22434"})
     @Test
     public void testClean() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
 
         /* String starts with a surrogate character, mathematical
@@ -520,7 +498,6 @@ public class GitAPITest {
 
     @Test
     public void testPushTags() throws Exception {
-        initializeWorkspace(workspace);
         /* Working Repo with commit */
         final String fileName1 = "file1";
         workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
@@ -607,7 +584,6 @@ public class GitAPITest {
     @Issue("JENKINS-34309")
     @Test
     public void testListBranches() throws Exception {
-        initializeWorkspace(workspace);
         Set<Branch> branches = testGitClient.getBranches();
         assertEquals(0, branches.size()); // empty repo should have 0 branches
         workspace.commitEmpty("init");
@@ -651,7 +627,6 @@ public class GitAPITest {
         remote.getGitClient().branch("test");
         remote.getGitClient().branch("another");
 
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
         workspace.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = testGitClient.getRemoteBranches();
@@ -668,7 +643,6 @@ public class GitAPITest {
         remote.tag("another_test");
         remote.tag("yet_another");
 
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
         workspace.launchCommand("git", "fetch", "origin");
         Set<String> local_tags = testGitClient.getTagNames("*test");
@@ -687,7 +661,6 @@ public class GitAPITest {
         remote.tag("another_test");
         remote.tag("yet_another");
 
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
         workspace.launchCommand("git", "fetch",  "origin");
         Set<String> allTags = workspace.getGitClient().getRemoteTagNames(null);
@@ -699,7 +672,6 @@ public class GitAPITest {
     @Issue("JENKINS-23299")
     @Test
     public void testCreateTag() throws Exception {
-        initializeWorkspace(workspace);
         final String gitDir = testGitDir.getAbsolutePath() + File.separator + ".git";
         workspace.commitEmpty("init");
         ObjectId commitId = testGitClient.revParse("HEAD");
@@ -746,7 +718,6 @@ public class GitAPITest {
 
     @Test
     public void testRevparseSHA1HEADorTag() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.touch(testGitDir, "file1", "");
         testGitClient.add("file1");
@@ -760,7 +731,6 @@ public class GitAPITest {
 
     @Test
     public void testRevparseThrowsExpectedException() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         try {
             testGitClient.revParse("unknown-rev-to-parse");
@@ -772,23 +742,7 @@ public class GitAPITest {
     }
 
     @Test
-    public void testHasGitRepoWithInvalidGitRepo() throws Exception {
-        // Create an empty directory named .git - "corrupt" git repo
-        File emptyDotGitDir = workspace.file(".git");
-        assertTrue("mkdir .git failed", emptyDotGitDir.mkdir());
-        boolean hasGitRepo = testGitClient.hasGitRepo();
-        // Don't assert condition if the temp directory is inside the dev dir.
-        // CLI git searches up the directory tree seeking a '.git' directory.
-        // If it finds such a directory, it uses it.
-        if (emptyDotGitDir.getAbsolutePath().contains("target") && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
-            return;
-        }
-        assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasGitRepo);
-    }
-
-    @Test
     public void testPush() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         workspace.touch(testGitDir, "file1", "");
         workspace.tag("file1");
@@ -807,7 +761,6 @@ public class GitAPITest {
 
     @Test
     public void testNotesAddFirstNote() throws Exception {
-        initializeWorkspace(workspace);
         workspace.touch(testGitDir, "file1", "");
         testGitClient.add("file1");
         workspace.commitEmpty("init");
@@ -845,7 +798,6 @@ public class GitAPITest {
 
         WorkspaceWithRepo workspace1 = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         initializeWorkspace(workspace1);
-        initializeWorkspace(workspace);
         WorkspaceWithRepo workspace2 = workspace;
 
         workspace1.commitEmpty("c");
@@ -872,7 +824,6 @@ public class GitAPITest {
 
     @Test
     public void testRevListAll() throws Exception {
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "pull", workspace.localMirror());
 
         final StringBuilder out = new StringBuilder();
@@ -886,7 +837,6 @@ public class GitAPITest {
     @Test
     public void testRevList_() throws Exception {
         List<ObjectId> oidList = new ArrayList<>();
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "pull", workspace.localMirror());
 
         RevListCommand revListCommand = testGitClient.revList_();
@@ -904,7 +854,6 @@ public class GitAPITest {
 
     @Test
     public void testRevListFirstParent() throws Exception {
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "pull", workspace.localMirror());
 
         for (Branch b : testGitClient.getRemoteBranches()) {
@@ -928,7 +877,6 @@ public class GitAPITest {
 
     @Test
     public void testRevList() throws Exception {
-        initializeWorkspace(workspace);
         workspace.launchCommand("git", "pull", workspace.localMirror());
 
         for (Branch b : testGitClient.getRemoteBranches()) {
@@ -943,7 +891,6 @@ public class GitAPITest {
 
     @Test
     public void testMergeStrategy() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("branch1");
         testGitClient.checkout().ref("branch1").execute();
@@ -963,7 +910,6 @@ public class GitAPITest {
 
     @Test
     public void testMergeStrategyCorrectFail() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("branch1");
         testGitClient.checkout().ref("branch1").execute();
@@ -987,7 +933,6 @@ public class GitAPITest {
     @Issue("JENKINS-12402")
     @Test
     public void testMergeFastForwardModeFF() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("branch1");
         testGitClient.checkout().ref("branch1").execute();
@@ -1023,7 +968,6 @@ public class GitAPITest {
 
     @Test
     public void testMergeFastForwardModeFFOnly() throws Exception {
-        initializeWorkspace(workspace);
         workspace.commitEmpty("init");
         testGitClient.branch("branch1");
         testGitClient.checkout().ref("branch1").execute();
