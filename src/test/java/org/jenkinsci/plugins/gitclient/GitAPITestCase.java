@@ -606,19 +606,6 @@ public abstract class GitAPITestCase extends TestCase {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
-    
-    public void test_revparse_sha1_HEAD_or_tag() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        w.touch("file1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        w.tag("test");
-        String sha1 = w.launchCommand("git", "rev-parse", "HEAD").substring(0,40);
-        assertEquals(sha1, w.git.revParse(sha1).name());
-        assertEquals(sha1, w.git.revParse("HEAD").name());
-        assertEquals(sha1, w.git.revParse("test").name());
-    }
 
     public void test_revparse_throws_expected_exception() throws Exception {
         w.init();

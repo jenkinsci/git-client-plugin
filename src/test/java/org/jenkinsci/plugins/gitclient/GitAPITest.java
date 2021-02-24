@@ -720,6 +720,19 @@ public class GitAPITest {
         assertNull("did not expect reference for invalid tag but got : " + invalidTagId, invalidTagId);
     }
 
+    @Test
+    public void testRevParseSHA1HEADorTag() throws Exception {
+        workspace.commitEmpty("init");
+        workspace.touch(testGitDir, "file1", "");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        workspace.tag("test");
+        final String sha1 = workspace.launchCommand("git", "rev-parse", "HEAD").substring(0, 40);
+        assertEquals(sha1, testGitClient.revParse(sha1).name());
+        assertEquals(sha1, testGitClient.revParse("HEAD").name());
+        assertEquals(sha1, testGitClient.revParse("test").name());
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
