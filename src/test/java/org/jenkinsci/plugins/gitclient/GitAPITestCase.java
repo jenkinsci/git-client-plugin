@@ -1612,36 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_prune() throws Exception {
-        // pretend that 'r' is a team repository and ws1 and ws2 are team members
-        WorkingArea r = new WorkingArea();
-        r.init(true);
-
-        WorkingArea ws1 = new WorkingArea().init();
-        WorkingArea ws2 = w.init();
-
-        ws1.commitEmpty("c");
-        ws1.launchCommand("git", "remote", "add", "origin", r.repoPath());
-
-        ws1.launchCommand("git", "push", "origin", "master:b1");
-        ws1.launchCommand("git", "push", "origin", "master:b2");
-        ws1.launchCommand("git", "push", "origin", "master");
-
-        ws2.launchCommand("git", "remote", "add", "origin", r.repoPath());
-        ws2.launchCommand("git", "fetch", "origin");
-
-        // at this point both ws1&ws2 have several remote tracking branches
-
-        ws1.launchCommand("git", "push", "origin", ":b1");
-        ws1.launchCommand("git", "push", "origin", "master:b3");
-
-        ws2.git.prune(new RemoteConfig(new Config(),"origin"));
-
-        assertFalse(ws2.exists(".git/refs/remotes/origin/b1"));
-        assertTrue( ws2.exists(".git/refs/remotes/origin/b2"));
-        assertFalse(ws2.exists(".git/refs/remotes/origin/b3"));
-    }
-
     public void test_revListAll() throws Exception {
         w.init();
         w.launchCommand("git", "pull", localMirror());
