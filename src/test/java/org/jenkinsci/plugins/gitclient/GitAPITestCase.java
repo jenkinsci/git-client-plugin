@@ -1612,39 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_with_message() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        // First commit to branch1
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        // Merge branch1 into master
-        w.git.checkout().ref("master").execute();
-        String mergeMessage = "Merge message to be tested.";
-        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        // Obtain last commit message
-        String resultMessage = "";
-        final List<String> content = w.git.showRevision(w.head());
-        if ("gpgsig -----BEGIN PGP SIGNATURE-----".equals(content.get(6).trim())) {
-            //Commit is signed so the commit message is after the signature
-            for (int i = 6; i < content.size(); i++) {
-                if(content.get(i).trim().equals("-----END PGP SIGNATURE-----")) {
-                    resultMessage = content.get(i+2).trim();
-                    break;
-                }
-            }
-        } else {
-            resultMessage = content.get(7).trim();
-        }
-
-        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
-    }
-
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();

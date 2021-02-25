@@ -1139,6 +1139,39 @@ public class GitAPITest {
         assertEquals("Commit merge failed. Should have committed the merge.", 2, commitCountAfter - commitCountBefore);
     }
 
+    @Test
+    public void testMergeWithMessage() throws Exception {
+        workspace.commitEmpty("init");
+
+        //Create branch1 and commit a file
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Merge branch1 into master
+        testGitClient.checkout().ref("master").execute();
+        final String mergeMessage = "Merge message to be tested.";
+        testGitClient.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        //Obtain last commit message
+        String resultMessage = "";
+        final List<String> content = testGitClient.showRevision(workspace.head());
+        if ("gpgsig -----BEGIN PGP SIGNATURE-----".equals(content.get(6).trim())) {
+            //Commit is signed so the commit message is after the signature
+            for (int i = 6; i < content.size(); i++) {
+                if (content.get(i).trim().equals("-----END PGP SIGNATURE-----")) {
+                    resultMessage = content.get(i + 2).trim();
+                    break;
+                }
+            }
+        } else {
+            resultMessage = content.get(7).trim();
+        }
+
+        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
