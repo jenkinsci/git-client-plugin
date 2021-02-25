@@ -1612,49 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_fast_forward_mode_no_ff() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        final ObjectId base = w.head();
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        final ObjectId branch1 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-        final ObjectId branch2 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        final ObjectId master = w.head();
-
-        // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-
-        // The first merge will have base and branch1 as parents
-        List<ObjectId> revList = w.git.revList("HEAD^1");
-        assertEquals("Merge commit failed. base should be a parent of HEAD but it isn't.",revList.get(0).name(), base.name());
-        revList = w.git.revList("HEAD^2");
-        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
-
-        final ObjectId base2 = w.head();
-
-        // Calling for NO_FF when required is expected to work
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
-
-        // The second merge will have base2 and branch2 as parents
-        revList = w.git.revList("HEAD^1");
-        assertEquals("Merge commit failed. base2 should be a parent of HEAD but it isn't.",revList.get(0).name(), base2.name());
-        revList = w.git.revList("HEAD^2");
-        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
-    }
-
     public void test_merge_squash() throws Exception{
         w.init();
         w.commitEmpty("init");
