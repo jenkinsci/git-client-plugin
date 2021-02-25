@@ -1118,6 +1118,27 @@ public class GitAPITest {
         assertEquals("No Commit merge failed. Shouldn't have committed any changes.", commitCountBefore, commitCountAfter);
     }
 
+    @Test
+    public void testMergeCommit() throws Exception {
+        workspace.commitEmpty("init");
+
+        //Create branch1 and commit a file
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Merge branch1 with master, without committing the merge.
+        //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
+        testGitClient.checkout().ref("master").execute();
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Commit merge failed. Should have committed the merge.", 2, commitCountAfter - commitCountBefore);
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();

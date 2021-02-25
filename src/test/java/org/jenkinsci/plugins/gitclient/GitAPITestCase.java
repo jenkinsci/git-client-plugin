@@ -1612,27 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_commit() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-
-        //Create branch1 and commit a file
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Merge branch1 with master, without committing the merge.
-        //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
-        w.git.checkout().ref("master").execute();
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("Commit merge failed. Should have committed the merge.", 2, commitCountAfter - commitCountBefore);
-    }
-
     public void test_merge_with_message() throws Exception {
         w.init();
         w.commitEmpty("init");
