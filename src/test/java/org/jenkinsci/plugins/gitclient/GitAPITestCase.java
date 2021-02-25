@@ -1667,21 +1667,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
     }
 
-    @Issue("JENKINS-25444")
-    public void test_fetch_delete_cleans() throws Exception {
-        w.init();
-        w.touch("file1", "old");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        w.touch("file1", "new");
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().branch("other").ref(Constants.HEAD).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
-
-        Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
-
-        assertTrue("Workspace must be clean", status.isClean());
-    }
-
     /**
      * Test getHeadRev with wildcard matching in the branch name.
      * Relies on the branches in the git-client-plugin repository

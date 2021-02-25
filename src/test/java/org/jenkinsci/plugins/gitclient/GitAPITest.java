@@ -10,6 +10,7 @@ import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -1311,6 +1312,21 @@ public class GitAPITest {
         // Clone it with no checkout
         testGitClient.clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
         assertFalse(workspace.exists("file1"));
+    }
+
+    @Issue("JENKINS-25444")
+    @Test
+    public void testFetchDeleteCleans() throws Exception {
+        workspace.touch(testGitDir, "file1", "old");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        workspace.touch(testGitDir, "file1", "new");
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        testGitClient.checkout().branch("other").ref(Constants.HEAD).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
+
+        Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+
+        assertTrue("Workspace must be clean", status.isClean());
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
