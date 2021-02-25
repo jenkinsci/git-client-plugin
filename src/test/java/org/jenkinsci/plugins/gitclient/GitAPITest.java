@@ -7,6 +7,8 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -1170,6 +1172,77 @@ public class GitAPITest {
         }
 
         assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
+    }
+
+    @Test
+    public void testRebasePassesWithoutConflict() throws Exception {
+        workspace.commitEmpty("init");
+
+        //First commit to master
+        workspace.touch(testGitDir, "master_file", "master1");
+        testGitClient.add("master_file");
+        testGitClient.commit("commit-master1");
+
+        //Create a feature branch and make a commit
+        testGitClient.branch("feature1");
+        testGitClient.checkout().ref("feature1").execute();
+        workspace.touch(testGitDir, "feature_file", "feature1");
+        testGitClient.add("feature_file");
+        testGitClient.commit("commit-feature1");
+
+        //Second commit to master
+        testGitClient.checkout().ref("master").execute();
+        workspace.touch(testGitDir, "master_file", "master2");
+        testGitClient.add("master_file");
+        testGitClient.commit("commit-master2");
+
+        //Rebase feature commit onto master
+        testGitClient.checkout().ref("feature1").execute();
+        testGitClient.rebase().setUpstream("master").execute();
+
+        assertThat("Should've rebased feature1 onto master", testGitClient.revList("feature1").contains(testGitClient.revParse("master")));
+        assertEquals("HEAD should be on the rebased branch", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+        assertThat("Rebased file should be present in the worktree", testGitClient.getWorkTree().child("feature_file").exists());
+    }
+
+    @Test
+    public void testRebaseFailsWithConflict() throws Exception {
+        workspace.commitEmpty("init");
+
+        // First commit to master
+        workspace.touch(testGitDir, "file", "master1");
+        testGitClient.add("file");
+        testGitClient.commit("commit-master1");
+
+        //Create a feature branch and make a commit
+        testGitClient.branch("feature1");
+        testGitClient.checkout().ref("feature1").execute();
+        workspace.touch(testGitDir, "file", "feature1");
+        testGitClient.add("file");
+        testGitClient.commit("commit-feature1");
+
+        //Second commit to master
+        testGitClient.checkout().ref("master").execute();
+        workspace.touch(testGitDir, "file", "master2");
+        testGitClient.add("file");
+        testGitClient.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        testGitClient.checkout().ref("feature1").execute();
+        try {
+            testGitClient.rebase().setUpstream("master").execute();
+            fail("Rebase did not throw expected GitException");
+        } catch (GitException ge) {
+            assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+            Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+            assertTrue("Workspace is not clean", status.isClean());
+            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+            assertTrue("Workspace has modified files", status.getModified().isEmpty());
+            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
+        }
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
