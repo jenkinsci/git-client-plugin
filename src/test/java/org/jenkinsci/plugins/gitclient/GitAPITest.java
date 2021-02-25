@@ -1298,6 +1298,21 @@ public class GitAPITest {
         }
     }
 
+    @Test
+    public void testCloneNoCheckout() throws Exception {
+        // Create a repo for cloning purpose
+        WorkspaceWithRepo repoToClone = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        initializeWorkspace(repoToClone);
+        repoToClone.commitEmpty("init");
+        repoToClone.touch(repoToClone.getGitFileDir(), "file1", "");
+        repoToClone.getGitClient().add("file1");
+        repoToClone.getGitClient().commit("commit1");
+
+        // Clone it with no checkout
+        testGitClient.clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
+        assertFalse(workspace.exists("file1"));
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();

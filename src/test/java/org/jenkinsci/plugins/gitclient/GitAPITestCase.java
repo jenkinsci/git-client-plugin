@@ -1482,20 +1482,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir3"));
     }
 
-    public void test_clone_no_checkout() throws Exception {
-        // Create a repo for cloning purpose
-        WorkingArea repoToClone = new WorkingArea();
-        repoToClone.init();
-        repoToClone.commitEmpty("init");
-        repoToClone.touch("file1");
-        repoToClone.git.add("file1");
-        repoToClone.git.commit("commit");
-
-        // Clone it with no checkout
-        w.git.clone_().url(repoToClone.repoPath()).repositoryName("origin").noCheckout().execute();
-        assertFalse(w.exists("file1"));
-    }
-
     public void test_hasSubmodules() throws Exception {
         w.init();
 
