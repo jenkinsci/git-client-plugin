@@ -685,61 +685,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * A rev-parse warning message should not break revision parsing.
-     */
-    @Issue("JENKINS-11177")
-    public void test_jenkins_11177() throws Exception
-    {
-        w.init();
-        w.commitEmpty("init");
-        ObjectId base = w.head();
-        ObjectId master = w.git.revParse("master");
-        assertEquals(base, master);
-
-        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
-        w.tag("master"); // ref "master" is now ambiguous
-        String revParse = w.launchCommand("git", "rev-parse", "master");
-        assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
-        ObjectId masterTag = w.git.revParse("refs/tags/master");
-        assertEquals("masterTag != head", w.head(), masterTag);
-
-        /* Get reference to ambiguous master */
-        ObjectId ambiguous = w.git.revParse("master");
-        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
-
-        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
-        w.touch("file-master", "content-master");
-        w.git.add("file-master");
-        w.git.commit("commit1-master");
-        final ObjectId masterTip = w.head();
-
-        w.launchCommand("git", "branch", "branch1", masterTip.name());
-        w.launchCommand("git", "checkout", "branch1");
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1-branch1");
-        final ObjectId branch1 = w.head();
-
-        /* JGit checks out the masterTag, while CliGit checks out
-         * master branch.  It is risky that there are different
-         * behaviors between the two implementations, but when a
-         * reference is ambiguous, it is safe to assume that
-         * resolution of the ambiguous reference is an implementation
-         * specific detail. */
-        w.git.checkout().ref("master").execute();
-        String messageDetails =
-            ", head=" + w.head().name() +
-            ", masterTip=" + masterTip.name() +
-            ", masterTag=" + masterTag.name() +
-            ", branch1=" + branch1.name();
-        if (w.git instanceof CliGitAPIImpl) {
-            assertEquals("head != master branch" + messageDetails, masterTip, w.head());
-        } else {
-            assertEquals("head != master tag" + messageDetails, masterTag, w.head());
-        }
-    }
-
-    /**
      * Command line git clean as implemented in CliGitAPIImpl does not remove
      * untracked submodules or files contained in untracked submodule dirs.
      * JGit clean as implemented in JGitAPIImpl removes untracked submodules.

@@ -21,7 +21,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -1242,6 +1241,60 @@ public class GitAPITest {
             assertTrue("Workspace has modified files", status.getModified().isEmpty());
             assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
             assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
+        }
+    }
+
+    /**
+     * A rev-parse warning message should not break revision parsing.
+     */
+    @Issue("JENKINS-11177")
+    @Test
+    public void testJenkins11177() throws Exception {
+        workspace.commitEmpty("init");
+        final ObjectId base = workspace.head();
+        final ObjectId master = testGitClient.revParse("master");
+        assertEquals(base, master);
+
+        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
+        workspace.tag("master");
+        final String revParse = workspace.launchCommand("git", "rev-parse", "master");
+        assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
+        final ObjectId masterTag = testGitClient.revParse("refs/tags/master");
+        assertEquals("masterTag != head", workspace.head(), masterTag);
+
+        /* Get reference to ambiguous master */
+        final ObjectId ambiguous = testGitClient.revParse("master");
+        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
+
+        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
+        workspace.touch(testGitDir, "file-master", "content-master");
+        testGitClient.add("file-master");
+        testGitClient.commit("commit1-master");
+        final ObjectId masterTip = workspace.head();
+
+        workspace.launchCommand("git", "branch", "branch1", masterTip.name());
+        workspace.launchCommand("git", "checkout", "branch1");
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1-branch1");
+        final ObjectId branch1 = workspace.head();
+
+        /* JGit checks out the masterTag, while CliGit checks out
+         * master branch.  It is risky that there are different
+         * behaviors between the two implementations, but when a
+         * reference is ambiguous, it is safe to assume that
+         * resolution of the ambiguous reference is an implementation
+         * specific detail. */
+        testGitClient.checkout().ref("master").execute();
+        final String messageDetails =
+                ", head=" + workspace.head().name() +
+                ", masterTip=" + masterTip.name() +
+                ", masterTag=" + masterTag.name() +
+                ", branch1=" + branch1.name();
+        if (testGitClient instanceof CliGitAPIImpl) {
+            assertEquals("head != master branch" + messageDetails, masterTip, workspace.head());
+        } else {
+            assertEquals("head != master tag" + messageDetails, masterTag, workspace.head());
         }
     }
 
