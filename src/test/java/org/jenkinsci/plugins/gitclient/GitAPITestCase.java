@@ -2099,19 +2099,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }
 
-    public void test_describe() throws Exception {
-        w.init();
-        w.commitEmpty("first");
-        w.launchCommand("git", "tag", "-m", "test", "t1");
-        w.touch("a");
-        w.git.add("a");
-        w.git.commit("second");
-        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
-
-        w.launchCommand("git", "tag", "-m", "test2", "t2");
-        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
-    }
-
     /*
     * Test result is intentionally ignored because it depends on the output
     * order of the `git log --all` command and the JGit equivalent. Output order
