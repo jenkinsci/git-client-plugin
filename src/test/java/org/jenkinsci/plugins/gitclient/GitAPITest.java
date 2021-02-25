@@ -1046,9 +1046,9 @@ public class GitAPITest {
     @Test
     public void testMergeSquash() throws Exception {
         workspace.commitEmpty("init");
-        testGitClient.branch("branch1");
 
         //First commit to branch1
+        testGitClient.branch("branch1");
         testGitClient.checkout().ref("branch1").execute();
         workspace.touch(testGitDir, "file1", "content1");
         testGitClient.add("file1");
@@ -1069,6 +1069,32 @@ public class GitAPITest {
         final int commitCountAfter = testGitClient.revList("HEAD").size();
 
         assertEquals("Squash merge failed. Should have merged only one commit.", 1, commitCountAfter - commitCountBefore);
+    }
+
+    @Test
+    public void testMergeNoSquash() throws Exception {
+        workspace.commitEmpty("init");
+
+        //First commit to branch1
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Second commit to branch2
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+
+        //Merge branch1 with master, without squashing commits.
+        //Compare commit counts of before and after commiting the merge, should be two due to the no squashing of commits.
+        testGitClient.checkout().ref("master").execute();
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.merge().setSquash(false).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {

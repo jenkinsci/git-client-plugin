@@ -1612,32 +1612,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
     }
 
-    public void test_merge_no_squash() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-
-        //First commit to branch1
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Second commit to branch1
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-
-        //Merge branch1 with master, without squashing commits.
-        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
-        w.git.checkout().ref("master").execute();
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.merge().setSquash(false).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
-    }
-
     public void test_merge_no_commit() throws Exception{
         w.init();
         w.commitEmpty("init");
