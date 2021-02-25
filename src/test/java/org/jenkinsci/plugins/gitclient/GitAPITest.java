@@ -1043,6 +1043,34 @@ public class GitAPITest {
         assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
     }
 
+    @Test
+    public void testMergeSquash() throws Exception {
+        workspace.commitEmpty("init");
+        testGitClient.branch("branch1");
+
+        //First commit to branch1
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Second commit to branch2
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+
+        //Merge branch1 with master, squashing both commits
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.merge().setSquash(true).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+
+        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.commit("commitMerge");
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Squash merge failed. Should have merged only one commit.", 1, commitCountAfter - commitCountBefore);
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
