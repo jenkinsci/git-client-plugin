@@ -2212,15 +2212,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
-    public void test_revList_local_branch() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        w.tag("t1");
-        w.commitEmpty("c2");
-        List<ObjectId> revList = w.git.revList("master");
-        assertEquals("Wrong list size: " + revList, 2, revList.size());
-    }
-
     @Issue("JENKINS-20153")
     public void test_checkoutBranch_null() throws Exception {
         w.init();

@@ -1360,6 +1360,15 @@ public class GitAPITest {
         assertEquals("wring list size: " + revList, 1, revList.size());
     }
 
+    @Test
+    public void testRevListLocalBranch() throws Exception {
+        workspace.commitEmpty("c1");
+        workspace.tag("t1");
+        workspace.commitEmpty("c2");
+        List<ObjectId> revList = testGitClient.revList("master");
+        assertEquals("Wrong list size: " + revList, 2, revList.size());
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
