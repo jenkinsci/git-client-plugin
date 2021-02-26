@@ -1384,6 +1384,28 @@ public class GitAPITest {
         assertFalse(head.isSymbolic());
     }
 
+    @Issue("JENKINS-18988")
+    @Test
+    public void testLocalCheckoutConflict() throws Exception {
+        workspace.touch(testGitDir, "foo", "old");
+        testGitClient.add("foo");
+        testGitClient.commit("c1");
+        workspace.tag("t1");
+
+        // delete the file from git
+        workspace.launchCommand("git", "rm", "foo");
+        testGitClient.commit("c2");
+        assertFalse(workspace.file("foo").exists());
+
+        // now create an untracked local file
+        workspace.touch(testGitDir, "foo", "new");
+
+        // this should overwrite foo
+        testGitClient.checkout().ref("t1").execute();
+
+        assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();

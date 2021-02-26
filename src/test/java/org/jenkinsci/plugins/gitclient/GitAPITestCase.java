@@ -2220,28 +2220,6 @@ public abstract class GitAPITestCase extends TestCase {
         return Util.join(names,",");
     }
 
-    @Issue("JENKINS-18988")
-    public void test_localCheckoutConflict() throws Exception {
-        w.init();
-        w.touch("foo","old");
-        w.git.add("foo");
-        w.git.commit("c1");
-        w.tag("t1");
-
-        // delete the file from git
-        w.launchCommand("git", "rm", "foo");
-        w.git.commit("c2");
-        assertFalse(w.file("foo").exists());
-
-        // now create an untracked local file
-        w.touch("foo","new");
-
-        // this should overwrite foo
-        w.git.checkout().ref("t1").execute();
-
-        assertEquals("old",FileUtils.readFileToString(w.file("foo")));
-    }
-
     /* The less critical assertions do not respond the same for the
      * JGit and the CliGit implementation. They are implemented here
      * so that the current behavior is described in tests and can be
