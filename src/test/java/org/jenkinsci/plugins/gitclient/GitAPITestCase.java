@@ -2212,21 +2212,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
-    @Issue("JENKINS-20153")
-    public void test_checkoutBranch_null() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        String sha1 = w.git.revParse("HEAD").name();
-        w.commitEmpty("c2");
-
-        w.git.checkoutBranch(null, sha1);
-
-        assertEquals(w.head(),w.git.revParse(sha1));
-
-        Ref head = w.repo().exactRef("HEAD");
-        assertFalse(head.isSymbolic());
-    }
-
     private String formatBranches(List<Branch> branches) {
         Set<String> names = new TreeSet<>();
         for (Branch b : branches) {

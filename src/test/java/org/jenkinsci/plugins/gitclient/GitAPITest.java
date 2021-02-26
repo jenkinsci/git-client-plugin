@@ -1369,6 +1369,21 @@ public class GitAPITest {
         assertEquals("Wrong list size: " + revList, 2, revList.size());
     }
 
+    @Issue("JENKINS-20153")
+    @Test
+    public void testCheckOutBranchNull() throws Exception {
+        workspace.commitEmpty("c1");
+        String sha1 = testGitClient.revParse("HEAD").name();
+        workspace.commitEmpty("c2");
+
+        testGitClient.checkoutBranch(null, sha1);
+
+        assertEquals(workspace.head(), testGitClient.revParse(sha1));
+
+        Ref head = new FileRepository(new File(testGitDir, ".git")).exactRef("HEAD");
+        assertFalse(head.isSymbolic());
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
