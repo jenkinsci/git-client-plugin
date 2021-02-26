@@ -12,6 +12,7 @@ import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
@@ -1341,6 +1342,22 @@ public class GitAPITest {
 
         workspace.launchCommand("git", "tag", "-m", "test2", "t2");
         assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
+    }
+
+    @Test
+    public void testRevListTag() throws Exception {
+        workspace.commitEmpty("c1");
+        FileRepository repo = new FileRepository(new File(testGitDir, ".git"));
+        Ref commitRefC1 = repo.exactRef("HEAD");
+        workspace.tag("t1");
+        Ref tagRefT1 = repo.findRef("t1");
+        Ref head = repo.exactRef("HEAD");
+        assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
+        workspace.commitEmpty("c2");
+        Ref commitRef2 = repo.exactRef("HEAD");
+        List<ObjectId> revList = testGitClient.revList("t1");
+        assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
+        assertEquals("wring list size: " + revList, 1, revList.size());
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {

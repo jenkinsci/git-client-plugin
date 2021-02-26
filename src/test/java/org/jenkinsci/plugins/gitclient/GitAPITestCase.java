@@ -2212,21 +2212,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
-    public void test_revList_tag() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        Ref commitRefC1 = w.repo().exactRef("HEAD");
-        w.tag("t1");
-        Ref tagRefT1 = w.repo().findRef("t1");
-        Ref head = w.repo().exactRef("HEAD");
-        assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
-        w.commitEmpty("c2");
-        Ref commitRefC2 = w.repo().exactRef("HEAD");
-        List<ObjectId> revList = w.git.revList("t1");
-        assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
-        assertEquals("Wrong list size: " + revList, 1, revList.size());
-    }
-
     public void test_revList_local_branch() throws Exception {
         w.init();
         w.commitEmpty("c1");
