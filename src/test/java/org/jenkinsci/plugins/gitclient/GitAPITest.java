@@ -7,13 +7,16 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -145,6 +148,87 @@ public class GitAPITest {
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
         initializeWorkspace(workspace);
+    }
+
+    @After
+    public void afterTearDown() throws Exception {
+        try {
+            String messages = StringUtils.join(handler.getMessages(), ";");
+            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            assertCheckoutTimeout();
+            assertCloneTimeout();
+            assertFetchTimeout();
+            assertSubmoduleUpdateTimeout();
+            assertRevParseCalls(revParseBranchName);
+        } finally {
+            handler.close();
+        }
+    }
+
+    private void assertCheckoutTimeout() {
+        if (checkoutTimeout > 0) {
+            assertSubstringTimeout("git checkout", checkoutTimeout);
+        }
+    }
+
+    private void assertCloneTimeout() {
+        if (cloneTimeout > 0) {
+            // clone_() uses "git fetch" internally, not "git clone"
+            assertSubstringTimeout("git fetch", cloneTimeout);
+        }
+    }
+
+    private void assertFetchTimeout() {
+        if (fetchTimeout > 0) {
+            assertSubstringTimeout("git fetch", fetchTimeout);
+        }
+    }
+
+    private void assertSubmoduleUpdateTimeout() {
+        if (submoduleUpdateTimeout > 0) {
+            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
+        }
+    }
+
+    private void assertSubstringTimeout(final String substring, int expectedTimeout) {
+        if (!(testGitClient instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
+            return;
+        }
+        List<String> messages = handler.getMessages();
+        List<String> substringMessages = new ArrayList<>();
+        List<String> substringTimeoutMessages = new ArrayList<>();
+        final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
+        final String timeoutRegEx = messageRegEx
+                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
+        for (String message : messages) {
+            if (message.matches(messageRegEx)) {
+                substringMessages.add(message);
+            }
+            if (message.matches(timeoutRegEx)) {
+                substringTimeoutMessages.add(message);
+            }
+        }
+        assertThat(messages, is(not(empty())));
+        assertThat(substringMessages, is(not(empty())));
+        assertThat(substringTimeoutMessages, is(not(empty())));
+        assertEquals(substringMessages, substringTimeoutMessages);
+    }
+
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The createRevParseBranch call
+     * creates a branch whose name is unknown to the tests. This
+     * checks that the branch name is not mentioned in a call to
+     * git rev-parse.
+     */
+    private void assertRevParseCalls(String branchName) {
+        if (revParseBranchName == null) {
+            return;
+        }
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        // Linux uses rev-parse without quotes
+        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
+        // Windows quotes the rev-parse argument
+        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
@@ -1341,6 +1425,68 @@ public class GitAPITest {
 
         workspace.launchCommand("git", "tag", "-m", "test2", "t2");
         assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
+    }
+
+    @Test
+    public void testRevListTag() throws Exception {
+        workspace.commitEmpty("c1");
+        FileRepository repo = new FileRepository(new File(testGitDir, ".git"));
+        Ref commitRefC1 = repo.exactRef("HEAD");
+        workspace.tag("t1");
+        Ref tagRefT1 = repo.findRef("t1");
+        Ref head = repo.exactRef("HEAD");
+        assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
+        workspace.commitEmpty("c2");
+        Ref commitRef2 = repo.exactRef("HEAD");
+        List<ObjectId> revList = testGitClient.revList("t1");
+        assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
+        assertEquals("wring list size: " + revList, 1, revList.size());
+    }
+
+    @Test
+    public void testRevListLocalBranch() throws Exception {
+        workspace.commitEmpty("c1");
+        workspace.tag("t1");
+        workspace.commitEmpty("c2");
+        List<ObjectId> revList = testGitClient.revList("master");
+        assertEquals("Wrong list size: " + revList, 2, revList.size());
+    }
+
+    @Issue("JENKINS-20153")
+    @Test
+    public void testCheckOutBranchNull() throws Exception {
+        workspace.commitEmpty("c1");
+        String sha1 = testGitClient.revParse("HEAD").name();
+        workspace.commitEmpty("c2");
+
+        testGitClient.checkoutBranch(null, sha1);
+
+        assertEquals(workspace.head(), testGitClient.revParse(sha1));
+
+        Ref head = new FileRepository(new File(testGitDir, ".git")).exactRef("HEAD");
+        assertFalse(head.isSymbolic());
+    }
+
+    @Issue("JENKINS-18988")
+    @Test
+    public void testLocalCheckoutConflict() throws Exception {
+        workspace.touch(testGitDir, "foo", "old");
+        testGitClient.add("foo");
+        testGitClient.commit("c1");
+        workspace.tag("t1");
+
+        // delete the file from git
+        workspace.launchCommand("git", "rm", "foo");
+        testGitClient.commit("c2");
+        assertFalse(workspace.file("foo").exists());
+
+        // now create an untracked local file
+        workspace.touch(testGitDir, "foo", "new");
+
+        // this should overwrite foo
+        testGitClient.checkout().ref("t1").execute();
+
+        assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {

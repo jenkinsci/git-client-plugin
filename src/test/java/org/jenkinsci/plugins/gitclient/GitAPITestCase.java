@@ -2212,73 +2212,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
-    public void test_revList_tag() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        Ref commitRefC1 = w.repo().exactRef("HEAD");
-        w.tag("t1");
-        Ref tagRefT1 = w.repo().findRef("t1");
-        Ref head = w.repo().exactRef("HEAD");
-        assertEquals("head != t1", head.getObjectId(), tagRefT1.getObjectId());
-        w.commitEmpty("c2");
-        Ref commitRefC2 = w.repo().exactRef("HEAD");
-        List<ObjectId> revList = w.git.revList("t1");
-        assertTrue("c1 not in revList", revList.contains(commitRefC1.getObjectId()));
-        assertEquals("Wrong list size: " + revList, 1, revList.size());
-    }
-
-    public void test_revList_local_branch() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        w.tag("t1");
-        w.commitEmpty("c2");
-        List<ObjectId> revList = w.git.revList("master");
-        assertEquals("Wrong list size: " + revList, 2, revList.size());
-    }
-
-    @Issue("JENKINS-20153")
-    public void test_checkoutBranch_null() throws Exception {
-        w.init();
-        w.commitEmpty("c1");
-        String sha1 = w.git.revParse("HEAD").name();
-        w.commitEmpty("c2");
-
-        w.git.checkoutBranch(null, sha1);
-
-        assertEquals(w.head(),w.git.revParse(sha1));
-
-        Ref head = w.repo().exactRef("HEAD");
-        assertFalse(head.isSymbolic());
-    }
-
     private String formatBranches(List<Branch> branches) {
         Set<String> names = new TreeSet<>();
         for (Branch b : branches) {
             names.add(b.getName());
         }
         return Util.join(names,",");
-    }
-
-    @Issue("JENKINS-18988")
-    public void test_localCheckoutConflict() throws Exception {
-        w.init();
-        w.touch("foo","old");
-        w.git.add("foo");
-        w.git.commit("c1");
-        w.tag("t1");
-
-        // delete the file from git
-        w.launchCommand("git", "rm", "foo");
-        w.git.commit("c2");
-        assertFalse(w.file("foo").exists());
-
-        // now create an untracked local file
-        w.touch("foo","new");
-
-        // this should overwrite foo
-        w.git.checkout().ref("t1").execute();
-
-        assertEquals("old",FileUtils.readFileToString(w.file("foo")));
     }
 
     /* The less critical assertions do not respond the same for the
