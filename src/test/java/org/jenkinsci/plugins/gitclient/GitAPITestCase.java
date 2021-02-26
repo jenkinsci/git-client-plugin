@@ -685,61 +685,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * A rev-parse warning message should not break revision parsing.
-     */
-    @Issue("JENKINS-11177")
-    public void test_jenkins_11177() throws Exception
-    {
-        w.init();
-        w.commitEmpty("init");
-        ObjectId base = w.head();
-        ObjectId master = w.git.revParse("master");
-        assertEquals(base, master);
-
-        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
-        w.tag("master"); // ref "master" is now ambiguous
-        String revParse = w.launchCommand("git", "rev-parse", "master");
-        assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
-        ObjectId masterTag = w.git.revParse("refs/tags/master");
-        assertEquals("masterTag != head", w.head(), masterTag);
-
-        /* Get reference to ambiguous master */
-        ObjectId ambiguous = w.git.revParse("master");
-        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
-
-        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
-        w.touch("file-master", "content-master");
-        w.git.add("file-master");
-        w.git.commit("commit1-master");
-        final ObjectId masterTip = w.head();
-
-        w.launchCommand("git", "branch", "branch1", masterTip.name());
-        w.launchCommand("git", "checkout", "branch1");
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1-branch1");
-        final ObjectId branch1 = w.head();
-
-        /* JGit checks out the masterTag, while CliGit checks out
-         * master branch.  It is risky that there are different
-         * behaviors between the two implementations, but when a
-         * reference is ambiguous, it is safe to assume that
-         * resolution of the ambiguous reference is an implementation
-         * specific detail. */
-        w.git.checkout().ref("master").execute();
-        String messageDetails =
-            ", head=" + w.head().name() +
-            ", masterTip=" + masterTip.name() +
-            ", masterTag=" + masterTag.name() +
-            ", branch1=" + branch1.name();
-        if (w.git instanceof CliGitAPIImpl) {
-            assertEquals("head != master branch" + messageDetails, masterTip, w.head());
-        } else {
-            assertEquals("head != master tag" + messageDetails, masterTag, w.head());
-        }
-    }
-
-    /**
      * Command line git clean as implemented in CliGitAPIImpl does not remove
      * untracked submodules or files contained in untracked submodule dirs.
      * JGit clean as implemented in JGitAPIImpl removes untracked submodules.
@@ -1537,20 +1482,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir3"));
     }
 
-    public void test_clone_no_checkout() throws Exception {
-        // Create a repo for cloning purpose
-        WorkingArea repoToClone = new WorkingArea();
-        repoToClone.init();
-        repoToClone.commitEmpty("init");
-        repoToClone.touch("file1");
-        repoToClone.git.add("file1");
-        repoToClone.git.commit("commit");
-
-        // Clone it with no checkout
-        w.git.clone_().url(repoToClone.repoPath()).repositoryName("origin").noCheckout().execute();
-        assertFalse(w.exists("file1"));
-    }
-
     public void test_hasSubmodules() throws Exception {
         w.init();
 
@@ -1610,178 +1541,6 @@ public abstract class GitAPITestCase extends TestCase {
         // create a brand new Git object to make sure it's persisted
         WorkingArea subModuleVerify = new WorkingArea(w.repo);
         assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
-    }
-
-    public void test_merge_fast_forward_mode_no_ff() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-        final ObjectId base = w.head();
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        final ObjectId branch1 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        w.git.branch("branch2");
-        w.git.checkout().ref("branch2").execute();
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-        final ObjectId branch2 = w.head();
-
-        w.git.checkout().ref("master").execute();
-        final ObjectId master = w.head();
-
-        // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-
-        // The first merge will have base and branch1 as parents
-        List<ObjectId> revList = w.git.revList("HEAD^1");
-        assertEquals("Merge commit failed. base should be a parent of HEAD but it isn't.",revList.get(0).name(), base.name());
-        revList = w.git.revList("HEAD^2");
-        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
-
-        final ObjectId base2 = w.head();
-
-        // Calling for NO_FF when required is expected to work
-        w.git.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch2")).execute();
-
-        // The second merge will have base2 and branch2 as parents
-        revList = w.git.revList("HEAD^1");
-        assertEquals("Merge commit failed. base2 should be a parent of HEAD but it isn't.",revList.get(0).name(), base2.name());
-        revList = w.git.revList("HEAD^2");
-        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
-    }
-
-    public void test_merge_squash() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-        w.git.branch("branch1");
-
-        //First commit to branch1
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Second commit to branch1
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-
-        //Merge branch1 with master, squashing both commits
-        w.git.checkout().ref("master").execute();
-        w.git.merge().setSquash(true).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-
-        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.commit("commitMerge");
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("Squash merge failed. Should have merged only one commit.", 1, commitCountAfter - commitCountBefore);
-    }
-
-    public void test_merge_no_squash() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-
-        //First commit to branch1
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Second commit to branch1
-        w.touch("file2", "content2");
-        w.git.add("file2");
-        w.git.commit("commit2");
-
-        //Merge branch1 with master, without squashing commits.
-        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
-        w.git.checkout().ref("master").execute();
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.merge().setSquash(false).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
-    }
-
-    public void test_merge_no_commit() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-
-        //Create branch1 and commit a file
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Merge branch1 with master, without committing the merge.
-        //Compare commit counts of before and after the merge, should be zero due to the lack of autocommit.
-        w.git.checkout().ref("master").execute();
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.merge().setCommit(false).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("No Commit merge failed. Shouldn't have committed any changes.", commitCountBefore, commitCountAfter);
-    }
-
-    public void test_merge_commit() throws Exception{
-        w.init();
-        w.commitEmpty("init");
-
-        //Create branch1 and commit a file
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        //Merge branch1 with master, without committing the merge.
-        //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
-        w.git.checkout().ref("master").execute();
-        final int commitCountBefore = w.git.revList("HEAD").size();
-        w.git.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        final int commitCountAfter = w.git.revList("HEAD").size();
-
-        assertEquals("Commit merge failed. Should have committed the merge.", 2, commitCountAfter - commitCountBefore);
-    }
-
-    public void test_merge_with_message() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        // First commit to branch1
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "content1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        // Merge branch1 into master
-        w.git.checkout().ref("master").execute();
-        String mergeMessage = "Merge message to be tested.";
-        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch1")).execute();
-        // Obtain last commit message
-        String resultMessage = "";
-        final List<String> content = w.git.showRevision(w.head());
-        if ("gpgsig -----BEGIN PGP SIGNATURE-----".equals(content.get(6).trim())) {
-            //Commit is signed so the commit message is after the signature
-            for (int i = 6; i < content.size(); i++) {
-                if(content.get(i).trim().equals("-----END PGP SIGNATURE-----")) {
-                    resultMessage = content.get(i+2).trim();
-                    break;
-                }
-            }
-        } else {
-            resultMessage = content.get(7).trim();
-        }
-
-        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
     }
 
     @Deprecated
@@ -1848,77 +1607,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
 
-    public void test_rebase_passes_without_conflict() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        // First commit to master
-        w.touch("master_file", "master1");
-        w.git.add("master_file");
-        w.git.commit("commit-master1");
-
-        // Create a feature branch and make a commit
-        w.git.branch("feature1");
-        w.git.checkout().ref("feature1").execute();
-        w.touch("feature_file", "feature1");
-        w.git.add("feature_file");
-        w.git.commit("commit-feature1");
-
-        // Second commit to master
-        w.git.checkout().ref("master").execute();
-        w.touch("master_file", "master2");
-        w.git.add("master_file");
-        w.git.commit("commit-master2");
-
-        // Rebase feature commit onto master
-        w.git.checkout().ref("feature1").execute();
-        w.git.rebase().setUpstream("master").execute();
-
-        assertThat("Should've rebased feature1 onto master", w.git.revList("feature1").contains(w.git.revParse("master")));
-        assertEquals("HEAD should be on the rebased branch", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
-        assertThat("Rebased file should be present in the worktree",w.git.getWorkTree().child("feature_file").exists());
-    }
-
-    public void test_rebase_fails_with_conflict() throws Exception {
-        w.init();
-        w.commitEmpty("init");
-
-        // First commit to master
-        w.touch("file", "master1");
-        w.git.add("file");
-        w.git.commit("commit-master1");
-
-        // Create a feature branch and make a commit
-        w.git.branch("feature1");
-        w.git.checkout().ref("feature1").execute();
-        w.touch("file", "feature1");
-        w.git.add("file");
-        w.git.commit("commit-feature1");
-
-        // Second commit to master
-        w.git.checkout().ref("master").execute();
-        w.touch("file", "master2");
-        w.git.add("file");
-        w.git.commit("commit-master2");
-
-        // Rebase feature commit onto master
-        w.git.checkout().ref("feature1").execute();
-        try {
-            w.git.rebase().setUpstream("master").execute();
-            fail("Rebase did not throw expected GitException");
-        } catch (GitException e) {
-            assertEquals("HEAD not reset to the feature branch.", w.git.revParse("HEAD").name(), w.git.revParse("feature1").name());
-            Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
-            assertTrue("Workspace is not clean", status.isClean());
-            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
-            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
-            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
-            assertTrue("Workspace has modified files", status.getModified().isEmpty());
-            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
-            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
-        }
-    }
-
     /**
      * Checks that the ChangelogCommand abort() API does not write
      * output to the destination.  Does not check that the abort() API
@@ -1977,21 +1665,6 @@ public abstract class GitAPITestCase extends TestCase {
         Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
         ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
-    }
-
-    @Issue("JENKINS-25444")
-    public void test_fetch_delete_cleans() throws Exception {
-        w.init();
-        w.touch("file1", "old");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        w.touch("file1", "new");
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().branch("other").ref(Constants.HEAD).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
-
-        Status status = new org.eclipse.jgit.api.Git(w.repo()).status().call();
-
-        assertTrue("Workspace must be clean", status.isClean());
     }
 
     /**
@@ -2424,19 +2097,6 @@ public abstract class GitAPITestCase extends TestCase {
         Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
         assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
-    }
-
-    public void test_describe() throws Exception {
-        w.init();
-        w.commitEmpty("first");
-        w.launchCommand("git", "tag", "-m", "test", "t1");
-        w.touch("a");
-        w.git.add("a");
-        w.git.commit("second");
-        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
-
-        w.launchCommand("git", "tag", "-m", "test2", "t2");
-        assertThat(w.launchCommand("git", "describe").trim(), sharesPrefix(w.git.describe("HEAD")));
     }
 
     /*

@@ -7,7 +7,10 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -19,7 +22,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
-import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -28,6 +30,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -998,6 +1001,346 @@ public class GitAPITest {
             // expected
             assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",workspace.head(),branch1);
         }
+    }
+
+    @Test
+    public void testMergeFastForwardModeNoFF() throws Exception {
+        workspace.commitEmpty("init");
+        final ObjectId base = workspace.head();
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        final ObjectId branch1 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.branch("branch2");
+        testGitClient.checkout().ref("branch2").execute();
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+        final ObjectId branch2 = workspace.head();
+
+        testGitClient.checkout().ref("master").execute();
+        final ObjectId master = workspace.head();
+
+        // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
+        testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+
+        // The first merge will have base and branch1 as parents
+        List<ObjectId> revList = testGitClient.revList("HEAD^1");
+        assertEquals("Merge commit failed. base should be a parent of HEAD but it isn't.",revList.get(0).name(), base.name());
+        revList = testGitClient.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch1 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch1.name());
+
+        final ObjectId base2 = workspace.head();
+
+        // Calling for NO_FF when required is expected to work
+        testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
+
+        // The second merge will have base2 and branch2 as parents
+        revList = testGitClient.revList("HEAD^1");
+        assertEquals("Merge commit failed. base2 should be a parent of HEAD but it isn't.",revList.get(0).name(), base2.name());
+        revList = testGitClient.revList("HEAD^2");
+        assertEquals("Merge commit failed. branch2 should be a parent of HEAD but it isn't.",revList.get(0).name(), branch2.name());
+    }
+
+    @Test
+    public void testMergeSquash() throws Exception {
+        workspace.commitEmpty("init");
+
+        //First commit to branch1
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Second commit to branch2
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+
+        //Merge branch1 with master, squashing both commits
+        testGitClient.checkout().ref("master").execute();
+        testGitClient.merge().setSquash(true).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+
+        //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.commit("commitMerge");
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Squash merge failed. Should have merged only one commit.", 1, commitCountAfter - commitCountBefore);
+    }
+
+    @Test
+    public void testMergeNoSquash() throws Exception {
+        workspace.commitEmpty("init");
+
+        //First commit to branch1
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Second commit to branch2
+        workspace.touch(testGitDir, "file2", "content2");
+        testGitClient.add("file2");
+        testGitClient.commit("commit2");
+
+        //Merge branch1 with master, without squashing commits.
+        //Compare commit counts of before and after commiting the merge, should be two due to the no squashing of commits.
+        testGitClient.checkout().ref("master").execute();
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.merge().setSquash(false).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Squashless merge failed. Should have merged two commits.", 2, commitCountAfter - commitCountBefore);
+    }
+
+    @Test
+    public void testMergeNoCommit() throws Exception {
+        workspace.commitEmpty("init");
+
+        //Create branch1 and commit a file
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Merge branch1 with master, without committing the merge.
+        //Compare commit counts of before and after the merge, should be zero due to the lack of autocommit.
+        testGitClient.checkout().ref("master").execute();
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.merge().setCommit(false).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("No Commit merge failed. Shouldn't have committed any changes.", commitCountBefore, commitCountAfter);
+    }
+
+    @Test
+    public void testMergeCommit() throws Exception {
+        workspace.commitEmpty("init");
+
+        //Create branch1 and commit a file
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Merge branch1 with master, without committing the merge.
+        //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
+        testGitClient.checkout().ref("master").execute();
+        final int commitCountBefore = testGitClient.revList("HEAD").size();
+        testGitClient.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        final int commitCountAfter = testGitClient.revList("HEAD").size();
+
+        assertEquals("Commit merge failed. Should have committed the merge.", 2, commitCountAfter - commitCountBefore);
+    }
+
+    @Test
+    public void testMergeWithMessage() throws Exception {
+        workspace.commitEmpty("init");
+
+        //Create branch1 and commit a file
+        testGitClient.branch("branch1");
+        testGitClient.checkout().ref("branch1").execute();
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+
+        //Merge branch1 into master
+        testGitClient.checkout().ref("master").execute();
+        final String mergeMessage = "Merge message to be tested.";
+        testGitClient.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        //Obtain last commit message
+        String resultMessage = "";
+        final List<String> content = testGitClient.showRevision(workspace.head());
+        if ("gpgsig -----BEGIN PGP SIGNATURE-----".equals(content.get(6).trim())) {
+            //Commit is signed so the commit message is after the signature
+            for (int i = 6; i < content.size(); i++) {
+                if (content.get(i).trim().equals("-----END PGP SIGNATURE-----")) {
+                    resultMessage = content.get(i + 2).trim();
+                    break;
+                }
+            }
+        } else {
+            resultMessage = content.get(7).trim();
+        }
+
+        assertEquals("Custom message merge failed. Should have set custom merge message.", mergeMessage, resultMessage);
+    }
+
+    @Test
+    public void testRebasePassesWithoutConflict() throws Exception {
+        workspace.commitEmpty("init");
+
+        //First commit to master
+        workspace.touch(testGitDir, "master_file", "master1");
+        testGitClient.add("master_file");
+        testGitClient.commit("commit-master1");
+
+        //Create a feature branch and make a commit
+        testGitClient.branch("feature1");
+        testGitClient.checkout().ref("feature1").execute();
+        workspace.touch(testGitDir, "feature_file", "feature1");
+        testGitClient.add("feature_file");
+        testGitClient.commit("commit-feature1");
+
+        //Second commit to master
+        testGitClient.checkout().ref("master").execute();
+        workspace.touch(testGitDir, "master_file", "master2");
+        testGitClient.add("master_file");
+        testGitClient.commit("commit-master2");
+
+        //Rebase feature commit onto master
+        testGitClient.checkout().ref("feature1").execute();
+        testGitClient.rebase().setUpstream("master").execute();
+
+        assertThat("Should've rebased feature1 onto master", testGitClient.revList("feature1").contains(testGitClient.revParse("master")));
+        assertEquals("HEAD should be on the rebased branch", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+        assertThat("Rebased file should be present in the worktree", testGitClient.getWorkTree().child("feature_file").exists());
+    }
+
+    @Test
+    public void testRebaseFailsWithConflict() throws Exception {
+        workspace.commitEmpty("init");
+
+        // First commit to master
+        workspace.touch(testGitDir, "file", "master1");
+        testGitClient.add("file");
+        testGitClient.commit("commit-master1");
+
+        //Create a feature branch and make a commit
+        testGitClient.branch("feature1");
+        testGitClient.checkout().ref("feature1").execute();
+        workspace.touch(testGitDir, "file", "feature1");
+        testGitClient.add("file");
+        testGitClient.commit("commit-feature1");
+
+        //Second commit to master
+        testGitClient.checkout().ref("master").execute();
+        workspace.touch(testGitDir, "file", "master2");
+        testGitClient.add("file");
+        testGitClient.commit("commit-master2");
+
+        // Rebase feature commit onto master
+        testGitClient.checkout().ref("feature1").execute();
+        try {
+            testGitClient.rebase().setUpstream("master").execute();
+            fail("Rebase did not throw expected GitException");
+        } catch (GitException ge) {
+            assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+            Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+            assertTrue("Workspace is not clean", status.isClean());
+            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+            assertTrue("Workspace has modified files", status.getModified().isEmpty());
+            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
+        }
+    }
+
+    /**
+     * A rev-parse warning message should not break revision parsing.
+     */
+    @Issue("JENKINS-11177")
+    @Test
+    public void testJenkins11177() throws Exception {
+        workspace.commitEmpty("init");
+        final ObjectId base = workspace.head();
+        final ObjectId master = testGitClient.revParse("master");
+        assertEquals(base, master);
+
+        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
+        workspace.tag("master");
+        final String revParse = workspace.launchCommand("git", "rev-parse", "master");
+        assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
+        final ObjectId masterTag = testGitClient.revParse("refs/tags/master");
+        assertEquals("masterTag != head", workspace.head(), masterTag);
+
+        /* Get reference to ambiguous master */
+        final ObjectId ambiguous = testGitClient.revParse("master");
+        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
+
+        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
+        workspace.touch(testGitDir, "file-master", "content-master");
+        testGitClient.add("file-master");
+        testGitClient.commit("commit1-master");
+        final ObjectId masterTip = workspace.head();
+
+        workspace.launchCommand("git", "branch", "branch1", masterTip.name());
+        workspace.launchCommand("git", "checkout", "branch1");
+        workspace.touch(testGitDir, "file1", "content1");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1-branch1");
+        final ObjectId branch1 = workspace.head();
+
+        /* JGit checks out the masterTag, while CliGit checks out
+         * master branch.  It is risky that there are different
+         * behaviors between the two implementations, but when a
+         * reference is ambiguous, it is safe to assume that
+         * resolution of the ambiguous reference is an implementation
+         * specific detail. */
+        testGitClient.checkout().ref("master").execute();
+        final String messageDetails =
+                ", head=" + workspace.head().name() +
+                ", masterTip=" + masterTip.name() +
+                ", masterTag=" + masterTag.name() +
+                ", branch1=" + branch1.name();
+        if (testGitClient instanceof CliGitAPIImpl) {
+            assertEquals("head != master branch" + messageDetails, masterTip, workspace.head());
+        } else {
+            assertEquals("head != master tag" + messageDetails, masterTag, workspace.head());
+        }
+    }
+
+    @Test
+    public void testCloneNoCheckout() throws Exception {
+        // Create a repo for cloning purpose
+        WorkspaceWithRepo repoToClone = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        initializeWorkspace(repoToClone);
+        repoToClone.commitEmpty("init");
+        repoToClone.touch(repoToClone.getGitFileDir(), "file1", "");
+        repoToClone.getGitClient().add("file1");
+        repoToClone.getGitClient().commit("commit1");
+
+        // Clone it with no checkout
+        testGitClient.clone_().url(repoToClone.getGitFileDir().getAbsolutePath()).repositoryName("origin").noCheckout().execute();
+        assertFalse(workspace.exists("file1"));
+    }
+
+    @Issue("JENKINS-25444")
+    @Test
+    public void testFetchDeleteCleans() throws Exception {
+        workspace.touch(testGitDir, "file1", "old");
+        testGitClient.add("file1");
+        testGitClient.commit("commit1");
+        workspace.touch(testGitDir, "file1", "new");
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        testGitClient.checkout().branch("other").ref(Constants.HEAD).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
+
+        Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+
+        assertTrue("Workspace must be clean", status.isClean());
+    }
+
+    @Test
+    public void testDescribe() throws Exception {
+        workspace.commitEmpty("first");
+        workspace.launchCommand("git", "tag", "-m", "test", "t1");
+        workspace.touch(testGitDir, "a", "");
+        testGitClient.add("a");
+        testGitClient.commit("second");
+        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
+
+        workspace.launchCommand("git", "tag", "-m", "test2", "t2");
+        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
