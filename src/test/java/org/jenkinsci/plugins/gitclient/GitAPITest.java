@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -60,9 +61,6 @@ import java.util.logging.Logger;
 
 @RunWith(Parameterized.class)
 public class GitAPITest {
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
@@ -126,8 +124,6 @@ public class GitAPITest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        final File repoRoot = tempFolder.newFolder();
-
         revParseBranchName = null;
         checkoutTimeout = -1;
         cloneTimeout = -1;

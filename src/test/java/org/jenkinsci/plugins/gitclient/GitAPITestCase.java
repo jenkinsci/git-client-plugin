@@ -1504,19 +1504,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    public void test_setSubmoduleUrl() throws Exception {
-        w = clone(localMirror());
-        w.launchCommand("git", "checkout", "tests/getSubmodules");
-        w.git.submoduleInit();
-
-        String DUMMY = "/dummy";
-        w.igit().setSubmoduleUrl("modules/firewall", DUMMY);
-
-        // create a brand new Git object to make sure it's persisted
-        WorkingArea subModuleVerify = new WorkingArea(w.repo);
-        assertEquals(DUMMY, subModuleVerify.igit().getSubmoduleUrl("modules/firewall"));
-    }
-
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
@@ -1610,18 +1597,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
     }
 
-    @Issue("JENKINS-23299")
-    public void test_getHeadRev() throws Exception {
-        Map<String, ObjectId> heads = w.git.getHeadRev(remoteMirrorURL);
-        ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
-        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
-
-        /* Test with a specific tag reference - JENKINS-23299 */
-        ObjectId knownTag = w.git.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
-        ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
-        assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
-    }
-
     /**
      * User interface calls getHeadRev without a workspace while
      * validating user input. This test showed a null pointer
@@ -1639,32 +1614,6 @@ public abstract class GitAPITestCase extends TestCase {
         Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
         ObjectId master = w.git.getHeadRev(remoteMirrorURL, "refs/heads/master");
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
-    }
-
-    /**
-     * Test getHeadRev with wildcard matching in the branch name.
-     * Relies on the branches in the git-client-plugin repository
-     * include at least branches named:
-     *   master
-     *   tests/getSubmodules
-     *
-     * Also relies on a specific return ordering of the values in the
-     * pattern matching performed by getHeadRev, and relies on not
-     * having new branches created which match the patterns and will
-     * occur earlier than the expected value.
-     */
-    public void test_getHeadRev_wildcards() throws Exception {
-        Map<String, ObjectId> heads = w.git.getHeadRev(localMirror());
-        ObjectId master = w.git.getHeadRev(localMirror(), "refs/heads/master");
-        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
-        ObjectId wildOrigin = w.git.getHeadRev(localMirror(), "*/master");
-        assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
-        ObjectId master1 = w.git.getHeadRev(localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
-        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
-        ObjectId getSubmodules1 = w.git.getHeadRev(localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
-        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
-        ObjectId getSubmodules = w.git.getHeadRev(localMirror(), "N/*et*modul*");
-        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 
     /**

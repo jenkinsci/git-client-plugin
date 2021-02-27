@@ -2,8 +2,15 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
 import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.Revision;
+import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
+import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -11,24 +18,29 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Git API Tests which doesn't need a working initialized git repo.
+ * Implemented in JUnit 4
+ */
+
 @RunWith(Parameterized.class)
 public class GitAPITestNotIntialized {
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
@@ -90,8 +102,6 @@ public class GitAPITestNotIntialized {
 
     @Before
     public void setUpRepositories() throws Exception {
-        final File repoRoot = tempFolder.newFolder();
-
         revParseBranchName = null;
         checkoutTimeout = -1;
         cloneTimeout = -1;
@@ -145,5 +155,48 @@ public class GitAPITestNotIntialized {
         WorkspaceWithRepo subModuleVerify = new WorkspaceWithRepo(testGitDir, gitImplName, TaskListener.NULL);
         IGitAPI subModuleIgit = (IGitAPI) subModuleVerify.getGitClient();
         assertEquals(DUMMY, subModuleIgit.getSubmoduleUrl("modules/firewall"));
+    }
+
+    private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
+
+    @Issue("JENKINS-23299")
+    @Test
+    public void testGetHeadRev() throws Exception {
+        Map<String, ObjectId> heads = testGitClient.getHeadRev(remoteMirrorURL);
+        ObjectId master = testGitClient.getHeadRev(remoteMirrorURL, "refs/heads/master");
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
+
+        /* Test with a specific tag reference - JENKINS-23299 */
+        ObjectId knownTag = testGitClient.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
+        ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
+        assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
+    }
+
+
+    /**
+     * Test getHeadRev with wildcard matching in the branch name.
+     * Relies on the branches in the git-client-plugin repository
+     * include at least branches named:
+     *   master
+     *   tests/getSubmodules
+     *
+     * Also relies on a specific return ordering of the values in the
+     * pattern matching performed by getHeadRev, and relies on not
+     * having new branches created which match the patterns and will
+     * occur earlier than the expected value.
+     */
+    @Test
+    public void testGetHeadRevWildCards() throws Exception {
+        Map<String, ObjectId> heads = testGitClient.getHeadRev(workspace.localMirror());
+        ObjectId master = testGitClient.getHeadRev(workspace.localMirror(), "refs/heads/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
+        ObjectId wildOrigin = testGitClient.getHeadRev(workspace.localMirror(), "*/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
+        ObjectId master1 = testGitClient.getHeadRev(workspace.localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
+        ObjectId getSubmodules1 = testGitClient.getHeadRev(workspace.localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
+        ObjectId getSubmodules = testGitClient.getHeadRev(workspace.localMirror(), "N/*et*modul*");
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
     }
 }
