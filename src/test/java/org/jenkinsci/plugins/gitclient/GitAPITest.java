@@ -5,6 +5,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -40,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1487,6 +1489,20 @@ public class GitAPITest {
         testGitClient.checkout().ref("t1").execute();
 
         assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
+    }
+
+    @Test
+    public void testNoSubmodules() throws Exception {
+        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        testGitClient.add("committed-file");
+        testGitClient.commit("commit1");
+        IGitAPI igit = (IGitAPI) testGitClient;
+        igit.submoduleClean(false);
+        igit.submoduleClean(true);
+        igit.submoduleUpdate().recursive(false).execute();
+        igit.submoduleUpdate().recursive(true).execute();
+        igit.submoduleSync();
+        assertTrue("committed-file missing at commit1", workspace.file("committed-file").exists());
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {

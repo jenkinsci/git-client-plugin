@@ -1075,19 +1075,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
 
-    public void test_no_submodules() throws IOException, InterruptedException {
-        w.init();
-        w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
-        w.git.add("committed-file");
-        w.git.commit("commit1");
-        w.igit().submoduleClean(false);
-        w.igit().submoduleClean(true);
-        w.igit().submoduleUpdate().recursive(false).execute();
-        w.igit().submoduleUpdate().recursive(true).execute();
-        w.igit().submoduleSync();
-        assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
-    }
-
     public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
         try {
             w.igit().fixSubmoduleUrls("origin", listener);
