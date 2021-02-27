@@ -1957,7 +1957,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return proxy hosts concatenated by commas
      */
     private String getNoProxyHosts(){
-        String noProxyHost = proxy.noProxyHost;
+        String noProxyHost = proxy.getNoProxyHost();
         List <String> noProxyHosts = Lists.newArrayList(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
         return String.join(",",noProxyHosts);
     }
