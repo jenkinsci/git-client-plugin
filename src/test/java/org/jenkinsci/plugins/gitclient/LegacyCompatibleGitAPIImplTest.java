@@ -23,19 +23,14 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class LegacyCompatibleGitAPIImplTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private LegacyCompatibleGitAPIImpl git;
     private File repo;
@@ -51,13 +46,6 @@ public class LegacyCompatibleGitAPIImplTest {
         gitImpl = "git";
     }
 
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @Before
     public void setUp() throws IOException, InterruptedException {
         repo = tempFolder.newFolder();
@@ -65,6 +53,9 @@ public class LegacyCompatibleGitAPIImplTest {
         git = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         assertNotGitRepo(repo);
         git.init();
+        CliGitCommand gitCmd = new CliGitCommand(git);
+        gitCmd.run("config", "user.name", "Vojtěch legacy Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client.test@example.com");
         assertIsGitRepo(repo);
     }
 
@@ -162,8 +153,10 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
         File trackedFile = commitTrackedFile();
-        thrown.expect(GitException.class);
-        git.showRevision(new Revision(gitClientCommit));
+        assertThrows(GitException.class,
+                     () -> {
+                         git.showRevision(new Revision(gitClientCommit));
+                     });
     }
 
     @Test
@@ -193,7 +186,6 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit_SHA1() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         List<Tag> result = myGit.getTagsOnCommit(taggedCommit.name());
         assertTrue("Tag list not empty: " + result, result.isEmpty());
@@ -202,8 +194,8 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
+        File trackedFile = commitTrackedFile();
         final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID().toString();
         final String tagMessage = "Tagged with " + uniqueTagName;
         myGit.tag(uniqueTagName, tagMessage);
@@ -217,7 +209,6 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit_sha1() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         String revName = "2db88a20bba8e98b6710f06213f3b60940a63c7c";
         List<Tag> result = myGit.getTagsOnCommit(revName);
@@ -226,8 +217,11 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     public void testLsTreeThrows() throws Exception {
-        thrown.expect(git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class);
-        git.lsTree("HEAD");
+        Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
+        assertThrows(expectedExceptionClass,
+                     () -> {
+                         git.lsTree("HEAD");
+                     });
     }
 
     @Test

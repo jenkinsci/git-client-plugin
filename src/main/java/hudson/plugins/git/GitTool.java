@@ -17,6 +17,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.File;
 import java.io.IOException;
@@ -94,11 +95,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     public GitTool forNode(Node node, TaskListener log) throws IOException, InterruptedException {
-        return new GitTool(getName(), translateFor(node, log), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
     public GitTool forEnvironment(EnvVars environment) {
-        return new GitTool(getName(), environment.expand(getHome()), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
     }
 
     @Override
@@ -125,7 +126,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         String defaultGitExe = isWindows() ? "git.exe" : "git";
-        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
+        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.emptyList());
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
     }
@@ -151,6 +152,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return true;
         }
 
+        @RequirePOST
         public FormValidation doCheckHome(@QueryParameter File value) {
             Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
             String path = value.getPath();

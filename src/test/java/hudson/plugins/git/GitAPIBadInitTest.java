@@ -13,9 +13,11 @@ import org.apache.commons.io.FileUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 public class GitAPIBadInitTest {
 
@@ -27,9 +29,6 @@ public class GitAPIBadInitTest {
     public GitAPIBadInitTest() {
         env = new EnvVars();
     }
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private File tempDir;
     private TaskListener listener;
@@ -54,8 +53,10 @@ public class GitAPIBadInitTest {
         File existingFile = new File(tempDir, "file-exists");
         FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");
         GitClient git = new GitAPI("git", existingFile, listener, env);
-        thrown.expect(GitException.class);
-        thrown.expectMessage("Could not init " + existingFile.getAbsolutePath());
-        git.init();
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          git.init();
+                                      });
+        assertThat(e.getMessage(), is("Could not init " + existingFile.getAbsolutePath()));
     }
 }

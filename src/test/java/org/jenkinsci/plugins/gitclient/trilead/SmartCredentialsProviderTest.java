@@ -9,9 +9,7 @@ import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.*;
 
@@ -32,9 +30,6 @@ public class SmartCredentialsProviderTest {
     private final String MASKED_STRING_TYPE_PROMPT = "masked string type prompt";
     private final String UNMASKED_STRING_TYPE_PROMPT = "unmasked string type prompt";
     private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     public SmartCredentialsProviderTest() throws URISyntaxException {
         gitURI = new URIish("git://github.com/jenkinsci/git-client-plugin.git");
@@ -221,8 +216,10 @@ public class SmartCredentialsProviderTest {
         Secret secret = Secret.fromString("password-secret");
         StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         provider.addCredentials(gitURI.toString(), credentials);
-
-        exception.expect(UnsupportedCredentialItem.class);
-        assertTrue(provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
+        assertThrows(UnsupportedCredentialItem.class,
+                     () ->
+                     {
+                         provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType);
+                     });
     }
 }

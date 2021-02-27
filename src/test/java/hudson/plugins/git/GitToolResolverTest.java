@@ -9,7 +9,8 @@ import hudson.tools.InstallSourceProperty;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +44,7 @@ public class GitToolResolverTest {
 
         GitTool defaultTool = GitTool.getDefaultInstallation();
         GitTool resolved = (GitTool) defaultTool.translate(j.jenkins, new EnvVars(), TaskListener.NULL);
-        assertThat(resolved.getGitExe(), org.hamcrest.CoreMatchers.containsString(toolHome));
+        assertThat(resolved.getGitExe(), containsString(toolHome));
     }
 
     private boolean isWindows() {

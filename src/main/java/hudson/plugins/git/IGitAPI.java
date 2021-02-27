@@ -16,6 +16,7 @@ import java.util.List;
  *
  * @deprecated methods here are deprecated until proven useful by a plugin
  */
+@Deprecated
 public interface IGitAPI extends GitClient {
 
     /**
@@ -130,7 +131,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void fetch(String repository, String refspec) throws GitException, InterruptedException;
+    void fetch(String repository, String refspec) throws GitException, InterruptedException;
 
     /**
      * Retrieve commits from RemoteConfig.
@@ -216,6 +217,7 @@ public interface IGitAPI extends GitClient {
      *             instead. This method does work only with local branches on
      *             one implementation and with all the branches - in the other
      */
+    @Deprecated
     List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException;
 
     /**
@@ -230,6 +232,7 @@ public interface IGitAPI extends GitClient {
      * @deprecated
      *  Use {@link #lsTree(String, boolean)} to be explicit about the recursion behaviour.
      */
+    @Deprecated
     List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException;
 
     /**
@@ -300,5 +303,6 @@ public interface IGitAPI extends GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Restricted(NoExternalUse.class)
+    @Deprecated
     String getAllLogEntries(String branch) throws InterruptedException;
 }

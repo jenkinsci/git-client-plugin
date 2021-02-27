@@ -14,7 +14,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
-import java.io.File;
 import java.io.IOException;
 import org.jenkinsci.remoting.RoleChecker;
 
@@ -51,18 +50,7 @@ public class RemotingTest {
 
         private final GitClient git;
 
-        private static boolean cliGitDefaultsSet = false;
-
-        private void setCliGitDefaults() throws Exception {
-            if (!cliGitDefaultsSet) {
-                CliGitCommand gitCmd = new CliGitCommand(null);
-                gitCmd.setDefaults();
-            }
-            cliGitDefaultsSet = true;
-        }
-
         private Work(GitClient git) throws Exception {
-            setCliGitDefaults();
             this.git = git;
         }
 

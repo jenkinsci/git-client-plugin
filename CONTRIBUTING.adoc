@@ -5,6 +5,8 @@ The git client plugin implements the link:https://plugins.jenkins.io/scm-api[Jen
 Refer to the SCM API documentation for link:https://github.com/jenkinsci/scm-api-plugin/blob/master/docs/implementation.adoc#naming-your-plugin[plugin naming conventions]
 and for the link:https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#add-to-core-or-create-extension-plugin[preferred locations of new functionality].
 
+== Preparing a pull request
+
 Plugin source code is hosted on link:https://github.com/jenkinsci/git-client-plugin[GitHub].
 New feature proposals and bug fix proposals should be submitted as link:https://help.github.com/articles/creating-a-pull-request[GitHub pull requests].
 Your pull request will be evaluated by the link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/[Jenkins job].
@@ -13,10 +15,24 @@ Before submitting your change, please assure that you've added tests which verif
 There have been many developers involved in the git client plugin and there are many, many users who depend on the git client plugin.
 Tests help us assure that we're delivering a reliable plugin, and that we've communicated our intent to other developers as executable descriptions of plugin behavior.
 
+=== Compiling and testing the plugin
+
+Compile and run the plugin automated tests on Java 8 or Java 11 with:
+
+* `mvn clean verify`
+
+Run the plugin inside a Jenkins environment with the link:https://jenkinsci.github.io/maven-hpi-plugin/run-mojo.html[maven hpi plugin]:
+
+* `mvn -Djetty.port=8080 hpi:run`
+
+=== Code coverage reporting
+
 Code coverage reporting is available as a maven target.
 Please improve code coverage with tests when you submit.
 
 * `mvn -P enable-jacoco clean install jacoco:report` to report code coverage
+
+=== Spotbugs checks
 
 Please don't introduce new spotbugs output.
 
@@ -25,8 +41,10 @@ Please don't introduce new spotbugs output.
 
 Code formatting in the git client plugin varies between files.
 Try to maintain reasonable consistency with the existing files where feasible.
+
 Please *don't reformat a file* without discussing with the current maintainers.
 There are many closed pull requests with label 'link:https://github.com/jenkinsci/git-client-plugin/milestone/2?closed=1[Later]' that may develop conflicts due to whitespace changes.
+
 New code should follow the link:https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines[SCM API code style guidelines].
 
 [[pull-request-review]]
@@ -64,3 +82,11 @@ Typical bug review tasks include:
 * Review summary and description
 * Attempt to duplicate the issue
 * Add a comment with results of the attempt to duplicate the issue
+
+[[jmh-benchmarks]]
+== Java Microbenchmark Harness
+
+Git client plugin includes link:https://openjdk.java.net/projects/code-tools/jmh/[Java Microbenchmark Harness (JMH)] benchmark tests to compare the performance of command line git and JGit.
+Run the benchmarks with the command:
+
+* `mvn -P jmh-benchmark test`

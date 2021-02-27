@@ -1,12 +1,22 @@
 #!groovy
 
-Random random = new Random() // Randomize which Jenkins version is selected for more testing
-def use_newer_jenkins = random.nextBoolean() // Use newer Jenkins on one build but slightly older on other
+buildPlugin(failFast: false)
 
-// build recommended configurations
-subsetConfiguration = [ [ jdk: '8',  platform: 'windows', jenkins: null                      ],
-                        [ jdk: '8',  platform: 'linux',   jenkins: !use_newer_jenkins ? '2.176.3' : '2.164.1', javaLevel: '8' ],
-                        [ jdk: '11', platform: 'linux',   jenkins:  use_newer_jenkins ? '2.176.3' : '2.164.1', javaLevel: '8' ]
-                      ]
+// Return true if benchmarks should be run
+// Benchmarks run if any of the most recent 3 commits includes the word 'benchmark'
+boolean shouldRunBenchmarks(String branchName) {
+    // Disable benchmarks on master branch for speed
+    // if (branchName.endsWith('master')) { // accept both origin/master and master
+    //     return true;
+    // }
+    def recentCommitMessages
+    node('linux') {
+        checkout scm
+        recentCommitMessages = sh(script: 'git log -n 3', returnStdout: true)
+    }
+    return recentCommitMessages =~ /.*[Bb]enchmark.*/
+}
 
-buildPlugin(configurations: subsetConfiguration, failFast: false)
+if (shouldRunBenchmarks(env.BRANCH_NAME)) {
+    runBenchmarks('jmh-report.json')
+}

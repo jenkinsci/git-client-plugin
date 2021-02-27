@@ -11,13 +11,11 @@ import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 public class CliGitAPIWindowsFilePermissionsTest {
 
@@ -28,7 +26,9 @@ public class CliGitAPIWindowsFilePermissionsTest {
 
     @Before
     public void beforeEach() throws Exception {
-        assumeTrue(isWindows());
+        if (!isWindows()) {
+            return;
+        }
         cliGit = new CliGitAPIImpl("git", new File("."), null, null);
         file = cliGit.createTempFile("permission", ".suff");
         Path path = Paths.get(file.toURI());
@@ -40,6 +40,9 @@ public class CliGitAPIWindowsFilePermissionsTest {
 
     @Test
     public void test_windows_file_permission_is_set_correctly() throws Exception {
+        if (!isWindows()) {
+            return;
+        }
         cliGit.fixSshKeyOnWindows(file);
         assertEquals(1, fileAttributeView.getAcl().size());
         AclEntry aclEntry = fileAttributeView.getAcl().get(0);
@@ -51,6 +54,9 @@ public class CliGitAPIWindowsFilePermissionsTest {
 
     @Test
     public void test_windows_file_permission_are_incorrect() throws Exception {
+        if (!isWindows()) {
+            return;
+        }
         // By default files include System and builtin administrators
         assertNotSame(1, fileAttributeView.getAcl().size());
         for (AclEntry entry : fileAttributeView.getAcl()) {

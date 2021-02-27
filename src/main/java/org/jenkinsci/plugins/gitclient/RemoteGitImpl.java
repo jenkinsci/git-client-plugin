@@ -11,7 +11,6 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
@@ -24,7 +23,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -44,7 +43,8 @@ import java.util.Set;
  *
  * @author Kohsuke Kawaguchi
  */
-class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
+@SuppressWarnings("deprecation") // Suppressing deprecation warnings intentionally
+class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializable {
     private final GitClient proxy;
     private transient Channel channel;
 
@@ -52,11 +52,11 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         this.proxy = proxy;
     }
 
-    private IGitAPI getGitAPI() {
-        return (IGitAPI)proxy;
+    private hudson.plugins.git.IGitAPI getGitAPI() {
+        return (hudson.plugins.git.IGitAPI)proxy;
     }
 
-    private Object readResolve() {
+    protected Object readResolve() {
         channel = Channel.current();
         return this;
     }
@@ -72,7 +72,7 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
         private final String[] parameterTypes;
         private final Object[] args;
 
-        Invocation(Method method, @Nonnull Object[] args) {
+        Invocation(Method method, @NonNull Object[] args) {
             this.methodName = method.getName();
             this.args = args;
             this.parameterTypes = new String[args.length];
@@ -306,12 +306,14 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void checkout(String ref) throws GitException, InterruptedException {
-        proxy.checkout().ref(ref).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.checkout(ref);
     }
 
     /** {@inheritDoc} */
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        proxy.checkout().ref(ref).branch(branch).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.checkout(ref, branch);
     }
 
     /**
@@ -411,7 +413,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        proxy.fetch_().from(url, refspecs).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.fetch(url, refspecs);
     }
 
     /** {@inheritDoc} */
@@ -436,7 +439,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void merge(ObjectId rev) throws GitException, InterruptedException {
-        proxy.merge().setRevisionToMerge(rev).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.merge(rev);
     }
 
     /** {@inheritDoc} */
@@ -626,7 +630,8 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.submoduleUpdate(recursive);
     }
 
     /**
@@ -638,17 +643,20 @@ class RemoteGitImpl implements GitClient, IGitAPI, Serializable {
      * @throws java.lang.InterruptedException if any.
      */
     public void submoduleUpdate(boolean recursive, String ref) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).ref(ref).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.submoduleUpdate(recursive, ref);
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.submoduleUpdate(recursive, remoteTracking);
     }
 
     /** {@inheritDoc} */
     public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
-        proxy.submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        proxy.submoduleUpdate(recursive, remoteTracking, reference);
     }
 
     /**

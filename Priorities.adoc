@@ -13,11 +13,11 @@ When others provide additional help on an item, it tends to raise the priority o
 
 . link:CONTRIBUTING.adoc#bug-triage[Bug report triage]
 . link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3AShortTerm[Short term improvements]
-. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3ACaching[Caching and performance improvements]
-. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3AnotifyCommit[notifyCommit and webhook improvements]
+. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3ACaching[Caching & performance improvements]
+. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3AnotifyCommit[notifyCommit & webhook improvements]
 . link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3AChangelog+[Changelog improvements]
 . link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3ASubmodules[Submodule improvements]
-. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3ABuildData[BuildData memory bloat]
+. link:https://github.com/jenkinsci/git-client-plugin/pulls?utf8=%E2%9C%93&q=is%3Apr+is%3Aunmerged+label%3ABuildData[BuildData memory bloat reduction]
 
 [[bug-reports]]
 == Bug Reports

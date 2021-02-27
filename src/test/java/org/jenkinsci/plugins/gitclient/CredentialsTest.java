@@ -8,16 +8,12 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.google.common.io.Files;
 import hudson.model.Fingerprint;
-import hudson.plugins.git.GitException;
 import hudson.util.LogTaskListener;
-import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,10 +29,12 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import org.junit.After;
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.Rule;
@@ -50,12 +48,10 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.ClassRule;
-import org.junit.rules.DisableOnDebug;
-import org.junit.rules.TestRule;
-import org.junit.rules.Timeout;
 
 /**
- *
+ * Test authenticated operations with the git implementations.
+ * Uses contents of ~/.ssh/auth-data for parameterized tests.
  * @author Mark Waite
  */
 @RunWith(Parameterized.class)
@@ -90,7 +86,6 @@ public class CredentialsTest {
     private int logCount;
     private LogHandler handler;
     private LogTaskListener listener;
-    private static final String LOGGING_STARTED = "*** Logging started ***";
 
     private final static File HOME_DIR = new File(System.getProperty("user.home"));
     private final static File SSH_DIR = new File(HOME_DIR, ".ssh");
@@ -340,11 +335,11 @@ public class CredentialsTest {
         return TEST_ALL_CREDENTIALS ? repos : repos.subList(0, Math.min(repos.size(), 6));
     }
 
-    private void doFetch(String source) throws Exception {
-        doFetch(source, "master", true);
+    private void gitFetch(String source) throws Exception {
+        gitFetch(source, "master", true);
     }
 
-    private void doFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
+    private void gitFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
         /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
@@ -382,29 +377,30 @@ public class CredentialsTest {
     }
 
     /**
-     * Returns true if another test should be allowed to start.
+     * Returns true if another test should not be allowed to start.
      * JenkinsRule test timeout defaults to 180 seconds.
      *
-     * @return true if another test should be allowed to start
+     * @return true if another test should not be allowed to start
      */
-    private boolean testPeriodNotExpired() {
-        return (System.currentTimeMillis() - firstTestStartTime) < ((180 - 70) * 1000L);
+    private boolean testPeriodExpired() {
+        return (System.currentTimeMillis() - firstTestStartTime) > ((180 - 70) * 1000L);
     }
 
     @Test
     @Issue("JENKINS-50573")
     public void testFetchWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
-        assumeFalse(lfsSpecificTest);
+        if (testPeriodExpired() || lfsSpecificTest) {
+            return;
+        }
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
         addCredential();
         /* Fetch with remote URL */
-        doFetch(gitRepoURL);
+        gitFetch(gitRepoURL);
         git.setRemoteUrl("origin", gitRepoURL);
         /* Fetch with remote name "origin" instead of remote URL */
-        doFetch("origin");
+        gitFetch("origin");
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         git.checkout().branch("master").ref(master.getName()).deleteBranchIfExist(true).execute();
         if (submodules) {
@@ -413,16 +409,18 @@ public class CredentialsTest {
             subcmd.execute();
         }
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));
-        assertEquals("Master != HEAD", master, git.withRepository((repo, channel) -> repo.findRef("master").getObjectId()));
-        assertEquals("Wrong branch", "master", git.withRepository((repo, channel) -> repo.getBranch()));
+        assertEquals("Master != HEAD", master, git.withRepository((gitRepo, unusedChannel)-> gitRepo.findRef("master").getObjectId()));
+        assertEquals("Wrong branch", "master", git.withRepository((gitRepo, unusedChanel) -> gitRepo.getBranch()));
         assertTrue("No file " + fileToCheck + ", has " + listDir(repo), clonedFile.exists());
         /* prune opens a remote connection to list remote branches */
-        git.prune(new RemoteConfig(git.withRepository((repo, channel) -> repo.getConfig()), "origin"));
+        git.prune(new RemoteConfig(git.withRepository((gitRepo, unusedChannel) -> gitRepo.getConfig()), "origin"));
     }
 
     @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
+        if (testPeriodExpired()) {
+            return;
+        }
         addCredential();
         Map<String, ObjectId> remoteReferences;
         switch (random.nextInt(4)) {
@@ -453,8 +451,9 @@ public class CredentialsTest {
     @Test
     @Issue("JENKINS-45228")
     public void testLfsMergeWithCredentials() throws Exception {
-        assumeTrue(testPeriodNotExpired());
-        assumeTrue(lfsSpecificTest);
+        if (testPeriodExpired() || !lfsSpecificTest) {
+            return;
+        }
         File clonedFile = new File(repo, fileToCheck);
         git.init_().workspace(repo.getAbsolutePath()).execute();
         assertFalse("file " + fileToCheck + " in " + repo + ", has " + listDir(repo), clonedFile.exists());
@@ -462,7 +461,7 @@ public class CredentialsTest {
 
         /* Fetch with remote name "origin" instead of remote URL */
         git.setRemoteUrl("origin", gitRepoURL);
-        doFetch("origin", "*", false);
+        gitFetch("origin", "*", false);
         ObjectId master = git.getHeadRev(gitRepoURL, "master");
         git.checkout().branch("master").ref(master.getName()).lfsRemote("origin").deleteBranchIfExist(true).execute();
         assertTrue("master: " + master + " not in repo", git.isCommitInRepo(master));

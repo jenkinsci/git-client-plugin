@@ -16,13 +16,15 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.After;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
-import org.junit.BeforeClass;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,16 +55,6 @@ public class MergeCommandTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @Before
     public void createMergeTestRepo() throws IOException, InterruptedException {
         EnvVars env = new hudson.EnvVars();
@@ -70,6 +62,9 @@ public class MergeCommandTest {
         File repo = tempFolder.newFolder();
         git = Git.with(listener, env).in(repo).using(gitImpl).getClient();
         git.init_().workspace(repo.getAbsolutePath()).execute();
+        CliGitCommand gitCmd = new CliGitCommand(git);
+        gitCmd.run("config", "user.name", "Vojtěch MergeCommandTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
 
         // Create a master branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
@@ -313,9 +308,11 @@ public class MergeCommandTest {
         assertTrue("branch commit 1 not on master branch after merge", git.revList("master").contains(commit1Branch));
         assertTrue("branch commit 2 not on master branch after merge", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing in working directory", readmeOne.exists());
-        thrown.expect(GitException.class);
-        thrown.expectMessage(commitConflict.getName());
-        mergeCmd.setRevisionToMerge(commitConflict).execute();
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          mergeCmd.setRevisionToMerge(commitConflict).execute();
+                                      });
+        assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 
     @Test
@@ -325,8 +322,10 @@ public class MergeCommandTest {
         assertFalse("branch commit 1 on master branch after merge without commit", git.revList("master").contains(commit1Branch));
         assertFalse("branch commit 2 on master branch after merge without commit", git.revList("master").contains(commit2Branch));
         assertTrue("README 1 missing in working directory", readmeOne.exists());
-        thrown.expect(GitException.class);
-        thrown.expectMessage(commitConflict.getName());
-        mergeCmd.setRevisionToMerge(commitConflict).execute();
+        GitException e = assertThrows(GitException.class,
+                                      () -> {
+                                          mergeCmd.setRevisionToMerge(commitConflict).execute();
+                                      });
+        assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 }

@@ -86,30 +86,4 @@ class CliGitCommand {
         args.add(arguments);
         return run(false);
     }
-
-    private void setConfigIfEmpty(String configName, String value) throws Exception {
-        String[] cmdOutput = runWithoutAssert("config", configName);
-        if (cmdOutput == null || cmdOutput[0].isEmpty() || cmdOutput[0].equals("[]")) {
-            /* Set config value globally */
-            run("config", "--global", configName, value);
-            /* Read config value */
-            cmdOutput = run("config", configName);
-            if (cmdOutput == null || cmdOutput[0].isEmpty() || !cmdOutput[0].equals(value)) {
-                System.out.println("ERROR: git config " + configName + " reported '" + cmdOutput[0] + "' instead of '" + value + "'");
-            }
-        }
-    }
-
-    /**
-     * Set git config values for user.name and user.email if they are not
-     * already set. Many tests assume that "git commit" can be called without
-     * failure, but a newly installed user account does not necessarily have
-     * values assigned for user.name and user.email. This method checks the
-     * existing values, and if they are not set, assigns default values.
-     * If the values are already set, they are unchanged.
-     */
-    void setDefaults() throws Exception {
-        setConfigIfEmpty("user.name", "Vojtěch-Zweibrücken-Šafařík");
-        setConfigIfEmpty("user.email", "email.address.from.git.client.plugin.test@example.com");
-    }
 }
