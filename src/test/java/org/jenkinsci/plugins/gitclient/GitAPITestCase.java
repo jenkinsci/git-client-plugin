@@ -1469,19 +1469,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir3"));
     }
 
-    public void test_hasSubmodules() throws Exception {
-        w.init();
-
-        w.launchCommand("git", "fetch", localMirror(), "tests/getSubmodules:t");
-        w.git.checkout().ref("t").execute();
-        assertTrue(w.git.hasGitModules());
-
-        w.launchCommand("git", "fetch", localMirror(), "master:t2");
-        w.git.checkout().ref("t2").execute();
-        assertFalse(w.git.hasGitModules());
-        assertFixSubmoduleUrlsThrows();
-    }
-
     /*
      * core.symlinks is set to false by git for WIndows.
      * It is not set on Linux.

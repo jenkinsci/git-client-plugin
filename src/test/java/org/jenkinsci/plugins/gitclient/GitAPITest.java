@@ -1505,6 +1505,37 @@ public class GitAPITest {
         assertTrue("committed-file missing at commit1", workspace.file("committed-file").exists());
     }
 
+    @Test
+    public void testHasSubmodules() throws Exception {
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), "tests/getSubmodules:t");
+        testGitClient.checkout().ref("t").execute();
+        assertTrue(testGitClient.hasGitModules());
+
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), "master:t2");
+        testGitClient.checkout().ref("t2").execute();
+        assertFalse(testGitClient.hasGitModules());
+        assertFixSubmoduleUrlsThrows();
+    }
+
+    public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
+        IGitAPI igit = (IGitAPI) testGitClient;
+        try {
+            igit.fixSubmoduleUrls("origin", listener);
+            fail("Expected exception not thrown");
+        } catch (UnsupportedOperationException uoe) {
+            assertTrue("Unsupported operation not on JGit", igit instanceof JGitAPIImpl);
+        } catch (GitException ge) {
+            assertTrue("GitException not on CliGit", igit instanceof CliGitAPIImpl);
+            assertTrue("Wrong message in " + ge.getMessage(), ge.getMessage().startsWith("Could not determine remote"));
+            assertExceptionMessageContains(ge, "origin");
+        }
+    }
+
+    private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
+        String actual = ge.getMessage().toLowerCase();
+        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+    }
+
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
         final GitClient initGitClient = initWorkspace.getGitClient();
         final CliGitCommand initCliGitCommand = initWorkspace.getCliGitCommand();
