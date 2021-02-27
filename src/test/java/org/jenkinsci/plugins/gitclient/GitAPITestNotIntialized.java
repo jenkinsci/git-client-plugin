@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -11,6 +12,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
@@ -23,7 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @RunWith(Parameterized.class)
-public class GitAPITestForInvalidGit {
+public class GitAPITestNotIntialized {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -58,7 +60,7 @@ public class GitAPITestForInvalidGit {
     private File testGitDir;
     private CliGitCommand cliGitCommand;
 
-    public GitAPITestForInvalidGit(final String gitImplName) { this.gitImplName = gitImplName; }
+    public GitAPITestNotIntialized(final String gitImplName) { this.gitImplName = gitImplName; }
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
@@ -127,5 +129,21 @@ public class GitAPITestForInvalidGit {
             return;
         }
         assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasGitRepo);
+    }
+
+    @Test
+    public void testSetSubmoduleUrl() throws Exception {
+        workspace.cloneRepo(workspace, workspace.localMirror());
+        workspace.launchCommand("git", "checkout", "tests/getSubmodules");
+        testGitClient.submoduleInit();
+
+        String DUMMY = "/dummy";
+        IGitAPI igit = (IGitAPI) testGitClient;
+        igit.setSubmoduleUrl("modules/firewall", DUMMY);
+
+        // create a brand new Git object to make sure it's persisted
+        WorkspaceWithRepo subModuleVerify = new WorkspaceWithRepo(testGitDir, gitImplName, TaskListener.NULL);
+        IGitAPI subModuleIgit = (IGitAPI) subModuleVerify.getGitClient();
+        assertEquals(DUMMY, subModuleIgit.getSubmoduleUrl("modules/firewall"));
     }
 }
