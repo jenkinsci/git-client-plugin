@@ -2,20 +2,13 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.Util;
 import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
 import hudson.plugins.git.IGitAPI;
-import hudson.plugins.git.Revision;
-import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
@@ -24,7 +17,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,8 +109,6 @@ public class GitAPITestNotIntialized {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-//        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
-//        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();

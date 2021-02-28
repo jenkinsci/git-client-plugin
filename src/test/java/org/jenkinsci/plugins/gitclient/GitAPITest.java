@@ -20,10 +20,9 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
@@ -42,13 +41,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -70,6 +67,9 @@ public class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -139,8 +139,6 @@ public class GitAPITest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-//        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
-//        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();
@@ -1511,26 +1509,15 @@ public class GitAPITest {
         workspace.launchCommand("git", "fetch", workspace.localMirror(), "master:t2");
         testGitClient.checkout().ref("t2").execute();
         assertFalse(testGitClient.hasGitModules());
-        assertFixSubmoduleUrlsThrows();
-    }
-
-    public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
         IGitAPI igit = (IGitAPI) testGitClient;
-        try {
-            igit.fixSubmoduleUrls("origin", listener);
-            fail("Expected exception not thrown");
-        } catch (UnsupportedOperationException uoe) {
-            assertTrue("Unsupported operation not on JGit", igit instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertTrue("GitException not on CliGit", igit instanceof CliGitAPIImpl);
-            assertTrue("Wrong message in " + ge.getMessage(), ge.getMessage().startsWith("Could not determine remote"));
-            assertExceptionMessageContains(ge, "origin");
+        if (igit instanceof JGitAPIImpl) {
+            thrown.expect(UnsupportedOperationException.class);
+        } else if (igit instanceof  CliGitAPIImpl){
+            thrown.expect(GitException.class);
+            thrown.expectMessage("Could not determine remote");
+            thrown.expectMessage("origin");
         }
-    }
-
-    private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
-        String actual = ge.getMessage().toLowerCase();
-        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+        igit.fixSubmoduleUrls("origin", listener);
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
