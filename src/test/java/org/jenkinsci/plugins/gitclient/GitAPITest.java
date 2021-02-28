@@ -5,6 +5,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -21,7 +22,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
@@ -59,9 +60,6 @@ import java.util.logging.Logger;
 public class GitAPITest {
 
     @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
     @Rule
@@ -69,6 +67,9 @@ public class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -123,8 +124,6 @@ public class GitAPITest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        final File repoRoot = tempFolder.newFolder();
-
         revParseBranchName = null;
         checkoutTimeout = -1;
         cloneTimeout = -1;
@@ -140,8 +139,6 @@ public class GitAPITest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-//        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
-//        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();
@@ -1487,6 +1484,40 @@ public class GitAPITest {
         testGitClient.checkout().ref("t1").execute();
 
         assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
+    }
+
+    @Test
+    public void testNoSubmodules() throws Exception {
+        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        testGitClient.add("committed-file");
+        testGitClient.commit("commit1");
+        IGitAPI igit = (IGitAPI) testGitClient;
+        igit.submoduleClean(false);
+        igit.submoduleClean(true);
+        igit.submoduleUpdate().recursive(false).execute();
+        igit.submoduleUpdate().recursive(true).execute();
+        igit.submoduleSync();
+        assertTrue("committed-file missing at commit1", workspace.file("committed-file").exists());
+    }
+
+    @Test
+    public void testHasSubmodules() throws Exception {
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), "tests/getSubmodules:t");
+        testGitClient.checkout().ref("t").execute();
+        assertTrue(testGitClient.hasGitModules());
+
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), "master:t2");
+        testGitClient.checkout().ref("t2").execute();
+        assertFalse(testGitClient.hasGitModules());
+        IGitAPI igit = (IGitAPI) testGitClient;
+        if (igit instanceof JGitAPIImpl) {
+            thrown.expect(UnsupportedOperationException.class);
+        } else if (igit instanceof  CliGitAPIImpl){
+            thrown.expect(GitException.class);
+            thrown.expectMessage("Could not determine remote");
+            thrown.expectMessage("origin");
+        }
+        igit.fixSubmoduleUrls("origin", listener);
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
