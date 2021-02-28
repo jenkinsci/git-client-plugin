@@ -1,10 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.IGitAPI;
+import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -17,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -188,5 +193,151 @@ public class GitAPITestNotIntialized {
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
         ObjectId getSubmodules = testGitClient.getHeadRev(workspace.localMirror(), "N/*et*modul*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
+    }
+
+    /* Opening a git repository in a directory with a symbolic git file instead
+     * of a git directory should function properly.
+     */
+    @Test
+    public void testWithRepositoryWorksWithSubmodule() throws Exception {
+        workspace.cloneRepo(workspace, workspace.localMirror());
+        assertSubmoduleDirs(testGitDir, false, false);
+
+        /* Checkout a branch which includes submodules (in modules directory) */
+        String subBranch = testGitClient instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
+        String subRefName = "origin/" + subBranch;
+        testGitClient.checkout().ref(subRefName).branch(subBranch).execute();
+        testGitClient.submoduleInit();
+        testGitClient.submoduleUpdate().recursive(true).execute();
+        assertSubmoduleRepository(new File(testGitDir, "modules/ntp"));
+        assertSubmoduleRepository(new File(testGitDir, "modules/firewall"));
+    }
+
+    private void assertSubmoduleRepository(File submoduleDir) throws Exception {
+        /* Get a client directly on the submoduleDir */
+        GitClient submoduleClient = setupGitAPI(submoduleDir);
+
+        /* Assert that when we invoke the repository callback it gets a
+         * functioning repository object
+         */
+        submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
+            assertTrue(repo.getDirectory() + " is not a valid repository",
+                    repo.getObjectDatabase().exists());
+            return null;
+        });
+    }
+
+    protected GitClient setupGitAPI(File ws) throws Exception {
+        setCliGitDefaults();
+        return Git.with(listener, new EnvVars()).in(ws).using(gitImplName).getClient();
+    }
+
+    private static boolean cliGitDefaultsSet = false;
+
+    private void setCliGitDefaults() throws Exception {
+        if (!cliGitDefaultsSet) {
+            CliGitCommand gitCmd = new CliGitCommand(null);
+        }
+        cliGitDefaultsSet = true;
+    }
+
+    private void assertSubmoduleContents(File repo) throws IOException {
+        final File modulesDir = new File(repo, "modules");
+
+        final File sshkeysDir = new File(modulesDir, "sshkeys");
+        final File sshkeysModuleFile = new File(sshkeysDir, "Modulefile");
+        assertFileExists(sshkeysModuleFile);
+
+        final File keeperFile = new File(modulesDir, "keeper");
+        final String keeperContent = "";
+        assertFileExists(keeperFile);
+        assertFileContents(keeperFile, keeperContent);
+
+        final File ntpDir = new File(modulesDir, "ntp");
+        final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
+        final String ntpContributingContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        assertFileExists(ntpContributingFile);
+        assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
+    }
+
+    private void assertFileContains(File file, String expectedContent) throws IOException {
+        assertFileExists(file);
+        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
+        assertTrue(message, fileContent.contains(expectedContent));
+    }
+
+    private void assertFileContents(File file, String expectedContent) throws IOException {
+        assertFileExists(file);
+        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        assertEquals(file + " wrong content", expectedContent, fileContent);
+    }
+
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+        final File modulesDir = new File(repo, "modules");
+        final File ntpDir = new File(modulesDir, "ntp");
+        final File firewallDir = new File(modulesDir, "firewall");
+        final File keeperFile = new File(modulesDir, "keeper");
+        final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
+        final File sshkeysDir = new File(modulesDir, "sshkeys");
+        final File sshkeysModuleFile = new File(sshkeysDir, "Modulefile");
+        if (dirsShouldExist) {
+            assertDirExists(modulesDir);
+            assertDirExists(ntpDir);
+            assertDirExists(firewallDir);
+            assertDirExists(sshkeysDir);
+            /* keeperFile is in the submodules branch, but is a plain file */
+            assertFileExists(keeperFile);
+        } else {
+            assertDirNotFound(modulesDir);
+            assertDirNotFound(ntpDir);
+            assertDirNotFound(firewallDir);
+            assertDirNotFound(sshkeysDir);
+            /* keeperFile is in the submodules branch, but is a plain file */
+            assertFileNotFound(keeperFile);
+        }
+        if (filesShouldExist) {
+            assertFileExists(ntpContributingFile);
+            assertFileExists(sshkeysModuleFile);
+        } else {
+            assertFileNotFound(ntpContributingFile);
+            assertFileNotFound(sshkeysModuleFile);
+        }
+    }
+
+    private void assertDirNotFound(File dir) {
+        assertFileNotFound(dir);
+    }
+
+    private void assertFileNotFound(File file) {
+        assertFalse(file + " found, peer files: " + listDir(file.getParentFile()), file.exists());
+    }
+
+    private void assertDirExists(File dir) {
+        assertFileExists(dir);
+        assertTrue(dir + " is not a directory", dir.isDirectory());
+    }
+
+    private void assertFileExists(File file) {
+        assertTrue(file + " not found, peer files: " + listDir(file.getParentFile()), file.exists());
+    }
+
+    private String listDir(File dir) {
+        if (dir == null || !dir.exists()) {
+            return "";
+        }
+        File[] files = dir.listFiles();
+        if (files == null) {
+            return "";
+        }
+        StringBuilder fileList = new StringBuilder();
+        for (File file : files) {
+            fileList.append(file.getName());
+            fileList.append(',');
+        }
+        if (fileList.length() > 0) {
+            fileList.deleteCharAt(fileList.length() - 1);
+        }
+        return fileList.toString();
     }
 }

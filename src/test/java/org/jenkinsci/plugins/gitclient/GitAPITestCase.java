@@ -890,23 +890,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    /* Opening a git repository in a directory with a symbolic git file instead
-     * of a git directory should function properly.
-     */
-    public void test_with_repository_works_with_submodule() throws Exception {
-        w = clone(localMirror());
-        assertSubmoduleDirs(w.repo, false, false);
-
-        /* Checkout a branch which includes submodules (in modules directory) */
-        String subBranch = w.git instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
-        String subRefName = "origin/" + subBranch;
-        w.git.checkout().ref(subRefName).branch(subBranch).execute();
-        w.git.submoduleInit();
-        w.git.submoduleUpdate().recursive(true).execute();
-        assertSubmoduleRepository(new File(w.repo, "modules/ntp"));
-        assertSubmoduleRepository(new File(w.repo, "modules/firewall"));
-    }
-
     private void assertSubmoduleRepository(File submoduleDir) throws Exception {
         /* Get a client directly on the submoduleDir */
         GitClient submoduleClient = setupGitAPI(submoduleDir);
