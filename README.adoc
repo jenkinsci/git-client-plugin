@@ -19,14 +19,16 @@ It can fetch, checkout, branch, list, merge, and tag repositories.
 Refer to the https://javadoc.jenkins-ci.org/plugin/git-client/[API documentation] for specific API details.
 
 The https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html[GitClient interface] provides the primary entry points for git access.
-It supports username / password credentials and private key credentials using the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
+It supports username / password credentials for git repository access with HTTP and HTTPS protocols (for example, `+https://github.com/jenkinsci/git-client-plugin+` or `+http://git.example.com/your-repo.git+` ).
+It supports private key credentials for git repository access with SSH protocol (for example, `+git@github.com:jenkinsci/git-client-plugin.git+` or `+ssh://git@github.com/jenkinsci/git-client-plugin.git+` ).
+Credential support is provided by the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
 
 toc::[]
 
 [#changelog]
 == Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
 
-Release notes are recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] beginning with git client plugin 2.8.1.
+Release notes have been recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] since git client plugin 2.8.1.
 Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
 
 [#implementations]
@@ -41,8 +43,7 @@ Command line git is *enabled by default* when the git client plugin is installed
 [#jgit]
 === JGit
 
-The git client plugin also includes two optional implementations that use https://www.eclipse.org/jgit/[Eclipse JGit].
-Eclipse JGit is a pure Java implementation of git.
+The git client plugin also includes two optional implementations ("jgit" and <<jgit-with-apache-http-client,"jgitapache">>) that use https://www.eclipse.org/jgit/[Eclipse JGit], a pure Java implementation of git.
 The JGit implementation in the git client plugin provides most of the functionality of the command line git implementation.
 When the JGit implementation is incomplete, the gap is noted in console logs.
 
@@ -93,6 +94,7 @@ It is best to disable Windows Credentials Manager when installing Git on Jenkins
 == Bug Reports
 
 Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins issue tracker].
+Please use the link:https://www.jenkins.io/participate/report-issue/["How to Report an Issue"] guidelines when reporting issues.
 
 [#contributing-to-the-plugin]
 == Contributing to the Plugin
