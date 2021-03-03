@@ -2061,6 +2061,58 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+        justification = "Path operations below intentionally use absolute '/usr/bin/chcon' at this time (as delivered in relevant popular Linux distros)"
+        )
+    private Boolean fixSELinuxLabel(File key, String label) {
+        // returning false means chcon was tried and failed,
+        // maybe caller needs to retry with other logic
+        // true means all ok, including nothing needs to be done
+        if (!launcher.isUnix()) return true;
+
+        if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
+            // JENKINS-64913: SELinux Enforced forbids SSH client to read
+            // untrusted key files. Here we assume a SELinux capable system
+            // if the tool exists, so label the key file for SSH to use.
+            // TOTHINK: Should this be further riddled with sanity checks
+            // (uname, PATH leading to "chcon", etc)?
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            args.add("/usr/bin/chcon");
+            args.add("--type=" + label);
+            args.add(key.getPath());
+            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray());
+            int status = -1;
+            String stdout = "";
+            String stderr = "";
+            String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
+
+            try {
+                // JENKINS-13356: capture stdout and stderr separately
+                ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
+                ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
+
+                p.stdout(stdoutStream).stderr(stderrStream);
+                listener.getLogger().println(" > " + command);
+                // Should be much faster than 1 min :)
+                status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
+
+                stdout = stdoutStream.toString(encoding);
+                stderr = stderrStream.toString(encoding);
+            } catch (Throwable e) {
+                listener.getLogger().println("Error performing chcon helper command: " + command + " :\n" + e.toString());
+                if (status <= 0) { status = 126; } // cause the message and false return below
+            }
+            if (status > 0) {
+                listener.getLogger().println("[WARNING] Failed (" + status + ") performing chcon helper command: " + command + ":\n" +
+                    (stdout.equals("") ? "" : ( "=== STDOUT:\n" + stdout + "\n====\n" )) +
+                    (stderr.equals("") ? "" : ( "=== STDERR:\n" + stderr + "\n====\n" )) +
+                    "IMPACT: if SELinux is enabled, access to temporary key file may be denied for git+ssh below");
+                return false;
+            }
+        }
+        return true;
+    }
+
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         File key = createTempFile("ssh", ".key");
         try (PrintWriter w = new PrintWriter(key, encoding)) {
@@ -2071,6 +2123,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         if (launcher.isUnix()) {
             new FilePath(key).chmod(0400);
+            fixSELinuxLabel(key, "ssh_home_t");
         } else {
             fixSshKeyOnWindows(key);
         }
@@ -2138,6 +2191,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("cat " + unixArgEncodeFileName(passphrase.getAbsolutePath()));
         }
         ssh.setExecutable(true, true);
+        // fixSELinuxLabel(ssh, "ssh_exec_t");
         return ssh;
     }
 
@@ -2162,6 +2216,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("esac");
         }
         askpass.setExecutable(true, true);
+        // fixSELinuxLabel(askpass, "ssh_exec_t");
         return askpass;
     }
 
@@ -2352,10 +2407,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String fromLocation = ssh.toString();
         String toLocation = ssh_copy.toString();
         //Copying ssh file
+        // fixSELinuxLabel(ssh, "ssh_exec_t");
         try {
             new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
             isCopied = true;
             ssh_copy.setExecutable(true,true);
+            // fixSELinuxLabel(ssh_copy, "ssh_exec_t");
             //Deleting original file
             deleteTempFile(ssh);
         }
