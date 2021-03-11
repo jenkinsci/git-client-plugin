@@ -1415,24 +1415,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(expected, symlinkValue);
     }
 
-
-
-    @NotImplementedInCliGit // Until submodule rename is fixed
-    public void test_getSubmoduleUrl() throws Exception {
-        w = clone(localMirror());
-        w.launchCommand("git", "checkout", "tests/getSubmodules");
-        w.git.submoduleInit();
-
-        assertEquals("https://github.com/puppetlabs/puppetlabs-firewall.git", w.igit().getSubmoduleUrl("modules/firewall"));
-
-        try {
-            w.igit().getSubmoduleUrl("bogus");
-            fail();
-        } catch (GitException e) {
-            // expected
-        }
-    }
-
     @Deprecated
     public void test_merge_refspec() throws Exception {
         w.init();
@@ -1495,35 +1477,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.setRemoteUrl("origin", remoteUrl);
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
-    }
-
-    /**
-     * Checks that the ChangelogCommand abort() API does not write
-     * output to the destination.  Does not check that the abort() API
-     * releases resources.
-     */
-    public void test_changelog_abort() throws InterruptedException, IOException
-    {
-        final String logMessage = "changelog-abort-test-commit";
-        w.init();
-        w.touch("file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
-        w.git.add("file-changelog-abort");
-        w.git.commit(logMessage);
-        String sha1 = w.git.revParse("HEAD").name();
-        ChangelogCommand changelogCommand = w.git.changelog();
-        StringWriter writer = new StringWriter();
-        changelogCommand.to(writer);
-
-        /* Abort the changelog, confirm no content was written */
-        changelogCommand.abort();
-        assertEquals("aborted changelog wrote data", "", writer.toString());
-
-        /* Execute the changelog, confirm expected content was written */
-        changelogCommand = w.git.changelog();
-        changelogCommand.to(writer);
-        changelogCommand.execute();
-        assertTrue("No log message in " + writer.toString(), writer.toString().contains(logMessage));
-        assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
     }
 
     /**

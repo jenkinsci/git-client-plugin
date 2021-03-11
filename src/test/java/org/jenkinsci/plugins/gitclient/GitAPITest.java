@@ -41,6 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1511,6 +1512,34 @@ public class GitAPITest {
             thrown.expectMessage("origin");
         }
         igit.fixSubmoduleUrls("origin", listener);
+    }
+
+    /**
+     * Checks that the ChangelogCommand abort() API does not write
+     * output to the destination.  Does not check that the abort() API
+     * releases resources.
+     */
+    @Test
+    public void testChangeLogAbort() throws Exception {
+        final String logMessage = "changelog-abort-test-commit";
+        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
+        testGitClient.add("file-changelog-abort");
+        testGitClient.commit(logMessage);
+        String sha1 = testGitClient.revParse("HEAD").name();
+        ChangelogCommand changelogCommand = testGitClient.changelog();
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+
+        /* Abort the changelog, confirm no content was written */
+        changelogCommand.abort();
+        assertEquals("aborted changelog wrote data", "", writer.toString());
+
+        /* Execute the changelog, confirm expected content was written */
+        changelogCommand = testGitClient.changelog();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        assertTrue("No log message in " + writer.toString(), writer.toString().contains(logMessage));
+        assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
