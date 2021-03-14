@@ -7,9 +7,7 @@ import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 
-import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.ProxyConfiguration;
@@ -58,7 +56,6 @@ import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
-import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
