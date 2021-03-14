@@ -83,8 +83,6 @@ import java.util.stream.Collectors;
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
-    private static final boolean acceptSelfSignedCertificates;
-
     /**
      * Constant which can block use of setsid in git calls for ssh credentialed operations.
      *
@@ -162,7 +160,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     );
 
     static {
-        acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
         CALL_SETSID = setsidExists() && USE_SETSID;
     }
 
