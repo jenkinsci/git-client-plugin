@@ -2059,7 +2059,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
-        justification = "Path operations below intentionally use absolute '/usr/bin/chcon' at this time (as delivered in relevant popular Linux distros)"
+        justification = "Path operations below intentionally use absolute '/usr/bin/chcon' and '/sys/fs/selinux/enforce' and '/proc/self/attr/current' at this time (as delivered in relevant popular Linux distros)"
         )
     private Boolean fixSELinuxLabel(File key, String label) {
         // returning false means chcon was tried and failed,
@@ -2067,12 +2067,116 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // true means all ok, including nothing needs to be done
         if (!launcher.isUnix()) return true;
 
+        // JENKINS-64913: SELinux Enforced mode forbids SSH client to read
+        // "untrusted" key files.
+        // Check that tools exist and then if SELinux subsystem is activated
+        // Otherwise calling the tools just pollutes build log with errors
         if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
-            // JENKINS-64913: SELinux Enforced forbids SSH client to read
-            // untrusted key files. Here we assume a SELinux capable system
-            // if the tool exists, so label the key file for SSH to use.
+            // SELinux may actually forbid us to read system paths, so
+            // there are a couple of ways to try checking if it is enabled
+            // (whether this run needs to worry about security labels) and
+            // we genuinely do not care if we failed to probe those points
+
+            // Keep track which "clues" indicate that SELinux currently is
+            // a force that should be reckoned with, on this host now:
+            Boolean clue_proc = false;
+            Boolean clue_sysfs = false;
+            //Boolean clue_ls = false;
+
+            try {
+                // A process should always have rights to inspect itself, but
+                // on some systems even this read returns "Invalid argument"
+                if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
+                    BufferedReader br = Files.newBufferedReader(
+                        Paths.get("/proc/self/attr/current"),
+                        Charset.forName("UTF-8"));
+                    String s;
+                    try {
+                        s = br.readLine();
+                    } catch (Throwable t) {
+                        br.close();
+                        throw t;
+                    }
+                    br.close();
+                    if ("unconfined".equals(s)) {
+                        return true;
+                    }
+                    if ("kernel".equals(s)) {
+                        return true;
+                    }
+                    if (s.contains(":")) {
+                        // Note that SELinux may be enabled but not enforcing,
+                        // if we can check for that - we bail below
+                        clue_proc = true;
+                    }
+                }
+            } catch (SecurityException e) {
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+
+            try {
+                if (!Files.isDirectory(Paths.get("/sys/fs/selinux"))) {
+                    // Assuming that lack of rights to read this is an
+                    // exception caught below, not a false return here?
+                    return true;
+                }
+
+                if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
+                    BufferedReader br = Files.newBufferedReader(
+                        Paths.get("/sys/fs/selinux/enforce"),
+                        Charset.forName("UTF-8"));
+                    String s;
+                    try {
+                        s = br.readLine();
+                    } catch (Throwable t) {
+                        br.close();
+                        throw t;
+                    }
+                    br.close();
+                    if ("0".equals(s)) {
+                        // Subsystem exists, but told to not get into way at the moment
+                        return true;
+                    }
+                    if ("1".equals(s)) {
+                        clue_sysfs = true;
+                    }
+                }
+            } catch (SecurityException e) {
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+
+            // If we are here, there were no clear clues about SELinux *not*
+            // being a possible problem for the current run. We might want
+            // to check `ls -Z` output for success (flag known) and for the
+            // label data in it: using a filesystem without labels (applied
+            // or supported) would get complaints from 'chcon' trying to fix
+            // just a component of the label below. Unfortunately, different
+            // toolkits (GNU/busybox/...) and OSes vary in outputs of that.
+
+            // Here we assume a SELinux capable system if the tool exists,
+            // and no clear indications were seen that the security subsystem
+            // is currently disarmed, so label the key file for SSH to use.
+            // (Can complain if it is unlabeled.)
             // TOTHINK: Should this be further riddled with sanity checks
             // (uname, PATH leading to "chcon", etc)?
+
+            if (clue_proc) {
+                listener.getLogger().println("[INFO] Currently running in a labeled security context");
+            }
+
+            if (clue_sysfs) {
+                listener.getLogger().println("[INFO] Currently SELinux is 'enforcing' on the host");
+            }
+
+            if (!clue_sysfs && !clue_proc) { // && !clue_ls
+                listener.getLogger().println("[INFO] SELinux is present on the host " +
+                    "and we could not confirm that it does not apply actively: " +
+                    "will try to relabel temporary files now; this may complain " +
+                    "if context labeling not applicable after all");
+            }
+
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("/usr/bin/chcon");
             args.add("--type=" + label);
@@ -2096,11 +2200,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 stdout = stdoutStream.toString(encoding);
                 stderr = stderrStream.toString(encoding);
             } catch (Throwable e) {
-                listener.getLogger().println("Error performing chcon helper command: " + command + " :\n" + e.toString());
+                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e.toString());
                 if (status <= 0) { status = 126; } // cause the message and false return below
             }
             if (status > 0) {
-                listener.getLogger().println("[WARNING] Failed (" + status + ") performing chcon helper command: " + command + ":\n" +
+                listener.getLogger().println("[WARNING] Failed (" + status + ") performing chcon helper command for SELinux: " + command + ":\n" +
                     (stdout.equals("") ? "" : ( "=== STDOUT:\n" + stdout + "\n====\n" )) +
                     (stderr.equals("") ? "" : ( "=== STDERR:\n" + stderr + "\n====\n" )) +
                     "IMPACT: if SELinux is enabled, access to temporary key file may be denied for git+ssh below");
