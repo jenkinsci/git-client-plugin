@@ -598,6 +598,16 @@ public class GitClientTest {
         assertTrue(emptyDir.exists());
         GitClient emptyClient = Git.with(TaskListener.NULL, new EnvVars()).in(emptyDir).using(gitImplName).getClient();
         assertFalse("Empty repo '" + emptyDir.getAbsolutePath() + "' initialized", emptyClient.hasGitRepo());
+
+        File badGitDir = tempFolder.newFolder("parentDir", "childDir", ".git");
+        assertEquals(".git", badGitDir.getName());
+        assertEquals("childDir", badGitDir.getParentFile().getName());
+        assertEquals("parentDir", badGitDir.getParentFile().getParentFile().getName());
+        gitClient.init_().workspace(badGitDir.getParentFile().getParentFile().getAbsolutePath()).execute();
+        File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
+        assertTrue("Missing " + gitDir, gitDir.isDirectory());
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in((badGitDir.getParentFile())).using(gitImplName).getClient();
+        assertFalse("Empty repo '" + badGitDir.getParentFile() + "' initialized", childDirClient.hasGitRepo());
     }
 
     @Test
