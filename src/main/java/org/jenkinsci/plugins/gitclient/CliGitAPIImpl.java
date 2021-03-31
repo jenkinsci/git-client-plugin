@@ -341,7 +341,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (hasGitRepo(".git")) {
             // Check if this is a valid git repo with --resolve-git-dir
             try {
-                launchCommand("rev-parse", "--resolve-git-dir",workspace.getAbsolutePath()+File.separator+".git");
+                launchCommand("rev-parse", "--resolve-git-dir",
+                        workspace.getAbsolutePath() + File.separator + ".git");
             } catch (Exception ex) {
                 ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
                 return false;
