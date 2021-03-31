@@ -2185,7 +2185,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             int status = -1;
             String stdout = "";
             String stderr = "";
-            String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
+            String command = StringUtils.join(args.toCommandArray(), " ");
 
             try {
                 // JENKINS-13356: capture stdout and stderr separately
