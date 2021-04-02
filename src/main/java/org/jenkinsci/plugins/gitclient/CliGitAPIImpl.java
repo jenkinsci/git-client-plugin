@@ -330,7 +330,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.

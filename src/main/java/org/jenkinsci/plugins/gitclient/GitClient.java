@@ -183,7 +183,7 @@ public interface GitClient {
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
 
     /**
-     * hasGitRepo.
+     * Return true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
