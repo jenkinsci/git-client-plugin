@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -603,13 +604,92 @@ public class GitClientTest {
     @Issue("JENKINS-38699")
     @Test
     public void test_worktree() throws Exception {
-        File badGitDir = tempFolder.newFolder("parentDir", "childDir", ".git");
-        assertEquals(".git", badGitDir.getName());
-        assertEquals("childDir", badGitDir.getParentFile().getName());
-        assertEquals("parentDir", badGitDir.getParentFile().getParentFile().getName());
-        gitClient.init_().workspace(badGitDir.getParentFile().getParentFile().getAbsolutePath()).execute();
-        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in((badGitDir.getParentFile())).using(gitImplName).getClient();
-        assertFalse("Empty .git directory in " + badGitDir.getParentFile().getName(), childDirClient.hasGitRepo());
+        File childDir = tempFolder.newFolder("parentDir", "childDir");
+        gitClient.init_().workspace(childDir.getParentFile().getAbsolutePath()).execute();
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in((childDir)).using(gitImplName).getClient();
+        assertFalse("Expected no .git directory in " + childDir.getName(), childDirClient.hasGitRepo(false));
+        File badGitDir = new File(childDir, ".git");
+        assertThat(badGitDir, is(not(anExistingDirectory()))); // .git directory should not exist yet
+        assertTrue("Failed to create empty .git directory", badGitDir.mkdir());
+        assertFalse("Empty .git directory in reports initialized in " + childDir.getName(), childDirClient.hasGitRepo(false));
+    }
+
+    @Test
+    public void testHasGitRepoFalse() throws Exception {
+        Path tempDir = Files.createTempDirectory("git-client-hasGitRepo");
+        GitClient noRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(tempDir.toFile()).using(gitImplName).getClient();
+        assertFalse("New empty temp dir has a git repo(1)", noRepoClient.hasGitRepo());
+        assertFalse("New empty temp dir has a git repo(2)", noRepoClient.hasGitRepo(false));
+        assertFalse("New empty temp dir has a git repo(3)", noRepoClient.hasGitRepo(true));
+        tempDir.toFile().delete();
+    }
+
+    @Test
+    public void testHasGitRepoNestedDir() throws Exception {
+        File childDir = tempFolder.newFolder("parentDir", "childDir");
+        File parentDir = childDir.getParentFile();
+
+        GitClient parentDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(parentDir).using(gitImplName).getClient();
+        assertFalse("Unexpected has git repo before init(1)", parentDirClient.hasGitRepo());
+        assertFalse("Unexpected has git repo before init(2)", parentDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has git repo before init(3)", parentDirClient.hasGitRepo(false));
+
+        parentDirClient.init();
+        assertTrue("Missing git repo after init(1)", parentDirClient.hasGitRepo());
+        assertTrue("Missing git repo after init(2)", parentDirClient.hasGitRepo(true));
+        assertTrue("Missing git repo after init(3)", parentDirClient.hasGitRepo(false));
+
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(childDir).using(gitImplName).getClient();
+        assertFalse("Unexpected has child git repo before child init(1)", childDirClient.hasGitRepo());
+        assertFalse("Unexpected has child git repo before child init(2)", childDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has child git repo before child init(3)", childDirClient.hasGitRepo(false));
+
+        File childGitDir = new File(childDir, ".git");
+        boolean dirCreated = childGitDir.mkdir();
+        assertTrue("Failed to create empty .git dir in childDir", dirCreated);
+        if (gitImplName.equals("git")) {
+            // JENKINS-38699 - if an empty .git directory exists, CLI git searches upwards to perform operations
+            assertTrue("Missing parent git repo before child init(1)", childDirClient.hasGitRepo());
+        } else {
+            // JENKINS-38699 - if an empty .git directory exists, JGit does NOT search upwards to perform operations
+            assertFalse("Unexpected parent git repo detected by JGit before child init(1)", childDirClient.hasGitRepo());
+        }
+        assertTrue("Missing parent git repo before child init(2)", childDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has child repo before child init(3)", childDirClient.hasGitRepo(false));
+
+        childDirClient.init();
+        assertTrue("Missing git repo after child init(1)", childDirClient.hasGitRepo());
+        assertTrue("Missing git repo after child init(2)", childDirClient.hasGitRepo(true));
+        assertTrue("Missing git repo after child init(3)", childDirClient.hasGitRepo(false));
+    }
+
+    @Issue("JENKINS-38699")
+    @Test
+    public void testHasGitRepoCheckParentDirectories() throws Exception {
+        File childDir = tempFolder.newFolder("grandParentDir", "parentDir", "childDir");
+        File parentDir = childDir.getParentFile();
+        File grandParentDir = parentDir.getParentFile();
+        gitClient.init_().workspace(grandParentDir.getAbsolutePath()).execute();
+
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in((childDir)).using(gitImplName).getClient();
+        assertFalse("Expected no .git directory in " + childDir.getName(), childDirClient.hasGitRepo());
+        assertFalse("Expected no .git directory in " + childDir.getName(), childDirClient.hasGitRepo(false));
+        assertFalse("No '.git' directory in childDir and yet parent repository found " + childDir.getName(), childDirClient.hasGitRepo(true));
+
+        File badGitDir = new File(childDir, ".git");
+        assertThat(badGitDir, is(not(anExistingDirectory()))); // .git directory should not exist yet
+        boolean badGitDirCreated = badGitDir.mkdir();
+        assertTrue("Failed to create empty .git directory", badGitDirCreated);
+        assertThat(badGitDir, is(anExistingDirectory())); // .git directory should exist
+
+        if (gitImplName.equals("git")) {
+            assertTrue("Empty .git directory not initialized in " + childDir.getName(), childDirClient.hasGitRepo());
+        } else {
+            assertFalse("Empty .git directory initialized in " + childDir.getName(), childDirClient.hasGitRepo());
+        }
+
+        assertFalse("Empty .git directory in reports initialized in " + childDir.getName(), childDirClient.hasGitRepo(false));
+        assertTrue("Expected repo in grandparent " + grandParentDir.getName(), childDirClient.hasGitRepo(true));
     }
 
     @Test
