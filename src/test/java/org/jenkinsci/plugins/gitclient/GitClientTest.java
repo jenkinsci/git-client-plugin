@@ -624,6 +624,7 @@ public class GitClientTest {
         tempDir.toFile().delete();
     }
 
+    @Issue("JENKINS-38699")
     @Test
     public void testHasGitRepoNestedDir() throws Exception {
         File childDir = tempFolder.newFolder("parentDir", "childDir");
