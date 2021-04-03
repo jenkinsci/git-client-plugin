@@ -330,7 +330,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if this workspace has a git repository.
+     * Also returns true if this workspace contains an empty .git directory and
+     * a parent directory has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -342,6 +344,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // Check if this is a valid git repo with --is-inside-work-tree
             try {
                 launchCommand("rev-parse", "--is-inside-work-tree");
+            } catch (Exception ex) {
+                ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if this workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        if (checkParentDirectories) {
+            return hasGitRepo();
+        }
+        if (hasGitRepo(".git")) {
+            // Check if this is a valid git repo with --resolve-git-dir
+            try {
+                launchCommand("rev-parse", "--resolve-git-dir",
+                        workspace.getAbsolutePath() + File.separator + ".git");
             } catch (Exception ex) {
                 ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
                 return false;

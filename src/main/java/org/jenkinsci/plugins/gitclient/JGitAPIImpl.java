@@ -91,6 +91,7 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
@@ -121,8 +122,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.plugins.git.GitObject;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -1714,7 +1713,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if the current workspace has a git repository.
+     * Does not search parent directories for a repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -1725,6 +1725,48 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return repo.getObjectDatabase().exists();
         } catch (GitException e) {
             return false;
+        }
+    }
+
+    /**
+     * Returns true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upwards for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException {
+        if (!checkParentDirectories) { // JGit hasGitRepo() does not check parent directories
+            return hasGitRepo();
+        }
+        if (hasGitRepo(".git")) {
+            try (Repository repo = getRepository()) {
+                if (repo.getObjectDatabase().exists()) {
+                    return true;
+                }
+                /* Emulate command line git searching up the file system hierarchy */
+                FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
+                FileRepositoryBuilder parentRepoBuilder = repositoryBuilder.findGitDir(workspace);
+                return parentRepoBuilder.getGitDir() != null;
+            } catch (GitException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasGitRepo(String gitDirectory) throws GitException {
+        try {
+            File dotGit = new File(workspace, gitDirectory);
+            return dotGit.exists();
+        } catch (SecurityException ex) {
+            throw new GitException("Security error when trying to check for .git. Are you sure you have correct permissions?",
+                                   ex);
+        } catch (Exception e) {
+            throw new GitException("Couldn't check for .git", e);
         }
     }
 

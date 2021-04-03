@@ -183,13 +183,25 @@ public interface GitClient {
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
 
     /**
-     * hasGitRepo.
+     * Return true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     boolean hasGitRepo() throws GitException, InterruptedException;
+
+    /**
+     * Return true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException;
 
     /**
      * isCommitInRepo.

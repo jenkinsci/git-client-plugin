@@ -274,7 +274,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -282,6 +282,21 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
      */
     public boolean hasGitRepo() throws GitException, InterruptedException {
         return proxy.hasGitRepo();
+    }
+
+    /**
+     * Returns true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        return proxy.hasGitRepo(checkParentDirectories);
     }
 
     /** {@inheritDoc} */
