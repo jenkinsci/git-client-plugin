@@ -1746,13 +1746,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return false;
         }
         try (Repository repo = getRepository()) {
-            if (repo.isBare()) {
-                return true;
-            }
-            File dotGitDir = repo.getDirectory();
-            if (dotGitDir == null || !dotGitDir.isDirectory()) {
-                return false;
-            }
             if (repo.getObjectDatabase().exists()) {
                 return true;
             }
