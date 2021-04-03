@@ -1742,20 +1742,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (!checkParentDirectories) { // JGit hasGitRepo() does not check parent directories
             return hasGitRepo();
         }
-        if (!hasGitRepo(".git")) {
-            return false;
-        }
-        try (Repository repo = getRepository()) {
-            if (repo.getObjectDatabase().exists()) {
-                return true;
+        if (hasGitRepo(".git")) {
+            try (Repository repo = getRepository()) {
+                if (repo.getObjectDatabase().exists()) {
+                    return true;
+                }
+                /* Emulate command line git searching up the file system hierarchy */
+                FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
+                FileRepositoryBuilder parentRepoBuilder = repositoryBuilder.findGitDir(workspace);
+                return parentRepoBuilder.getGitDir() != null;
+            } catch (GitException e) {
+                return false;
             }
-            /* Emulate command line git searching up the file system hierarchy */
-            FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
-            FileRepositoryBuilder parentRepoBuilder = repositoryBuilder.findGitDir(workspace);
-            return parentRepoBuilder.getGitDir() != null;
-        } catch (GitException e) {
-            return false;
         }
+        return false;
     }
 
     private boolean hasGitRepo(String gitDirectory) throws GitException {
