@@ -2229,8 +2229,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void reportFailureClues() {
         if (!failureClues.isEmpty()) {
             listener.getLogger().println("ERROR: Git command failed, and previous operations logged the following error details:");
-            for (Instant ts : failureClues.keySet()) {
-                listener.getLogger().println("[" + ts.toString() + "]" + failureClues.get(ts) + "\n");
+            for (Map.Entry<Instant, String> entry : failureClues.entrySet()) {
+                listener.getLogger().println("[" + entry.getKey().toString() + "]" + entry.getValue() + "\n");
             }
             failureClues = new TreeMap(); // Flush to collect new errors and not report twice
         }
