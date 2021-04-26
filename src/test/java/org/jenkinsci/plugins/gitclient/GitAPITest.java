@@ -1098,7 +1098,6 @@ public class GitAPITest {
         final ObjectId branch2 = workspace.head();
 
         testGitClient.checkout().ref("master").execute();
-        final ObjectId master = workspace.head();
 
         // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
         testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
