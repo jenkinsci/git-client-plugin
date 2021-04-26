@@ -101,7 +101,7 @@ Please use the link:https://www.jenkins.io/participate/report-issue/["How to Rep
 
 Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.
 
-==  Plugin Properties
+== Plugin Properties
 
 Some plugin settings are controlled by Java system properties.
 The properties are often used to override a standard behavior or to revert to previous behavior.
