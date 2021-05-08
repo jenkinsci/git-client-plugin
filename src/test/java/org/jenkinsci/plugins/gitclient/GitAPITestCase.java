@@ -1555,52 +1555,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * Test getHeadRev with branch names which SHOULD BE reserved by Git, but ARE NOT.<br/>
-     * E.g. it is possible to create the following LOCAL (!) branches:<br/>
-     * <ul>
-     *   <li> origin/master
-     *   <li> remotes/origin/master
-     *   <li> refs/heads/master
-     *   <li> refs/remotes/origin/master
-     * </ul>
-     *
-     * TODO: This does not work yet! Fix behaviour and enable test!
-     */
-    public void test_getHeadRev_reservedBranchNames() throws Exception {
-        /* REMARK: Local branch names in this test are called exactly like follows!
-         *   e.g. origin/master means the branch is called "origin/master", it does NOT mean master branch in remote "origin".
-         *   or refs/heads/master means branch called "refs/heads/master" ("refs/heads/refs/heads/master" in the end).
-         */
-
-        setTimeoutVisibleInCurrentTest(false);
-        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
-        extract(new ZipFile("src/test/resources/specialBranchRepo.zip"), tempRemoteDir);
-        Properties commits = parseLsRemote(new File("src/test/resources/specialBranchRepo.ls-remote"));
-        w = clone(tempRemoteDir.getAbsolutePath());
-
-        /*
-         * The first entry in the String[2] is the branch name (as specified in the job config).
-         * The second entry is the expected commit.
-         */
-        final String[][] checkBranchSpecs = {};
-//TODO: Fix and enable test
-//                {
-//                {"master", commits.getProperty("refs/heads/master")},
-//                {"origin/master", commits.getProperty("refs/heads/master")},
-//                {"remotes/origin/master", commits.getProperty("refs/heads/master")},
-//                {"refs/remotes/origin/master", commits.getProperty("refs/heads/refs/remotes/origin/master")},
-//                {"refs/heads/origin/master", commits.getProperty("refs/heads/origin/master")},
-//                {"refs/heads/master", commits.getProperty("refs/heads/master")},
-//                {"refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/master")},
-//                {"refs/heads/refs/heads/refs/heads/master", commits.getProperty("refs/heads/refs/heads/refs/heads/master")},
-//                {"refs/tags/master", commits.getProperty("refs/tags/master^{}")}
-//                };
-        for(String[] branch : checkBranchSpecs) {
-          check_getHeadRev(tempRemoteDir.getAbsolutePath(), branch[0], ObjectId.fromString(branch[1]));
-        }
-    }
-
-    /**
      * Test getRemoteReferences with listing all references
      */
     public void test_getRemoteReferences() throws Exception {
