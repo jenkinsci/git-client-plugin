@@ -227,7 +227,7 @@ public class CredentialsTest {
         List<Object[]> repos = new ArrayList<>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
         for (String implementation : implementations) {
-            /* Add master repository as authentication test with private
+            /* Add upstream repository as authentication test with private
              * key of current user.  Try to test at least one
              * authentication case, even if there is no repos.json file in
              * the external directory.
