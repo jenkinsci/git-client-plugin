@@ -353,7 +353,7 @@
 == 1.6.4 (March 6, 2014)
 
 * Add NTLM authentication (for Team Foundation Server git implementation)
-* Support branch change detection in branches using namespaces (e.g. develop1/master)
+* Support branch change detection in branches using namespaces (e.g. develop1/branch-name)
 * Replace obsolete Apache HttpClient with Apache HttpComponents
 * Require at least Jenkins 1.509 so that authentication can be tested
 * QA improvements (more tests, findbugs warnings fixes, etc.)
