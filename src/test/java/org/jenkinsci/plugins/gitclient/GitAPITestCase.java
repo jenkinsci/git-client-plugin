@@ -1978,7 +1978,7 @@ public abstract class GitAPITestCase extends TestCase {
         for (Branch b : branches) {
             names.add(b.getName());
         }
-        return Util.join(names,",");
+        return String.join(",", names);
     }
 
     /* The less critical assertions do not respond the same for the
