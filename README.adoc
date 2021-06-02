@@ -93,7 +93,7 @@ It is best to disable Windows Credentials Manager when installing Git on Jenkins
 [#bug-reports]
 == Bug Reports
 
-Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins issue tracker].
+Report issues and enhancements with the https://issues.jenkins.io[Jenkins issue tracker].
 Please use the link:https://www.jenkins.io/participate/report-issue/["How to Report an Issue"] guidelines when reporting issues.
 
 [#contributing-to-the-plugin]
@@ -101,7 +101,7 @@ Please use the link:https://www.jenkins.io/participate/report-issue/["How to Rep
 
 Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.
 
-==  Plugin Properties
+== Plugin Properties
 
 Some plugin settings are controlled by Java system properties.
 The properties are often used to override a standard behavior or to revert to previous behavior.

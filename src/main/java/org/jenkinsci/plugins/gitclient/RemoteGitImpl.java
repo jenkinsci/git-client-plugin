@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
-import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -102,7 +101,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                     return;
                 }
             }
-            throw new IllegalStateException("Method not found: "+methodName+"("+ Util.join(Arrays.asList(parameterTypes),",")+")");
+            throw new IllegalStateException("Method not found: " + methodName + "(" + String.join(",", parameterTypes) + ")");
         }
 
         private static final long serialVersionUID = 1L;
