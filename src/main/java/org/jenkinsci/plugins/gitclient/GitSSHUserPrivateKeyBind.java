@@ -1,7 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.jcraft.jsch.HostKey;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
@@ -9,6 +11,8 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
+import io.jenkins.cli.shaded.org.apache.sshd.client.auth.hostbased.HostKeyIdentityProvider;
+import io.jenkins.cli.shaded.org.apache.sshd.server.auth.hostbased.HostBasedAuthenticator;
 import jenkins.bouncycastle.api.PEMEncodable;
 import org.bouncycastle.util.encoders.UTF8;
 import org.jenkinsci.Symbol;
@@ -17,8 +21,6 @@ import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
 import org.jenkinsci.plugins.credentialsbinding.impl.AbstractOnDiskBinding;
 import org.jenkinsci.plugins.credentialsbinding.impl.UnbindableDir;
 import org.kohsuke.stapler.DataBoundConstructor;
-import sun.nio.cs.UTF_8;
-
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +55,7 @@ public class GitSSHUserPrivateKeyBind extends MultiBinding<SSHUserPrivateKey> {
         UnbindableDir keyDir = null;
         Map<String, String> credMap = new LinkedHashMap();
         SSHUserPrivateKey credentials = getCredentials(build);
+        setDefaultBindings(credMap,credentials);
         SSHScript sshEcho = new SSHScript(getPrivateKey(credentials),getCredentialsId());
         //TODO Create sperate methods for Linux/Unix and Windows
         //Linux/Unix working
@@ -75,13 +78,15 @@ public class GitSSHUserPrivateKeyBind extends MultiBinding<SSHUserPrivateKey> {
         //TODO PUT UNDER workspace != null check
         return new MultiEnvironment(credMap,keyDir.getUnbinder());
     }
-
+    Map<String, String> setDefaultBindings(Map<String, String> credentials, @Nullable StandardCredentials gitUsernamePassword){
+        return null;
+    }
     @Override
     public Set<String> variables() {
         return null;
     }
 
-     static private String getPrivateKey(SSHUserPrivateKey credentials){
+    static private String getPrivateKey(SSHUserPrivateKey credentials){
         return credentials.getPrivateKeys().get(0);
     }
 
