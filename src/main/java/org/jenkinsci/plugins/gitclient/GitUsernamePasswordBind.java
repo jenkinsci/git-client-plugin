@@ -3,7 +3,11 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.*;
+import hudson.Extension;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Functions;
+import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import org.jenkinsci.Symbol;
@@ -24,8 +28,8 @@ import java.util.Set;
 
 
 public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
-    final static private String usernameKey =  "Git_Username";
-    final static private String passwordKey =  "Git_Password";
+    final static private String USERNAMEKEY =  "Git_Username";
+    final static private String PASSWORDKEY =  "Git_Password";
     private Map<String,String> credMap = new LinkedHashMap<>();
 
     @DataBoundConstructor
@@ -61,22 +65,22 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
     @Override
     public Set<String> variables() {
         Set<String> keys = new LinkedHashSet<>();
-        keys.add(usernameKey);
-        keys.add(passwordKey);
+        keys.add(USERNAMEKEY);
+        keys.add(PASSWORDKEY);
         return keys;
     }
 
 
     @Override
     public void setKeyBindings(@Nonnull StandardCredentials credentials) {
-        credMap.put(usernameKey,((StandardUsernamePasswordCredentials) credentials).getUsername());
-        credMap.put(passwordKey,((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
+        credMap.put(USERNAMEKEY,((StandardUsernamePasswordCredentials) credentials).getUsername());
+        credMap.put(PASSWORDKEY,((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
     }
 
     @Override
     public void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         if(!Functions.isWindows() && getCliGitAPIInstance("git",new File(filePath.toURI()),listener,new EnvVars()
-                                    ).isAtLeastVersion(2,3,0,0))
+                                     ).isAtLeastVersion(2,3,0,0))
         {
             credMap.put("GIT_TERMINAL_PROMPT","false");
         }else {
