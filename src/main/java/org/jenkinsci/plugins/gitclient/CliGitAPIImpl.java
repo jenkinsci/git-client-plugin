@@ -2068,10 +2068,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         String userInfo = null;
                         if (StringUtils.isNotEmpty(proxy.getUserName())) {
                             userInfo = proxy.getUserName();
-                            listener.getLogger().println("Proxy user info: " + userInfo);
                             if (StringUtils.isNotEmpty(proxy.getPassword())) {
                                 userInfo += ":" + proxy.getPassword();
-                                listener.getLogger().println("Proxy user info with password: " + userInfo);
                             }
                         }
                         try {
