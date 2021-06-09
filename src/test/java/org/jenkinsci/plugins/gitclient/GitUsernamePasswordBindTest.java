@@ -28,7 +28,7 @@ public class GitUsernamePasswordBindTest {
     @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {"randomName", "special%%_342@**", "here's-a-quote", "&Ampersand", "semi;colon", "colon:inside"}
+                {"randomName", "special%%_342@**"}, {"here's-a-quote", "&Ampersand"}, {"semi;colon", "colon:inside"}
         });
     }
 
