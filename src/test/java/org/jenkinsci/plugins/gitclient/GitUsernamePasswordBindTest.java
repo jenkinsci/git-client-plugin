@@ -4,9 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.model.TaskListener;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -64,18 +62,11 @@ public class GitUsernamePasswordBindTest {
     }
 
     @Test
-    public void test_getCliGitAPIInstance(){
-        CliGitAPIImpl tempCliGit = gitCredBind.getCliGitAPIInstance("git",rootDir, TaskListener.NULL,new EnvVars());
-        assertNotNull(tempCliGit);
-    }
-
-    @Test
     public void test_GenerateGitScript_write() throws IOException, InterruptedException {
         GitUsernamePasswordBind.GenerateGitScript tempGenScript = new GitUsernamePasswordBind.GenerateGitScript(this.username,this.password,credentials.getId());
         FilePath tempSriptFile = tempGenScript.write(credentials,rootFilePath);
         assertNotNull(tempGenScript);
         assertTrue("Username not found",tempSriptFile.readToString().contains(this.username));
         assertTrue("Password not found",tempSriptFile.readToString().contains(this.password));
-
     }
 }

@@ -19,7 +19,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -49,7 +48,7 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
             throws IOException, InterruptedException {
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
-        if (filePath != null && launcher != null) {
+        if (GIT_TOOL_NAME.contentEquals("git") && filePath != null && launcher != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnviornmentVariables(filePath, taskListener);
             GenerateGitScript gitScript = new GenerateGitScript(credentials.getUsername(),
@@ -79,8 +78,8 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
 
     @Override
     public void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        if(!Functions.isWindows() && getCliGitAPIInstance("git",new File(filePath.toURI()),listener,new EnvVars()
-                                     ).isAtLeastVersion(2,3,0,0))
+        if(!Functions.isWindows() && ((CliGitAPIImpl) getGitClientInstance(listener)).
+                                            isAtLeastVersion(2,3,0,0))
         {
             credMap.put("GIT_TERMINAL_PROMPT","false");
         }else {
@@ -89,8 +88,9 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
     }
 
     @Override
-    public CliGitAPIImpl getCliGitAPIInstance(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
-        return new CliGitAPIImpl(gitExe,workspace,listener,environment);
+    public GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException {
+        Git gitInstance = new Git(listener,new EnvVars()).using(GIT_TOOL_NAME);
+        return gitInstance.getClient();
     }
 
     protected static final class GenerateGitScript extends AbstractOnDiskBinding<StandardUsernamePasswordCredentials> {
