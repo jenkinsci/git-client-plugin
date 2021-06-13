@@ -6,7 +6,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitTool;
 import org.apache.commons.io.FilenameUtils;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public interface GitCredentialBindings {
