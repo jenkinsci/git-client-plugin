@@ -1,17 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.model.Node;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitTool;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 
 public interface GitCredentialBindings {
