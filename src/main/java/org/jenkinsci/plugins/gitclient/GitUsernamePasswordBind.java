@@ -28,7 +28,7 @@ import java.util.Set;
 
 public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
     final static private String GIT_USERNAME_KEY =  "GIT_USERNAME";
-    final static private String PASSWORDKEY =  "Git_Password";
+    final static private String GIT_PASSWORD_KEY =  "GIT_PASSWORD";
     private Map<String,String> credMap = new LinkedHashMap<>();
 
     @DataBoundConstructor
