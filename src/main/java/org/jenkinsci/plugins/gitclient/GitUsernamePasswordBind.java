@@ -111,7 +111,7 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
                 gitEcho  = workspace.createTempFile("auth", ".sh");
                 gitEcho.write("#!/bin/sh\n" +
                         "case $1 in\n" +
-                        "        Username*) echo " + this.userVariable + "\n" +
+                        "        username*) echo " + this.userVariable + "\n" +
                         "                ;;\n" +
                         "        Password*) echo " + this.passVariable + "\n" +
                         "                ;;\n" +
