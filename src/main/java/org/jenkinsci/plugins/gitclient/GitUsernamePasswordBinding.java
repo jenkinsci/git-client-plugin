@@ -33,7 +33,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
     final static private String GIT_USERNAME_KEY =  "GIT_USERNAME";
     final static private String GIT_PASSWORD_KEY =  "GIT_PASSWORD";
     private final Map<String,String> credMap = new LinkedHashMap<>();
-    static private String gitTool = null;
+    private String gitTool = null;
 
     @DataBoundConstructor
     public GitUsernamePasswordBinding(String credentialsId) throws IOException, InterruptedException {

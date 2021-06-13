@@ -137,7 +137,6 @@ public class GitUsernamePasswordBindingTest {
         GitUsernamePasswordBinding.GenerateGitScript tempGenScript = new GitUsernamePasswordBinding.GenerateGitScript(this.username, this.password, credentials.getId());
         assertEquals("Type mis-match", StandardUsernamePasswordCredentials.class, tempGenScript.type());
         FilePath tempScriptFile = tempGenScript.write(credentials, rootFilePath);
-        assertNotNull(tempGenScript);
         assertEquals("Read and Execute permissions to be set:" + tempScriptFile.mode(), 320, tempScriptFile.mode());
         if (!isWindows()) {
             assertEquals("File extension not sh", "sh", FilenameUtils.getExtension(tempScriptFile.getName()));

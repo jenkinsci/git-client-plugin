@@ -36,6 +36,6 @@ public interface GitCredentialBindings {
             }
         }
 
-        return actualToolByPath.toLowerCase();
+        return actualToolByPath;
     }
 }
