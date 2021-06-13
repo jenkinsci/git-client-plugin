@@ -42,7 +42,7 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
-public class GitUsernamePasswordBindTest {
+public class GitUsernamePasswordBindingTest {
     @Parameterized.Parameters(name = "User {0}: Password {1}: GitToolName {2}: GitToolInstance {3}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
@@ -73,9 +73,9 @@ public class GitUsernamePasswordBindTest {
     private FilePath rootFilePath = null;
     private File gitRootRepo = null;
     private UsernamePasswordCredentialsImpl credentials = null;
-    private GitUsernamePasswordBind gitCredBind = null;
+    private GitUsernamePasswordBinding gitCredBind = null;
 
-    public GitUsernamePasswordBindTest(String username, String password, String gitToolName, GitTool gitToolInstance) {
+    public GitUsernamePasswordBindingTest(String username, String password, String gitToolName, GitTool gitToolInstance) {
         this.username = username;
         this.password = password;
         this.gitToolName = gitToolName;
@@ -99,8 +99,8 @@ public class GitUsernamePasswordBindTest {
         credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialID, "GIt Username and Password Binding Test", this.username, this.password);
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), credentials);
 
-        //GitUsernamePasswordBind instance
-        gitCredBind = new GitUsernamePasswordBind(credentials.getId());
+        //GitUsernamePasswordBinding instance
+        gitCredBind = new GitUsernamePasswordBinding(credentials.getId());
         assertEquals("Type mis-match", StandardUsernamePasswordCredentials.class, gitCredBind.type());
 
 
@@ -134,7 +134,7 @@ public class GitUsernamePasswordBindTest {
 
     @Test
     public void test_GenerateGitScript_write() throws IOException, InterruptedException {
-        GitUsernamePasswordBind.GenerateGitScript tempGenScript = new GitUsernamePasswordBind.GenerateGitScript(this.username, this.password, credentials.getId());
+        GitUsernamePasswordBinding.GenerateGitScript tempGenScript = new GitUsernamePasswordBinding.GenerateGitScript(this.username, this.password, credentials.getId());
         assertEquals("Type mis-match", StandardUsernamePasswordCredentials.class, tempGenScript.type());
         FilePath tempScriptFile = tempGenScript.write(credentials, rootFilePath);
         assertNotNull(tempGenScript);
@@ -152,7 +152,7 @@ public class GitUsernamePasswordBindTest {
     public void test_FreeStyleProject() throws Exception {
         FreeStyleProject prj = r.createFreeStyleProject();
         prj.getBuildWrappersList().add(new SecretBuildWrapper(Collections.<MultiBinding<?>>
-                singletonList(new GitUsernamePasswordBind(credentialID))));
+                singletonList(new GitUsernamePasswordBinding(credentialID))));
         if (isWindows()) {
             prj.getBuildersList().add(new BatchFile("@echo off\necho %Git_Username%:%Git_Password% > auth.txt"));
         } else {

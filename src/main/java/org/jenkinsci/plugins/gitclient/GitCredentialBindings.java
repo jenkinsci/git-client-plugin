@@ -7,14 +7,14 @@ import hudson.plugins.git.GitTool;
 import jenkins.model.Jenkins;
 import org.apache.commons.io.FilenameUtils;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.io.IOException;
 
 public interface GitCredentialBindings {
 
-    void setKeyBindings(@Nonnull StandardCredentials credentials);
+    void setKeyBindings(@NonNull StandardCredentials credentials);
 
-    void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException, ClassNotFoundException;
+    void setRunEnviornmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException;
 
     GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException;
 

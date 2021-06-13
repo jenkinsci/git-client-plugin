@@ -29,14 +29,14 @@ import java.util.Map;
 import java.util.Set;
 
 
-public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
-    final static private String USERNAMEKEY =  "Git_Username";
-    final static private String PASSWORDKEY =  "Git_Password";
+public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
+    final static private String GIT_USERNAME_KEY =  "GIT_USERNAME";
+    final static private String GIT_PASSWORD_KEY =  "GIT_PASSWORD";
     private final Map<String,String> credMap = new LinkedHashMap<>();
     static private String gitTool = null;
 
     @DataBoundConstructor
-    public GitUsernamePasswordBind(String credentialsId) throws IOException, InterruptedException {
+    public GitUsernamePasswordBinding(String credentialsId) throws IOException, InterruptedException {
         super(credentialsId);
         //Variables could be added if needed
     }
@@ -70,16 +70,16 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
     @Override
     public Set<String> variables() {
         Set<String> keys = new LinkedHashSet<>();
-        keys.add(USERNAMEKEY);
-        keys.add(PASSWORDKEY);
+        keys.add(GIT_USERNAME_KEY);
+        keys.add(GIT_PASSWORD_KEY);
         return keys;
     }
 
 
     @Override
     public void setKeyBindings(@Nonnull StandardCredentials credentials) {
-        credMap.put(USERNAMEKEY,((StandardUsernamePasswordCredentials) credentials).getUsername());
-        credMap.put(PASSWORDKEY,((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
+        credMap.put(GIT_USERNAME_KEY,((StandardUsernamePasswordCredentials) credentials).getUsername());
+        credMap.put(GIT_PASSWORD_KEY,((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
     }
 
     @Override
