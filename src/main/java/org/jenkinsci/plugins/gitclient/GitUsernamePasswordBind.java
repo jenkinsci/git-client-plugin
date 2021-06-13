@@ -10,6 +10,9 @@ import hudson.Functions;
 import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+
+import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
@@ -29,10 +32,11 @@ import java.util.Set;
 public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
     final static private String USERNAMEKEY =  "Git_Username";
     final static private String PASSWORDKEY =  "Git_Password";
-    private Map<String,String> credMap = new LinkedHashMap<>();
+    private final Map<String,String> credMap = new LinkedHashMap<>();
+    static private String gitTool = null;
 
     @DataBoundConstructor
-    public GitUsernamePasswordBind(String credentialsId) {
+    public GitUsernamePasswordBind(String credentialsId) throws IOException, InterruptedException {
         super(credentialsId);
         //Variables could be added if needed
     }
@@ -48,11 +52,13 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
             throws IOException, InterruptedException {
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
-        if (GIT_TOOL_NAME.contentEquals("git") && filePath != null && launcher != null) {
+        gitTool = gitToolName(taskListener);
+        if (!StringUtils.endsWithAny(gitTool,new String[]{JGitTool.MAGIC_EXENAME,JGitApacheTool.MAGIC_EXENAME})
+                && filePath != null && launcher != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnviornmentVariables(filePath, taskListener);
             GenerateGitScript gitScript = new GenerateGitScript(credentials.getUsername(),
-                                                credentials.getPassword().getPlainText(), credentials.getId());
+                    credentials.getPassword().getPlainText(), credentials.getId());
             FilePath gitTempFile = gitScript.write(credentials, unbindTempDir.getDirPath());
             credMap.put("GIT_ASKPASS", gitTempFile.getRemote());
             return new MultiEnvironment(credMap, unbindTempDir.getUnbinder());
@@ -79,7 +85,7 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
     @Override
     public void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException {
         if(!Functions.isWindows() && ((CliGitAPIImpl) getGitClientInstance(listener)).
-                                            isAtLeastVersion(2,3,0,0))
+                                      isAtLeastVersion(2,3,0,0))
         {
             credMap.put("GIT_TERMINAL_PROMPT","false");
         }else {
@@ -89,7 +95,7 @@ public class GitUsernamePasswordBind extends MultiBinding<StandardUsernamePasswo
 
     @Override
     public GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException {
-        Git gitInstance = new Git(listener,new EnvVars()).using(GIT_TOOL_NAME);
+        Git gitInstance = Git.with(listener,new EnvVars()).using(gitTool);
         return gitInstance.getClient();
     }
 
