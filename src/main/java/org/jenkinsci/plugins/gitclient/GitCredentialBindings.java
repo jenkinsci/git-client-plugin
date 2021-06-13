@@ -13,9 +13,9 @@ public interface GitCredentialBindings {
 
     String GIT_TOOL_NAME = FilenameUtils.removeExtension(GitTool.getDefaultInstallation().getGitExe());
 
-    void setKeyBindings(@Nonnull StandardCredentials credentials);
+    void setKeyBindings(@NonNull StandardCredentials credentials);
 
-    void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException;
+    void setRunEnviornmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException;
 
     GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException;
 
