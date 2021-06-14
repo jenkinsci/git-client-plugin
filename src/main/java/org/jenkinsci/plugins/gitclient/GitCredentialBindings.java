@@ -8,6 +8,7 @@ import jenkins.model.Jenkins;
 import org.apache.commons.io.FilenameUtils;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.io.IOException;
 
 public interface GitCredentialBindings {
@@ -27,10 +28,10 @@ public interface GitCredentialBindings {
             listener.getLogger().println("Selected Git installation does not exist. Using Default");
             gitTool = GitTool.getDefaultInstallation();
         }
-        if(gitTool!=null) {
+        if (gitTool != null) {
             try {
                 gitTool = gitTool.forNode(Jenkins.get(), listener);
-                actualToolByPath = FilenameUtils.getBaseName(gitTool.getGitExe());
+                actualToolByPath = FilenameUtils.getBaseName(gitTool.getGitExe()).toLowerCase();
             } catch (IOException | InterruptedException e) {
                 listener.getLogger().println("Failed to get git tool");
             }

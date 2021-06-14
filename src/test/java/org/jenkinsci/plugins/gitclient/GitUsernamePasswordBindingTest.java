@@ -47,9 +47,10 @@ public class GitUsernamePasswordBindingTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"randomName", "special%%_342@**", "git", null},
-                {"here-aquote", "&Ampersand", JGitTool.MAGIC_EXENAME, null},
-                {"semi_colon", "colon:inside", JGitApacheTool.MAGIC_EXENAME, null},
-                {"b", "He said \"Hello\", then left.", null, createToolInstance("DEFAULT", "git", null)}
+                {"a", "here's-a-quote", JGitTool.MAGIC_EXENAME, null},
+                {"b", "He said \"Hello\", then left.", JGitApacheTool.MAGIC_EXENAME, null},
+                {"many-words-in-a-user-name-because-we-can", "&Ampersand&", JGitApacheTool.MAGIC_EXENAME, null},
+                {"user_name", "colon:inside;outside", null, createToolInstance("DEFAULT", "git", null)}
         });
     }
 
@@ -87,7 +88,7 @@ public class GitUsernamePasswordBindingTest {
     }
 
     @Before
-    public void basicSetup() throws IOException, InterruptedException {
+    public void basicSetup() throws IOException {
         Jenkins.get();
         //File init
         rootDir = tempFolder.getRoot();
@@ -153,9 +154,9 @@ public class GitUsernamePasswordBindingTest {
         prj.getBuildWrappersList().add(new SecretBuildWrapper(Collections.<MultiBinding<?>>
                 singletonList(new GitUsernamePasswordBinding(credentialID))));
         if (isWindows()) {
-            prj.getBuildersList().add(new BatchFile("@echo off\necho %Git_Username%:%Git_Password% > auth.txt"));
+            prj.getBuildersList().add(new BatchFile("@echo off\necho %GIT_USERNAME%:%GIT_PASSWORD% > auth.txt"));
         } else {
-            prj.getBuildersList().add(new Shell("set +x\necho $Git_Username:$Git_Password > auth.txt"));
+            prj.getBuildersList().add(new Shell("set +x\necho $GIT_USERNAME:$GIT_PASSWORD > auth.txt"));
         }
         Map<JobPropertyDescriptor, JobProperty<? super FreeStyleProject>> p = prj.getProperties();
         r.configRoundtrip((Item) prj);
@@ -164,8 +165,8 @@ public class GitUsernamePasswordBindingTest {
         List<? extends MultiBinding<?>> bindings = wrapper.getBindings();
         assertEquals(1, bindings.size());
         MultiBinding<?> binding = bindings.get(0);
-        assertTrue("Keys not set", binding.variables().contains("Git_Username"));
-        assertTrue("Keys not set", binding.variables().contains("Git_Password"));
+        assertTrue("Keys not set", binding.variables().contains("GIT_USERNAME"));
+        assertTrue("Keys not set", binding.variables().contains("GIT_PASSWORD"));
         FreeStyleBuild b = r.buildAndAssertSuccess(prj);
         r.assertLogNotContains(this.password, b);
         assertEquals(username + ':' + password, b.getWorkspace().child("auth.txt").readToString().trim());

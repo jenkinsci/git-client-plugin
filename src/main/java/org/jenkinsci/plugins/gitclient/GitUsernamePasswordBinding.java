@@ -20,8 +20,6 @@ import org.jenkinsci.plugins.credentialsbinding.impl.AbstractOnDiskBinding;
 import org.jenkinsci.plugins.credentialsbinding.impl.UnbindableDir;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,13 +28,13 @@ import java.util.Set;
 
 
 public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePasswordCredentials> implements GitCredentialBindings {
-    final static private String GIT_USERNAME_KEY =  "GIT_USERNAME";
-    final static private String GIT_PASSWORD_KEY =  "GIT_PASSWORD";
-    private final Map<String,String> credMap = new LinkedHashMap<>();
+    final static private String GIT_USERNAME_KEY = "GIT_USERNAME";
+    final static private String GIT_PASSWORD_KEY = "GIT_PASSWORD";
+    private final Map<String, String> credMap = new LinkedHashMap<>();
     private String gitTool = null;
 
     @DataBoundConstructor
-    public GitUsernamePasswordBinding(String credentialsId) throws IOException, InterruptedException {
+    public GitUsernamePasswordBinding(String credentialsId) {
         super(credentialsId);
         //Variables could be added if needed
     }
@@ -47,13 +45,13 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
     }
 
     @Override
-    public MultiEnvironment bind(@Nonnull Run<?, ?> run, @Nullable FilePath filePath,
-                                 @Nullable Launcher launcher, @Nonnull TaskListener taskListener)
+    public MultiEnvironment bind(@NonNull Run<?, ?> run, FilePath filePath,
+                                 Launcher launcher,@NonNull TaskListener taskListener)
             throws IOException, InterruptedException {
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
         gitTool = gitToolName(taskListener);
-        if (!StringUtils.endsWithAny(gitTool,new String[]{JGitTool.MAGIC_EXENAME,JGitApacheTool.MAGIC_EXENAME})
+        if (!StringUtils.endsWithAny(gitTool, new String[]{JGitTool.MAGIC_EXENAME, JGitApacheTool.MAGIC_EXENAME})
                 && filePath != null && launcher != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnviornmentVariables(filePath, taskListener);
@@ -77,25 +75,24 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
 
 
     @Override
-    public void setKeyBindings(@Nonnull StandardCredentials credentials) {
-        credMap.put(GIT_USERNAME_KEY,((StandardUsernamePasswordCredentials) credentials).getUsername());
-        credMap.put(GIT_PASSWORD_KEY,((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
+    public void setKeyBindings(@NonNull StandardCredentials credentials) {
+        credMap.put(GIT_USERNAME_KEY, ((StandardUsernamePasswordCredentials) credentials).getUsername());
+        credMap.put(GIT_PASSWORD_KEY, ((StandardUsernamePasswordCredentials) credentials).getPassword().getPlainText());
     }
 
     @Override
-    public void setRunEnviornmentVariables(@Nonnull FilePath filePath, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        if(!Functions.isWindows() && ((CliGitAPIImpl) getGitClientInstance(listener)).
-                                      isAtLeastVersion(2,3,0,0))
-        {
-            credMap.put("GIT_TERMINAL_PROMPT","false");
-        }else {
-            credMap.put("GCM_INTERACTIVE","false");
+    public void setRunEnviornmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException {
+        if (!Functions.isWindows() && ((CliGitAPIImpl) getGitClientInstance(listener)).
+                isAtLeastVersion(2, 3, 0, 0)) {
+            credMap.put("GIT_TERMINAL_PROMPT", "false");
+        } else {
+            credMap.put("GCM_INTERACTIVE", "false");
         }
     }
 
     @Override
     public GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException {
-        Git gitInstance = Git.with(listener,new EnvVars()).using(gitTool);
+        Git gitInstance = Git.with(listener, new EnvVars()).using(gitTool);
         return gitInstance.getClient();
     }
 
@@ -109,12 +106,13 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
             this.userVariable = gitUsername;
             this.passVariable = gitPassword;
         }
+
         @Override
         protected FilePath write(StandardUsernamePasswordCredentials credentials, FilePath workspace)
                 throws IOException, InterruptedException {
             FilePath gitEcho;
             if (!Functions.isWindows()) {
-                gitEcho  = workspace.createTempFile("auth", ".sh");
+                gitEcho = workspace.createTempFile("auth", ".sh");
                 gitEcho.write("#!/bin/sh\n" +
                         "case $1 in\n" +
                         "        Username*) echo " + this.userVariable + "\n" +
@@ -122,12 +120,12 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
                         "        Password*) echo " + this.passVariable + "\n" +
                         "                ;;\n" +
                         "        esac\n", null);
-            }else {
-                gitEcho = workspace.createTempFile("auth",".bat");
+            } else {
+                gitEcho = workspace.createTempFile("auth", ".bat");
                 gitEcho.write("@ECHO OFF\n" +
                         "SET ARG=%~1\n" +
-                        "IF %ARG:~0,8%==Username (ECHO "+this.userVariable+")\n" +
-                        "IF %ARG:~0,8%==Password (ECHO "+this.passVariable+")",null);
+                        "IF %ARG:~0,8%==Username (ECHO " + this.userVariable + ")\n" +
+                        "IF %ARG:~0,8%==Password (ECHO " + this.passVariable + ")", null);
             }
             gitEcho.chmod(0500);
             return gitEcho;
