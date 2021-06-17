@@ -39,7 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 @RunWith(Parameterized.class)
 public class GitUsernamePasswordBindingTest {
@@ -94,15 +95,15 @@ public class GitUsernamePasswordBindingTest {
         rootDir = tempFolder.getRoot();
         rootFilePath = new FilePath(rootDir.getAbsoluteFile());
         gitRootRepo = tempFolder.newFolder();
-        assertNotNull(gitRootRepo);
+        assertThat(gitRootRepo, is(notNullValue()));
 
         //Credential init
-        credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialID, "GIt Username and Password Binding Test", this.username, this.password);
+        credentials = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, credentialID, "Git Username and Password Binding Test", this.username, this.password);
         CredentialsProvider.lookupStores(r.jenkins).iterator().next().addCredentials(Domain.global(), credentials);
 
         //GitUsernamePasswordBinding instance
         gitCredBind = new GitUsernamePasswordBinding(credentials.getId());
-        assertEquals("Type mis-match", StandardUsernamePasswordCredentials.class, gitCredBind.type());
+        assertThat(gitCredBind.type(), is(StandardUsernamePasswordCredentials.class));
 
 
         if (gitToolName == null) {
@@ -136,16 +137,16 @@ public class GitUsernamePasswordBindingTest {
     @Test
     public void test_GenerateGitScript_write() throws IOException, InterruptedException {
         GitUsernamePasswordBinding.GenerateGitScript tempGenScript = new GitUsernamePasswordBinding.GenerateGitScript(this.username, this.password, credentials.getId());
-        assertEquals("Type mis-match", StandardUsernamePasswordCredentials.class, tempGenScript.type());
+        assertThat(tempGenScript.type(), is(StandardUsernamePasswordCredentials.class));
         FilePath tempScriptFile = tempGenScript.write(credentials, rootFilePath);
-        assertEquals("Read and Execute permissions to be set:" + tempScriptFile.mode(), 320, tempScriptFile.mode());
         if (!isWindows()) {
-            assertEquals("File extension not sh", "sh", FilenameUtils.getExtension(tempScriptFile.getName()));
+            assertThat(tempScriptFile.mode(), is(0500));
+            assertThat("File extension not sh", FilenameUtils.getExtension(tempScriptFile.getName()), is("sh"));
         } else {
-            assertEquals("File extension not bat", "bat", FilenameUtils.getExtension(tempScriptFile.getName()));
+            assertThat("File extension not bat", FilenameUtils.getExtension(tempScriptFile.getName()), is("bat"));
         }
-        assertTrue("Username not found", tempScriptFile.readToString().contains(this.username));
-        assertTrue("Password not found", tempScriptFile.readToString().contains(this.password));
+        assertThat(tempScriptFile.readToString(), containsString(this.username));
+        assertThat(tempScriptFile.readToString(), containsString(this.password));
     }
 
     @Test
@@ -154,22 +155,24 @@ public class GitUsernamePasswordBindingTest {
         prj.getBuildWrappersList().add(new SecretBuildWrapper(Collections.<MultiBinding<?>>
                 singletonList(new GitUsernamePasswordBinding(credentialID))));
         if (isWindows()) {
-            prj.getBuildersList().add(new BatchFile("@echo off\necho %GIT_USERNAME%:%GIT_PASSWORD% > auth.txt"));
+            prj.getBuildersList().add(new BatchFile("set | findstr GIT_USERNAME > auth.txt & set | findstr GIT_PASSWORD >> auth.txt"));
         } else {
-            prj.getBuildersList().add(new Shell("set +x\necho $GIT_USERNAME:$GIT_PASSWORD > auth.txt"));
+            prj.getBuildersList().add(new Shell("env | grep GIT_USERNAME > auth.txt; env | grep GIT_PASSWORD >> auth.txt"));
         }
         Map<JobPropertyDescriptor, JobProperty<? super FreeStyleProject>> p = prj.getProperties();
         r.configRoundtrip((Item) prj);
         SecretBuildWrapper wrapper = prj.getBuildWrappersList().get(SecretBuildWrapper.class);
-        assertNotNull(wrapper);
+        assertThat(wrapper, is(notNullValue()));
         List<? extends MultiBinding<?>> bindings = wrapper.getBindings();
-        assertEquals(1, bindings.size());
+        assertThat(bindings.size(), is(1));
         MultiBinding<?> binding = bindings.get(0);
-        assertTrue("Keys not set", binding.variables().contains("GIT_USERNAME"));
-        assertTrue("Keys not set", binding.variables().contains("GIT_PASSWORD"));
+        assertThat(binding.variables(), hasItem("GIT_USERNAME"));
+        assertThat(binding.variables(), hasItem("GIT_PASSWORD"));
         FreeStyleBuild b = r.buildAndAssertSuccess(prj);
         r.assertLogNotContains(this.password, b);
-        assertEquals(username + ':' + password, b.getWorkspace().child("auth.txt").readToString().trim());
+        String fileContents = b.getWorkspace().child("auth.txt").readToString().trim();
+        assertThat(fileContents, containsString("GIT_USERNAME=" + this.username));
+        assertThat(fileContents, containsString("GIT_PASSWORD=" + this.password));
     }
 
     /**
