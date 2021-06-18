@@ -11,8 +11,6 @@ import hudson.Launcher;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 
-import org.apache.commons.lang.StringUtils;
-
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.credentialsbinding.BindingDescriptor;
 import org.jenkinsci.plugins.credentialsbinding.MultiBinding;
@@ -50,9 +48,8 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
             throws IOException, InterruptedException {
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
-        gitTool = gitToolName(taskListener);
-        if (!StringUtils.endsWithAny(gitTool, new String[]{JGitTool.MAGIC_EXENAME, JGitApacheTool.MAGIC_EXENAME})
-                && filePath != null && launcher != null) {
+        gitTool = gitToolName(run, taskListener);
+        if (gitTool !=null && filePath != null && launcher != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnviornmentVariables(filePath, taskListener);
             GenerateGitScript gitScript = new GenerateGitScript(credentials.getUsername(),
