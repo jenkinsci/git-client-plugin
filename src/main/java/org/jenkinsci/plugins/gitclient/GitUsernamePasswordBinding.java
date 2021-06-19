@@ -44,12 +44,12 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
 
     @Override
     public MultiEnvironment bind(@NonNull Run<?, ?> run, FilePath filePath,
-                                 Launcher launcher,@NonNull TaskListener taskListener)
+                                 Launcher launcher, @NonNull TaskListener taskListener)
             throws IOException, InterruptedException {
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
         gitTool = gitToolName(run, taskListener);
-        if (gitTool !=null && filePath != null && launcher != null) {
+        if (gitTool != null && filePath != null && launcher != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnviornmentVariables(filePath, taskListener);
             GenerateGitScript gitScript = new GenerateGitScript(credentials.getUsername(),
@@ -108,23 +108,24 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
         protected FilePath write(StandardUsernamePasswordCredentials credentials, FilePath workspace)
                 throws IOException, InterruptedException {
             FilePath gitEcho;
+            String newLine = System.lineSeparator();    //Platform dependent newLine
             if (!Functions.isWindows()) {
                 gitEcho = workspace.createTempFile("auth", ".sh");
-                gitEcho.write("#!/bin/sh\n" +
-                        "case $1 in\n" +
-                        "        Username*) echo " + this.userVariable + "\n" +
-                        "                ;;\n" +
-                        "        Password*) echo " + this.passVariable + "\n" +
-                        "                ;;\n" +
-                        "        esac\n", null);
+                gitEcho.write("#!/bin/sh" + newLine +
+                        "case $1 in" + newLine +
+                        "        Username*) echo " + this.userVariable + newLine +
+                        "                ;;" + newLine +
+                        "        Password*) echo " + this.passVariable + newLine +
+                        "                ;;" + newLine +
+                        "        esac" + newLine, null);
+                gitEcho.chmod(0500);
             } else {
                 gitEcho = workspace.createTempFile("auth", ".bat");
-                gitEcho.write("@ECHO OFF\n" +
-                        "SET ARG=%~1\n" +
-                        "IF %ARG:~0,8%==Username (ECHO " + this.userVariable + ")\n" +
+                gitEcho.write("@ECHO OFF" + newLine +
+                        "SET ARG=%~1" + newLine +
+                        "IF %ARG:~0,8%==Username (ECHO " + this.userVariable + ")" + newLine +
                         "IF %ARG:~0,8%==Password (ECHO " + this.passVariable + ")", null);
             }
-            gitEcho.chmod(0500);
             return gitEcho;
         }
 
