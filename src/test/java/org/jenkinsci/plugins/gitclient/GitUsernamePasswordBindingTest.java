@@ -16,6 +16,7 @@ import hudson.model.FreeStyleBuild;
 import hudson.plugins.git.GitTool;
 import hudson.tasks.BatchFile;
 import hudson.tasks.Shell;
+
 import hudson.tools.ToolProperty;
 import jenkins.model.Jenkins;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -47,11 +48,11 @@ public class GitUsernamePasswordBindingTest {
     @Parameterized.Parameters(name = "User {0}: Password {1}: GitToolName {2}: GitToolInstance {3}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
-                {"randomName", "special%%_342@**", "git", null},
-                {"a", "here's-a-quote", JGitTool.MAGIC_EXENAME, null},
-                {"b", "He said \"Hello\", then left.", JGitApacheTool.MAGIC_EXENAME, null},
-                {"many-words-in-a-user-name-because-we-can", "&Ampersand&", JGitApacheTool.MAGIC_EXENAME, null},
-                {"user_name", "colon:inside;outside", null, createToolInstance("DEFAULT", "git", null)}
+                {"randomName", "special%%_342@**", new GitTool("git", "git", null)},
+                {"a", "here's-a-quote", new JGitTool()},
+                {"b", "He said \"Hello\", then left.", new JGitApacheTool()},
+                {"many-words-in-a-user-name-because-we-can", "&Ampersand&", new JGitApacheTool()},
+                {"user_name", "colon:inside;outside", createToolInstance("DEFAULT", "git", null)}
         });
     }
 
@@ -65,11 +66,9 @@ public class GitUsernamePasswordBindingTest {
 
     private final String password;
 
+    private final GitTool gitToolInstance;
+
     private final String credentialID = DigestUtils.sha256Hex(("Git Usernanme and Password Binding").getBytes(StandardCharsets.UTF_8));
-
-    private GitTool gitToolInstance;
-
-    private String gitToolName = null;
 
     private File rootDir = null;
     private FilePath rootFilePath = null;
@@ -77,10 +76,9 @@ public class GitUsernamePasswordBindingTest {
     private UsernamePasswordCredentialsImpl credentials = null;
     private GitUsernamePasswordBinding gitCredBind = null;
 
-    public GitUsernamePasswordBindingTest(String username, String password, String gitToolName, GitTool gitToolInstance) {
+    public GitUsernamePasswordBindingTest(String username, String password, GitTool gitToolInstance) {
         this.username = username;
         this.password = password;
-        this.gitToolName = gitToolName;
         this.gitToolInstance = gitToolInstance;
     }
 
@@ -105,33 +103,12 @@ public class GitUsernamePasswordBindingTest {
         gitCredBind = new GitUsernamePasswordBinding(credentials.getId());
         assertThat(gitCredBind.type(), is(StandardUsernamePasswordCredentials.class));
 
-
-        if (gitToolName == null) {
-            gitToolName = gitToolInstance.getGitExe();
-        } else {
-            gitToolInstance = getToolInstance(gitToolName);
-        }
         //Git
-        Git git = Git.with(TaskListener.NULL, new EnvVars()).in(gitRootRepo).using(getToolInstance(gitToolName).getGitExe());
+        Git git = Git.with(TaskListener.NULL, new EnvVars()).in(gitRootRepo).using(gitToolInstance.getGitExe());
 
         //Git Tool
         Jenkins.get().getDescriptorByType(GitTool.DescriptorImpl.class).getDefaultInstallers().clear();
         Jenkins.get().getDescriptorByType(GitTool.DescriptorImpl.class).setInstallations(gitToolInstance);
-    }
-
-    public GitTool getToolInstance(String name) {
-        GitTool tool = null;
-        switch (name) {
-            case "git":
-                tool = GitTool.getDefaultInstallation();
-                break;
-            case "jgit":
-                tool = JGitTool.getDefaultInstallation();
-                break;
-            case "jgitapache":
-                tool = JGitApacheTool.getDefaultInstallation();
-        }
-        return tool;
     }
 
     @Test
@@ -149,6 +126,8 @@ public class GitUsernamePasswordBindingTest {
         assertThat(tempScriptFile.readToString(), containsString(this.password));
     }
 
+    //This test will pass as long as setKeyBindings(@NonNull StandardCredentials credentials) method
+    //is executed before git tool type check, for all git tool implementations
     @Test
     public void test_FreeStyleProject() throws Exception {
         FreeStyleProject prj = r.createFreeStyleProject();
