@@ -34,8 +34,29 @@ public interface GitCredentialBindings {
             Node currentNode = buildExecutor.getOwner().getNode();
             //Check node is not null
             if (currentNode != null) {
+                //It's on an agent type or Jenkins controller
+                ToolLocationNodeProperty nodeToolLocation = currentNode.getNodeProperty(ToolLocationNodeProperty.class);
+                //Tool location property is configured for the agent type or Jenkins controller
+                if (nodeToolLocation != null) {
+                    //Get Tool locations(could be many)
+                    List<ToolLocationNodeProperty.ToolLocation> toolList = nodeToolLocation.getLocations();
+                    //Iteration
+                    for (ToolLocationNodeProperty.ToolLocation tool : toolList) {
+                        //If 'Default' Git Tool is chosen on an agent then all the Git Tools installations added
+                        // to the master controller will be available on the agent as well
+                        //Check not an instance of jgit or jgitapache using tool descriptor not type key
+                        if (tool.getType().clazz.equals(GitTool.class)) {
+                            //Check for properties
+                            GitTool gitTool = new GitTool(tool.getName(), tool.getHome(), null);
+                            //node specific git home for git tool
+                            gitTool = gitTool.forNode(currentNode, listener);
+                            return gitTool.getGitExe();
+                        }
+                    }
+                }
+                //Check if Jenkins controller is using Global tools
                 if (currentNode.getNodeName().equals("")) {
-                    //It's on the master node
+                    //It's on the Jenkins controller
                     toolType = Jenkins.get().getDescriptorByType(GitTool.DescriptorImpl.class);
                     if (toolType != null) {
                         ToolInstallation[] toolInstalled = toolType.getInstallations();
@@ -45,32 +66,8 @@ public interface GitCredentialBindings {
                             }
                         }
                     }
-                } else {
-                    //It's on an agent type
-                    ToolLocationNodeProperty nodeToolLocation = currentNode.getNodeProperty(ToolLocationNodeProperty.class);
-                    //Tool location property is configured
-                    if (nodeToolLocation != null) {
-                        //Get Tool locations(could be many)
-                        List<ToolLocationNodeProperty.ToolLocation> toolList = nodeToolLocation.getLocations();
-                        //Iteration
-                        for (ToolLocationNodeProperty.ToolLocation tool : toolList) {
-                            //If 'Default' Git Tool is chosen on an agent then all the Git Tools installations added
-                            // to the master nodes will be available on the agent as well
-                            //Check not an instance of jgit or jgitapache using tool descriptor not type key
-                            if (tool.getType().clazz.equals(GitTool.class)) {
-                                //Check for properties
-                                GitTool gitTool = new GitTool(tool.getName(), tool.getHome(), null);
-                                //node specific git home for git tool
-                                gitTool = gitTool.forNode(currentNode, listener);
-                                return gitTool.getGitExe();
-                            }
-                        }
-                    }
                 }
-                listener.getLogger().println("No Git Tool is configured on the current node");
             }
-            listener.getLogger().println("Is this node available...");
         }
         return null;
-    }
-}
+    }}
