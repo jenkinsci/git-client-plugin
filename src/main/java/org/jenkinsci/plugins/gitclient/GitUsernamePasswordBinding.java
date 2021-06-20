@@ -78,7 +78,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
     }
 
     @Override
-    public void setRunEnviornmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException {
+    public void setRunEnvironmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException {
         if (!Functions.isWindows() && ((CliGitAPIImpl) getGitClientInstance(listener)).
                 isAtLeastVersion(2, 3, 0, 0)) {
             credMap.put("GIT_TERMINAL_PROMPT", "false");
