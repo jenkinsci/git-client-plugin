@@ -22,7 +22,7 @@ public interface GitCredentialBindings {
 
     void setKeyBindings(@NonNull StandardCredentials credentials);
 
-    void setRunEnviornmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException;
+    void setRunEnvironmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException;
 
     GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException;
 

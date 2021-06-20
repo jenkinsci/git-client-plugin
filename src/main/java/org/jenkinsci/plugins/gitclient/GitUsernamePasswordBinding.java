@@ -49,9 +49,9 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
         gitTool = gitToolName(run, taskListener);
-        if (gitTool != null && filePath != null && launcher != null) {
+        if (gitTool != null && filePath != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
-            setRunEnviornmentVariables(filePath, taskListener);
+            setRunEnvironmentVariables(filePath, taskListener);
             GenerateGitScript gitScript = new GenerateGitScript(credentials.getUsername(),
                     credentials.getPassword().getPlainText(), credentials.getId());
             FilePath gitTempFile = gitScript.write(credentials, unbindTempDir.getDirPath());
