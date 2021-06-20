@@ -31,6 +31,34 @@ toc::[]
 Release notes have been recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] since git client plugin 2.8.1.
 Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
 
+[#credential-binding]
+== Credential Mapping
+
+The git client plugin provides two bindings `Git Username and Password` and `Git SSH Private Key` using command line git implementation to support authentication operations in a Jenkins Pipeline job or a FreeStyle Project.
+
+The git-credential bindings are accessible through the https://plugins.jenkins.io/credentials-binding/[Credential Binding Plugin], which depends on the users credential retrieved from the Jenkins https://plugins.jenkins.io/credentials/[Credentials API Plugin].
+
+=== Git Username and Password Binding
+
+This binding provides authentication support over *HTTP* protocol for Git CLI commands in a Jenkins Pipeline and FreeStyle Project.
+
+*FreeStyle Project*::
+
+Check the box _Use secret text(s) or file(s)_, add Git Username and Password binding.
+No option is provided to set variable bindings which will use your credentials.
+
+image::TODO[FreeStyle Project Git Username and Password]
+
+*Pipeline Job*::
+
+Click the _Snippet Generator_ and choose the `withCredentials` step, add Git Username and Password binding.
+Similar to FreeStyle project, no option is provided to set variable bindings which will use your credentials.
+
+image::TODO[Pipeline Git Username and Password]
+
+NOTE: By default, two variable bindings `GIT_USERNAME` and `GIT_PASSWORD`, bind with user’s credential i.e. username and password respectively, in both FreeStyle Project and Pipeline Job.
+ The variable bindings are available even if `JGIT` or `JGit with Apache HTTP Client` Git implementation is being used but the authentication support is not provdied to these implementations.
+
 [#implementations]
 == Implementations
 
