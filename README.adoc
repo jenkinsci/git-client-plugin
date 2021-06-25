@@ -43,6 +43,16 @@ The binding retrieves credentials from the link:https://plugins.jenkins.io/crede
 
 This binding provides authentication support over *HTTP* protocol for command line git in a Pipeline job and a Freestyle job.
 
+Pipeline job::
+
+Click the Pipeline Syntax _Snippet Generator_ and choose the `withCredentials` step, add Git Username and Password binding.
+Similar to Freestyle project, no option is provided to set variable bindings which will use your credentials.
+
+image::TODO[Pipeline Git Username and Password]
+
+NOTE: By default, two variable bindings, `GIT_USERNAME` and `GIT_PASSWORD`, bind with user’s credential i.e. username and password respectively, in both Freestyle jobs and Pipeline jobs.
+The variable bindings are available even if the `JGit` or `JGit with Apache HTTP Client` git implementation is being used.
+
 .Shell example
 ```groovy
 withCredentials([GitUsernamePassword('my-credentials-id')]) {
@@ -64,22 +74,12 @@ withCredentials([GitUsernamePassword('my-credentials-id')]) {
 }
 ```
 
-FreeStyle job::
+Freestyle job::
 
 Check the box _Use secret text(s) or file(s)_, add Git Username and Password binding.
 No option is provided to set variable bindings which will use your credentials.
 
-image::TODO[FreeStyle Project Git Username and Password]
-
-Pipeline job::
-
-Click the Pipeline Syntax _Snippet Generator_ and choose the `withCredentials` step, add Git Username and Password binding.
-Similar to FreeStyle project, no option is provided to set variable bindings which will use your credentials.
-
-image::TODO[Pipeline Git Username and Password]
-
-NOTE: By default, two variable bindings, `GIT_USERNAME` and `GIT_PASSWORD`, bind with user’s credential i.e. username and password respectively, in both Freestyle jobs and Pipeline jobs.
-The variable bindings are available even if the `JGit` or `JGit with Apache HTTP Client` git implementation is being used.
+image::TODO[Freestyle Git Username and Password]
 
 [#implementations]
 == Implementations
