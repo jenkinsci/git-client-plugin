@@ -62,7 +62,8 @@ withCredentials([GitUsernamePassword('my-credentials-id')]) {
 withCredentials([GitUsernamePassword('my-credentials-id')]) {
   powershell 'git push'
 }
-``
+```
+
 FreeStyle job::
 
 Check the box _Use secret text(s) or file(s)_, add Git Username and Password binding.
