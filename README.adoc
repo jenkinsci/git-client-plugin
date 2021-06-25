@@ -32,7 +32,7 @@ Release notes have been recorded in https://github.com/jenkinsci/git-client-plug
 Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
 
 [#credential-binding]
-== Credential Mapping
+== Credential Binding
 
 The git client plugin provides the `Git Username and Password` binding that allows authenticated operations with command line git in a Pipeline job or a Freestyle job.
 
