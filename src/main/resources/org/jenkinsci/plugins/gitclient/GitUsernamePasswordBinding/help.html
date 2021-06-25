@@ -8,14 +8,18 @@ withCredentials([GitUsernamePassword('my-credentials-id')]) {
   sh 'git fetch --all'
 }
 </pre>
+</p>
 
+<p>
 <strong>Batch example</strong>
 <pre>
 withCredentials([GitUsernamePassword('my-credentials-id')]) {
   bat 'git submodule update --init --recursive'
 }
 </pre>
+</p>
 
+<p>
 <strong>Powershell example</strong>
 <pre>
 withCredentials([GitUsernamePassword('my-credentials-id')]) {
