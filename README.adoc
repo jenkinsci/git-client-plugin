@@ -36,7 +36,7 @@ Prior release notes are recorded in the git client plugin repository link:CHANGE
 
 The git client plugin provides the `Git Username and Password` binding that allows authenticated operations with command line git in a Pipeline job or a Freestyle job.
 
-The git credential bindings are accessible through the `withCredential` step of the link:https://plugins.jenkins.io/credentials-binding/[Credentials Binding] plugin.
+The git credential bindings are accessible through the `withCredentials` step of the link:https://plugins.jenkins.io/credentials-binding/[Credentials Binding] plugin.
 The binding retrieves credentials from the link:https://plugins.jenkins.io/credentials/[Credentials] plugin.
 
 === Git Username and Password Binding
