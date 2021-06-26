@@ -1240,6 +1240,7 @@ public class GitClientTest {
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
         if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
+            System.out.println("Not git or git lfs not found");
             return;
         }
 
@@ -1807,7 +1808,18 @@ public class GitClientTest {
         gitClient.addRemoteUrl(remote, lfsTestRepoURL);
         String firstRef = remote + "/" + firstBranch;
         String firstRefSpec = "+refs/heads/" + firstBranch + ":refs/remotes/" + firstRef;
+
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        String[] lfsStatus = gitCmd.run("lfs", "status");
+        System.out.println("**** git lfs status before is " + Arrays.toString(lfsStatus));
+        String[] configList = gitCmd.run("config", "--list");
+        System.out.println("**** git config --list status is " + Arrays.toString(configList));
+
         fetch(gitClient, remote, firstRefSpec);
+
+        String[] lfsStatusAfter = gitCmd.run("lfs", "status");
+        System.out.println("**** git lfs status after is " + Arrays.toString(lfsStatusAfter));
+
         return remote;
     }
 
