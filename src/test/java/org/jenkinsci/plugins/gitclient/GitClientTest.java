@@ -1816,8 +1816,8 @@ public class GitClientTest {
         System.out.println("**** git config --list status is " + Arrays.toString(configList));
         String[] lfsInstall = gitCmd.run("lfs", "install");
         System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
-        String[] lfsInstall = gitCmd.run("lfs", "install");
-        System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
+        String[] lfsVersion = gitCmd.run("lfs", "version");
+        System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
 
         fetch(gitClient, remote, firstRefSpec);
 
