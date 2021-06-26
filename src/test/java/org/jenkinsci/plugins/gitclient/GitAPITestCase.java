@@ -554,7 +554,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
-    public void xtest_lsTree_non_recursive() throws IOException, InterruptedException {
+    public void test_lsTree_non_recursive() throws IOException, InterruptedException {
         w.init();
         w.touch("file1", "file1 fixed content");
         w.git.add("file1");
