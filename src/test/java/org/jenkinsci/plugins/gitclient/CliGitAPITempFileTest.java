@@ -99,7 +99,7 @@ public class CliGitAPITempFileTest {
      */
     // @Test
     @Issue({"JENKINS-44301", "JENKINS-43931"}) // and ...
-    public void testTempFilePathCharactersValid() throws IOException {
+    public void xtestTempFilePathCharactersValid() throws IOException {
         CliGitAPIImplExtension cliGit = new CliGitAPIImplExtension("git", workspace, null, null);
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
             File tempFile = cliGit.createTempFile(filenamePrefix, filenameSuffix);
