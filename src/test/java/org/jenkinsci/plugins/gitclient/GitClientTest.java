@@ -206,7 +206,6 @@ public class GitClientTest {
         srcRepoDir = new File(mirrorParent, "git-client-plugin");
     }
 
-
     /**
      * Tests that need the default branch name can use this variable.
      */
@@ -219,7 +218,7 @@ public class GitClientTest {
      * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
      */
     @BeforeClass
-    public static void getDefaultBranchName() throws Exception {
+    public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.run("config", "--global", "--get", "init.defaultBranch");
