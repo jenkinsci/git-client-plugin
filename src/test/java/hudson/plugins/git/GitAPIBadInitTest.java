@@ -39,7 +39,7 @@ public class GitAPIBadInitTest {
         listener = StreamTaskListener.fromStderr();
     }
 
-    @Test
+    // @Test
     public void testInitExistingDirectory() throws Exception {
         GitClient git = new GitAPI("git", tempDir, listener, env);
         git.init();
@@ -48,7 +48,7 @@ public class GitAPIBadInitTest {
         assertTrue(gitDir + " not a directory", gitDir.isDirectory());
     }
 
-    @Test
+    // @Test
     public void testInitExistingFile() throws Exception {
         File existingFile = new File(tempDir, "file-exists");
         FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");

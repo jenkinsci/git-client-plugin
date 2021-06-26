@@ -199,7 +199,7 @@ public class GitAPITesJGITNotInitialized {
         assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
     }
 
-    @Test
+    // @Test
     public void testGetSubmoduleUrl() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         workspace.launchCommand("git", "checkout", "tests/getSubmodules");

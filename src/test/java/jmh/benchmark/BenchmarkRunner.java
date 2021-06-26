@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * provided by JMH
  */
 public class BenchmarkRunner {
-    @Test
+    // @Test
     public void runJmhBenchmarks() throws Exception {
         ChainedOptionsBuilder options = new OptionsBuilder()
                 .mode(Mode.AverageTime) // Performance metric is Average time (ms per operation)

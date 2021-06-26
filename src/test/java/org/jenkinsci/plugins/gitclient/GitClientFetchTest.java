@@ -99,7 +99,7 @@ public class GitClientFetchTest {
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
-    @Test
+    // @Test
     public void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
@@ -228,7 +228,7 @@ public class GitClientFetchTest {
         assertThat("null refSpec fetch modified local repo", newAreaWorkspace.getGitClient().revParse("HEAD"), is(expectedHead));
     }
 
-    @Test
+    // @Test
     @Issue("JENKINS-19591")
     public void test_fetch_needs_preceding_prune() throws Exception {
         /* Create a working repo containing a commit */
@@ -330,7 +330,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).execute();
     }
 
-    @Test
+    // @Test
     public void test_prune_without_remote() throws Exception {
         /* Prune when a remote is not yet defined */
         String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
@@ -347,7 +347,7 @@ public class GitClientFetchTest {
      * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533549
      * Refer to https://bugs.eclipse.org/bugs/show_bug.cgi?id=533806
      */
-    @Test
+    // @Test
     @Issue("JENKINS-26197")
     public void test_fetch_with_prune() throws Exception {
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
@@ -411,7 +411,7 @@ public class GitClientFetchTest {
         }
     }
 
-    @Test
+    // @Test
     public void test_fetch_from_url() throws Exception {
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.getGitClient().init();
@@ -425,7 +425,7 @@ public class GitClientFetchTest {
         assertThat(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")), is(true));
     }
 
-    @Test
+    // @Test
     public void test_fetch_shallow() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
@@ -439,7 +439,7 @@ public class GitClientFetchTest {
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
     }
 
-    @Test
+    // @Test
     public void test_fetch_shallow_depth() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
@@ -453,7 +453,7 @@ public class GitClientFetchTest {
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
     }
 
-    @Test
+    // @Test
     public void test_fetch_noTags() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).tags(false).execute();

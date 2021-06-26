@@ -103,7 +103,7 @@
 //        System.out.println("Do TearDown");
 //    }
 //
-//    @Test
+//    // @Test
 //    public void gitFetchBenchmark1() throws Exception {
 //        urIish = new URIish("file://" + repoOneDir.getAbsolutePath());
 //        FetchCommand fetch = gitClient.fetch_().from(urIish, refSpecs);
@@ -113,7 +113,7 @@
 //        System.out.println("The execution time is" + " " + (end - begin));
 //    }
 //
-//    @Test
+//    // @Test
 //    public void gitFetchBenchmark2() throws Exception {
 //        urIish = new URIish("file://" + repoTwoDir.getAbsolutePath());
 //        FetchCommand fetch = gitClient.fetch_().from(urIish, refSpecs);
@@ -123,7 +123,7 @@
 //        System.out.println("The execution time is" + " " + (end - begin));
 //    }
 //
-//    @Test
+//    // @Test
 //    public void gitFetchBenchmark3() throws Exception {
 //        urIish = new URIish("file://" + repoThreeDir.getAbsolutePath());
 //        FetchCommand fetch = gitClient.fetch_().from(urIish, refSpecs);
@@ -133,7 +133,7 @@
 //        System.out.println("The execution time is" + " " + (end - begin));
 //    }
 //
-//    @Test
+//    // @Test
 //    public void gitFetchBenchmark4() throws Exception {
 //        urIish = new URIish("file://" + repoFourDir.getAbsolutePath());
 //        FetchCommand fetch = gitClient.fetch_().from(urIish, refSpecs);

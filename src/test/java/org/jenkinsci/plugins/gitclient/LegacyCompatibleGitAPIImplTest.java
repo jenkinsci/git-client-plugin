@@ -106,7 +106,7 @@ public class LegacyCompatibleGitAPIImplTest {
         return FileUtils.readFileToString(file, "UTF-8");
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testCloneRemoteConfig() throws URISyntaxException, InterruptedException, IOException, ConfigInvalidException {
         if (gitImpl.equals("jgit")) {
@@ -128,14 +128,14 @@ public class LegacyCompatibleGitAPIImplTest {
         assertEquals("Wrong file name", ".git", files[0].getName());
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testHasGitModules_default_ignored_arg() {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules("ignored treeIsh argument 1"));
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testHasGitModules_default_no_arg() {
         assertFalse((new File(repo, ".gitmodules")).exists());
@@ -151,7 +151,7 @@ public class LegacyCompatibleGitAPIImplTest {
         return trackedFile;
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
         File trackedFile = commitTrackedFile();
@@ -161,7 +161,7 @@ public class LegacyCompatibleGitAPIImplTest {
                      });
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testShowRevisionTrackedFile() throws Exception {
         File trackedFile = commitTrackedFile();
@@ -170,14 +170,14 @@ public class LegacyCompatibleGitAPIImplTest {
         assertEquals("commit " + head.name(), revisions.get(0));
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testGetTagsOnCommit_empty() throws Exception {
         List<Tag> result = git.getTagsOnCommit(taggedCommit.name());
         assertTrue("Tag list not empty: " + result, result.isEmpty());
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testGetTagsOnCommit_non_empty() throws Exception {
         File trackedFile = commitTrackedFile();
@@ -185,7 +185,7 @@ public class LegacyCompatibleGitAPIImplTest {
         assertTrue("Tag list not empty: " + result, result.isEmpty());
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testGetTagsOnCommit_SHA1() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
@@ -193,7 +193,7 @@ public class LegacyCompatibleGitAPIImplTest {
         assertTrue("Tag list not empty: " + result, result.isEmpty());
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testGetTagsOnCommit() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
@@ -208,7 +208,7 @@ public class LegacyCompatibleGitAPIImplTest {
         assertNull("Unexpected message for commit: " + result.get(0).getCommitSHA1(), result.get(0).getCommitMessage());
     }
 
-    @Test
+    // @Test
     @Deprecated
     public void testGetTagsOnCommit_sha1() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
@@ -217,7 +217,7 @@ public class LegacyCompatibleGitAPIImplTest {
         assertTrue("Tag list not empty for " + revName, result.isEmpty());
     }
 
-    @Test
+    // @Test
     public void testLsTreeThrows() throws Exception {
         Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
         assertThrows(expectedExceptionClass,
@@ -226,7 +226,7 @@ public class LegacyCompatibleGitAPIImplTest {
                      });
     }
 
-    @Test
+    // @Test
     public void testLsTreeOneCommit() throws Exception {
         File trackedFile = commitTrackedFile();
         List<IndexEntry> lsTree = git.lsTree("HEAD");
@@ -234,7 +234,7 @@ public class LegacyCompatibleGitAPIImplTest {
         assertEquals("tracked-file", lsTree.get(0).getFile());
     }
 
-    @Test
+    // @Test
     public void testExtractBranchNameFromBranchSpec() {
         assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec(DEFAULT_BRANCH_NAME));
         assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("origin/" + DEFAULT_BRANCH_NAME));

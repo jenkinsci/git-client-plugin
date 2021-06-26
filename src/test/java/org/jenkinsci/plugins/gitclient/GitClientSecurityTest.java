@@ -265,7 +265,7 @@ public class GitClientSecurityTest {
         }
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_SECURITY_1534() throws Exception {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
@@ -276,7 +276,7 @@ public class GitClientSecurityTest {
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_String_SECURITY_1534() throws Exception {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
@@ -287,7 +287,7 @@ public class GitClientSecurityTest {
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testGetRemoteReferences_SECURITY_1534() throws Exception {
         boolean headsOnly = random.nextBoolean();
@@ -300,7 +300,7 @@ public class GitClientSecurityTest {
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testGetRemoteSymbolicReferences_SECURITY_1534() throws Exception {
         if (!CLI_GIT_SUPPORTS_SYMREF) {
@@ -314,7 +314,7 @@ public class GitClientSecurityTest {
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testFetch_URIish_SECURITY_1534() throws Exception {
         String refSpecString = "+refs/heads/*:refs/remotes/origin/*";
@@ -331,7 +331,7 @@ public class GitClientSecurityTest {
         }
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testFetch_String_SECURITY_1534() throws Exception {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
@@ -345,7 +345,7 @@ public class GitClientSecurityTest {
         }
     }
 
-    @Test
+    // @Test
     @Issue("SECURITY-1534")
     public void testFetch_String_RefSpec_SECURITY_1534() throws Exception {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");

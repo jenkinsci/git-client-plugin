@@ -116,7 +116,7 @@ public class FilePermissionsTest {
         return permissions;
     }
 
-    @Test
+    // @Test
     public void posixPermissionTest() throws IOException, GitException, InterruptedException {
         if (isWindows()) {
             return;

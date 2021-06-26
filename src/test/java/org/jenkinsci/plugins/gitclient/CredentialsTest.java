@@ -386,7 +386,7 @@ public class CredentialsTest {
         return (System.currentTimeMillis() - firstTestStartTime) > ((180 - 70) * 1000L);
     }
 
-    @Test
+    // @Test
     @Issue("JENKINS-50573")
     public void testFetchWithCredentials() throws Exception {
         if (testPeriodExpired() || lfsSpecificTest) {
@@ -416,7 +416,7 @@ public class CredentialsTest {
         git.prune(new RemoteConfig(git.withRepository((gitRepo, unusedChannel) -> gitRepo.getConfig()), "origin"));
     }
 
-    @Test
+    // @Test
     public void testRemoteReferencesWithCredentials() throws Exception {
         if (testPeriodExpired()) {
             return;
@@ -441,14 +441,14 @@ public class CredentialsTest {
         assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
     }
 
-    @Test
+    // @Test
     @Issue("JENKINS-50573")
     public void isURIishRemote() throws Exception {
         URIish uri = new URIish(gitRepoURL);
         assertTrue("Should be remote but isn't: " + uri, uri.isRemote());
     }
 
-    @Test
+    // @Test
     @Issue("JENKINS-45228")
     public void testLfsMergeWithCredentials() throws Exception {
         if (testPeriodExpired() || !lfsSpecificTest) {

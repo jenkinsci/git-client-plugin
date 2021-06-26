@@ -73,19 +73,19 @@ public class RemoteGitImplTest {
         remoteGit = new RemoteGitImpl(defaultClient);
     }
 
-    @Test
+    // @Test
     public void testGetRepository() throws IOException, InterruptedException {
         assertThrows(UnsupportedOperationException.class, () -> {
             remoteGit.getRepository();
         });
     }
 
-    @Test
+    // @Test
     public void testClearCredentials() throws IOException, InterruptedException {
         remoteGit.clearCredentials();
     }
 
-    @Test
+    // @Test
     public void testAddCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
@@ -96,7 +96,7 @@ public class RemoteGitImplTest {
         remoteGit.addCredentials(url, credentials);
     }
 
-    @Test
+    // @Test
     public void testSetCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
@@ -107,7 +107,7 @@ public class RemoteGitImplTest {
         remoteGit.setCredentials(credentials);
     }
 
-    @Test
+    // @Test
     public void testAddDefaultCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
@@ -118,14 +118,14 @@ public class RemoteGitImplTest {
         remoteGit.addDefaultCredentials(credentials);
     }
 
-    @Test
+    // @Test
     public void testSetAuthor_String_String() {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setAuthor(name, email);
     }
 
-    @Test
+    // @Test
     public void testSetAuthor_PersonIdent() {
         String name = "charlie";
         String email = "charlie@example.com";
@@ -133,14 +133,14 @@ public class RemoteGitImplTest {
         remoteGit.setAuthor(p);
     }
 
-    @Test
+    // @Test
     public void testSetCommitter_String_String() {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setCommitter(name, email);
     }
 
-    @Test
+    // @Test
     public void testSetCommitter_PersonIdent() {
         String name = "charlie";
         String email = "charlie@example.com";
@@ -148,14 +148,14 @@ public class RemoteGitImplTest {
         remoteGit.setCommitter(p);
     }
 
-    @Test
+    // @Test
     public void testGetWorkTree() {
         FilePath folderPath = new FilePath(localFolder);
         FilePath remoteFolderPath = remoteGit.getWorkTree();
         assertThat(remoteFolderPath, is(folderPath));
     }
 
-    @Test
+    // @Test
     public void testInit() throws Exception {
         assertFalse("defaultClient has repo before init", defaultClient.hasGitRepo());
         remoteGit.init();
@@ -179,12 +179,12 @@ public class RemoteGitImplTest {
         return remoteGit.revParse("HEAD");
     }
 
-    @Test
+    // @Test
     public void testAddAndCommit() throws Exception {
         assertThat(firstCommit("testAddAndCommit"), is(not(nullValue())));
     }
 
-    @Test
+    // @Test
     public void testCommit_3args() throws Exception {
         firstAdd("testCommit_3args_abc");
         String message = "Committing with authorName and commiterName";
@@ -195,14 +195,14 @@ public class RemoteGitImplTest {
         assertTrue("Commit not in repo", remoteGit.isCommitInRepo(commit));
     }
 
-    @Test
+    // @Test
     public void testHasGitRepo() throws Exception {
         assertFalse("remoteGit has repo before init", remoteGit.hasGitRepo());
         remoteGit.init();
         assertTrue("remoteGit missing repo after init", remoteGit.hasGitRepo());
     }
 
-    @Test
+    // @Test
     public void testIsCommitInRepo() throws Exception {
         ObjectId commit = firstCommit("testIsCommitInRepo-abc");
         assertTrue("Commit not in repo", remoteGit.isCommitInRepo(commit));
@@ -210,7 +210,7 @@ public class RemoteGitImplTest {
         assertFalse("Missing commit found in repo", remoteGit.isCommitInRepo(missingCommit));
     }
 
-    @Test
+    // @Test
     public void testGetRemoteUrl_String() throws Exception {
         String name = "originName";
         String url = "https://github.com/jenkinsci/git-client-plugin";

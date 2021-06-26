@@ -32,31 +32,31 @@ public class BranchTest {
         this.branchFromRef = new Branch(branchRef);
     }
 
-    @Test
+    // @Test
     public void testToString() {
         assertThat(branch.toString(), is(branchFromRef.toString()));
     }
 
-    @Test
+    // @Test
     public void testToString_Contents() {
         String expected = "Branch " + branchName + "(" + branchSHA1 + ")";
         assertThat(branch.toString(), is(expected));
     }
 
-    @Test
+    // @Test
     public void hashCodeContract() {
         assertThat(branch, is(branchFromRef));
         assertThat(branch.hashCode(), is(branchFromRef.hashCode()));
     }
 
-    @Test
+    // @Test
     public void constructorRefArgStripped() {
         Ref ref = new ObjectIdRef.PeeledNonTag(Ref.Storage.LOOSE, refPrefix + branchName, branchHead);
         Branch strippedBranch = new Branch(ref);
         assertThat(strippedBranch.getName(), is(branchName));
     }
 
-    @Test
+    // @Test
     public void equalsContract() {
         EqualsVerifier.forClass(Branch.class)
                 .usingGetClass()

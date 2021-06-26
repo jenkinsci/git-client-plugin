@@ -18,7 +18,7 @@ public class GitJenkinsRuleTest {
     @Rule
     public JenkinsRule j = new JenkinsRule();
 
-    @Test
+    // @Test
     public void testMockClient() throws IOException, InterruptedException {
         System.setProperty(Git.class.getName() + ".mockClient", MyMockGitClient.class.getName());
         try {

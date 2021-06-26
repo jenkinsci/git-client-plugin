@@ -210,7 +210,7 @@ public class GitAPITestCliGitNotIntialized {
      * The test branch intentionally includes a renamed submodule, so this test
      * is not run with JGit.
      */
-    @Test
+    // @Test
     public void testSubmoduleCheckoutSimple() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         assertSubmoduleDirs(testGitDir, false, false);

@@ -38,7 +38,7 @@ public class CliGitAPIWindowsFilePermissionsTest {
         assertNotNull(userPrincipal);
     }
 
-    @Test
+    // @Test
     public void test_windows_file_permission_is_set_correctly() throws Exception {
         if (!isWindows()) {
             return;
@@ -52,7 +52,7 @@ public class CliGitAPIWindowsFilePermissionsTest {
         assertEquals(AclEntryType.ALLOW, aclEntry.type());
     }
 
-    @Test
+    // @Test
     public void test_windows_file_permission_are_incorrect() throws Exception {
         if (!isWindows()) {
             return;

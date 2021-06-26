@@ -110,14 +110,14 @@ public class NetrcTest
     }
 
 
-    @Test
+    // @Test
     public void testGetInstanceString()
     {
         Netrc netrc = Netrc.getInstance(testFilePath_1);
         assertNotNull(netrc);
     }
 
-    @Test
+    // @Test
     public void testGetInstanceFile()
     {
         Netrc netrc = Netrc.getInstance(new File(testFilePath_1));
@@ -125,7 +125,7 @@ public class NetrcTest
     }
 
 
-    @Test
+    // @Test
     public void testGetCredentialsPath()
     {
         Netrc netrc = Netrc.getInstance(testFilePath_1);
@@ -151,7 +151,7 @@ public class NetrcTest
     }
 
 
-    @Test
+    // @Test
     public void testGetCredentialsFile()
     {
         Netrc netrc = Netrc.getInstance(new File(testFilePath_1));
@@ -177,7 +177,7 @@ public class NetrcTest
     }
 
 
-    @Test
+    // @Test
     public void testGetCredentialsModifyFile() throws IOException
     {
         String testFilePath = testFilePath_1 + "_m";
@@ -227,7 +227,7 @@ public class NetrcTest
     }
 
 
-    @Test
+    // @Test
     public void testGetCredentialsOtherFile()
     {
         Netrc netrc = Netrc.getInstance(testFilePath_1);

@@ -31,7 +31,7 @@ public class RemotingTest {
     /**
      * Makes sure {@link GitClient} is remotable.
      */
-    @Test
+    // @Test
     public void testRemotability() throws Exception {
         DumbSlave agent = j.createSlave();
 
