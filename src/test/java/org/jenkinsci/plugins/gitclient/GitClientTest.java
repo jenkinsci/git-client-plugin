@@ -1814,9 +1814,15 @@ public class GitClientTest {
         System.out.println("**** git lfs status before is " + Arrays.toString(lfsStatus));
         String[] configList = gitCmd.run("config", "--list");
         System.out.println("**** git config --list status is " + Arrays.toString(configList));
+        String[] lfsInstall = gitCmd.run("lfs", "install");
+        System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
+        String[] lfsInstall = gitCmd.run("lfs", "install");
+        System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
 
         fetch(gitClient, remote, firstRefSpec);
 
+        String[] lfsCheckout = gitCmd.run("lfs", "checkout");
+        System.out.println("**** git lfs checkout is " + Arrays.toString(lfsCheckout));
         String[] lfsStatusAfter = gitCmd.run("lfs", "status");
         System.out.println("**** git lfs status after is " + Arrays.toString(lfsStatusAfter));
 
