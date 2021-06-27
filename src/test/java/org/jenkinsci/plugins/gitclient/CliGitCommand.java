@@ -53,7 +53,7 @@ class CliGitCommand {
         return run(true);
     }
 
-    private String[] run(boolean assertProcessStatus) throws IOException, InterruptedException {
+    String[] run(boolean assertProcessStatus) throws IOException, InterruptedException {
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
         ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
         Launcher.ProcStarter p = launcher.launch().cmds(args).envs(env).stdout(bytesOut).stderr(bytesErr).pwd(dir);
@@ -81,7 +81,7 @@ class CliGitCommand {
         }
     }
 
-    private String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
+    String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
         return run(false);

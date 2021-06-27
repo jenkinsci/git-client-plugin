@@ -1818,11 +1818,17 @@ public class GitClientTest {
         System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
         String[] lfsVersion = gitCmd.run("lfs", "version");
         System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
+        String[] lfsFetch = gitCmd.runWithoutAssert("lfs", "fetch");
+        System.out.println("**** git lfs fetch is " + Arrays.toString(lfsFetch));
+        String[] lfsLogsLast1 = gitCmd.runWithoutAssert("lfs", "logs", "last");
+        System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast1));
 
         fetch(gitClient, remote, firstRefSpec);
 
-        String[] lfsCheckout = gitCmd.run("lfs", "checkout");
+        String[] lfsCheckout = gitCmd.runWithoutAssert("lfs", "checkout");
         System.out.println("**** git lfs checkout is " + Arrays.toString(lfsCheckout));
+        String[] lfsLogsLast2 = gitCmd.runWithoutAssert("lfs", "logs", "last");
+        System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast2));
         String[] lfsStatusAfter = gitCmd.run("lfs", "status");
         System.out.println("**** git lfs status after is " + Arrays.toString(lfsStatusAfter));
 
