@@ -139,6 +139,10 @@ public class GitClientTest {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
             gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+            // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
+            // Intentionally ignores the return value, assumes that failure will throw an exception
+            // and disable the git LFS tests
+            cliGitClient.launchCommand("lfs", "install");
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSExists = false;
