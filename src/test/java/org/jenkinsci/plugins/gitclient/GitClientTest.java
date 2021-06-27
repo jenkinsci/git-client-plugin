@@ -1239,8 +1239,11 @@ public class GitClientTest {
     @Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
-            System.out.println("Not git or git lfs not found");
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        if (!CLI_GIT_HAS_GIT_LFS) {
+            System.out.println("git lfs not found");
             return;
         }
 
