@@ -18,14 +18,12 @@ import java.util.Random;
 import org.eclipse.jgit.lib.ObjectId;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
@@ -57,13 +55,6 @@ public class MergeCommandTest {
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @Before
     public void createMergeTestRepo() throws IOException, InterruptedException {
         EnvVars env = new hudson.EnvVars();
@@ -71,6 +62,9 @@ public class MergeCommandTest {
         File repo = tempFolder.newFolder();
         git = Git.with(listener, env).in(repo).using(gitImpl).getClient();
         git.init_().workspace(repo.getAbsolutePath()).execute();
+        CliGitCommand gitCmd = new CliGitCommand(git);
+        gitCmd.run("config", "user.name", "Vojtěch MergeCommandTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
 
         // Create a master branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');

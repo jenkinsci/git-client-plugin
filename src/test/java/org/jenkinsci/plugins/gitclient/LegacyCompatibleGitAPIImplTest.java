@@ -23,7 +23,6 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import static org.junit.Assert.*;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -41,17 +40,12 @@ public class LegacyCompatibleGitAPIImplTest {
     private final ObjectId gitClientCommit = ObjectId.fromString("d771d97f1e126b1b01ea214ef245d2d5f432200e");
     private final ObjectId taggedCommit = ObjectId.fromString("2db88a20bba8e98b6710f06213f3b60940a63c7c");
 
+    private static final String DEFAULT_BRANCH_NAME = "master";
+
     protected String gitImpl;
 
     public LegacyCompatibleGitAPIImplTest() {
         gitImpl = "git";
-    }
-
-    @BeforeClass
-    public static void setCliGitDefaults() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
     }
 
     @Before
@@ -61,6 +55,9 @@ public class LegacyCompatibleGitAPIImplTest {
         git = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         assertNotGitRepo(repo);
         git.init();
+        CliGitCommand gitCmd = new CliGitCommand(git);
+        gitCmd.run("config", "user.name", "Vojtěch legacy Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client.test@example.com");
         assertIsGitRepo(repo);
     }
 
@@ -168,7 +165,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testShowRevisionTrackedFile() throws Exception {
         File trackedFile = commitTrackedFile();
-        ObjectId head = git.getHeadRev(repo.getPath(), "master");
+        ObjectId head = git.getHeadRev(repo.getPath(), DEFAULT_BRANCH_NAME);
         List<String> revisions = git.showRevision(new Revision(head));
         assertEquals("commit " + head.name(), revisions.get(0));
     }
@@ -191,7 +188,6 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit_SHA1() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         List<Tag> result = myGit.getTagsOnCommit(taggedCommit.name());
         assertTrue("Tag list not empty: " + result, result.isEmpty());
@@ -200,8 +196,8 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
+        File trackedFile = commitTrackedFile();
         final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID().toString();
         final String tagMessage = "Tagged with " + uniqueTagName;
         myGit.tag(uniqueTagName, tagMessage);
@@ -215,7 +211,6 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit_sha1() throws Exception {
-        repo = new File(".");
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         String revName = "2db88a20bba8e98b6710f06213f3b60940a63c7c";
         List<Tag> result = myGit.getTagsOnCommit(revName);
@@ -241,15 +236,15 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     public void testExtractBranchNameFromBranchSpec() {
-        assertEquals("master", git.extractBranchNameFromBranchSpec("master"));
-        assertEquals("master", git.extractBranchNameFromBranchSpec("origin/master"));
-        assertEquals("master", git.extractBranchNameFromBranchSpec("*/master"));
+        assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec(DEFAULT_BRANCH_NAME));
+        assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("origin/" + DEFAULT_BRANCH_NAME));
+        assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("*/" + DEFAULT_BRANCH_NAME));
         assertEquals("maste*", git.extractBranchNameFromBranchSpec("ori*/maste*"));
-        assertEquals("refs/heads/master", git.extractBranchNameFromBranchSpec("remotes/origin/master"));
-        assertEquals("refs/heads/master", git.extractBranchNameFromBranchSpec("refs/heads/master"));
-        assertEquals("refs/heads/origin/master", git.extractBranchNameFromBranchSpec("refs/heads/origin/master"));
-        assertEquals("master", git.extractBranchNameFromBranchSpec("other/master"));
-        assertEquals("refs/heads/master", git.extractBranchNameFromBranchSpec("refs/remotes/origin/master"));
+        assertEquals("refs/heads/" + DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("remotes/origin/" + DEFAULT_BRANCH_NAME));
+        assertEquals("refs/heads/" + DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("refs/heads/" + DEFAULT_BRANCH_NAME));
+        assertEquals("refs/heads/origin/" + DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("refs/heads/origin/" + DEFAULT_BRANCH_NAME));
+        assertEquals(DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("other/" + DEFAULT_BRANCH_NAME));
+        assertEquals("refs/heads/" + DEFAULT_BRANCH_NAME, git.extractBranchNameFromBranchSpec("refs/remotes/origin/" + DEFAULT_BRANCH_NAME));
         assertEquals("refs/tags/mytag", git.extractBranchNameFromBranchSpec("refs/tags/mytag"));
     }
 }

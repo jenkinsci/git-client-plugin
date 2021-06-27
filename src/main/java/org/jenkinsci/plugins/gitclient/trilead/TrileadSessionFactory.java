@@ -53,6 +53,12 @@ public class TrileadSessionFactory extends SshSessionFactory {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public String getType() {
+        return "Jenkins credentials Trilead ssh session factory";
+    }
+
     /**
      * wrap.
      *

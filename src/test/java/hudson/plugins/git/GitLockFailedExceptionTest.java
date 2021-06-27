@@ -1,6 +1,5 @@
 package hudson.plugins.git;
 
-import org.junit.Rule;
 import org.junit.Test;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;

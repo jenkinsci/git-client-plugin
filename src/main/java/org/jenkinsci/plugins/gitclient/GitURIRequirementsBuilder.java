@@ -156,7 +156,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public static GitURIRequirementsBuilder create() {
-        return new GitURIRequirementsBuilder(Collections.<DomainRequirement>emptyList());
+        return new GitURIRequirementsBuilder(Collections.emptyList());
     }
 
     /**

@@ -21,7 +21,7 @@ public class JGitApacheTool extends GitTool {
     }
 
     public JGitApacheTool() {
-        this(Collections.<ToolProperty<?>>emptyList());
+        this(Collections.emptyList());
     }
 
     /** {@inheritDoc} */

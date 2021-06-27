@@ -27,6 +27,7 @@ import java.util.Set;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  * @deprecated
  */
+@Deprecated
 public class GitAPI extends CliGitAPIImpl {
     private static final long serialVersionUID = 1L;
     private final GitClient jgit;
@@ -167,14 +168,14 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /*
-    public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).execute(); else  jgit.submoduleUpdate().recursive(recursive).execute();
+    public void submoduleUpdate(boolean recursive) throws GitException {
+        if (Git.USE_CLI) super.submoduleUpdate(recursive); else  jgit.submoduleUpdate(recursive);
     }
     */
 
     /*
-    public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.submoduleUpdate().recursive(recursive).ref(reference).execute(); else  jgit.submoduleUpdate().recursive(recursive).ref(reference).execute();
+    public void submoduleUpdate(boolean recursive, String reference) throws GitException {
+        if (Git.USE_CLI) super.submoduleUpdate(recursive, String reference); else  jgit.submoduleUpdate(recursive, String reference);
     }
     */
 
@@ -223,13 +224,21 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout().ref(ref).branch(branch).execute(); else  jgit.checkout().ref(ref).branch(branch).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
     }
 
     /** {@inheritDoc} */
     public boolean hasGitRepo() throws GitException, InterruptedException {
         return Git.USE_CLI ? super.hasGitRepo() :  jgit.hasGitRepo();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        return Git.USE_CLI ? super.hasGitRepo(checkParentDirectories) :  jgit.hasGitRepo(checkParentDirectories);
     }
 
     /** {@inheritDoc} */
@@ -262,8 +271,10 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void checkout(String ref) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.checkout().ref(ref).execute(); else  jgit.checkout().ref(ref).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
     }
 
     /** {@inheritDoc} */
@@ -289,8 +300,10 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @SuppressWarnings("deprecation")
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.fetch_().from(url, refspecs).execute(); else  jgit.fetch_().from(url, refspecs).execute();
+        /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
     }
 
     /** {@inheritDoc} */
