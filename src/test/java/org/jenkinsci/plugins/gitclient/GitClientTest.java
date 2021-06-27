@@ -1269,6 +1269,9 @@ public class GitClientTest {
 
             List<String> sparsePaths = Lists.newArrayList("uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            CliGitCommand gitCmd = new CliGitCommand(gitClient);
+            String[] lfsLogsLast = gitCmd.run("lfs", "logs", "last");
+            System.out.println("**** git lfs logs last before file content assert is " + Arrays.toString(lfsLogsLast));
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
