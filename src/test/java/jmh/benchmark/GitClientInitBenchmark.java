@@ -2,7 +2,6 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import jenkins.benchmark.jmh.JmhBenchmark;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.InitCommand;
@@ -29,7 +28,7 @@ public class GitClientInitBenchmark {
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
-        public void doSetup() throws Exception {
+        public void setup() throws Exception {
             tmp.before();
             gitDir = tmp.newFolder();
 
@@ -39,7 +38,7 @@ public class GitClientInitBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void doTearDown() {
+        public void tearDown() {
             try {
                 // making sure that git init made a git an empty repository
                 File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());

@@ -236,6 +236,12 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        return Git.USE_CLI ? super.hasGitRepo(checkParentDirectories) :  jgit.hasGitRepo(checkParentDirectories);
+    }
+
+    /** {@inheritDoc} */
     public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
         return Git.USE_CLI ? super.isCommitInRepo(commit) :  jgit.isCommitInRepo(commit);
     }

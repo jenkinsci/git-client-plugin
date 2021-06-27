@@ -22,7 +22,7 @@ public class UnsupportedCommand {
      * @return this for chaining
      */
     public UnsupportedCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-        List<String> sparseList = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+        List<String> sparseList = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
         if (!sparseList.isEmpty()) {
             useJGit = false;
         }
@@ -173,6 +173,18 @@ public class UnsupportedCommand {
      */
     public UnsupportedCommand useBranch(String submodule, String branchname) {
         if (submodule != null || branchname != null) {
+            useJGit = false;
+        }
+        return this;
+    }
+
+    /**
+     * JGit doesn't support Git Publisher.
+     * @param isEnabled if true, then git publisher post-build action is enabled in this context
+     * @return this for chaining
+     */
+    public UnsupportedCommand gitPublisher(boolean isEnabled) {
+        if (isEnabled) {
             useJGit = false;
         }
         return this;

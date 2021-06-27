@@ -71,7 +71,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public void doTest(String versionOutput, VersionTest[] versions) {
+    public void assertVersionOutput(String versionOutput, VersionTest[] versions) {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);

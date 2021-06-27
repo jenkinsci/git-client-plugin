@@ -15,7 +15,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
 
 /**
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"
@@ -40,7 +39,7 @@ public class GitClientFetchBenchmark {
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
-        public void doSetup() throws Exception {
+        public void setup() throws Exception {
             tmp.before();
             gitDir = tmp.newFolder();
 
@@ -56,7 +55,7 @@ public class GitClientFetchBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void doTearDown() {
+        public void tearDown() {
             try {
                 // making sure that git init made a git an empty repository
                 File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
@@ -112,7 +111,7 @@ public class GitClientFetchBenchmark {
         }
 
         @TearDown(Level.Trial)
-        public void doTearDown() {
+        public void tearDown() {
             tmp.after();
             System.out.println("Removed local upstream directory for: " + repoUrl);
         }

@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
-import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -56,7 +55,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
         return (hudson.plugins.git.IGitAPI)proxy;
     }
 
-    private Object readResolve() {
+    protected Object readResolve() {
         channel = Channel.current();
         return this;
     }
@@ -102,7 +101,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                     return;
                 }
             }
-            throw new IllegalStateException("Method not found: "+methodName+"("+ Util.join(Arrays.asList(parameterTypes),",")+")");
+            throw new IllegalStateException("Method not found: " + methodName + "(" + String.join(",", parameterTypes) + ")");
         }
 
         private static final long serialVersionUID = 1L;
@@ -274,7 +273,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -282,6 +281,21 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
      */
     public boolean hasGitRepo() throws GitException, InterruptedException {
         return proxy.hasGitRepo();
+    }
+
+    /**
+     * Returns true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        return proxy.hasGitRepo(checkParentDirectories);
     }
 
     /** {@inheritDoc} */

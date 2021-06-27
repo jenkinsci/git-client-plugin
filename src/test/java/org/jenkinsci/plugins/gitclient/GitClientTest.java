@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -138,6 +139,10 @@ public class GitClientTest {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
             gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+            // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
+            // Intentionally ignores the return value, assumes that failure will throw an exception
+            // and disable the git LFS tests
+            cliGitClient.launchCommand("lfs", "install");
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSExists = false;
@@ -598,6 +603,57 @@ public class GitClientTest {
         assertTrue(emptyDir.exists());
         GitClient emptyClient = Git.with(TaskListener.NULL, new EnvVars()).in(emptyDir).using(gitImplName).getClient();
         assertFalse("Empty repo '" + emptyDir.getAbsolutePath() + "' initialized", emptyClient.hasGitRepo());
+    }
+
+    @Test
+    public void testHasGitRepoFalse() throws Exception {
+        /* Use system temp directory so that no parent directory has a git repository */
+        Path tempDir = Files.createTempDirectory("git-client-hasGitRepo");
+        GitClient noRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(tempDir.toFile()).using(gitImplName).getClient();
+        assertFalse("New empty temp dir has a git repo(1)", noRepoClient.hasGitRepo());
+        assertFalse("New empty temp dir has a git repo(2)", noRepoClient.hasGitRepo(false));
+        assertFalse("New empty temp dir has a git repo(3)", noRepoClient.hasGitRepo(true));
+        tempDir.toFile().delete(); // Remove the temporary directory
+    }
+
+    @Issue("JENKINS-38699")
+    @Test
+    public void testHasGitRepoNestedDir() throws Exception {
+        File childDir = tempFolder.newFolder("parentDir", "childDir");
+        File parentDir = childDir.getParentFile();
+
+        GitClient parentDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(parentDir).using(gitImplName).getClient();
+        assertFalse("Unexpected has git repo before init(1)", parentDirClient.hasGitRepo());
+        assertFalse("Unexpected has git repo before init(2)", parentDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has git repo before init(3)", parentDirClient.hasGitRepo(false));
+
+        parentDirClient.init();
+        assertTrue("Missing git repo after init(1)", parentDirClient.hasGitRepo());
+        assertTrue("Missing git repo after init(2)", parentDirClient.hasGitRepo(true));
+        assertTrue("Missing git repo after init(3)", parentDirClient.hasGitRepo(false));
+
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(childDir).using(gitImplName).getClient();
+        assertFalse("Unexpected has child git repo before child init(1)", childDirClient.hasGitRepo());
+        assertFalse("Unexpected has child git repo before child init(2)", childDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has child git repo before child init(3)", childDirClient.hasGitRepo(false));
+
+        File childGitDir = new File(childDir, ".git");
+        boolean dirCreated = childGitDir.mkdir();
+        assertTrue("Failed to create empty .git dir in childDir", dirCreated);
+        if (gitImplName.equals("git")) {
+            // JENKINS-38699 - if an empty .git directory exists, CLI git searches upwards to perform operations
+            assertTrue("Missing parent git repo before child init(1)", childDirClient.hasGitRepo());
+        } else {
+            // JENKINS-38699 - if an empty .git directory exists, JGit does NOT search upwards to perform operations
+            assertFalse("Unexpected parent git repo detected by JGit before child init(1)", childDirClient.hasGitRepo());
+        }
+        assertTrue("Missing parent git repo before child init(2)", childDirClient.hasGitRepo(true));
+        assertFalse("Unexpected has child repo before child init(3)", childDirClient.hasGitRepo(false));
+
+        childDirClient.init();
+        assertTrue("Missing git repo after child init(1)", childDirClient.hasGitRepo());
+        assertTrue("Missing git repo after child init(2)", childDirClient.hasGitRepo(true));
+        assertTrue("Missing git repo after child init(3)", childDirClient.hasGitRepo(false));
     }
 
     @Test
@@ -2172,6 +2228,10 @@ public class GitClientTest {
         assertBranches(gitClient, oldBranchName);
         assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys"); // No submodule init or update yet
 
+        if (isWindows() && repoRoot.getAbsolutePath().length() > 120) {
+            // Skip the test when long paths would break the test
+            return;
+        }
         /* Create tests/addSubmodules branch with one more module */
         String newBranchName = "tests/addSubmodules";
         String newDirName = "git-client-plugin-" + (10 + random.nextInt(90));
@@ -2236,6 +2296,8 @@ public class GitClientTest {
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
         urlRepoClient.add("readme");
         urlRepoClient.commit("Added README to repo used as a submodule");
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(urlRepoClient);
 
         // Add new repository as submodule to repository that ends in .url
         File repoHasSubmodule = new File(baseDir, "has-submodule.url");
@@ -2245,6 +2307,8 @@ public class GitClientTest {
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(repoHasSubmoduleClient);
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
@@ -2268,6 +2332,8 @@ public class GitClientTest {
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
         String branch = "master";
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
+        enableLongPaths(cloneGitClient);
         cloneGitClient.submoduleInit();
         cloneGitClient.submoduleUpdate().recursive(false).execute();
         assertSubmoduleStatus(cloneGitClient, true, moduleDirBaseName);
@@ -2565,7 +2631,7 @@ public class GitClientTest {
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
         if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
+            throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax");
         }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
     }
@@ -2732,7 +2798,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 10, 3),
                 cliGitAPIImplTest.new VersionTest(false, 1, 7, 10, 5)
         };
-        cliGitAPIImplTest.doTest("git version 1.7.10.4", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.7.10.4", versions);
     }
 
     @Test
@@ -2746,7 +2812,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(false, 2, 0, 2, 0),
                 cliGitAPIImplTest.new VersionTest(false, 2, 1, 0, 0)
         };
-        cliGitAPIImplTest.doTest("git version 2.0.1", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.0.1", versions);
     }
 
     @Test
@@ -2759,11 +2825,11 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 99, 99),
                 cliGitAPIImplTest.new VersionTest(false, 2, 0,  1,  0)
         };
-        cliGitAPIImplTest.doTest("git version 2.0.0.rc0", versions);
-        cliGitAPIImplTest.doTest("git version 2.0.0.rc2", versions);
-        cliGitAPIImplTest.doTest("git version 2.0.0", versions);
-        cliGitAPIImplTest.doTest("git version 2.0", versions); // mythical version
-        cliGitAPIImplTest.doTest("git version 2", versions);   // mythical version
+        cliGitAPIImplTest.assertVersionOutput("git version 2.0.0.rc0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.0.0.rc2", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.0.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.0", versions); // mythical version
+        cliGitAPIImplTest.assertVersionOutput("git version 2", versions);   // mythical version
     }
 
     @Test
@@ -2776,7 +2842,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 99),
                 cliGitAPIImplTest.new VersionTest(false, 1, 9,  1,  0)
         };
-        cliGitAPIImplTest.doTest("git version 1.9.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.9.0", versions);
     }
 
     @Test
@@ -2789,7 +2855,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 7, 99, 0),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8,  1, 0)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.0.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.0.msysgit.0", versions);
     }
 
     @Test
@@ -2802,7 +2868,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 99),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8, 4,  1)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.4.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.4.msysgit.0", versions);
     }
 
     @Test
@@ -2815,7 +2881,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 5, 1),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8, 5, 3)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.5.2.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.5.2.msysgit.0", versions);
     }
 
     @Test
@@ -2828,7 +2894,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 99, 0),
                 cliGitAPIImplTest.new VersionTest(false, 1, 9,  0, 1)
         };
-        cliGitAPIImplTest.doTest("git version 1.9.0.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.9.0.msysgit.0", versions);
     }
 
     @Test
@@ -2841,7 +2907,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 1, 99),
                 cliGitAPIImplTest.new VersionTest(false, 1, 9, 2,  1)
         };
-        cliGitAPIImplTest.doTest("git version 1.9.2.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.9.2.msysgit.0", versions);
     }
 
     @Test
@@ -2854,7 +2920,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 9, 3, 99),
                 cliGitAPIImplTest.new VersionTest(false, 1, 9, 4,  1)
         };
-        cliGitAPIImplTest.doTest("git version 1.9.4.msysgit.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.9.4.msysgit.0", versions);
     }
 
     @Test
@@ -2867,7 +2933,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  2, 5, 0, 0),
                 cliGitAPIImplTest.new VersionTest(false, 2, 5, 0, 2)
         };
-        cliGitAPIImplTest.doTest("git version 2.5.0.windows.1", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.5.0.windows.1", versions);
     }
 
     @Test
@@ -2882,7 +2948,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(false, 2, 10, 1, 2),
                 cliGitAPIImplTest.new VersionTest(false, 2, 10, 2, 0)
         };
-        cliGitAPIImplTest.doTest("git version 2.10.1.windows.1", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.10.1.windows.1", versions);
     }
 
     @Test
@@ -2895,7 +2961,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 2, 0),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8, 2, 2)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.2.1", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.2.1", versions);
     }
 
     @Test
@@ -2909,7 +2975,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(false, 1, 7, 1,  1),
                 cliGitAPIImplTest.new VersionTest(false, 1, 7, 2,  0)
         };
-        cliGitAPIImplTest.doTest("git version 1.7.1", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.7.1", versions);
     }
 
     @Test
@@ -2922,7 +2988,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 4, 4),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8, 4, 6)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.4.5", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.4.5", versions);
     }
 
     @Test
@@ -2935,7 +3001,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  1, 8, 3, 1),
                 cliGitAPIImplTest.new VersionTest(false, 1, 8, 3, 3)
         };
-        cliGitAPIImplTest.doTest("git version 1.8.3.2", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 1.8.3.2", versions);
     }
 
     @Test
@@ -2948,7 +3014,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 1, 0),
                 cliGitAPIImplTest.new VersionTest(false, 2, 2, 3, 0)
         };
-        cliGitAPIImplTest.doTest("git version 2.2.2", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.2.2", versions);
     }
 
     @Test
@@ -2961,7 +3027,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(true,  2, 2, 9, 0),
                 cliGitAPIImplTest.new VersionTest(false, 2, 3, 1, 0)
         };
-        cliGitAPIImplTest.doTest("git version 2.3.0", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.3.0", versions);
     }
 
     @Test
@@ -2976,7 +3042,7 @@ public class GitClientTest {
                 cliGitAPIImplTest.new VersionTest(false, 2, 4, 0, 0),
                 cliGitAPIImplTest.new VersionTest(false, 3, 0, 0, 0)
         };
-        cliGitAPIImplTest.doTest("git version 2.3.5", versions);
+        cliGitAPIImplTest.assertVersionOutput("git version 2.3.5", versions);
     }
 
     @Test

@@ -238,7 +238,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * TODO: Currently only for specs starting with "refs/heads/" the implementation is correct.
      * All others branch specs should also be normalized to "refs/heads/" in order to get unambiguous results.
      * To achieve this it is necessary to identify remote names in the branch spec and to discuss how
-     * to handle clashes (e.g. "remoteName/master" for branch "master" (refs/heads/master) in remote "remoteName" and branch "remoteName/master" (refs/heads/remoteName/master)).
+     * to handle clashes (e.g. "remoteName/main" for branch "main" (refs/heads/main) in remote "remoteName" and branch "remoteName/main" (refs/heads/remoteName/main)).
      * <br><br>
      * Existing behavior is intentionally being retained so that
      * current use cases are not disrupted by a behavioral change.
@@ -247,10 +247,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * <table>
      * <caption>Branch Spec Normalization Examples</caption>
      * <tr><th>branch spec</th><th>normalized</th></tr>
-     * <tr><td><code>master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>main</code></td><td><code>main*</code></td></tr>
      * <tr><td><code>feature1</code></td><td><code>feature1*</code></td></tr>
-     * <tr><td><code>feature1/master</code></td><td><div style="color:red">master <code>feature1/master</code>*</div></td></tr>
-     * <tr><td><code>origin/master</code></td><td><code>master*</code></td></tr>
+     * <tr><td><code>feature1/main</code></td><td><div style="color:red">main <code>feature1/main</code>*</div></td></tr>
+     * <tr><td><code>origin/main</code></td><td><code>main*</code></td></tr>
      * <tr><td><code>repo2/feature1</code></td><td><code>feature1*</code></td></tr>
      * <tr><td><code>refs/heads/feature1</code></td><td><code>refs/heads/feature1</code></td></tr>
      * <tr><td valign="top">origin/namespaceA/fix15</td>

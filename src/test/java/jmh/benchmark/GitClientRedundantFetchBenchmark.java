@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 
 public class GitClientRedundantFetchBenchmark {
 
+    public static final String DEFAULT_BRANCH_REFSPEC = "+refs/heads/master:refs/remotes/origin/master";
+    public static final String ALL_BRANCHES_REFSPEC = "+refs/heads/*:refs/remotes/origin/*";
+
     @State(Scope.Thread)
     public static class ClientState {
 
@@ -78,16 +81,16 @@ public class GitClientRedundantFetchBenchmark {
          * "before" and "after" JUnit annotations.
          */
         @Setup(Level.Iteration)
-        public void doSetup() throws Exception {
+        public void setup() throws Exception {
             tmp.before();
             gitDir = tmp.newFolder();
             gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
 
-            // fetching just master branch
-            narrowRefSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+            // fetching just only the contents of the default branch
+            narrowRefSpecs.add(new RefSpec(DEFAULT_BRANCH_REFSPEC));
 
             // wide refspec
-            wideRefSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+            wideRefSpecs.add(new RefSpec(ALL_BRANCHES_REFSPEC));
 
             // initialize the test folder for git fetch
             gitClient.clone_().url(urIish.toString()).execute();
@@ -98,7 +101,7 @@ public class GitClientRedundantFetchBenchmark {
         }
 
         @TearDown(Level.Iteration)
-        public void doTearDown() {
+        public void tearDown() {
             try {
                 // making sure that git init made a git an empty repository
                 File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());

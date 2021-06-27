@@ -119,7 +119,7 @@ public class Git implements Serializable {
     public GitClient getClient() throws IOException, InterruptedException {
         jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable();
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;
