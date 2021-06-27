@@ -1239,11 +1239,7 @@ public class GitClientTest {
     @Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (!gitImplName.equals("git")) {
-            return;
-        }
-        if (!CLI_GIT_HAS_GIT_LFS) {
-            System.out.println("git lfs not found");
+        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
             return;
         }
 
@@ -1824,10 +1820,10 @@ public class GitClientTest {
         System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
         // String[] lfsVersion = gitCmd.run("lfs", "version");
         // System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
-        String[] lfsFetch = gitCmd.runWithoutAssert("lfs", "fetch");
-        System.out.println("**** git lfs fetch is " + Arrays.toString(lfsFetch));
-        String[] lfsLogsLast1 = gitCmd.runWithoutAssert("lfs", "logs", "last");
-        System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast1));
+        // String[] lfsFetch = gitCmd.runWithoutAssert("lfs", "fetch");
+        // System.out.println("**** git lfs fetch is " + Arrays.toString(lfsFetch));
+        // String[] lfsLogsLast1 = gitCmd.runWithoutAssert("lfs", "logs", "last");
+        // System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast1));
 
         fetch(gitClient, remote, firstRefSpec);
 
