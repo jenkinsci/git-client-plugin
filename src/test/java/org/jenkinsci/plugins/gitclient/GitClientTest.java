@@ -139,6 +139,7 @@ public class GitClientTest {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
             gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+            cliGitClient.launchCommand("lfs", "install");
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSExists = false;
@@ -1811,13 +1812,13 @@ public class GitClientTest {
         String firstRef = remote + "/" + firstBranch;
         String firstRefSpec = "+refs/heads/" + firstBranch + ":refs/remotes/" + firstRef;
 
-        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        // CliGitCommand gitCmd = new CliGitCommand(gitClient);
         // String[] lfsStatus = gitCmd.run("lfs", "status");
         // System.out.println("**** git lfs status before is " + Arrays.toString(lfsStatus));
         // String[] configList = gitCmd.run("config", "--list");
         // System.out.println("**** git config --list status is " + Arrays.toString(configList));
-        String[] lfsInstall = gitCmd.run("lfs", "install");
-        System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
+        // String[] lfsInstall = gitCmd.run("lfs", "install");
+        // System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
         // String[] lfsVersion = gitCmd.run("lfs", "version");
         // System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
         // String[] lfsFetch = gitCmd.runWithoutAssert("lfs", "fetch");
