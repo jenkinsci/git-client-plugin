@@ -1816,14 +1816,14 @@ public class GitClientTest {
         String firstRefSpec = "+refs/heads/" + firstBranch + ":refs/remotes/" + firstRef;
 
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        String[] lfsStatus = gitCmd.run("lfs", "status");
-        System.out.println("**** git lfs status before is " + Arrays.toString(lfsStatus));
-        String[] configList = gitCmd.run("config", "--list");
-        System.out.println("**** git config --list status is " + Arrays.toString(configList));
+        // String[] lfsStatus = gitCmd.run("lfs", "status");
+        // System.out.println("**** git lfs status before is " + Arrays.toString(lfsStatus));
+        // String[] configList = gitCmd.run("config", "--list");
+        // System.out.println("**** git config --list status is " + Arrays.toString(configList));
         String[] lfsInstall = gitCmd.run("lfs", "install");
         System.out.println("**** git lfs install is " + Arrays.toString(lfsInstall));
-        String[] lfsVersion = gitCmd.run("lfs", "version");
-        System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
+        // String[] lfsVersion = gitCmd.run("lfs", "version");
+        // System.out.println("**** git lfs version is " + Arrays.toString(lfsVersion));
         String[] lfsFetch = gitCmd.runWithoutAssert("lfs", "fetch");
         System.out.println("**** git lfs fetch is " + Arrays.toString(lfsFetch));
         String[] lfsLogsLast1 = gitCmd.runWithoutAssert("lfs", "logs", "last");
@@ -1831,12 +1831,12 @@ public class GitClientTest {
 
         fetch(gitClient, remote, firstRefSpec);
 
-        String[] lfsCheckout = gitCmd.runWithoutAssert("lfs", "checkout");
-        System.out.println("**** git lfs checkout is " + Arrays.toString(lfsCheckout));
-        String[] lfsLogsLast2 = gitCmd.runWithoutAssert("lfs", "logs", "last");
-        System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast2));
-        String[] lfsStatusAfter = gitCmd.run("lfs", "status");
-        System.out.println("**** git lfs status after is " + Arrays.toString(lfsStatusAfter));
+        // String[] lfsCheckout = gitCmd.runWithoutAssert("lfs", "checkout");
+        // System.out.println("**** git lfs checkout is " + Arrays.toString(lfsCheckout));
+        // String[] lfsLogsLast2 = gitCmd.runWithoutAssert("lfs", "logs", "last");
+        // System.out.println("**** git lfs logs last is " + Arrays.toString(lfsLogsLast2));
+        // String[] lfsStatusAfter = gitCmd.run("lfs", "status");
+        // System.out.println("**** git lfs status after is " + Arrays.toString(lfsStatusAfter));
 
         return remote;
     }
