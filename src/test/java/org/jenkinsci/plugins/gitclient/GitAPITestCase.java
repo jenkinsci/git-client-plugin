@@ -1940,7 +1940,7 @@ public abstract class GitAPITestCase extends TestCase {
                 "refs/heads/*:refs/remotes/origin/*"));
         final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/"
                 + defaultBranchName;
-        final String bothBranches = defaultBranchName + "," + "remotes/origin/" + defaultBranchName;
+        final String bothBranches = defaultBranchName + "," + "origin/" + defaultBranchName;
         w.git.fetch_().from(remote, refspecs).execute();
         checkoutTimeout = 1 + random.nextInt(60 * 24);
         w.git.checkout().ref(defaultBranchName).timeout(checkoutTimeout).execute();
