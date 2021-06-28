@@ -29,6 +29,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
     final static private String GIT_USERNAME_KEY = "GIT_USERNAME";
     final static private String GIT_PASSWORD_KEY = "GIT_PASSWORD";
     private final Map<String, String> credMap = new LinkedHashMap<>();
+    private static boolean unixNodeType;
     private String gitTool = null;
 
     @DataBoundConstructor
@@ -49,6 +50,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
         gitTool = gitToolName(run, taskListener);
+        unixNodeType = isCurrentNodeOSUnix(launcher);
         if (gitTool != null && filePath != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnvironmentVariables(filePath, taskListener);
@@ -109,7 +111,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
                 throws IOException, InterruptedException {
             FilePath gitEcho;
               //Hard Coded platform dependent newLine
-            if (!Functions.isWindows()) {
+            if (unixNodeType) {
                 gitEcho = workspace.createTempFile("auth", ".sh");
                 // [#!/usr/bin/evn sh] to be used if required, could have some corner cases
                 gitEcho.write("case $1 in\n"

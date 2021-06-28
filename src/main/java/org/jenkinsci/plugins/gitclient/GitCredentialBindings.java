@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.FilePath;
 
+import hudson.Launcher;
 import hudson.model.Executor;
 import hudson.model.Node;
 import hudson.model.Run;
@@ -25,6 +26,10 @@ public interface GitCredentialBindings {
     void setRunEnvironmentVariables(@NonNull FilePath filePath, @NonNull TaskListener listener) throws IOException, InterruptedException;
 
     GitClient getGitClientInstance(TaskListener listener) throws IOException, InterruptedException;
+
+    default boolean isCurrentNodeOSUnix(@NonNull Launcher launcher){
+        return launcher.isUnix();
+    }
 
     default String gitToolName(Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
 
@@ -70,4 +75,5 @@ public interface GitCredentialBindings {
             }
         }
         return null;
-    }}
+    }
+}
