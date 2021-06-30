@@ -43,6 +43,10 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
         return StandardUsernamePasswordCredentials.class;
     }
 
+    private static void setUnixNodeType(boolean value) {
+        unixNodeType = value;
+    }
+
     @Override
     public MultiEnvironment bind(@NonNull Run<?, ?> run, FilePath filePath,
                                  Launcher launcher, @NonNull TaskListener taskListener)
@@ -50,7 +54,7 @@ public class GitUsernamePasswordBinding extends MultiBinding<StandardUsernamePas
         StandardUsernamePasswordCredentials credentials = getCredentials(run);
         setKeyBindings(credentials);
         gitTool = gitToolName(run, taskListener);
-        unixNodeType = isCurrentNodeOSUnix(launcher);
+        setUnixNodeType(isCurrentNodeOSUnix(launcher));
         if (gitTool != null && filePath != null) {
             final UnbindableDir unbindTempDir = UnbindableDir.create(filePath);
             setRunEnvironmentVariables(filePath, taskListener);
