@@ -418,7 +418,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
         return defaultBranchValue;
     }
-    
 
     /* HEAD ref of local mirror - all read access should use getMirrorHead */
     private static ObjectId mirrorHead = null;
