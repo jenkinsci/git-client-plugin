@@ -75,7 +75,7 @@ public class GitAPITest {
     private int logCount = 0;
     private final Random random = new Random();
     private static final String LOGGING_STARTED = "Logging started";
-    private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; 
+    private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er";
     private LogHandler handler = null;
     private TaskListener listener;
     private final String gitImplName;
