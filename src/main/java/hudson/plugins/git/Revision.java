@@ -87,9 +87,9 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @return a {@link java.util.Collection} object.
      */
     @Exported(name = "branch")
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Consumers are known to modify returned value")
     public Collection<Branch> getBranches() {
-        /* Defensive copy to avoid caller modifying contents of returned list of branches */
-        return Collections.unmodifiableList(new ArrayList<>(branches));
+        return branches;
     }
 
     /**
@@ -97,9 +97,9 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @param branches a {@link java.util.Collection} object.
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Consumers are known to modify returned value")
     public void setBranches(Collection<Branch> branches) {
-        /* Defensive copy to avoid caller modifying contents of returned list of branches */
-        this.branches = branches == null ? null : Collections.unmodifiableList(new ArrayList<>(branches));
+        this.branches = branches;
     }
 
     /**
