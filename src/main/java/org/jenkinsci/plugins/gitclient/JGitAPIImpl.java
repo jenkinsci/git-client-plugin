@@ -196,6 +196,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in JGitAPIImpl interface definition")
     public synchronized void setCredentialsProvider(CredentialsProvider prov) {
         this.provider = prov;
     }

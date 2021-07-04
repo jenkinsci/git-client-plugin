@@ -4,6 +4,8 @@ import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.Session;
 import org.eclipse.jgit.transport.RemoteSession;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,6 +25,7 @@ public class TrileadSession implements RemoteSession {
      *
      * @param con a {@link com.trilead.ssh2.Connection} object for this session's connection.
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in interface definition")
     public TrileadSession(Connection con) {
         this.con = con;
     }
