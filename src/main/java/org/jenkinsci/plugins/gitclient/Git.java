@@ -49,7 +49,9 @@ public class Git implements Serializable {
      */
     public Git(TaskListener listener, EnvVars env) {
         this.listener = listener;
-        this.env = env;
+        /* Defensive copy to avoid risk that caller might modify EnvVars after
+         * passing it to this constructor. */
+        this.env = env == null ? null : new EnvVars(env);
     }
 
     /**
