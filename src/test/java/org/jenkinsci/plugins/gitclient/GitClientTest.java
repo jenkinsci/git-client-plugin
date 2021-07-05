@@ -221,7 +221,7 @@ public class GitClientTest {
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(configDir).using("git").getClient());
-        String[] output = getDefaultBranchNameCmd.run("config", "--global", "--get", "init.defaultBranch");
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
         for (int i = 0; i < output.length; i++) {
             String result = output[i].trim();
             if (result != null && !result.isEmpty()) {
