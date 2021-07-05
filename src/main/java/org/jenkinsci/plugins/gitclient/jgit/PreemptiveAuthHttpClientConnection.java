@@ -70,6 +70,8 @@ import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.eclipse.jgit.util.TemporaryBuffer;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
@@ -141,6 +143,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this(credentialsProvider, urlStr, proxy, null);
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in interface definition")
     public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy, final HttpClient cl) {
         this.credentialsProvider = credentialsProvider;
         this.urlStr = urlStr;
