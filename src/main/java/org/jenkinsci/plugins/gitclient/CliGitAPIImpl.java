@@ -297,6 +297,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Compare the current cli git version with the required version.
+     * Finds if the current cli git version is at-least the required version
+     *
+     * Returns True if the current cli git version is al-least the required version
+     *
+     * @param major ,required major version for cli git
+     * @param minor ,required minor version for cli git
+     * @param rev ,required revision for cli git
+     * @param bugfix ,required patches for cli git
+     * @return true if the cli git version is al-least the required version
+     **/
+    public boolean compareLeastGitVersion(int major, int minor, int rev, int bugfix) {
+        return isAtLeastVersion(major,minor,rev,bugfix);
+    }
+
+    /**
      * Constructor for CliGitAPIImpl.
      *
      * @param gitExe a {@link java.lang.String} object.
@@ -3828,4 +3844,5 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return tags;
     }
+
 }
