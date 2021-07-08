@@ -308,7 +308,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param bugfix required patches for command line git
      * @return true if the command line git version is at least the required version
      **/
-    public boolean compareLeastGitVersion(int major, int minor, int rev, int bugfix) {
+    public boolean isCliGitVerAtLeast(int major, int minor, int rev, int bugfix) {
         return isAtLeastVersion(major,minor,rev,bugfix);
     }
 

@@ -83,7 +83,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
                         version.minor,
                         version.rev,
                         version.bugfix));
-                assertTrue("Failed " + msg, git.compareLeastGitVersion(
+                assertTrue("Failed " + msg, git.isCliGitVerAtLeast(
                         version.major,
                         version.minor,
                         version.rev,
@@ -94,7 +94,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
                         version.minor,
                         version.rev,
                         version.bugfix));
-                assertFalse("Passed " + msg, git.compareLeastGitVersion(
+                assertFalse("Passed " + msg, git.isCliGitVerAtLeast(
                         version.major,
                         version.minor,
                         version.rev,
