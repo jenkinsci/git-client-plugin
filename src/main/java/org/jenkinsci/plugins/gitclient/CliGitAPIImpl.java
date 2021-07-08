@@ -302,11 +302,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * Returns True if the current cli git version is al-least the required version
      *
-     * @param major ,required major version for cli git
-     * @param minor ,required minor version for cli git
-     * @param rev ,required revision for cli git
-     * @param bugfix ,required patches for cli git
-     * @return true if the cli git version is al-least the required version
+     * @param major required major version for command line git
+     * @param minor required minor version for command line git
+     * @param rev required revision for command line git
+     * @param bugfix required patches for command line git
+     * @return true if the command line git version is at least the required version
      **/
     public boolean compareLeastGitVersion(int major, int minor, int rev, int bugfix) {
         return isAtLeastVersion(major,minor,rev,bugfix);
