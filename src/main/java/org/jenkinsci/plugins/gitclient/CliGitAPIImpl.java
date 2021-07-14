@@ -298,9 +298,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Compare the current cli git version with the required version.
-     * Finds if the current cli git version is at-least the required version
+     * Finds if the current cli git version is at-least the required version.
      *
-     * Returns True if the current cli git version is at least the required version
+     * Returns True if the current cli git version is at least the required version.
      *
      * @param major required major version for command line git
      * @param minor required minor version for command line git
