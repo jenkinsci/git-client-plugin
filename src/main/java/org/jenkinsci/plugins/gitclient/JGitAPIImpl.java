@@ -1248,24 +1248,44 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * clean.
+     * Remove untracked files and directories, with option to also
+     * remove untracked files and directories in submodules and other
+     * nested git repositories.
      *
-     * @param cleanSubmodule flag to add extra -f
+     * @param cleanSubmodule Remove files in nested git repositories (submodules, etc.) using the same rules as are used in the base repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
     @Override
     public void clean(boolean cleanSubmodule) throws GitException {
+        this.clean(cleanSubmodule, false);
+    }
+
+    /**
+     * Remove untracked files and directories, with option to also
+     * remove untracked files and directories in submodules and other
+     * nested git repositories and to remove files ignored by the
+     * '.gitignore' file.
+     *
+     * @param cleanSubmodule flag to add extra -f
+     * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    @Override
+    public void clean(boolean cleanSubmodule, boolean keepIgnored) throws GitException {
         try (Repository repo = getRepository()) {
             Git git = git(repo);
             git.reset().setMode(HARD).call();
-            git.clean().setCleanDirectories(true).setIgnore(false).setForce(cleanSubmodule).call();
+            git.clean().setCleanDirectories(true).setIgnore(keepIgnored).setForce(cleanSubmodule).call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
     }
 
     /**
-     * clean.
+     * Remove untracked files and directories. Does not remove
+     * untracked files in submodules and other nested git
+     * repositories.  Does not remove files ignored by the
+     * '.gitignore' file.
      *
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */

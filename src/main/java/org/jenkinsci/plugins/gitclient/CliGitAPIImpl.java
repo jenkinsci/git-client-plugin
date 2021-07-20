@@ -1052,6 +1052,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Remove untracked files and directories.
+     *
+     * @param cleanSubmodule Remove files in submodules and nested git repositories using the same rules as are used in the base repository
+     * @param keepIgnored  Do not delete files and directories that are ignored by the git configuration of the repository
+     * @throws GitException         if underlying git operation fails.
+     * @throws InterruptedException if interrupted.
+     */
+    @Override
+    public void clean(boolean cleanSubmodule, boolean keepIgnored) throws GitException, InterruptedException {
+        reset(true);
+        String cmd = "-fd";
+        if (cleanSubmodule) cmd = "-ffd";
+        if (!keepIgnored) cmd = cmd + 'x';
+
+        launchCommand("clean", cmd);
+    }
+
+    /**
      * Remove untracked files and directories, including files listed
      * in the ignore rules.
      *
@@ -1061,11 +1079,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Override
     public void clean(boolean cleanSubmodule) throws GitException, InterruptedException {
-        reset(true);
-	String cmd = "-fdx";
-	if (cleanSubmodule) cmd = "-ffdx";
-
-	launchCommand("clean", cmd);
+        this.clean(cleanSubmodule, false);
     }
 
     /**

@@ -468,6 +468,19 @@ public interface GitClient {
      */
     void clean(boolean cleanSubmodule) throws GitException, InterruptedException;
 
+    /**
+     * Fully revert working copy to a clean state, i.e. run both
+     * <a href="https://git-scm.com/docs/git-reset">git-reset(1) --hard</a> then
+     * <a href="https://git-scm.com/docs/git-clean">git-clean(1)</a> for working copy to
+     * match a fresh clone.
+     *
+     * @param cleanSubmodule Remove files in submodules using the same rules as are used in the base repository
+     * @param keepIgnored Do not delete files and directories that are ignored by the git configuration of the repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void clean(boolean cleanSubmodule, boolean keepIgnored) throws GitException, InterruptedException;
+
 
 
     // --- manage branches
