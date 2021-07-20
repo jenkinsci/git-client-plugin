@@ -92,6 +92,17 @@ public interface IGitAPI extends GitClient {
     void submoduleSync() throws GitException, InterruptedException;
 
     /**
+     * Synchronizes submodules' remote URL configuration setting to
+     * the value specified in .gitmodules. Refer to git submodule sync
+     * documentation for more details.
+     *
+     * @param recursive Synchronize submodules recursively
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void submoduleSync(boolean recursive) throws GitException, InterruptedException;
+
+    /**
      * Returns URL of the named submodule.
      *
      * @param name submodule name whose URL will be returned

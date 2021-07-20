@@ -830,6 +830,18 @@ public interface GitClient {
      */
     void setupSubmoduleUrls( Revision rev, TaskListener listener ) throws GitException, InterruptedException;
 
+    /**
+     * Set up submodule URLs so that they correspond to the remote pertaining to
+     * the revision that has been checked out.
+     *
+     * @param rev a {@link hudson.plugins.git.Revision} object.
+     * @param listener a {@link hudson.model.TaskListener} object.
+     * @param recursive Recursively setup submodule URLs
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    void setupSubmoduleUrls( Revision rev, TaskListener listener, boolean recursive ) throws GitException, InterruptedException;
+
 
     // --- commit log and notes
 
