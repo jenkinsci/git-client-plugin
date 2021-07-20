@@ -69,6 +69,17 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     SubmoduleUpdateCommand shallow(boolean shallow);
 
     /**
+     * Forces the checkout of submodules. 
+     * This will discard any conflicting local changes and makes sure the
+     * submodule is at the requested commit
+     * this addes --checkout --force to the submodule update command.
+     *
+     * @param forceUpdate boolean controlling whether to force update the submodule or not
+     * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
+     */
+    SubmoduleUpdateCommand forceUpdate(boolean forceUpdate);
+
+    /**
      * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
      * Has no effect if shallow is set to false (default).
      *
