@@ -341,6 +341,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public GitClient newGit(String somedir) {
+        return new CliGitAPIImpl(gitExe, new File(somedir), listener, environment);
+    }
+
     /**
      * Initialize an empty repository for further git operations.
      *
@@ -812,31 +818,50 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (reference != null && !reference.isEmpty()) {
-                    File referencePath = new File(reference);
-                    if (!referencePath.exists())
-                        listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                    else if (!referencePath.isDirectory())
-                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                    else {
-                        // reference path can either be a normal or a base repository
-                        File objectsPath = new File(referencePath, ".git/objects");
-                        if (!objectsPath.isDirectory()) {
-                            // reference path is bare repo
-                            objectsPath = new File(referencePath, "objects");
+                    if (isParameterizedReferenceRepository(reference)) {
+                        // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
+                        listener.getLogger().println("[INFO] The git reference repository path is parameterized, " +
+                            "it may take a few git queries logged below to resolve it into a particular directory name");
+                    }
+                    File referencePath = findParameterizedReferenceRepository(reference, url);
+                    if (referencePath == null) {
+                        listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
+                    } else {
+                        if (!referencePath.getPath().equals(reference)) {
+                            // Note: both these logs are needed, they are used in selftest
+                            String msg = "Parameterized reference path ";
+                            msg += "'" + reference + "'";
+                            msg += " replaced with: ";
+                            msg += "'" + referencePath.getPath() + "'";
+                            if (referencePath.exists()) {
+                                listener.getLogger().println("[WARNING] " + msg);
+                            } else {
+                                listener.getLogger().println("[WARNING] " + msg + " does not exist");
+                            }
+                            reference = referencePath.getPath();
                         }
-                        if (!objectsPath.isDirectory())
-                            listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
+
+                        if (!referencePath.exists())
+                            listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
+                        else if (!referencePath.isDirectory())
+                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
                         else {
-                            File alternates = new File(workspace, ".git/objects/info/alternates");
-                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
-                                String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
-                                listener.getLogger().println("Using reference repository: " + reference);
-                                // git implementations on windows also use
-                                w.print(absoluteReference);
-                            } catch (UnsupportedEncodingException ex) {
-                                listener.error("Default character set is an unsupported encoding");
-                            } catch (FileNotFoundException e) {
-                                listener.error("Failed to setup reference");
+                            File objectsPath = getObjectsFile(referencePath);
+                            if (objectsPath == null || !objectsPath.isDirectory())
+                                listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
+                            else {
+                                // Go behind git's back to write a meta file in new workspace
+                                File alternates = new File(workspace, ".git/objects/info/alternates");
+                                try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                                    String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                    listener.getLogger().println("Using reference repository: " + reference);
+                                    // git implementations on windows also use
+                                    w.print(absoluteReference);
+                                } catch (UnsupportedEncodingException ex) {
+                                    listener.error("Default character set is an unsupported encoding");
+                                } catch (FileNotFoundException e) {
+                                    listener.error("Failed to setup reference");
+                                }
                             }
                         }
                     }
@@ -1428,13 +1453,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                 }
                 if ((ref != null) && !ref.isEmpty()) {
-                    File referencePath = new File(ref);
-                    if (!referencePath.exists())
-                        listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
-                    else if (!referencePath.isDirectory())
-                        listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
-                    else
-                        args.add("--reference", ref);
+                    if (!isParameterizedReferenceRepository(ref)) {
+                        File referencePath = new File(ref);
+                        if (!referencePath.exists())
+                            listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
+                        else if (!referencePath.isDirectory())
+                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
+                        else
+                            args.add("--reference", ref);
+                    } // else handled below in per-module loop
                 }
                 if (shallow) {
                     if (depth == null) {
@@ -1484,9 +1511,34 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         listener.error("Invalid repository for " + sModuleName);
                         throw new GitException("Invalid repository for " + sModuleName);
                     }
+                    String strURIish = null;
+                    if (urIish != null) {
+                        strURIish = urIish.toPrivateString();
+                    }
+
+                    if (isParameterizedReferenceRepository(ref)) {
+                        File referencePath = findParameterizedReferenceRepository(ref, strURIish);
+                        if (referencePath == null) {
+                            listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + ref);
+                        } else {
+                            String expRef = null;
+                            if (referencePath.getPath().equals(ref)) {
+                                expRef = ref;
+                            } else {
+                                expRef = referencePath.getPath();
+                                expRef += " (expanded from " + ref + ")";
+                            }
+                            if (!referencePath.exists())
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + expRef);
+                            else if (!referencePath.isDirectory())
+                                listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
+                            else
+                                args.add("--reference", referencePath.getPath());
+                        }
+                    }
 
                     // Find credentials for this URL
-                    StandardCredentials cred = credentials.get(urIish.toPrivateString());
+                    StandardCredentials cred = credentials.get(strURIish);
                     if (parentCredentials) {
                         String parentUrl = getRemoteUrl(getDefaultRemote());
                         URIish parentUri = null;
@@ -1592,6 +1644,60 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public @CheckForNull String getRemoteUrl(String name) throws GitException, InterruptedException {
         String result = launchCommand( "config", "--get", "remote."+name+".url" );
         return StringUtils.trim(firstLine(result));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @CheckForNull Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
+        String result = launchCommand( "config", "--local", "--list" );
+        Map<String, String> uriNames = new HashMap<>();
+        for (String line : result.split("\\R+")) {
+            line = StringUtils.trim(line);
+            if (!line.startsWith("remote.") || !line.contains(".url=")) {
+                continue;
+            }
+
+            String remoteName = StringUtils.substringBetween(line, "remote.", ".url=");
+            String remoteUri = StringUtils.substringAfter(line, ".url=");
+
+            // If uri String values end up identical, Map only stores one entry
+            uriNames.put(remoteUri, remoteName);
+
+            try {
+                URI u = new URI(remoteUri);
+                uriNames.put(u.toASCIIString(), remoteName);
+                URI uSafe = new URI(u.getScheme(), u.getHost(), u.getPath(), u.getFragment());
+                uriNames.put(uSafe.toString(), remoteName);
+                uriNames.put(uSafe.toASCIIString(), remoteName);
+            } catch (URISyntaxException ue) {} // ignore, move along
+        }
+        return uriNames;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public @CheckForNull Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        String result = launchCommand( "config", "--local", "--list" );
+        Map<String, String> uriNames = new HashMap<>();
+        for (String line : result.split("\\R+")) {
+            line = StringUtils.trim(line);
+            if (!line.startsWith("remote.") || !line.contains(".pushurl=")) {
+                continue;
+            }
+
+            String remoteName = StringUtils.substringBetween(line, "remote.", ".pushurl=");
+            String remoteUri = StringUtils.substringAfter(line, ".pushurl=");
+            uriNames.put(remoteUri, remoteName);
+
+            try {
+                URI u = new URI(remoteUri);
+                uriNames.put(u.toASCIIString(), remoteName);
+                URI uSafe = new URI(u.getScheme(), u.getHost(), u.getPath(), u.getFragment());
+                uriNames.put(uSafe.toString(), remoteName);
+                uriNames.put(uSafe.toASCIIString(), remoteName);
+            } catch (URISyntaxException ue) {} // ignore, move along
+        }
+        return uriNames;
     }
 
     /** {@inheritDoc} */

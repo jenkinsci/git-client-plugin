@@ -6,6 +6,7 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -238,6 +239,175 @@ public class GitClientCloneTest {
         assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
     }
 
+    @Test
+    public void test_clone_reference_parameterized_basename() throws Exception, IOException, InterruptedException {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL_BASENAME}").execute();
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertThat("Reference repo name-parsing logged in: " + messages,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: "),
+            is(true));
+        // TODO: Actually construct the local filesystem path to match
+        // the last pathname component from the URL (plus/minus ".git"
+        // extension). Be sure to clean away this path at end of test,
+        // so that the test_clone_reference_parameterized_basename_fallback()
+        // below is not confused - it expects this location to not exist.
+        // Skip: Missing if clone failed - currently would, with bogus
+        // path above and not yet pre-created path structure.
+        //assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+        //assertAlternateFilePointsToLocalMirror();
+        //assertBranchesExist(testGitClient.getBranches(), "master");
+        //assertNoObjectsInRepository();
+    }
+
+    @Test
+    public void test_clone_reference_parameterized_basename_fallback() throws Exception, IOException, InterruptedException {
+        // TODO: Currently we do not make paths which would invalidate
+        // this test, but note the test above might do just that later.
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror() + "/${GIT_URL_BASENAME_FALLBACK}").execute();
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+        assertThat("Reference repo name-parsing logged in: " + messages,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: '" + workspace.localMirror() + "'"),
+            is(true));
+        // With fallback mode, and nonexistent parameterized reference
+        // repository, and a usable repository in the common path (what
+        // remains if the parameterizing suffix is just discarded), this
+        // common path should be used. So it should overall behave same
+        // as the non-parameterized test_clone_reference_basename() above.
+        assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+        assertAlternateFilePointsToLocalMirror();
+        assertBranchesExist(testGitClient.getBranches(), "master");
+        assertNoObjectsInRepository();
+    }
+
+    @Test
+    public void test_clone_reference_parameterized_sha256() throws Exception, IOException, InterruptedException {
+        String wsMirror = workspace.localMirror();
+        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java
+         * should be okay for network URLs but are too complex for local pathnames */
+        //String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String wsMirrorNormalized = LegacyCompatibleGitAPIImpl.normalizeGitUrl(wsMirror, true);
+        String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
+
+        /* Make a new repo replica to use as refrepo, in specified location */
+        // Start of the path to pass into `git clone` call; note that per
+        // WorkspaceWithRepo.java the test workspaces are under target/
+        // where the executed test binaries live
+        File fRefrepoBase = new File("target/refrepo256.git").getAbsoluteFile();
+        String wsRefrepoBase = fRefrepoBase.getPath(); // String with full pathname
+        String wsRefrepo = null;
+        try {
+            if (fRefrepoBase.exists() || fRefrepoBase.mkdirs()) {
+            /* Note: per parser of magic suffix, use slash - not OS separator char
+             * And be sure to use relative paths here (see
+             * WorkspaceWithRepo.java::localMirror()):
+             */
+                wsRefrepo = workspace.localMirror("refrepo256.git/" + wsMirrorHash);
+            }
+        } catch (RuntimeException e) {
+            wsRefrepo = null;
+            Util.deleteRecursive(fRefrepoBase);
+            // At worst, the test would log that it mangled and parsed
+            // the provided string, as we check in log below
+        }
+
+        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" +
+            "wsRefrepo='" + wsRefrepo);
+
+        testGitClient.clone_().url(wsMirror).repositoryName("origin").reference(wsRefrepoBase + "/${GIT_URL_SHA256}").execute();
+
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+
+        System.err.println("clone output:\n======\n" + messages + "\n======\n");
+
+        assertThat("Reference repo name-parsing logged in: " + messages +
+                (wsRefrepo == null ? "" : ("\n...and replaced with: '" + wsRefrepo + "'")) ,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: ") &&
+            (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)) ,
+            is(true));
+
+        if (wsRefrepo != null) {
+            assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+            assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir.getPath(), wsRefrepo);
+            assertBranchesExist(testGitClient.getBranches(), "master");
+            assertNoObjectsInRepository();
+        } // else Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
+    }
+
+    @Test
+    public void test_clone_reference_parameterized_sha256_fallback() throws Exception, IOException, InterruptedException {
+        String wsMirror = workspace.localMirror();
+        /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java
+         * should be okay for network URLs but are too complex for local pathnames */
+        //String wsMirrorNormalized = wsMirror.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String wsMirrorNormalized = LegacyCompatibleGitAPIImpl.normalizeGitUrl(wsMirror, true);
+        String wsMirrorHash = org.apache.commons.codec.digest.DigestUtils.sha256Hex(wsMirrorNormalized);
+
+        /* Make a new repo replica to use as refrepo, in specified location */
+        // Start of the path to pass into `git clone` call; note that per
+        // WorkspaceWithRepo.java the test workspaces are under target/
+        // where the executed test binaries live
+        File fRefrepoBase = new File("target/refrepo256.git").getAbsoluteFile();
+        String wsRefrepoBase = fRefrepoBase.getPath(); // String with full pathname
+        String wsRefrepo = null;
+        try {
+            if (fRefrepoBase.exists() || fRefrepoBase.mkdirs()) {
+            /* Note: per parser of magic suffix, use slash - not OS separator char
+             * And be sure to use relative paths here (see
+             * WorkspaceWithRepo.java::localMirror()):
+             */
+                wsRefrepo = workspace.localMirror("refrepo256.git/" + wsMirrorHash);
+            }
+        } catch (RuntimeException e) {
+            wsRefrepo = null;
+            Util.deleteRecursive(fRefrepoBase);
+            // At worst, the test would log that it mangled and parsed
+            // the provided string, as we check in log below
+        }
+
+        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" +
+            "wsRefrepo='" + wsRefrepo);
+
+        testGitClient.clone_().url(wsMirror).repositoryName("origin").reference(wsRefrepoBase + "/${GIT_URL_SHA256_FALLBACK}").execute();
+
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+
+        // Verify JENKINS-46737 expected log message is written
+        String messages = StringUtils.join(handler.getMessages(), ";");
+
+        System.err.println("clone output:\n======\n" + messages + "\n======\n");
+
+        // Note: we do not expect the closing single quote after wsRefrepoBase
+        // because other tests might pollute our test area, and SHA dir is there
+        assertThat("Reference repo name-parsing logged in: " + messages +
+                "\n...and replaced with: '" + wsRefrepoBase,
+            handler.containsMessageSubstring("Parameterized reference path ") &&
+            handler.containsMessageSubstring(" replaced with: '" + wsRefrepoBase),
+            is(true));
+
+        // Barring filesystem errors, if we have the "custom" refrepo
+        // we expect it to be used (fallback mode is not triggered)
+        if (wsRefrepo != null) {
+            assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+            assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir.getPath(), wsRefrepo);
+            assertBranchesExist(testGitClient.getBranches(), "master");
+            assertNoObjectsInRepository();
+        } // else Skip: Missing if clone failed - currently would, with bogus path above and not pre-created path structure
+    }
+
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
 
     @Test
@@ -346,12 +516,51 @@ public class GitClientCloneTest {
 
     }
 
+    // Most tests use this method, expecting a non-bare repo
     private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
+    }
 
-        assertThat(new File(testGitDir, alternates), is(anExistingFile()));
-        final String expectedContent = workspace.localMirror().replace("\\", "/") + "/objects";
-        final String actualContent = FileUtils.readFileToString(new File(testGitDir, alternates), "UTF-8");
+    private void assertAlternateFilePointsToLocalWorkspaceMirror() throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(File _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir.getPath());
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir, workspace.localMirror());
+    }
+
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir, String _testAltDir) throws IOException, InterruptedException {
+        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalMirror(_testGitDir, _testAltDir, alternates);
+    }
+
+    // Similar for bare repos, without ".git/" dir
+    private void assertAlternateFilePointsToLocalBareMirror() throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(testGitDir);
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(File _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(_testGitDir.getPath());
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir) throws IOException, InterruptedException {
+        assertAlternateFilePointsToLocalBareMirror(_testGitDir, workspace.localMirror());
+    }
+
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir, String _testAltDir) throws IOException, InterruptedException {
+        final String alternates = "objects" + File.separator + "info" + File.separator + "alternates";
+        assertAlternateFilePointsToLocalMirror(_testGitDir, _testAltDir, alternates);
+    }
+
+    private void assertAlternateFilePointsToLocalMirror(String _testGitDir, String _testAltDir, String alternates) throws IOException, InterruptedException {
+        assertThat("Did not find '" + alternates + "' under '" + _testGitDir + "'",
+            new File(_testGitDir, alternates), is(anExistingFile()));
+        final String expectedContent = _testAltDir.replace("\\", "/") + "/objects";
+        final String actualContent = FileUtils.readFileToString(new File(_testGitDir, alternates), "UTF-8");
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
