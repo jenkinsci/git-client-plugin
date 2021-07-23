@@ -2479,8 +2479,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return new File(parentPath + "\\ssh.exe");
     }
-
-    /* package */ File getSSHExecutable() {
+    /**
+     * Returns an executable file of ssh installed in Windows
+     *
+     * @return File The ssh executable file {@link java.io.File}
+     **/
+    public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
         if (sshexe != null && sshexe.exists()) {
