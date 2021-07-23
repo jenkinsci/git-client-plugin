@@ -2480,7 +2480,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new File(parentPath + "\\ssh.exe");
     }
 
-    /* package */ File getSSHExecutable() {
+    public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
         if (sshexe != null && sshexe.exists()) {
