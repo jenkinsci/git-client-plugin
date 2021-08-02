@@ -1635,7 +1635,7 @@ public class GitClientTest {
             throw new GitException("Skipping JGit test in CLI git specific test testDeleteRefException");
         }
         assertThat(gitClient.getRefNames(""), is(empty()));
-        commitOneFile(); // Creates commit on master branch
+        commitOneFile(); // Creates commit on default branch
         Set<String> refNames = gitClient.getRefNames("");
         assertThat(refNames, hasItems("refs/heads/" + defaultBranchName));
         gitClient.deleteRef("refs/heads/" + defaultBranchName); // Throws - JGit cannot delete current branch
