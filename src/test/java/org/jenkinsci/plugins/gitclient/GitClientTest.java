@@ -206,6 +206,31 @@ public class GitClientTest {
         srcRepoDir = new File(mirrorParent, "git-client-plugin");
     }
 
+    /**
+     * Tests that need the default branch name can use this variable.
+     */
+    private static String defaultBranchName = "mast" + "er"; // Intentionally separated string
+
+    /**
+     * Determine the global default branch name.
+     * Command line git is moving towards more inclusive naming.
+     * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
+     * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
+     */
+    @BeforeClass
+    public static void computeDefaultBranchName() throws Exception {
+        File configDir = Files.createTempDirectory("readGitConfig").toFile();
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(configDir).using("git").getClient());
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
+        for (int i = 0; i < output.length; i++) {
+            String result = output[i].trim();
+            if (result != null && !result.isEmpty()) {
+                defaultBranchName = result;
+            }
+        }
+        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+    }
+
     @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
         FileUtils.deleteDirectory(mirrorParent);
@@ -955,10 +980,10 @@ public class GitClientTest {
         final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
                 "refs/heads/*:refs/remotes/origin/*"));
         gitClient.fetch_().from(remote, refspecs).execute();
-        gitClient.checkout().ref(Constants.MASTER).execute();
+        gitClient.checkout().ref(defaultBranchName).execute();
 
         Set<String> refNames = gitClient.getRefNames("refs/heads/");
-        assertThat(refNames, contains("refs/heads/master"));
+        assertThat(refNames, contains("refs/heads/" + defaultBranchName));
     }
 
     private void assertFileInWorkingDir(GitClient client, String fileName) {
@@ -1610,10 +1635,10 @@ public class GitClientTest {
             throw new GitException("Skipping JGit test in CLI git specific test testDeleteRefException");
         }
         assertThat(gitClient.getRefNames(""), is(empty()));
-        commitOneFile(); // Creates commit on master branch
+        commitOneFile(); // Creates commit on default branch
         Set<String> refNames = gitClient.getRefNames("");
-        assertThat(refNames, hasItems("refs/heads/master"));
-        gitClient.deleteRef("refs/heads/master"); // Throws - JGit cannot delete current branch
+        assertThat(refNames, hasItems("refs/heads/" + defaultBranchName));
+        gitClient.deleteRef("refs/heads/" + defaultBranchName); // Throws - JGit cannot delete current branch
     }
 
     @Test
@@ -1622,13 +1647,13 @@ public class GitClientTest {
 
         ObjectId commitA = commitOneFile();
         Map<String, ObjectId> headRevMapA = gitClient.getHeadRev(url);
-        assertThat(headRevMapA.keySet(), hasItems("refs/heads/master"));
-        assertThat(headRevMapA.get("refs/heads/master"), is(commitA));
+        assertThat(headRevMapA.keySet(), hasItems("refs/heads/" + defaultBranchName));
+        assertThat(headRevMapA.get("refs/heads/" + defaultBranchName), is(commitA));
 
         ObjectId commitB = commitOneFile();
         Map<String, ObjectId> headRevMapB = gitClient.getHeadRev(url);
-        assertThat(headRevMapB.keySet(), hasItems("refs/heads/master"));
-        assertThat(headRevMapB.get("refs/heads/master"), is(commitB));
+        assertThat(headRevMapB.keySet(), hasItems("refs/heads/" + defaultBranchName));
+        assertThat(headRevMapB.get("refs/heads/" + defaultBranchName), is(commitB));
     }
 
     @Test
@@ -1636,10 +1661,10 @@ public class GitClientTest {
         String url = repoRoot.getAbsolutePath();
 
         ObjectId commitA = commitOneFile();
-        assertThat(gitClient.getHeadRev(url, "master"), is(commitA));
+        assertThat(gitClient.getHeadRev(url, defaultBranchName), is(commitA));
 
         ObjectId commitB = commitOneFile();
-        assertThat(gitClient.getHeadRev(url, "master"), is(commitB));
+        assertThat(gitClient.getHeadRev(url, defaultBranchName), is(commitB));
     }
 
     @Test(expected = GitException.class)
@@ -1700,9 +1725,9 @@ public class GitClientTest {
     @Test
     public void testRevParse() throws Exception {
         ObjectId commitA = commitOneFile();
-        assertThat(gitClient.revParse("master"), is(commitA));
+        assertThat(gitClient.revParse(defaultBranchName), is(commitA));
         ObjectId commitB = commitOneFile();
-        assertThat(gitClient.revParse("master"), is(commitB));
+        assertThat(gitClient.revParse(defaultBranchName), is(commitB));
     }
 
     @Test(expected = GitException.class)
@@ -1720,7 +1745,7 @@ public class GitClientTest {
         assertThat(resultAll, contains(commitA));
 
         List<ObjectId> resultRef = new ArrayList<>();
-        gitClient.revList_().to(resultRef).reference("master").execute();
+        gitClient.revList_().to(resultRef).reference(defaultBranchName).execute();
         assertThat(resultRef, contains(commitA));
     }
 
@@ -1744,17 +1769,17 @@ public class GitClientTest {
     @Test
     public void testRevList() throws Exception {
         ObjectId commitA = commitOneFile();
-        assertThat(gitClient.revList("master"), contains(commitA));
+        assertThat(gitClient.revList(defaultBranchName), contains(commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultA = new ArrayList<>();
-        gitClient.revList_().to(resultA).reference("master").execute();
+        gitClient.revList_().to(resultA).reference(defaultBranchName).execute();
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
-        assertThat(gitClient.revList("master"), contains(commitB, commitA));
+ assertThat(gitClient.revList(defaultBranchName), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultB = new ArrayList<>();
-        gitClient.revList_().to(resultB).reference("master").execute();
+        gitClient.revList_().to(resultB).reference(defaultBranchName).execute();
         assertThat(resultB, contains(commitB, commitA));
     }
 
@@ -2330,8 +2355,7 @@ public class GitClientTest {
         GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
         cloneGitClient.init();
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
-        String branch = "master";
-        cloneGitClient.checkoutBranch(branch, "origin/" + branch);
+        cloneGitClient.checkoutBranch(defaultBranchName, "origin/" + defaultBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(cloneGitClient);
         cloneGitClient.submoduleInit();
@@ -2549,7 +2573,7 @@ public class GitClientTest {
         }
         commitOneFile("A-Single-File-Commit");
         assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
-                hasEntry(Constants.HEAD, "refs/heads/master"));
+                hasEntry(Constants.HEAD, "refs/heads/" + defaultBranchName));
     }
 
     @Test
@@ -2584,7 +2608,7 @@ public class GitClientTest {
         }
         commitOneFile("A-Single-File-Commit");
         assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
-                hasEntry(Constants.HEAD, "refs/heads/master"));
+                hasEntry(Constants.HEAD, "refs/heads/" + defaultBranchName));
     }
 
     @Test

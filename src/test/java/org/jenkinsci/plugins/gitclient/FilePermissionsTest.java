@@ -52,6 +52,31 @@ public class FilePermissionsTest {
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
 
+    /**
+     * Tests that need the default branch name can use this variable.
+     */
+    private static String defaultBranchName = "mast" + "er"; // Intentionally separated string
+
+    /**
+     * Determine the global default branch name.
+     * Command line git is moving towards more inclusive naming.
+     * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
+     * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
+     */
+    @BeforeClass
+    public static void computeDefaultBranchName() throws Exception {
+        File configDir = Files.createTempDirectory("readGitConfig").toFile();
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
+        for (int i = 0; i < output.length; i++) {
+            String result = output[i].trim();
+            if (result != null && !result.isEmpty()) {
+                defaultBranchName = result;
+            }
+        }
+        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+    }
+
     @AfterClass
     public static void verifyTestRepo() throws IOException, InterruptedException {
         if (isWindows()) return;
@@ -77,7 +102,7 @@ public class FilePermissionsTest {
         GitClient git = Git.with(listener, new hudson.EnvVars()).in(newRepo).using("git").getClient();
         String repoURL = repo.toURI().toURL().toString();
         git.clone_().repositoryName("origin").url(repoURL).execute();
-        git.checkoutBranch("master", "origin/master");
+        git.checkoutBranch(defaultBranchName, "origin/" + defaultBranchName);
         return newRepo;
     }
 

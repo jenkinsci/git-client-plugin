@@ -72,6 +72,36 @@ public class GitClientFetchTest {
         this.gitImplName = gitImplName;
     }
 
+    /**
+     * Default branch name in the upstream repository.
+     */
+    private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er";
+
+    /**
+     * Tests that need the default branch name can use this variable.
+     */
+    private static String defaultBranchName = "mast" + "er"; // Intentionally separated string
+
+    /**
+     * Determine the global default branch name.
+     * Command line git is moving towards more inclusive naming.
+     * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
+     * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
+     */
+    @BeforeClass
+    public static void computeDefaultBranchName() throws Exception {
+        File configDir = Files.createTempDirectory("readGitConfig").toFile();
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
+        for (int i = 0; i < output.length; i++) {
+            String result = output[i].trim();
+            if (result != null && !result.isEmpty()) {
+                defaultBranchName = result;
+            }
+        }
+        assertThat("Failed to delete temporary readGitConfig directory", configDir.delete(), is(true));
+    }
+
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
@@ -113,10 +143,10 @@ public class GitClientFetchTest {
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
         Set<Branch> remoteBranchesEmpty = testGitClient.getRemoteBranches();
         assertThat(remoteBranchesEmpty, is(empty()));
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare != working", bareCommit1, is(commit1));
-        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(commit1));
+        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/" + defaultBranchName), is(commit1));
 
         /* Clone new working repo from bare repo */
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
@@ -124,21 +154,21 @@ public class GitClientFetchTest {
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         assertThat("bare != newArea", newAreaHead, is(bareCommit1));
         Set<Branch> remoteBranches1 = newAreaWorkspace.getGitClient().getRemoteBranches();
-        assertThat(getBranchNames(remoteBranches1), hasItems("origin/master"));
-        assertThat(newAreaWorkspace.getGitClient().getHeadRev(newAreaWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(bareCommit1));
+        assertThat(getBranchNames(remoteBranches1), hasItems("origin/" + defaultBranchName));
+        assertThat(newAreaWorkspace.getGitClient().getHeadRev(newAreaWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/" + defaultBranchName), is(bareCommit1));
 
         /* Commit a new change to the original repo */
         workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID().toString());
         testGitClient.add("file2");
         testGitClient.commit("commit2");
         ObjectId commit2 = testGitClient.revParse("HEAD");
-        assertThat(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "refs/heads/master"), is(commit2));
+        assertThat(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "refs/heads/" + defaultBranchName), is(commit2));
 
         /* Push the new change to the bare repo */
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit2 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit2 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare2 != working2", bareCommit2, is(commit2));
-        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/master"), is(commit2));
+        assertThat(bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/" + defaultBranchName), is(commit2));
 
         /* Fetch new change into newArea repo */
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
@@ -161,8 +191,8 @@ public class GitClientFetchTest {
         ObjectId commit3 = testGitClient.revParse("HEAD");
 
         /* Push the new change to the bare repo */
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit3 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit3 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare3 != working3", bareCommit3, is(commit3));
 
         /* Fetch new change into newArea repo using different argument forms */
@@ -180,8 +210,8 @@ public class GitClientFetchTest {
         ObjectId commit4 = testGitClient.revParse("HEAD");
 
         /* Push the new change to the bare repo */
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit4 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit4 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare4 != working4", bareCommit4, is(commit4));
 
         /* Fetch new change into newArea repo using a different argument form */
@@ -199,8 +229,8 @@ public class GitClientFetchTest {
         ObjectId commit5 = testGitClient.revParse("HEAD");
 
         /* Push the new change to the bare repo */
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit5 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit5 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare5 != working5", bareCommit5, is(commit5));
 
         /* Fetch into newArea repo with null RefSpec - should only
@@ -236,17 +266,17 @@ public class GitClientFetchTest {
         testGitClient.add("file1");
         testGitClient.commit("commit1");
         ObjectId commit1 = testGitClient.revParse("HEAD");
-        assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
+        assertThat(getBranchNames(testGitClient.getBranches()), contains(defaultBranchName));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Clone working repo into a bare repo */
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "master");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit1 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare != working", bareCommit1, is(commit1));
-        assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
+        assertThat(getBranchNames(testGitClient.getBranches()), contains(defaultBranchName));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Create a branch in working repo named "parent" */
@@ -256,14 +286,14 @@ public class GitClientFetchTest {
         testGitClient.add("file2");
         testGitClient.commit("commit2");
         ObjectId commit2 = testGitClient.revParse("HEAD");
-        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder("master", "parent"));
+        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "parent"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Push branch named "parent" to bare repo */
         testGitClient.push("origin", "parent");
         ObjectId bareCommit2 = bareWorkspace.getGitClient().getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), "parent");
         assertThat("working parent != bare parent", bareCommit2, is(commit2));
-        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder("master", "parent"));
+        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "parent"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
 
         /* Clone new working repo from bare repo */
@@ -272,7 +302,7 @@ public class GitClientFetchTest {
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         assertThat("bare != newArea", newAreaHead, is(bareCommit1));
         Set<Branch> remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
-        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/parent", "origin/HEAD"));
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/parent", "origin/HEAD"));
 
         /* Checkout parent in new working repo */
         newAreaWorkspace.getGitClient().checkout().ref("origin/parent").branch("parent").execute();
@@ -280,9 +310,9 @@ public class GitClientFetchTest {
         assertThat("parent1 != newAreaParent", newAreaParent, is(commit2));
 
         /* Delete parent branch from testGitClient */
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         cliGitCommand.run("branch", "-D", "parent");
-        assertThat(getBranchNames(testGitClient.getBranches()), contains("master"));
+        assertThat(getBranchNames(testGitClient.getBranches()), contains(defaultBranchName));
         assertThat("Wrong branch count", testGitClient.getBranches().size(), is(1));
 
         /* Delete parent branch on bare repo*/
@@ -353,29 +383,29 @@ public class GitClientFetchTest {
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         /* Create a working repo containing three branches */
-        /* master -> branch1 */
-        /*        -> branch2 */
+        /* main -> branch1 */
+        /*      -> branch2 */
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
-        workspace.touch(testGitDir, "file-master", "file master content " + UUID.randomUUID().toString());
-        testGitClient.add("file-master");
-        testGitClient.commit("master-commit");
+        workspace.touch(testGitDir, "file-main", "file main content " + UUID.randomUUID().toString());
+        testGitClient.add("file-main");
+        testGitClient.commit("main-commit");
         assertThat("Wrong branch count", testGitClient.getBranches().size(), is(1));
-        testGitClient.push("origin", "master"); /* master branch is now on bare repo */
+        testGitClient.push("origin", defaultBranchName); /* main branch is now on bare repo */
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch1");
         workspace.touch(testGitDir, "file-branch1", "file branch1 content " + UUID.randomUUID().toString());
         testGitClient.add("file-branch1");
         testGitClient.commit("branch1-commit");
-        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder("master", "branch1"));
+        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "branch1"));
         testGitClient.push("origin", "branch1"); /* branch1 is now on bare repo */
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         workspace.touch(testGitDir, "file-branch2", "file branch2 content " + UUID.randomUUID().toString());
         testGitClient.add("file-branch2");
         testGitClient.commit("branch2-commit");
-        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder("master", "branch1", "branch2"));
+        assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "branch1", "branch2"));
         assertThat(testGitClient.getRemoteBranches(), is(empty()));
         testGitClient.push("origin", "branch2"); /* branch2 is now on bare repo */
 
@@ -384,7 +414,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.cloneRepo(newAreaWorkspace, bareWorkspace.getGitFileDir().getAbsolutePath());
         ObjectId newAreaHead = newAreaWorkspace.getGitClient().revParse("HEAD");
         Set<Branch> remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
-        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Remove branch1 from bare repo using original repo */
         cliGitCommand.run("push", bareWorkspace.getGitFileDir().getAbsolutePath(), ":branch1");
@@ -395,7 +425,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).execute();
         remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
-        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
 
         /* Fetch with prune should remove branch1 from newArea */
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).prune(true).execute();
@@ -405,9 +435,9 @@ public class GitClientFetchTest {
          * on that old git version.
          */
         if (newAreaWorkspace.getGitClient() instanceof CliGitAPIImpl && !workspace.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch1", "origin/branch2", "origin/HEAD"));
+            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
         } else {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/master", "origin/branch2", "origin/HEAD"));
+            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch2", "origin/HEAD"));
         }
     }
 
@@ -430,7 +460,7 @@ public class GitClientFetchTest {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
-        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
+        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
@@ -444,7 +474,7 @@ public class GitClientFetchTest {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
-        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
+        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
         boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
@@ -458,7 +488,7 @@ public class GitClientFetchTest {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).tags(false).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
-        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/master");
+        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         Set<String> tags = testGitClient.getTagNames("");
         assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
