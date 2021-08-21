@@ -48,7 +48,7 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
         if (isWindows()) return;
-        repo = com.google.common.io.Files.createTempDir();
+        repo = Files.createTempDirectory(null).toFile();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
 
@@ -98,7 +98,7 @@ public class FilePermissionsTest {
     }
 
     private static File cloneTestRepo(File repo) throws IOException, InterruptedException {
-        File newRepo = com.google.common.io.Files.createTempDir();
+        File newRepo = Files.createTempDirectory(null).toFile();
         GitClient git = Git.with(listener, new hudson.EnvVars()).in(newRepo).using("git").getClient();
         String repoURL = repo.toURI().toURL().toString();
         git.clone_().repositoryName("origin").url(repoURL).execute();
