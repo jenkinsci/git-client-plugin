@@ -47,7 +47,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -69,7 +69,6 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
-import com.google.common.collect.Collections2;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.StandardCopyOption;
@@ -569,7 +568,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
+        return branches.stream().map(Branch::getName).collect(Collectors.toList());
     }
 
     private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
@@ -1801,16 +1800,21 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
         assertEquals(3, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         // Merge commit is duplicated as have to capture changes that may have been made as part of merge
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
-        Collection<String> paths = Collections2.transform(diffs, (String diff) -> diff.substring(diff.indexOf('\t')+1).trim() // Windows diff output ^M removed by trim()
-        );
+        List<String> paths =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith(":"))
+                        .map(diff -> diff.substring(diff.indexOf('\t') + 1).trim()) // Windows diff output ^M removed by trim()
+                        .collect(Collectors.toList());
 
         assertTrue(paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
@@ -1835,12 +1839,18 @@ public abstract class GitAPITestCase extends TestCase {
 
         List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
 
-        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
         assertEquals(2, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
 
-        Collection<String> diffs = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith(":"));
+        List<String> diffs =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith(":"))
+                        .collect(Collectors.toList());
 
         assertTrue(diffs.isEmpty());
     }
@@ -1868,7 +1878,10 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
         List<String> revisionDetails = w.git.showRevision(null, to);
-        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
         assertEquals(1, commits.size());
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
@@ -1881,7 +1894,10 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.commit("first");
         ObjectId first = w.head();
         List<String> revisionDetails = w.git.showRevision(first);
-        Collection<String> commits = Collections2.filter(revisionDetails, (String detail) -> detail.startsWith("commit "));
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
         assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }

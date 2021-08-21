@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -17,7 +16,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -1295,7 +1293,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            List<String> sparsePaths = Collections.singletonList("uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1315,7 +1313,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.txt", "uuid2.txt");
+            List<String> sparsePaths = Arrays.asList("uuid.txt", "uuid2.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1336,7 +1334,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid,3.txt");
+            List<String> sparsePaths = Collections.singletonList("uuid,3.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1); // file present due to workaround
@@ -1356,7 +1354,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid 4.txt");
+            List<String> sparsePaths = Collections.singletonList("uuid 4.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileNotInWorkingDir(gitClient, file1);
@@ -1376,7 +1374,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.t?t");
+            List<String> sparsePaths = Collections.singletonList("uuid.t?t");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1396,7 +1394,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.*");
+            List<String> sparsePaths = Collections.singletonList("uuid.*");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1416,7 +1414,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("/**/uuid.txt");
+            List<String> sparsePaths = Collections.singletonList("/**/uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1436,7 +1434,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("/*", "!uuid.txt");
+            List<String> sparsePaths = Arrays.asList("/*", "!uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileNotInWorkingDir(gitClient, file1);
@@ -1456,7 +1454,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths1 = Lists.newArrayList("uuid.txt");
+            List<String> sparsePaths1 = Collections.singletonList("uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths1).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1470,7 +1468,7 @@ public class GitClientTest {
             assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
 
 	    if (LFS_SUPPORTS_SPARSE_CHECKOUT) {
-		List<String> sparsePaths2 = Lists.newArrayList("uuid2.txt");
+		List<String> sparsePaths2 = Collections.singletonList("uuid2.txt");
 		gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths2).execute();
 
 		assertFileNotInWorkingDir(gitClient, file1);
@@ -1503,7 +1501,7 @@ public class GitClientTest {
             assertFileInWorkingDir(gitClient, lfsObjectFile3);
             assertFileInWorkingDir(gitClient, lfsObjectFile4);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            List<String> sparsePaths = Collections.singletonList("uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1523,7 +1521,7 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            List<String> sparsePaths = Lists.newArrayList("uuid.txt");
+            List<String> sparsePaths = Collections.singletonList("uuid.txt");
             gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
 
             assertFileContent(file1, expectedContent1);
@@ -1977,7 +1975,7 @@ public class GitClientTest {
         lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
-                List<String> lines = Files.readAllLines(file.toPath(), Charset.forName("UTF-8"));
+                List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
                 for (String line : lines) {
                     if (line.contains(randomString)) {
                         lastModifiedFile = file;

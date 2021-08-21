@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import com.google.common.io.Files;
 import hudson.model.Fingerprint;
 import hudson.util.LogTaskListener;
 import java.io.File;
@@ -14,7 +13,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,6 +24,7 @@ import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -194,7 +194,7 @@ public class CredentialsTest {
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath() + random.nextInt();
-        String privateKeyData = Files.toString(privateKey, Charset.forName("UTF-8"));
+        String privateKeyData = FileUtils.readFileToString(privateKey, StandardCharsets.UTF_8);
         BasicSSHUserPrivateKey.PrivateKeySource privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKeyData);
         String description = "private key from " + privateKey.getPath();
         if (this.passphrase != null) {
