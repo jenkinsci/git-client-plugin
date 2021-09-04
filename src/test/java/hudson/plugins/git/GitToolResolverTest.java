@@ -6,6 +6,7 @@ import hudson.tools.AbstractCommandInstaller;
 import hudson.tools.BatchCommandInstaller;
 import hudson.tools.CommandInstaller;
 import hudson.tools.InstallSourceProperty;
+import hudson.util.VersionNumber;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -32,7 +33,8 @@ public class GitToolResolverTest {
 
     @Test
     public void shouldResolveToolsOnMaster() throws Exception {
-        final String label = "master";
+        // TODO Delete the legacy code once the baseline is >= 2.307.
+        final String label = j.jenkins.getVersion().isOlderThan(new VersionNumber("2.307")) ? "master" : "built-in";
         final String command = "echo Hello";
         final String toolHome = "TOOL_HOME";
         AbstractCommandInstaller installer = isWindows()
