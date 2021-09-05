@@ -33,8 +33,9 @@ public class GitToolResolverTest {
 
     @Test
     public void shouldResolveToolsOnMaster() throws Exception {
-        // TODO Delete the legacy code once the baseline is >= 2.307.
-        final String label = j.jenkins.getVersion().isOlderThan(new VersionNumber("2.307")) ? "master" : "built-in";
+        // Jenkins 2.307+ uses "built-in" for the label on the controller node
+        // Before 2.307, used the deprecated term "master"
+        final String label = j.jenkins.getSelfLabel().getName();
         final String command = "echo Hello";
         final String toolHome = "TOOL_HOME";
         AbstractCommandInstaller installer = isWindows()
