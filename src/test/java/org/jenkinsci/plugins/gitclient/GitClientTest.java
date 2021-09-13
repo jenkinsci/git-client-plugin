@@ -2442,7 +2442,8 @@ public class GitClientTest {
         }
         // Test may fail if updateSubmodule called with remoteTracking == true
         // and the remoteTracking argument is used in the updateSubmodule call
-        updateSubmodule(upstream, branchName, null);
+        boolean remoteTracking = false;
+        updateSubmodule(upstream, branchName, remoteTracking);
         assertSubmoduleDirectories(gitClient, true, "firewall", "ntp", "sshkeys");
         assertSubmoduleContents("firewall", "ntp", "sshkeys");
 
