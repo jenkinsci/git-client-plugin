@@ -709,7 +709,7 @@ public abstract class GitAPITestCase extends TestCase {
         String subRefName = "origin/" + subBranch;
         String ntpDirName = "modules/ntp";
         String contributingFileName = "modules/ntp/CONTRIBUTING.md";
-        String contributingFileContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        String contributingFileContent = "Contributing to Puppet modules";
 
         File modulesDir = new File(w.repo, "modules");
         assertDirNotFound(modulesDir);
@@ -875,7 +875,7 @@ public abstract class GitAPITestCase extends TestCase {
          * since checkout of a branch does not currently use the "-f"
          * option.
          */
-        assertEquals(ObjectId.fromString("a6dd186704985fdb0c60e60f5c6ea7ea35e082e5"), w.git.revParse(subRefName));
+        assertEquals(ObjectId.fromString("915a6bf1c66c6905a6aa68a12c06afe3607cb0eb"), w.git.revParse(subRefName));
         // w.git.checkout().ref(subRefName).branch(subBranch).execute();
         w.git.checkout().ref(subRefName).execute();
         assertDirExists(modulesDir);
@@ -1024,7 +1024,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         final File ntpDir = new File(modulesDir, "ntp");
         final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
-        final String ntpContributingContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        final String ntpContributingContent = "Contributing to Puppet modules";
         assertFileExists(ntpContributingFile);
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
