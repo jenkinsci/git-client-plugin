@@ -271,7 +271,7 @@ public class GitAPITestCliGitNotIntialized {
 
         final File ntpDir = new File(modulesDir, "ntp");
         final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
-        final String ntpContributingContent = "Contributing to Puppet modules";
+        final String ntpContributingContent = "Puppet Labs modules on the Puppet Forge are open projects";
         assertFileExists(ntpContributingFile);
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
