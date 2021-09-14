@@ -709,7 +709,7 @@ public abstract class GitAPITestCase extends TestCase {
         String subRefName = "origin/" + subBranch;
         String ntpDirName = "modules/ntp";
         String contributingFileName = "modules/ntp/CONTRIBUTING.md";
-        String contributingFileContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        String contributingFileContent = "Contributing to Puppet modules";
 
         File modulesDir = new File(w.repo, "modules");
         assertDirNotFound(modulesDir);
@@ -875,7 +875,7 @@ public abstract class GitAPITestCase extends TestCase {
          * since checkout of a branch does not currently use the "-f"
          * option.
          */
-        assertEquals(ObjectId.fromString("a6dd186704985fdb0c60e60f5c6ea7ea35e082e5"), w.git.revParse(subRefName));
+        assertEquals(ObjectId.fromString("915a6bf1c66c6905a6aa68a12c06afe3607cb0eb"), w.git.revParse(subRefName));
         // w.git.checkout().ref(subRefName).branch(subBranch).execute();
         w.git.checkout().ref(subRefName).execute();
         assertDirExists(modulesDir);
@@ -1024,7 +1024,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         final File ntpDir = new File(modulesDir, "ntp");
         final File ntpContributingFile = new File(ntpDir, "CONTRIBUTING.md");
-        final String ntpContributingContent = "Puppet Labs modules on the Puppet Forge are open projects";
+        final String ntpContributingContent = "Contributing to Puppet modules";
         assertFileExists(ntpContributingFile);
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
@@ -1201,8 +1201,8 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout().ref("sub_origin/tests/getSubmodules").branch("tests/getSubmodules").execute();
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
-                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], " +
-                 "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609], " +
+                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=3e50abc89dfe13675e66a7791bcc912c6014db3b], " +
+                 "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=d9e287a055322f2985f63c6a77df89f617c823f9], " +
                  "IndexEntry[mode=160000,type=commit,file=modules/sshkeys,object=689c45ed57f0829735f9a2b16760c14236fe21d9]]",
                 r.toString()
         );
