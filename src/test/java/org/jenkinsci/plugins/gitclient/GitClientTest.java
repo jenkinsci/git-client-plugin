@@ -2371,8 +2371,8 @@ public class GitClientTest {
         String upstream = checkoutAndAssertHasGitModules(branchName, true);
         List<IndexEntry> submodules = gitClient.getSubmodules(branchName);
         IndexEntry[] expectedSubmodules = {
-            new IndexEntry("160000", "commit", "3e50abc89dfe13675e66a7791bcc912c6014db3b", "modules/firewall"),
-            new IndexEntry("160000", "commit", "d9e287a055322f2985f63c6a77df89f617c823f9", "modules/ntp"),
+            new IndexEntry("160000", "commit", "978c8b223b33e203a5c766ecf79704a5ea9b35c8", "modules/firewall"),
+            new IndexEntry("160000", "commit", "b62fabbc2bb37908c44ded233e0f4bf479e45609", "modules/ntp"),
             new IndexEntry("160000", "commit", "689c45ed57f0829735f9a2b16760c14236fe21d9", "modules/sshkeys")
         };
         assertThat(submodules, hasItems(expectedSubmodules));
