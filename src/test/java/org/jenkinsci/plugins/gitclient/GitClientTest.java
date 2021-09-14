@@ -2340,6 +2340,12 @@ public class GitClientTest {
         String moduleDirBaseName = "module.named.url";
         File modulesDir = new File(repoHasSubmodule, "modules");
         assertTrue("Failed to create modules dir in repoHasSubmodule", modulesDir.mkdir());
+
+        /* Even with long paths enabled, the test fails in modulesDir is more than about 220 characters */
+        if (this.srcGitClient instanceof CliGitAPIImpl && isWindows() && modulesDir.getCanonicalPath().length() > 215) {
+            return;
+        }
+
         repoHasSubmoduleClient.addSubmodule(repoHasSubmodule.getAbsolutePath(), "modules/" + moduleDirBaseName);
         repoHasSubmoduleClient.add(".");
         repoHasSubmoduleClient.commit("Add modules/" + moduleDirBaseName + " as submodule");
