@@ -57,6 +57,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,6 +69,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -82,8 +84,6 @@ import java.util.stream.Collectors;
  * </b>
  */
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
-
-    private static final boolean acceptSelfSignedCertificates;
 
     /**
      * Constant which can block use of setsid in git calls for ssh credentialed operations.
@@ -162,7 +162,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     );
 
     static {
-        acceptSelfSignedCertificates = Boolean.getBoolean(GitClient.class.getName() + ".untrustedSSL");
         CALL_SETSID = setsidExists() && USE_SETSID;
     }
 
@@ -197,6 +196,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private StandardCredentials defaultCredentials;
     private StandardCredentials lfsCredentials;
     private final String encoding;
+
+    /* If we fail some helper tool (e.g. SELinux chcon) do not make noise
+     * until actually git fails. Use a TreeMap to sort by keys (timestamp).
+     */
+    private Map<Instant, String> failureClues = new TreeMap<>();
 
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
@@ -249,6 +253,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String version = "";
         try {
             version = launchCommand("--version").trim();
+            listener.getLogger().println(" > git --version # '" + version + "'");
         } catch (Throwable e) {
         }
 
@@ -292,6 +297,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Compare the current cli git version with the required version.
+     * Finds if the current cli git version is at-least the required version.
+     *
+     * Returns True if the current cli git version is at least the required version.
+     *
+     * @param major required major version for command line git
+     * @param minor required minor version for command line git
+     * @param rev required revision for command line git
+     * @param bugfix required patches for command line git
+     * @return true if the command line git version is at least the required version
+     **/
+    public boolean isCliGitVerAtLeast(int major, int minor, int rev, int bugfix) {
+        return isAtLeastVersion(major,minor,rev,bugfix);
+    }
+
+    /**
      * Constructor for CliGitAPIImpl.
      *
      * @param gitExe a {@link java.lang.String} object.
@@ -332,7 +353,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if this workspace has a git repository.
+     * Also returns true if this workspace contains an empty .git directory and
+     * a parent directory has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -344,6 +367,35 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             // Check if this is a valid git repo with --is-inside-work-tree
             try {
                 launchCommand("rev-parse", "--is-inside-work-tree");
+            } catch (Exception ex) {
+                ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns true if this workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
+        if (checkParentDirectories) {
+            return hasGitRepo();
+        }
+        if (hasGitRepo(".git")) {
+            // Check if this is a valid git repo with --resolve-git-dir
+            try {
+                launchCommand("rev-parse", "--resolve-git-dir",
+                        workspace.getAbsolutePath() + File.separator + ".git");
             } catch (Exception ex) {
                 ex.printStackTrace(listener.error("Workspace has a .git repository, but it appears to be corrupt."));
                 return false;
@@ -1821,7 +1873,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return Files.createTempFile(prefix, suffix).toFile();
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
-        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
         return Files.createTempFile(prefix, suffix, fileAttribute).toFile();
     }
 
@@ -1887,7 +1939,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return createTempFileInSystemDir(prefix, suffix);
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
-        FileAttribute fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+        FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
         return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute).toFile();
     }
 
@@ -2060,6 +2112,177 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
+        justification = "Path operations below intentionally use absolute '/usr/bin/chcon' and '/sys/fs/selinux/enforce' and '/proc/self/attr/current' at this time (as delivered in relevant popular Linux distros)"
+        )
+    private Boolean fixSELinuxLabel(File key, String label) {
+        // returning false means chcon was tried and failed,
+        // maybe caller needs to retry with other logic
+        // true means all ok, including nothing needs to be done
+        if (!launcher.isUnix()) return true;
+
+        // JENKINS-64913: SELinux Enforced mode forbids SSH client to read
+        // "untrusted" key files.
+        // Check that tools exist and then if SELinux subsystem is activated
+        // Otherwise calling the tools just pollutes build log with errors
+        if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
+            // SELinux may actually forbid us to read system paths, so
+            // there are a couple of ways to try checking if it is enabled
+            // (whether this run needs to worry about security labels) and
+            // we genuinely do not care if we failed to probe those points
+
+            // Keep track which "clues" indicate that SELinux currently is
+            // a force that should be reckoned with, on this host now:
+            Boolean clue_proc = false;
+            Boolean clue_sysfs = false;
+            //Boolean clue_ls = false;
+
+            try {
+                // A process should always have rights to inspect itself, but
+                // on some systems even this read returns "Invalid argument"
+                if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
+                    BufferedReader br = Files.newBufferedReader(
+                        Paths.get("/proc/self/attr/current"),
+                        Charset.forName("UTF-8"));
+                    String s;
+                    try {
+                        s = br.readLine();
+                    } catch (Throwable t) {
+                        br.close();
+                        throw t;
+                    }
+                    br.close();
+                    if ("unconfined".equals(s)) {
+                        return true;
+                    }
+                    if ("kernel".equals(s)) {
+                        return true;
+                    }
+                    if (s.contains(":")) {
+                        // Note that SELinux may be enabled but not enforcing,
+                        // if we can check for that - we bail below
+                        clue_proc = true;
+                    }
+                }
+            } catch (SecurityException e) {
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+
+            try {
+                if (!Files.isDirectory(Paths.get("/sys/fs/selinux"))) {
+                    // Assuming that lack of rights to read this is an
+                    // exception caught below, not a false return here?
+                    return true;
+                }
+
+                if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
+                    BufferedReader br = Files.newBufferedReader(
+                        Paths.get("/sys/fs/selinux/enforce"),
+                        Charset.forName("UTF-8"));
+                    String s;
+                    try {
+                        s = br.readLine();
+                    } catch (Throwable t) {
+                        br.close();
+                        throw t;
+                    }
+                    br.close();
+                    if ("0".equals(s)) {
+                        // Subsystem exists, but told to not get into way at the moment
+                        return true;
+                    }
+                    if ("1".equals(s)) {
+                        clue_sysfs = true;
+                    }
+                }
+            } catch (SecurityException e) {
+            } catch (FileNotFoundException e) {
+            } catch (IOException e) {
+            }
+
+            // If we are here, there were no clear clues about SELinux *not*
+            // being a possible problem for the current run. We might want
+            // to check `ls -Z` output for success (flag known) and for the
+            // label data in it: using a filesystem without labels (applied
+            // or supported) would get complaints from 'chcon' trying to fix
+            // just a component of the label below. Unfortunately, different
+            // toolkits (GNU/busybox/...) and OSes vary in outputs of that.
+
+            // Here we assume a SELinux capable system if the tool exists,
+            // and no clear indications were seen that the security subsystem
+            // is currently disarmed, so label the key file for SSH to use.
+            // (Can complain if it is unlabeled.)
+            // TOTHINK: Should this be further riddled with sanity checks
+            // (uname, PATH leading to "chcon", etc)?
+
+            if (clue_proc) {
+                listener.getLogger().println("[INFO] Currently running in a labeled security context");
+            }
+
+            if (clue_sysfs) {
+                listener.getLogger().println("[INFO] Currently SELinux is 'enforcing' on the host");
+            }
+
+            if (!clue_sysfs && !clue_proc) { // && !clue_ls
+                listener.getLogger().println("[INFO] SELinux is present on the host " +
+                    "and we could not confirm that it does not apply actively: " +
+                    "will try to relabel temporary files now; this may complain " +
+                    "if context labeling not applicable after all");
+            }
+
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            args.add("/usr/bin/chcon");
+            args.add("--type=" + label);
+            args.add(key.getPath());
+            Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray());
+            int status = -1;
+            String stdout = "";
+            String stderr = "";
+            String command = StringUtils.join(args.toCommandArray(), " ");
+
+            try {
+                // JENKINS-13356: capture stdout and stderr separately
+                ByteArrayOutputStream stdoutStream = new ByteArrayOutputStream();
+                ByteArrayOutputStream stderrStream = new ByteArrayOutputStream();
+
+                p.stdout(stdoutStream).stderr(stderrStream);
+                listener.getLogger().println(" > " + command);
+                // Should be much faster than 1 min :)
+                status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
+
+                stdout = stdoutStream.toString(encoding);
+                stderr = stderrStream.toString(encoding);
+            } catch (Throwable e) {
+                /* Simple erroneous non-zero exit code does not get here.
+                 * True exceptions are better handled (reported) ASAP, without
+                 * caching into failureClues like the noisy log further below.
+                 */
+                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e.toString());
+                if (status <= 0) { status = 126; } // cause the message and false return below
+            }
+            if (status > 0) {
+                failureClues.put(Instant.now(),
+                    "[WARNING] Failed (" + status + ") performing chcon helper command for SELinux:\n >>> " + command + "\n" +
+                    (stdout.equals("") ? "" : ( "=== STDOUT:\n" + stdout + "\n====\n" )) +
+                    (stderr.equals("") ? "" : ( "=== STDERR:\n" + stderr + "\n====\n" )) +
+                    "IMPACT: if SELinux is enabled, access to temporary key file may be denied for git+ssh later");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void reportFailureClues() {
+        if (!failureClues.isEmpty()) {
+            listener.getLogger().println("ERROR: Git command failed, and previous operations logged the following error details:");
+            for (Map.Entry<Instant, String> entry : failureClues.entrySet()) {
+                listener.getLogger().println("[" + entry.getKey().toString() + "]" + entry.getValue() + "\n");
+            }
+            failureClues = new TreeMap(); // Flush to collect new errors and not report twice
+        }
+    }
+
     private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
         File key = createTempFile("ssh", ".key");
         try (PrintWriter w = new PrintWriter(key, encoding)) {
@@ -2070,6 +2293,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         if (launcher.isUnix()) {
             new FilePath(key).chmod(0400);
+            fixSELinuxLabel(key, "ssh_home_t");
         } else {
             fixSshKeyOnWindows(key);
         }
@@ -2137,6 +2361,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("cat " + unixArgEncodeFileName(passphrase.getAbsolutePath()));
         }
         ssh.setExecutable(true, true);
+        // fixSELinuxLabel(ssh, "ssh_exec_t");
         return ssh;
     }
 
@@ -2161,31 +2386,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("esac");
         }
         askpass.setExecutable(true, true);
+        // fixSELinuxLabel(askpass, "ssh_exec_t");
         return askpass;
     }
 
     private File createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
+        String charset = computeCredentialFileCharset("passphrase", "UTF-8");
         File passphraseFile = createTempFile("phrase", ".txt");
-        try (PrintWriter w = new PrintWriter(passphraseFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
             w.println(Secret.toString(sshUser.getPassphrase()));
         }
         return passphraseFile;
     }
 
     private File createUsernameFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        String charset = computeCredentialFileCharset("name", "UTF-8");
         File usernameFile = createTempFile("username", ".txt");
-        try (PrintWriter w = new PrintWriter(usernameFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(usernameFile, charset)) {
             w.println(userPass.getUsername());
         }
         return usernameFile;
     }
 
     private File createPasswordFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        String charset = computeCredentialFileCharset("password", "UTF-8");
         File passwordFile = createTempFile("password", ".txt");
-        try (PrintWriter w = new PrintWriter(passwordFile, "UTF-8")) {
+        try (PrintWriter w = new PrintWriter(passwordFile, charset)) {
             w.println(Secret.toString(userPass.getPassword()));
         }
         return passwordFile;
+    }
+
+    private String computeCredentialFileCharset(String context, String defaultValue) {
+        String property = CliGitAPIImpl.class.getName() + ".user." + context + ".file.encoding";
+        if (isZos() && System.getProperty(property) != null) {
+            String charset = Charset.forName(System.getProperty(property)).toString();
+	    listener.getLogger().println("Using " + context + " charset '" + charset + "'");
+            return charset;
+        }
+        return defaultValue;
     }
 
     private String getPathToExe(String userGitExe) {
@@ -2240,8 +2479,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return new File(parentPath + "\\ssh.exe");
     }
-
-    /* package */ File getSSHExecutable() {
+    /**
+     * Returns an executable file of ssh installed in Windows
+     *
+     * @return File The ssh executable file {@link java.io.File}
+     **/
+    public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
         if (sshexe != null && sshexe.exists()) {
@@ -2338,10 +2581,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String fromLocation = ssh.toString();
         String toLocation = ssh_copy.toString();
         //Copying ssh file
+        // fixSELinuxLabel(ssh, "ssh_exec_t");
         try {
             new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
             isCopied = true;
             ssh_copy.setExecutable(true,true);
+            // fixSELinuxLabel(ssh_copy, "ssh_exec_t");
             //Deleting original file
             deleteTempFile(ssh);
         }
@@ -2440,6 +2685,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (GitException | InterruptedException e) {
             throw e;
         } catch (Throwable e) {
+            reportFailureClues();
             throw new GitException("Error performing git command: " + command, e);
         }
     }
@@ -2666,7 +2912,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
                 return this;
             }
 
@@ -3571,7 +3817,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          */
         String[] output = result.split("[\\n\\r]+");
         if (output.length == 0 || (output.length == 1 && output[0].isEmpty())) {
-            return Collections.EMPTY_SET;
+            return Collections.emptySet();
         }
         Pattern pattern = Pattern.compile("(\\p{XDigit}{40})\\s+refs/tags/([^^]+)(\\^\\{\\})?");
         Map<String, ObjectId> tagMap = new HashMap<>();
@@ -3603,4 +3849,5 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return tags;
     }
+
 }

@@ -43,25 +43,15 @@ import org.jvnet.hudson.test.JenkinsRule;
  */
 public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
 
-    private static boolean initialized = false;
-
     private static final Logger LOGGER = Logger.getLogger(GitClientSampleRepoRule.class.getName());
 
     public void git(String... cmds) throws Exception {
         run("git", cmds);
     }
 
-    private static void checkGlobalConfig() throws Exception {
-        if (initialized) return;
-        initialized = true;
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-    }
-
     @Override
     public void init() throws Exception {
         run(true, tmp.getRoot(), "git", "version");
-        checkGlobalConfig();
         git("init");
         write("file", "");
         git("add", "file");

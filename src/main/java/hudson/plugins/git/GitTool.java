@@ -17,6 +17,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,7 +78,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
      * @return default installation
      */
     public static GitTool getDefaultInstallation() {
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.get();
         DescriptorImpl gitTools = jenkinsInstance.getDescriptorByType(GitTool.DescriptorImpl.class);
         GitTool tool = gitTools.getInstallation(GitTool.DEFAULT);
         if (tool != null) {
@@ -94,16 +95,16 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     public GitTool forNode(Node node, TaskListener log) throws IOException, InterruptedException {
-        return new GitTool(getName(), translateFor(node, log), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
     public GitTool forEnvironment(EnvVars environment) {
-        return new GitTool(getName(), environment.expand(getHome()), Collections.<ToolProperty<?>>emptyList());
+        return new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
     }
 
     @Override
     public DescriptorImpl getDescriptor() {
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance == null) {
             /* Throw AssertionError exception to match behavior of Jenkins.getDescriptorOrDie */
             throw new AssertionError("No Jenkins instance");
@@ -115,7 +116,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     public static void onLoaded() {
         //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
 
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.get();
         DescriptorImpl descriptor = (DescriptorImpl) jenkinsInstance.getDescriptor(GitTool.class);
         GitTool[] installations = getInstallations(descriptor);
 
@@ -125,7 +126,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         String defaultGitExe = isWindows() ? "git.exe" : "git";
-        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.<ToolProperty<?>>emptyList());
+        GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.emptyList());
         descriptor.setInstallations(new GitTool[] { tool });
         descriptor.save();
     }
@@ -151,8 +152,9 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return true;
         }
 
+        @RequirePOST
         public FormValidation doCheckHome(@QueryParameter File value) {
-            Jenkins.getInstance().checkPermission(Jenkins.ADMINISTER);
+            Jenkins.get().checkPermission(Jenkins.ADMINISTER);
             String path = value.getPath();
 
             return FormValidation.validateExecutable(path);
@@ -184,7 +186,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         @SuppressWarnings("unchecked")
         public List<ToolDescriptor<? extends GitTool>> getApplicableDescriptors() {
             List<ToolDescriptor<? extends GitTool>> r = new ArrayList<>();
-            Jenkins jenkinsInstance = Jenkins.getInstance();
+            Jenkins jenkinsInstance = Jenkins.get();
             for (ToolDescriptor<?> td : jenkinsInstance.<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
                 if (GitTool.class.isAssignableFrom(td.clazz)) { // This checks cast is allowed
                     r.add((ToolDescriptor<? extends GitTool>)td); // This is the unchecked cast

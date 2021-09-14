@@ -27,7 +27,6 @@ public class CliGitAPIImplTest extends GitAPITestCase {
     private void setCliGitDefaults() throws Exception {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
-            gitCmd.setDefaults();
         }
         cliGitDefaultsSet = true;
     }
@@ -72,7 +71,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public void doTest(String versionOutput, VersionTest[] versions) {
+    public void assertVersionOutput(String versionOutput, VersionTest[] versions) {
         setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
@@ -84,8 +83,18 @@ public class CliGitAPIImplTest extends GitAPITestCase {
                         version.minor,
                         version.rev,
                         version.bugfix));
+                assertTrue("Failed " + msg, git.isCliGitVerAtLeast(
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             } else {
                 assertFalse("Passed " + msg, git.isAtLeastVersion(
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
+                assertFalse("Passed " + msg, git.isCliGitVerAtLeast(
                         version.major,
                         version.minor,
                         version.rev,

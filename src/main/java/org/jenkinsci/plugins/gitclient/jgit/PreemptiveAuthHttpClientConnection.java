@@ -59,7 +59,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.SystemDefaultCredentialsProvider;
@@ -70,6 +69,8 @@ import org.eclipse.jgit.transport.http.apache.TemporaryBufferEntity;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.eclipse.jgit.util.TemporaryBuffer;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -127,7 +128,8 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
 
     private Boolean followRedirects;
 
-    private X509HostnameVerifier hostnameverifier;
+    @Deprecated
+    private org.apache.http.conn.ssl.X509HostnameVerifier hostnameverifier;
 
     SSLContext ctx;
 
@@ -141,6 +143,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this(credentialsProvider, urlStr, proxy, null);
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in interface definition")
     public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy, final HttpClient cl) {
         this.credentialsProvider = credentialsProvider;
         this.urlStr = urlStr;
@@ -434,7 +437,8 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this.hostnameverifier = new X509HostnameVerifierImpl(hostnameverifier);
     }
 
-    private static class X509HostnameVerifierImpl implements X509HostnameVerifier {
+    @Deprecated
+    private static class X509HostnameVerifierImpl implements org.apache.http.conn.ssl.X509HostnameVerifier {
 
         private final HostnameVerifier hostnameverifier;
 

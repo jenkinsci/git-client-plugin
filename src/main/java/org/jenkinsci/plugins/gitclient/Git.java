@@ -9,6 +9,8 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -49,7 +51,9 @@ public class Git implements Serializable {
      */
     public Git(TaskListener listener, EnvVars env) {
         this.listener = listener;
-        this.env = env;
+        /* Defensive copy to avoid risk that caller might modify EnvVars after
+         * passing it to this constructor. */
+        this.env = env == null ? null : new EnvVars(env);
     }
 
     /**
@@ -90,6 +94,7 @@ public class Git implements Serializable {
      * @param repository {@link hudson.FilePath} of the git repository.
      * @return a {@link org.jenkinsci.plugins.gitclient.Git} object for repository access
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Published API in Git")
     public Git in(FilePath repository) {
         this.repository = repository;
         return this;
@@ -119,7 +124,7 @@ public class Git implements Serializable {
     public GitClient getClient() throws IOException, InterruptedException {
         jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable();
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;

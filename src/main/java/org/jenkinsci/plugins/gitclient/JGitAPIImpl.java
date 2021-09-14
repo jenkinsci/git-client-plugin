@@ -29,7 +29,6 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +77,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
-import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
@@ -93,8 +91,8 @@ import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
-import org.eclipse.jgit.transport.BasePackFetchConnection;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.HttpTransport;
@@ -124,8 +122,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.plugins.git.GitObject;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -200,6 +196,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in JGitAPIImpl interface definition")
     public synchronized void setCredentialsProvider(CredentialsProvider prov) {
         this.provider = prov;
     }
@@ -278,7 +275,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CheckoutCommand sparseCheckoutPaths(List<String> sparseCheckoutPaths) {
-                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.<String>emptyList() : sparseCheckoutPaths;
+                this.sparseCheckoutPaths = sparseCheckoutPaths == null ? Collections.emptyList() : sparseCheckoutPaths;
                 return this;
             }
 
@@ -801,7 +798,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
             throws GitException, InterruptedException {
         Map<String, String> references = new HashMap<>();
@@ -813,48 +809,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return references;
         }
         try (Repository repo = openDummyRepository()) {
-            try {
-                // HACK HACK HACK
-                // The symref info is advertised as a capability starting from git 1.8.5
-                // So all we need to do is ask JGit to fetch the refs and then (because JGit adds all capabilities
-                // into a Set) we iterate the resulting set to find any that matching symref=$symref:$realref
-                // of course JGit does not expose a way to iterate the capabilities, so instead we have to hack
-                // and peek inside
-                // TODO if JGit implement https://bugs.eclipse.org/bugs/show_bug.cgi?id=514052 we should switch to that
-                Class<?> basePackConnection = BasePackFetchConnection.class.getSuperclass();
-                Field remoteCapablities = basePackConnection.getDeclaredField("remoteCapablities");
-                remoteCapablities.setAccessible(true);
-                try (Transport transport = Transport.open(repo, url)) {
-                    transport.setCredentialsProvider(getProvider());
-                    try (FetchConnection fc = transport.openFetch()) {
-                        fc.getRefs();
-                        if (fc instanceof BasePackFetchConnection) {
-                            Object o = remoteCapablities.get(fc);
-                            if (o instanceof Set) {
-                                boolean hackWorked = false;
-                                @SuppressWarnings("unchecked") /* compile-time type erasure causes this */
-                                Set<String> capabilities = (Set<String>)o;
-                                for (String capability: capabilities) {
-                                    if (capability.startsWith("symref=")) {
-                                        hackWorked = true;
-                                        int index = capability.indexOf(':', 7);
-                                        if (index != -1) {
-                                            references.put(capability.substring(7, index), capability.substring(index+1));
-                                        }
-                                    }
-                                }
-                                if (hackWorked) {
-                                    return references;
-                                }
-                            }
-                        }
-                    }
-                    // ignore this is a total hack
+            LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
+            lsRemote.setRemote(url);
+            lsRemote.setCredentialsProvider(getProvider());
+            Collection<Ref> refs = lsRemote.call();
+            for (final Ref r : refs) {
+                if (!r.isSymbolic()) { // Skip reference if it is not symbolic
+                    continue;
                 }
-            } catch (IllegalAccessException | NoSuchFieldException e) {
-                // ignore, caller will just have to try it the Git 1.8.4 way, we'll return an empty map
+                if (regexPattern == null) {
+                    references.put(r.getName(), r.getTarget().getName());
+                } else if (r.getName().matches(regexPattern)) {
+                    references.put(r.getName(), r.getTarget().getName());
+                } // else do not return symbolic references with names that do not match pattern
             }
-        } catch (IOException | URISyntaxException e) {
+        } catch (GitAPIException | IOException e) {
             throw new GitException(e);
         }
         return references;
@@ -1745,7 +1714,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * hasGitRepo.
+     * Returns true if the current workspace has a git repository.
+     * Does not search parent directories for a repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -1756,6 +1726,48 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return repo.getObjectDatabase().exists();
         } catch (GitException e) {
             return false;
+        }
+    }
+
+    /**
+     * Returns true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upwards for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     */
+    @Override
+    public boolean hasGitRepo(boolean checkParentDirectories) throws GitException {
+        if (!checkParentDirectories) { // JGit hasGitRepo() does not check parent directories
+            return hasGitRepo();
+        }
+        if (hasGitRepo(".git")) {
+            try (Repository repo = getRepository()) {
+                if (repo.getObjectDatabase().exists()) {
+                    return true;
+                }
+                /* Emulate command line git searching up the file system hierarchy */
+                FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder();
+                FileRepositoryBuilder parentRepoBuilder = repositoryBuilder.findGitDir(workspace);
+                return parentRepoBuilder.getGitDir() != null;
+            } catch (GitException e) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasGitRepo(String gitDirectory) throws GitException {
+        try {
+            File dotGit = new File(workspace, gitDirectory);
+            return dotGit.exists();
+        } catch (SecurityException ex) {
+            throw new GitException("Security error when trying to check for .git. Are you sure you have correct permissions?",
+                                   ex);
+        } catch (Exception e) {
+            throw new GitException("Couldn't check for .git", e);
         }
     }
 
@@ -2254,7 +2266,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     update.call();
                     if (recursive) {
                         for (JGitAPIImpl sub : submodules()) {
-                            sub.submoduleUpdate().recursive(recursive).execute();
+                            /* Intentionally using the deprecated method because the replacement method is not serializable. */
+                            sub.submoduleUpdate(recursive);
                         }
                     }
                 } catch (IOException | GitAPIException e) {
@@ -2441,7 +2454,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Adds all the refs as start commits.
      */
     private void markAllRefs(RevWalk walk) throws IOException {
-        markRefs(walk, Predicates.<Ref>alwaysTrue());
+        markRefs(walk, Predicates.alwaysTrue());
     }
 
     /**

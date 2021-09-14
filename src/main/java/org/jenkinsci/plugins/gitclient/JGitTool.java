@@ -31,7 +31,7 @@ public class JGitTool extends GitTool {
      * Constructor for JGitTool.
      */
     public JGitTool() {
-        this(Collections.<ToolProperty<?>>emptyList());
+        this(Collections.emptyList());
     }
 
 
