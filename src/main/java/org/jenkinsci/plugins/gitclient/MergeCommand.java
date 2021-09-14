@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.util.Locale;
 import org.eclipse.jgit.lib.ObjectId;
 
 /**
@@ -10,10 +11,10 @@ import org.eclipse.jgit.lib.ObjectId;
 public interface MergeCommand extends GitCommand {
 
     /**
-     * setRevisionToMerge.
+     * Sets the revision to include in the merge.
      *
-     * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @param rev revision to include in the merge
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setRevisionToMerge(ObjectId rev);
 
@@ -21,7 +22,7 @@ public interface MergeCommand extends GitCommand {
      * setMessage.
      *
      * @param message the desired comment for the merge command.
-     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setMessage(String message);
 
@@ -29,16 +30,16 @@ public interface MergeCommand extends GitCommand {
      * setStrategy.
      *
      * @param strategy a {@link org.jenkinsci.plugins.gitclient.MergeCommand.Strategy} object.
-     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setStrategy(Strategy strategy);
 
-    public enum Strategy {
+    enum Strategy {
         DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE, RECURSIVE_THEIRS;
 
         @Override
         public String toString() {
-            return name().toLowerCase();
+            return name().toLowerCase(Locale.ENGLISH); // Avoid Turkish 'i' conversion
         }
     }
 
@@ -52,14 +53,14 @@ public interface MergeCommand extends GitCommand {
      */
     MergeCommand setGitPluginFastForwardMode(GitPluginFastForwardMode fastForwardMode);
 
-    public enum GitPluginFastForwardMode {
+    enum GitPluginFastForwardMode {
         FF,        // Default option, fast forward update the branch pointer only
         FF_ONLY,   // Create a merge commit even for a fast forward
         NO_FF;     // Abort unless the merge is a fast forward
 
         @Override
         public String toString() {
-            return "--"+name().toLowerCase().replace("_","-");
+            return "--"+name().toLowerCase(Locale.ENGLISH).replace("_","-"); // Avoid Turkish 'i' issue
         }
     }
 
@@ -67,7 +68,7 @@ public interface MergeCommand extends GitCommand {
      * setSquash
      *
      * @param squash - whether to squash commits or not
-     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setSquash(boolean squash);
 
@@ -75,7 +76,7 @@ public interface MergeCommand extends GitCommand {
      * setCommit
      *
      * @param commit - whether or not to commit the result after a successful merge.
-     * @return a {@link org.jenkinsci.plugins.gitclient.MergeCommand} object.
+     * @return MergeCommand to be used in fluent calls
      */
     MergeCommand setCommit(boolean commit);
 }

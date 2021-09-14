@@ -13,8 +13,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 
 public class CredentialsProviderImplTest {
 
@@ -23,9 +21,6 @@ public class CredentialsProviderImplTest {
     private final String USER_NAME = "user-name";
     private final URIish uri;
     private final String SECRET_VALUE = "secret-credentials-provider-impl-test";
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     public CredentialsProviderImplTest() throws URISyntaxException {
         uri = new URIish("git://github.com/jenkinsci/git-client-plugin.git");
@@ -87,16 +82,20 @@ public class CredentialsProviderImplTest {
     public void testSpecialStringTypeThrowsException() {
         CredentialItem.StringType specialStringType = new CredentialItem.StringType("Bad Password: ", false);
         assertFalse(provider.supports(specialStringType));
-        exception.expect(UnsupportedCredentialItem.class);
-        assertTrue(provider.get(uri, specialStringType));
+        assertThrows(UnsupportedCredentialItem.class,
+                     () -> {
+                         provider.get(uri, specialStringType);
+                     });
     }
 
     @Test
     public void testThrowsUnsupportedOperationException() {
         CredentialItem.InformationalMessage message = new CredentialItem.InformationalMessage("Some info");
         assertFalse(provider.supports(message));
-        exception.expect(UnsupportedCredentialItem.class);
-        assertTrue(provider.get(uri, message));
+        assertThrows(UnsupportedCredentialItem.class,
+                     () -> {
+                         provider.get(uri, message);
+                     });
     }
 
     @Test

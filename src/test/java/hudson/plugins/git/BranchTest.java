@@ -5,8 +5,8 @@ import org.eclipse.jgit.lib.ObjectIdRef;
 import org.eclipse.jgit.lib.Ref;
 
 import org.junit.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -20,9 +20,11 @@ public class BranchTest {
     private final Ref branchRef;
     private final Branch branchFromRef;
 
+    private static final String REMOTE_BRANCH_NAME = "origin/master";
+
     public BranchTest() {
         this.branchSHA1 = "fa71f704f9b90fa1f857d1623f3fe33fa2277ca9";
-        this.branchName = "origin/master";
+        this.branchName = REMOTE_BRANCH_NAME;
         this.branchHead = ObjectId.fromString(branchSHA1);
         this.refPrefix = "refs/remotes/";
         this.branchRef = new ObjectIdRef.PeeledNonTag(Ref.Storage.NEW, refPrefix + branchName, branchHead);

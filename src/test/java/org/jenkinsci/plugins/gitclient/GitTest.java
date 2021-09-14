@@ -1,20 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.EnvVars;
 import hudson.FilePath;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import hudson.model.TaskListener;
 import org.eclipse.jgit.lib.ObjectId;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import org.hamcrest.core.IsInstanceOf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

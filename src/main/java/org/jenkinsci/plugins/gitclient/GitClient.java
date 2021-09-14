@@ -17,7 +17,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 
-import javax.annotation.CheckForNull;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
@@ -120,6 +120,7 @@ public interface GitClient {
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
+    @Deprecated
     Repository getRepository() throws GitException;
 
     /**
@@ -146,7 +147,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public void init() throws GitException, InterruptedException;
+    void init() throws GitException, InterruptedException;
 
     /**
      * add.
@@ -178,16 +179,29 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException;
 
     /**
-     * hasGitRepo.
+     * Return true if the current workspace has a git repository.
      *
      * @return true if this workspace has a git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     boolean hasGitRepo() throws GitException, InterruptedException;
+
+    /**
+     * Return true if the current workspace has a git repository.
+     * If checkParentDirectories is true, searches parent directories.
+     * If checkParentDirectories is false, checks workspace directory only.
+     *
+     * @param checkParentDirectories if true, search upward for a git repository
+     * @return true if this workspace has a git repository
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException;
 
     /**
      * isCommitInRepo.
@@ -238,6 +252,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void checkout(String ref) throws GitException, InterruptedException;
 
     /**
@@ -252,6 +267,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void checkout(String ref, String branch) throws GitException, InterruptedException;
 
     /**
@@ -322,6 +338,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException;
 
     /**
@@ -333,6 +350,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException;
 
     /**
@@ -344,6 +362,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException;
 
     /**
@@ -362,6 +381,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void push(String remoteName, String refspec) throws GitException, InterruptedException;
 
     /**
@@ -373,6 +393,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void push(URIish url, String refspec) throws GitException, InterruptedException;
 
     /**
@@ -391,6 +412,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void merge(ObjectId rev) throws GitException, InterruptedException;
 
     /**
@@ -729,6 +751,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive)  throws GitException, InterruptedException;
 
     /**
@@ -742,6 +765,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException;
 
     /**
@@ -754,6 +778,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, boolean remoteTracking)  throws GitException, InterruptedException;
     /**
      * Run submodule update optionally recursively on all submodules, optionally with remoteTracking, with a specific
@@ -767,6 +792,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)  throws GitException, InterruptedException;
 
     /**
@@ -827,6 +853,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
+    @Deprecated
     void changelog(String revFrom, String revTo, OutputStream os) throws GitException, InterruptedException;
 
     /**
@@ -876,14 +903,23 @@ public interface GitClient {
     void addNote(String note, String namespace ) throws GitException, InterruptedException;
 
     /**
-     * showRevision.
+     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * can be parsed by GitChangeLogParser.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * For merge commit, this method reports one diff per each parent. This makes this method
+     * behave differently from {@link #changelog()}.
      *
      * @param r a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return a {@link java.util.List} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    public List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
+    List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
      * Given a Revision, show it as if it were an entry from git whatchanged, so that it
@@ -897,9 +933,9 @@ public interface GitClient {
      * For merge commit, this method reports one diff per each parent. This makes this method
      * behave differently from {@link #changelog()}.
      *
-     * @return The git show output, in <code>raw</code> format.
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -921,10 +957,10 @@ public interface GitClient {
      * For merge commit, this method reports one diff per each parent. This makes this method
      * behave differently from {@link #changelog()}.
      *
-     * @return The git show output, in <code>raw</code> format.
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param useRawOutput a {java.lang.Boolean} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */

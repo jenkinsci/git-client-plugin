@@ -36,9 +36,9 @@ import io.jenkins.plugins.casc.model.Mapping;
 import io.jenkins.plugins.casc.model.Sequence;
 import java.util.ArrayList;
 import java.util.List;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.jvnet.hudson.test.JenkinsRule;
 

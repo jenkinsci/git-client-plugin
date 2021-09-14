@@ -23,14 +23,18 @@ import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
@@ -67,9 +71,6 @@ public class PushTest {
     private ObjectId workingCommit;
 
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
-    @Rule
     public TestName name = new TestName();
 
     @ClassRule
@@ -90,9 +91,13 @@ public class PushTest {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
-            thrown.expect(expectedException);
+            assertThrows(expectedException,
+                         () -> {
+                             workingGitClient.push().to(bareURI).ref(refSpec).execute();
+                         });
+        } else {
+            workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
-        workingGitClient.push().to(bareURI).ref(refSpec).execute();
     }
 
     @Test
@@ -100,9 +105,13 @@ public class PushTest {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
-            thrown.expect(expectedException);
+            assertThrows(expectedException,
+                         () -> {
+                             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
+                         });
+        } else {
+            workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
-        workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
     }
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
@@ -168,6 +177,9 @@ public class PushTest {
         ObjectId workingHead = workingGitClient.getHeadRev(workingRepo.getAbsolutePath(), branchName);
         ObjectId bareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
         assertEquals("Initial checkout of " + branchName + " has different HEAD than bare repo", bareHead, workingHead);
+        CliGitCommand gitCmd = new CliGitCommand(workingGitClient);
+        gitCmd.run("config", "user.name", "Vojtěch PushTest working repo Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
     }
 
     @After
@@ -183,10 +195,6 @@ public class PushTest {
 
     @BeforeClass
     public static void createBareRepository() throws Exception {
-        /* Command line git commands fail unless certain default values are set */
-        CliGitCommand gitCmd = new CliGitCommand(null);
-        gitCmd.setDefaults();
-
         /* Randomly choose git implementation to create bare repository */
         final String[] gitImplementations = {"git", "jgit"};
         Random random = new Random();
@@ -207,6 +215,9 @@ public class PushTest {
                 .url(bareRepo.getAbsolutePath())
                 .repositoryName("origin")
                 .execute();
+        CliGitCommand gitCmd = new CliGitCommand(cloneGitClient);
+        gitCmd.run("config", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */

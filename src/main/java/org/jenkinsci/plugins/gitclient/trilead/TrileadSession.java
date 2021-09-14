@@ -4,6 +4,8 @@ import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.Session;
 import org.eclipse.jgit.transport.RemoteSession;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,55 +25,67 @@ public class TrileadSession implements RemoteSession {
      *
      * @param con a {@link com.trilead.ssh2.Connection} object for this session's connection.
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in interface definition")
     public TrileadSession(Connection con) {
         this.con = con;
     }
 
     /** {@inheritDoc} */
+    @Override
     public Process exec(String commandName, final int timeout) throws IOException {
-        final Session s = con.openSession();
-        s.execCommand(commandName);
-
-        return new Process() {
-            @Override
-            public OutputStream getOutputStream() {
-                return s.getStdin();
-            }
-
-            @Override
-            public InputStream getInputStream() {
-                return s.getStdout();
-            }
-
-            @Override
-            public InputStream getErrorStream() {
-                return s.getStderr();
-            }
-
-            @Override
-            public int waitFor() throws InterruptedException {
-                int r = s.waitForCondition(EXIT_STATUS, timeout * 1000);
-                if ((r&EXIT_STATUS)!=0)
-                    return exitValue();
-
-                // not sure what exception jgit expects
-                throw new InterruptedException("Timed out: "+r);
-            }
-
-            @Override
-            public int exitValue() {
-                Integer i = s.getExitStatus();
-                if (i==null)    throw new IllegalThreadStateException(); // hasn't finished
-                return i;
-            }
-
-            @Override
-            public void destroy() {
-                s.close();
-            }
-        };
+        return new ProcessImpl(con, commandName, timeout);
     }
 
+    private static class ProcessImpl extends Process {
+
+        private final int timeout;
+        private final Session s;
+
+        public ProcessImpl(Connection con, String commandName, final int timeout) throws IOException {
+            this.timeout = timeout;
+            s = con.openSession();
+            s.execCommand(commandName);
+        }
+
+        @Override
+        public OutputStream getOutputStream() {
+            return s.getStdin();
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            return s.getStdout();
+        }
+
+        @Override
+        public InputStream getErrorStream() {
+            return s.getStderr();
+        }
+
+        @Override
+        public int waitFor() throws InterruptedException {
+            int r = s.waitForCondition(EXIT_STATUS, timeout * 1000L);
+            if ((r&EXIT_STATUS)!=0)
+                return exitValue();
+
+            // not sure what exception jgit expects
+            throw new InterruptedException("Timed out: " + r);
+        }
+
+        @Override
+        public int exitValue() {
+            Integer i = s.getExitStatus();
+            if (i==null)    throw new IllegalThreadStateException(); // hasn't finished
+            return i;
+        }
+
+        @Override
+        public void destroy() {
+            s.close();
+        }
+    }
+
+    @Override
     public void disconnect() {
         con.close();
     }

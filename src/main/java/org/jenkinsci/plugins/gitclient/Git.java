@@ -9,11 +9,13 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -32,7 +34,6 @@ import java.lang.reflect.Constructor;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class Git implements Serializable {
-    @Nullable
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
@@ -50,7 +51,9 @@ public class Git implements Serializable {
      */
     public Git(TaskListener listener, EnvVars env) {
         this.listener = listener;
-        this.env = env;
+        /* Defensive copy to avoid risk that caller might modify EnvVars after
+         * passing it to this constructor. */
+        this.env = env == null ? null : new EnvVars(env);
     }
 
     /**
@@ -91,6 +94,7 @@ public class Git implements Serializable {
      * @param repository {@link hudson.FilePath} of the git repository.
      * @return a {@link org.jenkinsci.plugins.gitclient.Git} object for repository access
      */
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Published API in Git")
     public Git in(FilePath repository) {
         this.repository = repository;
         return this;
@@ -120,7 +124,7 @@ public class Git implements Serializable {
     public GitClient getClient() throws IOException, InterruptedException {
         jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable();
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
-        Jenkins jenkinsInstance = Jenkins.getInstance();
+        Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance != null && git != null)
             git.setProxy(jenkinsInstance.proxy);
         return git;
@@ -131,7 +135,7 @@ public class Git implements Serializable {
             final Class<?> it = Class.forName(className);
             final Constructor<?> constructor = it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
             return (GitClient)constructor.newInstance(exe, env, f, listener);
-        } catch (Exception e) {
+        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
             throw new RuntimeException("Unable to initialize mock GitClient " + className, e);
         }
     }
