@@ -969,7 +969,7 @@ public interface GitClient {
      * just one commit that {@code to} represents.
      *
      * <p>
-     * If supressMergeCommitDiff is false, for merge commit this method reports one diff per each parent. 
+     * If suppressMergeCommitDiff is false, for merge commit this method reports one diff per each parent. 
      *
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
@@ -978,7 +978,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean supressMergeCommitDiff) throws GitException, InterruptedException;
+    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean suppressMergeCommitDiff) throws GitException, InterruptedException;
 
     /**
      * Equivalent of "git-describe --tags".

@@ -1291,10 +1291,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean supressMergeCommitDiff) throws GitException, InterruptedException {
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean suppressMergeCommitDiff) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M");
         
-        if (!supressMergeCommitDiff) {
+        if (!suppressMergeCommitDiff) {
             args.add("-m");
         }
         
