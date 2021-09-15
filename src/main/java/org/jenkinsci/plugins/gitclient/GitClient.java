@@ -956,6 +956,29 @@ public interface GitClient {
      */
     List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException, InterruptedException;
 
+    /**
+     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * can be parsed by GitChangeLogParser.
+     *
+     * <p>
+     * If useRawOutput is true, the '--raw' option will include commit file information to be passed to the
+     * GitChangeLogParser.
+     *
+     * <p>
+     * Changes are computed on the [from..to] range. If {@code from} is null, this prints
+     * just one commit that {@code to} represents.
+     *
+     * <p>
+     * If supressMergeCommitDiff is false, for merge commit this method reports one diff per each parent. 
+     *
+     * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
+     * @param useRawOutput a {java.lang.Boolean} object.
+     * @return The git whatchanged output, in <code>raw</code> format.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean supressMergeCommitDiff) throws GitException, InterruptedException;
 
     /**
      * Equivalent of "git-describe --tags".
