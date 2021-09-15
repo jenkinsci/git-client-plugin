@@ -1086,6 +1086,12 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
         assertFalse("file2 exists and should not because we didn't update to the tip of the default branch.", w.exists(subFile));
 
+        // Windows tests fail if repoPath is more than 200 characters
+        // CLI git support for longpaths on Windows is complicated
+        if (w.repoPath().length() > 200) {
+            return;
+        }
+
         // Run submodule update with remote tracking
         w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
         assertTrue("file2 does not exist and should because we updated to the tip of the default branch.", w.exists(subFile));
@@ -1350,6 +1356,12 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
         assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Windows tests fail if repoPath is more than 200 characters
+        // CLI git support for longpaths on Windows is complicated
+        if (w.repoPath().length() > 200) {
+            return;
+        }
 
         // Switch to branch1
         submoduleUpdateTimeout = 1 + random.nextInt(60 * 24);
