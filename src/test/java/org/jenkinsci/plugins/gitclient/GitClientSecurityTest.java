@@ -240,9 +240,7 @@ public class GitClientSecurityTest {
 
     private static final String[] VALID_REMOTES = {
         "https://github.com/jenkinsci/platformlabeler-plugin.git",
-        "git://github.com/jenkinsci/platformlabeler-plugin.git",
         "https://github.com/jenkinsci/archetypes.git",
-        "git://github.com/jenkinsci/archetypes.git",
         "https://github.com/jenkinsci/archetypes.git",
         "https://git.assembla.com/git-plugin.3.git",
         "https://markewaite@bitbucket.org/markewaite/jenkins-pipeline-utils.git",
