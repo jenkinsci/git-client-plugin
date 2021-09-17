@@ -23,7 +23,7 @@ public class CredentialsProviderImplTest {
     private final String SECRET_VALUE = "secret-credentials-provider-impl-test";
 
     public CredentialsProviderImplTest() throws URISyntaxException {
-        uri = new URIish("git://github.com/jenkinsci/git-client-plugin.git");
+        uri = new URIish("git://example.com/someone/somewhere.git");
     }
 
     @Before

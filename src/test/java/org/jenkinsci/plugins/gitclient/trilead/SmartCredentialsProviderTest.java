@@ -32,7 +32,7 @@ public class SmartCredentialsProviderTest {
     private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
     public SmartCredentialsProviderTest() throws URISyntaxException {
-        gitURI = new URIish("git://github.com/jenkinsci/git-client-plugin.git");
+        gitURI = new URIish("git://example.com/someone/somewhere.git");
     }
 
     @Before
