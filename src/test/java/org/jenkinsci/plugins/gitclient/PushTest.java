@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;

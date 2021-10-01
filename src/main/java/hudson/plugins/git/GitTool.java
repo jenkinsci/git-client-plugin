@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.init.Initializer;
@@ -94,7 +95,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
     }
 
-    public GitTool forNode(Node node, TaskListener log) throws IOException, InterruptedException {
+    public GitTool forNode(@NonNull Node node, TaskListener log) throws IOException, InterruptedException {
         return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
@@ -140,6 +141,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             load();
         }
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Git";

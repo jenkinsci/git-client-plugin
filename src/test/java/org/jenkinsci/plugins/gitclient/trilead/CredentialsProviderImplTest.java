@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient.trilead;
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
@@ -113,10 +114,12 @@ public class CredentialsProviderImplTest {
             this.username = username;
         }
 
+        @NonNull
         public String getDescription() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public String getId() {
             throw new UnsupportedOperationException("Do not call");
         }
@@ -125,10 +128,12 @@ public class CredentialsProviderImplTest {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public CredentialsDescriptor getDescriptor() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public String getUsername() {
             return username;
         }
