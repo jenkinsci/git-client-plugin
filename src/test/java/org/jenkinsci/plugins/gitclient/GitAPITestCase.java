@@ -1609,12 +1609,12 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteReferences_withLimitReferences() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
         references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
-        assertTrue(!references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
         for (String key : references.keySet()) {
-            assertTrue(!key.endsWith("^{}"));
+            assertFalse(key.endsWith("^{}"));
         }
     }
 
@@ -1624,9 +1624,9 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteReferences_withMatchingPattern() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
         references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
-        assertTrue(!references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         for (String key : references.keySet()) {
             assertTrue(key.startsWith("refs/tags/git-client"));
         }

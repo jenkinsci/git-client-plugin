@@ -16,7 +16,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        assertEquals(null, actual);
+        assertNull(actual);
     }
 
     @Test public void goUp_slash() throws Exception {
@@ -24,7 +24,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        assertEquals(null, actual);
+        assertNull(actual);
     }
 
     @Test public void goUp_slashSlash() throws Exception {
