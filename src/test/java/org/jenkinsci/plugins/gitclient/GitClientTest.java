@@ -305,8 +305,6 @@ public class GitClientTest {
         return name.replaceAll(" ", ".") + "@middle.earth";
     }
 
-    @Test
-    @Issue("JENKINS-29977")
     /**
      * Changelog was formatted on word boundary prior to
      * 72 characters with git client plugin 2.0+ when using CLI git.
@@ -315,6 +313,8 @@ public class GitClientTest {
      * Matching change will be included in git plugin 4.0.0
      * to retain existing truncation behavior.
      */
+    @Test
+    @Issue("JENKINS-29977")
     public void testChangelogVeryLong() throws Exception {
 
         final String gitMessage =
@@ -2179,7 +2179,7 @@ public class GitClientTest {
             assertSubmoduleStatus(cloneGitClient, true, "ntp");
         }
 
-        /**
+        /*
          * With extra -f argument, git clean removes submodules
          */
         CliGitCommand cloneRepoCmd = new CliGitCommand(cloneGitClient);
