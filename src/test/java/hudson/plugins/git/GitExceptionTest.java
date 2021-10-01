@@ -59,7 +59,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initCliImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
+    public void initCliImplThrowsGitException() throws IOException, InterruptedException {
         if (new File("/").canWrite()) { // running as root?
             return;
         }
@@ -74,7 +74,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initJGitImplThrowsGitException() throws GitAPIException, IOException, InterruptedException {
+    public void initJGitImplThrowsGitException() throws IOException, InterruptedException {
         if (new File("/").canWrite()) { // running as root?
             return;
         }
@@ -90,7 +90,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initCliImplCollisionThrowsGitException() throws GitAPIException, IOException, InterruptedException {
+    public void initCliImplCollisionThrowsGitException() throws IOException, InterruptedException {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
         Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
@@ -102,7 +102,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initJGitImplCollisionThrowsGitException() throws GitAPIException, IOException, InterruptedException {
+    public void initJGitImplCollisionThrowsGitException() throws IOException, InterruptedException {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
         Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);

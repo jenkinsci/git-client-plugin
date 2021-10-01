@@ -19,7 +19,7 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Test
-    public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile(); // Old branch can't be pushed without force()
         assertThrows(GitException.class,
                      () -> {

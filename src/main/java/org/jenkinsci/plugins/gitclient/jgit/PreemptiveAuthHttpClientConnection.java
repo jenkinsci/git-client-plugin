@@ -309,7 +309,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         return resp.getStatusLine().getReasonPhrase();
     }
 
-    private void execute() throws IOException, ClientProtocolException {
+    private void execute() throws IOException {
         if (resp == null)
             if (entity != null) {
                 if (req instanceof HttpEntityEnclosingRequest) {
@@ -343,7 +343,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         req.addHeader(name, value);
     }
 
-    public void setRequestMethod(String method) throws ProtocolException {
+    public void setRequestMethod(String method) {
         this.method = method;
         if ("GET".equalsIgnoreCase(method)) //$NON-NLS-1$
             req = new HttpGet(urlStr);
@@ -409,7 +409,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         entity.setContentLength(contentLength);
     }
 
-    public OutputStream getOutputStream() throws IOException {
+    public OutputStream getOutputStream() {
         if (entity == null)
             entity = new TemporaryBufferEntity(new TemporaryBuffer.LocalFile(null));
         return entity.getBuffer();

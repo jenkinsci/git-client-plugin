@@ -61,7 +61,7 @@ public class GitClientSecurityTest {
     public TemporaryFolder tempFolder = new TemporaryFolder();
     private File repoRoot = null;
 
-    public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) throws IOException, InterruptedException {
+    public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) {
         this.badRemoteUrl = badRemoteUrl;
         this.enableRemoteCheckUrl = enableRemoteCheckUrl;
     }
@@ -129,7 +129,7 @@ public class GitClientSecurityTest {
     }
 
     @Parameterized.Parameters(name = "{1},{0}")
-    public static Collection testConfiguration() throws Exception {
+    public static Collection testConfiguration() {
         markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
@@ -265,7 +265,7 @@ public class GitClientSecurityTest {
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetHeadRev_String_SECURITY_1534() throws Exception {
+    public void testGetHeadRev_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
                                       () -> {
@@ -276,7 +276,7 @@ public class GitClientSecurityTest {
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetHeadRev_String_String_SECURITY_1534() throws Exception {
+    public void testGetHeadRev_String_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
                                       () -> {
@@ -287,7 +287,7 @@ public class GitClientSecurityTest {
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetRemoteReferences_SECURITY_1534() throws Exception {
+    public void testGetRemoteReferences_SECURITY_1534() {
         boolean headsOnly = random.nextBoolean();
         boolean tagsOnly = random.nextBoolean();
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
@@ -300,7 +300,7 @@ public class GitClientSecurityTest {
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetRemoteSymbolicReferences_SECURITY_1534() throws Exception {
+    public void testGetRemoteSymbolicReferences_SECURITY_1534() {
         if (!CLI_GIT_SUPPORTS_SYMREF) {
             return;
         }

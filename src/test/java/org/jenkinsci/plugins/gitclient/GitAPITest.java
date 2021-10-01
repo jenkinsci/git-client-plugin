@@ -175,7 +175,7 @@ public class GitAPITest {
     }
 
     @After
-    public void afterTearDown() throws Exception {
+    public void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
@@ -259,7 +259,7 @@ public class GitAPITest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));

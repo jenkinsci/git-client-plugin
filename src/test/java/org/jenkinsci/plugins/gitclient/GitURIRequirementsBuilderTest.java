@@ -19,7 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class GitURIRequirementsBuilderTest {
 
     @Test
-    public void smokes() throws Exception {
+    public void smokes() {
         List<DomainRequirement> list =
                 GitURIRequirementsBuilder.fromUri("ssh://bob@foo.bar.com:8080/path/to/repo.git/").build();
 

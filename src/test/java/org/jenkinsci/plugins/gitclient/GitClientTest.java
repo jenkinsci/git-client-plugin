@@ -268,7 +268,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) throws Exception {
+    private void createFile(String path, String content) {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -1801,7 +1801,7 @@ public class GitClientTest {
     }
 
     // @Test
-    public void testSubGit() throws Exception {
+    public void testSubGit() {
         // Tested in assertSubmoduleContents
     }
 
@@ -2219,7 +2219,7 @@ public class GitClientTest {
      * than 256 characters and that the checkout operation will
      * attempt to create a directory path greater than 256 characters.
      */
-    private void enableLongPaths(GitClient gitClient) throws InterruptedException, IOException {
+    private void enableLongPaths(GitClient gitClient) throws InterruptedException {
         CliGitAPIImpl cliGitClient;
         if (gitClient instanceof CliGitAPIImpl && isWindows()) {
             /* Enable core.longpaths prior to fetch on Windows -
@@ -2399,7 +2399,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testFixSubmoduleUrlsInvalidRemote() throws Exception {
+    public void testFixSubmoduleUrlsInvalidRemote() {
         // CliGit
         if (!gitImplName.equals("git")) {
             return;
@@ -2413,7 +2413,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testFixSubmoduleUrlsJGitUnsupported() throws Exception {
+    public void testFixSubmoduleUrlsJGitUnsupported() {
         // JGit does not support fixSubmoduleUrls
         if (gitImplName.equals("git")) {
             return;

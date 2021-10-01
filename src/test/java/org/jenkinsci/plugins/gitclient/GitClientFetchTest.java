@@ -361,7 +361,7 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_prune_without_remote() throws Exception {
+    public void test_prune_without_remote() {
         /* Prune when a remote is not yet defined */
         String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
         GitException gitException = assertThrows(GitException.class, () -> {
@@ -508,7 +508,7 @@ public class GitClientFetchTest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));

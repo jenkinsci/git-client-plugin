@@ -264,7 +264,7 @@ public class MergeCommandTest {
     }
 
     @Test
-    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, FileNotFoundException, IOException {
+    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, IOException {
         mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
         assertTrue("branch 2 commit 1 not on default branch after merge", git.revList(defaultBranchName).contains(commit1Branch2));
         assertTrue("README.adoc is missing on master", readme.exists());

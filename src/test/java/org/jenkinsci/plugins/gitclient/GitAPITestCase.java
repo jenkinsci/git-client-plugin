@@ -571,7 +571,7 @@ public abstract class GitAPITestCase extends TestCase {
         return branches.stream().map(Branch::getName).collect(Collectors.toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String ... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -978,7 +978,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 
-    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) {
         final File modulesDir = new File(w.repo, "modules");
         final File ntpDir = new File(modulesDir, "ntp");
         final File firewallDir = new File(modulesDir, "firewall");
@@ -1441,7 +1441,7 @@ public abstract class GitAPITestCase extends TestCase {
      * See also JENKINS-22376 and JENKINS-22391
      */
     @Issue("JENKINS-21168")
-    private void checkSymlinkSetting(WorkingArea area) throws IOException {
+    private void checkSymlinkSetting(WorkingArea area) {
         String expected = SystemUtils.IS_OS_WINDOWS ? "false" : "";
         String symlinkValue;
         try {
@@ -1719,7 +1719,7 @@ public abstract class GitAPITestCase extends TestCase {
         return unmodifiableList(matches);
     }
 
-    private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
+    private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
 

@@ -119,7 +119,7 @@ public class GitAPITesJGITNotInitialized {
     }
 
     @After
-    public void afterTearDown() throws Exception {
+    public void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));

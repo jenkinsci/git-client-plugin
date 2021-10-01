@@ -128,7 +128,7 @@ public class FilePermissionsTest {
     }
 
     @Parameterized.Parameters
-    public static List<Integer[]> permissionBits() throws MalformedURLException, FileNotFoundException, IOException {
+    public static List<Integer[]> permissionBits() {
         List<Integer[]> permissions = new ArrayList<>();
         /* 0640 and 0740 are the only permissions to be tested */
         Integer[] permissionArray0640 = {0640};

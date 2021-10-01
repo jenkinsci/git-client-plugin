@@ -240,7 +240,7 @@ public class LegacyCompatibleGitAPIImplTest {
     }
 
     @Test
-    public void testLsTreeThrows() throws Exception {
+    public void testLsTreeThrows() {
         Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
         assertThrows(expectedExceptionClass,
                      () -> {

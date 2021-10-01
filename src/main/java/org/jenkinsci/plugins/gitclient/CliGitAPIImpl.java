@@ -2613,7 +2613,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "earlier readStderr()/readStdout() call prevents null return")
     private String readProcessIntoString(Proc process, String encoding, boolean useStderr)
-        throws IOException, UnsupportedEncodingException {
+        throws IOException {
         if (useStderr) {
             /* process.getStderr reference is the findbugs warning to be suppressed */
             return IOUtils.toString(process.getStderr(), encoding);

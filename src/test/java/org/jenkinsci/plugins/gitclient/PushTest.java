@@ -87,7 +87,7 @@ public class PushTest {
     }
 
     @Test
-    public void push() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void push() throws IOException, GitException, InterruptedException {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
@@ -101,7 +101,7 @@ public class PushTest {
     }
 
     @Test
-    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
@@ -156,7 +156,7 @@ public class PushTest {
     }
 
     @Before
-    public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
+    public void createWorkingRepository() throws IOException, InterruptedException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
         List<RefSpec> refSpecs = new ArrayList<>();
@@ -183,7 +183,7 @@ public class PushTest {
     }
 
     @After
-    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException, IOException {
+    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException {
         /* Confirm push reached bare repo */
         if (expectedException == null && !name.getMethodName().contains("Throws")) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);

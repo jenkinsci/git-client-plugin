@@ -226,7 +226,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_reference() throws Exception, IOException, InterruptedException {
+    public void test_clone_reference() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror()).execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
@@ -361,7 +361,7 @@ public class GitClientCloneTest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));

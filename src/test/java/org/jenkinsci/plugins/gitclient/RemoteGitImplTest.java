@@ -74,14 +74,14 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testGetRepository() throws IOException, InterruptedException {
+    public void testGetRepository() {
         assertThrows(UnsupportedOperationException.class, () -> {
             remoteGit.getRepository();
         });
     }
 
     @Test
-    public void testClearCredentials() throws IOException, InterruptedException {
+    public void testClearCredentials() {
         remoteGit.clearCredentials();
     }
 

@@ -234,7 +234,7 @@ public class GitAPITestNotIntialized {
 
     private static boolean cliGitDefaultsSet = false;
 
-    private void setCliGitDefaults() throws Exception {
+    private void setCliGitDefaults() {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
         }
@@ -273,7 +273,7 @@ public class GitAPITestNotIntialized {
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 
-    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) {
         final File modulesDir = new File(repo, "modules");
         final File ntpDir = new File(modulesDir, "ntp");
         final File firewallDir = new File(modulesDir, "firewall");

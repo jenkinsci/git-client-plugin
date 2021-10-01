@@ -146,7 +146,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         @Override
-        public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+        public boolean configure(StaplerRequest req, JSONObject json) {
             setInstallations(req.bindJSONToList(clazz, json.get("tool")).toArray(new GitTool[0]));
             save();
             return true;
