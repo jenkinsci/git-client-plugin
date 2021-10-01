@@ -76,7 +76,7 @@ public class NetrcTest
         }
         else {
             assertEquals("Host." + host.name() + ": Login mismatch.", host.login, ((UsernamePasswordCredentials)cred).getUserName());
-            assertEquals("Host." + host.name() + ": Password mismatch.", host.password, ((UsernamePasswordCredentials)cred).getPassword());
+            assertEquals("Host." + host.name() + ": Password mismatch.", host.password, cred.getPassword());
         }
     }
 

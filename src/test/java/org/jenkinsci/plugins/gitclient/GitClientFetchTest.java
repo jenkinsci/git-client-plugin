@@ -449,7 +449,7 @@ public class GitClientFetchTest {
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 
         cliGitCommand.run("remote", "add", "origin", newAreaWorkspace.getGitFileDir().getAbsolutePath());
-        testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.<RefSpec>emptyList());
+        testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.emptyList());
         assertThat(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")), is(true));
     }
 

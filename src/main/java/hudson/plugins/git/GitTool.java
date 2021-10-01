@@ -127,7 +127,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
         String defaultGitExe = isWindows() ? "git.exe" : "git";
         GitTool tool = new GitTool(DEFAULT, defaultGitExe, Collections.emptyList());
-        descriptor.setInstallations(new GitTool[] { tool });
+        descriptor.setInstallations(tool);
         descriptor.save();
     }
 

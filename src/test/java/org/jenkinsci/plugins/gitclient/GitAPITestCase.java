@@ -1422,7 +1422,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.<String>emptyList()).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.emptyList()).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
@@ -1665,8 +1665,8 @@ public abstract class GitAPITestCase extends TestCase {
     {
         Properties properties = new Properties();
         Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
-        for(Object lineO : FileUtils.readLines(file)) {
-            String line = ((String)lineO).trim();
+        for(String lineO : FileUtils.readLines(file)) {
+            String line = lineO.trim();
             Matcher matcher = pattern.matcher(line);
             if(matcher.matches()) {
                 properties.setProperty(matcher.group(2), matcher.group(1));
