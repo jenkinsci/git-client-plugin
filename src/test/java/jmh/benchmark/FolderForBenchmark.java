@@ -46,7 +46,7 @@ public class FolderForBenchmark {
         File file = new File(getRoot(), fileName);
         if (!file.createNewFile()) {
             throw new IOException(
-                    "a file with the name \'" + fileName + "\' already exists in the test folder");
+                    "a file with the name '" + fileName + "' already exists in the test folder");
         }
         return file;
     }
@@ -78,7 +78,7 @@ public class FolderForBenchmark {
             file = new File(file, folderName);
             if (!file.mkdir() && isLastElementInArray(i, folderNames)) {
                 throw new IOException(
-                        "a folder with the name \'" + folderName + "\' already exists");
+                        "a folder with the name '" + folderName + "' already exists");
             }
         }
         return file;
