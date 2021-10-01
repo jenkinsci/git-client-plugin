@@ -185,17 +185,15 @@ public class FilePermissionsTest {
     }
 
     private static String permString(int filePermission) {
-        StringBuilder sb = new StringBuilder();
-        sb.append((filePermission & 0400) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0200) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0100) != 0 ? 'x' : '-');
-        sb.append((filePermission & 0040) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0020) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0010) != 0 ? 'x' : '-');
-        sb.append((filePermission & 0004) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0002) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0001) != 0 ? 'x' : '-');
-        return sb.toString();
+        return String.valueOf((filePermission & 0400) != 0 ? 'r' : '-') +
+                ((filePermission & 0200) != 0 ? 'w' : '-') +
+                ((filePermission & 0100) != 0 ? 'x' : '-') +
+                ((filePermission & 0040) != 0 ? 'r' : '-') +
+                ((filePermission & 0020) != 0 ? 'w' : '-') +
+                ((filePermission & 0010) != 0 ? 'x' : '-') +
+                ((filePermission & 0004) != 0 ? 'r' : '-') +
+                ((filePermission & 0002) != 0 ? 'w' : '-') +
+                ((filePermission & 0001) != 0 ? 'x' : '-');
     }
 
     private Set<PosixFilePermission> filePerms(int filePermission) {
