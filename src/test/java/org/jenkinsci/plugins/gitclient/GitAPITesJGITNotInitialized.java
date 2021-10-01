@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.nio.file.Files;
@@ -41,9 +42,6 @@ public class GitAPITesJGITNotInitialized {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -208,7 +206,6 @@ public class GitAPITesJGITNotInitialized {
         IGitAPI igit = (IGitAPI) testGitClient;
         assertEquals("https://github.com/puppetlabs/puppetlabs-firewall.git", igit.getSubmoduleUrl("modules/firewall"));
 
-        thrown.expect(GitException.class);
-        igit.getSubmoduleUrl("bogus");
+        assertThrows(GitException.class, () -> igit.getSubmoduleUrl("bogus"));
     }
 }

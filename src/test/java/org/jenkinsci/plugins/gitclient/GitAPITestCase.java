@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -1665,7 +1666,7 @@ public abstract class GitAPITestCase extends TestCase {
     {
         Properties properties = new Properties();
         Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
-        for(String lineO : FileUtils.readLines(file)) {
+        for(String lineO : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
             String line = lineO.trim();
             Matcher matcher = pattern.matcher(line);
             if(matcher.matches()) {

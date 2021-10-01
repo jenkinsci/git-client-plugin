@@ -1949,7 +1949,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File msg = null;
         try {
             msg = createTempFile("git-note", ".txt");
-            FileUtils.writeStringToFile(msg,note);
+            FileUtils.writeStringToFile(msg, note, StandardCharsets.UTF_8);
             launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
         } catch (IOException | GitException e) {
             throw new GitException("Could not apply note " + note, e);

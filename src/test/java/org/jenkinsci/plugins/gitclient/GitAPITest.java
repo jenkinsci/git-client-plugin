@@ -38,6 +38,7 @@ import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
@@ -68,9 +69,6 @@ public class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -843,9 +841,8 @@ public class GitAPITest {
     @Test
     public void testRevparseThrowsExpectedException() throws Exception {
         workspace.commitEmpty("init");
-        thrown.expect(GitException.class);
-        thrown.expectMessage("unknown-to-rev-parse");
-        testGitClient.revParse("unknown-to-rev-parse");
+        final GitException ex = assertThrows(GitException.class, () -> testGitClient.revParse("unknown-to-rev-parse"));
+        assertThat(ex.getMessage(), containsString("unknown-to-rev-parse"));
     }
 
     @Test
@@ -1030,8 +1027,8 @@ public class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit2");
 
-        thrown.expect(GitException.class);
-        testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        assertThrows(GitException.class, () ->
+                testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute());
     }
 
     @Issue("JENKINS-12402")
@@ -1530,13 +1527,13 @@ public class GitAPITest {
         assertFalse(testGitClient.hasGitModules());
         IGitAPI igit = (IGitAPI) testGitClient;
         if (igit instanceof JGitAPIImpl) {
-            thrown.expect(UnsupportedOperationException.class);
+            assertThrows(UnsupportedOperationException.class, () -> igit.fixSubmoduleUrls("origin", listener));
         } else if (igit instanceof  CliGitAPIImpl){
-            thrown.expect(GitException.class);
-            thrown.expectMessage("Could not determine remote");
-            thrown.expectMessage("origin");
+            final GitException ex = assertThrows(GitException.class, () -> igit.fixSubmoduleUrls("origin", listener));
+            assertThat(ex.getMessage(), containsString("Could not determine remote"));
+            assertThat(ex.getMessage(), containsString("origin"));
         }
-        igit.fixSubmoduleUrls("origin", listener);
+
     }
 
     /**
