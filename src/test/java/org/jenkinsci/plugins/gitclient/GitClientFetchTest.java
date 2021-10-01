@@ -243,9 +243,8 @@ public class GitClientFetchTest {
             newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
             expectedHead = bareCommit5;
         } else {
-            GitException gitException = assertThrows(GitException.class, () -> {
-                newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
-            });
+            GitException gitException = assertThrows(GitException.class,
+                    () -> newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute());
             assertThat(gitException.getMessage(), anyOf(
                     containsString("Could not merge"),
                     containsString("not something we can merge"),
@@ -364,9 +363,8 @@ public class GitClientFetchTest {
     public void test_prune_without_remote() {
         /* Prune when a remote is not yet defined */
         String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
-        GitException gitException = assertThrows(GitException.class, () -> {
-            testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
-        });
+        GitException gitException = assertThrows(GitException.class,
+                () -> testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined")));
         assertThat(gitException.getMessage(), containsString(expectedMessage));
     }
 

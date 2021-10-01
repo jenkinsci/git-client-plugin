@@ -177,10 +177,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
         File trackedFile = commitTrackedFile();
-        assertThrows(GitException.class,
-                     () -> {
-                         git.showRevision(new Revision(gitClientCommit));
-                     });
+        assertThrows(GitException.class, () -> git.showRevision(new Revision(gitClientCommit)));
     }
 
     @Test
@@ -242,10 +239,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     public void testLsTreeThrows() {
         Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
-        assertThrows(expectedExceptionClass,
-                     () -> {
-                         git.lsTree("HEAD");
-                     });
+        assertThrows(expectedExceptionClass, () -> git.lsTree("HEAD"));
     }
 
     @Test

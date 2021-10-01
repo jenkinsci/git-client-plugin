@@ -68,9 +68,7 @@ public class GitExceptionTest {
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("git").getClient();
         assertNotNull(defaultClient);
         assertThrows(GitException.class,
-                     () -> {
-                         defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
-                     });
+                     () -> defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute());
     }
 
     @Test
@@ -83,9 +81,7 @@ public class GitExceptionTest {
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDirectory).using("jgit").getClient();
         assertNotNull(defaultClient);
         JGitInternalException e = assertThrows(JGitInternalException.class,
-                                               () -> {
-                                                   defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute();
-                                               });
+                                               () -> defaultClient.init_().workspace(badDirectory.getAbsolutePath()).execute());
         assertThat(e.getCause(), isA(IOException.class));
     }
 
@@ -96,9 +92,7 @@ public class GitExceptionTest {
         Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("git").getClient();
         assertThrows(GitException.class,
-                     () -> {
-                         defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
-                     });
+                     () -> defaultClient.init_().workspace(dir.getAbsolutePath()).execute());
     }
 
     @Test
@@ -108,9 +102,7 @@ public class GitExceptionTest {
         Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("jgit").getClient();
         JGitInternalException e = assertThrows(JGitInternalException.class,
-                                               () -> {
-                                                   defaultClient.init_().workspace(dir.getAbsolutePath()).execute();
-                                               });
+                                               () -> defaultClient.init_().workspace(dir.getAbsolutePath()).execute());
         assertThat(e.getCause(), isA(IOException.class));
     }
 

@@ -431,11 +431,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         List<IndexEntry> submodules = lsTree(treeIsh,true);
 
         // Remove anything that isn't a submodule
-        for (Iterator<IndexEntry> it = submodules.iterator(); it.hasNext();) {
-            if (!it.next().getMode().equals("160000")) {
-                it.remove();
-            }
-        }
+        submodules.removeIf(indexEntry -> !indexEntry.getMode().equals("160000"));
         return submodules;
     }
 
@@ -2164,9 +2160,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_proc = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             try {
@@ -2196,9 +2190,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_sysfs = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             // If we are here, there were no clear clues about SELinux *not*

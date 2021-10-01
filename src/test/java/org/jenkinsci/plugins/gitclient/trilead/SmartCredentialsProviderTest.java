@@ -217,9 +217,6 @@ public class SmartCredentialsProviderTest {
         StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         provider.addCredentials(gitURI.toString(), credentials);
         assertThrows(UnsupportedCredentialItem.class,
-                     () ->
-                     {
-                         provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType);
-                     });
+                     () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
     }
 }

@@ -53,10 +53,7 @@ public class GitAPIBadInitTest {
         File existingFile = new File(tempDir, "file-exists");
         FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");
         GitClient git = new GitAPI("git", existingFile, listener, env);
-        GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          git.init();
-                                      });
+        GitException e = assertThrows(GitException.class, git::init);
         assertThat(e.getMessage(), is("Could not init " + existingFile.getAbsolutePath()));
     }
 }

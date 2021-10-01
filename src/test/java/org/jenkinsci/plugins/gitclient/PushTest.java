@@ -92,9 +92,7 @@ public class PushTest {
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
@@ -106,9 +104,7 @@ public class PushTest {
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }

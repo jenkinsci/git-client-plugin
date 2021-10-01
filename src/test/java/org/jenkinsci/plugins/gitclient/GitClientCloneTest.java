@@ -138,9 +138,8 @@ public class GitClientCloneTest {
         cmd.execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedabeefabeadeddeedaccede";
-        GitException gitException = assertThrows(GitException.class, () -> {
-            testGitClient.checkout().ref(SHA1).branch("master").execute();
-        });
+        GitException gitException = assertThrows(GitException.class,
+                () -> testGitClient.checkout().ref(SHA1).branch("master").execute());
         assertThat(gitException.getMessage(), is("Could not checkout master with start point " + SHA1));
     }
 

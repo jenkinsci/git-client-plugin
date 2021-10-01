@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -1452,7 +1454,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    config.setStringList("remote", remote, "fetch", Lists.newArrayList(Iterables.transform(refspecs, Functions.toStringFunction())));
+                    config.setStringList("remote", remote, "fetch", Lists.newArrayList(refspecs.stream().map(Functions.toStringFunction()::apply).collect(Collectors.toList())));
                     config.save();
 
                 } catch (GitAPIException | IOException e) {
@@ -2691,7 +2693,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("No tags can describe "+tip);
 
             // if all the nodes are dominated by all the tags, the walk stops
-            Collections.sort(candidates, (Candidate o1, Candidate o2) -> o1.depth-o2.depth);
+            candidates.sort(Comparator.comparingInt((Candidate o) -> o.depth));
 
             return candidates.get(0).describe(tipId);
         } catch (IOException e) {

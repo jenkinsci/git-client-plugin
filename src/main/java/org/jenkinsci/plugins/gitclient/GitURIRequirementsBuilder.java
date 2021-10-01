@@ -231,12 +231,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutScheme() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof SchemeRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof SchemeRequirement);
         return this;
     }
 
@@ -247,12 +242,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutPath() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof PathRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof PathRequirement);
         return this;
     }
 
@@ -263,12 +253,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutHostname() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof HostnameRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof HostnameRequirement);
         return this;
     }
 
@@ -279,12 +264,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutHostnamePort() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof HostnamePortRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof HostnamePortRequirement);
         return this;
     }
 

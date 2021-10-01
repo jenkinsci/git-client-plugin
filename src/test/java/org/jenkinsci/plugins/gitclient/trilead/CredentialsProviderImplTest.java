@@ -82,20 +82,14 @@ public class CredentialsProviderImplTest {
     public void testSpecialStringTypeThrowsException() {
         CredentialItem.StringType specialStringType = new CredentialItem.StringType("Bad Password: ", false);
         assertFalse(provider.supports(specialStringType));
-        assertThrows(UnsupportedCredentialItem.class,
-                     () -> {
-                         provider.get(uri, specialStringType);
-                     });
+        assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, specialStringType));
     }
 
     @Test
     public void testThrowsUnsupportedOperationException() {
         CredentialItem.InformationalMessage message = new CredentialItem.InformationalMessage("Some info");
         assertFalse(provider.supports(message));
-        assertThrows(UnsupportedCredentialItem.class,
-                     () -> {
-                         provider.get(uri, message);
-                     });
+        assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, message));
     }
 
     @Test

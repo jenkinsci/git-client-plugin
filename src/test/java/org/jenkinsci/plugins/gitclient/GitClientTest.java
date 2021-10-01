@@ -407,10 +407,7 @@ public class GitClientTest {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
         changelog.includes(commitA);
-        assertThrows(IllegalStateException.class,
-                     () -> {
-                         changelog.execute();
-                     });
+        assertThrows(IllegalStateException.class, changelog::execute);
     }
 
     @Test
@@ -418,10 +415,7 @@ public class GitClientTest {
         final ObjectId commitA = commitOneFile();
         ChangelogCommand changelog = gitClient.changelog();
         changelog.excludes(commitA);
-        assertThrows(IllegalStateException.class,
-                     () -> {
-                         changelog.execute();
-                     });
+        assertThrows(IllegalStateException.class, changelog::execute);
     }
 
     @Test
@@ -559,9 +553,7 @@ public class GitClientTest {
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : InvalidPathException.class;
         assertThrows(expectedExceptionClass,
-                     () -> {
-                         badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
-                     });
+                     () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
     }
 
     @Test
@@ -574,9 +566,7 @@ public class GitClientTest {
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
         assertThrows(expectedExceptionClass,
-                     () -> {
-                         badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute();
-                     });
+                     () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
     }
 
     @Test
@@ -1207,9 +1197,7 @@ public class GitClientTest {
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         /* Check that exception is thrown trying to create an existing branch */
         assertThrows(GitException.class,
-                     () -> {
-                         gitClient.branch("master");
-                     });
+                     () -> gitClient.branch("master"));
     }
 
     @Test
@@ -1222,9 +1210,7 @@ public class GitClientTest {
         if (gitImplName.equals("git")) {
             /* Check that exception is thrown trying to commit nothing */
             assertThrows(GitException.class,
-                         () -> {
-                             gitClient.commit("This commit contains no changes");
-                         });
+                         () -> gitClient.commit("This commit contains no changes"));
         } else {
             /* Check that JGit does not throw an exception trying to commit nothing */
             gitClient.commit("This commit contains no changes");
@@ -1241,9 +1227,7 @@ public class GitClientTest {
         if (gitImplName.equals("git")) {
             /* Check that exception is thrown trying to delete non-existent branch */
             assertThrows(GitException.class,
-                         () -> {
-                             gitClient.deleteBranch("ThisBranchDoesNotExist");
-                         });
+                         () -> gitClient.deleteBranch("ThisBranchDoesNotExist"));
         } else {
             /* Check that JGit does not throw an exception trying to delete non-existent branch */
             gitClient.deleteBranch("ThisBranchDoesNotExist");
@@ -2406,9 +2390,7 @@ public class GitClientTest {
         }
         IGitAPI gitAPI = (IGitAPI) gitClient;
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL);
-                                      });
+                                      () -> gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL));
         assertThat(e.getMessage(), containsString("Could not determine remote"));
     }
 
@@ -2420,9 +2402,7 @@ public class GitClientTest {
         }
         IGitAPI gitAPI = (IGitAPI) gitClient;
         assertThrows(UnsupportedOperationException.class,
-                     () -> {
-                         gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL);
-                     });
+                     () -> gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL));
     }
 
     private void assertStatusUntrackedContent(GitClient client, boolean expectUntrackedContent) throws Exception {
