@@ -105,7 +105,7 @@ public class CredentialsProviderImplTest {
         assertNull(username.getValue());
     }
 
-    private class MyUsernameCredentialsImpl implements StandardUsernameCredentials {
+    private static class MyUsernameCredentialsImpl implements StandardUsernameCredentials {
 
         private final String username;
 

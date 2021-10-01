@@ -121,7 +121,7 @@ public class CliGitAPITempFileTest {
         return File.pathSeparatorChar == ';';
     }
 
-    private class CliGitAPIImplExtension extends CliGitAPIImpl {
+    private static class CliGitAPIImplExtension extends CliGitAPIImpl {
 
         private CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
             super(gitExe, workspace, listener, environment);

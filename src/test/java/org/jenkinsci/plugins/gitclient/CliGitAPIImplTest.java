@@ -54,7 +54,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public class VersionTest {
+    public static class VersionTest {
 
         private boolean expectedIsAtLeastVersion;
         private int major;
