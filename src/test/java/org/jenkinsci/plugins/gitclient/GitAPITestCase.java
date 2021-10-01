@@ -1407,12 +1407,12 @@ public abstract class GitAPITestCase extends TestCase {
         workingArea.git.clone_().url(w.repoPath()).execute();
 
         checkoutTimeout = 1 + random.nextInt(60 * 24);
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir1")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir1")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertFalse(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir2")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir2")).timeout(checkoutTimeout).execute();
         assertFalse(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));

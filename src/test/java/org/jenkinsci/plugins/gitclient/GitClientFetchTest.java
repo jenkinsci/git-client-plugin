@@ -417,7 +417,7 @@ public class GitClientFetchTest {
         /* Remove branch1 from bare repo using original repo */
         cliGitCommand.run("push", bareWorkspace.getGitFileDir().getAbsolutePath(), ":branch1");
 
-        List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+        List<RefSpec> refSpecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
         newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
