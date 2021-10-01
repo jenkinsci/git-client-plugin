@@ -68,8 +68,8 @@ public class FilePermissionsTest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -156,7 +156,7 @@ public class FilePermissionsTest {
 
     private void addFile() throws IOException, GitException, InterruptedException {
         String fileName = getFileName();
-        String content = fileName + " and UUID " + UUID.randomUUID().toString();
+        String content = fileName + " and UUID " + UUID.randomUUID();
         File added = new File(repo, fileName);
         assertFalse(fileName + " already exists", added.exists());
         FileUtils.writeStringToFile(added, content, "UTF-8");
@@ -173,7 +173,7 @@ public class FilePermissionsTest {
 
     private void modifyFile() throws IOException, GitException, InterruptedException {
         String fileName = getFileName();
-        String content = fileName + " chg UUID " + UUID.randomUUID().toString();
+        String content = fileName + " chg UUID " + UUID.randomUUID();
         File modified = new File(repo, fileName);
         assertTrue(fileName + " doesn't exist", modified.exists());
         FileUtils.writeStringToFile(modified, content, "UTF-8");

@@ -220,8 +220,8 @@ public class GitClientTest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -255,7 +255,7 @@ public class GitClientTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID());
         return commitFile("One-File.txt", content, commitMessage);
     }
 
@@ -330,7 +330,7 @@ public class GitClientTest {
                         "\nseis\n" +
                         "\nasfasfasfasf\n"
                 ;
-        final String content = String.format("A random UUID: %s\n", UUID.randomUUID().toString());
+        final String content = String.format("A random UUID: %s\n", UUID.randomUUID());
         ObjectId message = commitFile("One-File.txt", content, gitMessage);
 
         ChangelogCommand changelog = gitClient.changelog();
@@ -458,7 +458,7 @@ public class GitClientTest {
                 found = true;
             }
         }
-        assertTrue("no " + prefix + ", expected: '" + expected + "' in " + builder.toString(), found);
+        assertTrue("no " + prefix + ", expected: '" + expected + "' in " + builder, found);
     }
 
     private void assertAuthor(ObjectId commitA, ObjectId commitB, String name, String email) throws GitException, InterruptedException {
@@ -620,7 +620,7 @@ public class GitClientTest {
             fileList.append(file.getAbsolutePath());
             fileList.append(" ");
         }
-        assertTrue("Source repo '" + srcRepoDir.getAbsolutePath() + "' not initialized, contains " + fileList.toString(), srcGitClient.hasGitRepo());
+        assertTrue("Source repo '" + srcRepoDir.getAbsolutePath() + "' not initialized, contains " + fileList, srcGitClient.hasGitRepo());
 
         File emptyDir = tempFolder.newFolder();
         assertTrue(emptyDir.exists());
@@ -1961,7 +1961,7 @@ public class GitClientTest {
         File lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), "UTF-8"), true)) {
+                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8), true)) {
                     writer.print(randomString);
                 }
                 lastModifiedFile = file;
@@ -2435,7 +2435,7 @@ public class GitClientTest {
             }
             output.append(line);
         }
-        assertEquals("Untracked content: " + output.toString(), expectUntrackedContent, foundUntrackedContent);
+        assertEquals("Untracked content: " + output, expectUntrackedContent, foundUntrackedContent);
     }
 
     @Test

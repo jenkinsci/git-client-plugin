@@ -21,8 +21,8 @@ class Netrc {
     private static final Pattern NETRC_TOKEN = Pattern.compile("(\\S+)");
 
     private enum ParseState {
-        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, MACDEF, END;
-    };
+        START, REQ_KEY, REQ_VALUE, MACHINE, LOGIN, PASSWORD, MACDEF, END
+    }
 
 
     private File netrc;

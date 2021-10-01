@@ -69,8 +69,8 @@ public class MergeCommandTest {
         File configDir = java.nio.file.Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }

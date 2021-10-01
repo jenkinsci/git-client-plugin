@@ -8,6 +8,7 @@ import hudson.model.TaskListener;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import static java.nio.file.StandardOpenOption.APPEND;
 
@@ -92,7 +93,7 @@ public class GitExceptionTest {
     public void initCliImplCollisionThrowsGitException() throws GitAPIException, IOException, InterruptedException {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
-        Files.write(dotGit.toPath(), "file named .git".getBytes("UTF-8"), APPEND);
+        Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("git").getClient();
         assertThrows(GitException.class,
                      () -> {
@@ -104,7 +105,7 @@ public class GitExceptionTest {
     public void initJGitImplCollisionThrowsGitException() throws GitAPIException, IOException, InterruptedException {
         File dir = folder.getRoot();
         File dotGit = folder.newFile(".git");
-        Files.write(dotGit.toPath(), "file named .git".getBytes("UTF-8"), APPEND);
+        Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
         GitClient defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("jgit").getClient();
         JGitInternalException e = assertThrows(JGitInternalException.class,
                                                () -> {

@@ -164,11 +164,7 @@ public class CredentialsTest {
 
     @Before
     public void enableSETSID() throws IOException, InterruptedException {
-        if (gitImpl.equals("git") && privateKey != null && passphrase != null) {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = true;
-        } else {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
-        }
+        CliGitAPIImpl.CALL_SETSID = gitImpl.equals("git") && privateKey != null && passphrase != null;
     }
 
     @After
@@ -486,6 +482,6 @@ public class CredentialsTest {
      * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
      */
     private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.parseBoolean(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
     private static final Pattern URL_MUST_MATCH_PATTERN = Pattern.compile(System.getProperty("URL_MUST_MATCH_PATTERN", ".*"));
 }

@@ -74,7 +74,7 @@ public class GitClientCliCloneTest {
      * the random branch name is not mentioned in a call to git rev-parse.
      */
     private String checkoutRandomBranch() throws GitException, InterruptedException {
-        String branchName = "rev-parse-branch-" + UUID.randomUUID().toString();
+        String branchName = "rev-parse-branch-" + UUID.randomUUID();
         testGitClient.checkout().ref("origin/master").branch(branchName).execute();
         Set<String> branchNames = testGitClient.getBranches().stream().map(Branch::getName).collect(Collectors.toSet());
         assertThat(branchNames, hasItem(branchName));

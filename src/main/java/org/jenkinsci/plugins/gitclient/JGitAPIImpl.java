@@ -1021,7 +1021,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     StringWriter sw = new StringWriter();
                     IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
                     sw.write("\n");
-                    addNote(sw.toString() + normalizeNote(note), namespace);
+                    addNote(sw + normalizeNote(note), namespace);
                 }
             }
         } catch (GitAPIException | IOException e) {

@@ -140,8 +140,8 @@ public class GitAPITest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -611,7 +611,7 @@ public class GitAPITest {
     public void testPushTags() throws Exception {
         /* Working Repo with commit */
         final String fileName1 = "file1";
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit1");
         ObjectId commit1 = workspace.head();
@@ -640,7 +640,7 @@ public class GitAPITest {
         assertTrue("tag1 not pushed", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Create a new commit, move tag1 to that commit, attempt push */
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit2");
         ObjectId commit2 = workspace.head();
@@ -681,7 +681,7 @@ public class GitAPITest {
 
         /* Add another tag to working repo and push tags to the bare repo */
         final String fileName2 = "file2";
-        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName2);
         testGitClient.commit("commit2");
         workspace.tag("tag2");
@@ -1507,7 +1507,7 @@ public class GitAPITest {
 
     @Test
     public void testNoSubmodules() throws Exception {
-        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID());
         testGitClient.add("committed-file");
         testGitClient.commit("commit1");
         IGitAPI igit = (IGitAPI) testGitClient;
@@ -1547,7 +1547,7 @@ public class GitAPITest {
     @Test
     public void testChangeLogAbort() throws Exception {
         final String logMessage = "changelog-abort-test-commit";
-        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID());
         testGitClient.add("file-changelog-abort");
         testGitClient.commit(logMessage);
         String sha1 = testGitClient.revParse("HEAD").name();
@@ -1563,8 +1563,8 @@ public class GitAPITest {
         changelogCommand = testGitClient.changelog();
         changelogCommand.to(writer);
         changelogCommand.execute();
-        assertTrue("No log message in " + writer.toString(), writer.toString().contains(logMessage));
-        assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
+        assertTrue("No log message in " + writer, writer.toString().contains(logMessage));
+        assertTrue("No SHA1 in " + writer, writer.toString().contains(sha1));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
