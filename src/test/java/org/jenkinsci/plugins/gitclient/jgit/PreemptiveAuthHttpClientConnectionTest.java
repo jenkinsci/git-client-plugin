@@ -12,7 +12,7 @@ import org.junit.Test;
 public class PreemptiveAuthHttpClientConnectionTest {
 
     @Test public void goUp_noPath() throws Exception {
-        final URIish input = new URIish("http://example.com");
+        final URIish input = new URIish("https://example.com");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
@@ -20,7 +20,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test public void goUp_slash() throws Exception {
-        final URIish input = new URIish("http://example.com/");
+        final URIish input = new URIish("https://example.com/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
@@ -28,57 +28,57 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test public void goUp_slashSlash() throws Exception {
-        final URIish input = new URIish("http://example.com//");
+        final URIish input = new URIish("https://example.com//");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com", actual.toString());
+        assertEquals("https://example.com", actual.toString());
     }
 
     @Test public void goUp_one() throws Exception {
-        final URIish input = new URIish("http://example.com/one");
+        final URIish input = new URIish("https://example.com/one");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com", actual.toString());
+        assertEquals("https://example.com", actual.toString());
     }
 
     @Test public void goUp_oneSlash() throws Exception {
-        final URIish input = new URIish("http://example.com/one/");
+        final URIish input = new URIish("https://example.com/one/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com", actual.toString());
+        assertEquals("https://example.com", actual.toString());
     }
 
     @Test public void goUp_oneSlashTwo() throws Exception {
-        final URIish input = new URIish("http://example.com/one/two");
+        final URIish input = new URIish("https://example.com/one/two");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com/one", actual.toString());
+        assertEquals("https://example.com/one", actual.toString());
     }
 
     @Test public void goUp_oneSlashSlashTwoSlash() throws Exception {
-        final URIish input = new URIish("http://example.com/one//two/");
+        final URIish input = new URIish("https://example.com/one//two/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com/one/", actual.toString());
+        assertEquals("https://example.com/one/", actual.toString());
     }
 
     @Test public void goUp_oneSlashTwoSlash() throws Exception {
-        final URIish input = new URIish("http://example.com/one/two/");
+        final URIish input = new URIish("https://example.com/one/two/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
         assertNotNull(actual);
-        assertEquals("http://example.com/one", actual.toString());
+        assertEquals("https://example.com/one", actual.toString());
     }
 
     private static void createNTCredentials(final String inputUserName, final String inputPassword, final String expectedDomain, final String expectedUserName, final String expectedPassword) {
