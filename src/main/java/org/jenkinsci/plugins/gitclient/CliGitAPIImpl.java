@@ -2128,8 +2128,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             // Keep track which "clues" indicate that SELinux currently is
             // a force that should be reckoned with, on this host now:
-            boolean clue_proc = false;
-            boolean clue_sysfs = false;
+            Boolean clue_proc = false;
+            Boolean clue_sysfs = false;
             //Boolean clue_ls = false;
 
             try {
