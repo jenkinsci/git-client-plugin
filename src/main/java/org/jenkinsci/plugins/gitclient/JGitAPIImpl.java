@@ -829,7 +829,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return references;
     }
 
-    /* Adapted from http://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
+    /* Adapted from https://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
@@ -1935,7 +1935,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
-                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref. (see http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html)
+                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref.
                                 if (!specs[spec].startsWith("/")) {
                                     specs[spec] = "/" + specs[spec];
                                 }

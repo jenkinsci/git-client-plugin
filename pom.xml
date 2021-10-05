@@ -324,8 +324,8 @@
           <force>true</force>
           <failOnError>false</failOnError>
           <links>
-            <link>http://docs.oracle.com/javase/8/docs/api/</link>
-            <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
+            <link>https://docs.oracle.com/javase/8/docs/api/</link>
+            <link>https://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
           </links>
         </configuration>
       </plugin>
