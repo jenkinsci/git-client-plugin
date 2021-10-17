@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,28 +86,24 @@ public class PushTest {
     }
 
     @Test
-    public void push() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void push() throws IOException, GitException, InterruptedException {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
     }
 
     @Test
-    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
@@ -156,7 +151,7 @@ public class PushTest {
     }
 
     @Before
-    public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
+    public void createWorkingRepository() throws IOException, InterruptedException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
         List<RefSpec> refSpecs = new ArrayList<>();
@@ -183,7 +178,7 @@ public class PushTest {
     }
 
     @After
-    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException, IOException {
+    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException {
         /* Confirm push reached bare repo */
         if (expectedException == null && !name.getMethodName().contains("Throws")) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);

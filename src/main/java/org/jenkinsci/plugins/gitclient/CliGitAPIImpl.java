@@ -63,7 +63,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -96,7 +95,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * not allow automatic answers to private key passphrase prompts
      * unless there is no controlling terminal associated with the process.
      */
-    public static final boolean USE_SETSID = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
+    public static final boolean USE_SETSID = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
 
     /**
      * Set promptForAuthentication=true if you must allow command line git
@@ -123,7 +122,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * run from the desktop environment.  Agents running on the
      * desktop are much less common in the Unix environments.
      */
-    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
+    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
 
     /**
      * CALL_SETSID decides if command line git can use the setsid program
@@ -180,7 +179,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.forceFetch=false'
      * to prevent 'force' in 'git fetch' with CLI git 2.20 and later.
      */
-    private static final boolean USE_FORCE_FETCH = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
+    private static final boolean USE_FORCE_FETCH = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
 
     private static final long serialVersionUID = 1;
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
@@ -430,11 +429,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         List<IndexEntry> submodules = lsTree(treeIsh,true);
 
         // Remove anything that isn't a submodule
-        for (Iterator<IndexEntry> it = submodules.iterator(); it.hasNext();) {
-            if (!it.next().getMode().equals("160000")) {
-                it.remove();
-            }
-        }
+        submodules.removeIf(indexEntry -> !indexEntry.getMode().equals("160000"));
         return submodules;
     }
 
@@ -450,7 +445,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL=false'
      * to prevent check of remote URL.
      */
-    static boolean CHECK_REMOTE_URL = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
+    static boolean CHECK_REMOTE_URL = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
 
     /**
      * SECURITY-1534 found that arguments
@@ -1266,7 +1261,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // "git whatchanged" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
-                try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
+                try (WriterOutputStream w = new WriterOutputStream(out, StandardCharsets.UTF_8)) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
                         throw new GitException("Error: " + args + " in " + workspace);
                 } catch (IOException e) {
@@ -1952,7 +1947,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File msg = null;
         try {
             msg = createTempFile("git-note", ".txt");
-            FileUtils.writeStringToFile(msg,note);
+            FileUtils.writeStringToFile(msg, note, StandardCharsets.UTF_8);
             launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
         } catch (IOException | GitException e) {
             throw new GitException("Could not apply note " + note, e);
@@ -2142,7 +2137,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
                     BufferedReader br = Files.newBufferedReader(
                         Paths.get("/proc/self/attr/current"),
-                        Charset.forName("UTF-8"));
+                            StandardCharsets.UTF_8);
                     String s;
                     try {
                         s = br.readLine();
@@ -2163,9 +2158,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_proc = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             try {
@@ -2178,7 +2171,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
                     BufferedReader br = Files.newBufferedReader(
                         Paths.get("/sys/fs/selinux/enforce"),
-                        Charset.forName("UTF-8"));
+                            StandardCharsets.UTF_8);
                     String s;
                     try {
                         s = br.readLine();
@@ -2195,9 +2188,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_sysfs = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             // If we are here, there were no clear clues about SELinux *not*
@@ -2257,7 +2248,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                  * True exceptions are better handled (reported) ASAP, without
                  * caching into failureClues like the noisy log further below.
                  */
-                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e.toString());
+                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e);
                 if (status <= 0) { status = 126; } // cause the message and false return below
             }
             if (status > 0) {
@@ -2612,7 +2603,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "earlier readStderr()/readStdout() call prevents null return")
     private String readProcessIntoString(Proc process, String encoding, boolean useStderr)
-        throws IOException, UnsupportedEncodingException {
+        throws IOException {
         if (useStderr) {
             /* process.getStderr reference is the findbugs warning to be suppressed */
             return IOUtils.toString(process.getStderr(), encoding);
@@ -3832,10 +3823,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String sha1String = matcher.group(1);
             String tagName = matcher.group(2);
             String trailingText = matcher.group(3);
-            boolean isPeeledRef = false;
-            if (trailingText != null && trailingText.equals("^{}")) { // Line ends with '^{}'
-                isPeeledRef = true;
-            }
+            final boolean isPeeledRef = trailingText != null && trailingText.equals("^{}");
+            // Line ends with '^{}'
             /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
             if (isPeeledRef || !tagMap.containsKey(tagName)) {
                 tagMap.put(tagName, ObjectId.fromString(sha1String));

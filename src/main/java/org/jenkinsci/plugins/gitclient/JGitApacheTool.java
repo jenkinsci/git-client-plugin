@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
@@ -32,6 +33,7 @@ public class JGitApacheTool extends GitTool {
 
     @Extension @Symbol(MAGIC_EXENAME)
     public static class DescriptorImpl extends GitTool.DescriptorImpl {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "JGit with Apache HTTP client";

@@ -16,7 +16,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        assertEquals(null, actual);
+        assertNull(actual);
     }
 
     @Test public void goUp_slash() throws Exception {
@@ -24,7 +24,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
 
-        assertEquals(null, actual);
+        assertNull(actual);
     }
 
     @Test public void goUp_slashSlash() throws Exception {
@@ -90,22 +90,22 @@ public class PreemptiveAuthHttpClientConnectionTest {
         assertEquals(expectedPassword, actual.getPassword());
     }
 
-    @Test public void createNTCredentials_plainUser() throws Exception {
+    @Test public void createNTCredentials_plainUser() {
         createNTCredentials("cnorris", "roundhouse", null, "cnorris", "roundhouse");
         createNTCredentials("cnorris", "round\\:/house", null, "cnorris", "round\\:/house");
     }
 
-    @Test public void createNTCredentials_domainBackslashUser() throws Exception {
+    @Test public void createNTCredentials_domainBackslashUser() {
         createNTCredentials("WALKER\\cnorris", "roundhouse", "WALKER", "cnorris", "roundhouse");
         createNTCredentials("WALKER\\cnorris", "round\\:/house", "WALKER", "cnorris", "round\\:/house");
     }
 
-    @Test public void createNTCredentials_domainSlashUser() throws Exception {
+    @Test public void createNTCredentials_domainSlashUser() {
         createNTCredentials("WALKER/cnorris", "roundhouse", "WALKER", "cnorris", "roundhouse");
         createNTCredentials("WALKER/cnorris", "round\\:/house", "WALKER", "cnorris", "round\\:/house");
     }
 
-    @Test public void createNTCredentials_userAtDomain() throws Exception {
+    @Test public void createNTCredentials_userAtDomain() {
         createNTCredentials("cnorris@walker.example.com", "roundhouse", "WALKER.EXAMPLE.COM", "cnorris", "roundhouse");
         createNTCredentials("cnorris@walker.example.com", "round\\:/house", "WALKER.EXAMPLE.COM", "cnorris", "round\\:/house");
     }

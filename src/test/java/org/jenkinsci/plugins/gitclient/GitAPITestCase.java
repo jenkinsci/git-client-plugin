@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -408,8 +409,8 @@ public abstract class GitAPITestCase extends TestCase {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, env).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchValue = result;
             }
@@ -571,7 +572,7 @@ public abstract class GitAPITestCase extends TestCase {
         return branches.stream().map(Branch::getName).collect(Collectors.toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String ... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String ... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -978,7 +979,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 
-    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) {
         final File modulesDir = new File(w.repo, "modules");
         final File ntpDir = new File(modulesDir, "ntp");
         final File firewallDir = new File(modulesDir, "firewall");
@@ -1072,7 +1073,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.git.commit("submod-commit1");
 
         // Add new GIT repo to w
-        String subModDir = "submod1-" + java.util.UUID.randomUUID().toString();
+        String subModDir = "submod1-" + UUID.randomUUID();
         w.git.addSubmodule(r.repoPath(), subModDir);
         w.git.submoduleInit();
 
@@ -1345,7 +1346,7 @@ public abstract class GitAPITestCase extends TestCase {
         r.git.checkout().ref(defaultBranchName).execute();
 
         // Setup variables for use in tests
-        String submodDir = "submod1" + java.util.UUID.randomUUID().toString();
+        String submodDir = "submod1" + UUID.randomUUID();
         String subFile1 = submodDir + File.separator + "file1";
         String subFile2 = submodDir + File.separator + "file2";
         String subFile3 = submodDir + File.separator + "file3";
@@ -1407,12 +1408,12 @@ public abstract class GitAPITestCase extends TestCase {
         workingArea.git.clone_().url(w.repoPath()).execute();
 
         checkoutTimeout = 1 + random.nextInt(60 * 24);
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir1")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir1")).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertFalse(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir2")).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir2")).timeout(checkoutTimeout).execute();
         assertFalse(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
@@ -1422,7 +1423,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(workingArea.exists("dir2"));
         assertFalse(workingArea.exists("dir3"));
 
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.<String>emptyList()).timeout(checkoutTimeout).execute();
+        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.emptyList()).timeout(checkoutTimeout).execute();
         assertTrue(workingArea.exists("dir1"));
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
@@ -1441,7 +1442,7 @@ public abstract class GitAPITestCase extends TestCase {
      * See also JENKINS-22376 and JENKINS-22391
      */
     @Issue("JENKINS-21168")
-    private void checkSymlinkSetting(WorkingArea area) throws IOException {
+    private void checkSymlinkSetting(WorkingArea area) {
         String expected = SystemUtils.IS_OS_WINDOWS ? "false" : "";
         String symlinkValue;
         try {
@@ -1609,12 +1610,12 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteReferences_withLimitReferences() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
         references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
-        assertTrue(!references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
         for (String key : references.keySet()) {
-            assertTrue(!key.endsWith("^{}"));
+            assertFalse(key.endsWith("^{}"));
         }
     }
 
@@ -1624,9 +1625,9 @@ public abstract class GitAPITestCase extends TestCase {
     public void test_getRemoteReferences_withMatchingPattern() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertTrue(!references.containsKey("refs/tags/git-client-1.0.0"));
+        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
         references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
-        assertTrue(!references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         for (String key : references.keySet()) {
             assertTrue(key.startsWith("refs/tags/git-client"));
         }
@@ -1665,8 +1666,8 @@ public abstract class GitAPITestCase extends TestCase {
     {
         Properties properties = new Properties();
         Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
-        for(Object lineO : FileUtils.readLines(file)) {
-            String line = ((String)lineO).trim();
+        for(String lineO : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
+            String line = lineO.trim();
             Matcher matcher = pattern.matcher(line);
             if(matcher.matches()) {
                 properties.setProperty(matcher.group(2), matcher.group(1));
@@ -1688,7 +1689,7 @@ public abstract class GitAPITestCase extends TestCase {
                 entryDestination.mkdirs();
             else {
                 try (InputStream in = zipFile.getInputStream(entry);
-                        OutputStream out = Files.newOutputStream(entryDestination.toPath());) {
+                        OutputStream out = Files.newOutputStream(entryDestination.toPath())) {
                     org.apache.commons.io.IOUtils.copy(in, out);
                 }
             }
@@ -1719,7 +1720,7 @@ public abstract class GitAPITestCase extends TestCase {
         return unmodifiableList(matches);
     }
 
-    private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException, IOException {
+    private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
 
@@ -1759,7 +1760,7 @@ public abstract class GitAPITestCase extends TestCase {
 
         w.git.branch("branch1");
         w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "branch1 contents " + java.util.UUID.randomUUID().toString());
+        w.touch("file1", "branch1 contents " + UUID.randomUUID());
         w.git.add("file1");
         w.git.commit("commit1-branch1");
         final ObjectId branch1 = w.head();
@@ -1873,7 +1874,7 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.changelog(sha1Begin, sha1End, writer);
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
         assertEquals("Wrong bounded changelog line 1 on branch " + branchName, "commit " + sha1End, splitLog[0]);
-        assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer.toString(), writer.toString().contains(sha1Begin));
+        assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer, writer.toString().contains(sha1Begin));
     }
 
     public void test_changelog_bounded() throws Exception {
@@ -1988,7 +1989,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
         assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
-        final String branchName = "test-checkout-null-ref-branch-" + java.util.UUID.randomUUID().toString();
+        final String branchName = "test-checkout-null-ref-branch-" + UUID.randomUUID();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
         w.git.checkout().ref(null).branch(branchName).execute();
@@ -2000,7 +2001,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
         assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
-        final String branchName = "test-checkout-branch-" + java.util.UUID.randomUUID().toString();
+        final String branchName = "test-checkout-branch-" + UUID.randomUUID();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
         w.git.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").branch(branchName).execute(); // git-client-1.6.0
@@ -2072,7 +2073,7 @@ public abstract class GitAPITestCase extends TestCase {
         /* No valid HEAD yet - nothing to reset, should give no error */
         w.igit().reset(false);
         w.igit().reset(true);
-        w.touch("committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        w.touch("committed-file", "committed-file content " + UUID.randomUUID());
         w.git.add("committed-file");
         w.git.commit("commit1");
         assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
@@ -2080,9 +2081,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("touched-file exists at commit1", w.file("added-file").exists());
 
         w.launchCommand("git", "rm", "committed-file");
-        w.touch("added-file", "File 2 content " + java.util.UUID.randomUUID().toString());
+        w.touch("added-file", "File 2 content " + UUID.randomUUID());
         w.git.add("added-file");
-        w.touch("touched-file", "File 3 content " + java.util.UUID.randomUUID().toString());
+        w.touch("touched-file", "File 3 content " + UUID.randomUUID());
         assertFalse("committed-file exists", w.file("committed-file").exists());
         assertTrue("added-file missing", w.file("added-file").exists());
         assertTrue("touched-file missing", w.file("touched-file").exists());
@@ -2115,7 +2116,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Didn't mkdir " + dirName, w.file(dirName).mkdir());
 
         String fullName = dirName + File.separator + fileName;
-        w.touch(fullName, fullName + " content " + UUID.randomUUID().toString());
+        w.touch(fullName, fullName + " content " + UUID.randomUUID());
 
         boolean shouldThrow = !longpathsEnabled &&
             SystemUtils.IS_OS_WINDOWS &&

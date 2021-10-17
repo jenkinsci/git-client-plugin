@@ -50,7 +50,7 @@ public class RemotingTest {
 
         private final GitClient git;
 
-        private Work(GitClient git) throws Exception {
+        private Work(GitClient git) {
             this.git = git;
         }
 

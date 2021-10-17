@@ -147,7 +147,7 @@ public class Git implements Serializable {
      *
      * Uses command line implementation ({@link CliGitAPIImpl}) by default.
      */
-    public static final boolean USE_CLI = Boolean.valueOf(System.getProperty(Git.class.getName() + ".useCLI", "true"));
+    public static final boolean USE_CLI = Boolean.parseBoolean(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
     private static final long serialVersionUID = 1L;
 

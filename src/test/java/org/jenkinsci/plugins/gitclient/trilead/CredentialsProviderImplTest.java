@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient.trilead;
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
@@ -82,20 +83,14 @@ public class CredentialsProviderImplTest {
     public void testSpecialStringTypeThrowsException() {
         CredentialItem.StringType specialStringType = new CredentialItem.StringType("Bad Password: ", false);
         assertFalse(provider.supports(specialStringType));
-        assertThrows(UnsupportedCredentialItem.class,
-                     () -> {
-                         provider.get(uri, specialStringType);
-                     });
+        assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, specialStringType));
     }
 
     @Test
     public void testThrowsUnsupportedOperationException() {
         CredentialItem.InformationalMessage message = new CredentialItem.InformationalMessage("Some info");
         assertFalse(provider.supports(message));
-        assertThrows(UnsupportedCredentialItem.class,
-                     () -> {
-                         provider.get(uri, message);
-                     });
+        assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, message));
     }
 
     @Test
@@ -111,7 +106,7 @@ public class CredentialsProviderImplTest {
         assertNull(username.getValue());
     }
 
-    private class MyUsernameCredentialsImpl implements StandardUsernameCredentials {
+    private static class MyUsernameCredentialsImpl implements StandardUsernameCredentials {
 
         private final String username;
 
@@ -119,10 +114,12 @@ public class CredentialsProviderImplTest {
             this.username = username;
         }
 
+        @NonNull
         public String getDescription() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public String getId() {
             throw new UnsupportedOperationException("Do not call");
         }
@@ -131,10 +128,12 @@ public class CredentialsProviderImplTest {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public CredentialsDescriptor getDescriptor() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @NonNull
         public String getUsername() {
             return username;
         }

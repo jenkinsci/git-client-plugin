@@ -6,7 +6,7 @@ import hudson.tools.AbstractCommandInstaller;
 import hudson.tools.BatchCommandInstaller;
 import hudson.tools.CommandInstaller;
 import hudson.tools.InstallSourceProperty;
-import hudson.util.VersionNumber;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;

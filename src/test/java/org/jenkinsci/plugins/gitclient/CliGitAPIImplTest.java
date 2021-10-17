@@ -24,7 +24,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
 
     private static boolean cliGitDefaultsSet = false;
 
-    private void setCliGitDefaults() throws Exception {
+    private void setCliGitDefaults() {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
         }
@@ -54,7 +54,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public class VersionTest {
+    public static class VersionTest {
 
         private boolean expectedIsAtLeastVersion;
         private int major;

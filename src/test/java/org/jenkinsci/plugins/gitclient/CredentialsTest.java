@@ -9,10 +9,8 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.model.Fingerprint;
 import hudson.util.LogTaskListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -163,12 +161,8 @@ public class CredentialsTest {
     }
 
     @Before
-    public void enableSETSID() throws IOException, InterruptedException {
-        if (gitImpl.equals("git") && privateKey != null && passphrase != null) {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = true;
-        } else {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
-        }
+    public void enableSETSID() {
+        CliGitAPIImpl.CALL_SETSID = gitImpl.equals("git") && privateKey != null && passphrase != null;
     }
 
     @After
@@ -187,7 +181,7 @@ public class CredentialsTest {
     }
 
     @After
-    public void disableSETSID() throws IOException, InterruptedException {
+    public void disableSETSID() {
         org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
     }
 
@@ -214,7 +208,7 @@ public class CredentialsTest {
         return cli.isAtLeastVersion(1, 7, 9, 0);
     }
 
-    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) throws IOException, InterruptedException {
+    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) {
         if (!implementation.equals("git")) {
             return false;
         }
@@ -223,7 +217,7 @@ public class CredentialsTest {
     }
 
     @Parameterized.Parameters(name = "Impl:{0} User:{2} Pass:{3} Embed:{9} Phrase:{5} URL:{1}")
-    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
+    public static Collection gitRepoUrls() throws IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
         String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
         for (String implementation : implementations) {
@@ -362,7 +356,7 @@ public class CredentialsTest {
         return joiner.toString();
     }
 
-    private void addCredential() throws IOException {
+    private void addCredential() {
         //Begin - JENKINS-56257
         //Credential need not be added when supplied in the URL
         if (this.credentialsEmbeddedInURL) {
@@ -486,6 +480,6 @@ public class CredentialsTest {
      * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
      */
     private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.parseBoolean(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
     private static final Pattern URL_MUST_MATCH_PATTERN = Pattern.compile(System.getProperty("URL_MUST_MATCH_PATTERN", ".*"));
 }

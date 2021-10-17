@@ -4,9 +4,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -68,8 +66,8 @@ public class FilePermissionsTest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -128,7 +126,7 @@ public class FilePermissionsTest {
     }
 
     @Parameterized.Parameters
-    public static List<Integer[]> permissionBits() throws MalformedURLException, FileNotFoundException, IOException {
+    public static List<Integer[]> permissionBits() {
         List<Integer[]> permissions = new ArrayList<>();
         /* 0640 and 0740 are the only permissions to be tested */
         Integer[] permissionArray0640 = {0640};
@@ -156,7 +154,7 @@ public class FilePermissionsTest {
 
     private void addFile() throws IOException, GitException, InterruptedException {
         String fileName = getFileName();
-        String content = fileName + " and UUID " + UUID.randomUUID().toString();
+        String content = fileName + " and UUID " + UUID.randomUUID();
         File added = new File(repo, fileName);
         assertFalse(fileName + " already exists", added.exists());
         FileUtils.writeStringToFile(added, content, "UTF-8");
@@ -173,7 +171,7 @@ public class FilePermissionsTest {
 
     private void modifyFile() throws IOException, GitException, InterruptedException {
         String fileName = getFileName();
-        String content = fileName + " chg UUID " + UUID.randomUUID().toString();
+        String content = fileName + " chg UUID " + UUID.randomUUID();
         File modified = new File(repo, fileName);
         assertTrue(fileName + " doesn't exist", modified.exists());
         FileUtils.writeStringToFile(modified, content, "UTF-8");
@@ -185,17 +183,15 @@ public class FilePermissionsTest {
     }
 
     private static String permString(int filePermission) {
-        StringBuilder sb = new StringBuilder();
-        sb.append((filePermission & 0400) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0200) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0100) != 0 ? 'x' : '-');
-        sb.append((filePermission & 0040) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0020) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0010) != 0 ? 'x' : '-');
-        sb.append((filePermission & 0004) != 0 ? 'r' : '-');
-        sb.append((filePermission & 0002) != 0 ? 'w' : '-');
-        sb.append((filePermission & 0001) != 0 ? 'x' : '-');
-        return sb.toString();
+        return String.valueOf((filePermission & 0400) != 0 ? 'r' : '-') +
+                ((filePermission & 0200) != 0 ? 'w' : '-') +
+                ((filePermission & 0100) != 0 ? 'x' : '-') +
+                ((filePermission & 0040) != 0 ? 'r' : '-') +
+                ((filePermission & 0020) != 0 ? 'w' : '-') +
+                ((filePermission & 0010) != 0 ? 'x' : '-') +
+                ((filePermission & 0004) != 0 ? 'r' : '-') +
+                ((filePermission & 0002) != 0 ? 'w' : '-') +
+                ((filePermission & 0001) != 0 ? 'x' : '-');
     }
 
     private Set<PosixFilePermission> filePerms(int filePermission) {

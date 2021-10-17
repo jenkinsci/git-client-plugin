@@ -51,7 +51,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.NTCredentials;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -84,7 +83,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.Proxy;
 import java.net.SocketAddress;
 import java.net.URISyntaxException;
@@ -309,7 +307,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         return resp.getStatusLine().getReasonPhrase();
     }
 
-    private void execute() throws IOException, ClientProtocolException {
+    private void execute() throws IOException {
         if (resp == null)
             if (entity != null) {
                 if (req instanceof HttpEntityEnclosingRequest) {
@@ -343,7 +341,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         req.addHeader(name, value);
     }
 
-    public void setRequestMethod(String method) throws ProtocolException {
+    public void setRequestMethod(String method) {
         this.method = method;
         if ("GET".equalsIgnoreCase(method)) //$NON-NLS-1$
             req = new HttpGet(urlStr);
@@ -409,7 +407,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         entity.setContentLength(contentLength);
     }
 
-    public OutputStream getOutputStream() throws IOException {
+    public OutputStream getOutputStream() {
         if (entity == null)
             entity = new TemporaryBufferEntity(new TemporaryBuffer.LocalFile(null));
         return entity.getBuffer();

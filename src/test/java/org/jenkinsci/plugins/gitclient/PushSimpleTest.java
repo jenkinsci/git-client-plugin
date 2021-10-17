@@ -19,12 +19,10 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Test
-    public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile(); // Old branch can't be pushed without force()
         assertThrows(GitException.class,
-                     () -> {
-                         workingGitClient.push().to(bareURI).ref(refSpec).timeout(1).execute();
-                     });
+                     () -> workingGitClient.push().to(bareURI).ref(refSpec).timeout(1).execute());
     }
 
     @Test
@@ -32,9 +30,7 @@ public class PushSimpleTest extends PushTest {
         checkoutBranchAndCommitFile();
         URIish bad = new URIish(bareURI.toString() + "-bad");
         assertThrows(GitException.class,
-                     () -> {
-                         workingGitClient.push().to(bad).ref(refSpec).execute();
-                     });
+                     () -> workingGitClient.push().to(bad).ref(refSpec).execute());
     }
 
     @Parameterized.Parameters(name = "{0} with {1}")

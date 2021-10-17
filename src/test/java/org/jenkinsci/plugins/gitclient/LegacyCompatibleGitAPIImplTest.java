@@ -61,8 +61,8 @@ public class LegacyCompatibleGitAPIImplTest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -165,7 +165,7 @@ public class LegacyCompatibleGitAPIImplTest {
     }
 
     private File commitTrackedFile() throws IOException, GitException, InterruptedException {
-        File trackedFile = touch("tracked-file", "tracked content " + UUID.randomUUID().toString());
+        File trackedFile = touch("tracked-file", "tracked content " + UUID.randomUUID());
         git.add("tracked-file");
         git.commit("First commit");
         assertEquals(trackedFile.getParentFile(), repo); /* Is tracked file in correct directory */
@@ -177,10 +177,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
         File trackedFile = commitTrackedFile();
-        assertThrows(GitException.class,
-                     () -> {
-                         git.showRevision(new Revision(gitClientCommit));
-                     });
+        assertThrows(GitException.class, () -> git.showRevision(new Revision(gitClientCommit)));
     }
 
     @Test
@@ -220,7 +217,7 @@ public class LegacyCompatibleGitAPIImplTest {
     public void testGetTagsOnCommit() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
         File trackedFile = commitTrackedFile();
-        final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID().toString();
+        final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID();
         final String tagMessage = "Tagged with " + uniqueTagName;
         myGit.tag(uniqueTagName, tagMessage);
         List<Tag> result = myGit.getTagsOnCommit(uniqueTagName);
@@ -240,12 +237,9 @@ public class LegacyCompatibleGitAPIImplTest {
     }
 
     @Test
-    public void testLsTreeThrows() throws Exception {
+    public void testLsTreeThrows() {
         Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
-        assertThrows(expectedExceptionClass,
-                     () -> {
-                         git.lsTree("HEAD");
-                     });
+        assertThrows(expectedExceptionClass, () -> git.lsTree("HEAD"));
     }
 
     @Test

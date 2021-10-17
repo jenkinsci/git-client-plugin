@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -93,8 +92,8 @@ public class GitClientFetchTest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -132,7 +131,7 @@ public class GitClientFetchTest {
     @Test
     public void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
-        workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID());
         testGitClient.add("file1");
         testGitClient.commit("commit1");
         ObjectId commit1 = testGitClient.revParse("HEAD");
@@ -158,7 +157,7 @@ public class GitClientFetchTest {
         assertThat(newAreaWorkspace.getGitClient().getHeadRev(newAreaWorkspace.getGitFileDir().getAbsolutePath(), "refs/heads/" + defaultBranchName), is(bareCommit1));
 
         /* Commit a new change to the original repo */
-        workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID());
         testGitClient.add("file2");
         testGitClient.commit("commit2");
         ObjectId commit2 = testGitClient.revParse("HEAD");
@@ -185,7 +184,7 @@ public class GitClientFetchTest {
         assertThat("bare2 != newArea2", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit2));
 
         /* Commit a new change to the original repo */
-        workspace.touch(testGitDir, "file3", "file3 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file3", "file3 content " + UUID.randomUUID());
         testGitClient.add("file3");
         testGitClient.commit("commit3");
         ObjectId commit3 = testGitClient.revParse("HEAD");
@@ -204,7 +203,7 @@ public class GitClientFetchTest {
         assertThat("bare3 != newArea3", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit3));
 
         /* Commit a new change to the original repo */
-        workspace.touch(testGitDir, "file4", "file4 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file4", "file4 content " + UUID.randomUUID());
         testGitClient.add("file4");
         testGitClient.commit("commit4");
         ObjectId commit4 = testGitClient.revParse("HEAD");
@@ -223,7 +222,7 @@ public class GitClientFetchTest {
         assertThat("bare4 != newArea4", newAreaWorkspace.getGitClient().revParse("HEAD"), is(bareCommit4));
 
         /* Commit a new change to the original repo */
-        workspace.touch(testGitDir, "file5", "file5 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file5", "file5 content " + UUID.randomUUID());
         testGitClient.add("file5");
         testGitClient.commit("commit5");
         ObjectId commit5 = testGitClient.revParse("HEAD");
@@ -243,9 +242,8 @@ public class GitClientFetchTest {
             newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
             expectedHead = bareCommit5;
         } else {
-            GitException gitException = assertThrows(GitException.class, () -> {
-                newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
-            });
+            GitException gitException = assertThrows(GitException.class,
+                    () -> newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute());
             assertThat(gitException.getMessage(), anyOf(
                     containsString("Could not merge"),
                     containsString("not something we can merge"),
@@ -262,7 +260,7 @@ public class GitClientFetchTest {
     @Issue("JENKINS-19591")
     public void test_fetch_needs_preceding_prune() throws Exception {
         /* Create a working repo containing a commit */
-        workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID());
         testGitClient.add("file1");
         testGitClient.commit("commit1");
         ObjectId commit1 = testGitClient.revParse("HEAD");
@@ -282,7 +280,7 @@ public class GitClientFetchTest {
         /* Create a branch in working repo named "parent" */
         testGitClient.branch("parent");
         testGitClient.checkout().ref("parent").execute();
-        workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file2", "file2 content " + UUID.randomUUID());
         testGitClient.add("file2");
         testGitClient.commit("commit2");
         ObjectId commit2 = testGitClient.revParse("HEAD");
@@ -322,7 +320,7 @@ public class GitClientFetchTest {
         /* Create parent/a branch in working repo */
         testGitClient.branch("parent/a");
         testGitClient.checkout().ref("parent/a").execute();
-        workspace.touch(testGitDir, "file3", "file3 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file3", "file3 content " + UUID.randomUUID());
         testGitClient.add("file3");
         testGitClient.commit("commit3");
         ObjectId commit3 = testGitClient.revParse("HEAD");
@@ -361,12 +359,11 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_prune_without_remote() throws Exception {
+    public void test_prune_without_remote() {
         /* Prune when a remote is not yet defined */
         String expectedMessage = testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
-        GitException gitException = assertThrows(GitException.class, () -> {
-            testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined"));
-        });
+        GitException gitException = assertThrows(GitException.class,
+                () -> testGitClient.prune(new RemoteConfig(new Config(), "remote-is-not-defined")));
         assertThat(gitException.getMessage(), containsString(expectedMessage));
     }
 
@@ -386,7 +383,7 @@ public class GitClientFetchTest {
         /* main -> branch1 */
         /*      -> branch2 */
         testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
-        workspace.touch(testGitDir, "file-main", "file main content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file-main", "file main content " + UUID.randomUUID());
         testGitClient.add("file-main");
         testGitClient.commit("main-commit");
         assertThat("Wrong branch count", testGitClient.getBranches().size(), is(1));
@@ -394,7 +391,7 @@ public class GitClientFetchTest {
 
         testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch1");
-        workspace.touch(testGitDir, "file-branch1", "file branch1 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file-branch1", "file branch1 content " + UUID.randomUUID());
         testGitClient.add("file-branch1");
         testGitClient.commit("branch1-commit");
         assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "branch1"));
@@ -402,7 +399,7 @@ public class GitClientFetchTest {
 
         testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
-        workspace.touch(testGitDir, "file-branch2", "file branch2 content " + UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file-branch2", "file branch2 content " + UUID.randomUUID());
         testGitClient.add("file-branch2");
         testGitClient.commit("branch2-commit");
         assertThat(getBranchNames(testGitClient.getBranches()), containsInAnyOrder(defaultBranchName, "branch1", "branch2"));
@@ -419,7 +416,7 @@ public class GitClientFetchTest {
         /* Remove branch1 from bare repo using original repo */
         cliGitCommand.run("push", bareWorkspace.getGitFileDir().getAbsolutePath(), ":branch1");
 
-        List<RefSpec> refSpecs = Arrays.asList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+        List<RefSpec> refSpecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
         newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
@@ -451,7 +448,7 @@ public class GitClientFetchTest {
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 
         cliGitCommand.run("remote", "add", "origin", newAreaWorkspace.getGitFileDir().getAbsolutePath());
-        testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.<RefSpec>emptyList());
+        testGitClient.fetch(new URIish(newAreaWorkspace.getGitFileDir().toString()), Collections.emptyList());
         assertThat(sha1.contains(newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD")), is(true));
     }
 
@@ -508,7 +505,7 @@ public class GitClientFetchTest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));

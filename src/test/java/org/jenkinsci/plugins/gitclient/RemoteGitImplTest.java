@@ -74,14 +74,12 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testGetRepository() throws IOException, InterruptedException {
-        assertThrows(UnsupportedOperationException.class, () -> {
-            remoteGit.getRepository();
-        });
+    public void testGetRepository() {
+        assertThrows(UnsupportedOperationException.class, () -> remoteGit.getRepository());
     }
 
     @Test
-    public void testClearCredentials() throws IOException, InterruptedException {
+    public void testClearCredentials() {
         remoteGit.clearCredentials();
     }
 
@@ -216,9 +214,7 @@ public class RemoteGitImplTest {
         String url = "https://github.com/jenkinsci/git-client-plugin";
         remoteGit.init();
         if (gitImplName.equals("git")) { // JGit does not throw an exception for undefined remote
-            assertThrows(GitException.class, () -> {
-                    remoteGit.getRemoteUrl(name);
-                });
+            assertThrows(GitException.class, () -> remoteGit.getRemoteUrl(name));
         }
         remoteGit.setRemoteUrl(name, url);
         assertThat(remoteGit.getRemoteUrl(name), is(url));

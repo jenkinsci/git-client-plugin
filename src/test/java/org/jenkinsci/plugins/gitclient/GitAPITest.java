@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
@@ -38,6 +37,7 @@ import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import java.io.File;
@@ -68,9 +68,6 @@ public class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private int logCount = 0;
     private final Random random = new Random();
@@ -140,8 +137,8 @@ public class GitAPITest {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -175,7 +172,7 @@ public class GitAPITest {
     }
 
     @After
-    public void afterTearDown() throws Exception {
+    public void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
@@ -259,7 +256,7 @@ public class GitAPITest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -611,7 +608,7 @@ public class GitAPITest {
     public void testPushTags() throws Exception {
         /* Working Repo with commit */
         final String fileName1 = "file1";
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit1");
         ObjectId commit1 = workspace.head();
@@ -640,7 +637,7 @@ public class GitAPITest {
         assertTrue("tag1 not pushed", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Create a new commit, move tag1 to that commit, attempt push */
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit2");
         ObjectId commit2 = workspace.head();
@@ -681,7 +678,7 @@ public class GitAPITest {
 
         /* Add another tag to working repo and push tags to the bare repo */
         final String fileName2 = "file2";
-        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName2);
         testGitClient.commit("commit2");
         workspace.tag("tag2");
@@ -843,9 +840,8 @@ public class GitAPITest {
     @Test
     public void testRevparseThrowsExpectedException() throws Exception {
         workspace.commitEmpty("init");
-        thrown.expect(GitException.class);
-        thrown.expectMessage("unknown-to-rev-parse");
-        testGitClient.revParse("unknown-to-rev-parse");
+        final GitException ex = assertThrows(GitException.class, () -> testGitClient.revParse("unknown-to-rev-parse"));
+        assertThat(ex.getMessage(), containsString("unknown-to-rev-parse"));
     }
 
     @Test
@@ -1030,8 +1026,8 @@ public class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit2");
 
-        thrown.expect(GitException.class);
-        testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
+        assertThrows(GitException.class, () ->
+                testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute());
     }
 
     @Issue("JENKINS-12402")
@@ -1507,7 +1503,7 @@ public class GitAPITest {
 
     @Test
     public void testNoSubmodules() throws Exception {
-        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID());
         testGitClient.add("committed-file");
         testGitClient.commit("commit1");
         IGitAPI igit = (IGitAPI) testGitClient;
@@ -1530,13 +1526,13 @@ public class GitAPITest {
         assertFalse(testGitClient.hasGitModules());
         IGitAPI igit = (IGitAPI) testGitClient;
         if (igit instanceof JGitAPIImpl) {
-            thrown.expect(UnsupportedOperationException.class);
+            assertThrows(UnsupportedOperationException.class, () -> igit.fixSubmoduleUrls("origin", listener));
         } else if (igit instanceof  CliGitAPIImpl){
-            thrown.expect(GitException.class);
-            thrown.expectMessage("Could not determine remote");
-            thrown.expectMessage("origin");
+            final GitException ex = assertThrows(GitException.class, () -> igit.fixSubmoduleUrls("origin", listener));
+            assertThat(ex.getMessage(), containsString("Could not determine remote"));
+            assertThat(ex.getMessage(), containsString("origin"));
         }
-        igit.fixSubmoduleUrls("origin", listener);
+
     }
 
     /**
@@ -1547,7 +1543,7 @@ public class GitAPITest {
     @Test
     public void testChangeLogAbort() throws Exception {
         final String logMessage = "changelog-abort-test-commit";
-        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID());
         testGitClient.add("file-changelog-abort");
         testGitClient.commit(logMessage);
         String sha1 = testGitClient.revParse("HEAD").name();
@@ -1563,8 +1559,8 @@ public class GitAPITest {
         changelogCommand = testGitClient.changelog();
         changelogCommand.to(writer);
         changelogCommand.execute();
-        assertTrue("No log message in " + writer.toString(), writer.toString().contains(logMessage));
-        assertTrue("No SHA1 in " + writer.toString(), writer.toString().contains(sha1));
+        assertTrue("No log message in " + writer, writer.toString().contains(logMessage));
+        assertTrue("No SHA1 in " + writer, writer.toString().contains(sha1));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
