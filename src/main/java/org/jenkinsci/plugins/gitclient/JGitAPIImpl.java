@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -113,10 +114,6 @@ import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.google.common.base.Functions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -830,7 +827,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return references;
     }
 
-    /* Adapted from http://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
+    /* Adapted from https://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
     private String createRefRegexFromGlob(String glob)
     {
         StringBuilder out = new StringBuilder();
@@ -1452,7 +1449,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    config.setStringList("remote", remote, "fetch", Lists.newArrayList(refspecs.stream().map(Functions.toStringFunction()::apply).collect(Collectors.toList())));
+                    config.setStringList("remote", remote, "fetch", refspecs.stream().map(Object::toString).collect(Collectors.toList()));
                     config.save();
 
                 } catch (GitAPIException | IOException e) {
@@ -1935,7 +1932,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
-                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref. (see http://git.661346.n2.nabble.com/JGit-Push-to-new-Amazon-S3-does-not-work-quot-funny-refname-quot-td2441026.html)
+                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref.
                                 if (!specs[spec].startsWith("/")) {
                                     specs[spec] = "/" + specs[spec];
                                 }
@@ -2454,7 +2451,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Adds all the refs as start commits.
      */
     private void markAllRefs(RevWalk walk) throws IOException {
-        markRefs(walk, Predicates.alwaysTrue());
+        markRefs(walk, unused -> true);
     }
 
     /**
@@ -2463,7 +2460,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void markRefs(RevWalk walk, Predicate<Ref> filter) throws IOException {
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
-                if (filter.apply(r)) {
+                if (filter.test(r)) {
                     RevCommit c = walk.parseCommit(r.getObjectId());
                     walk.markStart(c);
                 }
@@ -2774,7 +2771,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
         Set<String> remotes = getConfig(null).getSubsections("remote");
         if (remotes.contains(_default_))    return _default_;
-        else    return com.google.common.collect.Iterables.getFirst(remotes, null);
+        else    return remotes.stream().findFirst().orElse(null);
     }
 
     /** {@inheritDoc} */

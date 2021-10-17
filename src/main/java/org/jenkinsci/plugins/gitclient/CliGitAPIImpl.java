@@ -9,7 +9,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
@@ -1088,7 +1087,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * On Windows command prompt, '^' is an escape character (http://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
+     * On Windows command prompt, '^' is an escape character (https://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
      * This isn't a problem if 'git' we are executing is git.exe, because '^' is a special character only for the command processor,
      * but if 'git' we are executing is git.cmd (which is the case of msysgit), then the arguments we pass in here ends up getting
      * processed by the command processor, and so 'xyz^{commit}' becomes 'xyz{commit}' and fails.
@@ -2536,7 +2535,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        throw new RuntimeException("ssh executable not found. The git plugin only supports official git client http://git-scm.com/download/win");
+        throw new RuntimeException("ssh executable not found. The git plugin only supports official git client https://git-scm.com/download/win");
     }
 
     private File createWindowsGitSSH(File key, String user) throws IOException {
@@ -3045,7 +3044,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     return;
                 } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
                     deactivatingSparseCheckout = true;
-                    paths = Lists.newArrayList("/*");
+                    paths = Collections.singletonList("/*");
                 } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
                     launchCommand( "config", "core.sparsecheckout", "true" );
                 }

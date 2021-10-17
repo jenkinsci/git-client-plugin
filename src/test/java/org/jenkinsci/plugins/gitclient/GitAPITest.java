@@ -523,7 +523,7 @@ public class GitAPITest {
          * double struck small t as the first character of the file
          * name. The last three characters of the file name are three
          * different forms of the a-with-ring character. Refer to
-         * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
+         * https://unicode.org/reports/tr15/#Detecting_Normalization_Forms
          * for the source of those example characters.
          */
         final String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";

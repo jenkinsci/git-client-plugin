@@ -1,6 +1,10 @@
 #!groovy
 
-buildPlugin(failFast: false)
+buildPlugin(failFast: false,
+            configurations: [
+                [platform: 'linux', jdk: '11'],
+                [platform: 'windows', jdk: '8'],
+            ])
 
 // Return true if benchmarks should be run
 // Benchmarks run if any of the most recent 3 commits includes the word 'benchmark'
