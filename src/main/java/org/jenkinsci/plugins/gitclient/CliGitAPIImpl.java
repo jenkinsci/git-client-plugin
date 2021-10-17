@@ -9,7 +9,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
@@ -3054,7 +3053,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     return;
                 } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
                     deactivatingSparseCheckout = true;
-                    paths = Lists.newArrayList("/*");
+                    paths = Collections.singletonList("/*");
                 } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
                     launchCommand( "config", "core.sparsecheckout", "true" );
                 }

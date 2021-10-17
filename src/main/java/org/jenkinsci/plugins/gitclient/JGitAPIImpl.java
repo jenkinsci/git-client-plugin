@@ -40,7 +40,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -111,11 +113,6 @@ import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.google.common.base.Functions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -1452,7 +1449,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    config.setStringList("remote", remote, "fetch", Lists.newArrayList(Iterables.transform(refspecs, Functions.toStringFunction())));
+                    config.setStringList("remote", remote, "fetch", refspecs.stream().map(Object::toString).collect(Collectors.toList()));
                     config.save();
 
                 } catch (GitAPIException | IOException e) {
@@ -2454,7 +2451,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Adds all the refs as start commits.
      */
     private void markAllRefs(RevWalk walk) throws IOException {
-        markRefs(walk, Predicates.alwaysTrue());
+        markRefs(walk, unused -> true);
     }
 
     /**
@@ -2463,7 +2460,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void markRefs(RevWalk walk, Predicate<Ref> filter) throws IOException {
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
-                if (filter.apply(r)) {
+                if (filter.test(r)) {
                     RevCommit c = walk.parseCommit(r.getObjectId());
                     walk.markStart(c);
                 }
@@ -2775,7 +2772,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
         Set<String> remotes = getConfig(null).getSubsections("remote");
         if (remotes.contains(_default_))    return _default_;
-        else    return com.google.common.collect.Iterables.getFirst(remotes, null);
+        else    return remotes.stream().findFirst().orElse(null);
     }
 
     /** {@inheritDoc} */
