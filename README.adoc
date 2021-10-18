@@ -93,7 +93,7 @@ It is best to disable Windows Credentials Manager when installing Git on Jenkins
 [#bug-reports]
 == Bug Reports
 
-Report issues and enhancements with the https://issues.jenkins.io[Jenkins issue tracker].
+Report issues and enhancements with the link:https://www.jenkins.io/participate/report-issue/redirect/#17423[Jenkins issue tracker].
 Please use the link:https://www.jenkins.io/participate/report-issue/["How to Report an Issue"] guidelines when reporting issues.
 
 [#contributing-to-the-plugin]
