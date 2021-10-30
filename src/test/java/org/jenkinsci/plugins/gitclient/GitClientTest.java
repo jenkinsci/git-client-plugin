@@ -137,7 +137,7 @@ public class GitClientTest {
         try {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
-            String lfsVersionOutput = cliGitClient.launchCommand("lfs", "version");
+            String lfsVersionOutput = cliGitClient.launchCommand("lfs", "version").trim();
             gitLFSExists = lfsVersionOutput.startsWith("git-lfs");
             gitSparseCheckoutWithLFS = lfsVersionOutput.matches("git-lfs/[3-9][.].*|git-lfs/2[.]1[0-9].*|git-lfs/2[.][89].*");
             // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
