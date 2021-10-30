@@ -133,10 +133,13 @@ public class GitClientTest {
         CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
 
         boolean gitLFSExists;
+        boolean gitSparseCheckoutWithLFS;
         try {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
-            gitLFSExists = cliGitClient.launchCommand("lfs", "version").startsWith("git-lfs");
+            String lfsVersionOutput = cliGitClient.launchCommand("lfs", "version");
+            gitLFSExists = lfsVersionOutput.startsWith("git-lfs");
+            gitSparseCheckoutWithLFS = lfsVersionOutput.matches("git-lfs/[3-9][.].*|git-lfs/2[.]1[0-9].*|git-lfs/2[.][89].*");
             // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
             // Intentionally ignores the return value, assumes that failure will throw an exception
             // and disable the git LFS tests
@@ -144,6 +147,7 @@ public class GitClientTest {
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSExists = false;
+            gitSparseCheckoutWithLFS = false;
         }
         CLI_GIT_HAS_GIT_LFS = gitLFSExists;
 
@@ -156,7 +160,7 @@ public class GitClientTest {
             gitLFSConfigured = false;
         }
         CLI_GIT_HAS_GIT_LFS_CONFIGURED = gitLFSConfigured;
-        LFS_SUPPORTS_SPARSE_CHECKOUT = CLI_GIT_HAS_GIT_LFS_CONFIGURED && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
+        LFS_SUPPORTS_SPARSE_CHECKOUT = CLI_GIT_HAS_GIT_LFS_CONFIGURED && gitSparseCheckoutWithLFS && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
