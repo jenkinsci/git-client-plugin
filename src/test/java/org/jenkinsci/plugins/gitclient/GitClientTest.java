@@ -1,3 +1,4 @@
+
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
@@ -235,7 +236,11 @@ public class GitClientTest {
 
     @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
-        FileUtils.deleteDirectory(mirrorParent);
+        try {
+            FileUtils.deleteDirectory(mirrorParent);
+        } catch (IOException ioe) {
+            System.out.println("Ignored cleanup failure on " + mirrorParent);
+        }
     }
 
     @Before
