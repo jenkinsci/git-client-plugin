@@ -1,3 +1,4 @@
+
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
@@ -235,7 +236,11 @@ public class GitClientTest {
 
     @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
-        FileUtils.deleteDirectory(mirrorParent);
+        try {
+            FileUtils.deleteDirectory(mirrorParent);
+        } catch (IOException ioe) {
+            System.out.println("Ignored cleanup failure on " + mirrorParent);
+        }
     }
 
     @Before
@@ -1254,7 +1259,8 @@ public class GitClientTest {
     @Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
+        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS || isWindows()) {
+            /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
 
@@ -1900,7 +1906,8 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME) {
+        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+            /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
         String branch = "tests/getSubmodules";
@@ -1922,7 +1929,8 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME) {
+        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+            /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
         String branch = "tests/getSubmodules";
@@ -2086,7 +2094,8 @@ public class GitClientTest {
     @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SUBMODULE_DEINIT) {
+        if (!CLI_GIT_SUPPORTS_SUBMODULE_DEINIT || isWindows()) {
+            /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
         String branch = "tests/getSubmodules";
@@ -2224,7 +2233,8 @@ public class GitClientTest {
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
         /* Submodules not fully supported with JGit */
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git")) {
+        if (!gitImplName.equals("git") || isWindows()) {
+            /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
         String oldBranchName = "tests/getSubmodules";

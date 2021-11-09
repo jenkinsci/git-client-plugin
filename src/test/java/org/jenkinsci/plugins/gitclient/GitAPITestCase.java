@@ -703,6 +703,10 @@ public abstract class GitAPITestCase extends TestCase {
      * @throws Exception on test failure
      */
     public void test_submodule_checkout_and_clean_transitions() throws Exception {
+        if (isWindows() || random.nextBoolean()) {
+            /* Skip slow, low value test on Windows, run 50% of time on non-Windows */
+            return;
+        }
         w = clone(localMirror());
         assertSubmoduleDirs(w.repo, false, false);
 
@@ -1166,6 +1170,10 @@ public abstract class GitAPITestCase extends TestCase {
      */
     @Issue("JENKINS-8122")
     public void test_submodule_tags_not_fetched_into_parent() throws Exception {
+        if (isWindows() || random.nextBoolean()) {
+            /* Skip slow, low value test on Windows, run 50% of time on non-Windows */
+            return;
+        }
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         checkoutTimeout = 1 + random.nextInt(60 * 24);
         w.git.checkout().ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).branch(DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).execute();
