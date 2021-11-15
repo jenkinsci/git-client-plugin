@@ -1,6 +1,7 @@
 package hudson.plugins.git;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.init.Initializer;
@@ -63,6 +64,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         return getHome();
     }
 
+    @SuppressFBWarnings(value = "DCN_NULLPOINTER_EXCEPTION", justification = "Historical check (2013)")
     private static GitTool[] getInstallations(DescriptorImpl descriptor) {
         GitTool[] installations;
         try {
