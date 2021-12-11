@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
@@ -124,6 +125,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         GitTool[] installations = getInstallations(descriptor);
 
         if (installations != null && installations.length > 0) {
+            LOGGER.log(Level.FINEST, "Already initialized GitTool, no need to initialize again");
             //No need to initialize if there's already something
             return;
         }
