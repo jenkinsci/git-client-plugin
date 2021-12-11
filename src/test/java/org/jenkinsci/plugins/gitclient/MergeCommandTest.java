@@ -180,7 +180,7 @@ public class MergeCommandTest {
     }
 
     @Parameterized.Parameters(name = "{0}")
-    public static Collection gitImplementations() {
+    public static Collection<Object[]> gitImplementations() {
         List<Object[]> args = new ArrayList<>();
         String[] implementations = new String[]{"git", "jgit"};
         for (String implementation : implementations) {
