@@ -6,6 +6,8 @@
 target/
 work/
 .@tmp/
+.vs/
+.vscode/
 
 .project
 .classpath
