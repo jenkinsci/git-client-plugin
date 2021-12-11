@@ -1,13 +1,11 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
 import hudson.util.StreamTaskListener;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -16,12 +14,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;

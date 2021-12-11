@@ -17,7 +17,6 @@ import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
