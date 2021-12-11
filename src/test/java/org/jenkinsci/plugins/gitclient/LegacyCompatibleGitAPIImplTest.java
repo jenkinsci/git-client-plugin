@@ -97,33 +97,6 @@ public class LegacyCompatibleGitAPIImplTest {
         return f;
     }
 
-    private String cmd(boolean ignoreError, String... args) throws IOException, InterruptedException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
-                envs(env).stdout(out).join();
-        String s = out.toString();
-        if (!ignoreError) {
-            if (s == null || s.isEmpty()) {
-                s = StringUtils.join(args, ' ');
-            }
-            assertEquals(s, 0, st); /* Reports full output of failing commands */
-
-        }
-        return s;
-    }
-
-    private String log() throws IOException, InterruptedException {
-        return cmd(false, "git", "log", "-n", "3");
-    }
-
-    private String log(ObjectId rev) throws IOException, InterruptedException {
-        return cmd(false, "git", "log", "-n", "3", rev.name());
-    }
-
-    private String contentOf(File file) throws IOException {
-        return FileUtils.readFileToString(file, "UTF-8");
-    }
-
     @Test
     @Deprecated
     public void testCloneRemoteConfig() throws URISyntaxException, InterruptedException, IOException, ConfigInvalidException {
@@ -139,7 +112,6 @@ public class LegacyCompatibleGitAPIImplTest {
                 + "fetch = +refs/heads/*:refs/remotes/" + remoteName + "/*\n";
         config.fromText(configText);
         RemoteConfig remoteConfig = new RemoteConfig(config, remoteName);
-        List<URIish> list = remoteConfig.getURIs();
         git.clone(remoteConfig);
         File[] files = git.workspace.listFiles();
         assertEquals(files.length + "files in " + Arrays.toString(files), 1, files.length);
@@ -172,14 +144,14 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testShowRevisionThrowsGitException() throws Exception {
-        File trackedFile = commitTrackedFile();
+        commitTrackedFile();
         assertThrows(GitException.class, () -> git.showRevision(new Revision(gitClientCommit)));
     }
 
     @Test
     @Deprecated
     public void testShowRevisionTrackedFile() throws Exception {
-        File trackedFile = commitTrackedFile();
+        commitTrackedFile();
         ObjectId head = git.getHeadRev(repo.getPath(), defaultBranchName);
         List<String> revisions = git.showRevision(new Revision(head));
         assertEquals("commit " + head.name(), revisions.get(0));
@@ -195,7 +167,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Test
     @Deprecated
     public void testGetTagsOnCommit_non_empty() throws Exception {
-        File trackedFile = commitTrackedFile();
+        commitTrackedFile();
         List<Tag> result = git.getTagsOnCommit(taggedCommit.name());
         assertTrue("Tag list not empty: " + result, result.isEmpty());
     }
@@ -212,7 +184,7 @@ public class LegacyCompatibleGitAPIImplTest {
     @Deprecated
     public void testGetTagsOnCommit() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl) Git.with(listener, env).in(repo).using(gitImpl).getClient();
-        File trackedFile = commitTrackedFile();
+        commitTrackedFile();
         final String uniqueTagName = "testGetTagsOnCommit-" + UUID.randomUUID();
         final String tagMessage = "Tagged with " + uniqueTagName;
         myGit.tag(uniqueTagName, tagMessage);
@@ -240,7 +212,7 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     public void testLsTreeOneCommit() throws Exception {
-        File trackedFile = commitTrackedFile();
+        commitTrackedFile();
         List<IndexEntry> lsTree = git.lsTree("HEAD");
         assertEquals("lsTree wrong size - " + lsTree, 1, lsTree.size());
         assertEquals("tracked-file", lsTree.get(0).getFile());

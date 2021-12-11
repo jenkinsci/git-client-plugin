@@ -153,7 +153,6 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = temporaryFolder.newFolder();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()

@@ -95,7 +95,6 @@ public class CredentialsProviderImplTest {
 
     @Test
     public void testSupportsDisallowed() {
-        Secret secret = Secret.fromString(SECRET_VALUE);
         listener = StreamTaskListener.fromStdout();
         StandardUsernameCredentials badCred = new MyUsernameCredentialsImpl(USER_NAME);
         CredentialsProviderImpl badProvider = new CredentialsProviderImpl(listener, badCred);

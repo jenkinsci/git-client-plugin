@@ -98,7 +98,6 @@ public class RemoteGitImplTest {
     public void testSetCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
-        String url = "https://github.com/jenkinsci/git-client-plugin";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
         StandardUsernameCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
@@ -109,7 +108,6 @@ public class RemoteGitImplTest {
     public void testAddDefaultCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
-        String url = "https://github.com/jenkinsci/git-client-plugin";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
         StandardCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
