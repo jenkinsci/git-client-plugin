@@ -269,7 +269,7 @@
     <dependency>
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
-      <version>4.5.0</version>
+      <version>4.5.1</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
