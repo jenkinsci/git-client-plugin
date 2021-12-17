@@ -119,4 +119,3 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
                 (gitMajor == neededMajor && gitMinor == neededMinor  && gitPatch >= neededPatch);
     }
 }
-
