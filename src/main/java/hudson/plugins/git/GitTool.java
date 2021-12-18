@@ -207,4 +207,3 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         return File.pathSeparatorChar==';';
     }
 }
-
