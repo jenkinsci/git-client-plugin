@@ -73,7 +73,7 @@ public class WarnTempDirValueTest {
     }
 
     @Parameterized.Parameters(name = "{0}")
-    public static Collection envVarsToCheck() {
+    public static Collection<Object[]> envVarsToCheck() {
         List<Object[]> envVarNames = new ArrayList<>();
         Object[] tmp = {"TMP"};
         envVarNames.add(tmp);

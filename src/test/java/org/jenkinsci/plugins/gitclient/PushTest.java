@@ -17,7 +17,6 @@ import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
@@ -110,7 +109,7 @@ public class PushTest {
     }
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
-    public static Collection pushParameters() {
+    public static Collection<Object[]> pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
@@ -154,7 +153,6 @@ public class PushTest {
     public void createWorkingRepository() throws IOException, InterruptedException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = temporaryFolder.newFolder();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()

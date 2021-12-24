@@ -34,7 +34,7 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Parameterized.Parameters(name = "{0} with {1}")
-    public static Collection pushParameters() {
+    public static Collection<Object[]> pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
         Object[] gitParameter = {"git", "master", "master", null};
         parameters.add(gitParameter);
