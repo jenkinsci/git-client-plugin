@@ -11,7 +11,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>git-client</artifactId>
-  <version>${revision}${changelist}</version>
+  <version>3.10.1</version>
   <packaging>hpi</packaging>
 
   <name>Jenkins Git client plugin</name>
@@ -56,7 +56,7 @@
     <connection>scm:git:https://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>${scmTag}</tag>
+    <tag>git-client-3.10.1</tag>
   </scm>
 
   <properties>
@@ -324,8 +324,8 @@
             <!-- define a language-specific format -->
             <java>
               <!-- no need to specify files, inferred automatically -->
-              <endWithNewline></endWithNewline>
-              <removeUnusedImports></removeUnusedImports>
+              <endWithNewline />
+              <removeUnusedImports />
             </java>
           </configuration>
           <executions>
