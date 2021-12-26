@@ -47,16 +47,16 @@
       <id>olamy</id>
       <name>Olivier Lamy</name>
       <email>olamy@apache.org</email>
-      <timezone>Australia/Brisbane</timezone>
       <url>https://about.me/olamy</url>
+      <timezone>Australia/Brisbane</timezone>
     </developer>
   </developers>
 
   <scm>
     <connection>scm:git:https://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
     <tag>${scmTag}</tag>
+    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   </scm>
 
   <properties>
@@ -93,7 +93,8 @@
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by apache-httpcomponents-client-4-api -->
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
@@ -109,7 +110,8 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit http server so that git-userContent and other
+    <dependency>
+      <!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
@@ -117,7 +119,8 @@
       <artifactId>org.eclipse.jgit.http.server</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by apache-httpcomponents-client-4-api -->
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
@@ -128,13 +131,15 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's Apache HTTP client so that we can avoid
+    <dependency>
+      <!-- Include jgit's Apache HTTP client so that we can avoid
            automatic NTLM on Windows. See JENKINS-37934 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by apache-httpcomponents-client-4-api -->
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
@@ -150,12 +155,14 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's LFS module for eventual large file support -->
+    <dependency>
+      <!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- Provided by apache-httpcomponents-client-4-api -->
+        <exclusion>
+          <!-- Provided by apache-httpcomponents-client-4-api -->
           <groupId>org.apache.httpcomponents</groupId>
           <artifactId>httpclient</artifactId>
         </exclusion>
@@ -171,15 +178,18 @@
       <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion><!-- provided by jenkins-core -->
+        <exclusion>
+          <!-- provided by jenkins-core -->
           <groupId>com.jcraft</groupId>
           <artifactId>jzlib</artifactId>
         </exclusion>
-        <exclusion> <!-- Provided by jsch plugin -->
+        <exclusion>
+          <!-- Provided by jsch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
-        <exclusion> <!-- provided by jenkins-core -->
+        <exclusion>
+          <!-- provided by jenkins-core -->
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
@@ -189,12 +199,14 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
     </dependency>
-    <dependency><!-- Credentials test requires scm-api -->
+    <dependency>
+      <!-- Credentials test requires scm-api -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency><!-- Tests require the scm-api-tests jar -->
+    <dependency>
+      <!-- Tests require the scm-api-tests jar -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <classifier>tests</classifier>
@@ -209,7 +221,8 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
       <exclusions>
-        <exclusion><!-- Hamcrest 2.x bundles all hamcrest-core functionality in the hamcrest artifact -->
+        <exclusion>
+          <!-- Hamcrest 2.x bundles all hamcrest-core functionality in the hamcrest artifact -->
           <groupId>org.hamcrest</groupId>
           <artifactId>hamcrest-core</artifactId>
         </exclusion>
@@ -270,13 +283,13 @@
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
       <version>4.5.2</version>
+      <optional>true</optional>
       <exclusions>
         <exclusion>
           <groupId>com.google.code.findbugs</groupId>
           <artifactId>jsr305</artifactId>
         </exclusion>
       </exclusions>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -327,6 +340,14 @@
               <endWithNewline />
               <removeUnusedImports />
             </java>
+            <pom>
+              <sortPom>
+                <encoding>${project.build.sourceEncoding}</encoding>
+                <lineSeparator>\n</lineSeparator>
+                <expandEmptyElements>false</expandEmptyElements>
+                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+              </sortPom>
+            </pom>
           </configuration>
           <executions>
             <execution>
