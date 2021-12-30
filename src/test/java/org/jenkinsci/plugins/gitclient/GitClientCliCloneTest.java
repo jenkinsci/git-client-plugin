@@ -204,10 +204,8 @@ public class GitClientCliCloneTest {
     }
 
     /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The createRevParseBranch call
-     * creates a branch whose name is unknown to the tests. This
-     * checks that the branch name is not mentioned in a call to
-     * git rev-parse.
+     * those calls that unexpectedBranchName is not referenced in the
+     * log.
      */
     private void assertRevParseNotCalled(GitClient gitClient, String unexpectedBranchName) {
         assertLoggedMessage(gitClient, "git rev-parse ", unexpectedBranchName, false);
