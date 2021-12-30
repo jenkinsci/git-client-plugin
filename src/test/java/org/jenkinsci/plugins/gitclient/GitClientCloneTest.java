@@ -76,13 +76,13 @@ public class GitClientCloneTest {
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
-        /* Allow 3-7 second delay before priming the cache */
+        /* Allow 3-8 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
-        /* 3-7 second delay is small compared to execution time of this test */
+        /* 3-8 second delay is small compared to execution time of this test */
         Random random = new Random();
-        Thread.sleep((3 + random.nextInt(5)) * 1000L); // Wait 3-7 seconds before priming the cache
+        Thread.sleep(3000L + random.nextInt(5000)); // Wait 3-8 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeCloneTest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitClientCloneTest").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);

@@ -101,30 +101,13 @@ public abstract class GitAPITestCase extends TestCase {
     /** Name of the default branch on the official git client plugin remote repository. */
     private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; // Intentionally split string
 
-    private String revParseBranchName = null;
-
     private int checkoutTimeout = -1;
-    private int cloneTimeout = -1;
-    private int fetchTimeout = -1;
     private int submoduleUpdateTimeout = -1;
     private final Random random = new Random();
 
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
             assertSubstringTimeout("git checkout", checkoutTimeout);
-        }
-    }
-
-    private void assertCloneTimeout() {
-        if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git fetch", cloneTimeout);
-        }
-    }
-
-    private void assertFetchTimeout() {
-        if (fetchTimeout > 0) {
-            assertSubstringTimeout("git fetch", fetchTimeout);
         }
     }
 
@@ -387,11 +370,8 @@ public abstract class GitAPITestCase extends TestCase {
             defaultBranchName = getDefaultBranchName();
             defaultRemoteBranchName = "origin/" + defaultBranchName;
         }
-        revParseBranchName = null;
         setTimeoutVisibleInCurrentTest(true);
         checkoutTimeout = -1;
-        cloneTimeout = -1;
-        fetchTimeout = -1;
         submoduleUpdateTimeout = -1;
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
@@ -518,23 +498,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The createRevParseBranch call
-     * creates a branch whose name is unknown to the tests. This
-     * checks that the branch name is not mentioned in a call to
-     * git rev-parse.
-     */
-    private void assertRevParseCalls(String branchName) {
-        if (revParseBranchName == null) {
-            return;
-        }
-        String messages = StringUtils.join(handler.getMessages(), ";");
-        // Linux uses rev-parse without quotes
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
-        // Windows quotes the rev-parse argument
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
-    }
-
     protected abstract GitClient setupGitAPI(File ws) throws Exception;
 
     private List<File> tempDirsToDelete = new ArrayList<>();
@@ -550,10 +513,7 @@ public abstract class GitAPITestCase extends TestCase {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             assertCheckoutTimeout();
-            assertCloneTimeout();
-            assertFetchTimeout();
             assertSubmoduleUpdateTimeout();
-            assertRevParseCalls(revParseBranchName);
         } finally {
             handler.close();
         }

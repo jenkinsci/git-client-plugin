@@ -70,7 +70,7 @@ public class GitAPITestJGitNotInitialized {
         Random random = new Random();
         Thread.sleep(2000L + random.nextInt(3000)); // Wait 2-5 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGITAPITest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitAPITestJGitNotInitialized").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);

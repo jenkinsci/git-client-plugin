@@ -77,18 +77,12 @@ public class GitAPITest {
     private TaskListener listener;
     private final String gitImplName;
 
-    private String revParseBranchName = null;
-
     /**
      * Tests that need the default branch name can use this variable.
      */
     private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 
     private int checkoutTimeout = -1;
-    private int cloneTimeout = -1;
-    private int fetchTimeout = -1;
-    private int submoduleUpdateTimeout = -1;
-
 
     WorkspaceWithRepo workspace;
 
@@ -114,13 +108,13 @@ public class GitAPITest {
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
-        /* Allow 2-5 second delay before priming the cache */
+        /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
-        /* 2-5 second delay is small compared to execution time of this test */
+        /* 2-6 second delay is small compared to execution time of this test */
         Random random = new Random();
-        Thread.sleep((2 + random.nextInt(4)) * 1000L); // Wait 2-5 seconds before priming the cache
+        Thread.sleep(2000L + random.nextInt(4000)); // Wait 2-6 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGITAPITest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitAPITest").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
@@ -148,11 +142,7 @@ public class GitAPITest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        revParseBranchName = null;
         checkoutTimeout = -1;
-        cloneTimeout = -1;
-        fetchTimeout = -1;
-        submoduleUpdateTimeout = -1;
 
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
@@ -177,10 +167,6 @@ public class GitAPITest {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             assertCheckoutTimeout();
-            assertCloneTimeout();
-            assertFetchTimeout();
-            assertSubmoduleUpdateTimeout();
-            assertRevParseCalls(revParseBranchName);
         } finally {
             handler.close();
         }
@@ -189,25 +175,6 @@ public class GitAPITest {
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
             assertSubstringTimeout("git checkout", checkoutTimeout);
-        }
-    }
-
-    private void assertCloneTimeout() {
-        if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git fetch", cloneTimeout);
-        }
-    }
-
-    private void assertFetchTimeout() {
-        if (fetchTimeout > 0) {
-            assertSubstringTimeout("git fetch", fetchTimeout);
-        }
-    }
-
-    private void assertSubmoduleUpdateTimeout() {
-        if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
         }
     }
 
@@ -233,23 +200,6 @@ public class GitAPITest {
         assertThat(substringMessages, is(not(empty())));
         assertThat(substringTimeoutMessages, is(not(empty())));
         assertEquals(substringMessages, substringTimeoutMessages);
-    }
-
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The createRevParseBranch call
-     * creates a branch whose name is unknown to the tests. This
-     * checks that the branch name is not mentioned in a call to
-     * git rev-parse.
-     */
-    private void assertRevParseCalls(String branchName) {
-        if (revParseBranchName == null) {
-            return;
-        }
-        String messages = StringUtils.join(handler.getMessages(), ";");
-        // Linux uses rev-parse without quotes
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
-        // Windows quotes the rev-parse argument
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
