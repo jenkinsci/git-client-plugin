@@ -12,6 +12,7 @@ import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -28,8 +29,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.*;
@@ -322,6 +325,35 @@ public class GitClientCloneTest {
         assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
     }
 
+    @Test
+    public void test_clone_default_timeout_logging() throws Exception {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
+    }
+
+    @Test
+    public void test_clone_timeout_logging() throws Exception {
+        int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
+        testGitClient.clone_().url(workspace.localMirror()).timeout(largerTimeout).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", largerTimeout);
+    }
+
+    @Test
+    public void test_max_timeout_logging() throws Exception {
+        int maxTimeout = JGitAPIImpl.MAX_TIMEOUT;
+        testGitClient.clone_().url(workspace.localMirror()).timeout(maxTimeout).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", maxTimeout);
+    }
+
+    @Test
+    public void test_clone_huge_timeout_logging() throws Exception {
+        int hugeTimeout = JGitAPIImpl.MAX_TIMEOUT + 1 + random.nextInt(Integer.MAX_VALUE - 1 - JGitAPIImpl.MAX_TIMEOUT);
+        testGitClient.clone_().url(workspace.localMirror()).timeout(hugeTimeout).repositoryName("origin").execute();
+        /* Expect fallback value from JGit for this nonsense timeout value */
+        int expectedValue = gitImplName.startsWith("jgit") ? JGitAPIImpl.MAX_TIMEOUT : hugeTimeout;
+        assertTimeout(testGitClient, "fetch", expectedValue);
+    }
+
     private void assertAlternatesFileExists() {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
@@ -397,4 +429,33 @@ public class GitClientCloneTest {
         assertThat("Updated URL", remotes, containsString(workspace.localMirror()));
     }
 
+    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
+        List<String> messages = handler.getMessages();
+        List<String> candidateMessages = new ArrayList<>();
+        List<String> matchedMessages = new ArrayList<>();
+        final String messageRegEx = ".*\\b" + candidateSubstring + "\\b.*"; // the expected substring
+        final String timeoutRegEx = messageRegEx + expectedValue + "\\b.*"; // # timeout=<value>
+        for (String message : messages) {
+            if (message.matches(messageRegEx)) {
+                candidateMessages.add(message);
+            }
+            if (message.matches(timeoutRegEx)) {
+                matchedMessages.add(message);
+            }
+        }
+        assertThat("No messages logged", messages, is(not(empty())));
+        if (expectToFindMatch) {
+            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
+        } else {
+            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+        }
+    }
+
+    private void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
+        String implName = gitImplName.equals("git") ? "git" : "JGit";
+        String operationName = implName + " " + substring;
+        assertLoggedMessage(gitClient, operationName, " [#] timeout=" + expectedTimeout, true);
+    }
 }

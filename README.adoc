@@ -56,6 +56,22 @@ Click the "*Add Git*" button in the "*Global Tool Configuration*" section under 
 
 image::images/enable-jgit.png[Enable JGit or JGit with Apache HTTP Client]
 
+=== JGit timeout
+
+The command line git implementation in the git client plugin provides a timeout setting for many operations like fetch and checkout.
+Operations that take more than the specified time are canceled.
+When the timeout is exceeded, the command line git process fails and the git client plugin API operation fails.
+
+The JGit implementation in the git client plugin uses a different concept of timeout.
+The JGit timeout is a network level transport timeout rather than a timeout of a higher level JGit operation.
+If the JGit network transport does not receive a response within the defined timeout, the JGit API call fails.
+The link:https://javadoc.io/static/org.eclipse.jgit/org.eclipse.jgit/5.13.0.202109080827-r/org/eclipse/jgit/transport/Transport.html#setTimeout-int-[JGit javadoc] describes the JGit API.
+
+The JGit timeout implementation prevents JGit operations from hanging indefinitely when a remote server stops responding.
+It does not stop a JGit operation if it has executed for more than a specified time.
+The JGit timeout counter is reset each time a response is received from the remote server during the JGit API call.
+The command line git timeout counter is set at the start of the command line git call and is not reset during the call.
+
 [#jgit-with-apache-http-client]
 === JGit with Apache HTTP Client
 

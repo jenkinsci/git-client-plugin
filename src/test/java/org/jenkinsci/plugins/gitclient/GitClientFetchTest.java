@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.io.FileMatchers.*;
@@ -55,6 +58,10 @@ public class GitClientFetchTest {
     private File testGitDir;
     private CliGitCommand cliGitCommand;
     private final String gitImplName;
+
+    private final Random random = new Random();
+    private LogHandler handler = null;
+    private TaskListener listener;
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
@@ -118,7 +125,15 @@ public class GitClientFetchTest {
 
     @Before
     public void setUpRepositories() throws Exception {
-        workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, TaskListener.NULL);
+        Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
+        handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+
+        workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
@@ -355,7 +370,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().prune(new RemoteConfig(new Config(), "origin"));
 
         /* Fetch should succeed */
-        newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).execute();
+        newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).timeout(7).execute();
     }
 
     @Test
@@ -420,7 +435,7 @@ public class GitClientFetchTest {
 
         /* Fetch without prune should leave branch1 in newArea */
         newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
-        newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).execute();
+        newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).timeout(13).execute();
         remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
         assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
 
@@ -490,6 +505,28 @@ public class GitClientFetchTest {
         assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
 
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The checkoutRandomBranch call
+     * creates a branch with a random name. The later assertion checks that
+     * the random branch name is not mentioned in a call to git rev-parse.
+     */
+    private String checkoutRandomBranch() throws GitException, InterruptedException {
+        String branchName = "rev-parse-branch-" + UUID.randomUUID();
+        testGitClient.checkout().ref("origin/master").branch(branchName).execute();
+        Set<String> branchNames = testGitClient.getBranches().stream().map(Branch::getName).collect(Collectors.toSet());
+        assertThat(branchNames, hasItem(branchName));
+        return branchName;
+    }
+
+    @Test
+    public void test_fetch_default_timeout_logging() throws Exception {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        String randomBranchName = checkoutRandomBranch();
+        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).execute();
+        assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
+        assertRevParseNotCalled(testGitClient, randomBranchName);
+    }
+
     private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
         assertThat("Wrong remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
@@ -517,4 +554,41 @@ public class GitClientFetchTest {
         assertThat(new File(gitDir, alternates), is(not(anExistingFile())));
     }
 
+    private void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
+        assertLoggedMessage(gitClient, substring, " [#] timeout=" + expectedTimeout, true);
+    }
+
+    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
+        List<String> messages = handler.getMessages();
+        List<String> candidateMessages = new ArrayList<>();
+        List<String> matchedMessages = new ArrayList<>();
+        final String messageRegEx = ".*\\b" + candidateSubstring + "\\b.*"; // the expected substring
+        final String timeoutRegEx = messageRegEx + expectedValue + "\\b.*"; // # timeout=<value>
+        for (String message : messages) {
+            if (message.matches(messageRegEx)) {
+                candidateMessages.add(message);
+            }
+            if (message.matches(timeoutRegEx)) {
+                matchedMessages.add(message);
+            }
+        }
+        assertThat("No messages logged", messages, is(not(empty())));
+        if (expectToFindMatch) {
+            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
+        } else {
+            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+        }
+    }
+
+    /* JENKINS-33258 detected many calls to git rev-parse. This checks
+     * those calls are not being made. The checkoutRandomBranch call
+     * creates a branch whose name is unknown to the tests. This
+     * checks that the branch name is not mentioned in a call to
+     * git rev-parse.
+     */
+    private void assertRevParseNotCalled(GitClient gitClient, String unexpectedBranchName) {
+        assertLoggedMessage(gitClient, "git rev-parse ", unexpectedBranchName, false);
+    }
 }
