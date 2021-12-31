@@ -68,51 +68,6 @@ public class GitClientCliCloneTest {
         testGitClient = workspace.getGitClient();
     }
 
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The checkoutRandomBranch call
-     * creates a branch with a random name. The later assertion checks that
-     * the random branch name is not mentioned in a call to git rev-parse.
-     */
-    private String checkoutRandomBranch() throws GitException, InterruptedException {
-        String branchName = "rev-parse-branch-" + UUID.randomUUID();
-        testGitClient.checkout().ref("origin/master").branch(branchName).execute();
-        Set<String> branchNames = testGitClient.getBranches().stream().map(Branch::getName).collect(Collectors.toSet());
-        assertThat(branchNames, hasItem(branchName));
-        return branchName;
-    }
-
-    @Test
-    public void test_clone_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        assertTimeout(testGitClient, "git fetch", CliGitAPIImpl.TIMEOUT);
-    }
-
-    @Test
-    public void test_clone_timeout_logging() throws Exception {
-        int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
-        testGitClient.clone_().url(workspace.localMirror()).timeout(largerTimeout).repositoryName("origin").execute();
-        assertTimeout(testGitClient, "git fetch", largerTimeout);
-    }
-
-    @Test
-    public void test_fetch_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        String randomBranchName = checkoutRandomBranch();
-        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).execute();
-        assertTimeout(testGitClient, "git fetch", CliGitAPIImpl.TIMEOUT);
-        assertRevParseNotCalled(testGitClient, randomBranchName);
-    }
-
-    @Test
-    public void test_fetch_timeout_logging() throws Exception {
-        int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
-        String randomBranchName = checkoutRandomBranch(); // Check that prune(true) does not call git rev-parse
-        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).timeout(largerTimeout).execute();
-        assertTimeout(testGitClient, "git fetch .* origin", largerTimeout);
-        assertRevParseNotCalled(testGitClient, randomBranchName);
-    }
-
     @Test
     public void test_checkout_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
@@ -201,13 +156,5 @@ public class GitClientCliCloneTest {
 
     private void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
         assertLoggedMessage(gitClient, substring, " [#] timeout=" + expectedTimeout, true);
-    }
-
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls that unexpectedBranchName is not referenced in the
-     * log.
-     */
-    private void assertRevParseNotCalled(GitClient gitClient, String unexpectedBranchName) {
-        assertLoggedMessage(gitClient, "git rev-parse ", unexpectedBranchName, false);
     }
 }
