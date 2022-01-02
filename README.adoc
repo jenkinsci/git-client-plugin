@@ -81,22 +81,21 @@ The issue in JGit has now been resolved and delivered in git client plugin relea
 JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
 [#installing-portablegit-automatically]
-=== Installing PortableGit Automatically
+=== Installing MinGit for Windows Automatically
 
-The git client plugin can install link:https://git-scm.com/download/win[Git for Windows Portable] automatically from a zip file.
+Jenkins can install link:https://github.com/git-for-windows/git/wiki/MinGit[MinGit for Windows] automatically.
+MinGit for Windows is an intentionally minimal, non-interactive distribution of Git for Windows, with third-party applications as its intended audience.
+Jenkins is well suited to use MinGit on Windows agents.
 
-image::images/portable-git-for-windows-as-a-tool.png[Configure Git for Windows Portable to install automatically]
+image::images/mingit-for-windows-as-a-tool.png[Configure MinGit for Windows to install automatically]
 
-* Download and install link:https://github.com/git-for-windows/git/releases/[Git for Windows Portable] from its 7z.exe file.
-* Create a zip file of the installation as `PortableGit-a.bb.c.zip`.
-* Upload that zip file to an HTTP server.
-* Set the `Download URL for binary archive` as the URL of the uploaded zip file.
-* Leave `Path to Git` executable as `git`.
-* Specify `PortableGit-a.bb.c\bin\git.exe` for the `Subdirectory of extracted archive`.
-  This points to the git.exe in the archive relative to the root of the archive.
+* Configure a global git tool from "Manage Jenkins" >> "Global Tool Configuration" with `git` as the `Path to Git executable`
+* Set the label `windows` to limit the tool installer to agents with the `windows` label
+* Set the `Download URL for binary archive` as the URL of the link:https://github.com/git-for-windows/git/releases/[MinGit zip file]
+* Specify `mingw64\bin\git.exe` as the `Subdirectory of extracted archive`.
 
-Git for Windows Portable will be installed on each agent in `tools\git\PortableGit-a.bb.c`.
-The path to the git executable will be `tools\git\PortableGit-a.bb.c\bin\git.exe`.
+Git for Windows Portable will be installed on each agent in `tools\git\mingw64`.
+The path to the git executable will be `tools\git\mingw64\bin\git.exe`.
 
 [#windows-credentials-manager]
 == Windows Credentials Manager
