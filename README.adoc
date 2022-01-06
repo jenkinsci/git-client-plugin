@@ -80,7 +80,7 @@ A workaround was implemented to provide JGit but use Apache HTTP client for auth
 The issue in JGit has now been resolved and delivered in git client plugin releases.
 JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
-[#installing-portablegit-automatically]
+[#installing-mingit-for-windows-automatically]
 === Installing MinGit for Windows Automatically
 
 Jenkins can install link:https://github.com/git-for-windows/git/wiki/MinGit[MinGit for Windows] automatically.
