@@ -479,8 +479,25 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         Boolean isBare = false;
         try {
             isBare = ((hudson.plugins.git.IGitAPI)referenceGit).isBareRepository();
-        } catch (InterruptedException e) {
-            isBare = false; // At least try to look into submodules...
+        } catch (InterruptedException | GitException e) {
+            // Proposed base directory whose subdirs contain refrepos might
+            // itself be not a repo. Shouldn't be per reference scripts, but...
+            if (e.toString().contains("GIT_DISCOVERY_ACROSS_FILESYSTEM")) {
+                // Note the message may be localized, envvar name should not be:
+                // stderr: fatal: not a git repository (or any parent up to mount point /some/path)
+                // Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
+                // As far as the logic below is currently concerned, we do not
+                // look for submodules directly in a bare repo.
+                isBare = true;
+            } else {
+                // Some other error
+                isBare = false; // At least try to look into submodules...
+                isBare = false;
+            }
+
+            LOGGER.log(Level.SEVERE, "getSubmodulesUrls(): failed to determine " +
+                "isBareRepository() in '" + referenceBaseDirAbs + "'; " +
+                "assuming '" + isBare + "': " + e.toString());
         }
 
         // Simplify checks below by stating a useless needle is null
