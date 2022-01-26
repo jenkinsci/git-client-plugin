@@ -2553,7 +2553,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             if (status != 0) {
-                throw new GitException("Command \"" + command + "\" returned status code " + status + ":\nstdout: " + stdout + "\nstderr: "+ stderr);
+                if (workDir == null)
+                    workDir = java.nio.file.Paths.get(".").toAbsolutePath().normalize().toFile();
+                throw new GitException("Command \"" + command +
+                    "\" executed in workdir \"" + workDir.toString() +
+                    "\" returned status code " + status +
+                    ":\nstdout: " + stdout + "\nstderr: " + stderr);
             }
 
             return stdout;
