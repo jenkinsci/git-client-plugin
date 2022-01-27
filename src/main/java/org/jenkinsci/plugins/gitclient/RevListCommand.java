@@ -54,6 +54,15 @@ public interface RevListCommand extends GitCommand {
     RevListCommand firstParent(boolean firstParent);
 
     /**
+     * Limit the number of commits to output.
+     *
+     * @param maxCount {@code int} to limit the number of commits to output.
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @since 2.5.0
+     */
+    RevListCommand maxCount(int maxCount);
+
+    /**
      * to.
      *
      * @param revs a {@link java.util.List} object.

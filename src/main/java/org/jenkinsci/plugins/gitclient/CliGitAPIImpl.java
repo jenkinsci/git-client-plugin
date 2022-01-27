@@ -3187,6 +3187,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
+            private Integer maxCount;
             private String refspec;
             private List<ObjectId> out;
 
@@ -3222,6 +3223,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand maxCount(int maxCount) {
+                this.maxCount = maxCount;
+                return this;
+            }
+
+            @Override
             public RevListCommand to(List<ObjectId> revs){
                 this.out = revs;
                 return this;
@@ -3247,6 +3254,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (nowalk) {
                     args.add("--no-walk");
+                }
+
+                if (maxCount != null) {
+                    args.add("--max-count=" + maxCount);
                 }
 
                 if (refspec != null) {

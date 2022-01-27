@@ -1964,6 +1964,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
+            private Integer maxCount;
             private String refspec;
             private List<ObjectId> out;
 
@@ -1996,6 +1997,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand maxCount(int maxCount) {
+                this.maxCount = maxCount;
+                return this;
+            }
+
+            @Override
             public RevListCommand to(List<ObjectId> revs){
                 this.out = revs;
                 return this;
@@ -2011,6 +2018,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException, InterruptedException {
                 if (firstParent) {
                   throw new UnsupportedOperationException("not implemented yet");
+                }
+
+                if (maxCount != null) {
+                    throw new UnsupportedOperationException("not implemented yet");
                 }
 
                 try (Repository repo = getRepository();
