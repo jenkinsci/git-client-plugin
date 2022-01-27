@@ -3187,6 +3187,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
+            private boolean parents;
+            private Integer minParents;
+            private Integer maxParents;
             private Integer maxCount;
             private String refspec;
             private List<ObjectId> out;
@@ -3223,6 +3226,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand parents(boolean parents) {
+                this.parents = parents;
+                return this;
+            }
+
+            @Override
+            public RevListCommand minParents(int minParents) {
+                this.minParents = minParents;
+                return this;
+            }
+
+            @Override
+            public RevListCommand maxParents(int maxParents) {
+                this.maxParents = maxParents;
+                return this;
+            }
+
+            @Override
             public RevListCommand maxCount(int maxCount) {
                 this.maxCount = maxCount;
                 return this;
@@ -3255,6 +3276,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (nowalk) {
                     args.add("--no-walk");
                 }
+                if (parents) {
+                    if (maxCount != null) {
+                        throw new UnsupportedOperationException("the list 'to' is use to store parents");
+                    }
+                    // Enforce limit to 1 line, as 'to' is one-dimension.
+                    args.add("--max-count=1");
+                    args.add("--parents");
+                }
+
+                if (minParents != null) {
+                    args.add("--min-parents=" + minParents);
+                }
+
+                if (maxParents != null) {
+                    args.add("--max-parents=" + maxParents);
+                }
 
                 if (maxCount != null) {
                     args.add("--max-count=" + maxCount);
@@ -3273,6 +3310,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 try {
                     while ((line = rdr.readLine()) != null) {
+                        if (parents) {
+                            Arrays.stream(line.split("\\s+")).forEach(sha1 -> out.add(ObjectId.fromString(sha1)));
+                            continue; // We could break;
+                        }
                         // Add the SHA1
                         out.add(ObjectId.fromString(line));
                     }

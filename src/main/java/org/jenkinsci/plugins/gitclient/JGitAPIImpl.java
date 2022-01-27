@@ -1964,6 +1964,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
+            private boolean parents;
+            private Integer minParents;
+            private Integer maxParents;
             private Integer maxCount;
             private String refspec;
             private List<ObjectId> out;
@@ -1997,6 +2000,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand parents(boolean parents) {
+                this.parents = parents;
+                return this;
+            }
+
+            @Override
+            public RevListCommand minParents(int minParents) {
+                this.minParents = minParents;
+                return this;
+            }
+
+            @Override
+            public RevListCommand maxParents(int maxParents) {
+                this.maxParents = maxParents;
+                return this;
+            }
+
+            @Override
             public RevListCommand maxCount(int maxCount) {
                 this.maxCount = maxCount;
                 return this;
@@ -2017,9 +2038,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 if (firstParent) {
-                  throw new UnsupportedOperationException("not implemented yet");
+                    throw new UnsupportedOperationException("not implemented yet");
                 }
-
+                if (parents) {
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if (minParents != null) {
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
+                if (maxParents != null) {
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
                 if (maxCount != null) {
                     throw new UnsupportedOperationException("not implemented yet");
                 }
