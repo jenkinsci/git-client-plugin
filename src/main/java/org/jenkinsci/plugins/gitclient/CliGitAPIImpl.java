@@ -3184,6 +3184,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public RevListCommand revList_() {
         return new RevListCommand() {
+            private boolean reverse;
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
@@ -3262,8 +3263,18 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand reverse(boolean reverse) {
+                this.reverse = reverse;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args = new ArgumentListBuilder("rev-list");
+
+                if (reverse) {
+                    args.add("--reverse");
+                }
 
                 if (firstParent) {
                    args.add("--first-parent");

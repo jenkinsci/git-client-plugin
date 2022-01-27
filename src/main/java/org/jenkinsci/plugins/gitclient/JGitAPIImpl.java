@@ -1961,6 +1961,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public RevListCommand revList_()
     {
         return new RevListCommand() {
+            boolean reverse;
             private boolean all;
             private boolean nowalk;
             private boolean firstParent;
@@ -2036,7 +2037,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public RevListCommand reverse(boolean reverse) {
+                this.reverse = reverse;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
+                if (reverse) {
+                    throw new UnsupportedOperationException("not implemented yet");
+                }
                 if (firstParent) {
                     throw new UnsupportedOperationException("not implemented yet");
                 }

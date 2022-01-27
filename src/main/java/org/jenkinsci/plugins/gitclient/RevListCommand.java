@@ -104,4 +104,13 @@ public interface RevListCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
      */
     RevListCommand reference(String reference);
+
+    /**
+     * Output the commits chosen to be shown in reverse order.
+     *
+     * @param reverse {@code true} to reverse order
+     * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
+     * @since 2.5.0
+     */
+    RevListCommand reverse(boolean reverse);
 }
