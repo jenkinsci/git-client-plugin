@@ -1617,6 +1617,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    @Override
+    public CherryPickCommand cherryPick() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override
     public void deleteTag(String tagName) throws GitException {

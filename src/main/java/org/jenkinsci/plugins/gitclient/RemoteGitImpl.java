@@ -392,6 +392,15 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     }
 
     /**
+     * cherry-pick.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CherryPickCommand} object.
+     */
+    public CherryPickCommand cherryPick() {
+        return command(CherryPickCommand.class);
+    }
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.

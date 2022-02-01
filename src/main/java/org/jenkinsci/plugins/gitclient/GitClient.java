@@ -430,6 +430,13 @@ public interface GitClient {
     RebaseCommand rebase();
 
     /**
+     * cherry-pick.
+     *
+     * @return a {@link org.jenkinsci.plugins.gitclient.CherryPickCommand} object.
+     */
+    CherryPickCommand cherryPick();
+
+    /**
      * init_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.

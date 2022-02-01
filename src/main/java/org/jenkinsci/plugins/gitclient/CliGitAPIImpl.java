@@ -999,6 +999,47 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    @Override
+    public CherryPickCommand cherryPick() {
+        return new CherryPickCommand() {
+            private String reference;
+            private List<ObjectId> commits;
+
+            @Override
+            public CherryPickCommand commits(List<ObjectId> commits) {
+                this.commits = commits;
+                return this;
+            }
+
+            @Override
+            public CherryPickCommand setReference(String reference) {
+                this.reference = reference;
+                return this;
+            }
+
+            @Override
+            public void execute() throws GitException, InterruptedException {
+
+
+                try {
+                    ArgumentListBuilder args = new ArgumentListBuilder();
+                    args.add("cherry-pick");
+                    if (reference != null) {
+                        args.add(reference);
+                    }
+                    if (commits != null) {
+                        this.commits.forEach(c -> args.add(c.name()));
+                    }
+                    launchCommand(args);
+                } catch (GitException e) {
+                    e.printStackTrace(listener.error("Failed to cherry-pick"));
+                    launchCommand("cherry-pick", "--abort");
+                    throw new GitException("Could not cherry-pick " + reference, e);
+                }
+            }
+        };
+    }
+
     /**
      * init_.
      *
