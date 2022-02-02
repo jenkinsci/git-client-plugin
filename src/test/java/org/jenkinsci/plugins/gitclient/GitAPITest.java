@@ -58,7 +58,7 @@ import java.util.logging.Logger;
  */
 
 @RunWith(Parameterized.class)
-public class GitAPITest {
+public abstract class GitAPITest {
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
