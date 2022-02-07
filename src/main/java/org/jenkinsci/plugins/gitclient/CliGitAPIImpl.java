@@ -3408,6 +3408,33 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    public List<ObjectId> revListFull(String ref, int minParents, int maxParents, int maxCount, boolean parents, boolean reverse) throws GitException, InterruptedException {
+        List<ObjectId> oidList = new ArrayList<>();
+        RevListCommand revListCommand = revList_();
+        if (minParents > 0) {
+            revListCommand.minParents(minParents);
+        }
+        if (maxParents > 0) {
+            revListCommand.maxParents(maxParents);
+        }
+        if (maxCount > 0) {
+            revListCommand.maxCount(maxCount);
+        }
+        if (parents) {
+            revListCommand.parents(true);
+        }
+        if (reverse) {
+            revListCommand.reverse(true);
+        }
+        revListCommand.reference(ref);
+        revListCommand.to(oidList);
+        revListCommand.execute();
+
+        return oidList;
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
         if (commit == null) {
             return false;

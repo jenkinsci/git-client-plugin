@@ -2148,6 +2148,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return oidList;
     }
 
+    @Override
+    public List<ObjectId> revListFull(String ref, int minParents, int maxParents, int maxCount, boolean parents, boolean reverse) throws GitException, InterruptedException {
+        throw new UnsupportedOperationException("not implemented yet");
+    }
+
     /** {@inheritDoc} */
     @Override
     public ObjectId revParse(String revName) throws GitException {

@@ -710,6 +710,22 @@ public interface GitClient {
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
 
+    /**
+     * revList with more options
+     * remote proxy pattern does not work and break builder with "to" argument which is used as output.
+     *
+     * @param ref a {@link java.lang.String} object.
+     * @param minParents {@code int} to limit the parents.
+     * @param maxParents {@code int} to limit the parents.
+     * @param maxCount {@code int} to limit the number of commits to output.
+     * @param parents {@code true} to list parents
+     * @param reverse {@code true} to reverse order
+     * @return a {@link java.util.List} object.
+     * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @throws java.lang.InterruptedException if interrupted.
+     */
+    List<ObjectId> revListFull(String ref, int minParents, int maxParents, int maxCount, boolean parents, boolean reverse) throws GitException, InterruptedException;
+
     // --- submodules
 
     /**
