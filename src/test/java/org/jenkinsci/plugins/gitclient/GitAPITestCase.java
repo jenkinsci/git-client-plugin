@@ -2169,6 +2169,7 @@ public abstract class GitAPITestCase extends TestCase {
      *
      * @throws java.lang.Exception on error
      */
+    // moved
     public void test_git_init_creates_directory_if_needed() throws Exception {
         File nonexistentDir = new File(UUID.randomUUID().toString());
         assertFalse("Dir unexpectedly exists at start of test", nonexistentDir.exists());

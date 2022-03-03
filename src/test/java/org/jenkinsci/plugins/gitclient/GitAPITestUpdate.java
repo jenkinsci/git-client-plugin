@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -284,5 +285,17 @@ public class GitAPITestUpdate {
 	{
 		setTimeoutVisibleInCurrentTest(false);
 		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
+	}
+
+	@Test
+	public void test_git_init_creates_directory_if_needed() throws Exception {
+		File nonexistentDir = new File(UUID.randomUUID().toString());
+		assertFalse("Dir unexpectedly exists at start of test", nonexistentDir.exists());
+		try {
+			GitClient git = setupGitAPI(nonexistentDir);
+			git.init();
+		} finally {
+			FileUtils.deleteDirectory(nonexistentDir);
+		}
 	}
 }
