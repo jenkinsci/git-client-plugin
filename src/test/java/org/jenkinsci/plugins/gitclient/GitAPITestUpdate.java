@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.Launcher;
 import hudson.ProxyConfiguration;
+import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.IGitAPI;
 import org.apache.commons.io.FileUtils;
@@ -9,6 +10,7 @@ import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
@@ -18,6 +20,7 @@ import org.objenesis.ObjenesisStd;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +31,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 public class GitAPITestUpdate {
@@ -48,6 +53,42 @@ public class GitAPITestUpdate {
 	protected hudson.EnvVars env = new hudson.EnvVars();
 
 	private static boolean firstRun = true;
+
+	private void assertCheckoutTimeout() {
+		if (checkoutTimeout > 0) {
+			assertSubstringTimeout("git checkout", checkoutTimeout);
+		}
+	}
+
+	private void assertSubmoduleUpdateTimeout() {
+		if (submoduleUpdateTimeout > 0) {
+			assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
+		}
+	}
+
+	private void assertSubstringTimeout(final String substring, int expectedTimeout) {
+		if (!(w.git instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
+			return;
+		}
+		List<String> messages = handler.getMessages();
+		List<String> substringMessages = new ArrayList<>();
+		List<String> substringTimeoutMessages = new ArrayList<>();
+		final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
+		final String timeoutRegEx = messageRegEx
+				+ " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
+		for (String message : messages) {
+			if (message.matches(messageRegEx)) {
+				substringMessages.add(message);
+			}
+			if (message.matches(timeoutRegEx)) {
+				substringTimeoutMessages.add(message);
+			}
+		}
+		assertThat(messages, is(not(empty())));
+		assertThat(substringMessages, is(not(empty())));
+		assertThat(substringTimeoutMessages, is(not(empty())));
+		assertEquals(substringMessages, substringTimeoutMessages);
+	}
 
 	protected GitClient setupGitAPI(File ws) throws Exception {
 		return Git.with(listener, env).in(ws).using("git").getClient();
@@ -260,6 +301,34 @@ public class GitAPITestUpdate {
 		listener = new hudson.util.LogTaskListener(logger, Level.ALL);
 		listener.getLogger().println(LOGGING_STARTED);
 		w = new WorkingArea();
+	}
+
+	private List<File> tempDirsToDelete = new ArrayList<>();
+
+	@After
+	public void tearDown() throws Exception {
+		try {
+			temporaryDirectoryAllocator.dispose();
+		} catch (IOException e) {
+			e.printStackTrace(System.err);
+		}
+		try {
+			String messages = StringUtils.join(handler.getMessages(), ";");
+			assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+			assertCheckoutTimeout();
+			assertSubmoduleUpdateTimeout();
+		} finally {
+			handler.close();
+		}
+		try {
+			for (File tempdir : tempDirsToDelete) {
+				Util.deleteRecursive(tempdir);
+			}
+		} catch (IOException e) {
+			e.printStackTrace(System.err);
+		} finally {
+			tempDirsToDelete = new ArrayList<>();
+		}
 	}
 
 	private String getDefaultBranchName() throws Exception {

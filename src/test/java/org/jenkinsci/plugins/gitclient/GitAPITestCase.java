@@ -105,18 +105,21 @@ public abstract class GitAPITestCase extends TestCase {
     private int submoduleUpdateTimeout = -1;
     private final Random random = new Random();
 
+    //moved
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
             assertSubstringTimeout("git checkout", checkoutTimeout);
         }
     }
 
+    //moved
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
             assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
         }
     }
 
+    //moved
     private void assertSubstringTimeout(final String substring, int expectedTimeout) {
         if (!(w.git instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
             return;
@@ -508,6 +511,7 @@ public abstract class GitAPITestCase extends TestCase {
     private List<File> tempDirsToDelete = new ArrayList<>();
 
     @Override
+    //moved
     protected void tearDown() throws Exception {
         try {
             temporaryDirectoryAllocator.dispose();
