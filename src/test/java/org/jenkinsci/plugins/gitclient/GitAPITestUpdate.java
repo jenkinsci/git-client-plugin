@@ -19,9 +19,11 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -303,6 +305,23 @@ public class GitAPITestUpdate {
 	{
 		setTimeoutVisibleInCurrentTest(false);
 		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
+	}
+
+	@Issue("JENKINS-22343")
+	@Test
+	public void test_show_revision_for_first_commit() throws Exception {
+		w.init();
+		w.touch("a");
+		w.git.add("a");
+		w.git.commit("first");
+		ObjectId first = w.head();
+		List<String> revisionDetails = w.git.showRevision(first);
+		List<String> commits =
+				revisionDetails.stream()
+						.filter(detail -> detail.startsWith("commit "))
+						.collect(Collectors.toList());
+		assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
+		assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
 	}
 
 	@Deprecated

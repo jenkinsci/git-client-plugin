@@ -1870,6 +1870,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Issue("JENKINS-22343")
+    // moved
     public void test_show_revision_for_first_commit() throws Exception {
         w.init();
         w.touch("a");
