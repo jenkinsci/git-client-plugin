@@ -1644,7 +1644,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
         return properties;
     }
-
+    // moved
     private void extract(ZipFile zipFile, File outputDir) throws IOException
     {
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -2038,6 +2038,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
+    // moved
     public void test_reset() throws IOException, InterruptedException {
         w.init();
         /* No valid HEAD yet - nothing to reset, should give no error */
@@ -2134,6 +2135,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Test parsing of changelog with unicode characters in commit messages.
      */
     @Issue({"JENKINS-6203", "JENKINS-14798", "JENKINS-23091"})
+    //moved
     public void test_unicodeCharsInChangelog() throws Exception {
         File tempRemoteDir = temporaryDirectoryAllocator.allocate();
         extract(new ZipFile("src/test/resources/unicodeCharsInChangelogRepo.zip"), tempRemoteDir);

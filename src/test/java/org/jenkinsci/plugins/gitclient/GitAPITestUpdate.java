@@ -10,7 +10,6 @@ import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
@@ -49,7 +48,7 @@ public class GitAPITestUpdate {
 	private static boolean firstRun = true;
 
 	protected GitClient setupGitAPI(File ws) throws Exception {
-		return Git.with(listener, env).in(ws).using("jgit").getClient();
+		return Git.with(listener, env).in(ws).using("git").getClient();
 	}
 
 	class WorkingArea {
@@ -305,6 +304,51 @@ public class GitAPITestUpdate {
 		setTimeoutVisibleInCurrentTest(false);
 		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
 	}
+
+	@Deprecated
+	@Test
+	public void test_reset() throws IOException, InterruptedException {
+		w.init();
+		/* No valid HEAD yet - nothing to reset, should give no error */
+		w.igit().reset(false);
+		w.igit().reset(true);
+		w.touch("committed-file", "committed-file content " + UUID.randomUUID());
+		w.git.add("committed-file");
+		w.git.commit("commit1");
+		assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
+		assertFalse("added-file exists at commit1", w.file("added-file").exists());
+		assertFalse("touched-file exists at commit1", w.file("added-file").exists());
+
+		w.launchCommand("git", "rm", "committed-file");
+		w.touch("added-file", "File 2 content " + UUID.randomUUID());
+		w.git.add("added-file");
+		w.touch("touched-file", "File 3 content " + UUID.randomUUID());
+		assertFalse("committed-file exists", w.file("committed-file").exists());
+		assertTrue("added-file missing", w.file("added-file").exists());
+		assertTrue("touched-file missing", w.file("touched-file").exists());
+
+		w.igit().reset(false);
+		assertFalse("committed-file exists", w.file("committed-file").exists());
+		assertTrue("added-file missing", w.file("added-file").exists());
+		assertTrue("touched-file missing", w.file("touched-file").exists());
+
+		w.git.add("added-file"); /* Add the file which soft reset "unadded" */
+
+		w.igit().reset(true);
+		assertTrue("committed-file missing", w.file("committed-file").exists());
+		assertFalse("added-file exists at hard reset", w.file("added-file").exists());
+		assertTrue("touched-file missing", w.file("touched-file").exists());
+
+		final String remoteUrl = "git@github.com:MarkEWaite/git-client-plugin.git";
+		w.git.setRemoteUrl("origin", remoteUrl);
+		w.git.setRemoteUrl("ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
+		assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+		assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
+		/* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
+		assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+				w.igit().getDefaultRemote("invalid"));
+	}
+
 
 	@Issue({"JENKINS-6203", "JENKINS-14798", "JENKINS-23091"})
 	@Test
