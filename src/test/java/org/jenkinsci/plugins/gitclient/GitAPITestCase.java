@@ -148,6 +148,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Every test case automatically gets one in {@link #w} but additional ones can be created if multi-repository
      * interactions need to be tested.
      */
+    // Moved
     class WorkingArea {
         final File repo;
         final GitClient git;
@@ -328,6 +329,7 @@ public abstract class GitAPITestCase extends TestCase {
 
     protected WorkingArea w;
 
+    // moved
     protected WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
         x.launchCommand("git", "clone", src, x.repoPath());
@@ -357,6 +359,7 @@ public abstract class GitAPITestCase extends TestCase {
      * @param visible set to false if current test performs no operation which should report a timeout value
      * @see #getTimeoutVisibleInCurrentTest()
      */
+    // moved
     protected void setTimeoutVisibleInCurrentTest(boolean visible) {
         timeoutVisibleInCurrentTest = visible;
     }
@@ -364,6 +367,7 @@ public abstract class GitAPITestCase extends TestCase {
     private static boolean firstRun = true;
 
     @Override
+    //moved
     protected void setUp() throws Exception {
         if (firstRun) {
             firstRun = false;
@@ -384,6 +388,7 @@ public abstract class GitAPITestCase extends TestCase {
         w = new WorkingArea();
     }
 
+    //moved
     private String getDefaultBranchName() throws Exception {
         String defaultBranchValue = "mast" + "er"; // Intentionally split to note this will remain
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
@@ -540,22 +545,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
-    public void test_lsTree_non_recursive() throws IOException, InterruptedException {
-        w.init();
-        w.touch("file1", "file1 fixed content");
-        w.git.add("file1");
-        w.git.commit("commit1");
-        String expectedBlobSHA1 = "3f5a898e0c8ea62362dbf359cf1a400f3cfd46ae";
-        List<IndexEntry> tree = w.igit().lsTree("HEAD", false);
-        assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
-        assertEquals("Wrong number of tree entries", 1, tree.size());
-        final String remoteUrl = localMirror();
-        w.igit().setRemoteUrl("origin", remoteUrl, w.repoPath() + File.separator + ".git");
-        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
-        assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
-    }
-
-    @Deprecated
     public void test_lsTree_recursive() throws IOException, InterruptedException {
         w.init();
         assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
@@ -593,6 +582,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
     }
 
+    // moved
     public void test_hasGitRepo_without_git_directory() throws Exception
     {
         setTimeoutVisibleInCurrentTest(false);

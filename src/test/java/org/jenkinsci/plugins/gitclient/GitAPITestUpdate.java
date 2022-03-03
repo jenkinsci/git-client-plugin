@@ -10,6 +10,8 @@ import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
@@ -236,7 +238,7 @@ public class GitAPITestUpdate {
 	}
 
 	@Before
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		if (firstRun) {
 			firstRun = false;
 			defaultBranchName = getDefaultBranchName();
@@ -277,4 +279,10 @@ public class GitAPITestUpdate {
 		timeoutVisibleInCurrentTest = visible;
 	}
 
+	@Test
+	public void test_hasGitRepo_without_git_directory() throws Exception
+	{
+		setTimeoutVisibleInCurrentTest(false);
+		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
+	}
 }
