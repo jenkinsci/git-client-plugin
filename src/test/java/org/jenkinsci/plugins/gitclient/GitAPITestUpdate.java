@@ -12,17 +12,19 @@ import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.util.Enumeration;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.junit.Assert.*;
@@ -274,6 +276,23 @@ public class GitAPITestUpdate {
 		return defaultBranchValue;
 	}
 
+	private void extract(ZipFile zipFile, File outputDir) throws IOException
+	{
+		Enumeration<? extends ZipEntry> entries = zipFile.entries();
+		while (entries.hasMoreElements()) {
+			ZipEntry entry = entries.nextElement();
+			File entryDestination = new File(outputDir,  entry.getName());
+			entryDestination.getParentFile().mkdirs();
+			if (entry.isDirectory())
+				entryDestination.mkdirs();
+			else {
+				try (InputStream in = zipFile.getInputStream(entry);
+				     OutputStream out = Files.newOutputStream(entryDestination.toPath())) {
+					org.apache.commons.io.IOUtils.copy(in, out);
+				}
+			}
+		}
+	}
 	private boolean timeoutVisibleInCurrentTest;
 
 	protected void setTimeoutVisibleInCurrentTest(boolean visible) {
@@ -285,6 +304,28 @@ public class GitAPITestUpdate {
 	{
 		setTimeoutVisibleInCurrentTest(false);
 		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
+	}
+
+	@Issue({"JENKINS-6203", "JENKINS-14798", "JENKINS-23091"})
+	@Test
+	public void test_unicodeCharsInChangelog() throws Exception {
+		File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+		extract(new ZipFile("src/test/resources/unicodeCharsInChangelogRepo.zip"), tempRemoteDir);
+		File pathToTempRepo = new File(tempRemoteDir, "unicodeCharsInChangelogRepo");
+		w = clone(pathToTempRepo.getAbsolutePath());
+
+		// w.git.changelog gives us strings
+		// We want to collect all the strings and check that unicode characters are still there.
+
+		StringWriter sw = new StringWriter();
+		w.git.changelog("v0", "vLast", sw);
+		String content = sw.toString();
+
+		assertTrue(content.contains("hello in English: hello"));
+		assertTrue(content.contains("hello in Russian: \u043F\u0440\u0438\u0432\u0435\u0442 (priv\u00E9t)"));
+		assertTrue(content.contains("hello in Chinese: \u4F60\u597D (n\u01D0 h\u01CEo)"));
+		assertTrue(content.contains("hello in French: \u00C7a va ?"));
+		assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
 	}
 
 	@Test
