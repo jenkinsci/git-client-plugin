@@ -1694,6 +1694,7 @@ public abstract class GitAPITestCase extends TestCase {
         return unmodifiableList(matches);
     }
 
+    // moved
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
@@ -1721,6 +1722,7 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(localMirror(), getMirrorHead());
     }
 
+    //moved
     public void test_getHeadRev_remote() throws Exception {
         String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
         ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));

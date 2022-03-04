@@ -20,10 +20,7 @@ import org.objenesis.ObjenesisStd;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -44,7 +41,11 @@ public class GitAPITestUpdate {
 	private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 	private static String defaultRemoteBranchName = "origin/" + defaultBranchName;
 
+	private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
+
 	protected TaskListener listener;
+
+	private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; // Intentionally split string
 
 	private static final String LOGGING_STARTED = "Logging started";
 	private int checkoutTimeout = -1;
@@ -363,10 +364,41 @@ public class GitAPITestUpdate {
 			}
 		}
 	}
+
+	private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
+		final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
+		assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
+
+		final ObjectId simpleDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
+		assertEquals("simple default branch mismatch", expectedId, simpleDefaultBranch);
+
+		final ObjectId wildcardSCMDefaultBranch = w.git.getHeadRev(repoURL, "*/" + DEFAULT_MIRROR_BRANCH_NAME);
+		assertEquals("wildcard SCM default branch mismatch", expectedId, wildcardSCMDefaultBranch);
+
+		/* This assertion may fail if the localMirror has more than
+		 * one branch matching the wildcard expression in the call to
+		 * getHeadRev.  The expression is chosen to be unlikely to
+		 * match with typical branch names, while still matching a
+		 * known branch name. Should be fine so long as no one creates
+		 * branches named like main-default-branch or new-default-branch on the
+		 * remote repo.
+		 * 'origin/main' becomes 'origin/m*i?'
+		 */
+		final ObjectId wildcardEndDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME.replace('a', '*').replace('t', '?').replace('n', '?'));
+		assertEquals("wildcard end default branch mismatch", expectedId, wildcardEndDefaultBranch);
+	}
+
 	private boolean timeoutVisibleInCurrentTest;
 
 	protected void setTimeoutVisibleInCurrentTest(boolean visible) {
 		timeoutVisibleInCurrentTest = visible;
+	}
+
+	@Test
+	public void test_getHeadRev_remote() throws Exception {
+		String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
+		ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
+		check_headRev(remoteMirrorURL, lsRemoteId);
 	}
 
 	@Test
