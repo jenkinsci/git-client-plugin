@@ -991,6 +991,7 @@ public abstract class GitAPITestCase extends TestCase {
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
 
+    //moved
     public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
         try {
             w.igit().fixSubmoduleUrls("origin", listener);
@@ -1004,6 +1005,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
+    //moved
     private File createTempDirectoryWithoutSpaces() throws IOException {
         // JENKINS-56175 notes that the plugin does not support submodule URL's
         // which contain a space character. Parent pom 3.36 and later use a
@@ -1018,6 +1020,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @NotImplementedInJGit
+    //moved
     public void test_trackingSubmodule() throws Exception {
         if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
             System.err.println("git must be at least 1.8.2 to do tracking submodules.");

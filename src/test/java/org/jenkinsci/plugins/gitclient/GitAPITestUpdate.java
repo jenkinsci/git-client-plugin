@@ -23,6 +23,7 @@ import org.objenesis.ObjenesisStd;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -381,6 +382,77 @@ public class GitAPITestUpdate {
 		String actual = ge.getMessage().toLowerCase();
 		assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
 	}
+
+	public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
+		try {
+			w.igit().fixSubmoduleUrls("origin", listener);
+			fail("Expected exception not thrown");
+		} catch (UnsupportedOperationException uoe) {
+			assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
+		} catch (GitException ge) {
+			assertTrue("GitException not on CliGit", w.igit() instanceof CliGitAPIImpl);
+			assertTrue("Wrong message in " + ge.getMessage(), ge.getMessage().startsWith("Could not determine remote"));
+			assertExceptionMessageContains(ge, "origin");
+		}
+	}
+
+	private File createTempDirectoryWithoutSpaces() throws IOException {
+		// JENKINS-56175 notes that the plugin does not support submodule URL's
+		// which contain a space character. Parent pom 3.36 and later use a
+		// temporary directory containing a space to detect these problems.
+		// Not yet ready to solve JENKINS-56175, so this dodges the problem by
+		// creating the submodule repository in a path which does not contain
+		// space characters.
+		Path tempDirWithoutSpaces = Files.createTempDirectory("no-spaces");
+		assertThat(tempDirWithoutSpaces.toString(), not(containsString(" ")));
+		tempDirsToDelete.add(tempDirWithoutSpaces.toFile());
+		return tempDirWithoutSpaces.toFile();
+	}
+
+	@NotImplementedInJGit
+	@Test
+	public void testTrackingSubmodule() throws Exception {
+		if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+			System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+			return;
+		}
+		w.init(); // empty repository
+
+		// create a new GIT repo.
+		//   default branch -- <file1>C  <file2>C
+		WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
+		r.init();
+		r.touch("file1", "content1");
+		r.git.add("file1");
+		r.git.commit("submod-commit1");
+
+		// Add new GIT repo to w
+		String subModDir = "submod1-" + UUID.randomUUID();
+		w.git.addSubmodule(r.repoPath(), subModDir);
+		w.git.submoduleInit();
+
+		// Add a new file to the separate GIT repo.
+		r.touch("file2", "content2");
+		r.git.add("file2");
+		r.git.commit("submod-branch1-commit1");
+
+		// Make sure that the new file doesn't exist in the repo with remoteTracking
+		String subFile = subModDir + File.separator + "file2";
+		w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
+		assertFalse("file2 exists and should not because we didn't update to the tip of the default branch.", w.exists(subFile));
+
+		// Windows tests fail if repoPath is more than 200 characters
+		// CLI git support for longpaths on Windows is complicated
+		if (w.repoPath().length() > 200) {
+			return;
+		}
+
+		// Run submodule update with remote tracking
+		w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
+		assertTrue("file2 does not exist and should because we updated to the tip of the default branch.", w.exists(subFile));
+		assertFixSubmoduleUrlsThrows();
+	}
+
 
 	private String getDefaultBranchName() throws Exception {
 		String defaultBranchValue = "mast" + "er"; // Intentionally split to note this will remain
