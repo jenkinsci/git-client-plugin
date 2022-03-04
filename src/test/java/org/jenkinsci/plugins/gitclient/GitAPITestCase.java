@@ -596,6 +596,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
+    //moved
     public void test_push_deprecated_signature() throws Exception {
         /* Make working repo a remote of the bare repo */
         w.init();
