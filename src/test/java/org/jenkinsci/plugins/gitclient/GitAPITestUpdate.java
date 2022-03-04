@@ -518,6 +518,19 @@ public class GitAPITestUpdate {
 		assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
 	}
 
+	@Deprecated
+	@Test
+	public void test_getDefaultRemote() throws Exception {
+		w.init();
+		w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
+		w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
+		assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+		assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
+		/* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
+		assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+				w.igit().getDefaultRemote("invalid"));
+	}
+
 	@Test
 	public void test_git_init_creates_directory_if_needed() throws Exception {
 		File nonexistentDir = new File(UUID.randomUUID().toString());

@@ -570,6 +570,7 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Deprecated
+    //moved
     public void test_getDefaultRemote() throws Exception {
         w.init();
         w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
@@ -1595,7 +1596,7 @@ public abstract class GitAPITestCase extends TestCase {
      * Test getRemoteReferences with matching pattern
      */
     //moved
-    public void test_getRemoteReferences_withMatchingPatternest_getRemoteReferences_withMatchingPattern() throws Exception {
+    public void test_getRemoteReferences_withMatchingPattern() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
