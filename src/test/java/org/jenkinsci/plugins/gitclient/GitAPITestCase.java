@@ -581,6 +581,7 @@ public abstract class GitAPITestCase extends TestCase {
                      w.igit().getDefaultRemote("invalid"));
     }
 
+    //moved
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
@@ -1593,7 +1594,8 @@ public abstract class GitAPITestCase extends TestCase {
     /**
      * Test getRemoteReferences with matching pattern
      */
-    public void test_getRemoteReferences_withMatchingPattern() throws Exception {
+    //moved
+    public void test_getRemoteReferences_withMatchingPatternest_getRemoteReferences_withMatchingPattern() throws Exception {
         Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));

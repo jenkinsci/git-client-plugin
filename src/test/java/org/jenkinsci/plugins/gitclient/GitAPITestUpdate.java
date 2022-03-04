@@ -4,6 +4,7 @@ import hudson.Launcher;
 import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -332,6 +333,11 @@ public class GitAPITestUpdate {
 		}
 	}
 
+	private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
+		String actual = ge.getMessage().toLowerCase();
+		assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+	}
+
 	private String getDefaultBranchName() throws Exception {
 		String defaultBranchValue = "mast" + "er"; // Intentionally split to note this will remain
 		File configDir = Files.createTempDirectory("readGitConfig").toFile();
@@ -392,6 +398,26 @@ public class GitAPITestUpdate {
 
 	protected void setTimeoutVisibleInCurrentTest(boolean visible) {
 		timeoutVisibleInCurrentTest = visible;
+	}
+
+	@Test
+	public void test_getRemoteReferences_withMatchingPattern() throws Exception {
+		Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
+		assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+		assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
+		references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
+		assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+		for (String key : references.keySet()) {
+			assertTrue(key.startsWith("refs/tags/git-client"));
+		}
+
+		references = new HashMap<>();
+		try {
+			references = w.git.getRemoteReferences(remoteMirrorURL, "notexists-*", false, false);
+		} catch (GitException ge) {
+			assertExceptionMessageContains(ge, "unexpected ls-remote output");
+		}
+		assertTrue(references.isEmpty());
 	}
 
 	@Test
