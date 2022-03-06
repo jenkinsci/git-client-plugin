@@ -1508,11 +1508,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("wildcard end default branch mismatch", expectedId, wildcardEndDefaultBranch);
     }
 
-    public void test_getHeadRev_localMirror() throws Exception {
-        check_headRev(localMirror(), getMirrorHead());
-    }
-
-
     public void test_getHeadRev_returns_accurate_SHA1_values() throws Exception {
         /* CliGitAPIImpl had a longstanding bug that it inserted the
          * same SHA1 in all the values, rather than inserting the SHA1

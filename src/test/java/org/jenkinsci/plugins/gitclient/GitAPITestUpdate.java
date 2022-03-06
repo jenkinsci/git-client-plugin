@@ -986,6 +986,11 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testGetHeadRevLocalMirror() throws Exception {
+        checkHeadRev(localMirror(), getMirrorHead());
+    }
+
+    @Test
     public void testCheckoutNullRef() throws Exception {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
