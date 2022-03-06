@@ -1078,24 +1078,6 @@ public abstract class GitAPITestCase extends TestCase {
         int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
         assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 2 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
-
-    @NotImplementedInJGit
-    public void test_submodule_update_with_threads() throws Exception {
-        w.init();
-        w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
-        w.git.checkout().branch("tests/getSubmodules").ref("sub2_origin/tests/getSubmodules").deleteBranchIfExist(true).execute();
-        w.git.submoduleInit();
-        w.git.submoduleUpdate().threads(3).execute();
-
-        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
-        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
-        // JGit submodule implementation doesn't handle renamed submodules
-        if (w.igit() instanceof CliGitAPIImpl) {
-            assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
-        }
-        assertFixSubmoduleUrlsThrows();
-    }
-
     /*
      * core.symlinks is set to false by git for WIndows.
      * It is not set on Linux.
