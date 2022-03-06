@@ -1165,61 +1165,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
-    @NotImplementedInJGit
-    public void test_sparse_checkout() throws Exception {
-        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
-         * required by the plugin implementation does not work in git 1.7.1.
-         */
-        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            return;
-        }
-        // Create a repo for cloning purpose
-        w.init();
-        w.commitEmpty("init");
-        assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
-        w.touch("dir1/file1");
-        assertTrue("mkdir dir2 failed", w.file("dir2").mkdir());
-        w.touch("dir2/file2");
-        assertTrue("mkdir dir3 failed", w.file("dir3").mkdir());
-        w.touch("dir3/file3");
-        w.git.add("dir1/file1");
-        w.git.add("dir2/file2");
-        w.git.add("dir3/file3");
-        w.git.commit("commit");
-
-        // Clone it
-        WorkingArea workingArea = new WorkingArea();
-        workingArea.git.clone_().url(w.repoPath()).execute();
-
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir1")).timeout(checkoutTimeout).execute();
-        assertTrue(workingArea.exists("dir1"));
-        assertFalse(workingArea.exists("dir2"));
-        assertFalse(workingArea.exists("dir3"));
-
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.singletonList("dir2")).timeout(checkoutTimeout).execute();
-        assertFalse(workingArea.exists("dir1"));
-        assertTrue(workingArea.exists("dir2"));
-        assertFalse(workingArea.exists("dir3"));
-
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Arrays.asList("dir1", "dir2")).timeout(checkoutTimeout).execute();
-        assertTrue(workingArea.exists("dir1"));
-        assertTrue(workingArea.exists("dir2"));
-        assertFalse(workingArea.exists("dir3"));
-
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(Collections.emptyList()).timeout(checkoutTimeout).execute();
-        assertTrue(workingArea.exists("dir1"));
-        assertTrue(workingArea.exists("dir2"));
-        assertTrue(workingArea.exists("dir3"));
-
-        workingArea.git.checkout().ref(defaultRemoteBranchName).branch(defaultBranchName).deleteBranchIfExist(true).sparseCheckoutPaths(null)
-            .timeout(checkoutTimeout)
-            .execute();
-        assertTrue(workingArea.exists("dir1"));
-        assertTrue(workingArea.exists("dir2"));
-        assertTrue(workingArea.exists("dir3"));
-    }
-
     /*
      * core.symlinks is set to false by git for WIndows.
      * It is not set on Linux.
