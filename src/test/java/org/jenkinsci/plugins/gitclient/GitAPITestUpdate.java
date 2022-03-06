@@ -31,11 +31,7 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -485,6 +481,24 @@ public abstract class GitAPITestUpdate {
             final String branchName = branch[0];
             checkGetHeadRev(remote, branchName, objectId);
         }
+    }
+
+    @Test
+    public void testSubmoduleUpdateShallowWithDepth() throws Exception {
+        WorkingArea remote = setupRepositoryWithSubmodule();
+        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().shallow(true).depth(2).execute();
+
+        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+
+        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
+
+        int localSubmoduleCommits = w.cgit().subGit("submodule").revList(defaultBranchName).size();
+        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
+        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 2 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
 
     @NotImplementedInJGit
@@ -1616,6 +1630,34 @@ public abstract class GitAPITestUpdate {
         StringWriter writer = new StringWriter();
         w.git.changelog().max(maxlimit).to(writer).execute();
         assertThat(writer.toString(), is(not("")));
+    }
+
+    private WorkingArea setupRepositoryWithSubmodule() throws Exception {
+        WorkingArea workingArea = new WorkingArea(createTempDirectoryWithoutSpaces());
+
+        File repositoryDir = workingArea.file("dir-repository");
+        File submoduleDir = workingArea.file("dir-submodule");
+
+        assertTrue("did not create dir " + repositoryDir.getName(), repositoryDir.mkdir());
+        assertTrue("did not create dir " + submoduleDir.getName(), submoduleDir.mkdir());
+
+        WorkingArea submoduleWorkingArea = new WorkingArea(submoduleDir).init();
+
+        for (int commit = 1; commit <= 5; commit++) {
+            submoduleWorkingArea.touch("file", String.format("submodule content-%d", commit));
+            submoduleWorkingArea.cgit().add("file");
+            submoduleWorkingArea.cgit().commit(String.format("submodule commit-%d", commit));
+        }
+
+        WorkingArea repositoryWorkingArea = new WorkingArea(repositoryDir).init();
+
+        repositoryWorkingArea.commitEmpty("init");
+
+        repositoryWorkingArea.cgit().add(".");
+        repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
+        repositoryWorkingArea.cgit().commit("submodule");
+
+        return workingArea;
     }
 
 }
