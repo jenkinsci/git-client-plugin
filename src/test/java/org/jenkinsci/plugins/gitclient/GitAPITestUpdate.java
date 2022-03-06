@@ -501,6 +501,51 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    /* Check JENKINS-23424 - inconsistent handling of modified tracked
+     * files when performing a checkout in an existing directory.
+     * CliGitAPIImpl reverts tracked files, while JGitAPIImpl does
+     * not.
+     */
+    private void baseCheckoutReplacesTrackedChanges(boolean defineBranch) throws Exception {
+        w.git.clone_().url(localMirror()).repositoryName("JENKINS-23424").execute();
+        w.git.checkout().ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).branch(DEFAULT_MIRROR_BRANCH_NAME).execute();
+        if (defineBranch) {
+            w.git.checkout().branch(defaultBranchName).ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).deleteBranchIfExist(true).execute();
+        } else {
+            w.git.checkout().ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).deleteBranchIfExist(true).execute();
+        }
+
+        /* Confirm first checkout */
+        String pomContent = w.contentOf("pom.xml");
+        assertTrue("Missing inceptionYear ref in pom : " + pomContent, pomContent.contains("inceptionYear"));
+        assertFalse("Found untracked file", w.file("untracked-file").exists());
+
+        /* Modify the pom file by adding a comment */
+        String comment = " <!-- JENKINS-23424 comment -->";
+        /* JGit implementation prior to 3.4.1 did not reset modified tracked files */
+        w.touch("pom.xml", pomContent + comment);
+        assertTrue(w.contentOf("pom.xml").contains(comment));
+
+        /* Create an untracked file.  Both implementations retain
+         * untracked files across checkout.
+         */
+        w.touch("untracked-file", comment);
+        assertTrue("Missing untracked file", w.file("untracked-file").exists());
+
+        /* Checkout should erase local modification */
+        CheckoutCommand cmd = w.git.checkout().ref("JENKINS-23424/1.4.x").deleteBranchIfExist(true);
+        if (defineBranch) {
+            cmd.branch("1.4.x");
+        }
+        cmd.execute();
+
+        /* Tracked file should not contain added comment, nor the inceptionYear reference */
+        pomContent = w.contentOf("pom.xml");
+        assertFalse("Found inceptionYear ref in 1.4.x pom : " + pomContent, pomContent.contains("inceptionYear"));
+        assertFalse("Found comment in 1.4.x pom", pomContent.contains(comment));
+        assertTrue("Missing untracked file", w.file("untracked-file").exists());
+    }
+
     private File createTempDirectoryWithoutSpaces() throws IOException {
         // JENKINS-56175 notes that the plugin does not support submodule URL's
         // which contain a space character. Parent pom 3.36 and later use a
@@ -693,6 +738,13 @@ public abstract class GitAPITestUpdate {
         }
         assertTrue(references.isEmpty());
     }
+
+    @Issue("JENKINS-23424")
+    @Test
+    public void testCheckoutReplacesTrackedChanges() throws Exception {
+        baseCheckoutReplacesTrackedChanges(false);
+    }
+
 
     @Test
     public void testGetHeadRevRemote() throws Exception {

@@ -971,11 +971,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     @Issue("JENKINS-23424")
-    public void test_checkout_replaces_tracked_changes() throws Exception {
-        base_checkout_replaces_tracked_changes(false);
-    }
-
-    @Issue("JENKINS-23424")
     public void test_checkout_replaces_tracked_changes_with_branch() throws Exception {
         base_checkout_replaces_tracked_changes(true);
     }
