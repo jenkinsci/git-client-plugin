@@ -1087,6 +1087,41 @@ public abstract class GitAPITestUpdate {
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
+    @Test
+    public void testGetHeadRevReturnsAccurateSHA1Values() throws Exception {
+        /* CliGitAPIImpl had a longstanding bug that it inserted the
+         * same SHA1 in all the values, rather than inserting the SHA1
+         * which matched the key.
+         */
+        w = clone(localMirror());
+        w.git.checkout().ref(DEFAULT_MIRROR_BRANCH_NAME).execute(); // Depends on default branch name of local mirror
+        final ObjectId defaultBranch = w.head();
+
+        w.git.branch("branch1");
+        w.git.checkout().ref("branch1").execute();
+        w.touch("file1", "content1");
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
+        w.launchCommand("git", "branch", "branch.2", DEFAULT_MIRROR_BRANCH_NAME);
+        w.git.checkout().ref("branch.2").execute();
+        File f = w.touch("file.2", "content2");
+        w.git.add("file.2");
+        w.git.commit("commit2-branch.2");
+        final ObjectId branchDot2 = w.head();
+        assertTrue("file.2 does not exist", f.exists());
+
+        Map<String,ObjectId> heads = w.git.getHeadRev(w.repoPath());
+        assertEquals("Wrong default branch in " + heads, defaultBranch, heads.get("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertEquals("Wrong branch1 in " + heads, branch1, heads.get("refs/heads/branch1"));
+        assertEquals("Wrong branch.2 in " + heads, branchDot2, heads.get("refs/heads/branch.2"));
+
+        assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
+
+        checkHeadRev(w.repoPath(), getMirrorHead());
+    }
+
     @Issue("JENKINS-37185")
     @NotImplementedInJGit /* JGit doesn't have timeout */
     @Test
