@@ -1627,24 +1627,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(diffs.isEmpty());
     }
 
-    private void check_bounded_changelog_sha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException
-    {
-        StringWriter writer = new StringWriter();
-        w.git.changelog(sha1Begin, sha1End, writer);
-        String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
-        assertEquals("Wrong bounded changelog line 1 on branch " + branchName, "commit " + sha1End, splitLog[0]);
-        assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer, writer.toString().contains(sha1Begin));
-    }
-
-    public void test_changelog_bounded() throws Exception {
-        w = clone(localMirror());
-        String sha1Prev = w.git.revParse("HEAD").name();
-        w.touch("changelog-file", "changelog-file-content-" + sha1Prev);
-        w.git.add("changelog-file");
-        w.git.commit("changelog-commit-message");
-        String sha1 = w.git.revParse("HEAD").name();
-        check_bounded_changelog_sha1(sha1Prev, sha1, DEFAULT_MIRROR_BRANCH_NAME);
-    }
     /*
     * Test result is intentionally ignored because it depends on the output
     * order of the `git log --all` command and the JGit equivalent. Output order
