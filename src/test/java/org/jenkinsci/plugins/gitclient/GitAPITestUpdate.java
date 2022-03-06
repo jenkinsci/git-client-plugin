@@ -41,10 +41,7 @@ import java.util.zip.ZipFile;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -63,6 +60,7 @@ public abstract class GitAPITestUpdate {
 
     protected TaskListener listener;
 
+    private static final String DEFAULT_JGIT_BRANCH_NAME = Constants.MASTER;
     private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; // Intentionally split string
 
     private static final String LOGGING_STARTED = "Logging started";
@@ -984,6 +982,16 @@ public abstract class GitAPITestUpdate {
         assertEquals("Wrong list size: " + revList, 267, revList.size());
         Ref branchRef = w.repo().findRef("origin/1.4.x");
         assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
+    }
+
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+    @Test
+    public void testGetRemoteSymbolicReferences() throws Exception {
+        if (!hasWorkingGetRemoteSymbolicReferences()) return; // JUnit 3 replacement for assumeThat
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
     }
 
     @Test
