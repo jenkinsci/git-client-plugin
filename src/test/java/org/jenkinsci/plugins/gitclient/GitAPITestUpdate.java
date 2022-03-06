@@ -483,6 +483,22 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    @NotImplementedInJGit
+    @Test
+    public void testSubmoduleUpdateWithError() throws Exception {
+        w.git.clone_().url(localMirror()).execute();
+        w.git.checkout().ref("origin/tests/getSubmodules").execute();
+        w.rm("modules/ntp");
+        w.touch("modules/ntp", "file that interferes with ntp submodule folder");
+
+        try {
+            w.git.submoduleUpdate().execute();
+            fail("Did not throw expected submodule update exception");
+        } catch (GitException e) {
+            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" returned status code 1"));
+        }
+    }
+
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();

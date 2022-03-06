@@ -1021,29 +1021,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse("shallow file existence: " + shallow, w.exists(shallow));
     }
 
-    @NotImplementedInJGit
-    public void test_submodule_update_with_error() throws Exception {
-        w.git.clone_().url(localMirror()).execute();
-        w.git.checkout().ref("origin/tests/getSubmodules").execute();
-        w.rm("modules/ntp");
-        w.touch("modules/ntp", "file that interferes with ntp submodule folder");
-
-        try {
-            w.git.submoduleUpdate().execute();
-            fail("Did not throw expected submodule update exception");
-        } catch (GitException e) {
-            /* Depending on git program implementation/version, the string can be either short:
-             *    Command "git submodule update modules/ntp" returned status code 1"
-             * or detailed:
-             *    Command "git submodule update modules/ntp" executed in workdir "C:\Users\..." returned status code 1
-             * so we catch below the two common parts separately.
-             * NOTE: git codebase itself goes to great extents to forbid their
-             * own unit-testing code from relying on emitted text messages.
-             */
-            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" "));
-            assertThat(e.getMessage(), containsString(" returned status code 1"));
-        }
-    }
     /*
      * core.symlinks is set to false by git for WIndows.
      * It is not set on Linux.
