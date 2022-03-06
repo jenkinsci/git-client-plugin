@@ -484,6 +484,24 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testSubmoduleUpdateShallow() throws Exception {
+        WorkingArea remote = setupRepositoryWithSubmodule();
+        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
+        w.git.submoduleInit();
+        w.git.submoduleUpdate().shallow(true).execute();
+
+        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+
+        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
+
+        int localSubmoduleCommits = w.cgit().subGit("submodule").revList(defaultBranchName).size();
+        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
+        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
+    }
+
+    @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
