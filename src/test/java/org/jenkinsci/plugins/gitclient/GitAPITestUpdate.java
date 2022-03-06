@@ -660,6 +660,18 @@ public abstract class GitAPITestUpdate {
         return defaultBranchValue;
     }
 
+    /* HEAD ref of local mirror - all read access should use getMirrorHead */
+    private static ObjectId mirrorHead = null;
+
+    private ObjectId getMirrorHead() throws IOException, InterruptedException
+    {
+        if (mirrorHead == null) {
+            final String mirrorPath = new File(localMirror()).getAbsolutePath();
+            mirrorHead = ObjectId.fromString(w.launchCommand("git", "--git-dir=" + mirrorPath, "rev-parse", "HEAD").substring(0,40));
+        }
+        return mirrorHead;
+    }
+
     private void extract(ZipFile zipFile, File outputDir) throws IOException
     {
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -901,6 +913,26 @@ public abstract class GitAPITestUpdate {
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
         assertEquals("Wrong bounded changelog line 1 on branch " + branchName, "commit " + sha1End, splitLog[0]);
         assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer, writer.toString().contains(sha1Begin));
+    }
+
+    @Test
+    public void testGetHeadRevCurrentDirectory() throws Exception {
+        w = clone(localMirror());
+        w.git.checkout().ref("master").execute();
+        final ObjectId defaultBranch = w.head();
+
+        w.git.branch("branch1");
+        w.git.checkout().ref("branch1").execute();
+        w.touch("file1", "branch1 contents " + UUID.randomUUID());
+        w.git.add("file1");
+        w.git.commit("commit1-branch1");
+        final ObjectId branch1 = w.head();
+
+        Map<String, ObjectId> heads = w.git.getHeadRev(w.repoPath());
+        assertEquals(defaultBranch, heads.get("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertEquals(branch1, heads.get("refs/heads/branch1"));
+
+        checkHeadRev(w.repoPath(), getMirrorHead());
     }
 
     @Test

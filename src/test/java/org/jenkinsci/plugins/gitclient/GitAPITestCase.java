@@ -1512,24 +1512,6 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(localMirror(), getMirrorHead());
     }
 
-    public void test_getHeadRev_current_directory() throws Exception {
-        w = clone(localMirror());
-        w.git.checkout().ref("master").execute();
-        final ObjectId defaultBranch = w.head();
-
-        w.git.branch("branch1");
-        w.git.checkout().ref("branch1").execute();
-        w.touch("file1", "branch1 contents " + UUID.randomUUID());
-        w.git.add("file1");
-        w.git.commit("commit1-branch1");
-        final ObjectId branch1 = w.head();
-
-        Map<String, ObjectId> heads = w.git.getHeadRev(w.repoPath());
-        assertEquals(defaultBranch, heads.get("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertEquals(branch1, heads.get("refs/heads/branch1"));
-
-        check_headRev(w.repoPath(), getMirrorHead());
-    }
 
     public void test_getHeadRev_returns_accurate_SHA1_values() throws Exception {
         /* CliGitAPIImpl had a longstanding bug that it inserted the
