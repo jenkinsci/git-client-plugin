@@ -1352,33 +1352,6 @@ public abstract class GitAPITestCase extends TestCase {
             check_getHeadRev(remote, "refs/heads/" + branchName, objectId);
         }
     }
-
-    /**
-     * Test getHeadRev with namespaces in the branch name
-     * and branch specs starting with "refs/heads/".
-     */
-    public void test_getHeadRev_namespaces_withRefsHeads() throws Exception {
-        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
-        extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
-        Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
-        w = clone(tempRemoteDir.getAbsolutePath());
-        final String remote = tempRemoteDir.getAbsolutePath();
-
-        final String[][] checkBranchSpecs = {
-                {"refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                {"refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                {"refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                {"refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                {"refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)}
-                };
-
-        for(String[] branch : checkBranchSpecs) {
-            final ObjectId objectId = ObjectId.fromString(branch[1]);
-            final String branchName = branch[0];
-            check_getHeadRev(remote, branchName, objectId);
-        }
-    }
-
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
 
     private Properties parseLsRemote(File file) throws IOException

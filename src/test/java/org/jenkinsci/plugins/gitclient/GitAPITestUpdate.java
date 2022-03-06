@@ -27,6 +27,7 @@ import java.io.StringWriter;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Files;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -35,17 +36,17 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static java.util.Collections.unmodifiableList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public abstract class GitAPITestUpdate {
 
@@ -55,6 +56,7 @@ public abstract class GitAPITestUpdate {
     private int logCount = 0;
     private static String defaultBranchName = "mast" + "er"; // Intentionally split string
     private static String defaultRemoteBranchName = "origin/" + defaultBranchName;
+    private static final String ZIP_FILE_DEFAULT_BRANCH_NAME = "mast" + "er";
 
     private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
 
@@ -431,6 +433,57 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception
+    {
+        ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
+        assertNotNull(String.format("Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
+                expectedObjectId, remote, branchSpec), expectedObjectId);
+        assertNotNull(String.format("Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'.",
+                expectedObjectId, remote, branchSpec), actualObjectId);
+        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n" +
+                                "Actual %s,\nExpected %s\n", branchSpec, remote,
+                        StringUtils.join(getBranches(actualObjectId), ", "),
+                        StringUtils.join(getBranches(expectedObjectId), ", ")),
+                expectedObjectId, actualObjectId);
+    }
+
+    private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException
+    {
+        List<Branch> matches = new ArrayList<>();
+        Set<Branch> branches = w.git.getBranches();
+        for(Branch branch : branches) {
+            if(branch.getSHA1().equals(objectId)) matches.add(branch);
+        }
+        return unmodifiableList(matches);
+    }
+
+    /**
+     * Test getHeadRev with namespaces in the branch name
+     * and branch specs starting with "refs/heads/".
+     */
+     @Test
+    public void testGetHeadRevNamespacesWithRefsHeads() throws Exception {
+        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
+        extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
+        Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
+        w = clone(tempRemoteDir.getAbsolutePath());
+        final String remote = tempRemoteDir.getAbsolutePath();
+
+        final String[][] checkBranchSpecs = {
+                {"refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+                {"refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+                {"refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+                {"refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+                {"refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)}
+        };
+
+        for(String[] branch : checkBranchSpecs) {
+            final ObjectId objectId = ObjectId.fromString(branch[1]);
+            final String branchName = branch[0];
+            checkGetHeadRev(remote, branchName, objectId);
+        }
+    }
+
     /**
      * Test getRemoteReferences with listing all references
      */
@@ -458,6 +511,23 @@ public abstract class GitAPITestUpdate {
     }
 
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
+
+    private Properties parseLsRemote(File file) throws IOException
+    {
+        Properties properties = new Properties();
+        Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
+        for(String lineO : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
+            String line = lineO.trim();
+            Matcher matcher = pattern.matcher(line);
+            if(matcher.matches()) {
+                properties.setProperty(matcher.group(2), matcher.group(1));
+            } else {
+                System.err.println("ls-remote pattern does not match '" + line + "'");
+            }
+        }
+        return properties;
+    }
+
     protected abstract String getRemoteBranchPrefix();
 
     /**
