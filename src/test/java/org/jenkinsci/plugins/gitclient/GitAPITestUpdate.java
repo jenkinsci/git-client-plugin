@@ -895,6 +895,19 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testShowRevisionForSingleCommit() throws Exception {
+        w = clone(localMirror());
+        ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
+        List<String> revisionDetails = w.git.showRevision(null, to);
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
+        assertEquals(1, commits.size());
+        assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
+    }
+
+    @Test
     public void testRevListRemoteBranch() throws Exception {
         w = clone(localMirror());
         List<ObjectId> revList = w.git.revList("origin/1.4.x");

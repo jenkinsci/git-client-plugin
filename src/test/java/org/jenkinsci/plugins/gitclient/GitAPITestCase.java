@@ -1645,19 +1645,6 @@ public abstract class GitAPITestCase extends TestCase {
         String sha1 = w.git.revParse("HEAD").name();
         check_bounded_changelog_sha1(sha1Prev, sha1, DEFAULT_MIRROR_BRANCH_NAME);
     }
-
-    public void test_show_revision_for_single_commit() throws Exception {
-        w = clone(localMirror());
-        ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
-        List<String> revisionDetails = w.git.showRevision(null, to);
-        List<String> commits =
-                revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
-        assertEquals(1, commits.size());
-        assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
-    }
-
     /*
     * Test result is intentionally ignored because it depends on the output
     * order of the `git log --all` command and the JGit equivalent. Output order
