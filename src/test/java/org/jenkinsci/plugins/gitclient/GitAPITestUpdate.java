@@ -5,6 +5,7 @@ import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import org.apache.commons.io.FileUtils;
@@ -889,6 +890,21 @@ public abstract class GitAPITestUpdate {
             git.init();
         } finally {
             FileUtils.deleteDirectory(nonexistentDir);
+        }
+    }
+
+    @Test
+    public void testCheckoutBranchFailure() throws Exception {
+        w = clone(localMirror());
+        File lock = new File(w.repo, ".git/index.lock");
+        try {
+            FileUtils.touch(lock);
+            w.git.checkoutBranch("somebranch", DEFAULT_MIRROR_BRANCH_NAME);
+            fail();
+        } catch (GitLockFailedException e) {
+            // expected
+        } finally {
+            lock.delete();
         }
     }
 

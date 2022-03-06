@@ -1796,19 +1796,6 @@ public abstract class GitAPITestCase extends TestCase {
     //     assertFalse("abs(.) is a bare repository", w.igit().isBareRepository(w.file(".").getAbsolutePath()));
     // }
 
-    public void test_checkoutBranchFailure() throws Exception {
-        w = clone(localMirror());
-        File lock = new File(w.repo, ".git/index.lock");
-        try {
-            FileUtils.touch(lock);
-            w.git.checkoutBranch("somebranch", DEFAULT_MIRROR_BRANCH_NAME);
-            fail();
-        } catch (GitLockFailedException e) {
-            // expected
-        } finally {
-            lock.delete();
-        }
-    }
 
     private static final int MAX_PATH = 256;
 
@@ -1859,7 +1846,6 @@ public abstract class GitAPITestCase extends TestCase {
      * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
-
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
