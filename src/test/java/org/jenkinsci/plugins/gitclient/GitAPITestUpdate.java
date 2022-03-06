@@ -1004,6 +1004,45 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testShowRevisionForMerge() throws Exception {
+        w = clone(localMirror());
+        ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
+        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
+
+        List<String> revisionDetails = w.git.showRevision(from, to);
+
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
+        assertEquals(3, commits.size());
+        assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
+        // Merge commit is duplicated as have to capture changes that may have been made as part of merge
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
+
+        List<String> paths =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith(":"))
+                        .map(diff -> diff.substring(diff.indexOf('\t') + 1).trim()) // Windows diff output ^M removed by trim()
+                        .collect(Collectors.toList());
+
+        assertTrue(paths.contains(".gitignore"));
+        // Some irrelevant changes will be listed due to merge commit
+        assertTrue(paths.contains("pom.xml"));
+        assertTrue(paths.contains("src/main/java/hudson/plugins/git/GitAPI.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/CliGitAPIImpl.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/Git.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/GitClient.java"));
+        assertTrue(paths.contains("src/main/java/org/jenkinsci/plugins/gitclient/JGitAPIImpl.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/GitAPITestCase.java"));
+        assertTrue(paths.contains("src/test/java/org/jenkinsci/plugins/gitclient/JGitAPIImplTest.java"));
+        // Previous implementation included other commits, and listed irrelevant changes
+        assertFalse(paths.contains("README.adoc"));
+        assertFalse(paths.contains("README.md"));
+    }
+
+    @Test
     public void testCheckout() throws Exception {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
