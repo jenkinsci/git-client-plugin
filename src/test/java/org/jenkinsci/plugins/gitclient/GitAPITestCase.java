@@ -1320,38 +1320,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, defaultBranch, heads.get("refs/heads/" + defaultBranchName));
     }
 
-    /**
-     * Test getHeadRev with namespaces in the branch name
-     * and branch specs containing only the simple branch name.
-     *
-     * TODO: This does not work yet! Fix behaviour and enable test!
-     */
-    public void test_getHeadRev_namespaces_withSimpleBranchNames() throws Exception {
-        setTimeoutVisibleInCurrentTest(false);
-        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
-        extract(new ZipFile("src/test/resources/namespaceBranchRepo.zip"), tempRemoteDir);
-        Properties commits = parseLsRemote(new File("src/test/resources/namespaceBranchRepo.ls-remote"));
-        w = clone(tempRemoteDir.getAbsolutePath());
-        final String remote = tempRemoteDir.getAbsolutePath();
-
-        final String[][] checkBranchSpecs =
-        //TODO: Fix and enable test
-        {
-            {"a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            // {"a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            // {"a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            // {"b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            // {defaultBranchName, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-        };
-
-        for(String[] branch : checkBranchSpecs) {
-            final ObjectId objectId = ObjectId.fromString(branch[1]);
-            final String branchName = branch[0];
-            check_getHeadRev(remote, branchName, objectId);
-            check_getHeadRev(remote, "remotes/origin/" + branchName, objectId);
-            check_getHeadRev(remote, "refs/heads/" + branchName, objectId);
-        }
-    }
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
 
     private Properties parseLsRemote(File file) throws IOException
