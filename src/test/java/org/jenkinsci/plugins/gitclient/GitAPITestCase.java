@@ -925,57 +925,6 @@ public abstract class GitAPITestCase extends TestCase {
         return tempDirWithoutSpaces.toFile();
     }
 
-    /**
-     * Confirm that JENKINS-8122 is fixed in the current
-     * implementation.  That bug reported that the tags from a
-     * submodule were being included in the set of tags associated
-     * with the parent repository.  This test clones a repository with
-     * submodules, updates those submodules, and compares the tags
-     * available in the repository before the submodule branch
-     * checkout, after the submodule branch checkout, and within one
-     * of the submodules.
-     */
-    @Issue("JENKINS-8122")
-    public void test_submodule_tags_not_fetched_into_parent() throws Exception {
-        if (isWindows() || random.nextBoolean()) {
-            /* Skip slow, low value test on Windows, run 50% of time on non-Windows */
-            return;
-        }
-        w.git.clone_().url(localMirror()).repositoryName("origin").execute();
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).branch(DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).execute();
-
-        String tagsBefore = w.launchCommand("git", "tag");
-        Set<String> tagNamesBefore = w.git.getTagNames(null);
-        for (String tag : tagNamesBefore) {
-            assertTrue(tag + " not in " + tagsBefore, tagsBefore.contains(tag));
-        }
-
-        w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").timeout(checkoutTimeout).execute();
-        w.git.submoduleUpdate().recursive(true).execute();
-
-        String tagsAfter = w.launchCommand("git", "tag");
-        Set<String> tagNamesAfter = w.git.getTagNames(null);
-        for (String tag : tagNamesAfter) {
-            assertTrue(tag + " not in " + tagsAfter, tagsAfter.contains(tag));
-        }
-
-        assertEquals("tags before != after", tagsBefore, tagsAfter);
-
-        GitClient gitNtp = w.git.subGit("modules/ntp");
-        Set<String> tagNamesSubmodule = gitNtp.getTagNames(null);
-        for (String tag : tagNamesSubmodule) {
-            assertFalse("Submodule tag " + tag + " in parent " + tagsAfter, tagsAfter.matches("^" + tag + "$"));
-        }
-
-        try {
-            w.igit().fixSubmoduleUrls("origin", listener);
-            assertTrue("not CliGit", w.igit() instanceof CliGitAPIImpl);
-        } catch (UnsupportedOperationException uoe) {
-            assertTrue("Unsupported operation not on JGit", w.igit() instanceof JGitAPIImpl);
-        }
-    }
-
     /*
      * core.symlinks is set to false by git for WIndows.
      * It is not set on Linux.
