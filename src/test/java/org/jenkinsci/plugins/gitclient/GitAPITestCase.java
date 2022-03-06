@@ -1405,16 +1405,6 @@ public abstract class GitAPITestCase extends TestCase {
 
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
 
-    /**
-     * Test getRemoteSymbolicReferences with listing all references
-     */
-    public void test_getRemoteSymbolicReferences_withMatchingPattern() throws Exception {
-        if (!hasWorkingGetRemoteSymbolicReferences()) return; // JUnit 3 replacement for assumeThat
-        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
-        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
-        assertThat(references.size(), is(1));
-    }
-
     private Properties parseLsRemote(File file) throws IOException
     {
         Properties properties = new Properties();

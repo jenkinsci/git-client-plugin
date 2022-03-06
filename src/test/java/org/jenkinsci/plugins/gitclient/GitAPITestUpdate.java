@@ -434,6 +434,17 @@ public abstract class GitAPITestUpdate {
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
     protected abstract String getRemoteBranchPrefix();
 
+    /**
+     * Test getRemoteSymbolicReferences with listing all references
+     */
+     @Test
+    public void testGetRemoteSymbolicReferencesWithMatchingPattern() throws Exception {
+        if (!hasWorkingGetRemoteSymbolicReferences()) return; // JUnit 3 replacement for assumeThat
+        Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
+        assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
+        assertThat(references.size(), is(1));
+    }
+
     @Deprecated
     @Test
     public void testPushDeprecatedSignature() throws Exception {
