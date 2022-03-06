@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.junit.After;
@@ -891,6 +892,15 @@ public abstract class GitAPITestUpdate {
         } finally {
             FileUtils.deleteDirectory(nonexistentDir);
         }
+    }
+
+    @Test
+    public void testRevListRemoteBranch() throws Exception {
+        w = clone(localMirror());
+        List<ObjectId> revList = w.git.revList("origin/1.4.x");
+        assertEquals("Wrong list size: " + revList, 267, revList.size());
+        Ref branchRef = w.repo().findRef("origin/1.4.x");
+        assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
     }
 
     @Test

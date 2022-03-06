@@ -1764,14 +1764,6 @@ public abstract class GitAPITestCase extends TestCase {
         w.git.checkout().branch(DEFAULT_MIRROR_BRANCH_NAME).ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
     }
 
-    public void test_revList_remote_branch() throws Exception {
-        w = clone(localMirror());
-        List<ObjectId> revList = w.git.revList("origin/1.4.x");
-        assertEquals("Wrong list size: " + revList, 267, revList.size());
-        Ref branchRef = w.repo().findRef("origin/1.4.x");
-        assertTrue("origin/1.4.x not in revList", revList.contains(branchRef.getObjectId()));
-    }
-
     private String formatBranches(List<Branch> branches) {
         Set<String> names = new TreeSet<>();
         for (Branch b : branches) {
