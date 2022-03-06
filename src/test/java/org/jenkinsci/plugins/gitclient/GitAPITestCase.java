@@ -1603,30 +1603,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFalse(paths.contains("README.md"));
     }
 
-    public void test_show_revision_for_merge_exclude_files() throws Exception {
-        w = clone(localMirror());
-        ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
-        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
-        Boolean useRawOutput = false;
-
-        List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
-
-        List<String> commits =
-                revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
-        assertEquals(2, commits.size());
-        assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
-        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
-
-        List<String> diffs =
-                revisionDetails.stream()
-                        .filter(detail -> detail.startsWith(":"))
-                        .collect(Collectors.toList());
-
-        assertTrue(diffs.isEmpty());
-    }
-
     /*
     * Test result is intentionally ignored because it depends on the output
     * order of the `git log --all` command and the JGit equivalent. Output order

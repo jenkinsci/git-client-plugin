@@ -904,6 +904,31 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testShowRevisionForMergeExcludeFiles() throws Exception {
+        w = clone(localMirror());
+        ObjectId from = ObjectId.fromString("45e76942914664ee19f31d90e6f2edbfe0d13a46");
+        ObjectId to = ObjectId.fromString("b53374617e85537ec46f86911b5efe3e4e2fa54b");
+        Boolean useRawOutput = false;
+
+        List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
+
+        List<String> commits =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith("commit "))
+                        .collect(Collectors.toList());
+        assertEquals(2, commits.size());
+        assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
+        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
+
+        List<String> diffs =
+                revisionDetails.stream()
+                        .filter(detail -> detail.startsWith(":"))
+                        .collect(Collectors.toList());
+
+        assertTrue(diffs.isEmpty());
+    }
+
+    @Test
     public void testChangelogBounded() throws Exception {
         w = clone(localMirror());
         String sha1Prev = w.git.revParse("HEAD").name();
@@ -911,7 +936,7 @@ public abstract class GitAPITestUpdate {
         w.git.add("changelog-file");
         w.git.commit("changelog-commit-message");
         String sha1 = w.git.revParse("HEAD").name();
-        check_bounded_changelog_sha1(sha1Prev, sha1, DEFAULT_MIRROR_BRANCH_NAME);
+        checkBoundedChangelogSha1(sha1Prev, sha1, DEFAULT_MIRROR_BRANCH_NAME);
     }
 
     @Test
