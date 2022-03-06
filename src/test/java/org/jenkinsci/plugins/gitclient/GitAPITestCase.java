@@ -1542,16 +1542,6 @@ public abstract class GitAPITestCase extends TestCase {
         check_headRev(w.repoPath(), getMirrorHead());
     }
 
-
-    @Issue("JENKINS-37185")
-    @NotImplementedInJGit /* JGit doesn't have timeout */
-    public void test_checkout_honor_timeout() throws Exception {
-        w = clone(localMirror());
-
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().branch(DEFAULT_MIRROR_BRANCH_NAME).ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
-    }
-
     private String formatBranches(List<Branch> branches) {
         Set<String> names = new TreeSet<>();
         for (Branch b : branches) {

@@ -1079,6 +1079,16 @@ public abstract class GitAPITestUpdate {
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
+    @Issue("JENKINS-37185")
+    @NotImplementedInJGit /* JGit doesn't have timeout */
+    @Test
+    public void testCheckoutHonorTimeout() throws Exception {
+        w = clone(localMirror());
+
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        w.git.checkout().branch(DEFAULT_MIRROR_BRANCH_NAME).ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
+    }
+
     @Test
     public void testCheckout() throws Exception {
         w = clone(localMirror());
