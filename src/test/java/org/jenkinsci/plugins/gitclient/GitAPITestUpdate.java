@@ -904,6 +904,22 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testCheckout() throws Exception {
+        w = clone(localMirror());
+        String branches = w.launchCommand("git", "branch", "-l");
+        assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
+        final String branchName = "test-checkout-branch-" + UUID.randomUUID();
+        branches = w.launchCommand("git", "branch", "-l");
+        assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
+        w.git.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").branch(branchName).execute(); // git-client-1.6.0
+        branches = w.launchCommand("git", "branch", "-l");
+        assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
+        String sha1 = w.git.revParse("HEAD").name();
+        String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
+        assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
+    }
+
+    @Test
     public void testCheckoutBranchFailure() throws Exception {
         w = clone(localMirror());
         File lock = new File(w.repo, ".git/index.lock");
