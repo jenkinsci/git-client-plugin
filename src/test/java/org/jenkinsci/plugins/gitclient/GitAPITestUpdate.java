@@ -6,6 +6,7 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -27,8 +28,7 @@ import java.io.StringWriter;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -322,6 +322,90 @@ public abstract class GitAPITestUpdate {
 		w = new WorkingArea();
 	}
 
+	/**
+	 * Populate the local mirror of the git client plugin repository.
+	 * Returns path to the local mirror directory.
+	 *
+	 * @return path to the local mirrror directory
+	 * @throws IOException on I/O error
+	 * @throws InterruptedException when execption is interrupted
+	 */
+	protected String localMirror() throws IOException, InterruptedException {
+		File base = new File(".").getAbsoluteFile();
+		for (File f=base; f!=null; f=f.getParentFile()) {
+			File targetDir = new File(f, "target");
+			if (targetDir.exists()) {
+				String cloneDirName = "clone.git";
+				File clone = new File(targetDir, cloneDirName);
+				if (!clone.exists()) {
+					/* Clone to a temporary directory then move the
+					 * temporary directory to the final destination
+					 * directory. The temporary directory prevents
+					 * collision with other tests running in parallel.
+					 * The atomic move after clone completion assures
+					 * that only one of the parallel processes creates
+					 * the final destination directory.
+					 */
+					Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
+					w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", "https://github.com/jenkinsci/git-client-plugin", tempClonePath.toFile().getAbsolutePath());
+					if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
+						renameAndDeleteDir(tempClonePath, cloneDirName);
+					} else {
+						/*
+						 * If many unit tests run at the same time and
+						 * are using the localMirror, multiple clones
+						 * will happen.  All but one of the clones
+						 * will be discarded.  The tests reduce the
+						 * likelihood of multiple concurrent clones by
+						 * adding a random delay to the start of
+						 * longer running tests that use the local
+						 * mirror.  The delay was enough in my tests
+						 * to prevent the duplicate clones and the
+						 * resulting discard of the results of the
+						 * clone.
+						 *
+						 * Different processor configurations with
+						 * different performance characteristics may
+						 * still have parallel tests which attempt to
+						 * clone the local mirror concurrently. If
+						 * parallel clones happen, only one of the
+						 * parallel clones will 'win the race'.  The
+						 * deleteRecursive() will discard a clone that
+						 * 'lost the race'.
+						 */
+						Util.deleteRecursive(tempClonePath.toFile());
+					}
+				}
+				return clone.getPath();
+			}
+		}
+		throw new IllegalStateException();
+	}
+
+	private void renameAndDeleteDir(Path srcDir, String destDirName) {
+		try {
+			// Try an atomic move first
+			Files.move(srcDir, srcDir.resolveSibling(destDirName), StandardCopyOption.ATOMIC_MOVE);
+		} catch (AtomicMoveNotSupportedException e) {
+			// If Atomic move is not supported, try a move, display exception on failure
+			try {
+				Files.move(srcDir, srcDir.resolveSibling(destDirName));
+			} catch (IOException ioe) {
+				Util.displayIOException(ioe, listener);
+			}
+		} catch (FileAlreadyExistsException ignored) {
+			// Intentionally ignore FileAlreadyExists, another thread or process won the race
+		} catch (IOException ioe) {
+			Util.displayIOException(ioe, listener);
+		} finally {
+			try {
+				Util.deleteRecursive(srcDir.toFile());
+			} catch (IOException ioe) {
+				Util.displayIOException(ioe, listener);
+			}
+		}
+	}
+
 	private List<File> tempDirsToDelete = new ArrayList<>();
 
 	@After
@@ -424,6 +508,23 @@ public abstract class GitAPITestUpdate {
 		assertThat(tempDirWithoutSpaces.toString(), not(containsString(" ")));
 		tempDirsToDelete.add(tempDirWithoutSpaces.toFile());
 		return tempDirWithoutSpaces.toFile();
+	}
+
+	@Deprecated
+	@Test
+	public void testLsTreeNonRecursive() throws IOException, InterruptedException {
+		w.init();
+		w.touch("file1", "file1 fixed content");
+		w.git.add("file1");
+		w.git.commit("commit1");
+		String expectedBlobSHA1 = "3f5a898e0c8ea62362dbf359cf1a400f3cfd46ae";
+		List<IndexEntry> tree = w.igit().lsTree("HEAD", false);
+		assertEquals("Wrong blob sha1", expectedBlobSHA1, tree.get(0).getObject());
+		assertEquals("Wrong number of tree entries", 1, tree.size());
+		final String remoteUrl = localMirror();
+		w.igit().setRemoteUrl("origin", remoteUrl, w.repoPath() + File.separator + ".git");
+		assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
+		assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
 	}
 
 	@NotImplementedInJGit
