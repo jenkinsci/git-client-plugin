@@ -904,6 +904,19 @@ public abstract class GitAPITestUpdate {
     }
 
     @Test
+    public void testCheckoutNullRef() throws Exception {
+        w = clone(localMirror());
+        String branches = w.launchCommand("git", "branch", "-l");
+        assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
+        final String branchName = "test-checkout-null-ref-branch-" + UUID.randomUUID();
+        branches = w.launchCommand("git", "branch", "-l");
+        assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
+        w.git.checkout().ref(null).branch(branchName).execute();
+        branches = w.launchCommand("git", "branch", "-l");
+        assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
+    }
+
+    @Test
     public void testCheckout() throws Exception {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
