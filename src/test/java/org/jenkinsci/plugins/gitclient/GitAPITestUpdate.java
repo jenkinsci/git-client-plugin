@@ -7,6 +7,7 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.*;
 import org.eclipse.jgit.transport.RefSpec;
@@ -1040,6 +1041,42 @@ public abstract class GitAPITestUpdate {
         // Previous implementation included other commits, and listed irrelevant changes
         assertFalse(paths.contains("README.adoc"));
         assertFalse(paths.contains("README.md"));
+    }
+
+    /*
+     * Test result is intentionally ignored because it depends on the output
+     * order of the `git log --all` command and the JGit equivalent. Output order
+     * of that command is not reliable since it performs a time ordered sort and
+     * the time resolution is only one second.  Commits within the same second
+     * are sometimes ordered differently by JGit than by command line git.
+     * Testing a deprecated method is not important enough to distract with
+     * test failures.
+     */
+    @Deprecated
+    @Test
+    public void testGetAllLogEntries() throws Exception {
+        /* Use original clone source instead of localMirror.  The
+         * namespace test modifies the localMirror content by creating
+         * three independent branches very rapidly.  Those three
+         * branches may be created within the same second, making it
+         * more difficult for git to provide a time ordered log. The
+         * reference to localMirror will help performance of the C git
+         * implementation, since that will avoid copying content which
+         * is already local. */
+        String gitUrl = "https://github.com/jenkinsci/git-client-plugin.git";
+        if (SystemUtils.IS_OS_WINDOWS) {
+            // Does not leak an open file
+            w = clone(gitUrl);
+        } else {
+            // Leaks an open file - unclear why
+            w.git.clone_().url(gitUrl).repositoryName("origin").reference(localMirror()).execute();
+        }
+        String cgitAllLogEntries = w.cgit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
+        String igitAllLogEntries = w.igit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
+        if (!cgitAllLogEntries.equals(igitAllLogEntries)) {
+            return; // JUnit 3 does not honor @Ignore annotation
+        }
+        assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
     @Test
