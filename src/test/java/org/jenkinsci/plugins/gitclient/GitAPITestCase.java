@@ -1388,21 +1388,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
     }
 
-    /**
-     * Test getRemoteReferences with listing references limit to refs/heads or refs/tags
-     */
-    public void test_getRemoteReferences_withLimitReferences() throws Exception {
-        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
-        assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
-        references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
-        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
-        for (String key : references.keySet()) {
-            assertFalse(key.endsWith("^{}"));
-        }
-    }
-
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
 
     private Properties parseLsRemote(File file) throws IOException

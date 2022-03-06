@@ -431,6 +431,22 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    /**
+     * Test getRemoteReferences with listing references limit to refs/heads or refs/tags
+     */
+     @Test
+    public void testGetRemoteReferencesWithLimitReferences() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, true, false);
+        assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
+        references = w.git.getRemoteReferences(remoteMirrorURL, null, false, true);
+        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
+        for (String key : references.keySet()) {
+            assertFalse(key.endsWith("^{}"));
+        }
+    }
+
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
     protected abstract String getRemoteBranchPrefix();
 
