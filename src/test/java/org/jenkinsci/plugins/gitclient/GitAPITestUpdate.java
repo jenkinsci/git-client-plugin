@@ -1,5 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.Launcher;
 import hudson.ProxyConfiguration;
 import hudson.Util;
@@ -508,6 +511,26 @@ public abstract class GitAPITestUpdate {
         for (String key : references.keySet()) {
             assertFalse(key.endsWith("^{}"));
         }
+    }
+
+    /**
+     * User interface calls getHeadRev without a workspace while
+     * validating user input. This test showed a null pointer
+     * exception in a development version of credential passing to
+     * command line git. The referenced repository is a public
+     * repository, and https access to a public repository is allowed
+     * even if invalid credentials are provided.
+     *
+     * @throws Exception on test failure
+     */
+     @Test
+    public void testGetHeadRevFromPublicRepoWithInvalidCredential() throws Exception {
+        GitClient remoteGit = Git.with(listener, env).using("git").getClient();
+        StandardUsernamePasswordCredentials testCredential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "bad-id", "bad-desc", "bad-user", "bad-password");
+        remoteGit.addDefaultCredentials(testCredential);
+        Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
+        ObjectId defaultBranch = w.git.getHeadRev(remoteMirrorURL, "refs/heads/" + defaultBranchName);
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, defaultBranch, heads.get("refs/heads/" + defaultBranchName));
     }
 
     /**
