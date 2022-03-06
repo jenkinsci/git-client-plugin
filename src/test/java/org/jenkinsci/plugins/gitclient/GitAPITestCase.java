@@ -1620,41 +1620,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
-    /**
-     * UT for {@link GitClient#getBranchesContaining(String, boolean)}. The main
-     * testing case is retrieving remote branches.
-     * @throws Exception on exceptions occur
-     */
-    public void test_branchContainingRemote() throws Exception {
-        final WorkingArea r = new WorkingArea();
-        r.init();
-
-        r.commitEmpty("c1");
-        ObjectId c1 = r.head();
-
-        w.git.clone_().url("file://" + r.repoPath()).execute();
-        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/"
-                + defaultBranchName;
-        final String bothBranches = defaultBranchName + "," + "origin/" + defaultBranchName;
-        w.git.fetch_().from(remote, refspecs).execute();
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().ref(defaultBranchName).timeout(checkoutTimeout).execute();
-
-        assertEquals(defaultBranchName, formatBranches(w.git.getBranchesContaining(c1.name(), false)));
-        if (!(w.git instanceof CliGitAPIImpl)) { // Branch names incorrect in some CLI git cases
-            assertEquals(bothBranches, formatBranches(w.git.getBranchesContaining(c1.name(), true)));
-        }
-
-        r.commitEmpty("c2");
-        ObjectId c2 = r.head();
-        w.git.fetch_().from(remote, refspecs).execute();
-        assertEquals("", formatBranches(w.git.getBranchesContaining(c2.name(), false)));
-        assertEquals(remoteBranch, formatBranches(w.git.getBranchesContaining(c2.name(), true)));
-    }
-
     @Issue("JENKINS-37185")
     @NotImplementedInJGit /* JGit doesn't have timeout */
     public void test_checkout_honor_timeout() throws Exception {

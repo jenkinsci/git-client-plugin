@@ -4,18 +4,14 @@ import hudson.Launcher;
 import hudson.ProxyConfiguration;
 import hudson.Util;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitLockFailedException;
-import hudson.plugins.git.IGitAPI;
-import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.lib.Config;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,12 +31,7 @@ import java.nio.file.Files;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Enumeration;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -76,6 +67,7 @@ public abstract class GitAPITestUpdate {
     private static final String LOGGING_STARTED = "Logging started";
     private int checkoutTimeout = -1;
     private int submoduleUpdateTimeout = -1;
+    private final Random random = new Random();
 
     protected hudson.EnvVars env = new hudson.EnvVars();
 
@@ -1020,6 +1012,50 @@ public abstract class GitAPITestUpdate {
         String sha1 = w.git.revParse("HEAD").name();
         String sha1Expected = "6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea";
         assertEquals("Wrong SHA1 as checkout of git-client-1.6.0", sha1Expected, sha1);
+    }
+
+    /**
+     * UT for {@link GitClient#getBranchesContaining(String, boolean)}. The main
+     * testing case is retrieving remote branches.
+     * @throws Exception on exceptions occur
+     */
+     @Test
+    public void testBranchContainingRemote() throws Exception {
+        final WorkingArea r = new WorkingArea();
+        r.init();
+
+        r.commitEmpty("c1");
+        ObjectId c1 = r.head();
+
+        w.git.clone_().url("file://" + r.repoPath()).execute();
+        final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
+                "refs/heads/*:refs/remotes/origin/*"));
+        final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/"
+                + defaultBranchName;
+        final String bothBranches = defaultBranchName + "," + "origin/" + defaultBranchName;
+        w.git.fetch_().from(remote, refspecs).execute();
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        w.git.checkout().ref(defaultBranchName).timeout(checkoutTimeout).execute();
+
+        assertEquals(defaultBranchName, formatBranches(w.git.getBranchesContaining(c1.name(), false)));
+        if (!(w.git instanceof CliGitAPIImpl)) { // Branch names incorrect in some CLI git cases
+            assertEquals(bothBranches, formatBranches(w.git.getBranchesContaining(c1.name(), true)));
+        }
+
+        r.commitEmpty("c2");
+        ObjectId c2 = r.head();
+        w.git.fetch_().from(remote, refspecs).execute();
+        assertEquals("", formatBranches(w.git.getBranchesContaining(c2.name(), false)));
+        assertEquals(remoteBranch, formatBranches(w.git.getBranchesContaining(c2.name(), true)));
+    }
+
+    private String formatBranches(List<Branch> branches) {
+        Set<String> names = new TreeSet<>();
+        for (Branch b : branches) {
+            names.add(b.getName());
+        }
+        return String.join(",", names);
     }
 
     @Test
