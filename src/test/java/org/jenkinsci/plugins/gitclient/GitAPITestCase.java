@@ -64,7 +64,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
@@ -105,21 +104,18 @@ public abstract class GitAPITestCase extends TestCase {
     private int submoduleUpdateTimeout = -1;
     private final Random random = new Random();
 
-    //moved
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
             assertSubstringTimeout("git checkout", checkoutTimeout);
         }
     }
 
-    //moved
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
             assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
         }
     }
 
-    //moved
     private void assertSubstringTimeout(final String substring, int expectedTimeout) {
         if (!(w.git instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
             return;
@@ -332,7 +328,6 @@ public abstract class GitAPITestCase extends TestCase {
 
     protected WorkingArea w;
 
-    // moved
     protected WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
         x.launchCommand("git", "clone", src, x.repoPath());
@@ -362,7 +357,6 @@ public abstract class GitAPITestCase extends TestCase {
      * @param visible set to false if current test performs no operation which should report a timeout value
      * @see #getTimeoutVisibleInCurrentTest()
      */
-    // moved
     protected void setTimeoutVisibleInCurrentTest(boolean visible) {
         timeoutVisibleInCurrentTest = visible;
     }
@@ -370,7 +364,6 @@ public abstract class GitAPITestCase extends TestCase {
     private static boolean firstRun = true;
 
     @Override
-    //moved
     protected void setUp() throws Exception {
         if (firstRun) {
             firstRun = false;
@@ -391,7 +384,6 @@ public abstract class GitAPITestCase extends TestCase {
         w = new WorkingArea();
     }
 
-    //moved
     private String getDefaultBranchName() throws Exception {
         String defaultBranchValue = "mast" + "er"; // Intentionally split to note this will remain
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
@@ -511,7 +503,6 @@ public abstract class GitAPITestCase extends TestCase {
     private List<File> tempDirsToDelete = new ArrayList<>();
 
     @Override
-    //moved
     protected void tearDown() throws Exception {
         try {
             temporaryDirectoryAllocator.dispose();
@@ -569,71 +560,9 @@ public abstract class GitAPITestCase extends TestCase {
         assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
     }
 
-    @Deprecated
-    //moved
-    public void test_getDefaultRemote() throws Exception {
-        w.init();
-        w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
-        w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
-        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
-        assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
-        /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
-        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
-                     w.igit().getDefaultRemote("invalid"));
-    }
-
-    //moved
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
-    }
-
-    // moved
-    public void test_hasGitRepo_without_git_directory() throws Exception
-    {
-        setTimeoutVisibleInCurrentTest(false);
-        assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
-    }
-
-    @Deprecated
-    //moved
-    public void test_push_deprecated_signature() throws Exception {
-        /* Make working repo a remote of the bare repo */
-        w.init();
-        w.commitEmpty("init");
-        ObjectId workHead = w.head();
-
-        /* Create a bare repo */
-        WorkingArea bare = new WorkingArea();
-        bare.init(true);
-
-        /* Set working repo origin to point to bare */
-        w.git.setRemoteUrl("origin", bare.repoPath());
-        assertEquals("Wrong remote URL", w.git.getRemoteUrl("origin"), bare.repoPath());
-
-        /* Push to bare repo */
-        w.git.push("origin", defaultBranchName);
-        /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
-        assertEquals("Heads don't match", workHead, bareHead);
-        assertEquals("Heads don't match", w.git.getHeadRev(w.repoPath(), defaultBranchName), bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
-
-        /* Commit a new file */
-        w.touch("file1");
-        w.git.add("file1");
-        w.git.commit("commit1");
-
-        /* Push commit to the bare repo */
-        Config config = new Config();
-        config.fromText(w.contentOf(".git/config"));
-        RemoteConfig origin = new RemoteConfig(config, "origin");
-        w.igit().push(origin, defaultBranchName);
-
-        /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
-        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
-        assertEquals("Working SHA1 != bare SHA1", workHead2, bareHead2);
-        assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), defaultBranchName), bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
     }
 
     /**
@@ -991,7 +920,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
 
-    //moved
     public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
         try {
             w.igit().fixSubmoduleUrls("origin", listener);
@@ -1005,7 +933,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    //moved
     private File createTempDirectoryWithoutSpaces() throws IOException {
         // JENKINS-56175 notes that the plugin does not support submodule URL's
         // which contain a space character. Parent pom 3.36 and later use a
@@ -1017,50 +944,6 @@ public abstract class GitAPITestCase extends TestCase {
         assertThat(tempDirWithoutSpaces.toString(), not(containsString(" ")));
         tempDirsToDelete.add(tempDirWithoutSpaces.toFile());
         return tempDirWithoutSpaces.toFile();
-    }
-
-    @NotImplementedInJGit
-    //moved
-    public void test_trackingSubmodule() throws Exception {
-        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
-            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
-            return;
-        }
-        w.init(); // empty repository
-
-        // create a new GIT repo.
-        //   default branch -- <file1>C  <file2>C
-        WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
-        r.init();
-        r.touch("file1", "content1");
-        r.git.add("file1");
-        r.git.commit("submod-commit1");
-
-        // Add new GIT repo to w
-        String subModDir = "submod1-" + UUID.randomUUID();
-        w.git.addSubmodule(r.repoPath(), subModDir);
-        w.git.submoduleInit();
-
-        // Add a new file to the separate GIT repo.
-        r.touch("file2", "content2");
-        r.git.add("file2");
-        r.git.commit("submod-branch1-commit1");
-
-        // Make sure that the new file doesn't exist in the repo with remoteTracking
-        String subFile = subModDir + File.separator + "file2";
-        w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
-        assertFalse("file2 exists and should not because we didn't update to the tip of the default branch.", w.exists(subFile));
-
-        // Windows tests fail if repoPath is more than 200 characters
-        // CLI git support for longpaths on Windows is complicated
-        if (w.repoPath().length() > 200) {
-            return;
-        }
-
-        // Run submodule update with remote tracking
-        w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
-        assertTrue("file2 does not exist and should because we updated to the tip of the default branch.", w.exists(subFile));
-        assertFixSubmoduleUrlsThrows();
     }
 
     /* Check JENKINS-23424 - inconsistent handling of modified tracked
@@ -1597,29 +1480,6 @@ public abstract class GitAPITestCase extends TestCase {
     }
 
     /**
-     * Test getRemoteReferences with matching pattern
-     */
-    //moved
-    public void test_getRemoteReferences_withMatchingPattern() throws Exception {
-        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
-        assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
-        references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
-        assertFalse(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
-        for (String key : references.keySet()) {
-            assertTrue(key.startsWith("refs/tags/git-client"));
-        }
-
-        references = new HashMap<>();
-        try {
-            references = w.git.getRemoteReferences(remoteMirrorURL, "notexists-*", false, false);
-        } catch (GitException ge) {
-            assertExceptionMessageContains(ge, "unexpected ls-remote output");
-        }
-        assertTrue(references.isEmpty());
-    }
-
-    /**
      * Test getRemoteSymbolicReferences with listing all references
      */
     public void test_getRemoteSymbolicReferences() throws Exception {
@@ -1655,7 +1515,7 @@ public abstract class GitAPITestCase extends TestCase {
         }
         return properties;
     }
-    // moved
+
     private void extract(ZipFile zipFile, File outputDir) throws IOException
     {
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -1701,7 +1561,6 @@ public abstract class GitAPITestCase extends TestCase {
         return unmodifiableList(matches);
     }
 
-    // moved
     private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
@@ -1727,13 +1586,6 @@ public abstract class GitAPITestCase extends TestCase {
 
     public void test_getHeadRev_localMirror() throws Exception {
         check_headRev(localMirror(), getMirrorHead());
-    }
-
-    //moved
-    public void test_getHeadRev_remote() throws Exception {
-        String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
-        ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
-        check_headRev(remoteMirrorURL, lsRemoteId);
     }
 
     public void test_getHeadRev_current_directory() throws Exception {
@@ -1880,23 +1732,6 @@ public abstract class GitAPITestCase extends TestCase {
                         .collect(Collectors.toList());
         assertEquals(1, commits.size());
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
-    }
-
-    @Issue("JENKINS-22343")
-    // moved
-    public void test_show_revision_for_first_commit() throws Exception {
-        w.init();
-        w.touch("a");
-        w.git.add("a");
-        w.git.commit("first");
-        ObjectId first = w.head();
-        List<String> revisionDetails = w.git.showRevision(first);
-        List<String> commits =
-                revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
-        assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
-        assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }
 
     /*
@@ -2051,50 +1886,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    @Deprecated
-    // moved
-    public void test_reset() throws IOException, InterruptedException {
-        w.init();
-        /* No valid HEAD yet - nothing to reset, should give no error */
-        w.igit().reset(false);
-        w.igit().reset(true);
-        w.touch("committed-file", "committed-file content " + UUID.randomUUID());
-        w.git.add("committed-file");
-        w.git.commit("commit1");
-        assertTrue("committed-file missing at commit1", w.file("committed-file").exists());
-        assertFalse("added-file exists at commit1", w.file("added-file").exists());
-        assertFalse("touched-file exists at commit1", w.file("added-file").exists());
-
-        w.launchCommand("git", "rm", "committed-file");
-        w.touch("added-file", "File 2 content " + UUID.randomUUID());
-        w.git.add("added-file");
-        w.touch("touched-file", "File 3 content " + UUID.randomUUID());
-        assertFalse("committed-file exists", w.file("committed-file").exists());
-        assertTrue("added-file missing", w.file("added-file").exists());
-        assertTrue("touched-file missing", w.file("touched-file").exists());
-
-        w.igit().reset(false);
-        assertFalse("committed-file exists", w.file("committed-file").exists());
-        assertTrue("added-file missing", w.file("added-file").exists());
-        assertTrue("touched-file missing", w.file("touched-file").exists());
-
-        w.git.add("added-file"); /* Add the file which soft reset "unadded" */
-
-        w.igit().reset(true);
-        assertTrue("committed-file missing", w.file("committed-file").exists());
-        assertFalse("added-file exists at hard reset", w.file("added-file").exists());
-        assertTrue("touched-file missing", w.file("touched-file").exists());
-
-        final String remoteUrl = "git@github.com:MarkEWaite/git-client-plugin.git";
-        w.git.setRemoteUrl("origin", remoteUrl);
-        w.git.setRemoteUrl("ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
-        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
-        assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
-        /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
-        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
-                     w.igit().getDefaultRemote("invalid"));
-    }
-
     private static final int MAX_PATH = 256;
 
     private void commitFile(String dirName, String fileName, boolean longpathsEnabled) throws Exception {
@@ -2144,58 +1935,6 @@ public abstract class GitAPITestCase extends TestCase {
      * @return remote branch prefix, for example, "remotes/"
      */
     protected abstract String getRemoteBranchPrefix();
-
-    /**
-     * Test parsing of changelog with unicode characters in commit messages.
-     */
-    @Issue({"JENKINS-6203", "JENKINS-14798", "JENKINS-23091"})
-    //moved
-    public void test_unicodeCharsInChangelog() throws Exception {
-        File tempRemoteDir = temporaryDirectoryAllocator.allocate();
-        extract(new ZipFile("src/test/resources/unicodeCharsInChangelogRepo.zip"), tempRemoteDir);
-        File pathToTempRepo = new File(tempRemoteDir, "unicodeCharsInChangelogRepo");
-        w = clone(pathToTempRepo.getAbsolutePath());
-
-        // w.git.changelog gives us strings
-        // We want to collect all the strings and check that unicode characters are still there.
-
-        StringWriter sw = new StringWriter();
-        w.git.changelog("v0", "vLast", sw);
-        String content = sw.toString();
-
-        assertTrue(content.contains("hello in English: hello"));
-        assertTrue(content.contains("hello in Russian: \u043F\u0440\u0438\u0432\u0435\u0442 (priv\u00E9t)"));
-        assertTrue(content.contains("hello in Chinese: \u4F60\u597D (n\u01D0 h\u01CEo)"));
-        assertTrue(content.contains("hello in French: \u00C7a va ?"));
-        assertTrue(content.contains("goodbye in German: Tsch\u00FCss"));
-    }
-
-    /**
-     * Multi-branch pipeline plugin and other AbstractGitSCMSource callers were
-     * initially using JGit as their implementation, and developed an unexpected
-     * dependency on JGit behavior. JGit init() (in JGit 3.7 at least) creates
-     * the directory if it does not exist. Rather than change the multi-branch
-     * pipeline when the git client plugin was adapted to allow either git or
-     * jgit, instead the git.init() method was changed to create the target
-     * directory if it does not exist.
-     *
-     * Low risk from that change of behavior, since a non-existent directory
-     * caused the command line git init() method to consistently throw an
-     * exception.
-     *
-     * @throws java.lang.Exception on error
-     */
-    // moved
-    public void test_git_init_creates_directory_if_needed() throws Exception {
-        File nonexistentDir = new File(UUID.randomUUID().toString());
-        assertFalse("Dir unexpectedly exists at start of test", nonexistentDir.exists());
-        try {
-            GitClient git = setupGitAPI(nonexistentDir);
-            git.init();
-        } finally {
-            FileUtils.deleteDirectory(nonexistentDir);
-        }
-    }
 
     @Issue("JENKINS-40023")
     public void test_changelog_with_merge_commit_and_max_log_history() throws Exception {

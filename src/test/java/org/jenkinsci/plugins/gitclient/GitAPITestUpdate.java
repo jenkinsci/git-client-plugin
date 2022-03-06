@@ -20,11 +20,21 @@ import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
+import java.io.OutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -33,10 +43,16 @@ import java.util.zip.ZipFile;
 
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
-public class GitAPITestUpdate {
+public abstract class GitAPITestUpdate {
 
 	private final TemporaryDirectoryAllocator temporaryDirectoryAllocator = new TemporaryDirectoryAllocator();
 
@@ -95,9 +111,7 @@ public class GitAPITestUpdate {
 		assertEquals(substringMessages, substringTimeoutMessages);
 	}
 
-	protected GitClient setupGitAPI(File ws) throws Exception {
-		return Git.with(listener, env).in(ws).using("git").getClient();
-	}
+	protected abstract GitClient setupGitAPI(File ws) throws Exception;
 
 	class WorkingArea {
 		final File repo;
@@ -336,6 +350,9 @@ public class GitAPITestUpdate {
 		}
 	}
 
+	protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
+	protected abstract String getRemoteBranchPrefix();
+
 	@Deprecated
 	@Test
 	public void testPushDeprecatedSignature() throws Exception {
@@ -487,7 +504,7 @@ public class GitAPITestUpdate {
 		}
 	}
 
-	private void check_headRev(String repoURL, ObjectId expectedId) throws InterruptedException {
+	private void checkHeadRev(String repoURL, ObjectId expectedId) throws InterruptedException {
 		final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
 		assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
 
@@ -512,12 +529,26 @@ public class GitAPITestUpdate {
 
 	private boolean timeoutVisibleInCurrentTest;
 
+	/**
+	 * Returns true if the current test is expected to have a timeout
+	 * value visible written to the listener log.  Used to assert
+	 * timeout values are passed correctly through the layers without
+	 * requiring that the timeout actually expire.
+	 * @see #setTimeoutVisibleInCurrentTest(boolean)
+	 */
+	protected boolean getTimeoutVisibleInCurrentTest() {
+		return timeoutVisibleInCurrentTest;
+	}
+
 	protected void setTimeoutVisibleInCurrentTest(boolean visible) {
 		timeoutVisibleInCurrentTest = visible;
 	}
 
+	/**
+	 * Test getRemoteReferences with matching pattern
+	 */
 	@Test
-	public void test_getRemoteReferences_withMatchingPattern() throws Exception {
+	public void testGetRemoteReferencesWithMatchingPattern() throws Exception {
 		Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
 		assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
 		assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
@@ -537,14 +568,14 @@ public class GitAPITestUpdate {
 	}
 
 	@Test
-	public void test_getHeadRev_remote() throws Exception {
+	public void testGetHeadRevRemote() throws Exception {
 		String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
 		ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
-		check_headRev(remoteMirrorURL, lsRemoteId);
+		checkHeadRev(remoteMirrorURL, lsRemoteId);
 	}
 
 	@Test
-	public void test_hasGitRepo_without_git_directory() throws Exception
+	public void testHasGitRepoWithoutGitDirectory() throws Exception
 	{
 		setTimeoutVisibleInCurrentTest(false);
 		assertFalse("Empty directory has a Git repo", w.git.hasGitRepo());
@@ -552,7 +583,7 @@ public class GitAPITestUpdate {
 
 	@Issue("JENKINS-22343")
 	@Test
-	public void test_show_revision_for_first_commit() throws Exception {
+	public void testShowRevisionForFirstCommit() throws Exception {
 		w.init();
 		w.touch("a");
 		w.git.add("a");
@@ -567,9 +598,12 @@ public class GitAPITestUpdate {
 		assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
 	}
 
+	/**
+	 * Test parsing of changelog with unicode characters in commit messages.
+	 */
 	@Deprecated
 	@Test
-	public void test_reset() throws IOException, InterruptedException {
+	public void testReset() throws IOException, InterruptedException {
 		w.init();
 		/* No valid HEAD yet - nothing to reset, should give no error */
 		w.igit().reset(false);
@@ -614,7 +648,7 @@ public class GitAPITestUpdate {
 
 	@Issue({"JENKINS-6203", "JENKINS-14798", "JENKINS-23091"})
 	@Test
-	public void test_unicodeCharsInChangelog() throws Exception {
+	public void testUnicodeCharsInChangelog() throws Exception {
 		File tempRemoteDir = temporaryDirectoryAllocator.allocate();
 		extract(new ZipFile("src/test/resources/unicodeCharsInChangelogRepo.zip"), tempRemoteDir);
 		File pathToTempRepo = new File(tempRemoteDir, "unicodeCharsInChangelogRepo");
@@ -636,7 +670,7 @@ public class GitAPITestUpdate {
 
 	@Deprecated
 	@Test
-	public void test_getDefaultRemote() throws Exception {
+	public void testGetDefaultRemote() throws Exception {
 		w.init();
 		w.launchCommand("git", "remote", "add", "origin", "https://github.com/jenkinsci/git-client-plugin.git");
 		w.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
@@ -647,8 +681,23 @@ public class GitAPITestUpdate {
 				w.igit().getDefaultRemote("invalid"));
 	}
 
+	/**
+	 * Multi-branch pipeline plugin and other AbstractGitSCMSource callers were
+	 * initially using JGit as their implementation, and developed an unexpected
+	 * dependency on JGit behavior. JGit init() (in JGit 3.7 at least) creates
+	 * the directory if it does not exist. Rather than change the multi-branch
+	 * pipeline when the git client plugin was adapted to allow either git or
+	 * jgit, instead the git.init() method was changed to create the target
+	 * directory if it does not exist.
+	 *
+	 * Low risk from that change of behavior, since a non-existent directory
+	 * caused the command line git init() method to consistently throw an
+	 * exception.
+	 *
+	 * @throws java.lang.Exception on error
+	 */
 	@Test
-	public void test_git_init_creates_directory_if_needed() throws Exception {
+	public void testGitInitCreatesDirectoryIfNeeded() throws Exception {
 		File nonexistentDir = new File(UUID.randomUUID().toString());
 		assertFalse("Dir unexpectedly exists at start of test", nonexistentDir.exists());
 		try {
