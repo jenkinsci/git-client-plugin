@@ -539,27 +539,6 @@ public abstract class GitAPITestCase extends TestCase {
         }
     }
 
-    @Deprecated
-    public void test_lsTree_recursive() throws IOException, InterruptedException {
-        w.init();
-        assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
-        w.touch("dir1/file1", "dir1/file1 fixed content");
-        w.git.add("dir1/file1");
-        w.touch("file2", "file2 fixed content");
-        w.git.add("file2");
-        w.git.commit("commit-dir-and-file");
-        String expectedBlob1SHA1 = "a3ee484019f0576fcdeb48e682fa1058d0c74435";
-        String expectedBlob2SHA1 = "aa1b259ac5e8d6cfdfcf4155a9ff6836b048d0ad";
-        List<IndexEntry> tree = w.igit().lsTree("HEAD", true);
-        assertEquals("Wrong blob 1 sha1", expectedBlob1SHA1, tree.get(0).getObject());
-        assertEquals("Wrong blob 2 sha1", expectedBlob2SHA1, tree.get(1).getObject());
-        assertEquals("Wrong number of tree entries", 2, tree.size());
-        final String remoteUrl = "https://github.com/jenkinsci/git-client-plugin.git";
-        w.git.setRemoteUrl("origin", remoteUrl);
-        assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
-        assertEquals("Wrong invalid default remote", "origin", w.igit().getDefaultRemote("invalid"));
-    }
-
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
         assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
