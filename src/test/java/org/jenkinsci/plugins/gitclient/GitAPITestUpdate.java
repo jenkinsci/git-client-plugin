@@ -432,6 +432,16 @@ public abstract class GitAPITestUpdate {
     }
 
     /**
+     * Test getRemoteReferences with listing all references
+     */
+     @Test
+    public void testGetRemoteReferences() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, false, false);
+        assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
+    }
+
+    /**
      * Test getRemoteReferences with listing references limit to refs/heads or refs/tags
      */
      @Test
