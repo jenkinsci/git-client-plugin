@@ -745,6 +745,11 @@ public abstract class GitAPITestUpdate {
         baseCheckoutReplacesTrackedChanges(false);
     }
 
+    @Issue("JENKINS-23424")
+    @Test
+    public void testCheckoutReplacesTrackedChangesWithBranch() throws Exception {
+        baseCheckoutReplacesTrackedChanges(true);
+    }
 
     @Test
     public void testGetHeadRevRemote() throws Exception {
