@@ -17,6 +17,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.GitAPITestCase.WorkingArea;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -83,6 +85,8 @@ public class GitAPITest {
     private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 
     private int checkoutTimeout = -1;
+
+    private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
 
     WorkspaceWithRepo workspace;
 
@@ -1550,4 +1554,15 @@ public class GitAPITest {
         void run() throws Exception;
     }
 
+    protected WorkingArea w;
+
+    /**
+     * Test getRemoteReferences with listing all references
+     */
+    @Test
+    public void test_getRemoteReferences() throws Exception {
+        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, null, false, false);
+        assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertTrue(references.containsKey("refs/tags/git-client-1.0.0"));
+    }
 }
