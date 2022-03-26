@@ -135,4 +135,47 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
+    @Test
+    public void testTrackingSubmodule() throws Exception {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+            return;
+        }
+        w.init(); // empty repository
+
+        // create a new GIT repo.
+        //   default branch -- <file1>C  <file2>C
+        WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
+        r.init();
+        r.touch("file1", "content1");
+        r.git.add("file1");
+        r.git.commit("submod-commit1");
+
+        // Add new GIT repo to w
+        String subModDir = "submod1-" + UUID.randomUUID();
+        w.git.addSubmodule(r.repoPath(), subModDir);
+        w.git.submoduleInit();
+
+        // Add a new file to the separate GIT repo.
+        r.touch("file2", "content2");
+        r.git.add("file2");
+        r.git.commit("submod-branch1-commit1");
+
+        // Make sure that the new file doesn't exist in the repo with remoteTracking
+        String subFile = subModDir + File.separator + "file2";
+        w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
+        assertFalse("file2 exists and should not because we didn't update to the tip of the default branch.", w.exists(subFile));
+
+        // Windows tests fail if repoPath is more than 200 characters
+        // CLI git support for longpaths on Windows is complicated
+        if (w.repoPath().length() > 200) {
+            return;
+        }
+
+        // Run submodule update with remote tracking
+        w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
+        assertTrue("file2 does not exist and should because we updated to the tip of the default branch.", w.exists(subFile));
+        assertFixSubmoduleUrlsThrows();
+    }
+
 }
