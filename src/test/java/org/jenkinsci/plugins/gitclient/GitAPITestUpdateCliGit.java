@@ -3,7 +3,9 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.plugins.git.GitException;
 import org.junit.Test;
 
+import java.io.File;
 import java.nio.file.Paths;
+import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -64,6 +66,73 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
         assertFixSubmoduleUrlsThrows();
     }
 
+    @Test
+    public void testTrackingSubmoduleBranches() throws Exception {
+        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+            setTimeoutVisibleInCurrentTest(false);
+            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
+            return;
+        }
+        w.init(); // empty repository
 
+        // create a new GIT repo.
+        //    default branch  -- <file1>C
+        //    branch1 -- <file1>C <file2>C
+        //    branch2 -- <file1>C <file3>C
+        WorkingArea r = new WorkingArea(createTempDirectoryWithoutSpaces());
+        r.init();
+        r.touch("file1", "content1");
+        r.git.add("file1");
+        r.git.commit("submod-commit1");
+
+        r.git.branch("branch1");
+        r.git.checkout().ref("branch1").execute();
+        r.touch("file2", "content2");
+        r.git.add("file2");
+        r.git.commit("submod-commit2");
+        r.git.checkout().ref(defaultBranchName).execute();
+
+        r.git.branch("branch2");
+        r.git.checkout().ref("branch2").execute();
+        r.touch("file3", "content3");
+        r.git.add("file3");
+        r.git.commit("submod-commit3");
+        r.git.checkout().ref(defaultBranchName).execute();
+
+        // Setup variables for use in tests
+        String submodDir = "submod1" + UUID.randomUUID();
+        String subFile1 = submodDir + File.separator + "file1";
+        String subFile2 = submodDir + File.separator + "file2";
+        String subFile3 = submodDir + File.separator + "file3";
+
+        // Add new GIT repo to w, at the default branch
+        w.git.addSubmodule(r.repoPath(), submodDir);
+        w.git.submoduleInit();
+        assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Windows tests fail if repoPath is more than 200 characters
+        // CLI git support for longpaths on Windows is complicated
+        if (w.repoPath().length() > 200) {
+            return;
+        }
+
+        // Switch to branch1
+        submoduleUpdateTimeout = 1 + random.nextInt(60 * 24);
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch1").timeout(submoduleUpdateTimeout).execute();
+        assertTrue("file2 does not exist and should because on branch1", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+
+        // Switch to branch2
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, "branch2").timeout(submoduleUpdateTimeout).execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertTrue("file3 does not exist and should because on branch2", w.exists(subFile3));
+
+        // Switch to default branch
+        w.git.submoduleUpdate().remoteTracking(true).useBranch(submodDir, defaultBranchName).timeout(submoduleUpdateTimeout).execute();
+        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
+        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+    }
 
 }
