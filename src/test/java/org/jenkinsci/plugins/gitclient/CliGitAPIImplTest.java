@@ -9,7 +9,7 @@ import static org.junit.Assert.assertFalse;
  * CliGitAPIImplTest tests have been ported to GitClientTest
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class CliGitAPIImplTest extends GitAPITestUpdate {
+public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
 
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
