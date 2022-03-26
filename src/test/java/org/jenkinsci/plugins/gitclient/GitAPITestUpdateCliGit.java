@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.plugins.git.GitException;
 import org.junit.Test;
+import org.jvnet.hudson.test.Issue;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -176,6 +177,15 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
         w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
         assertTrue("file2 does not exist and should because we updated to the tip of the default branch.", w.exists(subFile));
         assertFixSubmoduleUrlsThrows();
+    }
+
+    @Issue("JENKINS-37185")
+    @Test
+    public void testCheckoutHonorTimeout() throws Exception {
+        w = clone(localMirror());
+
+        checkoutTimeout = 1 + random.nextInt(60 * 24);
+        w.git.checkout().branch(DEFAULT_MIRROR_BRANCH_NAME).ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
     }
 
 }

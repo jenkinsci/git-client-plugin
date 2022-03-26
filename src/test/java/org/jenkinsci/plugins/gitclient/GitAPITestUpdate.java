@@ -63,10 +63,10 @@ public abstract class GitAPITestUpdate {
     protected TaskListener listener;
 
     private static final String DEFAULT_JGIT_BRANCH_NAME = Constants.MASTER;
-    private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; // Intentionally split string
+    protected static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er"; // Intentionally split string
 
     private static final String LOGGING_STARTED = "Logging started";
-    private int checkoutTimeout = -1;
+    protected int checkoutTimeout = -1;
     protected int submoduleUpdateTimeout = -1;
     protected final Random random = new Random();
 
@@ -1827,16 +1827,6 @@ public abstract class GitAPITestUpdate {
         assertEquals("wildcard branch.2 mismatch", branchDot2, w.git.getHeadRev(w.repoPath(), "br*.2"));
 
         checkHeadRev(w.repoPath(), getMirrorHead());
-    }
-
-    @Issue("JENKINS-37185")
-    @NotImplementedInJGit /* JGit doesn't have timeout */
-    @Test
-    public void testCheckoutHonorTimeout() throws Exception {
-        w = clone(localMirror());
-
-        checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().branch(DEFAULT_MIRROR_BRANCH_NAME).ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).deleteBranchIfExist(true).execute();
     }
 
     @Test
