@@ -13,7 +13,6 @@
   <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
   <name>Jenkins Git client plugin</name>
-  <description>Utility plugin for Git support in Jenkins</description>
   <url>https://github.com/jenkinsci/git-client-plugin/blob/master/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
 
