@@ -2562,7 +2562,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("  DISPLAY=:123.456");
             w.println("  export DISPLAY");
             w.println("fi");
-            w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+            w.println("ssh -vvv -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
         }
         ssh.setExecutable(true, true);
         //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
@@ -2669,6 +2669,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (status != 0) {
                 throw new GitException("Command \"" + command + "\" returned status code " + status + ":\nstdout: " + stdout + "\nstderr: "+ stderr);
+            } else {
+                listener.getLogger().println("Command \"" + command + "\" returned status code " + status + ":\nstdout: " + stdout + "\nstderr: "+ stderr);
             }
 
             return stdout;

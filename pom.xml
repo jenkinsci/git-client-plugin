@@ -400,6 +400,12 @@
           </systemProperties>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <test>org.jenkinsci.plugins.gitclient.GitJenkinsRuleTest</test>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
