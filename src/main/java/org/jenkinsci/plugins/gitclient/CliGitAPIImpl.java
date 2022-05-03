@@ -71,6 +71,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -181,6 +183,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * to prevent 'force' in 'git fetch' with CLI git 2.20 and later.
      */
     private static final boolean USE_FORCE_FETCH = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
+
+    private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
     private static final long serialVersionUID = 1;
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
@@ -1943,7 +1947,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try {
                 Files.deleteIfExists(tempFile);
             } catch (IOException e) {
-                listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
+                LOGGER.log(Level.WARNING, "temp file " + tempFile + " not deleted", e);
             }
         }
     }
