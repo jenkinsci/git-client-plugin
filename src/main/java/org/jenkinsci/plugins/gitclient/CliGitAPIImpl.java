@@ -1943,7 +1943,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try {
                 Files.deleteIfExists(tempFile);
             } catch (IOException e) {
-                Functions.printStackTrace(e, listener.error("temp file " + tempFile + " not deleted"));
+                listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
             }
         }
     }
