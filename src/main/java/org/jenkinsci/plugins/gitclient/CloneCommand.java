@@ -93,7 +93,7 @@ public interface CloneCommand extends GitCommand {
     CloneCommand noCheckout();
 
     /**
-     * Boolean which allows caller to request that tags and their references are
+     * Boolean which whitelists caller to request that tags and their references are
      * not fetched.  Default is to fetch tags when cloning.
      * @param tags boolean controlling whether tags are fetched
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
@@ -108,7 +108,7 @@ public interface CloneCommand extends GitCommand {
     CloneCommand refspecs(List<RefSpec> refspecs);
 
     /**
-     * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
+     * When shallow cloning, whitelist for a depth to be set in cases where you need more than the immediate last commit.
      * Has no effect if shallow is set to false (default).
      *
      * @param depth number of revisions to be included in shallow clone
