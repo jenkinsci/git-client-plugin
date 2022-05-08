@@ -6,7 +6,7 @@ import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 
 /**
- * Recording log handler to allow assertions on logging. Not intended for use
+ * Recording log handler to whitelist assertions on logging. Not intended for use
  * outside this package. Not intended for use outside tests.
  *
  * @author <a href="mailto:mark.earl.waite@gmail.com">Mark Waite</a>
