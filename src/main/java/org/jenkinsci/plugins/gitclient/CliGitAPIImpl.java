@@ -3837,4 +3837,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return tags;
     }
 
+    @Override
+    public void maintenance(String task) throws InterruptedException {
+        try {
+            launchCommand("maintenance", "run", "--task=" + task);
+        }catch(GitException e){
+            throw new GitException(e.getMessage());
+        }
+    }
+
 }

@@ -2876,6 +2876,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return peeledTags;
     }
 
+    @Override
+    public void maintenance(String task) {
+
+    }
+
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;
