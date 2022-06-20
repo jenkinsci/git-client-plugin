@@ -1002,4 +1002,6 @@ public interface GitClient {
      * @throws java.lang.InterruptedException on thread interruption
      */
     Set<GitObject> getTags() throws GitException, InterruptedException;
+
+    void maintenance(String task);
 }
