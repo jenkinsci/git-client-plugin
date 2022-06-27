@@ -2957,18 +2957,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     sparseCheckout(sparseCheckoutPaths);
 
                     EnvVars checkoutEnv = environment;
+
+                    // Use credentials with checkout
+                    boolean useCredentials = false;
+                    URIish uri = null;
+                    StandardCredentials creds = null;
                     if (lfsRemote != null) {
                         // Disable the git-lfs smudge filter because it is much slower on
                         // certain OSes than doing a single "git lfs pull" after checkout.
                         checkoutEnv = new EnvVars(checkoutEnv);
                         checkoutEnv.put("GIT_LFS_SKIP_SMUDGE", "1");
+                    } else {
+                        useCredentials = true;
+                        String defaultRemote = null;
+                        try {
+                            defaultRemote = getDefaultRemote();
+                        } catch (GitException e) {
+                            useCredentials = false;
+                        }
+                        if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                            final String url = getRemoteUrl(defaultRemote);
+                            creds = credentials.get(url);
+                            if (creds == null) creds = defaultCredentials;
+                            try {
+                                uri = new URIish(url);
+                            } catch (URISyntaxException e) {
+                                useCredentials = false;
+                            }
+                        }
                     }
 
                     if (branch!=null && deleteBranch) {
                         // First, checkout to detached HEAD, so we can delete the branch.
                         ArgumentListBuilder args = new ArgumentListBuilder();
                         args.add("checkout", "-f", ref);
-                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                        if (useCredentials) {
+                            launchCommandWithCredentials(args, workspace, creds, uri, timeout);
+                        } else {
+                            launchCommandIn(args, workspace, checkoutEnv, timeout);
+                        }
 
                         // Second, check to see if the branch actually exists, and then delete it if it does.
                         for (Branch b : getBranches()) {
@@ -2986,7 +3013,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    if (useCredentials) {
+                        launchCommandWithCredentials(args, workspace, creds, uri, timeout);
+                    } else {
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    }
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
