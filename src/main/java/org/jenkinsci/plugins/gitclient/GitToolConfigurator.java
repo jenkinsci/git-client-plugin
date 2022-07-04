@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.logging.Logger;
 
 @Extension(optional = true)
-@SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-                    justification = "Intentionally throws a broad exception")
 public class GitToolConfigurator extends BaseConfigurator<GitTool> {
 
     private static final Logger logger = Logger.getLogger(GitToolConfigurator.class.getName());
@@ -117,8 +115,6 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
 
     @CheckForNull
     @Override
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
-                        justification = "Intentionally throws a broad exception")
     public CNode describe(GitTool instance, ConfigurationContext context) throws Exception {
         Mapping mapping = new Mapping();
         if (instance instanceof JGitTool) {
