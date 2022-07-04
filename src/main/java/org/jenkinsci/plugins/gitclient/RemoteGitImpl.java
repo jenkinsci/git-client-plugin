@@ -22,6 +22,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -121,6 +122,8 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
             this.proxy = owner.proxy;
         }
 
+        @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_THROWABLE",
+                            justification = "Intentionally throws a Throwable")
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Class<?> decl = method.getDeclaringClass();
             if (args == null) args = new Object[0];
@@ -148,6 +151,8 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
         private static final long serialVersionUID = 1L;
 
+        @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_THROWABLE",
+                            justification = "Intentionally throws a Throwable")
         private class GitCommandMasterToSlaveCallable extends jenkins.security.MasterToSlaveCallable<Void, GitException> {
             public Void call() throws GitException {
                 try {

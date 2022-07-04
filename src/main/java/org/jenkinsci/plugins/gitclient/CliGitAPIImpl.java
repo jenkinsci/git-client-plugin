@@ -81,6 +81,8 @@ import java.util.stream.Collectors;
  * For internal use only, don't use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
  * </b>
  */
+@SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
+                    justification = "Intentionally throws Exception in lambda, see https://github.com/spotbugs/spotbugs/issues/2040 for discussion")
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
