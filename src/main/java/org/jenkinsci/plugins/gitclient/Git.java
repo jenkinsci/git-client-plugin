@@ -130,6 +130,8 @@ public class Git implements Serializable {
         return git;
     }
 
+    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
+                        justification = "Intentionally throws RuntimeException")
     private GitClient initMockClient(String className, String exe, EnvVars env, File f, TaskListener listener) throws RuntimeException {
         try {
             final Class<?> it = Class.forName(className);
