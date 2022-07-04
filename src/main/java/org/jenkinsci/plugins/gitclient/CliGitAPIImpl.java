@@ -81,6 +81,8 @@ import java.util.stream.Collectors;
  * For internal use only, don't use directly. See {@link org.jenkinsci.plugins.gitclient.Git}
  * </b>
  */
+@SuppressFBWarnings(value = "THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION",
+                    justification = "Intentionally throws Exception in lambda, see https://github.com/spotbugs/spotbugs/issues/2040 for discussion")
 public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
@@ -2474,6 +2476,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return File The ssh executable file {@link java.io.File}
      **/
+    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
+                        justification = "Intentionally throws runtime exception")
     public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
