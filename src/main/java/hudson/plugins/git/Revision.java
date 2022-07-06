@@ -124,6 +124,8 @@ public class Revision implements java.io.Serializable, Cloneable {
     }
 
     @Override
+    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
+                        justification = "Intentionally throws runtime exception")
     public Revision clone() {
         Revision clone;
         try {

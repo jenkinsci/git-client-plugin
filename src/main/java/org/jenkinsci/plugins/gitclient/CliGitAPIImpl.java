@@ -2474,6 +2474,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return File The ssh executable file {@link java.io.File}
      **/
+    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
+                        justification = "Intentionally throws runtime exception")
     public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
