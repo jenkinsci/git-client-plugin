@@ -253,7 +253,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      * <tr><td><code>origin/main</code></td><td><code>main*</code></td></tr>
      * <tr><td><code>repo2/feature1</code></td><td><code>feature1*</code></td></tr>
      * <tr><td><code>refs/heads/feature1</code></td><td><code>refs/heads/feature1</code></td></tr>
-     * <tr><td valign="top">origin/namespaceA/fix15</td>
+     * <tr><td>origin/namespaceA/fix15</td>
      *     <td><div style="color:red">fix15 <code>namespaceA/fix15</code>*</div></td><td></td></tr>
      * <tr><td><code>refs/heads/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
      * <tr><td><code>remotes/origin/namespaceA/fix15</code></td><td><code>refs/heads/namespaceA/fix15</code></td></tr>
