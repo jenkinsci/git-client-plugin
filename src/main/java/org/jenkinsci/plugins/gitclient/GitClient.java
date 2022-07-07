@@ -1004,4 +1004,6 @@ public interface GitClient {
     Set<GitObject> getTags() throws GitException, InterruptedException;
 
     void maintenance(String task) throws InterruptedException;
+
+    void maintenanceLegacy(String task) throws InterruptedException;
 }

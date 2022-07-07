@@ -3852,4 +3852,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @Override
+    public void maintenanceLegacy(String task) throws InterruptedException{
+
+        long startTime = System.currentTimeMillis();
+        if(task.equals("gc")){
+            launchCommand("gc","--auto");
+        }else if(task.equals("commit-graph")){
+            launchCommand("commit-graph","write");
+        }else if(task.equals("incremental-repack")){
+            launchCommand("multi-pack-index","expire");
+            launchCommand("multi-pack-index","repack");
+        }else{
+            listener.getLogger().println("Invalid maintenance task " + task + ".");
+        }
+        long stopTime = System.currentTimeMillis();
+        listener.getLogger().println(task + " executed successfully. Execution time: " + (stopTime - startTime));
+    }
+
 }
