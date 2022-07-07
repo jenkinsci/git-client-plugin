@@ -3843,8 +3843,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void maintenance(String task) throws InterruptedException {
         try {
             listener.getLogger().println("Initialize executing " + task + " on " + workspace.getName());
+            long startTime = System.currentTimeMillis();
             launchCommand("maintenance", "run", "--task=" + task);
-            listener.getLogger().println("Maintenance task " + task + " executed successfully on " + workspace.getName());
+            long endTime = System.currentTimeMillis();
+            listener.getLogger().println("Maintenance task " + task + " executed successfully on " + workspace.getName() + ". Execution time: " + (endTime- startTime));
         }catch(GitException e){
             listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
         }
