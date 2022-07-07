@@ -925,6 +925,6 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     @Override
     public void maintenance(String task) {
-
+        return;
     }
 }
