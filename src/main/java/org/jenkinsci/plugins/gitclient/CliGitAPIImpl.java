@@ -3846,7 +3846,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             long startTime = System.currentTimeMillis();
             launchCommand("maintenance", "run", "--task=" + task);
             long endTime = System.currentTimeMillis();
-            listener.getLogger().println("Maintenance task " + task + " executed successfully on " + workspace.getName() + ". Execution time: " + (endTime- startTime));
+            listener.getLogger().println("Maintenance task " + task + " executed successfully on " + workspace.getName() + ". Execution time: " + (endTime- startTime) + "ms.");
         }catch(GitException e){
             listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
         }
@@ -3871,7 +3871,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             long stopTime = System.currentTimeMillis();
-            listener.getLogger().println(task + " executed successfully. Execution time: " + (stopTime - startTime));
+            listener.getLogger().println(task + " executed successfully. Execution time: " + (stopTime - startTime) + "ms.");
         }catch(GitException e){
             listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
         }
