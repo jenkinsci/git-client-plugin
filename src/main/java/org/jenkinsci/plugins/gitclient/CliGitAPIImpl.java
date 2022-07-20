@@ -2006,6 +2006,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File usernameFile = null;
         File passwordFile = null;
         File passphrase = null;
+        File knownHostsTemp = null;
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
@@ -2027,11 +2028,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
+                knownHostsTemp = createTempFile("known_hosts","");
                 if (launcher.isUnix()) {
-                    ssh =  createUnixGitSSH(key, userName);
+                    ssh =  createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass =  createUnixSshAskpass(sshUser, passphrase);
                 } else {
-                    ssh = createWindowsGitSSH(key, userName);
+                    ssh = createWindowsGitSSH(key, userName, knownHostsTemp);
                     askpass =  createWindowsSshAskpass(sshUser, passphrase);
                 }
 
@@ -2103,6 +2105,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             deleteTempFile(passphrase);
             deleteTempFile(usernameFile);
             deleteTempFile(passwordFile);
+            deleteTempFile(knownHostsTemp);
         }
     }
 
@@ -2538,20 +2541,20 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         throw new RuntimeException("ssh executable not found. The git plugin only supports official git client https://git-scm.com/download/win");
     }
 
-    private File createWindowsGitSSH(File key, String user) throws IOException {
+    private File createWindowsGitSSH(File key, String user, File knownHosts) throws IOException {
         File ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
 
         try (PrintWriter w = new PrintWriter(ssh, encoding)) {
             w.println("@echo off");
-            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
+            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
         }
         ssh.setExecutable(true, true);
         return ssh;
     }
 
-    private File createUnixGitSSH(File key, String user) throws IOException {
+    private File createUnixGitSSH(File key, String user, File knownHosts) throws IOException {
         File ssh = createTempFile("ssh", ".sh");
         File ssh_copy = new File(ssh.toString() + "-copy");
         boolean isCopied = false;
@@ -2562,7 +2565,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.println("  DISPLAY=:123.456");
             w.println("  export DISPLAY");
             w.println("fi");
-            w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+            w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
         }
         ssh.setExecutable(true, true);
         //JENKINS-48258 git client plugin occasionally fails with "text file busy" error

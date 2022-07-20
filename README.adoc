@@ -106,6 +106,16 @@ Windows Credentials Manager works very well for interactive users on the Windows
 Windows Credentials Manager does not work as well for batch processing in the git client plugin.
 It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
 
+[#ssh-host-key-verification]
+== Ssh Host Key verification
+
+Git Client plugin provides various options to verify the SSH keys presented by Git repository host servers.
+By default, Git Client plugin uses "Accept first connection" strategy, which automatically adds keys for hosts that have not been seen before to `known_hosts`, and does not allow connections to previously-seen hosts with modified keys.
+Configure the host key verification strategy from "Manage Jenkins" >> "Configure Global Security" >> "Git Host Key Verification Configuration".
+
+image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
+
+
 [#bug-reports]
 == Bug Reports
 
