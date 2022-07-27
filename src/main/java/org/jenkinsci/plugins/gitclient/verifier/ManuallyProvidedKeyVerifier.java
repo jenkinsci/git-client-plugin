@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,15 +25,15 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
         return tempKnownHosts -> {
-            Files.write(tempKnownHosts.toPath(), (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             listener.getLogger().println("Verifying host key using manually-configured host key entries");
             String userKnownHostsFileFlag;
             if (File.pathSeparatorChar == ';') { // check whether on Windows or not without sending Functions over remoting
                 // no escaping for windows because created temp file can't contain spaces
-                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", tempKnownHosts.getAbsolutePath());
+                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", tempKnownHosts.toAbsolutePath());
             } else {
                 // escaping needed in case job name contains spaces
-                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"", tempKnownHosts.getAbsolutePath().replace(" ", "\\ "));
+                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"", tempKnownHosts.toAbsolutePath().toString().replace(" ", "\\ "));
             }
             return "-o StrictHostKeyChecking=yes " + userKnownHostsFileFlag;
         };

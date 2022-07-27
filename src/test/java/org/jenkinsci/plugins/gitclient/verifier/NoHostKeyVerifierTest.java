@@ -5,8 +5,8 @@ import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -33,6 +33,6 @@ public class NoHostKeyVerifierTest {
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
-        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(new File("")), is("-o StrictHostKeyChecking=no"));
+        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get("")), is("-o StrictHostKeyChecking=no"));
     }
 }

@@ -11,9 +11,9 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -125,19 +125,19 @@ public class ManuallyProvidedKeyVerifierTest {
     @Test
     public void testGetVerifyHostKeyOption() throws IOException {
         Assume.assumeFalse("test can not run on windows", Functions.isWindows());
-        File tempFile = testFolder.newFile();
+        Path tempFile = testFolder.newFile().toPath();
         String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile);
-        assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=\\\"\"\"" + tempFile.getAbsolutePath() + "\\\"\"\""));
-        assertThat(Files.readAllLines(tempFile.toPath()), is(Collections.singletonList(hostKey)));
+        assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=\\\"\"\"" + tempFile.toAbsolutePath() + "\\\"\"\""));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }
 
     @Test
     public void testGetVerifyHostKeyOptionOnWindows() throws IOException {
         Assume.assumeTrue("test should run on windows", Functions.isWindows());
-        File tempFile = testFolder.newFile();
+        Path tempFile = testFolder.newFile().toPath();
         String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile);
-        assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=" + tempFile.getAbsolutePath() + ""));
-        assertThat(Files.readAllLines(tempFile.toPath()), is(Collections.singletonList(hostKey)));
+        assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=" + tempFile.toAbsolutePath() + ""));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }
 
 }
