@@ -112,6 +112,11 @@ Git Client plugin provides various options to verify the SSH keys presented by G
 By default, Git Client plugin uses "Accept first connection" strategy, which automatically adds keys for hosts that have not been seen before to `known_hosts`, and does not allow connections to previously-seen hosts with modified keys.
 Configure the host key verification strategy from "Manage Jenkins" >> "Configure Global Security" >> "Git Host Key Verification Configuration".
 
+Note: Some very old SSH implementations (Red Hat Enterprise Linux 7, CentOS 7, Debian 9) may not accept the command line argument used to accept first connection.
+The "Git Host Key Verification Configuration" for those systems cannot use the "Accept first connection" strategy.
+Choose a different host key verification strategy if those old SSH implementations must be supported on your Jenkins agents.
+Alternately, configure the git client plugin to use JGit instead of command line git.
+
 image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
 
 
