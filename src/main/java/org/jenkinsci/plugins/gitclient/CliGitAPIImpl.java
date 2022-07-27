@@ -3738,9 +3738,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
 
             BufferedReader rdr = new BufferedReader(new StringReader(result));
-            String line;
+            final String line = rdr.readLine();
 
-            while ((line = rdr.readLine()) != null) {
+            if (line != null) {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
