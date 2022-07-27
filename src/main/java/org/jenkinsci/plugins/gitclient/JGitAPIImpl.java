@@ -123,6 +123,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.plugins.git.GitObject;
 import org.eclipse.jgit.api.RebaseCommand.Operation;
 import org.eclipse.jgit.api.RebaseResult;
+import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -148,15 +149,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this(workspace, listener, null);
     }
 
+    @Deprecated
     JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
+        this(workspace, listener, httpConnectionFactory, null);
+    }
+
+    JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory, HostKeyVerifierFactory hostKeyFactory) {
         /* If workspace is null, then default to current directory to match 
          * CliGitAPIImpl behavior */
-        super(workspace == null ? new File(".") : workspace);
+        super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
-        SshSessionFactory.setInstance(new TrileadSessionFactory());
+        SshSessionFactory.setInstance(new TrileadSessionFactory(hostKeyFactory, listener));
 
         if (httpConnectionFactory != null) {
             httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());

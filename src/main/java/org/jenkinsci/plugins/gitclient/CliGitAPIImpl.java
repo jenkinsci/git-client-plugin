@@ -2017,6 +2017,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Path usernameFile = null;
         Path passwordFile = null;
         Path passphrase = null;
+        Path knownHostsTemp = null;
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
@@ -2038,11 +2039,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
+                knownHostsTemp = createTempFile("known_hosts","");
                 if (launcher.isUnix()) {
-                    ssh =  createUnixGitSSH(key, userName);
+                    ssh =  createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass =  createUnixSshAskpass(sshUser, passphrase);
                 } else {
-                    ssh = createWindowsGitSSH(key, userName);
+                    ssh = createWindowsGitSSH(key, userName, knownHostsTemp);
                     askpass =  createWindowsSshAskpass(sshUser, passphrase);
                 }
 
@@ -2114,6 +2116,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             deleteTempFile(passphrase);
             deleteTempFile(usernameFile);
             deleteTempFile(passwordFile);
+            deleteTempFile(knownHostsTemp);
         }
     }
 
@@ -2551,7 +2554,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         throw new RuntimeException("ssh executable not found. The git plugin only supports official git client https://git-scm.com/download/win");
     }
 
-    private Path createWindowsGitSSH(Path key, String user) throws IOException {
+    private Path createWindowsGitSSH(Path key, String user, Path knownHosts) throws IOException {
         Path ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
@@ -2559,14 +2562,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
             w.write("@echo off");
             w.newLine();
-            w.write("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.toAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
+            w.write("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.toAbsolutePath() +"\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
             w.newLine();
         }
         ssh.toFile().setExecutable(true, true);
         return ssh;
     }
 
-    private Path createUnixGitSSH(Path key, String user) throws IOException {
+    private Path createUnixGitSSH(Path key, String user, Path knownHosts) throws IOException {
         Path ssh = createTempFile("ssh", ".sh");
         Path ssh_copy = Paths.get(ssh.toString() + "-copy");
         boolean isCopied = false;
@@ -2582,7 +2585,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
-            w.write("ssh -i \"" + key.toAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+            w.write("ssh -i \"" + key.toAbsolutePath() + "\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
         }
         ssh.toFile().setExecutable(true, true);
@@ -3754,9 +3757,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
 
             BufferedReader rdr = new BufferedReader(new StringReader(result));
-            String line;
+            final String line = rdr.readLine();
 
-            while ((line = rdr.readLine()) != null) {
+            if (line != null) {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
