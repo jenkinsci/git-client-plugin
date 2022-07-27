@@ -4,6 +4,7 @@ import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Similar to a TemporaryFolder JUnit Rule, it provides a local git repository for the lifetime of a benchmark test.
@@ -111,9 +112,7 @@ public class FolderForBenchmark {
     }
 
     private File createTemporaryFolderIn(File parentFolder) throws IOException {
-        File createdFolder = File.createTempFile("junit", "", parentFolder);
-        createdFolder.delete();
-        createdFolder.mkdir();
+        File createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
         return createdFolder;
     }
 
