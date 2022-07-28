@@ -8,6 +8,7 @@ import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -29,6 +30,9 @@ public class KnownHostsFileVerifierTest {
     @Rule
     public TemporaryFolder testFolder = TemporaryFolder.builder().assureDeletion().build();
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     private File fakeKnownHosts;
 
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
@@ -47,26 +51,19 @@ public class KnownHostsFileVerifierTest {
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            fail("Should fail because hostkey for 'bitbucket.org:22' is not in known_hosts file");
-        } catch (IOException e) {
-            assertThat(e.getMessage(), is("There was a problem while connecting to bitbucket.org:22"));
-        }
+        // Should throw exception because hostkey for 'bitbucket.org:22' is not in known_hosts file
+        expectedException.expectMessage("There was a problem while connecting to bitbucket.org:22");
+        jGitConnection.connect(verifier);
     }
 
     @Test
-    public void connectWhenHostKeyProvidedThenShouldNotFail() {
+    public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-
-        try {
-            jGitConnection.connect(verifier);
-        } catch (IOException e) {
-            fail("Should not fail because hostkey for 'github.com:22' is in known_hosts");
-        }
+        // Should not fail because hostkey for 'github.com:22' is in known_hosts
+        jGitConnection.connect(verifier);
     }
 
     @Test
@@ -77,12 +74,8 @@ public class KnownHostsFileVerifierTest {
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-
-        try {
-            jGitConnection.connect(verifier);
-        } catch (IOException e) {
-            fail("Should not fail because hostkey for 'github.com:22' is in known_hosts with algorithm 'ecdsa-sha2-nistp256'");
-        }
+        // Should not fail because hostkey for 'github.com:22' is in known_hosts with algorithm 'ecdsa-sha2-nistp256
+        jGitConnection.connect(verifier);
     }
 
     @Test

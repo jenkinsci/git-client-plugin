@@ -22,13 +22,10 @@ public class NoHostKeyVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKey() {
+    public void testVerifyServerHostKey() throws IOException {
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-        try {
-            jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
-        } catch (IOException e) {
-            fail("Should not fail because verifyServerHostKey always true");
-        }
+        // Should not fail because verifyServerHostKey always true
+        jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
     }
 
     @Test
