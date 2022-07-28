@@ -16,8 +16,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.io.FileMatchers.anExistingFile;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -37,20 +37,17 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenFirstConnection() {
+    public void testVerifyServerHostKeyWhenFirstConnection() throws Exception {
         File file = new File(testFolder.getRoot() + "path/to/file");
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            assertTrue(file.exists());
-            assertThat(Files.readAllLines(file.toPath()), hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
-        } catch (IOException e) {
-            fail("Should not fail because first connection and create a file");
-        }
+        // Should not fail because first connection and create a file
+        jGitConnection.connect(verifier);
+        assertThat(file, is(anExistingFile()));
+        assertThat(Files.readAllLines(file.toPath()), hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
 
     @Test
@@ -63,12 +60,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
-        } catch (IOException e) {
-            fail("Should connect and do not add new line because keys are equal");
-        }
+        // Should connect and do not add new line because keys are equal
+        jGitConnection.connect(verifier);
+        assertThat(mockedKnownHosts, is(anExistingFile()));
+        assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
     }
 
     @Test
@@ -80,12 +75,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
-        } catch (IOException e) {
-            fail("Should connect and do not add new line because keys are equal");
-        }
+        // Should connect and do not add new line because keys are equal
+        jGitConnection.connect(verifier);
+        assertThat(mockedKnownHosts, is(anExistingFile()));
+        assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
     }
 
     @Test
@@ -99,12 +92,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(fileContent)));
-        } catch (IOException e) {
-            fail("Should connect and do not add new line because keys are equal");
-        }
+        // Should connect and do not add new line because keys are equal
+        jGitConnection.connect(verifier);
+        assertThat(mockedKnownHosts, is(anExistingFile()));
+        assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(fileContent)));
     }
 
     @Test
@@ -118,12 +109,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
+        Exception exception = assertThrows(IOException.class, () -> {
             jGitConnection.connect(verifier);
-            fail("Should fail because hostkey is broken for 'github.com:22'");
-        } catch (IOException e) {
-            assertThat(e.getMessage(), is("There was a problem while connecting to github.com:22"));
-        }
+        });
+        assertThat(exception.getMessage(), containsString("There was a problem while connecting to github.com:22"));
     }
 
     @Test
@@ -138,14 +127,11 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
-            assertThat(actual, hasItem(bitbucketFileContent));
-            assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
-        } catch (IOException e) {
-            fail("Should connect and add new line because a new key");
-        }
+        // Should connect and add new line because a new key
+        jGitConnection.connect(verifier);
+        List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
+        assertThat(actual, hasItem(bitbucketFileContent));
+        assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
 
     @Test
@@ -159,14 +145,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
-        try {
-            jGitConnection.connect(verifier);
-            List<String> actual = Files.readAllLines(mockedKnownHosts.toPath());
-            assertThat(actual, hasItem(fileContent));
-            assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
-        } catch (IOException e) {
-            fail("Should connect and add new line because a new key");
-        }
+        // Should connect and add new line because a new key
+        jGitConnection.connect(verifier);
+        List<String> actual = Files.readAllLines(mockedKnownHosts.toPath());
+        assertThat(actual, hasItem(fileContent));
+        assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
-
 }
