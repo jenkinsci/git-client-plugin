@@ -11,7 +11,7 @@ public interface AbstractCliGitHostKeyVerifier extends SerializableOnlyOverRemot
      * Specifies Git command-line options that control the logic of this verifier.
      * @param tempKnownHosts a temporary file that has already been created and may be used.
      * @return the command-line options
-     * @throws IOException
+     * @throws IOException on input or output error
      */
     String getVerifyHostKeyOption(Path tempKnownHosts) throws IOException;
 
