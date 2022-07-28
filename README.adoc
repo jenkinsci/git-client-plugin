@@ -114,6 +114,13 @@ Configure the host key verification strategy from "Manage Jenkins" >> "Configure
 
 image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
 
+[NOTE]
+====
+Some very old SSH implementations (Red Hat Enterprise Linux 7, CentOS 7, Debian 9) do not support the ssh command line argument used to accept first connection.
+The "Git Host Key Verification Configuration" for those systems cannot use the "Accept first connection" strategy with command line git.
+Choose a different host key verification strategy if those old SSH implementations must be supported on your Jenkins agents.
+Alternately, configure the git client plugin to use JGit instead of command line git.
+====
 
 [#bug-reports]
 == Bug Reports
