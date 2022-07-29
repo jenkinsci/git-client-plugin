@@ -8,7 +8,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Functions;
 import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -37,6 +36,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
+import org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
@@ -71,6 +71,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -126,6 +127,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * desktop are much less common in the Unix environments.
      */
     private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
+
+    private static final ReentrantLock ACCEPT_FIRST_CONNECTION_LOCK = new ReentrantLock();
 
     /**
      * CALL_SETSID decides if command line git can use the setsid program
@@ -2007,6 +2010,24 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     	return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
     }
     private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
+                                                StandardCredentials credentials,
+                                                @NonNull URIish url,
+                                                Integer timeout) throws GitException, InterruptedException {
+        if (getHostKeyFactory() instanceof AcceptFirstConnectionVerifier) {
+            // Accept First connection behavior need to be synchronized, because  AcceptFirstConnectionVerifier
+            // should be able to see and read if any known hosts was added during parallel connection.
+            ACCEPT_FIRST_CONNECTION_LOCK.lock();
+            try {
+                return launchCommandWithCredentialsWithoutLock(args, workDir, credentials, url, timeout);
+            } finally {
+                ACCEPT_FIRST_CONNECTION_LOCK.unlock();
+            }
+        } else {
+            return launchCommandWithCredentialsWithoutLock(args, workDir, credentials, url, timeout);
+        }
+    }
+
+    private String launchCommandWithCredentialsWithoutLock(ArgumentListBuilder args, File workDir,
                                                 StandardCredentials credentials,
                                                 @NonNull URIish url,
                                                 Integer timeout) throws GitException, InterruptedException {
