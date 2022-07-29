@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,9 +19,28 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
-        return tempKnownHosts -> {
-            listener.getLogger().println("Verifying host key using known hosts file, will automatically accept unseen keys");
-            return "-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes";
+        return (tempKnownHosts, url) -> {
+            String hostnamePort = url.getPort() > 0 ? url.getHost() + ":" + url.getPort() : url.getHost();
+            listener.getLogger().printf("Verifying host key for %s using %s, will automatically accept unseen keys %n", hostnamePort, getKnownHostsFile().toPath());
+            String strictHostKeyChecking;
+            if (!Files.exists(getKnownHostsFile().toPath())) {
+               strictHostKeyChecking = "no";
+            } else {
+
+                List<String> hostKeyLines = Files.readAllLines(getKnownHostsFile().toPath());
+                boolean isNew = hostKeyLines.stream()
+                        .map(line -> line.split("\\s+")[0])
+                        .noneMatch(hostname -> HostNameHashVerifier.checkHashed(hostname, hostnamePort) ||
+                                HostNameHashVerifier.checkHashed(hostname, url.getHost()) ||
+                                hostname.equals(url.getHost()) ||
+                                (hostname.contains(url.getHost()) && (url.getPort() <= 0 || hostname.contains(String.valueOf(url.getPort())))));
+                if (isNew) {
+                    strictHostKeyChecking = "no";
+                } else {
+                    strictHostKeyChecking = "yes";
+                }
+            }
+            return "-o StrictHostKeyChecking=" + strictHostKeyChecking + " -o HashKnownHosts=yes";
         };
     }
 

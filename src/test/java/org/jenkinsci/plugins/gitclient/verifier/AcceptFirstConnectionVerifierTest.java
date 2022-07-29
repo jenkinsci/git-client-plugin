@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
+import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,8 +33,74 @@ public class AcceptFirstConnectionVerifierTest {
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
 
     @Test
-    public void testVerifyHostKeyOption() throws IOException {
-        assertThat(new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
+    public void testVerifyHostKeyOptionWhenHostIsNew() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts("");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com").setPort(22);
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=no -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenKnownHostsFileNotExists() throws IOException {
+        File file = new File(testFolder.getRoot() + "path/to/file");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
+        URIish urIish = new URIish().setHost("github.com").setPort(22);
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=no -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenHostWasSeenPreviously() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(FILE_CONTENT);
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com");
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=yes -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenHostnamePortIsNewButHostnameIsInKnownHosts() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts("github.com"
+                + " ssh-ed25519"
+                + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com").setPort(22);
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=yes -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenHostnameInKnownHostsSeparatedByTab() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts("github.com     "
+                + " ssh-ed25519"
+                + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com");
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=yes -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenHostnamePortIsInKnownHostsWithAnotherPort() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts("github.com:99"
+                + " ssh-ed25519"
+                + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com").setPort(22);
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=no -o HashKnownHosts=yes"));
+    }
+
+    @Test
+    public void testVerifyHostKeyOptionWhenHostnamePortIsInKnownHostsWithBrackets() throws IOException {
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts("[github.com]:22"
+                + " ssh-ed25519"
+                + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+        URIish urIish = new URIish().setHost("github.com").setPort(22);
+        assertThat(acceptFirstConnectionVerifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, urIish), is("-o StrictHostKeyChecking=yes -o HashKnownHosts=yes"));
     }
 
     @Test

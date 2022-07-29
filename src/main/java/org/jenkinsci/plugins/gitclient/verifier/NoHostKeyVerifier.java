@@ -8,7 +8,7 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
-        return tempKnownHosts -> "-o StrictHostKeyChecking=no";
+        return (tempKnownHosts, url) -> "-o StrictHostKeyChecking=no";
     }
 
     @Override

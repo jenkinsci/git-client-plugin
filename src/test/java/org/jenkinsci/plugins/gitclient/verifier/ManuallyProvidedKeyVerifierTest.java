@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.Functions;
 import hudson.model.TaskListener;
+import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Assume;
 import org.junit.Before;
@@ -126,7 +127,7 @@ public class ManuallyProvidedKeyVerifierTest {
     public void testGetVerifyHostKeyOption() throws IOException {
         Assume.assumeFalse("test can not run on windows", Functions.isWindows());
         Path tempFile = testFolder.newFile().toPath();
-        String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile);
+        String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile, new URIish());
         assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=\\\"\"\"" + tempFile.toAbsolutePath() + "\\\"\"\""));
         assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }
@@ -135,7 +136,7 @@ public class ManuallyProvidedKeyVerifierTest {
     public void testGetVerifyHostKeyOptionOnWindows() throws IOException {
         Assume.assumeTrue("test should run on windows", Functions.isWindows());
         Path tempFile = testFolder.newFile().toPath();
-        String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile);
+        String actual = new ManuallyProvidedKeyVerifier(hostKey).forCliGit(TaskListener.NULL).getVerifyHostKeyOption(tempFile, new URIish());
         assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=" + tempFile.toAbsolutePath() + ""));
         assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }

@@ -24,7 +24,7 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
-        return tempKnownHosts -> {
+        return (tempKnownHosts, url) -> {
             Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             listener.getLogger().println("Verifying host key using manually-configured host key entries");
             String userKnownHostsFileFlag;

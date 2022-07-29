@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
+import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +34,6 @@ public class NoHostKeyVerifierTest {
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
-        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get("")), is("-o StrictHostKeyChecking=no"));
+        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get(""), new URIish()), is("-o StrictHostKeyChecking=no"));
     }
 }

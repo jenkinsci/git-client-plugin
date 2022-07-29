@@ -15,7 +15,7 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
-        return tempKnownHosts -> {
+        return (tempKnownHosts, url) -> {
             listener.getLogger().println("Verifying host key using known hosts file");
             return "-o StrictHostKeyChecking=yes";
         };

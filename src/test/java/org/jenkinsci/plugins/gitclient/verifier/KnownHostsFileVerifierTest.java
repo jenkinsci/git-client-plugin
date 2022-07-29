@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 import hudson.model.TaskListener;
+import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,7 +89,7 @@ public class KnownHostsFileVerifierTest {
     @Test
     public void testVerifyHostKeyOptionWithDefaultFile() throws Exception {
         KnownHostsFileVerifier verifier = new KnownHostsFileVerifier();
-        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=yes"));
+        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null, new URIish()), is("-o StrictHostKeyChecking=yes"));
     }
 
 }
