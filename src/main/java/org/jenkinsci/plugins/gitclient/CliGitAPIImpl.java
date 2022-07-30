@@ -13,6 +13,7 @@ import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
+import hudson.console.HyperlinkNote;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -37,7 +38,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
-import org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
@@ -2698,8 +2698,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return stdout;
         } catch (GitException | InterruptedException e) {
-            if (getHostKeyFactory() instanceof AcceptFirstConnectionVerifier) {
-                listener.getLogger().println("If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in ‘Manage Jenkins’ -> ‘Configure Global Security’ -> ‘Git Host Key Verification Configuration'");
+            if (e.getMessage().contains("unsupported option \"accept-new\"")) {
+                listener.getLogger().println(HyperlinkNote.encodeTo("https://plugins.jenkins.io/git-client/#plugin-content-ssh-host-key-verification/",
+                        "If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in ‘Manage Jenkins’ -> ‘Configure Global Security’ -> ‘Git Host Key Verification Configuration'"));
             }
             throw e;
         } catch (Throwable e) {
