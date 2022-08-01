@@ -66,8 +66,8 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
     private void logHint(TaskListener listener) {
         listener.getLogger().println(HyperlinkNote.encodeTo("https://plugins.jenkins.io/git-client/#plugin-content-ssh-host-key-verification/","You're using 'Known host file' strategy to verify ssh host keys," +
-                " but your known_hosts file not exists, please go to " +
-                "‘Manage Jenkins’ -> ‘Configure Global Security’ -> ‘Git Host Key Verification Configuration' " +
+                " but your known_hosts file does not exist, please go to " +
+                "‘Manage Jenkins’ -> ‘Configure Global Security’ -> ‘Git Host Key Verification Configuration‘ " +
                 "and configure host key verification."));
     }
 
