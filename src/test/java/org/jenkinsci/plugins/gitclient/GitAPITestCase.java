@@ -1225,7 +1225,16 @@ public abstract class GitAPITestCase extends TestCase {
             w.git.submoduleUpdate().execute();
             fail("Did not throw expected submodule update exception");
         } catch (GitException e) {
-            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" returned status code 1"));
+            /* Depending on git program implementation/version, the string can be either short:
+             *    Command "git submodule update modules/ntp" returned status code 1"
+             * or detailed:
+             *    Command "git submodule update modules/ntp" executed in workdir "C:\Users\..." returned status code 1
+             * so we catch below the two common parts separately.
+             * NOTE: git codebase itself goes to great extents to forbid their
+             * own unit-testing code from relying on emitted text messages.
+             */
+            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" "));
+            assertThat(e.getMessage(), containsString(" returned status code 1"));
         }
     }
 
