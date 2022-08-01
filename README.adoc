@@ -3,12 +3,6 @@
 :toc: macro
 :toc-title:
 
-link:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/[image:https://ci.jenkins.io/job/Plugins/job/git-client-plugin/job/master/badge/icon[Build]]
-link:https://github.com/jenkinsci/git-client-plugin/graphs/contributors[image:https://img.shields.io/github/contributors/jenkinsci/git-client-plugin.svg?color=blue[Contributors]]
-link:https://plugins.jenkins.io/git-client[image:https://img.shields.io/jenkins/plugin/i/git-client.svg?color=blue&label=installations[Jenkins Plugin Installs]]
-link:https://github.com/jenkinsci/git-client-plugin/releases/latest[image:https://img.shields.io/github/release/jenkinsci/git-client-plugin.svg?label=changelog[GitHub release]]
-link:https://gitter.im/jenkinsci/git-plugin[image:https://badges.gitter.im/jenkinsci/git-plugin.svg[Gitter]]
-
 [#introduction]
 == Introduction
 
@@ -25,20 +19,22 @@ It can fetch, checkout, branch, list, merge, and tag repositories.
 Refer to the https://javadoc.jenkins-ci.org/plugin/git-client/[API documentation] for specific API details.
 
 The https://javadoc.jenkins-ci.org/plugin/git-client/org/jenkinsci/plugins/gitclient/GitClient.html[GitClient interface] provides the primary entry points for git access.
-It supports username / password credentials and private key credentials using the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
+It supports username / password credentials for git repository access with HTTP and HTTPS protocols (for example, `+https://github.com/jenkinsci/git-client-plugin+` or `+https://git.example.com/your-repo.git+` ).
+It supports private key credentials for git repository access with SSH protocol (for example, `+git@github.com:jenkinsci/git-client-plugin.git+` or `+ssh://git@github.com/jenkinsci/git-client-plugin.git+` ).
+Credential support is provided by the https://plugins.jenkins.io/credentials[Jenkins credentials plugin].
 
 toc::[]
 
 [#changelog]
 == Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
 
-Release notes are recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] beginning with git client plugin 2.8.1.
-Prior release notes are recorded in the git client plugin repository link:CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
+Release notes have been recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] since git client plugin 2.8.1.
+Prior release notes were recorded in the git client plugin repository link:https://github.com/jenkinsci/git-client-plugin/blob/91c7435dffb489c1e0eb0252c7992c61054b822e/CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
 
 [#implementations]
 == Implementations
 
-The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the master and on every agent that will use git.
+The git client plugin default implementation requires that https://git-scm.com/downloads[command line git] is installed on the controller and on every agent that will use git.
 Command line git implementations working with large files should also install https://git-lfs.github.com/[git LFS].
 The command line git implementation is the canonical implementation of the git interfaces provided by the git client plugin.
 
@@ -47,8 +43,7 @@ Command line git is *enabled by default* when the git client plugin is installed
 [#jgit]
 === JGit
 
-The git client plugin also includes two optional implementations that use https://www.eclipse.org/jgit/[Eclipse JGit].
-Eclipse JGit is a pure Java implementation of git.
+The git client plugin also includes two optional implementations ("jgit" and <<jgit-with-apache-http-client,"jgitapache">>) that use https://www.eclipse.org/jgit/[Eclipse JGit], a pure Java implementation of git.
 The JGit implementation in the git client plugin provides most of the functionality of the command line git implementation.
 When the JGit implementation is incomplete, the gap is noted in console logs.
 
@@ -61,6 +56,22 @@ Click the "*Add Git*" button in the "*Global Tool Configuration*" section under 
 
 image::images/enable-jgit.png[Enable JGit or JGit with Apache HTTP Client]
 
+=== JGit timeout
+
+The command line git implementation in the git client plugin provides a timeout setting for many operations like fetch and checkout.
+Operations that take more than the specified time are canceled.
+When the timeout is exceeded, the command line git process fails and the git client plugin API operation fails.
+
+The JGit implementation in the git client plugin uses a different concept of timeout.
+The JGit timeout is a network level transport timeout rather than a timeout of a higher level JGit operation.
+If the JGit network transport does not receive a response within the defined timeout, the JGit API call fails.
+The link:https://javadoc.io/static/org.eclipse.jgit/org.eclipse.jgit/5.13.0.202109080827-r/org/eclipse/jgit/transport/Transport.html#setTimeout-int-[JGit javadoc] describes the JGit API.
+
+The JGit timeout implementation prevents JGit operations from hanging indefinitely when a remote server stops responding.
+It does not stop a JGit operation if it has executed for more than a specified time.
+The JGit timeout counter is reset each time a response is received from the remote server during the JGit API call.
+The command line git timeout counter is set at the start of the command line git call and is not reset during the call.
+
 [#jgit-with-apache-http-client]
 === JGit with Apache HTTP Client
 
@@ -69,23 +80,22 @@ A workaround was implemented to provide JGit but use Apache HTTP client for auth
 The issue in JGit has now been resolved and delivered in git client plugin releases.
 JGit with Apache HTTP Client continues to delivered to assure compatibility.
 
-[#installing-portablegit-automatically]
-=== Installing PortableGit Automatically
+[#installing-mingit-for-windows-automatically]
+=== Installing MinGit for Windows Automatically
 
-The git client plugin can install link:https://git-scm.com/download/win[Git for Windows Portable] automatically from a zip file.
+Jenkins can install link:https://github.com/git-for-windows/git/wiki/MinGit[MinGit for Windows] automatically.
+MinGit for Windows is an intentionally minimal, non-interactive distribution of Git for Windows, with third-party applications as its intended audience.
+Jenkins is well suited to use MinGit on Windows agents.
 
-image::images/portable-git-for-windows-as-a-tool.png[Configure Git for Windows Portable to install automatically]
+image::images/mingit-for-windows-as-a-tool.png[Configure MinGit for Windows to install automatically]
 
-* Download and install link:https://github.com/git-for-windows/git/releases/[Git for Windows Portable] from its 7z.exe file.
-* Create a zip file of the installation as `PortableGit-a.bb.c.zip`.
-* Upload that zip file to an HTTP server.
-* Set the `Download URL for binary archive` as the URL of the uploaded zip file.
-* Leave `Path to Git` executable as `git`.
-* Specify `PortableGit-a.bb.c\bin\git.exe` for the `Subdirectory of extracted archive`.
-  This points to the git.exe in the archive relative to the root of the archive.
+* Configure a global git tool from "Manage Jenkins" >> "Global Tool Configuration" with `git` as the `Path to Git executable`
+* Set the label `windows` to limit the tool installer to agents with the `windows` label
+* Set the `Download URL for binary archive` as the URL of the link:https://github.com/git-for-windows/git/releases/[MinGit zip file]
+* Specify `mingw64\bin\git.exe` as the `Subdirectory of extracted archive`.
 
-Git for Windows Portable will be installed on each agent in `tools\git\PortableGit-a.bb.c`.
-The path to the git executable will be `tools\git\PortableGit-a.bb.c\bin\git.exe`.
+Git for Windows Portable will be installed on each agent in `tools\git\mingw64`.
+The path to the git executable will be `tools\git\mingw64\bin\git.exe`.
 
 [#windows-credentials-manager]
 == Windows Credentials Manager
@@ -95,17 +105,42 @@ Windows Credentials Manager works very well for interactive users on the Windows
 Windows Credentials Manager does not work as well for batch processing in the git client plugin.
 It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
 
+[#ssh-host-key-verification]
+== Ssh Host Key verification
+
+Git Client plugin provides various options to verify the SSH keys presented by Git repository host servers.
+By default, Git Client plugin uses "Accept first connection" strategy, which automatically adds keys for hosts that have not been seen before to `known_hosts`, and does not allow connections to previously-seen hosts with modified keys.
+Configure the host key verification strategy from "Manage Jenkins" >> "Configure Global Security" >> "Git Host Key Verification Configuration".
+
+image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
+
+[NOTE]
+====
+OpenSSH releases prior to link:https://www.openssh.com/txt/release-7.6[OpenSSH 7.6 (released Oct 2017)] do not support the ssh command line argument used to accept first connection.
+Red Hat Enterprise Linux 7, CentOS 7, AWS Linux 2, and Debian 9 all deliver OpenSSH releases older than OpenSSH 7.6.
+The "Git Host Key Verification Configuration" for those systems cannot use the "Accept first connection" strategy with command line git.
+
+Users of those operating systems have the following options:
+
+* Use the "Manually provided keys" host key verification strategy and provide host keys for their git hosts
+* Use the "Known hosts file" host key verification strategy and provide a known_hosts file on the agents with values for the required hosts
+* Enable JGit and use JGit instead of command line git on agents and controllers with those older OpenSSH versions
+* Switch the repository URL's in job definitions from ssh protocol to https protocol and provide a username / password credential for the clone instead of a private key credential
+* Use the "No verification" host key verification strategy (not recommended)
+====
+
 [#bug-reports]
 == Bug Reports
 
-Report issues and enhancements with the https://issues.jenkins-ci.org[Jenkins issue tracker].
+Report issues and enhancements with the link:https://www.jenkins.io/participate/report-issue/redirect/#17423[Jenkins issue tracker].
+Please use the link:https://www.jenkins.io/participate/report-issue/["How to Report an Issue"] guidelines when reporting issues.
 
 [#contributing-to-the-plugin]
 == Contributing to the Plugin
 
 Refer to link:CONTRIBUTING.adoc#contributing-to-the-git-client-plugin[contributing to the plugin] for contribution guidelines.
 
-==  Plugin Properties
+== Plugin Properties
 
 Some plugin settings are controlled by Java system properties.
 The properties are often used to override a standard behavior or to revert to previous behavior.

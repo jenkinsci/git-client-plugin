@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.15</version>
+    <version>4.45</version>
     <relativePath />
   </parent>
 
@@ -13,11 +12,10 @@
   <artifactId>git-client</artifactId>
   <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
-
   <name>Jenkins Git client plugin</name>
-  <description>Utility plugin for Git support in Jenkins</description>
   <url>https://github.com/jenkinsci/git-client-plugin/blob/master/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
+
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -39,29 +37,34 @@
       <url>http://rsandell.com</url>
     </developer>
     <developer>
-      <id>fcojfernandez</id>
-      <name>Francisco J. Fernández</name>
-      <email>fjfernandez@cloudbees.com</email>
+      <id>mramonleon</id>
+      <name>M Ramon Leon</name>
+      <email>rleon@cloudbees.com</email>
+    </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>olamy@apache.org</email>
+      <url>https://about.me/olamy</url>
+      <timezone>Australia/Brisbane</timezone>
     </developer>
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+    <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
+    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
     <tag>${scmTag}</tag>
+    <url>https://github.com/${gitHubRepo}</url>
   </scm>
 
   <properties>
-    <revision>3.6.1</revision>
+    <revision>3.11.2</revision>
     <changelist>-SNAPSHOT</changelist>
+    <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.222.4</jenkins.version> <!-- Required for git plugin 4.5.0 -->
-    <java.level>8</java.level>
-    <jgit.version>5.10.0.202012080955-r</jgit.version>
-    <configuration-as-code.version>1.36</configuration-as-code.version>
-    <slf4jVersion>1.7.26</slf4jVersion>
+    <jenkins.version>2.289.1</jenkins.version>
+    <jgit.version>5.13.1.202206130422-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.failOnError>true</spotbugs.failOnError>
     <spotbugs.threshold>Medium</spotbugs.threshold>
@@ -71,13 +74,14 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.222.x</artifactId>
-        <version>20</version>
+        <artifactId>bom-2.289.x</artifactId>
+        <version>1117.v62a_f6a_01de98</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -105,7 +109,8 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit http server so that git-userContent and other
+    <dependency>
+      <!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
@@ -125,7 +130,8 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's Apache HTTP client so that we can avoid
+    <dependency>
+      <!-- Include jgit's Apache HTTP client so that we can avoid
            automatic NTLM on Windows. See JENKINS-37934 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
@@ -148,7 +154,8 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's LFS module for eventual large file support -->
+    <dependency>
+      <!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
@@ -170,15 +177,18 @@
       <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion> <!-- provided by jenkins-core -->
+        <exclusion>
+          <!-- provided by jenkins-core -->
           <groupId>com.jcraft</groupId>
           <artifactId>jzlib</artifactId>
         </exclusion>
-        <exclusion> <!-- Provided by jsch plugin -->
+        <exclusion>
+          <!-- Provided by jsch plugin -->
           <groupId>com.jcraft</groupId>
           <artifactId>jsch</artifactId>
         </exclusion>
-        <exclusion> <!-- provided by jenkins-core -->
+        <exclusion>
+          <!-- provided by jenkins-core -->
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
@@ -188,12 +198,14 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
     </dependency>
-    <dependency> <!-- Credentials test requires scm-api -->
+    <dependency>
+      <!-- Credentials test requires scm-api -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency> <!-- Tests require the scm-api-tests jar -->
+    <dependency>
+      <!-- Tests require the scm-api-tests jar -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <classifier>tests</classifier>
@@ -206,14 +218,8 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>4.13.2</version>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <!-- Hamcrest 2.x bundles all hamcrest-core functionality in the hamcrest artifact -->
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
@@ -225,11 +231,20 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <!-- newer version required by equalsverifier -->
+          <!-- needed by equalsverifier, not directly used by git client -->
+          <!-- Remove exclusion as soon as equalsverifier and mockito-core agree on byte buddy version -->
+          <groupId>net.bytebuddy</groupId>
+          <artifactId>byte-buddy</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.5.1</version>
+      <version>3.10.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -269,14 +284,8 @@
     <dependency>
       <groupId>com.github.spotbugs</groupId>
       <artifactId>spotbugs-annotations</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.code.findbugs</groupId>
-          <artifactId>jsr305</artifactId>
-        </exclusion>
-      </exclusions>
+      <version>4.7.1</version>
       <optional>true</optional>
-      <version>4.2.0</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -286,13 +295,11 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
-      <version>${configuration-as-code.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
       <artifactId>test-harness</artifactId>
-      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -316,6 +323,40 @@
   </pluginRepositories>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.24.0</version>
+          <configuration>
+            <!-- define a language-specific format -->
+            <java>
+              <!-- no need to specify files, inferred automatically -->
+              <endWithNewline />
+              <removeUnusedImports />
+            </java>
+            <pom>
+              <sortPom>
+                <encoding>${project.build.sourceEncoding}</encoding>
+                <lineSeparator>\n</lineSeparator>
+                <expandEmptyElements>false</expandEmptyElements>
+                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+              </sortPom>
+            </pom>
+          </configuration>
+          <executions>
+            <execution>
+              <!-- Runs in verify phase by default -->
+              <goals>
+                <!-- Can be disabled using -Dspotless.check.skip -->
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -326,8 +367,9 @@
           <force>true</force>
           <failOnError>false</failOnError>
           <links>
-            <link>http://docs.oracle.com/javase/8/docs/api/</link>
-            <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
+            <link>https://docs.oracle.com/javase/8/docs/api/</link>
+	    <!-- JGit patch releases do not provide javadoc. Use javadoc from matching minor release -->
+            <link>https://download.eclipse.org/jgit/site/5.13.0.202109080827-r/org.eclipse.jgit/apidocs/</link>
           </links>
         </configuration>
       </plugin>
@@ -339,14 +381,26 @@
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.2.0</version>
         <dependencies>
           <dependency>
             <groupId>com.github.spotbugs</groupId>
             <artifactId>spotbugs</artifactId>
-            <version>4.2.0</version>
+            <version>4.7.1</version>
           </dependency>
         </dependencies>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>0.8C</forkCount>
+          <reuseForks>true</reuseForks>
+          <systemProperties>
+            <property>
+              <name>surefire.profile</name>
+              <value>${project.activeProfiles[0].id}</value>
+            </property>
+          </systemProperties>
+        </configuration>
       </plugin>
     </plugins>
   </build>

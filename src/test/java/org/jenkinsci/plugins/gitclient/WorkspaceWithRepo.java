@@ -72,9 +72,9 @@ public class WorkspaceWithRepo {
      * Populate the local mirror of the git client plugin repository.
      * Returns path to the local mirror directory.
      *
-     * @return path to the local mirrror directory
+     * @return path to the local mirror directory
      * @throws IOException on I/O error
-     * @throws InterruptedException when execption is interrupted
+     * @throws InterruptedException when exception is interrupted
      */
     String localMirror() throws IOException, InterruptedException {
         return localMirror("clone.git");
@@ -207,6 +207,18 @@ public class WorkspaceWithRepo {
 
     File getGitFileDir() {
         return this.gitFileDir;
+    }
+
+    File file(String path) {
+        return new File(getGitFileDir(), path);
+    }
+
+    boolean exists(String path) {
+        return file(path).exists();
+    }
+
+    String contentOf(String path) throws IOException {
+        return FileUtils.readFileToString(file(path), "UTF-8");
     }
 
     CliGitCommand getCliGitCommand() {

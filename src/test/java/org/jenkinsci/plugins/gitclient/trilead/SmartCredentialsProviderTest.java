@@ -9,7 +9,6 @@ import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -33,7 +32,7 @@ public class SmartCredentialsProviderTest {
     private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
     public SmartCredentialsProviderTest() throws URISyntaxException {
-        gitURI = new URIish("git://github.com/jenkinsci/git-client-plugin.git");
+        gitURI = new URIish("git://example.com/someone/somewhere.git");
     }
 
     @Before
@@ -218,9 +217,6 @@ public class SmartCredentialsProviderTest {
         StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         provider.addCredentials(gitURI.toString(), credentials);
         assertThrows(UnsupportedCredentialItem.class,
-                     () ->
-                     {
-                         provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType);
-                     });
+                     () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
     }
 }

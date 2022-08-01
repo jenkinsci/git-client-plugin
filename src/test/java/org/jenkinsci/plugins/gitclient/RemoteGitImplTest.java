@@ -26,38 +26,17 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IndexEntry;
-import hudson.plugins.git.Revision;
-import hudson.plugins.git.Tag;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.transport.RefSpec;
-import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.transport.URIish;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -95,14 +74,12 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testGetRepository() throws IOException, InterruptedException {
-        assertThrows(UnsupportedOperationException.class, () -> {
-            remoteGit.getRepository();
-        });
+    public void testGetRepository() {
+        assertThrows(UnsupportedOperationException.class, () -> remoteGit.getRepository());
     }
 
     @Test
-    public void testClearCredentials() throws IOException, InterruptedException {
+    public void testClearCredentials() {
         remoteGit.clearCredentials();
     }
 
@@ -121,7 +98,6 @@ public class RemoteGitImplTest {
     public void testSetCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
-        String url = "https://github.com/jenkinsci/git-client-plugin";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
         StandardUsernameCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
@@ -132,7 +108,6 @@ public class RemoteGitImplTest {
     public void testAddDefaultCredentials() {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
-        String url = "https://github.com/jenkinsci/git-client-plugin";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
         StandardCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
@@ -237,9 +212,7 @@ public class RemoteGitImplTest {
         String url = "https://github.com/jenkinsci/git-client-plugin";
         remoteGit.init();
         if (gitImplName.equals("git")) { // JGit does not throw an exception for undefined remote
-            assertThrows(GitException.class, () -> {
-                    remoteGit.getRemoteUrl(name);
-                });
+            assertThrows(GitException.class, () -> remoteGit.getRemoteUrl(name));
         }
         remoteGit.setRemoteUrl(name, url);
         assertThat(remoteGit.getRemoteUrl(name), is(url));

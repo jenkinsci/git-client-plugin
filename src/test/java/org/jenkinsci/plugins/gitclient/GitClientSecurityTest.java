@@ -19,7 +19,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -56,11 +55,13 @@ public class GitClientSecurityTest {
     /* Marker file used to check for SECURITY-1534 */
     private static String markerFileName = "/tmp/iwantmore-%d.pizza";
 
+    private static final String DEFAULT_BRANCH_NAME = "master";
+
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
     private File repoRoot = null;
 
-    public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) throws IOException, InterruptedException {
+    public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) {
         this.badRemoteUrl = badRemoteUrl;
         this.enableRemoteCheckUrl = enableRemoteCheckUrl;
     }
@@ -128,7 +129,7 @@ public class GitClientSecurityTest {
     }
 
     @Parameterized.Parameters(name = "{1},{0}")
-    public static Collection testConfiguration() throws Exception {
+    public static Collection testConfiguration() {
         markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
@@ -204,7 +205,7 @@ public class GitClientSecurityTest {
         "--shallow-exclude=HEAD",
         "--unshallow",
         "--update-shallow",
-        "--negotiation-tip=master",
+        "--negotiation-tip=" + DEFAULT_BRANCH_NAME,
         "--dry-run",
         "--force",
         "-f",
@@ -239,9 +240,7 @@ public class GitClientSecurityTest {
 
     private static final String[] VALID_REMOTES = {
         "https://github.com/jenkinsci/platformlabeler-plugin.git",
-        "git://github.com/jenkinsci/platformlabeler-plugin.git",
         "https://github.com/jenkinsci/archetypes.git",
-        "git://github.com/jenkinsci/archetypes.git",
         "https://github.com/jenkinsci/archetypes.git",
         "https://git.assembla.com/git-plugin.3.git",
         "https://markewaite@bitbucket.org/markewaite/jenkins-pipeline-utils.git",
@@ -266,50 +265,42 @@ public class GitClientSecurityTest {
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetHeadRev_String_SECURITY_1534() throws Exception {
+    public void testGetHeadRev_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.getHeadRev(badRemoteUrl);
-                                      });
+                                      () -> gitClient.getHeadRev(badRemoteUrl));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetHeadRev_String_String_SECURITY_1534() throws Exception {
+    public void testGetHeadRev_String_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.getHeadRev(badRemoteUrl, "master");
-                                      });
+                                      () -> gitClient.getHeadRev(badRemoteUrl, DEFAULT_BRANCH_NAME));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetRemoteReferences_SECURITY_1534() throws Exception {
+    public void testGetRemoteReferences_SECURITY_1534() {
         boolean headsOnly = random.nextBoolean();
         boolean tagsOnly = random.nextBoolean();
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.getRemoteReferences(badRemoteUrl, "*master", headsOnly, tagsOnly);
-                                      });
+                                      () -> gitClient.getRemoteReferences(badRemoteUrl, "*" + DEFAULT_BRANCH_NAME, headsOnly, tagsOnly));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
     @Test
     @Issue("SECURITY-1534")
-    public void testGetRemoteSymbolicReferences_SECURITY_1534() throws Exception {
+    public void testGetRemoteSymbolicReferences_SECURITY_1534() {
         if (!CLI_GIT_SUPPORTS_SYMREF) {
             return;
         }
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.getRemoteSymbolicReferences(badRemoteUrl, "master");
-                                      });
+                                      () -> gitClient.getRemoteSymbolicReferences(badRemoteUrl, DEFAULT_BRANCH_NAME));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
@@ -322,9 +313,7 @@ public class GitClientSecurityTest {
         refSpecs.add(refSpec);
         URIish badRepoUrl = new URIish(badRemoteUrl.trim());
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.fetch_().from(badRepoUrl, refSpecs).execute();	
-                                      });
+                                      () -> gitClient.fetch_().from(badRepoUrl, refSpecs).execute());
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRepoUrl.toPrivateASCIIString()));
         }
@@ -336,9 +325,7 @@ public class GitClientSecurityTest {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.fetch("origin", refSpec);
-                                      });
+                                      () -> gitClient.fetch("origin", refSpec));
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRemoteUrl.trim()));
         }
@@ -350,9 +337,7 @@ public class GitClientSecurityTest {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          gitClient.fetch("origin", refSpec, refSpec, refSpec);
-                                      });
+                                      () -> gitClient.fetch("origin", refSpec, refSpec, refSpec));
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRemoteUrl.trim()));
         }

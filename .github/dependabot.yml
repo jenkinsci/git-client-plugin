@@ -1,3 +1,4 @@
+# Per https://docs.github.com/en/github/administering-a-repository/configuration-options-for-dependency-updates
 version: 2
 updates:
 - package-ecosystem: maven
@@ -44,3 +45,11 @@ updates:
   - dependency-name: org.jenkins-ci.plugins:trilead-api
     versions:
     - ">= 1.0.6.a, < 1.0.7"
+  - dependency-name: com.github.ben-manes.caffeine:caffeine
+    # caffeine 3.0.0 and later requires JDK 11
+    versions:
+    - ">= 3.0.0"
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly

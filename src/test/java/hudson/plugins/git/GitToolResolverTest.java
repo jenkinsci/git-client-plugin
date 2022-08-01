@@ -6,6 +6,7 @@ import hudson.tools.AbstractCommandInstaller;
 import hudson.tools.BatchCommandInstaller;
 import hudson.tools.CommandInstaller;
 import hudson.tools.InstallSourceProperty;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -32,7 +33,9 @@ public class GitToolResolverTest {
 
     @Test
     public void shouldResolveToolsOnMaster() throws Exception {
-        final String label = "master";
+        // Jenkins 2.307+ uses "built-in" for the label on the controller node
+        // Before 2.307, used the deprecated term "master"
+        final String label = j.jenkins.getSelfLabel().getName();
         final String command = "echo Hello";
         final String toolHome = "TOOL_HOME";
         AbstractCommandInstaller installer = isWindows()

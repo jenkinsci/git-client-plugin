@@ -28,6 +28,8 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import java.util.ArrayList;
 import java.util.List;
+
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -249,11 +251,13 @@ public class UnsupportedCommandTest {
         public FakeCredentials() {
         }
 
+        @NonNull
         @Override
         public String getDescription() {
             throw new UnsupportedOperationException("Unsupported");
         }
 
+        @NonNull
         @Override
         public String getId() {
             throw new UnsupportedOperationException("Unsupported");
@@ -264,6 +268,7 @@ public class UnsupportedCommandTest {
             throw new UnsupportedOperationException("Unsupported");
         }
 
+        @NonNull
         @Override
         public CredentialsDescriptor getDescriptor() {
             throw new UnsupportedOperationException("Unsupported");

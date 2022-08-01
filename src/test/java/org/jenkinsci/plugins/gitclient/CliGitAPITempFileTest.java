@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -102,12 +103,12 @@ public class CliGitAPITempFileTest {
     public void testTempFilePathCharactersValid() throws IOException {
         CliGitAPIImplExtension cliGit = new CliGitAPIImplExtension("git", workspace, null, null);
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
-            File tempFile = cliGit.createTempFile(filenamePrefix, filenameSuffix);
-            assertThat(tempFile.getAbsolutePath(), not(containsString("" + INVALID_CHARACTERS.charAt(charIndex))));
+            Path tempFile = cliGit.createTempFile(filenamePrefix, filenameSuffix);
+            assertThat(tempFile.toAbsolutePath().toString(), not(containsString("" + INVALID_CHARACTERS.charAt(charIndex))));
             if (!mustUseSystemTempDir) {
-                File tempParent = tempFile.getParentFile();
-                File tempGrandparent = tempParent.getParentFile();
-                File workspaceParent = workspace.getParentFile();
+                Path tempParent = tempFile.getParent();
+                Path tempGrandparent = tempParent.getParent();
+                Path workspaceParent = workspace.getParentFile().toPath();
                 assertThat("Parent dir not shared by workspace '" + workspace.getAbsolutePath() + "' and tempdir", workspaceParent, is(tempGrandparent));
             }
         }
@@ -121,7 +122,7 @@ public class CliGitAPITempFileTest {
         return File.pathSeparatorChar == ';';
     }
 
-    private class CliGitAPIImplExtension extends CliGitAPIImpl {
+    private static class CliGitAPIImplExtension extends CliGitAPIImpl {
 
         private CliGitAPIImplExtension(String gitExe, File workspace, TaskListener listener, EnvVars environment) {
             super(gitExe, workspace, listener, environment);

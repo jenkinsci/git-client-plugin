@@ -24,7 +24,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
 
     private static boolean cliGitDefaultsSet = false;
 
-    private void setCliGitDefaults() throws Exception {
+    private void setCliGitDefaults() {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
         }
@@ -40,7 +40,6 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         Method m = getClass().getMethod(getName());
 
         if (m.getAnnotation(NotImplementedInCliGit.class) != null) {
-            setTimeoutVisibleInCurrentTest(false); /* No timeout if not implemented in CliGitAPIImpl */
             return; // skip this test case
         }
         try {
@@ -54,7 +53,7 @@ public class CliGitAPIImplTest extends GitAPITestCase {
         }
     }
 
-    public class VersionTest {
+    public static class VersionTest {
 
         private boolean expectedIsAtLeastVersion;
         private int major;
@@ -83,8 +82,18 @@ public class CliGitAPIImplTest extends GitAPITestCase {
                         version.minor,
                         version.rev,
                         version.bugfix));
+                assertTrue("Failed " + msg, git.isCliGitVerAtLeast(
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
             } else {
                 assertFalse("Passed " + msg, git.isAtLeastVersion(
+                        version.major,
+                        version.minor,
+                        version.rev,
+                        version.bugfix));
+                assertFalse("Passed " + msg, git.isCliGitVerAtLeast(
                         version.major,
                         version.minor,
                         version.rev,

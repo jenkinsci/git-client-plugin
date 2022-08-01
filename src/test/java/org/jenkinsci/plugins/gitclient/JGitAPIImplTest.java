@@ -18,12 +18,9 @@ public class JGitAPIImplTest extends GitAPITestCase {
         return true; // JGit 5.10 has getRemoteSymbolicReferences, prior did not
     }
 
-    /**
-     * timeout is not implemented in JGitAPIImpl.
-     */
     @Override
     protected boolean getTimeoutVisibleInCurrentTest() {
-        return false;
+        return true; // git client plugin 3.11.0 supports JGit timeout
     }
 
     /**

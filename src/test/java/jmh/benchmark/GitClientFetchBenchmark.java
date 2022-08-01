@@ -15,7 +15,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertTrue;
 
 /**
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"

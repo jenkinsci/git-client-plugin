@@ -8,7 +8,6 @@ import java.util.regex.Pattern;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertTrue;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -37,7 +36,7 @@ public class SubmodulePatternStringTest {
      * Tests file, ssh (both forms), git, and https.
      */
     @Parameterized.Parameters(name = "{0}-{1}")
-    public static Collection repoAndRemote() {
+    public static Collection<Object[]> repoAndRemote() {
         List<Object[]> arguments = new ArrayList<>();
         String[] repoUrls = {
             "file://gitroot/thirdparty.url.repo",
