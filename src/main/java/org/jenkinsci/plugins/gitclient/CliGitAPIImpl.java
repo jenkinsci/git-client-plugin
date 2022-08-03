@@ -12,6 +12,7 @@ import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
+import hudson.console.HyperlinkNote;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -2676,6 +2677,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return stdout;
         } catch (GitException | InterruptedException e) {
+            if (e.getMessage().contains("unsupported option \"accept-new\"")) {
+                listener.getLogger().println(HyperlinkNote.encodeTo("https://plugins.jenkins.io/git-client/#plugin-content-ssh-host-key-verification",
+                        "If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in 'Manage Jenkins' -> 'Configure Global Security' -> 'Git Host Key Verification Configuration'"));
+            }
             throw e;
         } catch (Throwable e) {
             reportFailureClues();
