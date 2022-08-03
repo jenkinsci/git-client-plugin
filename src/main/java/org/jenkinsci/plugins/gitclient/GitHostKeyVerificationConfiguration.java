@@ -2,11 +2,13 @@ package org.jenkinsci.plugins.gitclient;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
+import hudson.Main;
 import hudson.model.PersistentDescriptor;
 import jenkins.model.GlobalConfiguration;
 import jenkins.model.GlobalConfigurationCategory;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
-import org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionStrategy;
+import org.jenkinsci.plugins.gitclient.verifier.KnownHostsFileVerificationStrategy;
+import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 import org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy;
 
 @Extension
@@ -21,7 +23,11 @@ public class GitHostKeyVerificationConfiguration extends GlobalConfiguration imp
     }
 
     public SshHostKeyVerificationStrategy<? extends HostKeyVerifierFactory> getSshHostKeyVerificationStrategy() {
-        return sshHostKeyVerificationStrategy != null ? sshHostKeyVerificationStrategy : new AcceptFirstConnectionStrategy();
+        return sshHostKeyVerificationStrategy != null ? sshHostKeyVerificationStrategy : getDefaultStrategy();
+    }
+
+    private SshHostKeyVerificationStrategy<?> getDefaultStrategy() {
+        return Main.isUnitTest ? new NoHostKeyVerificationStrategy() : new KnownHostsFileVerificationStrategy();
     }
 
     public void setSshHostKeyVerificationStrategy(SshHostKeyVerificationStrategy<? extends HostKeyVerifierFactory> sshHostKeyVerificationStrategy) {
