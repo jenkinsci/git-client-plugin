@@ -14,7 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
 
-public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
+public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
     @Test
@@ -71,7 +71,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
 
     @Test
     public void testTrackingSubmoduleBranches() throws Exception {
-        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+        if (!((CliGitAPIImpl) w.git).isAtLeastVersion(1, 8, 2, 0)) {
             setTimeoutVisibleInCurrentTest(false);
             System.err.println("git must be at least 1.8.2 to do tracking submodules.");
             return;
@@ -140,7 +140,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
 
     @Test
     public void testTrackingSubmodule() throws Exception {
-        if (! ((CliGitAPIImpl)w.git).isAtLeastVersion(1,8,2,0)) {
+        if (!((CliGitAPIImpl) w.git).isAtLeastVersion(1, 8, 2, 0)) {
             System.err.println("git must be at least 1.8.2 to do tracking submodules.");
             return;
         }
@@ -244,5 +244,4 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate{
         assertTrue(workingArea.exists("dir2"));
         assertTrue(workingArea.exists("dir3"));
     }
-
 }
