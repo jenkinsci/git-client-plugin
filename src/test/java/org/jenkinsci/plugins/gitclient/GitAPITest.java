@@ -53,8 +53,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Git API Tests, eventual replacement for GitAPITestCase,
- * Implemented in JUnit 4.
+ * Git API tests implemented in JUnit 4.
  */
 
 @RunWith(Parameterized.class)

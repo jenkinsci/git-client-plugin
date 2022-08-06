@@ -957,7 +957,7 @@ public class GitClientTest {
 
     /**
      * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link GitAPITestCase#test_branchContainingRemote()}
+     * This is essentially a stripped down version of {@link GitAPITestUpdate#testBranchContainingRemote()}
      * @throws Exception on exceptions occur
      */
     @Test
