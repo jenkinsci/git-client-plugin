@@ -264,11 +264,14 @@ public class GitAPITest {
         String tags = workspace.launchCommand("git", "tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another"));
-        try {
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteTag("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete tag test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteTag("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete tag test"));
         }
     }
 
@@ -593,27 +596,27 @@ public class GitAPITest {
         workspace.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
         assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit2, testGitClient.revParse("tag1"));
-        try {
+        if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
+            // Modern CLI git should throw exception pushing a change to existing tag
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
             testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
-            /* JGit does not throw exception updating existing tag - ugh */
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
         }
 
-        try {
-            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
-            /* JGit does not throw exception updating existing tag - ugh */
+        if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 8, 0, 0)) {
             /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
+            /* JGit does not throw exception updating existing tag - ugh */
+            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
         }
+
         testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(true).execute();
 
         /* Add tag to working repo without pushing it to the bare
@@ -1040,13 +1043,10 @@ public class GitAPITest {
         assertEquals("Fast-forward merge failed. Default branch and branch1 should be the same but aren't.", workspace.head(), branch1);
 
         // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
-        try {
+        assertThrows(GitException.class, () -> {
             testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
-            fail("Exception not thrown: the fast-forward only mode should have failed");
-        } catch (GitException ge) {
-            // expected
-            assertEquals("Fast-forward merge abort failed. Default branch and branch1 should still be the same as the merge was aborted.",workspace.head(),branch1);
-        }
+        });
+        assertEquals("Fast-forward merge abort failed. Default branch and branch1 should still be the same as the merge was aborted.", workspace.head(), branch1);
     }
 
     @Test
