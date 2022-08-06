@@ -28,6 +28,7 @@ import org.jvnet.hudson.test.Issue;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -247,11 +248,15 @@ public class GitAPITest {
         testGitClient.deleteBranch("test");
         String branches = workspace.launchCommand("git", "branch", "-l");
         assertFalse("deleted test branch still present", branches.contains("test"));
-        try {
+
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteBranch("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete branch test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteBranch("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete branch test"));
         }
     }
 
@@ -1275,20 +1280,20 @@ public class GitAPITest {
 
         // Rebase feature commit onto default branch
         testGitClient.checkout().ref("feature1").execute();
-        try {
+        Exception exception = assertThrows(GitException.class, () -> {
             testGitClient.rebase().setUpstream(defaultBranchName).execute();
-            fail("Rebase did not throw expected GitException");
-        } catch (GitException ge) {
-            assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
-            Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
-            assertTrue("Workspace is not clean", status.isClean());
-            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
-            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
-            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
-            assertTrue("Workspace has modified files", status.getModified().isEmpty());
-            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
-            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
-        }
+        });
+        assertThat(exception.getMessage(), anyOf(containsString("Failed to rebase main"),
+                                                 containsString("Could not rebase main")));
+        assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+        Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+        assertTrue("Workspace is not clean", status.isClean());
+        assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+        assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+        assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+        assertTrue("Workspace has modified files", status.getModified().isEmpty());
+        assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+        assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
     }
 
     /**
