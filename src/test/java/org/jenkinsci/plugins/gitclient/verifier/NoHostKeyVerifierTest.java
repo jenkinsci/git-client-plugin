@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
 
 public class NoHostKeyVerifierTest {
 
@@ -22,13 +21,10 @@ public class NoHostKeyVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKey() {
+    public void testVerifyServerHostKey() throws IOException {
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-        try {
-            jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
-        } catch (IOException e) {
-            fail("Should not fail because verifyServerHostKey always true");
-        }
+        // Should not fail because verifyServerHostKey always true
+        jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
     }
 
     @Test

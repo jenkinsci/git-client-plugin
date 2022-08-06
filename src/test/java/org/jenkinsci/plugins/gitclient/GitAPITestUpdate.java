@@ -659,7 +659,7 @@ public abstract class GitAPITestUpdate {
 
         /* git.clean() does not remove submodule remnants in CliGitAPIImpl, does in JGitAPIImpl */
         w.git.clean();
-        if (w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
+        if (w.git instanceof CliGitAPIImpl) {
             assertDirExists(ntpDir);
             assertDirExists(firewallDir);
             assertDirExists(sshkeysDir);
@@ -1033,12 +1033,6 @@ public abstract class GitAPITestUpdate {
         w.igit().merge("branch1");
         assertTrue("file1 does not exist after merge", w.exists("file1"));
 
-        /* Git 1.7.1 does not understand the --orphan argument to checkout.
-         * Stop the test here on older git versions
-         */
-        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            return;
-        }
         w.launchCommand("git", "checkout", "--orphan", "newroot"); // Create an independent root
         w.commitEmpty("init-on-newroot");
         final ObjectId newRootCommit = w.head();
@@ -1873,19 +1867,8 @@ public abstract class GitAPITestUpdate {
         String mergeMessage = "Merge message to be tested.";
         w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
 
-        /* JGit, and git 1.7.1 handle merge commits in changelog
-         * differently than git 1.7.9 and later.  See JENKINS-40023.
-         */
-        int maxlimit;
-        if (w.git instanceof CliGitAPIImpl) {
-            if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-                return;
-                /* git 1.7.1 is too old, changelog is too different */
-            }
-            maxlimit = 1;
-        } else {
-            maxlimit = 2;
-        }
+        /* JGit handles merge commits in changelog differently than CLI git.  See JENKINS-40023. */
+        int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2;
 
         StringWriter writer = new StringWriter();
         w.git.changelog().max(maxlimit).to(writer).execute();

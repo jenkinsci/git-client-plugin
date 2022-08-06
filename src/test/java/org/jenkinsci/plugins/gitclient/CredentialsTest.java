@@ -203,11 +203,6 @@ public class CredentialsTest {
         return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
     }
 
-    private static boolean isCredentialsSupported() throws IOException, InterruptedException {
-        CliGitAPIImpl cli = (CliGitAPIImpl) Git.with(null, new hudson.EnvVars()).in(CURR_DIR).using("git").getClient();
-        return cli.isAtLeastVersion(1, 7, 9, 0);
-    }
-
     private boolean isShallowCloneSupported(String implementation, GitClient gitClient) {
         if (!implementation.equals("git")) {
             return false;
@@ -219,7 +214,7 @@ public class CredentialsTest {
     @Parameterized.Parameters(name = "Impl:{0} User:{2} Pass:{3} Embed:{9} Phrase:{5} URL:{1}")
     public static Collection gitRepoUrls() throws IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
-        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
+        String[] implementations = new String[]{"git", "jgit", "jgitapache"};
         for (String implementation : implementations) {
             /* Add upstream repository as authentication test with private
              * key of current user.  Try to test at least one
