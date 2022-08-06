@@ -37,13 +37,12 @@ import java.util.logging.Logger;
  */
 
 @RunWith(Parameterized.class)
-public class GitAPITestNotIntialized {
+public class GitAPINotIntializedTest {
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
     private int logCount = 0;
-    private final Random random = new Random();
     private static final String LOGGING_STARTED = "Logging started";
     private LogHandler handler = null;
     private TaskListener listener;
@@ -55,7 +54,7 @@ public class GitAPITestNotIntialized {
     private File testGitDir;
     private CliGitCommand cliGitCommand;
 
-    public GitAPITestNotIntialized(final String gitImplName) { this.gitImplName = gitImplName; }
+    public GitAPINotIntializedTest(final String gitImplName) { this.gitImplName = gitImplName; }
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
