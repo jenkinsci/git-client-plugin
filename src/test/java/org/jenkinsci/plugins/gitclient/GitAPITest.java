@@ -601,7 +601,7 @@ public class GitAPITest {
         workspace.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
         assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit2, testGitClient.revParse("tag1"));
-        if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
+        if (testGitClient instanceof CliGitAPIImpl) {
             // Modern CLI git should throw exception pushing a change to existing tag
             Exception exception = assertThrows(GitException.class, () -> {
                 testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
@@ -611,8 +611,8 @@ public class GitAPITest {
             testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
         }
 
-        if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 8, 0, 0)) {
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
+        if (testGitClient instanceof CliGitAPIImpl) {
+            /* CliGit throws exception updating existing tag */
             Exception exception = assertThrows(GitException.class, () -> {
                 testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
             });

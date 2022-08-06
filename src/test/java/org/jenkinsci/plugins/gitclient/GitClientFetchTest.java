@@ -443,14 +443,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).prune(true).execute();
         remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
 
-        /* Git older than 1.7.9 (like 1.7.1 on Red Hat 6) does not prune branch1, don't fail the test
-         * on that old git version.
-         */
-        if (newAreaWorkspace.getGitClient() instanceof CliGitAPIImpl && !workspace.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
-        } else {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch2", "origin/HEAD"));
-        }
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch2", "origin/HEAD"));
     }
 
     @Test
@@ -475,7 +468,7 @@ public class GitClientFetchTest {
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
+        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl;
         assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
         String shallow = ".git" + File.separator + "shallow";
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
@@ -489,7 +482,7 @@ public class GitClientFetchTest {
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
         /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
+        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl;
         assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
         String shallow = ".git" + File.separator + "shallow";
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
