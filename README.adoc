@@ -109,11 +109,25 @@ It is best to disable Windows Credentials Manager when installing Git on Jenkins
 == Ssh Host Key verification
 
 Git Client plugin provides various options to verify the SSH keys presented by Git repository host servers.
-By default, Git Client plugin uses "Accept first connection" strategy, which automatically adds keys for hosts that have not been seen before to `known_hosts`, and does not allow connections to previously-seen hosts with modified keys.
+By default, Git Client plugin uses the "Known hosts file" strategy to verify all host keys using the known_hosts file.
 Configure the host key verification strategy from "Manage Jenkins" >> "Configure Global Security" >> "Git Host Key Verification Configuration".
 
 image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
 
+[NOTE]
+====
+OpenSSH releases prior to link:https://www.openssh.com/txt/release-7.6[OpenSSH 7.6 (released Oct 2017)] do not support the ssh command line argument used to accept first connection.
+Red Hat Enterprise Linux 7, CentOS 7, AWS Linux 2, and Debian 9 all deliver OpenSSH releases older than OpenSSH 7.6.
+The "Git Host Key Verification Configuration" for those systems cannot use the "Accept first connection" strategy with command line git.
+
+Users of those operating systems have the following options:
+
+* Use the "Manually provided keys" host key verification strategy and provide host keys for their git hosts
+* Use the "Known hosts file" host key verification strategy and provide a known_hosts file on the agents with values for the required hosts
+* Enable JGit and use JGit instead of command line git on agents and controllers with those older OpenSSH versions
+* Switch the repository URL's in job definitions from ssh protocol to https protocol and provide a username / password credential for the clone instead of a private key credential
+* Use the "No verification" host key verification strategy (not recommended)
+====
 
 [#bug-reports]
 == Bug Reports
