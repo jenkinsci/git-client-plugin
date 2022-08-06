@@ -1283,8 +1283,8 @@ public class GitAPITest {
         Exception exception = assertThrows(GitException.class, () -> {
             testGitClient.rebase().setUpstream(defaultBranchName).execute();
         });
-        assertThat(exception.getMessage(), anyOf(containsString("Failed to rebase main"),
-                                                 containsString("Could not rebase main")));
+        assertThat(exception.getMessage(), anyOf(containsString("Failed to rebase " + defaultBranchName),
+                                                 containsString("Could not rebase " + defaultBranchName)));
         assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
         Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
         assertTrue("Workspace is not clean", status.isClean());
