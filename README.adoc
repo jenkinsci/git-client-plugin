@@ -141,7 +141,6 @@ security:
     sshHostKeyVerificationStrategy:
       manuallyProvidedKeyVerificationStrategy:
         approvedHostKeys: |-
-          git.assembla.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN+whKLd9tzS4IIbZD7rCgly2LNxlvxef4JvwSaL/YZ7
           github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
           gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
 ----
