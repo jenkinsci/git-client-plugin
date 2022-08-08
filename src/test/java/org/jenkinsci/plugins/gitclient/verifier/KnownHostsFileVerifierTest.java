@@ -51,6 +51,7 @@ public class KnownHostsFileVerifierTest {
             jGitConnection.connect(verifier);
         });
         assertThat(exception.getMessage(), is("There was a problem while connecting to bitbucket.org:22"));
+
     }
 
     @Test
