@@ -8,14 +8,13 @@ import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -30,13 +29,9 @@ public class KnownHostsFileVerifierTest {
     @Rule
     public TemporaryFolder testFolder = TemporaryFolder.builder().assureDeletion().build();
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     private File fakeKnownHosts;
 
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
-
 
     @Before
     public void assignVerifiers() throws IOException {
@@ -52,8 +47,10 @@ public class KnownHostsFileVerifierTest {
         JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
 
         // Should throw exception because hostkey for 'bitbucket.org:22' is not in known_hosts file
-        expectedException.expectMessage("There was a problem while connecting to bitbucket.org:22");
-        jGitConnection.connect(verifier);
+        Exception exception = assertThrows(IOException.class, () -> {
+            jGitConnection.connect(verifier);
+        });
+        assertThat(exception.getMessage(), is("There was a problem while connecting to bitbucket.org:22"));
     }
 
     @Test
