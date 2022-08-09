@@ -373,35 +373,6 @@
           </links>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <extensions>true</extensions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.spotbugs</groupId>
-        <artifactId>spotbugs-maven-plugin</artifactId>
-        <dependencies>
-          <dependency>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs</artifactId>
-            <version>4.7.1</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <forkCount>0.8C</forkCount>
-          <reuseForks>true</reuseForks>
-          <systemProperties>
-            <property>
-              <name>surefire.profile</name>
-              <value>${project.activeProfiles[0].id}</value>
-            </property>
-          </systemProperties>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
