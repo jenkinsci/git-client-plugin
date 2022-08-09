@@ -132,7 +132,7 @@ Users of those operating systems have the following options:
 === Configuration as Code Sample
 
 The link:https://plugins.jenkins.io/configuration-as-code/[configuration as code plugin] can define the SSH host key verification strategy.
-The ""Manually provided keys" host key verification strategy might be configured like this:
+The "Manually provided keys" host key verification strategy might be configured like this:
 
 [source,yaml]
 ----
