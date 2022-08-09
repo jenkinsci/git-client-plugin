@@ -56,28 +56,32 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
+
         // Should not fail because hostkey for 'github.com:22' is in known_hosts
         jGitConnection.connect(verifier);
     }
 
     @Test
     public void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2",
                 "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=");
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
+
         // Should not fail because hostkey for 'github.com:22' is in known_hosts with algorithm 'ecdsa-sha2-nistp256
         jGitConnection.connect(verifier);
     }

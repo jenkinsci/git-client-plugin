@@ -38,14 +38,15 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenFirstConnection() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         File file = new File(testFolder.getRoot() + "path/to/file");
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
 
         // Should not fail because first connection and create a file
         jGitConnection.connect(verifier);
@@ -55,9 +56,6 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenSecondConnectionWithEqualKeys() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         // |1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= is github.com:22
         String hostKeyEntry = "|1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
@@ -65,6 +63,10 @@ public class AcceptFirstConnectionVerifierTest {
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
 
         // Should connect and do not add new line because keys are equal
         jGitConnection.connect(verifier);
@@ -74,15 +76,16 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenHostnameWithoutPort() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String hostKeyEntry = "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
 
         // Should connect and do not add new line because keys are equal
         jGitConnection.connect(verifier);
@@ -92,9 +95,6 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenSecondConnectionWhenNotDefaultAlgorithm() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String fileContent = "github.com,140.82.121.4"
                 + " ecdsa-sha2-nistp256"
                 + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
@@ -103,6 +103,10 @@ public class AcceptFirstConnectionVerifierTest {
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
 
         // Should connect and do not add new line because keys are equal
         jGitConnection.connect(verifier);
@@ -121,6 +125,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
+
         Exception exception = assertThrows(IOException.class, () -> {
             jGitConnection.connect(verifier);
         });
@@ -129,9 +137,6 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenConnectionWithAnotherHost() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String bitbucketFileContent = "|1|HnmPCP38pBhCY0NUtBXSraOg9pM=|L6YZ9asEeb2xplTDEThGOxRq7ZY="
                 + " ssh-rsa"
                 + " AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==";
@@ -142,6 +147,10 @@ public class AcceptFirstConnectionVerifierTest {
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
+
         // Should connect and add new line because a new key
         jGitConnection.connect(verifier);
         List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
@@ -151,9 +160,6 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenHostnamePortProvided() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String fileContent = "|1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M=" //github.com:59666
                 + " ssh-ed25519"
                 + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
@@ -162,6 +168,10 @@ public class AcceptFirstConnectionVerifierTest {
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
         JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
+        if (isKubernetesCI()) {
+            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
+        }
 
         // Should connect and add new line because a new key
         jGitConnection.connect(verifier);
