@@ -92,6 +92,6 @@ public class KnownHostsFileVerifierTest {
     private boolean isKubernetesCI() {
         String kubernetesPort = System.getenv("KUBERNETES_PORT");
         String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null && kubernetesPort.isEmpty() && buildURL != null && buildURL.startsWith("https://ci.jenkins.io/");
+        return kubernetesPort != null && !kubernetesPort.isEmpty() && buildURL != null && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }
