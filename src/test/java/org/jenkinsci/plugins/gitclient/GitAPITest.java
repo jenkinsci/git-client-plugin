@@ -28,6 +28,7 @@ import org.jvnet.hudson.test.Issue;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -53,8 +54,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Git API Tests, eventual replacement for GitAPITestCase,
- * Implemented in JUnit 4.
+ * Git API tests implemented in JUnit 4.
  */
 
 @RunWith(Parameterized.class)
@@ -248,11 +248,15 @@ public class GitAPITest {
         testGitClient.deleteBranch("test");
         String branches = workspace.launchCommand("git", "branch", "-l");
         assertFalse("deleted test branch still present", branches.contains("test"));
-        try {
+
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteBranch("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete branch test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteBranch("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete branch test"));
         }
     }
 
@@ -265,11 +269,14 @@ public class GitAPITest {
         String tags = workspace.launchCommand("git", "tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another"));
-        try {
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteTag("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete tag test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteTag("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete tag test"));
         }
     }
 
@@ -594,27 +601,27 @@ public class GitAPITest {
         workspace.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
         assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit2, testGitClient.revParse("tag1"));
-        try {
+        if (testGitClient instanceof CliGitAPIImpl) {
+            // Modern CLI git should throw exception pushing a change to existing tag
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
             testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
-            /* JGit does not throw exception updating existing tag - ugh */
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
         }
 
-        try {
-            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+        if (testGitClient instanceof CliGitAPIImpl) {
+            /* CliGit throws exception updating existing tag */
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
             /* JGit does not throw exception updating existing tag - ugh */
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
+            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
         }
+
         testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(true).execute();
 
         /* Add tag to working repo without pushing it to the bare
@@ -1041,13 +1048,10 @@ public class GitAPITest {
         assertEquals("Fast-forward merge failed. Default branch and branch1 should be the same but aren't.", workspace.head(), branch1);
 
         // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
-        try {
+        assertThrows(GitException.class, () -> {
             testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
-            fail("Exception not thrown: the fast-forward only mode should have failed");
-        } catch (GitException ge) {
-            // expected
-            assertEquals("Fast-forward merge abort failed. Default branch and branch1 should still be the same as the merge was aborted.",workspace.head(),branch1);
-        }
+        });
+        assertEquals("Fast-forward merge abort failed. Default branch and branch1 should still be the same as the merge was aborted.", workspace.head(), branch1);
     }
 
     @Test
@@ -1276,20 +1280,20 @@ public class GitAPITest {
 
         // Rebase feature commit onto default branch
         testGitClient.checkout().ref("feature1").execute();
-        try {
+        Exception exception = assertThrows(GitException.class, () -> {
             testGitClient.rebase().setUpstream(defaultBranchName).execute();
-            fail("Rebase did not throw expected GitException");
-        } catch (GitException ge) {
-            assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
-            Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
-            assertTrue("Workspace is not clean", status.isClean());
-            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
-            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
-            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
-            assertTrue("Workspace has modified files", status.getModified().isEmpty());
-            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
-            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
-        }
+        });
+        assertThat(exception.getMessage(), anyOf(containsString("Failed to rebase " + defaultBranchName),
+                                                 containsString("Could not rebase " + defaultBranchName)));
+        assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+        Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+        assertTrue("Workspace is not clean", status.isClean());
+        assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+        assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+        assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+        assertTrue("Workspace has modified files", status.getModified().isEmpty());
+        assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+        assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
     }
 
     /**

@@ -395,7 +395,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             } catch (CheckoutConflictException e) {
                 closeRepo(repo); /* Ready to reuse repo */
                 // "git checkout -f" seems to overwrite local untracked files but git CheckoutCommand doesn't.
-                // see the test case GitAPITestCase.test_localCheckoutConflict. so in this case we manually
+                // see the test case GitAPITest.testLocalCheckoutConflict. so in this case we manually
                 // clean up the conflicts and try it again
 
                 if (retried)

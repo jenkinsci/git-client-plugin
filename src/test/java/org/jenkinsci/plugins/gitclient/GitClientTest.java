@@ -127,11 +127,11 @@ public class GitClientTest {
         } else {
             cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
         }
-        CLI_GIT_REPORTS_DETACHED_SHA1 = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_REPORTS_DETACHED_SHA1 = true; // Included in CLI git 1.8.0 and later
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
-        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
+        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = true; // Included in CLI git 1.8.0 and later
 
         boolean gitLFSExists;
         boolean gitSparseCheckoutWithLFS;
@@ -957,7 +957,7 @@ public class GitClientTest {
 
     /**
      * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link GitAPITestCase#test_branchContainingRemote()}
+     * This is essentially a stripped down version of {@link GitAPITestUpdate#testBranchContainingRemote()}
      * @throws Exception on exceptions occur
      */
     @Test
