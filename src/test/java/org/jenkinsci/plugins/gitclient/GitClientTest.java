@@ -3155,7 +3155,27 @@ public class GitClientTest {
         assertEquals(multiPackIndexFile.length,1); // multi-pack-index file is found.
 
     }
-    private boolean isWindows() {
+
+    @Test
+    public void test_gc() throws Exception {
+        if (gitImplName.startsWith("jgit"))
+            return;
+
+        File objectsPath = new File(repoRoot.getAbsolutePath(),".git/objects");
+        commitOneFile();
+        commitOneFile();
+        commitOneFile();
+
+        assertTrue(objectsPath.listFiles().length > 2); // Initially loose objects are present
+        gitClient.maintenance("gc");
+
+        File packFilesPath = new File(repoRoot.getAbsolutePath(),".git/objects/pack");
+        assertEquals(packFilesPath.listFiles().length,2); // pack file and idx file
+        assertEquals(objectsPath.listFiles().length,2); // The repository is garbage collected.
+
+    }
+
+        private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
 }
