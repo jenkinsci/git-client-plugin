@@ -234,7 +234,7 @@ public class GitClientTest {
         assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
     }
 
-    @AfterClass
+//    @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
         try {
             FileUtils.deleteDirectory(mirrorParent);
@@ -3093,6 +3093,25 @@ public class GitClientTest {
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), cliGitAPIImplTest.listener, cliGitAPIImplTest.env);
         Set<Branch> branches = git.parseBranches(gitBranchOutput);
         assertEquals("\"git branch -a -v --no-abbrev\" output correctly parsed", 2, branches.size());
+    }
+
+    @Test
+    public void test_commit_graph() throws Exception{
+        if(gitImplName.startsWith("jgit"))
+            return;
+
+        File commitGraphPath = new File(repoRoot.getAbsolutePath(),".git/objects/info/commit-graphs");
+        commitOneFile();
+        commitOneFile();
+        commitOneFile();
+
+        // No commit-graph folder is present.
+        assertFalse(commitGraphPath.isDirectory());
+
+        gitClient.maintenance("commit-graph");
+
+        // Commit Graph folder is created.
+        assertTrue(commitGraphPath.isDirectory());
     }
 
     private boolean isWindows() {
