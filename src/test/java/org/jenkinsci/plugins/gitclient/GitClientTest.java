@@ -3136,6 +3136,25 @@ public class GitClientTest {
 
         assertEquals(objectsPath.listFiles().length,2); // All loose objects are removed.
     }
+
+    @Test
+    public void test_incremental_repack() throws Exception{
+        if(gitImplName.startsWith("jgit"))
+            return;
+
+        File packFilesPath = new File(repoRoot.getAbsolutePath(),".git/objects/pack");
+        commitOneFile();
+        commitOneFile();
+        commitOneFile();
+
+        String[] multiPackIndexFile = packFilesPath.list((dir1, name) -> name.equals("multi-pack-index")); // No multi-pack-index file is present.
+        assertEquals(multiPackIndexFile.length,0);
+        gitClient.maintenance("gc"); // Need to create pack files to use incremental repack
+        gitClient.maintenance("incremental-repack");  // Running incremental repack on the pack-files
+        multiPackIndexFile = packFilesPath.list((dir1, name) -> name.equals("multi-pack-index"));
+        assertEquals(multiPackIndexFile.length,1); // multi-pack-index file is found.
+
+    }
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
