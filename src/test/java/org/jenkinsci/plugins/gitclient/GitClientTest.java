@@ -3114,6 +3114,28 @@ public class GitClientTest {
         assertTrue(commitGraphPath.isDirectory());
     }
 
+    @Test
+    public void test_loose_objects() throws Exception{
+        if(gitImplName.startsWith("jgit"))
+            return;
+
+        File objectsPath = new File(repoRoot.getAbsolutePath(),".git/objects");
+        commitOneFile();
+        commitOneFile();
+        commitOneFile();
+
+        assertTrue(objectsPath.listFiles().length > 2); // Initially loose objects are present
+        gitClient.maintenance("loose-objects");
+
+        // Need to check if loose-object pack file is present or not.
+        File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(),"pack");
+        String[] looseObjectPackFile = looseObjectPackFilePath.list((dir1, name) -> name.startsWith("loose-"));
+        assertEquals(looseObjectPackFile.length,2); // Contains loose-${hash}.pack and loose-${hash}.idx
+
+        gitClient.maintenance("loose-objects"); // Cleaning the loose-object present in the repo.
+
+        assertEquals(objectsPath.listFiles().length,2); // All loose objects are removed.
+    }
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
