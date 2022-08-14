@@ -3175,7 +3175,22 @@ public class GitClientTest {
 
     }
 
-        private boolean isWindows() {
+    @Test
+    public void test_prefetch() throws Exception {
+        // Todo need to test prefetch
+        // How to get data from remote??? Is srcRepo a remote
+//        File refsPath = new File(repoRoot.getAbsolutePath(),".git/refs");
+//
+//        assertFalse(new File(refsPath.getAbsolutePath(),"prefetch").exists());
+//        gitClient.setRemoteUrl("origin","https://github.com/jenkinsci/git-client-plugin.git");
+//        gitClient.maintenance("prefetch");
+//        String[] args = new File(refsPath.getAbsolutePath()).list();
+//        System.out.println(new File(refsPath.getAbsolutePath(),"prefetch").exists());
+//        prefetchDir = refsPath.list((dir1,name) -> name.equals("prefetch"));
+//        System.out.println(prefetchDir.length);
+    }
+
+    private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
 }
