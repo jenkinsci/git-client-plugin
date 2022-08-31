@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 
@@ -3096,7 +3098,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_commit_graph() throws Exception{
+    public void test_commit_graph_maintenance() throws Exception{
         if(gitImplName.startsWith("jgit"))
             return;
 
@@ -3115,7 +3117,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_loose_objects() throws Exception{
+    public void test_loose_objects_maintenance() throws Exception{
         if(gitImplName.startsWith("jgit"))
             return;
 
@@ -3138,7 +3140,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_incremental_repack() throws Exception{
+    public void test_incremental_repack_maintenance() throws Exception{
         if(gitImplName.startsWith("jgit"))
             return;
 
@@ -3157,7 +3159,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_gc() throws Exception {
+    public void test_gc_maintenance() throws Exception {
         if (gitImplName.startsWith("jgit"))
             return;
 
@@ -3176,7 +3178,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_prefetch() throws Exception {
+    public void test_prefetch_maintenance() throws Exception {
         // Todo need to test prefetch
         // How to get data from remote??? Is srcRepo a remote
 //        File refsPath = new File(repoRoot.getAbsolutePath(),".git/refs");
@@ -3188,6 +3190,32 @@ public class GitClientTest {
 //        System.out.println(new File(refsPath.getAbsolutePath(),"prefetch").exists());
 //        prefetchDir = refsPath.list((dir1,name) -> name.equals("prefetch"));
 //        System.out.println(prefetchDir.length);
+    }
+
+    @Test
+    public void test_legacy_maintenance() throws IOException, InterruptedException {
+        if (gitImplName.startsWith("jgit"))
+            return;
+
+        String [] maintenanceTasks = {"gc","incremental-repack","commit-graph","prefetch","loose-objects"};
+        boolean[] results = {true,true,true,false,false};
+
+        for(int i=0;i<maintenanceTasks.length;i++){
+            Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
+            LogHandler handler = new LogHandler();
+            handler.setLevel(Level.ALL);
+            logger.setUseParentHandlers(false);
+            logger.addHandler(handler);
+            logger.setLevel(Level.ALL);
+            TaskListener listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+
+            repoRoot = tempFolder.newFolder();
+            gitClient = Git.with(listener, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
+
+            gitClient.maintenanceLegacy(maintenanceTasks[i]);
+            int index = i;
+            assertEquals(results[i],handler.getMessages().stream().anyMatch(log -> log.equals(maintenanceTasks[index] + " executed successfully.")));
+        }
     }
 
     private boolean isWindows() {

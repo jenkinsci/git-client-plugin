@@ -3897,10 +3897,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 launchCommand("multi-pack-index", "repack");
             } else {
                 listener.getLogger().println("Invalid maintenance task " + task + ".");
+                return;
             }
 
             long stopTime = System.currentTimeMillis();
-            listener.getLogger().println(task + " executed successfully. Execution time: " + (stopTime - startTime) + "ms.");
+            listener.getLogger().println(task + " executed successfully.");
+            listener.getLogger().println("Execution time: " + (stopTime - startTime) + "ms.");
         }catch(GitException e){
             listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
         }
