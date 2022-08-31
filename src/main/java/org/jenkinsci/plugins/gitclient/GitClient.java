@@ -1003,7 +1003,19 @@ public interface GitClient {
      */
     Set<GitObject> getTags() throws GitException, InterruptedException;
 
+    /**
+     * Executes git maintenance commands for git version >=2.30
+     *
+     * @param task a {@link java.lang.String} object. i.e (prefetch/gc/commit-graph/incremental-repack/loose-objects)
+     * @throws InterruptedException if underlying git operation fails.
+     */
     void maintenance(String task) throws InterruptedException;
 
+    /**
+     * Executes git maintenance commands for git version <2.30
+     *
+     * @param task a {@link java.lang.String} object. i.e (gc/commit-graph/incremental-repack)
+     * @throws InterruptedException if underlying git operation fails.
+     */
     void maintenanceLegacy(String task) throws InterruptedException;
 }

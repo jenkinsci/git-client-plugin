@@ -3866,6 +3866,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return tags;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void maintenance(String task) throws InterruptedException {
         try {
@@ -3879,6 +3880,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /** {@inheritDoc} */
     @Override
     public void maintenanceLegacy(String task) throws InterruptedException{
 
