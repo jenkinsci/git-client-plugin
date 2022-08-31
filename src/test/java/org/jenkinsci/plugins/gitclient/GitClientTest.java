@@ -236,7 +236,7 @@ public class GitClientTest {
         assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
     }
 
-//    @AfterClass
+    @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
         try {
             FileUtils.deleteDirectory(mirrorParent);
@@ -3179,17 +3179,46 @@ public class GitClientTest {
 
     @Test
     public void test_prefetch_maintenance() throws Exception {
-        // Todo need to test prefetch
-        // How to get data from remote??? Is srcRepo a remote
-//        File refsPath = new File(repoRoot.getAbsolutePath(),".git/refs");
-//
-//        assertFalse(new File(refsPath.getAbsolutePath(),"prefetch").exists());
-//        gitClient.setRemoteUrl("origin","https://github.com/jenkinsci/git-client-plugin.git");
-//        gitClient.maintenance("prefetch");
-//        String[] args = new File(refsPath.getAbsolutePath()).list();
-//        System.out.println(new File(refsPath.getAbsolutePath(),"prefetch").exists());
-//        prefetchDir = refsPath.list((dir1,name) -> name.equals("prefetch"));
-//        System.out.println(prefetchDir.length);
+        if (gitImplName.startsWith("jgit"))
+            return;
+
+        // Can improve the test by checking prefetch dir in .git/refs directory.
+        Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
+        LogHandler handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        TaskListener listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+
+        gitClient = Git.with(listener, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
+
+        gitClient.maintenance("prefetch");
+
+        String msg = "Maintenance task prefetch executed successfully on " + repoRoot.getName() + ".";
+        assertTrue(handler.getMessages().stream().anyMatch(log -> log.equals(msg)));
+    }
+
+    @Test
+    public void test_error_throw_by_maintenance() throws InterruptedException, IOException {
+        if (gitImplName.startsWith("jgit"))
+            return;
+
+
+        Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
+        LogHandler handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        TaskListener listener = new hudson.util.LogTaskListener(logger, Level.ALL);
+
+        gitClient = Git.with(listener, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
+
+        gitClient.maintenance("hello-world");
+
+        String msg = "Error executing hello-world maintenance task,msg: Command \"git maintenance run --task=hello-world\" returned status code 129:";
+        assertTrue(handler.getMessages().stream().anyMatch(log -> log.contains(msg)));
     }
 
     @Test
