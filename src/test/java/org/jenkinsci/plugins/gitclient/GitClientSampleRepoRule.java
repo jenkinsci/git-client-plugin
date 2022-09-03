@@ -60,7 +60,7 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
         git("commit", "--message=init");
     }
 
-    public final boolean mkdirs(String rel) throws IOException {
+    public boolean mkdirs(String rel) {
         return new File(this.sampleRepo, rel).mkdirs();
     }
 
@@ -119,4 +119,3 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
                 (gitMajor == neededMajor && gitMinor == neededMinor  && gitPatch >= neededPatch);
     }
 }
-

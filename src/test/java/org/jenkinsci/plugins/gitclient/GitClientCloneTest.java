@@ -76,13 +76,13 @@ public class GitClientCloneTest {
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
-        /* Allow 3-7 second delay before priming the cache */
+        /* Allow 3-8 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
-        /* 3-7 second delay is small compared to execution time of this test */
+        /* 3-8 second delay is small compared to execution time of this test */
         Random random = new Random();
-        Thread.sleep((3 + random.nextInt(5)) * 1000L); // Wait 3-7 seconds before priming the cache
+        Thread.sleep(3000L + random.nextInt(5000)); // Wait 3-8 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeCloneTest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitClientCloneTest").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
@@ -138,9 +138,8 @@ public class GitClientCloneTest {
         cmd.execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedabeefabeadeddeedaccede";
-        GitException gitException = assertThrows(GitException.class, () -> {
-            testGitClient.checkout().ref(SHA1).branch("master").execute();
-        });
+        GitException gitException = assertThrows(GitException.class,
+                () -> testGitClient.checkout().ref(SHA1).branch("master").execute());
         assertThat(gitException.getMessage(), is("Could not checkout master with start point " + SHA1));
     }
 
@@ -169,7 +168,7 @@ public class GitClientCloneTest {
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
-        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
+        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl;
         assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
         String shallow = ".git" + File.separator + "shallow";
         if (hasShallowCloneSupport) {
@@ -187,7 +186,7 @@ public class GitClientCloneTest {
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
         /* JGit does not support shallow clone */
-        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
+        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl;
         assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
         String shallow = ".git" + File.separator + "shallow";
         if (hasShallowCloneSupport) {
@@ -226,7 +225,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_reference() throws Exception, IOException, InterruptedException {
+    public void test_clone_reference() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror()).execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
@@ -323,6 +322,35 @@ public class GitClientCloneTest {
         assertThat("Origin URL after add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
     }
 
+    @Test
+    public void test_clone_default_timeout_logging() throws Exception {
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
+    }
+
+    @Test
+    public void test_clone_timeout_logging() throws Exception {
+        int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
+        testGitClient.clone_().url(workspace.localMirror()).timeout(largerTimeout).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", largerTimeout);
+    }
+
+    @Test
+    public void test_max_timeout_logging() throws Exception {
+        int maxTimeout = JGitAPIImpl.MAX_TIMEOUT;
+        testGitClient.clone_().url(workspace.localMirror()).timeout(maxTimeout).repositoryName("origin").execute();
+        assertTimeout(testGitClient, "fetch", maxTimeout);
+    }
+
+    @Test
+    public void test_clone_huge_timeout_logging() throws Exception {
+        int hugeTimeout = JGitAPIImpl.MAX_TIMEOUT + 1 + random.nextInt(Integer.MAX_VALUE - 1 - JGitAPIImpl.MAX_TIMEOUT);
+        testGitClient.clone_().url(workspace.localMirror()).timeout(hugeTimeout).repositoryName("origin").execute();
+        /* Expect fallback value from JGit for this nonsense timeout value */
+        int expectedValue = gitImplName.startsWith("jgit") ? JGitAPIImpl.MAX_TIMEOUT : hugeTimeout;
+        assertTimeout(testGitClient, "fetch", expectedValue);
+    }
+
     private void assertAlternatesFileExists() {
         final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
@@ -361,7 +389,7 @@ public class GitClientCloneTest {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -398,4 +426,33 @@ public class GitClientCloneTest {
         assertThat("Updated URL", remotes, containsString(workspace.localMirror()));
     }
 
+    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
+        List<String> messages = handler.getMessages();
+        List<String> candidateMessages = new ArrayList<>();
+        List<String> matchedMessages = new ArrayList<>();
+        final String messageRegEx = ".*\\b" + candidateSubstring + "\\b.*"; // the expected substring
+        final String timeoutRegEx = messageRegEx + expectedValue + "\\b.*"; // # timeout=<value>
+        for (String message : messages) {
+            if (message.matches(messageRegEx)) {
+                candidateMessages.add(message);
+            }
+            if (message.matches(timeoutRegEx)) {
+                matchedMessages.add(message);
+            }
+        }
+        assertThat("No messages logged", messages, is(not(empty())));
+        if (expectToFindMatch) {
+            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
+        } else {
+            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+        }
+    }
+
+    private void assertTimeout(GitClient gitClient, final String substring, int expectedTimeout) {
+        String implName = gitImplName.equals("git") ? "git" : "JGit";
+        String operationName = implName + " " + substring;
+        assertLoggedMessage(gitClient, operationName, " [#] timeout=" + expectedTimeout, true);
+    }
 }

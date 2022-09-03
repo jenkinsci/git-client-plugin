@@ -4,6 +4,8 @@ import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 import java.io.IOException;
 import java.net.Proxy;
 import java.net.URL;
@@ -22,10 +24,12 @@ public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnection
         return innerCreate(url, null);
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Included in interface definition")
     public SmartCredentialsProvider getCredentialsProvider() {
         return credentialsProvider;
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in interface definition")
     public void setCredentialsProvider(final SmartCredentialsProvider credentialsProvider) {
         this.credentialsProvider = credentialsProvider;
     }

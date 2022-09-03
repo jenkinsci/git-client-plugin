@@ -1,0 +1,11 @@
+skip-changelog:
+  - any: [ '.github/**/*', '.gitignore', 'Jenkinsfile', '.mvn/**/*', '.settings/*', '.sonarcloud.properties' ]
+
+dependencies:
+  - any: [ 'pom.xml', '.mvn/*' ]
+
+documentation:
+  - any: [ '*.adoc', '**/*.html', '**/*.png', 'LICENSE' ]
+
+test:
+  - any: [ ' src/test/**/*' ]

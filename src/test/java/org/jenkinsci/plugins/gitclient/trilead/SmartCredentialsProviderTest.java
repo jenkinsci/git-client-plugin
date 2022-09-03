@@ -34,7 +34,7 @@ public class SmartCredentialsProviderTest {
     private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
     public SmartCredentialsProviderTest() throws URISyntaxException {
-        String baseUri = "git://github.com/jenkinsci/git-client-plugin";
+        String baseUri = "git://example.com/someone/somewhere";
         gitURI = new URIish(baseUri + ".git");
         gitURISlash = new URIish(baseUri + ".git/");
         gitURIShort = new URIish(baseUri);
@@ -222,10 +222,7 @@ public class SmartCredentialsProviderTest {
         StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         provider.addCredentials(gitURI.toString(), credentials);
         assertThrows(UnsupportedCredentialItem.class,
-                     () ->
-                     {
-                         provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType);
-                     });
+                     () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
     }
 
     @Test

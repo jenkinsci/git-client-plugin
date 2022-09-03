@@ -71,9 +71,9 @@ public class WorkspaceWithRepo {
      * Populate the local mirror of the git client plugin repository.
      * Returns path to the local mirror directory.
      *
-     * @return path to the local mirrror directory
+     * @return path to the local mirror directory
      * @throws IOException on I/O error
-     * @throws InterruptedException when execption is interrupted
+     * @throws InterruptedException when exception is interrupted
      */
     String localMirror() throws IOException, InterruptedException {
         File base = new File(".").getAbsoluteFile();
