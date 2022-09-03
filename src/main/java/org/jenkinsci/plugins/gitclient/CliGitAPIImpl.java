@@ -8,7 +8,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Functions;
 import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -3870,43 +3869,48 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public void maintenance(String task) throws InterruptedException {
         try {
-            listener.getLogger().println("Initialize executing " + task + " on " + workspace.getName());
+            listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
             long startTime = System.currentTimeMillis();
-            launchCommand("maintenance", "run", "--task=" + task);
+            if (isAtLeastVersion(2, 30, 0, 0)) {
+                launchCommand("maintenance", "run", "--task=" + task);
+            } else {
+                switch(task) {
+                    case "gc":
+                        launchCommand("gc", "--auto");
+                        break;
+                    case "commit-graph":
+                        if (isAtLeastVersion(2, 19, 0, 0)) {
+                            launchCommand("commit-graph", "write");
+                        } else {
+                            listener.getLogger().println("Error executing commit-graph maintenance task");
+                        }
+                        break;
+                    case "incremental-repack":
+                        if (isAtLeastVersion(2, 25, 0, 0)) {
+                            launchCommand("multi-pack-index", "expire");
+                            launchCommand("multi-pack-index", "repack");
+                        } else {
+                            listener.getLogger().println("Error executing incremental-repack maintenance task");
+                        }
+                        break;
+                    default:
+                        String message = "Invalid legacy git maintenance task " + task + ".";
+                        listener.getLogger().println(message);
+                        throw new GitException(message);
+                }
+            }
             long endTime = System.currentTimeMillis();
-            listener.getLogger().println("Maintenance task " + task + " executed successfully on " + workspace.getName() + ".");
-            listener.getLogger().println("Execution time: " + (endTime- startTime) + "ms.");
-        }catch(GitException e){
-            listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
+            listener.getLogger().println("Git maintenance task " + task + " finished on " + workspace.getName() + " in " + (endTime - startTime) + "ms.");
+        } catch (GitException e) {
+            listener.getLogger().println("Error executing " + task + " maintenance task");
+            listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
         }
     }
 
     /** {@inheritDoc} */
     @Override
-    public void maintenanceLegacy(String task) throws InterruptedException{
-
-        try {
-
-            listener.getLogger().println("Initialize executing " + task + " on " + workspace.getName());
-            long startTime = System.currentTimeMillis();
-            if (task.equals("gc")) {
-                launchCommand("gc", "--auto");
-            } else if (task.equals("commit-graph")) {
-                launchCommand("commit-graph", "write");
-            } else if (task.equals("incremental-repack")) {
-                launchCommand("multi-pack-index", "expire");
-                launchCommand("multi-pack-index", "repack");
-            } else {
-                listener.getLogger().println("Invalid maintenance task " + task + ".");
-                return;
-            }
-
-            long stopTime = System.currentTimeMillis();
-            listener.getLogger().println(task + " executed successfully.");
-            listener.getLogger().println("Execution time: " + (stopTime - startTime) + "ms.");
-        }catch(GitException e){
-            listener.getLogger().println("Error executing " + task + " maintenance task,msg: " + e.getMessage());
-        }
+    public void maintenanceLegacy(String task) throws InterruptedException {
+        maintenance(task);
     }
 
 }
