@@ -48,7 +48,16 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
             w.git.submoduleUpdate().execute();
             fail("Did not throw expected submodule update exception");
         } catch (GitException e) {
-            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" returned status code 1"));
+            /* Depending on git program implementation/version, the string can be either short:
+             *    Command "git submodule update modules/ntp" returned status code 1"
+             * or detailed:
+             *    Command "git submodule update modules/ntp" executed in workdir "C:\Users\..." returned status code 1
+             * so we catch below the two common parts separately.
+             * NOTE: git codebase itself goes to great extents to forbid their
+             * own unit-testing code from relying on emitted text messages.
+             */
+            assertThat(e.getMessage(), containsString("Command \"git submodule update modules/ntp\" "));
+            assertThat(e.getMessage(), containsString(" returned status code 1"));
         }
     }
 
@@ -71,11 +80,6 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
     @Test
     public void testTrackingSubmoduleBranches() throws Exception {
-        if (!((CliGitAPIImpl) w.git).isAtLeastVersion(1, 8, 2, 0)) {
-            setTimeoutVisibleInCurrentTest(false);
-            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
-            return;
-        }
         w.init(); // empty repository
 
         // create a new GIT repo.
@@ -140,10 +144,6 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
     @Test
     public void testTrackingSubmodule() throws Exception {
-        if (!((CliGitAPIImpl) w.git).isAtLeastVersion(1, 8, 2, 0)) {
-            System.err.println("git must be at least 1.8.2 to do tracking submodules.");
-            return;
-        }
         w.init(); // empty repository
 
         // create a new GIT repo.
@@ -192,12 +192,6 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
     @Test
     public void testSparseCheckout() throws Exception {
-        /* Sparse checkout was added in git 1.7.0, but the checkout -f syntax
-         * required by the plugin implementation does not work in git 1.7.1.
-         */
-        if (!w.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            return;
-        }
         // Create a repo for cloning purpose
         w.init();
         w.commitEmpty("init");

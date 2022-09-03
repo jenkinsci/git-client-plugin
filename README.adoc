@@ -106,7 +106,7 @@ Windows Credentials Manager does not work as well for batch processing in the gi
 It is best to disable Windows Credentials Manager when installing Git on Jenkins agents running Windows.
 
 [#ssh-host-key-verification]
-== Ssh Host Key verification
+== SSH Host Key verification
 
 Git Client plugin provides various options to verify the SSH keys presented by Git repository host servers.
 By default, Git Client plugin uses the "Known hosts file" strategy to verify all host keys using the known_hosts file.
@@ -128,6 +128,24 @@ Users of those operating systems have the following options:
 * Switch the repository URL's in job definitions from ssh protocol to https protocol and provide a username / password credential for the clone instead of a private key credential
 * Use the "No verification" host key verification strategy (not recommended)
 ====
+
+=== Configuration as Code Sample
+
+The link:https://plugins.jenkins.io/configuration-as-code/[configuration as code plugin] can define the SSH host key verification strategy.
+The "Manually provided keys" host key verification strategy might be configured like this:
+
+[source,yaml]
+----
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy:
+      manuallyProvidedKeyVerificationStrategy:
+        approvedHostKeys: |-
+          github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+          gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
+----
+
+Other host key verification strategies can be configured from the user interface and then viewed with the "View Configuration" button in the configuration as code plugin page.
 
 [#bug-reports]
 == Bug Reports
