@@ -3872,6 +3872,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
             long startTime = System.currentTimeMillis();
             if (isAtLeastVersion(2, 30, 0, 0)) {
+                if(task.equals("prefetch")){
+                    try {
+                        launchCommand("ls-remote");
+                    }catch (GitException e){
+                        System.out.println("Error retrieving remotes.");
+                        return;
+                    }
+                }
                 launchCommand("maintenance", "run", "--task=" + task);
             } else {
                 switch(task) {
