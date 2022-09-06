@@ -2886,13 +2886,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void maintenance(String task) {
         listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
     }
-
-    @Override
-    public void maintenanceLegacy(String task) throws InterruptedException {
-        listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
-        return;
-    }
-
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;

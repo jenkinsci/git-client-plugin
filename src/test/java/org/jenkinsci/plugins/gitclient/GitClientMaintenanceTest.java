@@ -311,7 +311,7 @@ public class GitClientMaintenanceTest {
     }
 
     @Test
-    public void test_error_repored_by_invalid_maintenance_task() throws Exception {
+    public void test_error_reported_by_invalid_maintenance_task() throws Exception {
         if (gitImplName.startsWith("jgit")) {
             return;
         }
@@ -348,7 +348,7 @@ public class GitClientMaintenanceTest {
             String maintenanceTask = entry.getKey();
             boolean expectedResult = entry.getValue();
 
-            gitClient.maintenanceLegacy(maintenanceTask);
+            gitClient.maintenance(maintenanceTask);
 
             String expectedMessage = expectedResult
                     ? "Git maintenance task " + maintenanceTask + " finished"

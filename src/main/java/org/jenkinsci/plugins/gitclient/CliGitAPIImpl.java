@@ -3914,11 +3914,4 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
         }
     }
-
-    /** {@inheritDoc} */
-    @Override
-    public void maintenanceLegacy(String task) throws InterruptedException {
-        maintenance(task);
-    }
-
 }
