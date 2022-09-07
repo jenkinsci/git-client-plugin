@@ -3867,19 +3867,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    public void maintenance(String task) throws InterruptedException {
+    public boolean maintenance(String task) throws InterruptedException {
+        boolean isExecuted = true;
         try {
             listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
             long startTime = System.currentTimeMillis();
             if (isAtLeastVersion(2, 30, 0, 0)) {
-                if(task.equals("prefetch")){
-                    try {
-                        launchCommand("ls-remote");
-                    }catch (GitException e){
-                        System.out.println("Error retrieving remotes.");
-                        return;
-                    }
-                }
+                // For prefetch, the command will throw an error for private repo if it has no access.
                 launchCommand("maintenance", "run", "--task=" + task);
             } else {
                 switch(task) {
@@ -3910,8 +3904,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             long endTime = System.currentTimeMillis();
             listener.getLogger().println("Git maintenance task " + task + " finished on " + workspace.getName() + " in " + (endTime - startTime) + "ms.");
         } catch (GitException e) {
+            isExecuted = false;
             listener.getLogger().println("Error executing " + task + " maintenance task");
             listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
         }
+        return isExecuted;
     }
 }

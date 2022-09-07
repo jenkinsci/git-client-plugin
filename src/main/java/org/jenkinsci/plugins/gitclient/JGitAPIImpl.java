@@ -2883,8 +2883,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Override
-    public void maintenance(String task) {
+    public boolean maintenance(String task) {
         listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
+        return false;
     }
     private static class FileRepositoryImpl extends FileRepository {
 

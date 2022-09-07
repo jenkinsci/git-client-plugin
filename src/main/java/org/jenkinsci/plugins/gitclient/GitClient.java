@@ -1007,7 +1007,8 @@ public interface GitClient {
      * Executes git maintenance commands based on the git version.
      *
      * @param task a {@link java.lang.String} object. i.e (prefetch/gc/commit-graph/incremental-repack/loose-objects)
+     * @return Boolean if maintenance has been executed or not.
      * @throws InterruptedException if underlying git operation fails.
      */
-    void maintenance(String task) throws InterruptedException;
+    boolean maintenance(String task) throws InterruptedException;
 }
