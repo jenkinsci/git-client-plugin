@@ -227,10 +227,11 @@ public class GitClientMaintenanceTest {
 
         commitSeveralFiles();
 
-        gitClient.maintenance("commit-graph");
+        boolean isExecuted = gitClient.maintenance("commit-graph");
 
         String expectedMessage = "Git maintenance task commit-graph finished";
         assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(isExecuted,is(true));
     }
 
     @Test
@@ -252,7 +253,7 @@ public class GitClientMaintenanceTest {
                 looseObjects.length, is(greaterThan(2))); // Initially loose objects are present
 
         // Run the loose objects maintenance task, will create loose-objects pack file
-        gitClient.maintenance("loose-objects");
+        boolean isExecuted = gitClient.maintenance("loose-objects");
 
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
@@ -260,11 +261,16 @@ public class GitClientMaintenanceTest {
         assertThat("Missing expected loose objects in git dir, only found " + Arrays.stream(looseObjectPackFile).collect(Collectors.joining(",")),
                 looseObjectPackFile.length, is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
 
+        // Check if maintenance has executed successfully.
+        assertThat(isExecuted,is(true));
+
         // Clean the loose objects present in the repo.
-        gitClient.maintenance("loose-objects");
+        isExecuted = gitClient.maintenance("loose-objects");
 
         // Assert that loose objects are no longer in the objects directory
         assertThat(objectsPath.list(), is(arrayContainingInAnyOrder(expectedDirList)));
+
+        assertThat(isExecuted,is(true));
     }
 
     @Test
@@ -276,8 +282,10 @@ public class GitClientMaintenanceTest {
         commitSeveralFiles();
 
         // Run incremental repack maintenance task
-        gitClient.maintenance("gc"); // Need to create pack files to use incremental repack
-        gitClient.maintenance("incremental-repack");  // Running incremental repack on the pack-files
+        boolean isExecuted = gitClient.maintenance("gc"); // Need to create pack files to use incremental repack
+        assertThat(isExecuted,is(true));
+        isExecuted = gitClient.maintenance("incremental-repack");  // Running incremental repack on the pack-files
+        assertThat(isExecuted,is(true));
 
         String expectedMessage = "Git maintenance task incremental-repack finished";
         assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
@@ -291,10 +299,11 @@ public class GitClientMaintenanceTest {
 
         commitSeveralFiles();
 
-        gitClient.maintenance("gc");
+        boolean isExecuted = gitClient.maintenance("gc");
 
         String expectedMessage = "Git maintenance task gc finished";
         assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(isExecuted,is(true));
     }
 
     @Test
@@ -303,11 +312,12 @@ public class GitClientMaintenanceTest {
             return;
         }
 
-        gitClient.maintenance("prefetch");
+        boolean isExecuted = gitClient.maintenance("prefetch");
 
         // Can improve the test by checking prefetch dir in .git/refs directory.
         String expectedMessage = "Git maintenance task prefetch finished";
         assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(isExecuted,is(true));
     }
 
     @Test
@@ -316,10 +326,11 @@ public class GitClientMaintenanceTest {
             return;
         }
 
-        gitClient.maintenance("invalid-maintenance-task");
+        boolean isExecuted = gitClient.maintenance("invalid-maintenance-task");
 
         String expectedMessage = "Error executing invalid-maintenance-task maintenance task";
         assertThat(handler.getMessages(), hasItem(expectedMessage));
+        assertThat(isExecuted,is(false));
     }
 
     private Map<String, Boolean> getExpectedTaskResults() throws Exception {
@@ -348,12 +359,13 @@ public class GitClientMaintenanceTest {
             String maintenanceTask = entry.getKey();
             boolean expectedResult = entry.getValue();
 
-            gitClient.maintenance(maintenanceTask);
+            boolean isExecuted = gitClient.maintenance(maintenanceTask);
 
             String expectedMessage = expectedResult
                     ? "Git maintenance task " + maintenanceTask + " finished"
                     : "Error executing " + maintenanceTask + " maintenance task";
             assertThat(handler.getMessages(), hasItem(containsString(expectedMessage)));
+            assertThat(isExecuted,is(expectedResult));
         }
     }
 }
