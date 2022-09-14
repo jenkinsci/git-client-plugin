@@ -2953,6 +2953,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return peeledTags;
     }
 
+    @Override
+    public boolean maintenance(String task) {
+        listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
+        return false;
+    }
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;

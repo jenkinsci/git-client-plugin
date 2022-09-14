@@ -936,4 +936,9 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     public Set<GitObject> getTags() throws GitException, InterruptedException {
         return proxy.getTags();
     }
+
+    @Override
+    public boolean maintenance(String task) {
+        return false;
+    }
 }

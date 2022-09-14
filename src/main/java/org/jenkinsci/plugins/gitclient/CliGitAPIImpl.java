@@ -8,7 +8,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Functions;
 import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -973,15 +972,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 /* See JENKINS-45228 */
                 /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
-                String defaultRemote = null;
+                String repoUrl = null;
                 try {
-                    defaultRemote = getDefaultRemote();
+                    String defaultRemote = getDefaultRemote();
+                    if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                        repoUrl = getRemoteUrl(defaultRemote);
+                    }
                 } catch (GitException e) {
-                    /* Nothing to do, just keeping defaultRemote = null */
+                    /* Nothing to do, just keeping repoUrl = null */
                 }
 
-                if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                    String repoUrl = getRemoteUrl(defaultRemote);
+                if (repoUrl != null) {
                     StandardCredentials cred = credentials.get(repoUrl);
                     if (cred == null) cred = defaultCredentials;
                     launchCommandWithCredentials(args, workspace, cred, repoUrl);
@@ -3978,4 +3979,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return tags;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean maintenance(String task) throws InterruptedException {
+        boolean isExecuted = true;
+        try {
+            listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
+            long startTime = System.currentTimeMillis();
+            if (isAtLeastVersion(2, 30, 0, 0)) {
+                // For prefetch, the command will throw an error for private repo if it has no access.
+                launchCommand("maintenance", "run", "--task=" + task);
+            } else {
+                switch(task) {
+                    case "gc":
+                        launchCommand("gc", "--auto");
+                        break;
+                    case "commit-graph":
+                        if (isAtLeastVersion(2, 19, 0, 0)) {
+                            launchCommand("commit-graph", "write");
+                        } else {
+                            listener.getLogger().println("Error executing commit-graph maintenance task");
+                        }
+                        break;
+                    case "incremental-repack":
+                        if (isAtLeastVersion(2, 25, 0, 0)) {
+                            launchCommand("multi-pack-index", "expire");
+                            launchCommand("multi-pack-index", "repack");
+                        } else {
+                            listener.getLogger().println("Error executing incremental-repack maintenance task");
+                        }
+                        break;
+                    default:
+                        String message = "Invalid legacy git maintenance task " + task + ".";
+                        listener.getLogger().println(message);
+                        throw new GitException(message);
+                }
+            }
+            long endTime = System.currentTimeMillis();
+            listener.getLogger().println("Git maintenance task " + task + " finished on " + workspace.getName() + " in " + (endTime - startTime) + "ms.");
+        } catch (GitException e) {
+            isExecuted = false;
+            listener.getLogger().println("Error executing " + task + " maintenance task");
+            listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
+        }
+        return isExecuted;
+    }
 }
