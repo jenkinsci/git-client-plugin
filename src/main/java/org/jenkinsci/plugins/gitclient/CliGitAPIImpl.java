@@ -946,15 +946,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 /* See JENKINS-45228 */
                 /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
-                String defaultRemote = null;
+                String repoUrl = null;
                 try {
-                    defaultRemote = getDefaultRemote();
+                    String defaultRemote = getDefaultRemote();
+                    if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                        repoUrl = getRemoteUrl(defaultRemote);
+                    }
                 } catch (GitException e) {
-                    /* Nothing to do, just keeping defaultRemote = null */
+                    /* Nothing to do, just keeping repoUrl = null */
                 }
 
-                if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                    String repoUrl = getRemoteUrl(defaultRemote);
+                if (repoUrl != null) {
                     StandardCredentials cred = credentials.get(repoUrl);
                     if (cred == null) cred = defaultCredentials;
                     launchCommandWithCredentials(args, workspace, cred, repoUrl);
