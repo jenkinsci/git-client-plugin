@@ -29,6 +29,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.rules.ErrorCollector;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -60,6 +61,10 @@ public class GitClientMaintenanceTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Rule
+    public ErrorCollector collector = new ErrorCollector();
+
     private File repoRoot = null;
     private LogHandler handler;
 
@@ -134,9 +139,9 @@ public class GitClientMaintenanceTest {
         TaskListener listener = newListener(handler);
         gitClient = Git.with(listener, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
         File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
-        assertThat("Premature " + gitDir, gitDir, is(not(anExistingDirectory())));
+        collector.checkThat("Premature " + gitDir, gitDir, is(not(anExistingDirectory())));
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
-        assertThat("Missing " + gitDir, gitDir, is(anExistingDirectory()));
+        collector.checkThat("Missing " + gitDir, gitDir, is(anExistingDirectory()));
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík");
@@ -150,12 +155,10 @@ public class GitClientMaintenanceTest {
                 looseObjectsSupported = false;
             }
             if (!cliGitClient.isAtLeastVersion(2, 19, 0, 0)) {
-                incrementalRepackSupported = false;
                 prefetchSupported = false;
                 looseObjectsSupported = false;
             }
             if (!cliGitClient.isAtLeastVersion(2, 25, 0, 0)) {
-                incrementalRepackSupported = false;
                 prefetchSupported = false;
                 looseObjectsSupported = false;
             }
@@ -202,7 +205,7 @@ public class GitClientMaintenanceTest {
         gitClient.add(path);
         gitClient.commit(commitMessage);
         List<ObjectId> headList = gitClient.revList(Constants.HEAD);
-        assertThat(headList.size(), is(greaterThan(0)));
+        collector.checkThat(headList.size(), is(greaterThan(0)));
         return headList.get(0);
     }
 
@@ -219,19 +222,13 @@ public class GitClientMaintenanceTest {
         }
     }
 
-    @Test
-    public void test_commit_graph_maintenance() throws Exception {
-        if (!commitGraphSupported) {
-            return;
+    private String getExpectedMessage(String maintenanceTask, boolean expectedResult) {
+        if (gitImplName.startsWith("jgit")) {
+            return "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.";
         }
-
-        commitSeveralFiles();
-
-        boolean isExecuted = gitClient.maintenance("commit-graph");
-
-        String expectedMessage = "Git maintenance task commit-graph finished";
-        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
-        assertThat(isExecuted,is(true));
+        return expectedResult
+            ? "Git maintenance task " + maintenanceTask + " finished"
+            : "Error executing " + maintenanceTask + " maintenance task";
     }
 
     @Test
@@ -248,124 +245,90 @@ public class GitClientMaintenanceTest {
 
         // Assert loose objects are in the objects directory
         String looseObjects[] = objectsPath.list();
-        assertThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
-        assertThat("Missing expected loose objects in objects dir, only found " + Arrays.stream(looseObjects).collect(Collectors.joining(",")),
+        collector.checkThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
+        collector.checkThat("Missing expected loose objects in objects dir, only found " + Arrays.stream(looseObjects).collect(Collectors.joining(",")),
                 looseObjects.length, is(greaterThan(2))); // Initially loose objects are present
 
         // Run the loose objects maintenance task, will create loose-objects pack file
         boolean isExecuted = gitClient.maintenance("loose-objects");
+        // Check if maintenance has executed successfully.
+        collector.checkThat(isExecuted, is(true));
 
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
         String[] looseObjectPackFile = looseObjectPackFilePath.list((dir1, name) -> name.startsWith("loose-"));
-        assertThat("Missing expected loose objects in git dir, only found " + Arrays.stream(looseObjectPackFile).collect(Collectors.joining(",")),
+        collector.checkThat("Missing expected loose objects in git dir, only found " + Arrays.stream(looseObjectPackFile).collect(Collectors.joining(",")),
                 looseObjectPackFile.length, is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
-
-        // Check if maintenance has executed successfully.
-        assertThat(isExecuted,is(true));
 
         // Clean the loose objects present in the repo.
         isExecuted = gitClient.maintenance("loose-objects");
 
         // Assert that loose objects are no longer in the objects directory
-        assertThat(objectsPath.list(), is(arrayContainingInAnyOrder(expectedDirList)));
+        collector.checkThat(objectsPath.list(), is(arrayContainingInAnyOrder(expectedDirList)));
 
-        assertThat(isExecuted,is(true));
+        collector.checkThat(isExecuted, is(true));
     }
 
     @Test
     public void test_incremental_repack_maintenance() throws Exception {
-        if (!incrementalRepackSupported) {
-            return;
-        }
+        String maintenanceTask = "incremental-repack";
 
         commitSeveralFiles();
 
         // Run incremental repack maintenance task
-        boolean isExecuted = gitClient.maintenance("gc"); // Need to create pack files to use incremental repack
-        assertThat(isExecuted,is(true));
-        isExecuted = gitClient.maintenance("incremental-repack");  // Running incremental repack on the pack-files
-        assertThat(isExecuted,is(true));
+        // Need to create pack files to use incremental repack
+        collector.checkThat(gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenace
 
-        String expectedMessage = "Git maintenance task incremental-repack finished";
-        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        collector.checkThat(gitClient.maintenance(maintenanceTask), is(incrementalRepackSupported));
+
+        String expectedMessage = getExpectedMessage(maintenanceTask, incrementalRepackSupported);
+        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+    }
+
+    @Test
+    public void test_commit_graph_maintenance() throws Exception {
+        String maintenanceTask = "commit-graph";
+
+        commitSeveralFiles();
+
+        collector.checkThat(gitClient.maintenance(maintenanceTask), is(commitGraphSupported));
+
+        String expectedMessage = getExpectedMessage(maintenanceTask, commitGraphSupported);
+        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
     public void test_gc_maintenance() throws Exception {
-        if (!garbageCollectionSupported) {
-            return;
-        }
+        String maintenanceTask = "gc";
 
         commitSeveralFiles();
 
-        boolean isExecuted = gitClient.maintenance("gc");
+        collector.checkThat(gitClient.maintenance("gc"), is(garbageCollectionSupported));
 
-        String expectedMessage = "Git maintenance task gc finished";
-        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
-        assertThat(isExecuted,is(true));
+        String expectedMessage = getExpectedMessage(maintenanceTask, garbageCollectionSupported);
+        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
     public void test_prefetch_maintenance() throws Exception {
-        if (!prefetchSupported) {
-            return;
-        }
+        String maintenanceTask = "prefetch";
 
-        boolean isExecuted = gitClient.maintenance("prefetch");
+        collector.checkThat(gitClient.maintenance("prefetch"), is(prefetchSupported));
 
-        // Can improve the test by checking prefetch dir in .git/refs directory.
-        String expectedMessage = "Git maintenance task prefetch finished";
-        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
-        assertThat(isExecuted,is(true));
+        String expectedMessage = getExpectedMessage(maintenanceTask, prefetchSupported);
+        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
     public void test_error_reported_by_invalid_maintenance_task() throws Exception {
-        if (gitImplName.startsWith("jgit")) {
-            return;
-        }
+        String maintenanceTask = "invalid-maintenance-task";
 
-        boolean isExecuted = gitClient.maintenance("invalid-maintenance-task");
+        // Should always fail to execute
+        collector.checkThat(gitClient.maintenance(maintenanceTask), is(false));
 
-        String expectedMessage = "Error executing invalid-maintenance-task maintenance task";
-        assertThat(handler.getMessages(), hasItem(expectedMessage));
-        assertThat(isExecuted,is(false));
-    }
-
-    private Map<String, Boolean> getExpectedTaskResults() throws Exception {
-        Map<String, Boolean> expectedTaskResults = new HashMap<>();
-        expectedTaskResults.put("gc", true);
-        expectedTaskResults.put("incremental-repack", incrementalRepackSupported);
-        expectedTaskResults.put("commit-graph", commitGraphSupported);
-        expectedTaskResults.put("prefetch", prefetchSupported);
-        expectedTaskResults.put("loose-objects", looseObjectsSupported);
-        return expectedTaskResults;
-    }
-
-    @Test
-    public void test_legacy_maintenance() throws Exception {
-        if (gitImplName.startsWith("jgit")) {
-            return;
-        }
-
-        commitSeveralFiles();
-        gitClient.maintenance("gc"); // Need to create pack files to use incremental repack
-        commitSeveralFiles();
-
-        Map<String, Boolean> expectedTaskResults = getExpectedTaskResults();
-
-        for (Map.Entry<String, Boolean> entry : expectedTaskResults.entrySet()) {
-            String maintenanceTask = entry.getKey();
-            boolean expectedResult = entry.getValue();
-
-            boolean isExecuted = gitClient.maintenance(maintenanceTask);
-
-            String expectedMessage = expectedResult
-                    ? "Git maintenance task " + maintenanceTask + " finished"
-                    : "Error executing " + maintenanceTask + " maintenance task";
-            assertThat(handler.getMessages(), hasItem(containsString(expectedMessage)));
-            assertThat(isExecuted,is(expectedResult));
-        }
+        String expectedMessage = gitImplName.startsWith("jgit")
+            ? "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks."
+            : "Error executing invalid-maintenance-task maintenance task";
+        collector.checkThat(handler.getMessages(), hasItem(expectedMessage));
     }
 }
