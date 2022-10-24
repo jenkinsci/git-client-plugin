@@ -47,6 +47,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 public abstract class GitAPITestUpdate {
 
@@ -513,6 +514,7 @@ public abstract class GitAPITestUpdate {
      *
      * @throws Exception on test failure
      */
+    @Ignore("TODO …/modules/firewall not found, peer files: ntp")
     @Test
     public void testSubmoduleCheckoutAndCleanTransitions() throws Exception {
         if (isWindows() || random.nextBoolean()) {
@@ -922,6 +924,7 @@ public abstract class GitAPITestUpdate {
         assertFixSubmoduleUrlsThrows();
     }
 
+    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
@@ -940,6 +943,7 @@ public abstract class GitAPITestUpdate {
         assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
 
+    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
