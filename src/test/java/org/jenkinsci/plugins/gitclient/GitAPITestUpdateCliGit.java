@@ -13,6 +13,7 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
+import org.junit.Ignore;
 
 public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
@@ -78,6 +79,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         assertFixSubmoduleUrlsThrows();
     }
 
+    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testTrackingSubmoduleBranches() throws Exception {
         w.init(); // empty repository
@@ -142,6 +144,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
+    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testTrackingSubmodule() throws Exception {
         w.init(); // empty repository
