@@ -63,7 +63,7 @@
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.332.4</jenkins.version>
+    <jenkins.version>2.346.3</jenkins.version>
     <jgit.version>5.13.1.202206130422-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.failOnError>true</spotbugs.failOnError>
@@ -74,8 +74,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.332.x</artifactId>
-        <version>1643.v1cffef51df73</version>
+        <artifactId>bom-2.346.x</artifactId>
+        <version>1654.vcb_69d035fa_20</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -359,7 +359,7 @@
           <failOnError>false</failOnError>
           <links>
             <link>https://docs.oracle.com/javase/8/docs/api/</link>
-	    <!-- JGit patch releases do not provide javadoc. Use javadoc from matching minor release -->
+            <!-- JGit patch releases do not provide javadoc. Use javadoc from matching minor release -->
             <link>https://download.eclipse.org/jgit/site/5.13.0.202109080827-r/org.eclipse.jgit/apidocs/</link>
           </links>
         </configuration>
