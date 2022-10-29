@@ -13,7 +13,6 @@ import java.util.UUID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 
 public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
@@ -79,7 +78,6 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         assertFixSubmoduleUrlsThrows();
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testTrackingSubmoduleBranches() throws Exception {
         w.init(); // empty repository
@@ -115,6 +113,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         String subFile3 = submodDir + File.separator + "file3";
 
         // Add new GIT repo to w, at the default branch
+        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
         w.git.addSubmodule(r.repoPath(), submodDir);
         w.git.submoduleInit();
         assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
@@ -144,7 +143,6 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testTrackingSubmodule() throws Exception {
         w.init(); // empty repository
@@ -158,6 +156,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         r.git.commit("submod-commit1");
 
         // Add new GIT repo to w
+        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
         String subModDir = "submod1-" + UUID.randomUUID();
         w.git.addSubmodule(r.repoPath(), subModDir);
         w.git.submoduleInit();

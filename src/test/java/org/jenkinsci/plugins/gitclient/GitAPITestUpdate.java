@@ -47,7 +47,6 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 
 public abstract class GitAPITestUpdate {
 
@@ -439,6 +438,58 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    private boolean fileProtocolIsAllowed = false;
+
+    /**
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always in the global git configuration for
+     * the current user.
+     *
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     *
+     * After the test completes, the setting is removed from the
+     * global git configuration of the current user.
+     *
+     * The setting must be applied to the global configuration of the
+     * current user or the affected tests will fail. It is unfortunate
+     * that the tests are modifying the global configuration of the
+     * current user, but it is more important that the tests be run
+     * than that we defend the git settings of git plugin developers
+     * from changes performed by the tests.
+     */
+    protected void allowFileProtocol() throws Exception {
+        w.launchCommand("git", "config", "--global", "protocol.file.allow", "always");
+        fileProtocolIsAllowed = true;
+    }
+
+    /**
+     * Removes the protocol.file.allow setting from the global git
+     * configuration of the current user.
+     */
+    @After
+    public void resetFileProtocol() throws Exception {
+        if (!fileProtocolIsAllowed) {
+            return;
+        }
+        fileProtocolIsAllowed = false;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int st = new Launcher.LocalLauncher(TaskListener.NULL).launch()
+                .pwd(".")
+                .cmds("git", "config", "--global", "--unset", "protocol.file.allow")
+                .envs(env)
+                .stdout(out)
+                .stderr(err)
+                .join();
+        assertThat("Failed to reset protocol.file.allow."
+                + " stdout was '" + out.toString() + "'."
+                + " stderr was '" + err.toString() + "'."
+                + " error code was " + st, st, is(0));
+    }
+
     private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception {
         ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
         assertNotNull(String.format("Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
@@ -514,7 +565,6 @@ public abstract class GitAPITestUpdate {
      *
      * @throws Exception on test failure
      */
-    @Ignore("TODO …/modules/firewall not found, peer files: ntp")
     @Test
     public void testSubmoduleCheckoutAndCleanTransitions() throws Exception {
         if (isWindows() || random.nextBoolean()) {
@@ -924,7 +974,6 @@ public abstract class GitAPITestUpdate {
         assertFixSubmoduleUrlsThrows();
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
@@ -943,7 +992,6 @@ public abstract class GitAPITestUpdate {
         assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
@@ -1908,6 +1956,7 @@ public abstract class GitAPITestUpdate {
 
         repositoryWorkingArea.commitEmpty("init");
 
+        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
         repositoryWorkingArea.cgit().add(".");
         repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
         repositoryWorkingArea.cgit().commit("submodule");

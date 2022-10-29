@@ -1,8 +1,8 @@
-
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -10,6 +10,7 @@ import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
@@ -56,10 +57,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -256,6 +257,63 @@ public class GitClientTest {
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+    }
+
+    private boolean fileProtocolIsAllowed = false;
+
+    /**
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always in the global git configuration for
+     * the current user.
+     *
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     *
+     * After the test completes, the setting is removed from the
+     * global git configuration of the current user.
+     *
+     * The setting must be applied to the global configuration of the
+     * current user or the affected tests will fail. It is unfortunate
+     * that the tests are modifying the global configuration of the
+     * current user, but it is more important that the tests be run
+     * than that we defend the git settings of git plugin developers
+     * from changes performed by the tests.
+     */
+    private void allowFileProtocol() throws Exception {
+        CliGitAPIImpl cliGitClient;
+        if (this.srcGitClient instanceof CliGitAPIImpl) {
+            cliGitClient = (CliGitAPIImpl) this.srcGitClient;
+        } else {
+            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
+        }
+        cliGitClient.launchCommand("config", "--global", "protocol.file.allow", "always");
+        fileProtocolIsAllowed = true;
+    }
+
+    /**
+     * Removes the protocol.file.allow setting from the global git
+     * configuration of the current user.
+     */
+    @After
+    public void resetFileProtocol() throws Exception {
+        if (!fileProtocolIsAllowed) {
+            return;
+        }
+        fileProtocolIsAllowed = false;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        int st = new Launcher.LocalLauncher(TaskListener.NULL).launch()
+                .pwd(".")
+                .cmds("git", "config", "--global", "--unset", "protocol.file.allow")
+                .stdout(out)
+                .stderr(err)
+                .join();
+        assertThat("Failed to reset protocol.file.allow."
+                + " stdout was '" + out.toString() + "'."
+                + " stderr was '" + err.toString() + "'."
+                + " error code was " + st, st, is(0));
     }
 
     private static final String COMMITTED_ONE_TEXT_FILE = "Committed one text file";
@@ -2091,7 +2149,6 @@ public class GitClientTest {
         }
     }
 
-    @Ignore("TODO flake: Missing file …/modules/firewall/LICENSE (path:7)")
     // @Issue("JENKINS-8053")  // outdated submodules not removed by checkout
     @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
@@ -2109,6 +2166,7 @@ public class GitClientTest {
             expectedDirs = expectedDirsWithoutRename;
         }
         String remote = fetchUpstream(branch);
+        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(branch, remote + "/" + branch);
         } else {
@@ -2230,7 +2288,6 @@ public class GitClientTest {
         }
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Issue("JENKINS-37419") // Submodules from other branches are used in checkout
     @Test
     public void testSubmodulesUsedFromOtherBranches() throws Exception {
@@ -2244,6 +2301,7 @@ public class GitClientTest {
         String upstream = fetchUpstream(oldBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(gitClient);
+        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
@@ -2303,7 +2361,6 @@ public class GitClientTest {
         assertSubmoduleStatus(gitClient, true, "firewall", "ntp", "sshkeys"); // newDirName module won't be there
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Issue("JENKINS-46054")
     @Test
     public void testSubmoduleUrlEndsWithDotUrl() throws Exception {
@@ -2313,6 +2370,7 @@ public class GitClientTest {
         assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
         GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
         urlRepoClient.init();
+        allowFileProtocol();
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
