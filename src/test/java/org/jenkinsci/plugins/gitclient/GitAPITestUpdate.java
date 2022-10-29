@@ -82,7 +82,7 @@ public abstract class GitAPITestUpdate {
 
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
+            assertSubstringTimeout("git -c protocol.file.allow=always submodule update", submoduleUpdateTimeout);
         }
     }
 
@@ -258,10 +258,13 @@ public abstract class GitAPITestUpdate {
         }
 
         /**
-         * Creates a CGit implementation. Sometimes we need this for testing
+         * Returns a CGit implementation. Sometimes we need this for testing
          * JGit impl.
          */
         CliGitAPIImpl cgit() throws Exception {
+            if (git instanceof CliGitAPIImpl) {
+                return (CliGitAPIImpl) git;
+            }
             return (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
         }
 
@@ -438,56 +441,21 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    private boolean fileProtocolIsAllowed = false;
-
     /**
      * Allow local git clones to use the file:// protocol by setting
-     * protocol.file.allow=always in the global git configuration for
-     * the current user.
+     * protocol.file.allow=always on the git command line of the
+     * GitClient argument that is passed.
      *
      * Command line git 2.38.1 and patches to earlier versions
      * disallow local git submodule cloning with the file:// protocol.
      * The change resolves a security issue but that security issue is
      * not a threat to these tests.
-     *
-     * After the test completes, the setting is removed from the
-     * global git configuration of the current user.
-     *
-     * The setting must be applied to the global configuration of the
-     * current user or the affected tests will fail. It is unfortunate
-     * that the tests are modifying the global configuration of the
-     * current user, but it is more important that the tests be run
-     * than that we defend the git settings of git plugin developers
-     * from changes performed by the tests.
      */
-    protected void allowFileProtocol() throws Exception {
-        w.launchCommand("git", "config", "--global", "protocol.file.allow", "always");
-        fileProtocolIsAllowed = true;
-    }
-
-    /**
-     * Removes the protocol.file.allow setting from the global git
-     * configuration of the current user.
-     */
-    @After
-    public void resetFileProtocol() throws Exception {
-        if (!fileProtocolIsAllowed) {
-            return;
+    public void allowFileProtocol(GitClient client) throws Exception {
+        if (client instanceof CliGitAPIImpl) {
+            CliGitAPIImpl cliGit = (CliGitAPIImpl) client;
+            cliGit.setExtraGitCommandArguments(Arrays.asList("-c", "protocol.file.allow=always"));
         }
-        fileProtocolIsAllowed = false;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ByteArrayOutputStream err = new ByteArrayOutputStream();
-        int st = new Launcher.LocalLauncher(TaskListener.NULL).launch()
-                .pwd(".")
-                .cmds("git", "config", "--global", "--unset", "protocol.file.allow")
-                .envs(env)
-                .stdout(out)
-                .stderr(err)
-                .join();
-        assertThat("Failed to reset protocol.file.allow."
-                + " stdout was '" + out.toString() + "'."
-                + " stderr was '" + err.toString() + "'."
-                + " error code was " + st, st, is(0));
     }
 
     private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception {
@@ -977,6 +945,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        allowFileProtocol(w.git);
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -995,6 +964,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        allowFileProtocol(w.git);
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -1956,7 +1926,7 @@ public abstract class GitAPITestUpdate {
 
         repositoryWorkingArea.commitEmpty("init");
 
-        allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
+        repositoryWorkingArea.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
         repositoryWorkingArea.cgit().add(".");
         repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
         repositoryWorkingArea.cgit().commit("submodule");
