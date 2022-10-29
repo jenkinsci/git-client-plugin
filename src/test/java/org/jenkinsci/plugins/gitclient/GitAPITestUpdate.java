@@ -257,6 +257,8 @@ public abstract class GitAPITestUpdate {
             return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
+        private CliGitAPIImpl cachedCliGitAPIImpl = null;
+
         /**
          * Returns a CGit implementation. Sometimes we need this for testing
          * JGit impl.
@@ -265,7 +267,11 @@ public abstract class GitAPITestUpdate {
             if (git instanceof CliGitAPIImpl) {
                 return (CliGitAPIImpl) git;
             }
-            return (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            if (cachedCliGitAPIImpl != null) {
+                return cachedCliGitAPIImpl;
+            }
+            cachedCliGitAPIImpl = (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            return cachedCliGitAPIImpl;
         }
 
         /**
