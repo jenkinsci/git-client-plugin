@@ -2123,7 +2123,7 @@ public class GitClientTest {
             expectedDirs = expectedDirsWithoutRename;
         }
         String remote = fetchUpstream(branch);
-        allowFileProtocol(gitClient); // CLI git 2.38.1 requires protocol.file.allow=always
+        allowFileProtocol(gitClient);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(branch, remote + "/" + branch);
         } else {
@@ -2258,7 +2258,7 @@ public class GitClientTest {
         String upstream = fetchUpstream(oldBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(gitClient);
-        allowFileProtocol(gitClient); // CLI git 2.38.1 requires protocol.file.allow=always
+        allowFileProtocol(gitClient);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
@@ -2327,7 +2327,7 @@ public class GitClientTest {
         assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
         GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
         urlRepoClient.init();
-        allowFileProtocol(urlRepoClient); // CLI git 2.38.1 requires protocol.file.allow=always
+        allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
@@ -2349,7 +2349,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(repoHasSubmoduleClient);
-        allowFileProtocol(repoHasSubmoduleClient); // CLI git 2.38.1 requires protocol.file.allow=always
+        allowFileProtocol(repoHasSubmoduleClient);
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
@@ -2376,7 +2376,7 @@ public class GitClientTest {
         assertTrue("Failed to create clone dir", cloneDir.mkdir());
         GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
         cloneGitClient.init();
-        allowFileProtocol(cloneGitClient); // CLI git 2.38.1 requires protocol.file.allow=always
+        allowFileProtocol(cloneGitClient);
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
         cloneGitClient.checkoutBranch(defaultBranchName, "origin/" + defaultBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */

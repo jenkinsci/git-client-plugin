@@ -946,7 +946,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
-        w.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -965,7 +965,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
-        w.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -1927,7 +1927,7 @@ public abstract class GitAPITestUpdate {
 
         repositoryWorkingArea.commitEmpty("init");
 
-        repositoryWorkingArea.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always
+        repositoryWorkingArea.cgit().allowFileProtocol();
         repositoryWorkingArea.cgit().add(".");
         repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
         repositoryWorkingArea.cgit().commit("submodule");
