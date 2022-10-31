@@ -260,7 +260,7 @@ public class GitClientTest {
      * Allow local git clones to use the file:// protocol by setting
      * protocol.file.allow=always on the git command line of the
      * GitClient argument that is passed.
-     *
+     * <p>
      * Command line git 2.38.1 and patches to earlier versions
      * disallow local git submodule cloning with the file:// protocol.
      * The change resolves a security issue but that security issue is
