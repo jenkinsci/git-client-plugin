@@ -257,6 +257,18 @@ public abstract class GitAPITestUpdate {
             return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
+        /* Remember the CliGitAPIImpl for this WorkingArea so that the
+         * allowFileProtocol() changes are "sticky" for the life of
+         * the WorkingArea.
+         *
+         * Some of the submodule checkout tests use command line git
+         * to create a submodule test repository.  When running the
+         * test with JGit, the command line git configuration of the
+         * WorkingArea needs to be preserved for the life of the
+         * WorkingArea object so that command line git uses the
+         * correct arguments when creating the submodule test
+         * repository.
+         */
         private CliGitAPIImpl cachedCliGitAPIImpl = null;
 
         /**
