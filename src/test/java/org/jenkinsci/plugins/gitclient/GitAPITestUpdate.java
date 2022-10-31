@@ -47,7 +47,6 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 
 public abstract class GitAPITestUpdate {
 
@@ -83,7 +82,7 @@ public abstract class GitAPITestUpdate {
 
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
+            assertSubstringTimeout("git -c protocol.file.allow=always submodule update", submoduleUpdateTimeout);
         }
     }
 
@@ -258,12 +257,33 @@ public abstract class GitAPITestUpdate {
             return FileUtils.readFileToString(file(path), "UTF-8");
         }
 
+        /* Remember the CliGitAPIImpl for this WorkingArea so that the
+         * allowFileProtocol() changes are "sticky" for the life of
+         * the WorkingArea.
+         *
+         * Some of the submodule checkout tests use command line git
+         * to create a submodule test repository.  When running the
+         * test with JGit, the command line git configuration of the
+         * WorkingArea needs to be preserved for the life of the
+         * WorkingArea object so that command line git uses the
+         * correct arguments when creating the submodule test
+         * repository.
+         */
+        private CliGitAPIImpl cachedCliGitAPIImpl = null;
+
         /**
-         * Creates a CGit implementation. Sometimes we need this for testing
+         * Returns a CGit implementation. Sometimes we need this for testing
          * JGit impl.
          */
         CliGitAPIImpl cgit() throws Exception {
-            return (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            if (git instanceof CliGitAPIImpl) {
+                return (CliGitAPIImpl) git;
+            }
+            if (cachedCliGitAPIImpl != null) {
+                return cachedCliGitAPIImpl;
+            }
+            cachedCliGitAPIImpl = (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            return cachedCliGitAPIImpl;
         }
 
         /**
@@ -514,7 +534,6 @@ public abstract class GitAPITestUpdate {
      *
      * @throws Exception on test failure
      */
-    @Ignore("TODO …/modules/firewall not found, peer files: ntp")
     @Test
     public void testSubmoduleCheckoutAndCleanTransitions() throws Exception {
         if (isWindows() || random.nextBoolean()) {
@@ -924,10 +943,10 @@ public abstract class GitAPITestUpdate {
         assertFixSubmoduleUrlsThrows();
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -943,10 +962,10 @@ public abstract class GitAPITestUpdate {
         assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
     }
 
-    @Ignore("TODO see comment in CliGitAPIImplTest.setupGitAPI")
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -1908,6 +1927,7 @@ public abstract class GitAPITestUpdate {
 
         repositoryWorkingArea.commitEmpty("init");
 
+        repositoryWorkingArea.cgit().allowFileProtocol();
         repositoryWorkingArea.cgit().add(".");
         repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
         repositoryWorkingArea.cgit().commit("submodule");

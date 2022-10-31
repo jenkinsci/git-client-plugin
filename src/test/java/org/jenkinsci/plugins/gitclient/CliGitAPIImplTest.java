@@ -14,10 +14,6 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
         GitClient client = Git.with(listener, env).in(ws).using("git").getClient();
-        /* TODO does not help:
-        // https://github.blog/2022-10-18-git-security-vulnerabilities-announced/#cve-2022-39253
-        new CliGitCommand(client).run("config", "protocol.file.allow", "always");
-        */
         return client;
     }
 
