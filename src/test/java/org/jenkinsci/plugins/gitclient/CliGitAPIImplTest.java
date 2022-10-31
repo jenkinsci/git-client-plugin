@@ -13,22 +13,13 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
 
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
-        setCliGitDefaults();
-        return Git.with(listener, env).in(ws).using("git").getClient();
+        GitClient client = Git.with(listener, env).in(ws).using("git").getClient();
+        return client;
     }
 
     @Override
     protected boolean hasWorkingGetRemoteSymbolicReferences() {
         return ((CliGitAPIImpl)(w.git)).isAtLeastVersion(2,8,0,0);
-    }
-
-    private static boolean cliGitDefaultsSet = false;
-
-    private void setCliGitDefaults() {
-        if (!cliGitDefaultsSet) {
-            CliGitCommand gitCmd = new CliGitCommand(null);
-        }
-        cliGitDefaultsSet = true;
     }
 
     public static class VersionTest {
