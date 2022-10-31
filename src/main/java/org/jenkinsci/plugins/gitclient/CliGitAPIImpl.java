@@ -2321,7 +2321,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
      */
     @NonNull
-    private List<String> extraGitCommandArguments = new ArrayList<>();
+    private List<String> extraGitCommandArguments = Collections.<String>emptyList();
 
     /* package protected for use in tests.
      *
