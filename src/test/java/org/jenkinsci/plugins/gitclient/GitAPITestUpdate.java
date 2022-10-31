@@ -447,23 +447,6 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    /**
-     * Allow local git clones to use the file:// protocol by setting
-     * protocol.file.allow=always on the git command line of the
-     * GitClient argument that is passed.
-     *
-     * Command line git 2.38.1 and patches to earlier versions
-     * disallow local git submodule cloning with the file:// protocol.
-     * The change resolves a security issue but that security issue is
-     * not a threat to these tests.
-     */
-    public void allowFileProtocol(GitClient client) throws Exception {
-        if (client instanceof CliGitAPIImpl) {
-            CliGitAPIImpl cliGit = (CliGitAPIImpl) client;
-            cliGit.setExtraGitCommandArguments(Arrays.asList("-c", "protocol.file.allow=always"));
-        }
-    }
-
     private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception {
         ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
         assertNotNull(String.format("Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
@@ -951,7 +934,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
-        allowFileProtocol(w.git); // CLI git 2.38.1 requires protocol.file.allow=always for this test
+        w.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -970,7 +953,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
-        allowFileProtocol(w.git); // CLI git 2.38.1 requires protocol.file.allow=always for this test
+        w.cgit().allowFileProtocol(); // CLI git 2.38.1 requires protocol.file.allow=always for this test
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
