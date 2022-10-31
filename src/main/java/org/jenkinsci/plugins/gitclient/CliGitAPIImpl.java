@@ -2685,7 +2685,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         /* Prepend extra git command line arguments if any */
         if (!extraGitCommandArguments.isEmpty()) {
-            args = args.prepend(extraGitCommandArguments.stream().toArray(String[]::new));
+            args = args.prepend(extraGitCommandArguments.toArray(new String[0]));
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
