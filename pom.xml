@@ -276,6 +276,7 @@
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
+      <version>3.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
