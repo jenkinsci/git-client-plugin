@@ -224,13 +224,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.13.2</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-      <version>2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -376,4 +369,19 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <profiles>
+    <profile>
+      <id>continuous-integration</id>
+      <activation>
+        <property>
+          <name>env.CI</name>
+        </property>
+      </activation>
+      <properties>
+        <!-- Fork a JVM per core for automated tests on continuous integration servers -->
+        <forkCount>1C</forkCount>
+      </properties>
+    </profile>
+  </profiles>
 </project>
