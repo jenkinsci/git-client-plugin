@@ -9,7 +9,6 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 
@@ -101,7 +100,6 @@ public class Git implements Serializable {
      * @param repository {@link hudson.FilePath} of the git repository.
      * @return a {@link org.jenkinsci.plugins.gitclient.Git} object for repository access
      */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Published API in Git")
     public Git in(FilePath repository) {
         this.repository = repository;
         return this;
@@ -144,8 +142,6 @@ public class Git implements Serializable {
         return git;
     }
 
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
-                        justification = "Intentionally throws RuntimeException")
     private GitClient initMockClient(String className, String exe, EnvVars env, File f, TaskListener listener) throws RuntimeException {
         try {
             final Class<?> it = Class.forName(className);

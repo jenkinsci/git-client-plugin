@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient.cgit;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -64,8 +62,6 @@ public class GitCommandsExecutor {
      * It calls {@code MoreExecutors#sameThreadExecutor} or falls back to {@code MoreExecutors#newDirectExecutorService}
      * for compatibility with newer (> 18.0) versions of guava.
      */
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
-                        justification = "Intentionally throws runtime exception")
     private static ExecutorService newExecutorService() {
         try {
             try {
