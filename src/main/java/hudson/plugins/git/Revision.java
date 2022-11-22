@@ -42,7 +42,6 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param sha1 a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param branches a {@link java.util.Collection} object.
      */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Consumers are known to modify returned value of branches")
     public Revision(ObjectId sha1, Collection<Branch> branches) {
         /* Defensive copy to avoid caller modifying ObjectId after calling this constructor */
         this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
@@ -87,7 +86,6 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @return a {@link java.util.Collection} object.
      */
     @Exported(name = "branch")
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Consumers are known to modify returned value")
     public Collection<Branch> getBranches() {
         return branches;
     }
@@ -97,7 +95,6 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @param branches a {@link java.util.Collection} object.
      */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Consumers are known to modify returned value")
     public void setBranches(Collection<Branch> branches) {
         this.branches = branches;
     }
@@ -124,8 +121,6 @@ public class Revision implements java.io.Serializable, Cloneable {
     }
 
     @Override
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
-                        justification = "Intentionally throws runtime exception")
     public Revision clone() {
         Revision clone;
         try {
