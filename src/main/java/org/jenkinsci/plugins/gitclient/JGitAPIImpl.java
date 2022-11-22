@@ -325,7 +325,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /* Separate method call for benefit of spotbugs */
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Spotbugs and Netbeans disagree on potential for null")
     private void closeRepo(Repository repo) {
         if (repo != null) {
             repo.close();
@@ -790,7 +789,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return getRemoteReferences(url, null, true, false);
     }
@@ -908,7 +906,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try (Repository repo = openDummyRepository();
              final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
@@ -1844,7 +1841,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
@@ -2821,9 +2817,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    @SuppressFBWarnings(value = { "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
-                                  "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE" },
-                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
         try (Repository repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
@@ -2841,9 +2836,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
-    @SuppressFBWarnings(value = {"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
-                                 "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"},
-                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     private StoredConfig getConfig(String GIT_DIR) throws GitException {
         try (Repository repo = isBlank(GIT_DIR) ? getRepository() : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
             return repo.getConfig();
