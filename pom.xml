@@ -58,11 +58,11 @@
   </scm>
 
   <properties>
-    <revision>3.13.1</revision>
+    <revision>4.0.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <jenkins.version>2.361.4</jenkins.version>
-    <jgit.version>5.13.1.202206130422-r</jgit.version>
+    <jgit.version>6.4.0.202211300538-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>High</spotbugs.threshold>
   </properties>
