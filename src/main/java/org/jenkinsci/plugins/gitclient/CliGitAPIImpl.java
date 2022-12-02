@@ -3122,9 +3122,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
                     for (String path : paths) {
-                        writer.println(path);
+                        writer.println(environment.expand(path));
                     }
                 } catch (IOException e) {
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
