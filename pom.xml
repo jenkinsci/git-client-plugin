@@ -350,12 +350,6 @@
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
           <force>true</force>
-          <failOnError>false</failOnError>
-          <links>
-            <link>https://docs.oracle.com/javase/8/docs/api/</link>
-            <!-- JGit patch releases do not provide javadoc. Use javadoc from matching minor release -->
-            <link>https://download.eclipse.org/jgit/site/5.13.0.202109080827-r/org.eclipse.jgit/apidocs/</link>
-          </links>
         </configuration>
       </plugin>
     </plugins>
