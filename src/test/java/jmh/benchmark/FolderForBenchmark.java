@@ -1,5 +1,7 @@
 package jmh.benchmark;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+
 import org.junit.Rule;
 
 import java.io.File;
@@ -111,8 +113,13 @@ public class FolderForBenchmark {
         return createTemporaryFolderIn(getRoot());
     }
 
-    private File createTemporaryFolderIn(File parentFolder) throws IOException {
-        File createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
+    private File createTemporaryFolderIn(@CheckForNull File parentFolder) throws IOException {
+        File createdFolder;
+        if (parentFolder == null) {
+            createdFolder = Files.createTempDirectory("junit").toFile();
+        } else {
+            createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
+        }
         return createdFolder;
     }
 
