@@ -347,6 +347,11 @@ public abstract class GitAPITestUpdate {
         w = new WorkingArea();
     }
 
+    private boolean isShallow() {
+        File shallowMarker = new File(".git", "shallow");
+        return shallowMarker.isFile();
+    }
+
     /**
      * Populate the local mirror of the git client plugin repository. Returns
      * path to the local mirror directory.
@@ -372,7 +377,13 @@ public abstract class GitAPITestUpdate {
                      * the final destination directory.
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
-                    w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", "https://github.com/jenkinsci/git-client-plugin", tempClonePath.toFile().getAbsolutePath());
+                    String repoUrl = "https://github.com/jenkinsci/git-client-plugin.git";
+                    String destination = tempClonePath.toFile().getAbsolutePath();
+                    if (isShallow()) {
+                        w.launchCommand("git", "clone", "--mirror", repoUrl, destination);
+                    } else {
+                        w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", repoUrl, destination);
+                    }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
