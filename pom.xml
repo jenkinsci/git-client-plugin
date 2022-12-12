@@ -65,7 +65,7 @@
     <jenkins.version>2.361.4</jenkins.version>
     <jgit.version>6.4.0.202211300538-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
-    <spotbugs.threshold>High</spotbugs.threshold>
+    <spotbugs.threshold>Medium</spotbugs.threshold>
   </properties>
 
   <dependencyManagement>
