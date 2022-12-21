@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 
 /**
@@ -1166,7 +1165,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** {@inheritDoc} */
     @Deprecated
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public List<Tag> getTagsOnCommit(String revName) throws GitException, IOException {
         try (Repository db = getRepository()) {
             final ObjectId commit = db.resolve(revName);

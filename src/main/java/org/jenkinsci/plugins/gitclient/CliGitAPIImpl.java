@@ -2421,6 +2421,41 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /* Arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    @NonNull
+    private List<String> extraGitCommandArguments = Collections.<String>emptyList();
+
+    /* Define arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    private void setExtraGitCommandArguments(@NonNull List<String> args) {
+        extraGitCommandArguments = new ArrayList<>(args);
+    }
+
+    /* package protected for use in tests.
+     *
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always on the git command line.
+     *
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    void allowFileProtocol() {
+        setExtraGitCommandArguments(Arrays.asList("-c", "protocol.file.allow=always"));
+    }
+
     /* Escape all double quotes in filename, then surround filename in double quotes.
      * Only useful to prepare filename for reference from a DOS batch file.
      */
@@ -2597,8 +2632,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return File The ssh executable file {@link java.io.File}
      **/
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
-                        justification = "Intentionally throws runtime exception")
     public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
@@ -2754,6 +2787,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
             freshEnv.put("GIT_ASKPASS", "echo");
+        }
+        /* Prepend extra git command line arguments if any */
+        if (!extraGitCommandArguments.isEmpty()) {
+            args = args.prepend(extraGitCommandArguments.toArray(new String[0]));
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -3197,9 +3234,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
                     for (String path : paths) {
-                        writer.println(path);
+                        writer.println(environment.expand(path));
                     }
                 } catch (IOException e) {
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);

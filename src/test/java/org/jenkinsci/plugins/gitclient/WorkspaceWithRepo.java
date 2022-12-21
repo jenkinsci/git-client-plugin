@@ -68,6 +68,13 @@ public class WorkspaceWithRepo {
         }
     }
 
+
+    private boolean isShallow() {
+        File shallowMarker = new File(".git", "shallow");
+        return shallowMarker.isFile();
+    }
+
+
     /**
      * Populate the local mirror of the git client plugin repository.
      * Returns path to the local mirror directory.
@@ -99,8 +106,13 @@ public class WorkspaceWithRepo {
                      * the final destination directory.
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
-                    System.err.println("tempClonePath=" + tempClonePath + " => (FQPN)" + tempClonePath.toFile().getAbsolutePath());
-                    cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, tempClonePath.toFile().getAbsolutePath());
+                    String destination = tempClonePath.toFile().getAbsolutePath();
+                    System.err.println("tempClonePath=" + tempClonePath + " => (FQPN)" + destination);
+                    if (isShallow()) {
+                        cliGitCommand.run("clone", "--mirror", repoURL, destination);
+                    } else {
+                        cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, destination);
+                    }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         System.err.println("moving tempClonePath to cloneDirName=" + cloneDirName);
                         renameAndDeleteDir(tempClonePath, cloneDirName);

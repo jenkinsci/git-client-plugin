@@ -113,6 +113,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         String subFile3 = submodDir + File.separator + "file3";
 
         // Add new GIT repo to w, at the default branch
+        w.cgit().allowFileProtocol();
         w.git.addSubmodule(r.repoPath(), submodDir);
         w.git.submoduleInit();
         assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
@@ -155,6 +156,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         r.git.commit("submod-commit1");
 
         // Add new GIT repo to w
+        w.cgit().allowFileProtocol();
         String subModDir = "submod1-" + UUID.randomUUID();
         w.git.addSubmodule(r.repoPath(), subModDir);
         w.git.submoduleInit();
