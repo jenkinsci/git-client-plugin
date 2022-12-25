@@ -65,7 +65,7 @@ When the timeout is exceeded, the command line git process fails and the git cli
 The JGit implementation in the git client plugin uses a different concept of timeout.
 The JGit timeout is a network level transport timeout rather than a timeout of a higher level JGit operation.
 If the JGit network transport does not receive a response within the defined timeout, the JGit API call fails.
-The link:https://javadoc.io/static/org.eclipse.jgit/org.eclipse.jgit/5.13.0.202109080827-r/org/eclipse/jgit/transport/Transport.html#setTimeout-int-[JGit javadoc] describes the JGit API.
+The link:https://javadoc.io/doc/org.eclipse.jgit/org.eclipse.jgit/latest/org.eclipse.jgit/org/eclipse/jgit/transport/Transport.html#setTimeout(int)[JGit javadoc] describes the JGit API.
 
 The JGit timeout implementation prevents JGit operations from hanging indefinitely when a remote server stops responding.
 It does not stop a JGit operation if it has executed for more than a specified time.

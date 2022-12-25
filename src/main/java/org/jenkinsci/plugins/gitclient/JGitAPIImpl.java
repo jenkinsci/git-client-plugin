@@ -62,6 +62,7 @@ import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -1259,7 +1260,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             rd.reset();
             rd.addAll(DiffEntry.scan(tw));
-            List<DiffEntry> diffs = rd.compute(or, null);
+            List<DiffEntry> diffs;
+            try {
+                diffs = rd.compute(or, null);
+            } catch (CanceledException e) {
+                throw new IOException(e);
+            }
             if (useRawOutput) {
 	            for (DiffEntry diff : diffs) {
 	                pw.printf(":%06o %06o %s %s %s\t%s",

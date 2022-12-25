@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.51</version>
+    <version>4.53</version>
     <relativePath />
   </parent>
 
@@ -58,15 +58,13 @@
   </scm>
 
   <properties>
-    <revision>3.13.2</revision>
+    <revision>4.0.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.346.3</jenkins.version>
-    <jgit.version>5.13.1.202206130422-r</jgit.version>
+    <jenkins.version>2.361.4</jenkins.version>
+    <jgit.version>6.4.0.202211300538-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
-    <spotbugs.failOnError>true</spotbugs.failOnError>
     <spotbugs.threshold>Medium</spotbugs.threshold>
   </properties>
 
@@ -74,7 +72,7 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.346.x</artifactId>
+        <artifactId>bom-2.361.x</artifactId>
         <version>1757.vf3c66da_b_7492</version>
         <type>pom</type>
         <scope>import</scope>
@@ -86,12 +84,6 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>trilead-api</artifactId>
-    </dependency>
-    <!-- TODO: Remove when the plugin switches to JGit 6.x and Java 11 -->
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-      <version>2.8.9</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -350,25 +342,10 @@
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
           <force>true</force>
-          <failOnError>false</failOnError>
-          <links>
-            <link>https://docs.oracle.com/javase/8/docs/api/</link>
-            <!-- JGit patch releases do not provide javadoc. Use javadoc from matching minor release -->
-            <link>https://download.eclipse.org/jgit/site/5.13.0.202109080827-r/org.eclipse.jgit/apidocs/</link>
-          </links>
         </configuration>
       </plugin>
     </plugins>
   </build>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <profiles>
     <profile>
