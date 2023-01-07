@@ -467,11 +467,9 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
-        /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl;
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
-        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
     }
 
     @Test
@@ -481,11 +479,9 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
-        /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl;
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
-        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
     }
 
     @Test
