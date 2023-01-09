@@ -100,14 +100,6 @@
       <artifactId>mina-sshd-api-core</artifactId>
     </dependency>
     <dependency>
-      <!-- Use mina api sftp plugin rather than JGit transitive dependency inclusion of Apache Mina sshd sftp -->
-      <!-- This must be listed before its consumers -->
-      <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
-      <artifactId>mina-sshd-api-sftp</artifactId>
-      <!-- Not included in the plugin bom yet -->
-      <version>2.9.2-50.va_0e1f42659a_a</version>
-    </dependency>
-    <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>trilead-api</artifactId>
     </dependency>
@@ -150,6 +142,21 @@
       <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency, OSGi not needed by git client plugin -->
+          <groupId>org.apache.sshd</groupId>
+          <artifactId>sshd-osgi</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency, sftp not needed by git client plugin -->
+          <groupId>org.apache.sshd</groupId>
+          <artifactId>sshd-sftp</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency -->
+          <groupId>net.i2p.crypto</groupId>
+          <artifactId>eddsa</artifactId>
+        </exclusion>
         <exclusion>
           <!-- provided by jenkins-core -->
           <groupId>org.slf4j</groupId>
