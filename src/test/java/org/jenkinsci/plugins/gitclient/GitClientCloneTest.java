@@ -167,15 +167,9 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
-        /* JGit does not support shallow clone */
-        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl;
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
-        if (hasShallowCloneSupport) {
-            assertThat(new File(testGitDir, shallow), is(anExistingFile()));
-        } else {
-            assertThat(new File(testGitDir, shallow), is(not(anExistingFile())));
-        }
+        assertThat(new File(testGitDir, shallow), is(anExistingFile()));
     }
 
     @Test
@@ -185,15 +179,9 @@ public class GitClientCloneTest {
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
-        /* JGit does not support shallow clone */
-        boolean hasShallowCloneSupport = testGitClient instanceof CliGitAPIImpl;
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowCloneSupport));
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
-        if (hasShallowCloneSupport) {
-            assertThat(new File(testGitDir, shallow), is(anExistingFile()));
-        } else {
-            assertThat(new File(testGitDir, shallow), is(not(anExistingFile())));
-        }
+        assertThat(new File(testGitDir, shallow), is(anExistingFile()));
     }
 
     @Test

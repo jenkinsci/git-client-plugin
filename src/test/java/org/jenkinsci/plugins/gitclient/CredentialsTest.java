@@ -204,8 +204,8 @@ public class CredentialsTest {
     }
 
     private boolean isShallowCloneSupported(String implementation, GitClient gitClient) {
-        if (!implementation.equals("git")) {
-            return false;
+        if (!(gitClient instanceof CliGitAPIImpl)) {
+            return true;
         }
         CliGitAPIImpl cli = (CliGitAPIImpl) gitClient;
         return cli.isAtLeastVersion(1, 9, 0, 0);
@@ -329,16 +329,12 @@ public class CredentialsTest {
     }
 
     private void gitFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
-        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/"+branch+":refs/remotes/origin/"+branch+""));
         FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
-        if (isShallowCloneSupported(gitImpl, git)) {
-            // Reduce network transfer by using shallow clone
-            // JGit does not support shallow clone
-            cmd.shallow(true).depth(1);
-        }
+        // Reduce network transfer by using shallow clone
+        cmd.shallow(true).depth(1);
         cmd.execute();
     }
 
