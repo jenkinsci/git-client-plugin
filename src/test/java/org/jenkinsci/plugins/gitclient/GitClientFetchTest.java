@@ -472,16 +472,25 @@ public class GitClientFetchTest {
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
     }
 
-    @Test
-    public void test_fetch_shallow_depth() throws Exception {
+    private void fetch_shallow_depth(Integer fetchDepth) throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
-        testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
+        testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(fetchDepth).execute();
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
         assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
         assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
+    }
+
+    @Test
+    public void test_fetch_shallow_depth() throws Exception {
+        fetch_shallow_depth(2);
+    }
+
+    @Test
+    public void test_fetch_shallow_null_depth() throws Exception {
+        fetch_shallow_depth(null);
     }
 
     @Test
