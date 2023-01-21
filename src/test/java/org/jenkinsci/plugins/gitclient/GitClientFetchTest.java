@@ -511,7 +511,7 @@ public class GitClientFetchTest {
     public void test_fetch_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
         String randomBranchName = checkoutRandomBranch();
-        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).execute();
+        testGitClient.fetch_().from(new URIish("origin"), null).prune().execute();
         assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
         assertRevParseNotCalled(testGitClient, randomBranchName);
     }
