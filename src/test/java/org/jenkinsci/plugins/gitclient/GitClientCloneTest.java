@@ -186,7 +186,7 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_shared() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(true).execute();
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(true).tags(true).execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -196,7 +196,7 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_null_branch() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared().execute();
+        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared().tags(false).execute();
         testGitClient.checkout().ref("origin/master").branch(null).execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertAlternateFilePointsToLocalMirror();
