@@ -5,13 +5,13 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -169,7 +169,7 @@ public class WorkspaceWithRepo {
     void touch(File gitDir, String fileName, String content) throws Exception {
         File f = new File(gitDir, fileName);
         f.createNewFile();
-        FileUtils.writeStringToFile(f, content, "UTF-8");
+        Files.writeString(f.toPath(), content, StandardCharsets.UTF_8);
     }
 
     void tag(String tag) throws IOException, InterruptedException {
@@ -217,7 +217,7 @@ public class WorkspaceWithRepo {
     }
 
     String contentOf(String path) throws IOException {
-        return FileUtils.readFileToString(file(path), "UTF-8");
+        return Files.readString(file(path).toPath(), StandardCharsets.UTF_8);
     }
 
     CliGitCommand getCliGitCommand() {
