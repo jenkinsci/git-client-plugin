@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient.cgit;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
@@ -41,7 +39,7 @@ public class GitCommandsExecutor {
         ExecutorService executorService = null;
         try {
             if (threads == 1) {
-                executorService = newExecutorService();
+                executorService = MoreExecutors.newDirectExecutorService();
             } else {
                 ThreadFactory threadFactory = new ExceptionCatchingThreadFactory(new NamingThreadFactory(new DaemonThreadFactory(), GitCommandsExecutor.class.getSimpleName()));
                 executorService = Executors.newFixedThreadPool(threads, threadFactory);
@@ -54,27 +52,6 @@ public class GitCommandsExecutor {
                     listener.getLogger().println("[WARNING] Threads did not terminate properly");
                 }
             }
-        }
-    }
-
-    /**
-     * Returns an {@link ExecutorService} to be used as a parameter in other methods.
-     * It calls {@code MoreExecutors#sameThreadExecutor} or falls back to {@code MoreExecutors#newDirectExecutorService}
-     * for compatibility with newer (> 18.0) versions of guava.
-     */
-    private static ExecutorService newExecutorService() {
-        try {
-            try {
-                // guava older than 18
-                Method method = MoreExecutors.class.getMethod("sameThreadExecutor");
-                return (ExecutorService) method.invoke(null);
-            } catch (NoSuchMethodException e) {
-                // TODO invert this to prefer the newer guava method once guava is upgraded in Jenkins core, (or update jenkins.version)
-                Method method = MoreExecutors.class.getMethod("newDirectExecutorService");
-                return (ExecutorService) method.invoke(null);
-            }
-        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e ) {
-            throw new RuntimeException(e);
         }
     }
 
