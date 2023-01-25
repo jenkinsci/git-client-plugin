@@ -2,6 +2,8 @@ package org.jenkinsci.plugins.gitclient;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -217,11 +219,11 @@ public class PushTest {
             File added = File.createTempFile("added-", ".txt", cloneRepo);
             String randomContent = java.util.UUID.randomUUID().toString();
             String addedContent = "Initial commit to branch " + branchName + " content '" + randomContent + "'";
-            FileUtils.writeStringToFile(added, addedContent, "UTF-8");
+            Files.writeString(added.toPath(), addedContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
             cloneGitClient.commit("Initial commit to " + branchName + " file " + added.getName() + " with " + randomContent);
             // checkoutOldBranchAndCommitFile needs at least two commits to the branch
-            FileUtils.writeStringToFile(added, "Another revision " + randomContent, "UTF-8");
+            Files.writeString(added.toPath(), "Another revision " + randomContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
             cloneGitClient.commit("Second commit to " + branchName);
 
@@ -265,7 +267,7 @@ public class PushTest {
         File added = File.createTempFile("added-", ".txt", workingRepo);
         String randomContent = java.util.UUID.randomUUID().toString();
         String addedContent = "Push test " + randomContent;
-        FileUtils.writeStringToFile(added, addedContent, "UTF-8");
+        Files.writeString(added.toPath(), addedContent, StandardCharsets.UTF_8);
         workingGitClient.add(added.getName());
         workingGitClient.commit("Added " + added.getName() + " with " + randomContent);
 

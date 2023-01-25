@@ -827,14 +827,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
-                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset())) {
                                 String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
                                 listener.getLogger().println("Using reference repository: " + reference);
                                 // git implementations on windows also use
                                 w.print(absoluteReference);
-                            } catch (UnsupportedEncodingException ex) {
-                                listener.error("Default character set is an unsupported encoding");
-                            } catch (FileNotFoundException e) {
+                            } catch (IOException e) {
                                 listener.error("Failed to setup reference");
                             }
                         }
@@ -2321,7 +2319,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
      */
     @NonNull
-    private List<String> extraGitCommandArguments = Collections.<String>emptyList();
+    private List<String> extraGitCommandArguments = Collections.emptyList();
 
     /* Define arguments that will be inserted into every command line git
      * call immediately after the "git" command.  Intended to be used

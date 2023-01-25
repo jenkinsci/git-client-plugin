@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
@@ -32,6 +31,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1060,7 +1060,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), StandardCharsets.UTF_8),sw);
                     sw.write("\n");
                     addNote(sw + normalizeNote(note), namespace);
                 }
@@ -1467,7 +1467,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                     String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
                                     listener.getLogger().println("Using reference repository: " + reference);
                                     // git implementations on windows also use
-                                    try (PrintWriter w = new PrintWriter(alternates, "UTF-8")) {
+                                    try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
                                         // git implementations on windows also use
                                         w.print(absoluteReference);
                                     }

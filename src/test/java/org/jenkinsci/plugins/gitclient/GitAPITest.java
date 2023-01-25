@@ -7,7 +7,6 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -42,6 +41,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -964,7 +964,7 @@ public class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit2");
         testGitClient.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
-        assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f, "UTF-8"));
+        assertEquals("merge didn't selected OURS content", "content2", Files.readString(f.toPath(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -1451,7 +1451,7 @@ public class GitAPITest {
         // this should overwrite foo
         testGitClient.checkout().ref("t1").execute();
 
-        assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
+        assertEquals("old", Files.readString(workspace.file("foo").toPath(), StandardCharsets.UTF_8));
     }
 
     @Test

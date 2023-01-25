@@ -5,10 +5,9 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import org.apache.commons.io.IOUtils;
+import java.nio.file.StandardCopyOption;
 
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -82,17 +81,13 @@ public class NetrcTest
 
     private void copyFileContents(String source, String destination) throws IOException
     {
-        try (InputStream sourceStream = Files.newInputStream(Paths.get(source));
-                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
-            IOUtils.copy(sourceStream, out);
-        }
+        Files.copy(Paths.get(source), Paths.get(destination), StandardCopyOption.REPLACE_EXISTING);
     }
 
     private void copyResourceContents(String resource, String destination) throws IOException
     {
-        try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource);
-                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
-            IOUtils.copy(sourceStream, out);
+        try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource)) {
+            Files.copy(sourceStream, Paths.get(destination), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
