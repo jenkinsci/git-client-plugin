@@ -6,7 +6,6 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
@@ -20,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 public class CliGitAPIWindowsFilePermissionsTest {
 
     private CliGitAPIImpl cliGit;
-    private File file;
+    private Path file;
     private AclFileAttributeView fileAttributeView;
     private UserPrincipal userPrincipal;
 
@@ -31,8 +30,7 @@ public class CliGitAPIWindowsFilePermissionsTest {
         }
         cliGit = new CliGitAPIImpl("git", new File("."), null, null);
         file = cliGit.createTempFile("permission", ".suff");
-        Path path = Paths.get(file.toURI());
-        fileAttributeView = Files.getFileAttributeView(path, AclFileAttributeView.class);
+        fileAttributeView = Files.getFileAttributeView(file, AclFileAttributeView.class);
         assertNotNull(fileAttributeView);
         userPrincipal = fileAttributeView.getOwner();
         assertNotNull(userPrincipal);

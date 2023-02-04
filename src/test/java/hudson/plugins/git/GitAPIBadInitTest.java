@@ -7,8 +7,8 @@ import org.jenkinsci.plugins.gitclient.GitClient;
 
 import java.io.File;
 import java.io.IOException;
-
-import org.apache.commons.io.FileUtils;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -51,12 +51,9 @@ public class GitAPIBadInitTest {
     @Test
     public void testInitExistingFile() throws Exception {
         File existingFile = new File(tempDir, "file-exists");
-        FileUtils.writeStringToFile(existingFile, "git init should fail due to this file", "UTF-8");
+        Files.writeString(existingFile.toPath(), "git init should fail due to this file", StandardCharsets.UTF_8);
         GitClient git = new GitAPI("git", existingFile, listener, env);
-        GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          git.init();
-                                      });
+        GitException e = assertThrows(GitException.class, git::init);
         assertThat(e.getMessage(), is("Could not init " + existingFile.getAbsolutePath()));
     }
 }

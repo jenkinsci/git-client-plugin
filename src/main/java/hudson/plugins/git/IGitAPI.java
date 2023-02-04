@@ -45,7 +45,7 @@ public interface IGitAPI extends GitClient {
      * Set remote repository name and URL.
      *
      * @param name name for the remote repository, for examnple, "origin"
-     * @param url URL for the remote repository, for example git://github.com/jenkinsci/git-client-plugin.git
+     * @param url URL for the remote repository, for example https://github.com/jenkinsci/git-client-plugin.git
      * @param GIT_DIR directory containing git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
@@ -207,7 +207,6 @@ public interface IGitAPI extends GitClient {
 
     /**
      * Find all the branches that include the given commit.
-     * @deprecated Use {@link GitClient#getBranchesContaining(String, boolean)}
      *
      * @param revspec substring to be searched for branch name
      * @throws hudson.plugins.git.GitException on failure
