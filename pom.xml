@@ -63,7 +63,7 @@
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <jenkins.version>2.361.4</jenkins.version>
-    <jgit.version>6.4.0.202211300538-r</jgit.version>
+    <jgit.version>6.5.0.202303070854-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Medium</spotbugs.threshold>
   </properties>
