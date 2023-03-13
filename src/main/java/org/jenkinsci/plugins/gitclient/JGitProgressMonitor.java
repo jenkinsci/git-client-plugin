@@ -42,6 +42,10 @@ public class JGitProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor
     }
 
     /** {@inheritDoc} */
+    public void showDuration(boolean enabled) {
+    }
+
+    /** {@inheritDoc} */
     public boolean isCancelled() {
         return Thread.currentThread().isInterrupted();
     }
