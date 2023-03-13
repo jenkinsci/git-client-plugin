@@ -37,17 +37,11 @@ public class JGitProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor
         this.completed += completed;
     }
 
-    /**
-     * endTask.
-     */
+    /** {@inheritDoc} */
     public void endTask() {
     }
 
-    /**
-     * isCancelled.
-     *
-     * @return true if this progress monitor has been interrupted
-     */
+    /** {@inheritDoc} */
     public boolean isCancelled() {
         return Thread.currentThread().isInterrupted();
     }
