@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import hudson.EnvVars;
 import hudson.util.LogTaskListener;
 import java.io.File;
@@ -10,9 +14,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -105,6 +106,6 @@ public class WarnTempDirValueTest {
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
-        return File.pathSeparatorChar==';';
+        return File.pathSeparatorChar == ';';
     }
 }

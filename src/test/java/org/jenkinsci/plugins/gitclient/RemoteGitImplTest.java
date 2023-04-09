@@ -23,6 +23,12 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
@@ -41,17 +47,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
 public class RemoteGitImplTest {
 
-    public RemoteGitImplTest() {
-    }
+    public RemoteGitImplTest() {}
 
     @Rule
     public TemporaryFolder temporaryFolderRule = new TemporaryFolder();
@@ -66,10 +64,13 @@ public class RemoteGitImplTest {
     @Before
     public void setUp() throws IOException, InterruptedException {
         /* Use a randomly selected git implementation in hopes of detecting more issues with fewer tests */
-        String[] gitImplAlternatives = { "git", "jgit", "jgitapache" };
+        String[] gitImplAlternatives = {"git", "jgit", "jgitapache"};
         gitImplName = gitImplAlternatives[random.nextInt(gitImplAlternatives.length)];
         localFolder = temporaryFolderRule.newFolder();
-        defaultClient = Git.with(TaskListener.NULL, new EnvVars()).in(localFolder).using(gitImplName).getClient();
+        defaultClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(localFolder)
+                .using(gitImplName)
+                .getClient();
         remoteGit = new RemoteGitImpl(defaultClient);
     }
 
@@ -90,7 +91,8 @@ public class RemoteGitImplTest {
         String url = "https://github.com/jenkinsci/git-client-plugin";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
-        StandardCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
+        StandardCredentials credentials =
+                new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
         remoteGit.addCredentials(url, credentials);
     }
 
@@ -100,7 +102,8 @@ public class RemoteGitImplTest {
         String password = "password";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
-        StandardUsernameCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
+        StandardUsernameCredentials credentials =
+                new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
         remoteGit.setCredentials(credentials);
     }
 
@@ -110,7 +113,8 @@ public class RemoteGitImplTest {
         String password = "password";
         String username = "user";
         String id = "username-" + username + "-password-" + password + "-" + random.nextInt();
-        StandardCredentials credentials = new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
+        StandardCredentials credentials =
+                new UsernamePasswordCredentialsImpl(scope, username, password, id, "Credential description");
         remoteGit.addDefaultCredentials(credentials);
     }
 
@@ -160,7 +164,7 @@ public class RemoteGitImplTest {
 
     private void firstAdd(String fileName) throws Exception {
         File localFile = new File(localFolder, fileName);
-        byte [] content = ("File " + fileName).getBytes();
+        byte[] content = ("File " + fileName).getBytes();
         Files.write(localFile.toPath(), content);
         remoteGit.init();
         remoteGit.add(fileName);

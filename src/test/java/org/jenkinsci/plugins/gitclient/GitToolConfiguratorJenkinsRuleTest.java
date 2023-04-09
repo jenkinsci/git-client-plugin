@@ -23,6 +23,9 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+
 import hudson.plugins.git.GitTool;
 import hudson.tools.InstallSourceProperty;
 import hudson.tools.ToolInstallation;
@@ -36,10 +39,8 @@ import io.jenkins.plugins.casc.model.Mapping;
 import io.jenkins.plugins.casc.model.Sequence;
 import java.util.ArrayList;
 import java.util.List;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import org.junit.Test;
 import org.junit.Rule;
+import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
 public class GitToolConfiguratorJenkinsRuleTest {
@@ -107,10 +108,11 @@ public class GitToolConfiguratorJenkinsRuleTest {
         //                    label: "tool-label"
         //                    subdir: "tool-subdir"
         //                    url: "tool-url"
-        Sequence propertiesSequence = cNodeMapping.get("properties").asSequence();                             // properties:
-        Mapping installSourceMapping = propertiesSequence.get(0).asMapping().get("installSource").asMapping(); //  - installSource:
-        Sequence installersSequence = installSourceMapping.get("installers").asSequence();                     //      installers:
-        Mapping zipMapping = installersSequence.get(0).asMapping().get("zip").asMapping();                     //        - zip:
+        Sequence propertiesSequence = cNodeMapping.get("properties").asSequence(); // properties:
+        Mapping installSourceMapping =
+                propertiesSequence.get(0).asMapping().get("installSource").asMapping(); //  - installSource:
+        Sequence installersSequence = installSourceMapping.get("installers").asSequence(); //      installers:
+        Mapping zipMapping = installersSequence.get(0).asMapping().get("zip").asMapping(); //        - zip:
         assertThat(zipMapping.getScalarValue("label"), is("tool-label"));
         assertThat(zipMapping.getScalarValue("subdir"), is("tool-subdir"));
         assertThat(zipMapping.getScalarValue("url"), is("tool-url"));

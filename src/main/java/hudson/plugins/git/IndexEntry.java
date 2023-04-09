@@ -1,9 +1,8 @@
 package hudson.plugins.git;
 
-import org.eclipse.jgit.submodule.SubmoduleWalk;
-
 import java.io.Serializable;
 import java.util.Objects;
+import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 /**
  * Git index / tree entry.
@@ -90,10 +89,11 @@ public class IndexEntry implements Serializable {
      *
      * @return a {@link java.lang.String} object.
      */
+    @Override
     public String toString() {
-        return String.format("IndexEntry[mode=%s,type=%s,file=%s,object=%s]",mode,type,file,object);
+        return String.format("IndexEntry[mode=%s,type=%s,file=%s,object=%s]", mode, type, file, object);
     }
-  
+
     /**
      * Constructor for IndexEntry.
      *
@@ -152,7 +152,7 @@ public class IndexEntry implements Serializable {
      * @param walk a {@link org.eclipse.jgit.submodule.SubmoduleWalk} object.
      */
     public IndexEntry(SubmoduleWalk walk) {
-        this("160000","commit",walk.getObjectId().name(),walk.getPath());
+        this("160000", "commit", walk.getObjectId().name(), walk.getPath());
     }
 
     private static final long serialVersionUID = 1L;

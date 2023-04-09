@@ -4,11 +4,10 @@ import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.KnownHosts;
 import com.trilead.ssh2.ServerHostKeyVerifier;
 import hudson.model.TaskListener;
-import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
-
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
 public abstract class AbstractJGitHostKeyVerifier implements ServerHostKeyVerifier, SerializableOnlyOverRemoting {
 
@@ -29,14 +28,23 @@ public abstract class AbstractJGitHostKeyVerifier implements ServerHostKeyVerifi
      * @throws IOException
      */
     String[] getPreferredServerHostkeyAlgorithmOrder(Connection connection) {
-        String[] preferredServerHostkeyAlgorithmOrder = knownHosts.getPreferredServerHostkeyAlgorithmOrder(connection.getHostname());
+        String[] preferredServerHostkeyAlgorithmOrder =
+                knownHosts.getPreferredServerHostkeyAlgorithmOrder(connection.getHostname());
         if (preferredServerHostkeyAlgorithmOrder == null) {
-            return knownHosts.getPreferredServerHostkeyAlgorithmOrder(connection.getHostname() + ":" + connection.getPort());
+            return knownHosts.getPreferredServerHostkeyAlgorithmOrder(
+                    connection.getHostname() + ":" + connection.getPort());
         }
         return preferredServerHostkeyAlgorithmOrder;
     }
 
-    boolean verifyServerHostKey(TaskListener taskListener, KnownHosts knownHosts, String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws IOException {
+    boolean verifyServerHostKey(
+            TaskListener taskListener,
+            KnownHosts knownHosts,
+            String hostname,
+            int port,
+            String serverHostKeyAlgorithm,
+            byte[] serverHostKey)
+            throws IOException {
         String hostPort = hostname + ":" + port;
         int resultHost = knownHosts.verifyHostkey(hostname, serverHostKeyAlgorithm, serverHostKey);
         int resultHostPort = knownHosts.verifyHostkey(hostPort, serverHostKeyAlgorithm, serverHostKey);
@@ -53,5 +61,4 @@ public abstract class AbstractJGitHostKeyVerifier implements ServerHostKeyVerifi
     KnownHosts getKnownHosts() {
         return knownHosts;
     }
-
 }

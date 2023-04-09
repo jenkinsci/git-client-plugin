@@ -1,17 +1,5 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import hudson.model.TaskListener;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Collections;
-import java.util.List;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -21,6 +9,17 @@ import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import hudson.model.TaskListener;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Collections;
+import java.util.List;
+import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 public class AcceptFirstConnectionVerifierTest {
 
     private static final String FILE_CONTENT = "|1|4MiAohNAs5mYhPnYkpnOUWXmMTA=|iKR8xF3kCEdmSch/QtdXfdjWMCo="
@@ -28,12 +27,16 @@ public class AcceptFirstConnectionVerifierTest {
             + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
     @Rule
-    public TemporaryFolder testFolder = TemporaryFolder.builder().assureDeletion().build();
+    public TemporaryFolder testFolder =
+            TemporaryFolder.builder().assureDeletion().build();
+
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
-        assertThat(new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
+        assertThat(
+                new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null),
+                is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
     }
 
     @Test
@@ -50,7 +53,9 @@ public class AcceptFirstConnectionVerifierTest {
         // Should not fail because first connection and create a file
         jGitConnection.connect(verifier);
         assertThat(file, is(anExistingFile()));
-        assertThat(Files.readAllLines(file.toPath()), hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+        assertThat(
+                Files.readAllLines(file.toPath()),
+                hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
 
     @Test
@@ -59,7 +64,8 @@ public class AcceptFirstConnectionVerifierTest {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
         // |1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= is github.com:22
-        String hostKeyEntry = "|1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+        String hostKeyEntry =
+                "|1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
@@ -77,7 +83,8 @@ public class AcceptFirstConnectionVerifierTest {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        String hostKeyEntry = "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+        String hostKeyEntry =
+                "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
@@ -112,10 +119,11 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenSecondConnectionWithNonEqualKeys() throws Exception {
-        String fileContent = "|1|f7esvmtaiBk+EMHjPzWbRYRpBPY=|T7Qe4QAksYPZPwYEx5QxQykSjfc=" //github.com:22
+        String fileContent = "|1|f7esvmtaiBk+EMHjPzWbRYRpBPY=|T7Qe4QAksYPZPwYEx5QxQykSjfc=" // github.com:22
                 + " ssh-ed25519"
                 + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9OOOO";
-        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(fileContent); // file was created during first connection
+        File mockedKnownHosts =
+                knownHostsTestUtil.createFakeKnownHosts(fileContent); // file was created during first connection
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
@@ -154,7 +162,7 @@ public class AcceptFirstConnectionVerifierTest {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        String fileContent = "|1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M=" //github.com:59666
+        String fileContent = "|1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M=" // github.com:59666
                 + " ssh-ed25519"
                 + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(fileContent);
@@ -174,6 +182,9 @@ public class AcceptFirstConnectionVerifierTest {
     private boolean isKubernetesCI() {
         String kubernetesPort = System.getenv("KUBERNETES_PORT");
         String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null && !kubernetesPort.isEmpty() && buildURL != null && buildURL.startsWith("https://ci.jenkins.io/");
+        return kubernetesPort != null
+                && !kubernetesPort.isEmpty()
+                && buildURL != null
+                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }

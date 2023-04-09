@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertTrue;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import java.io.File;
@@ -9,9 +13,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,8 @@ public class CliGitAPITempFileTest {
     @Rule
     public TemporaryFolder workspaceParentFolder = new TemporaryFolder();
 
-    public CliGitAPITempFileTest(String workspaceDirName, boolean mustUseSystemTempDir, String filenamePrefix, String filenameSuffix) {
+    public CliGitAPITempFileTest(
+            String workspaceDirName, boolean mustUseSystemTempDir, String filenamePrefix, String filenameSuffix) {
         this.workspaceDirName = workspaceDirName;
         this.mustUseSystemTempDir = mustUseSystemTempDir;
         this.filenamePrefix = filenamePrefix;
@@ -52,33 +54,33 @@ public class CliGitAPITempFileTest {
         Random random = new Random();
         List<Object[]> workspaceNames = new ArrayList<>();
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
-            Object[] oneWorkspace = {"use " + INVALID_CHARACTERS.charAt(charIndex) + " dir", true, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
+            Object[] oneWorkspace = {
+                "use " + INVALID_CHARACTERS.charAt(charIndex) + " dir",
+                true,
+                random.nextBoolean() ? "pre" : null,
+                random.nextBoolean() ? ".suff" : null
+            };
             workspaceNames.add(oneWorkspace);
         }
-        String[] goodNames = {
-            "$5.00",
-            "b&d",
-            "f[x]",
-            "mark@home"
-        };
+        String[] goodNames = {"$5.00", "b&d", "f[x]", "mark@home"};
         for (String goodName : goodNames) {
-            Object[] oneWorkspace = {goodName, false, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
+            Object[] oneWorkspace = {
+                goodName, false, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null
+            };
             workspaceNames.add(oneWorkspace);
         }
-        String[] badNames = {
-            "50%off"
-        };
+        String[] badNames = {"50%off"};
         for (String badName : badNames) {
-            Object[] oneWorkspace = {badName, true, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
+            Object[] oneWorkspace = {
+                badName, true, random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null
+            };
             workspaceNames.add(oneWorkspace);
         }
-        String[] platformNames = {
-            "(abc)",
-            "abs(x)",
-            "shame's own"
-        };
+        String[] platformNames = {"(abc)", "abs(x)", "shame's own"};
         for (String platformName : platformNames) {
-            Object[] oneWorkspace = {platformName, isWindows(), random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null};
+            Object[] oneWorkspace = {
+                platformName, isWindows(), random.nextBoolean() ? "pre" : null, random.nextBoolean() ? ".suff" : null
+            };
             workspaceNames.add(oneWorkspace);
         }
         return workspaceNames;
@@ -104,12 +106,17 @@ public class CliGitAPITempFileTest {
         CliGitAPIImplExtension cliGit = new CliGitAPIImplExtension("git", workspace, null, null);
         for (int charIndex = 0; charIndex < INVALID_CHARACTERS.length(); charIndex++) {
             Path tempFile = cliGit.createTempFile(filenamePrefix, filenameSuffix);
-            assertThat(tempFile.toAbsolutePath().toString(), not(containsString("" + INVALID_CHARACTERS.charAt(charIndex))));
+            assertThat(
+                    tempFile.toAbsolutePath().toString(),
+                    not(containsString("" + INVALID_CHARACTERS.charAt(charIndex))));
             if (!mustUseSystemTempDir) {
                 Path tempParent = tempFile.getParent();
                 Path tempGrandparent = tempParent.getParent();
                 Path workspaceParent = workspace.getParentFile().toPath();
-                assertThat("Parent dir not shared by workspace '" + workspace.getAbsolutePath() + "' and tempdir", workspaceParent, is(tempGrandparent));
+                assertThat(
+                        "Parent dir not shared by workspace '" + workspace.getAbsolutePath() + "' and tempdir",
+                        workspaceParent,
+                        is(tempGrandparent));
             }
         }
     }

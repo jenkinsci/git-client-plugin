@@ -1,28 +1,25 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.eclipse.jgit.lib.Constants.HEAD;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.anExistingDirectory;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitObject;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
-
-import static org.eclipse.jgit.lib.Constants.HEAD;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
-
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -40,20 +37,19 @@ public class JGitLightweightTagTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
-    private File repoRoot;       // root directory of temporary repository
+
+    private File repoRoot; // root directory of temporary repository
     private File repoRootGitDir; // .git directory in temporary repository
 
     @Before
     public void setGitClientEtc() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
-                       .in(repoRoot)
-                       .using(GIT_IMPL_NAME)
-                       .getClient();
+                .in(repoRoot)
+                .using(GIT_IMPL_NAME)
+                .getClient();
         repoRootGitDir = gitClient.withRepository((r, channel) -> r.getDirectory());
-        gitClient.init_()
-                 .workspace(repoRoot.getAbsolutePath())
-                 .execute();
+        gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertThat(repoRootGitDir, is(anExistingDirectory()));
     }
 
@@ -100,20 +96,12 @@ public class JGitLightweightTagTest {
     @Test
     public void testGetTags_packedRefs() throws Exception {
         // JENKINS-57205 is triggered by lightweight tags
-        ObjectId firstCommit = commitFile(
-            "first.txt",
-            "Great info here",
-            "First commit"
-        );
+        ObjectId firstCommit = commitFile("first.txt", "Great info here", "First commit");
         String lightweightTagName = "lightweight_tag";
         lightweightTag(lightweightTagName);
 
         // But throw in an annotated tag for symmetry and coverage
-        ObjectId secondCommit = commitFile(
-            "second.txt",
-            "Great info here, too",
-            "Second commit"
-        );
+        ObjectId secondCommit = commitFile("second.txt", "Great info here, too", "Second commit");
         String annotatedTagName = "annotated_tag";
         gitClient.tag(annotatedTagName, "Tag annotation");
 
@@ -122,22 +110,12 @@ public class JGitLightweightTagTest {
         Set<GitObject> tags = gitClient.getTags();
 
         assertThat(
-            tags,
-            hasItem(
-                allOf(
-                    hasProperty("name", equalTo(lightweightTagName)),
-                    hasProperty("SHA1", equalTo(firstCommit))
-                )
-            )
-        );
+                tags,
+                hasItem(allOf(
+                        hasProperty("name", equalTo(lightweightTagName)), hasProperty("SHA1", equalTo(firstCommit)))));
         assertThat(
-            tags,
-            hasItem(
-                allOf(
-                    hasProperty("name", equalTo(annotatedTagName)),
-                    hasProperty("SHA1", equalTo(secondCommit))
-                )
-            )
-        );
+                tags,
+                hasItem(allOf(
+                        hasProperty("name", equalTo(annotatedTagName)), hasProperty("SHA1", equalTo(secondCommit)))));
     }
 }

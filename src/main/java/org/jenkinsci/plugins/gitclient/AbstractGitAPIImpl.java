@@ -1,21 +1,19 @@
 package org.jenkinsci.plugins.gitclient;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.plugins.git.GitException;
 import hudson.remoting.Channel;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.PersonIdent;
-import org.eclipse.jgit.lib.Repository;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Common parts between {@link JGitAPIImpl} and {@link CliGitAPIImpl}.
@@ -24,6 +22,7 @@ import java.nio.charset.Charset;
  */
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     /** {@inheritDoc} */
+    @Override
     public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
         try (Repository repo = getRepository()) {
             return callable.invoke(repo, FilePath.localChannel);
@@ -31,36 +30,47 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
+    @Override
+    public void commit(String message, PersonIdent author, PersonIdent committer)
+            throws GitException, InterruptedException {
         setAuthor(author);
         setCommitter(committer);
         commit(message);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void setAuthor(PersonIdent p) {
-        if (p!=null)
-            setAuthor(p.getName(),p.getEmailAddress());
+        if (p != null) {
+            setAuthor(p.getName(), p.getEmailAddress());
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public void setCommitter(PersonIdent p) {
-        if (p!=null)
+        if (p != null) {
             setCommitter(p.getName(), p.getEmailAddress());
+        }
     }
 
     /** {@inheritDoc} */
-    public void changelog(String revFrom, String revTo, OutputStream outputStream) throws GitException, InterruptedException {
+    @Override
+    public void changelog(String revFrom, String revTo, OutputStream outputStream)
+            throws GitException, InterruptedException {
         changelog(revFrom, revTo, new OutputStreamWriter(outputStream, Charset.defaultCharset()));
     }
 
     /** {@inheritDoc} */
+    @Override
     public void changelog(String revFrom, String revTo, Writer w) throws GitException, InterruptedException {
         changelog().excludes(revFrom).includes(revTo).to(w).execute();
     }
 
     /** {@inheritDoc} */
-    public void clone(String url, String origin, boolean useShallowClone, String reference) throws GitException, InterruptedException {
+    @Override
+    public void clone(String url, String origin, boolean useShallowClone, String reference)
+            throws GitException, InterruptedException {
         CloneCommand c = clone_().url(url).repositoryName(origin).reference(reference);
         if (useShallowClone) {
             c.shallow(true);
@@ -69,21 +79,25 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override
     public void checkout(String commit) throws GitException, InterruptedException {
         checkout().ref(commit).execute();
     }
 
     /** {@inheritDoc} */
+    @Override
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
         checkout().ref(ref).branch(branch).execute();
     }
 
     /** {@inheritDoc} */
+    @Override
     public void checkoutBranch(String branch, String ref) throws GitException, InterruptedException {
         checkout().ref(ref).branch(branch).deleteBranchIfExist(true).execute();
     }
 
     /** {@inheritDoc} */
+    @Override
     public void merge(ObjectId rev) throws GitException, InterruptedException {
         merge().setRevisionToMerge(rev).execute();
     }
@@ -96,8 +110,9 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
      */
     protected Object writeReplace() throws java.io.ObjectStreamException {
         Channel currentChannel = Channel.current();
-        if (currentChannel == null)
+        if (currentChannel == null) {
             throw new java.io.WriteAbortedException("No current channel", new java.lang.NullPointerException());
+        }
         return remoteProxyFor(currentChannel.export(GitClient.class, this));
     }
 
@@ -112,6 +127,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override
     public void setCredentials(StandardUsernameCredentials cred) {
         clearCredentials();
         addDefaultCredentials(cred);
@@ -120,25 +136,34 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     protected ProxyConfiguration proxy;
 
     /** {@inheritDoc} */
+    @Override
     public void setProxy(ProxyConfiguration proxy) {
         this.proxy = proxy;
     }
 
-
     /** {@inheritDoc} */
+    @Override
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).execute();
     }
     /** {@inheritDoc} */
+    @Override
     public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).ref(reference).execute();
     }
     /** {@inheritDoc} */
+    @Override
     public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
     }
     /** {@inheritDoc} */
-    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference) throws GitException, InterruptedException {
-        submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).ref(reference).execute();
+    @Override
+    public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)
+            throws GitException, InterruptedException {
+        submoduleUpdate()
+                .recursive(recursive)
+                .remoteTracking(remoteTracking)
+                .ref(reference)
+                .execute();
     }
 }
