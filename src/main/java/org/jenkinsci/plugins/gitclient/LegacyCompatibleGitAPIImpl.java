@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import static java.util.Arrays.copyOfRange;
 import static org.apache.commons.lang.StringUtils.join;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
