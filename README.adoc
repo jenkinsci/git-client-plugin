@@ -65,7 +65,7 @@ When the timeout is exceeded, the command line git process fails and the git cli
 The JGit implementation in the git client plugin uses a different concept of timeout.
 The JGit timeout is a network level transport timeout rather than a timeout of a higher level JGit operation.
 If the JGit network transport does not receive a response within the defined timeout, the JGit API call fails.
-The link:https://javadoc.io/static/org.eclipse.jgit/org.eclipse.jgit/5.13.0.202109080827-r/org/eclipse/jgit/transport/Transport.html#setTimeout-int-[JGit javadoc] describes the JGit API.
+The link:https://javadoc.io/doc/org.eclipse.jgit/org.eclipse.jgit/latest/org.eclipse.jgit/org/eclipse/jgit/transport/Transport.html#setTimeout(int)[JGit javadoc] describes the JGit API.
 
 The JGit timeout implementation prevents JGit operations from hanging indefinitely when a remote server stops responding.
 It does not stop a JGit operation if it has executed for more than a specified time.
@@ -91,7 +91,7 @@ image::images/mingit-for-windows-as-a-tool.png[Configure MinGit for Windows to i
 
 * Configure a global git tool from "Manage Jenkins" >> "Global Tool Configuration" with `git` as the `Path to Git executable`
 * Set the label `windows` to limit the tool installer to agents with the `windows` label
-* Set the `Download URL for binary archive` as the URL of the link:https://github.com/git-for-windows/git/releases/[MinGit zip file]
+* Set the `Download URL for binary archive` as the URL of your locally downloaded copy of the link:https://github.com/git-for-windows/git/releases/[MinGit zip file]
 * Specify `mingw64\bin\git.exe` as the `Subdirectory of extracted archive`.
 
 Git for Windows Portable will be installed on each agent in `tools\git\mingw64`.
@@ -110,6 +110,25 @@ It is best to disable Windows Credentials Manager when installing Git on Jenkins
 
 Git Client plugin provides various options to verify the SSH keys presented by Git repository host servers.
 By default, Git Client plugin uses the "Known hosts file" strategy to verify all host keys using the known_hosts file.
+
+Host key verification strategies include:
+
+Accept first connection::
+Remembers the first host key encountered for each git server and requires that the same host key must be use for later access.
+This is usually the most convenient setting for administrators while still providing ssh host key verification
+
+Known hosts file::
+Uses the existing `known_hosts` file on the controller and on the agent.
+This assumes the administrator has already configured this file on the controller and on all agents
+
+Manually provided keys::
+Provides a form field where the administrator inserts the host keys for the git repository servers.
+This works well when a small set of repository servers meet the needs of most users
+
+No verification::
+Disables all verification of ssh host keys.
+**Not recommended** because it provides no protection from "man-in-the-middle" attacks
+
 Configure the host key verification strategy from "Manage Jenkins" >> "Configure Global Security" >> "Git Host Key Verification Configuration".
 
 image::images/ssh-host-key-verification.png[Configure Ssh host key verification]
@@ -132,6 +151,25 @@ Users of those operating systems have the following options:
 === Configuration as Code Sample
 
 The link:https://plugins.jenkins.io/configuration-as-code/[configuration as code plugin] can define the SSH host key verification strategy.
+
+The "Accept first connection" host key verification strategy can be configured like this:
+
+[source,yaml]
+----
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy: "acceptFirstConnectionStrategy"
+----
+
+The "Known hosts file" host key verification strategy can be configured like this:
+
+[source,yaml]
+----
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy: "knownHostsFileVerificationStrategy"
+----
+
 The "Manually provided keys" host key verification strategy might be configured like this:
 
 [source,yaml]
@@ -141,11 +179,19 @@ security:
     sshHostKeyVerificationStrategy:
       manuallyProvidedKeyVerificationStrategy:
         approvedHostKeys: |-
+          git.assembla.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN+whKLd9tzS4IIbZD7rCgly2LNxlvxef4JvwSaL/YZ7
           github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
           gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
 ----
 
-Other host key verification strategies can be configured from the user interface and then viewed with the "View Configuration" button in the configuration as code plugin page.
+The "No verification" strategy (not recommended) can be configured like this:
+
+[source,yaml]
+----
+security:
+  gitHostKeyVerificationConfiguration:
+    sshHostKeyVerificationStrategy: "noHostKeyVerificationStrategy"
+----
 
 [#bug-reports]
 == Bug Reports

@@ -5,7 +5,9 @@ import hudson.model.TaskListener;
 import java.io.PrintStream;
 
 /**
- * JGitProgressMonitor class.
+ * Jenkins implementation of the JGit progress monitoring interface.
+ * Reports progress of JGit operations like fetch and clone to the
+ * Jenkins TaskListener passed to the constructor.
  *
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
@@ -17,7 +19,7 @@ public class JGitProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor
     /**
      * Constructor for JGitProgressMonitor.
      *
-     * @param listener a {@link hudson.model.TaskListener} object.
+     * @param listener task listener that will receive progress messages during JGit operations
      */
     public JGitProgressMonitor(TaskListener listener) {
         this.log = listener.getLogger();
@@ -37,17 +39,15 @@ public class JGitProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor
         this.completed += completed;
     }
 
-    /**
-     * endTask.
-     */
+    /** {@inheritDoc} */
     public void endTask() {
     }
 
-    /**
-     * isCancelled.
-     *
-     * @return true if this progress monitor has been interrupted
-     */
+    /** {@inheritDoc} */
+    public void showDuration(boolean enabled) {
+    }
+
+    /** {@inheritDoc} */
     public boolean isCancelled() {
         return Thread.currentThread().isInterrupted();
     }

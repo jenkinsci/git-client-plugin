@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
@@ -32,6 +31,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +62,7 @@ import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -203,7 +204,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "Included in JGitAPIImpl interface definition")
     public synchronized void setCredentialsProvider(CredentialsProvider prov) {
         this.provider = prov;
     }
@@ -326,7 +326,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /* Separate method call for benefit of spotbugs */
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Spotbugs and Netbeans disagree on potential for null")
     private void closeRepo(Repository repo) {
         if (repo != null) {
             repo.close();
@@ -587,9 +586,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
             private URIish url;
             private List<RefSpec> refspecs;
+            private boolean shallow;
             private boolean shouldPrune = false;
-            private boolean tags = true;
             private Integer timeout;
+            private boolean tags = true;
+            private Integer depth = 1;
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -611,9 +612,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
-                if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
-                }
+                this.shallow = shallow;
                 return this;
             }
 
@@ -631,7 +630,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                this.depth = depth;
                 return this;
             }
 
@@ -665,6 +664,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     fetch.setRefSpecs(allRefSpecs);
                     fetch.setRemoveDeletedRefs(shouldPrune);
                     setTransportTimeout(fetch, "fetch", timeout);
+                    if (shallow) {
+                        if (depth == null) {
+                            depth = 1;
+                        }
+                        fetch.setDepth(depth);
+                    }
                     fetch.call();
                 } catch (GitAPIException e) {
                     throw new GitException(e);
@@ -791,7 +796,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public Map<String, ObjectId> getHeadRev(String url) throws GitException, InterruptedException {
         return getRemoteReferences(url, null, true, false);
     }
@@ -909,7 +913,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try (Repository repo = openDummyRepository();
              final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
@@ -1057,7 +1060,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), StandardCharsets.UTF_8),sw);
                     sw.write("\n");
                     addNote(sw + normalizeNote(note), namespace);
                 }
@@ -1263,7 +1266,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             rd.reset();
             rd.addAll(DiffEntry.scan(tw));
-            List<DiffEntry> diffs = rd.compute(or, null);
+            List<DiffEntry> diffs;
+            try {
+                diffs = rd.compute(or, null);
+            } catch (CanceledException e) {
+                throw new IOException(e);
+            }
             if (useRawOutput) {
 	            for (DiffEntry diff : diffs) {
 	                pw.printf(":%06o %06o %s %s %s\t%s",
@@ -1324,10 +1332,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String url;
             private String remote = Constants.DEFAULT_REMOTE_NAME;
             private String reference;
+            private boolean shallow,shared;
             private Integer timeout;
-            private boolean shared;
             private boolean tags = true;
             private List<RefSpec> refspecs;
+            private Integer depth = 1;
 
             @Override
             public CloneCommand url(String url) {
@@ -1348,9 +1357,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand shallow(boolean shallow) {
-                if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
-                }
+                this.shallow = shallow;
                 return this;
             }
 
@@ -1397,7 +1404,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                this.depth = depth;
                 return this;
             }
 
@@ -1460,7 +1467,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                     String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
                                     listener.getLogger().println("Using reference repository: " + reference);
                                     // git implementations on windows also use
-                                    try (PrintWriter w = new PrintWriter(alternates, "UTF-8")) {
+                                    try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
                                         // git implementations on windows also use
                                         w.print(absoluteReference);
                                     }
@@ -1486,6 +1493,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
                             .setRefSpecs(refspecs);
                     setTransportTimeout(fetch, "fetch", timeout);
+                    if (shallow) {
+                        if (depth == null) {
+                            depth = 1;
+                        }
+                        fetch.setDepth(depth);
+                    }
                     fetch.call();
 
                     StoredConfig config = repository.getConfig();
@@ -1845,7 +1858,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "Java 11 spotbugs error")
     private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
@@ -2261,14 +2273,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
                 if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                    listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone. This flag is ignored");
                 }
                 return this;
             }
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
             }
 
@@ -2822,9 +2834,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    @SuppressFBWarnings(value = { "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
-                                  "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE" },
-                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
         try (Repository repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
@@ -2842,9 +2853,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
-    @SuppressFBWarnings(value = {"RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE",
-                                 "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"},
-                        justification = "Java 11 spotbugs error and JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                        justification = "JGit interaction with spotbugs")
     private StoredConfig getConfig(String GIT_DIR) throws GitException {
         try (Repository repo = isBlank(GIT_DIR) ? getRepository() : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
             return repo.getConfig();
@@ -2882,6 +2892,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return peeledTags;
     }
 
+    @Override
+    public boolean maintenance(String task) {
+        listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
+        return false;
+    }
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;

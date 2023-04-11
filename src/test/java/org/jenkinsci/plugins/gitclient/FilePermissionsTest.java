@@ -5,6 +5,7 @@ import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,7 +109,7 @@ public class FilePermissionsTest {
         String fileName = String.format("git-%03o.txt", staticPerm);
         File file = new File(repo, fileName);
         assertTrue("Missing " + file.getAbsolutePath(), file.exists());
-        String content = FileUtils.readFileToString(file, "UTF-8");
+        String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertTrue(fileName + " wrong content: '" + content + "'", content.contains(fileName));
         String rwx = permString(staticPerm);
         Set<PosixFilePermission> expected = PosixFilePermissions.fromString(rwx);
@@ -157,7 +158,7 @@ public class FilePermissionsTest {
         String content = fileName + " and UUID " + UUID.randomUUID();
         File added = new File(repo, fileName);
         assertFalse(fileName + " already exists", added.exists());
-        FileUtils.writeStringToFile(added, content, "UTF-8");
+        Files.writeString(added.toPath(), content, StandardCharsets.UTF_8);
         assertTrue(fileName + " doesn't exist", added.exists());
 
         GitClient git = Git.with(listener, new hudson.EnvVars()).in(repo).getClient();
@@ -174,7 +175,7 @@ public class FilePermissionsTest {
         String content = fileName + " chg UUID " + UUID.randomUUID();
         File modified = new File(repo, fileName);
         assertTrue(fileName + " doesn't exist", modified.exists());
-        FileUtils.writeStringToFile(modified, content, "UTF-8");
+        Files.writeString(modified.toPath(), content, StandardCharsets.UTF_8);
 
         GitClient git = Git.with(listener, new hudson.EnvVars()).in(repo).getClient();
         git.add(fileName);

@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
-import java.io.OutputStream;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
@@ -82,7 +81,7 @@ public abstract class GitAPITestUpdate {
 
     private void assertSubmoduleUpdateTimeout() {
         if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
+            assertSubstringTimeout("git -c protocol.file.allow=always submodule update", submoduleUpdateTimeout);
         }
     }
 
@@ -245,7 +244,7 @@ public abstract class GitAPITestUpdate {
          */
         File touch(String path, String content) throws IOException {
             File f = file(path);
-            FileUtils.writeStringToFile(f, content, "UTF-8");
+            Files.writeString(f.toPath(), content, StandardCharsets.UTF_8);
             return f;
         }
 
@@ -254,15 +253,36 @@ public abstract class GitAPITestUpdate {
         }
 
         String contentOf(String path) throws IOException {
-            return FileUtils.readFileToString(file(path), "UTF-8");
+            return Files.readString(file(path).toPath(), StandardCharsets.UTF_8);
         }
 
+        /* Remember the CliGitAPIImpl for this WorkingArea so that the
+         * allowFileProtocol() changes are "sticky" for the life of
+         * the WorkingArea.
+         *
+         * Some of the submodule checkout tests use command line git
+         * to create a submodule test repository.  When running the
+         * test with JGit, the command line git configuration of the
+         * WorkingArea needs to be preserved for the life of the
+         * WorkingArea object so that command line git uses the
+         * correct arguments when creating the submodule test
+         * repository.
+         */
+        private CliGitAPIImpl cachedCliGitAPIImpl = null;
+
         /**
-         * Creates a CGit implementation. Sometimes we need this for testing
+         * Returns a CGit implementation. Sometimes we need this for testing
          * JGit impl.
          */
         CliGitAPIImpl cgit() throws Exception {
-            return (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            if (git instanceof CliGitAPIImpl) {
+                return (CliGitAPIImpl) git;
+            }
+            if (cachedCliGitAPIImpl != null) {
+                return cachedCliGitAPIImpl;
+            }
+            cachedCliGitAPIImpl = (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            return cachedCliGitAPIImpl;
         }
 
         /**
@@ -326,6 +346,11 @@ public abstract class GitAPITestUpdate {
         w = new WorkingArea();
     }
 
+    private boolean isShallow() {
+        File shallowMarker = new File(".git", "shallow");
+        return shallowMarker.isFile();
+    }
+
     /**
      * Populate the local mirror of the git client plugin repository. Returns
      * path to the local mirror directory.
@@ -351,7 +376,13 @@ public abstract class GitAPITestUpdate {
                      * the final destination directory.
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
-                    w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", "https://github.com/jenkinsci/git-client-plugin", tempClonePath.toFile().getAbsolutePath());
+                    String repoUrl = "https://github.com/jenkinsci/git-client-plugin.git";
+                    String destination = tempClonePath.toFile().getAbsolutePath();
+                    if (isShallow()) {
+                        w.launchCommand("git", "clone", "--mirror", repoUrl, destination);
+                    } else {
+                        w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", repoUrl, destination);
+                    }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
@@ -784,14 +815,14 @@ public abstract class GitAPITestUpdate {
 
     private void assertFileContains(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
         assertTrue(message, fileContent.contains(expectedContent));
     }
 
     private void assertFileContents(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 
@@ -925,6 +956,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -943,6 +975,7 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
+        w.cgit().allowFileProtocol();
         w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
@@ -1101,7 +1134,7 @@ public abstract class GitAPITestUpdate {
     private Properties parseLsRemote(File file) throws IOException {
         Properties properties = new Properties();
         Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
-        for (String lineO : FileUtils.readLines(file, StandardCharsets.UTF_8)) {
+        for (String lineO : Files.readAllLines(file.toPath(), StandardCharsets.UTF_8)) {
             String line = lineO.trim();
             Matcher matcher = pattern.matcher(line);
             if (matcher.matches()) {
@@ -1322,9 +1355,8 @@ public abstract class GitAPITestUpdate {
             if (entry.isDirectory()) {
                 entryDestination.mkdirs();
             } else {
-                try (InputStream in = zipFile.getInputStream(entry);
-                        OutputStream out = Files.newOutputStream(entryDestination.toPath())) {
-                    org.apache.commons.io.IOUtils.copy(in, out);
+                try (InputStream in = zipFile.getInputStream(entry)) {
+                    Files.copy(in, entryDestination.toPath());
                 }
             }
         }
@@ -1904,6 +1936,7 @@ public abstract class GitAPITestUpdate {
 
         repositoryWorkingArea.commitEmpty("init");
 
+        repositoryWorkingArea.cgit().allowFileProtocol();
         repositoryWorkingArea.cgit().add(".");
         repositoryWorkingArea.cgit().addSubmodule("file://" + submoduleDir.getAbsolutePath(), "submodule");
         repositoryWorkingArea.cgit().commit("submodule");

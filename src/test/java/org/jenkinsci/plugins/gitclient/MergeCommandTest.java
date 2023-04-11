@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -91,7 +92,7 @@ public class MergeCommandTest {
         // Create a default branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
         readme = new File(repo, "README.adoc");
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println("# Default Branch README " + randomChar);
         }
         git.add("README.adoc");
@@ -103,7 +104,7 @@ public class MergeCommandTest {
         // Create branch-1
         readmeOne = new File(repo, "README-branch-1.md");
         git.checkoutBranch("branch-1", defaultBranchName);
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# Branch 1 README " + randomChar);
         }
         git.add(readmeOne.getName());
@@ -115,7 +116,7 @@ public class MergeCommandTest {
         assertTrue("Master README missing on branch 1", readme.exists());
 
         // Commit a second change to branch-1
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# Branch 1 README " + randomChar);
             writer.println("");
             writer.println("Second change to branch 1 README");
@@ -130,7 +131,7 @@ public class MergeCommandTest {
 
 
         git.checkoutBranch("branch-2", defaultBranchName);
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println(BRANCH_2_README_CONTENT + randomChar);
             writer.println("");
             writer.println("Changed on branch commit");
@@ -143,7 +144,7 @@ public class MergeCommandTest {
 
         // Commit a second change to default branch
         git.checkout().ref(defaultBranchName).execute();
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println("# Default Branch README " + randomChar);
             writer.println("");
             writer.println("Second commit");
@@ -167,7 +168,7 @@ public class MergeCommandTest {
         git.checkout().ref(defaultBranchName).execute();
         git.branch("branch-conflict");
         git.checkout().ref("branch-conflict").execute();
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# branch-conflict README with conflicting change");
         }
         git.add(readmeOne.getName());

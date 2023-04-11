@@ -9,11 +9,11 @@ import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
@@ -93,7 +93,7 @@ public class LegacyCompatibleGitAPIImplTest {
 
     private File touch(String path, String content) throws IOException {
         File f = new File(repo, path);
-        FileUtils.writeStringToFile(f, content, "UTF-8");
+        Files.writeString(f.toPath(), content, StandardCharsets.UTF_8);
         return f;
     }
 

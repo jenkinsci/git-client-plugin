@@ -109,7 +109,7 @@ public class UnsupportedCommandTest {
     @Test
     public void testShallow() {
         unsupportedCommand.shallow(true);
-        assertFalse(unsupportedCommand.determineSupportForJGit());
+        assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
@@ -120,14 +120,14 @@ public class UnsupportedCommandTest {
 
     @Test
     public void testDepthNegative() {
-        unsupportedCommand.depth(-1); // Surprising, but acceptable
-        assertFalse(unsupportedCommand.determineSupportForJGit());
+        unsupportedCommand.depth(-1);
+        assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
     public void testDepth() {
         unsupportedCommand.depth(1);
-        assertFalse(unsupportedCommand.determineSupportForJGit());
+        assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test

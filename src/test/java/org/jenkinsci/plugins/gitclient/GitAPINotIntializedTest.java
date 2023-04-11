@@ -6,7 +6,6 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.IGitAPI;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
@@ -22,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -241,14 +241,14 @@ public class GitAPINotIntializedTest {
 
     private void assertFileContains(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
         assertTrue(message, fileContent.contains(expectedContent));
     }
 
     private void assertFileContents(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 

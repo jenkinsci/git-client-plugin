@@ -8,7 +8,6 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
-import hudson.Functions;
 import hudson.Launcher;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
@@ -828,14 +827,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
-                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset())) {
                                 String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
                                 listener.getLogger().println("Using reference repository: " + reference);
                                 // git implementations on windows also use
                                 w.print(absoluteReference);
-                            } catch (UnsupportedEncodingException ex) {
-                                listener.error("Default character set is an unsupported encoding");
-                            } catch (FileNotFoundException e) {
+                            } catch (IOException e) {
                                 listener.error("Failed to setup reference");
                             }
                         }
@@ -947,15 +944,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 /* See JENKINS-45228 */
                 /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
-                String defaultRemote = null;
+                String repoUrl = null;
                 try {
-                    defaultRemote = getDefaultRemote();
+                    String defaultRemote = getDefaultRemote();
+                    if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                        repoUrl = getRemoteUrl(defaultRemote);
+                    }
                 } catch (GitException e) {
-                    /* Nothing to do, just keeping defaultRemote = null */
+                    /* Nothing to do, just keeping repoUrl = null */
                 }
 
-                if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                    String repoUrl = getRemoteUrl(defaultRemote);
+                if (repoUrl != null) {
                     StandardCredentials cred = credentials.get(repoUrl);
                     if (cred == null) cred = defaultCredentials;
                     launchCommandWithCredentials(args, workspace, cred, repoUrl);
@@ -2313,6 +2312,41 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /* Arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    @NonNull
+    private List<String> extraGitCommandArguments = Collections.emptyList();
+
+    /* Define arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    private void setExtraGitCommandArguments(@NonNull List<String> args) {
+        extraGitCommandArguments = new ArrayList<>(args);
+    }
+
+    /* package protected for use in tests.
+     *
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always on the git command line.
+     *
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    void allowFileProtocol() {
+        setExtraGitCommandArguments(Arrays.asList("-c", "protocol.file.allow=always"));
+    }
+
     /* Escape all double quotes in filename, then surround filename in double quotes.
      * Only useful to prepare filename for reference from a DOS batch file.
      */
@@ -2489,8 +2523,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return File The ssh executable file {@link java.io.File}
      **/
-    @SuppressFBWarnings(value = "THROWS_METHOD_THROWS_RUNTIMEEXCEPTION",
-                        justification = "Intentionally throws runtime exception")
     public File getSSHExecutable() {
         // First check the GIT_SSH environment variable
         File sshexe = getFileFromEnv("GIT_SSH", "");
@@ -2646,6 +2678,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
             freshEnv.put("GIT_ASKPASS", "echo");
+        }
+        /* Prepend extra git command line arguments if any */
+        if (!extraGitCommandArguments.isEmpty()) {
+            args = args.prepend(extraGitCommandArguments.toArray(new String[0]));
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -3084,9 +3120,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
                     for (String path : paths) {
-                        writer.println(path);
+                        writer.println(environment.expand(path));
                     }
                 } catch (IOException e) {
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
@@ -3866,4 +3903,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return tags;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean maintenance(String task) throws InterruptedException {
+        boolean isExecuted = true;
+        try {
+            listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
+            long startTime = System.currentTimeMillis();
+            if (isAtLeastVersion(2, 30, 0, 0)) {
+                // For prefetch, the command will throw an error for private repo if it has no access.
+                launchCommand("maintenance", "run", "--task=" + task);
+            } else {
+                switch(task) {
+                    case "gc":
+                        launchCommand("gc", "--auto");
+                        break;
+                    case "commit-graph":
+                        if (isAtLeastVersion(2, 19, 0, 0)) {
+                            launchCommand("commit-graph", "write");
+                        } else {
+                            listener.getLogger().println("Error executing commit-graph maintenance task");
+                        }
+                        break;
+                    case "incremental-repack":
+                        if (isAtLeastVersion(2, 25, 0, 0)) {
+                            launchCommand("multi-pack-index", "expire");
+                            launchCommand("multi-pack-index", "repack");
+                        } else {
+                            listener.getLogger().println("Error executing incremental-repack maintenance task");
+                        }
+                        break;
+                    default:
+                        String message = "Invalid legacy git maintenance task " + task + ".";
+                        listener.getLogger().println(message);
+                        throw new GitException(message);
+                }
+            }
+            long endTime = System.currentTimeMillis();
+            listener.getLogger().println("Git maintenance task " + task + " finished on " + workspace.getName() + " in " + (endTime - startTime) + "ms.");
+        } catch (GitException e) {
+            isExecuted = false;
+            listener.getLogger().println("Error executing " + task + " maintenance task");
+            listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
+        }
+        return isExecuted;
+    }
 }

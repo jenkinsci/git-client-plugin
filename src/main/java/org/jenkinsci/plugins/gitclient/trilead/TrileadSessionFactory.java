@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient.trilead;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.trilead.ssh2.Connection;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.model.TaskListener;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
@@ -29,7 +28,6 @@ public class TrileadSessionFactory extends SshSessionFactory {
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private final TaskListener listener;
 
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP2")
     public TrileadSessionFactory(HostKeyVerifierFactory hostKeyVerifierFactory, TaskListener listener) {
         this.hostKeyVerifierFactory = hostKeyVerifierFactory;
         this.listener = listener;
