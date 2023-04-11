@@ -132,22 +132,25 @@ public class SmartCredentialsProvider extends CredentialsProvider {
                 continue;
             }
             if (i instanceof CredentialItem.Username && c instanceof UsernameCredentials) {
-                ((CredentialItem.Username) i).setValue(((UsernameCredentials)c).getUsername());
+                ((CredentialItem.Username) i).setValue(((UsernameCredentials) c).getUsername());
                 continue;
             }
             if (i instanceof CredentialItem.Password && c instanceof PasswordCredentials) {
-                ((CredentialItem.Password) i).setValue(
-                        ((PasswordCredentials) c).getPassword().getPlainText().toCharArray());
+                ((CredentialItem.Password) i)
+                        .setValue(((PasswordCredentials) c)
+                                .getPassword()
+                                .getPlainText()
+                                .toCharArray());
                 continue;
             }
             if (i instanceof CredentialItem.StringType) {
                 if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials) {
-                    ((CredentialItem.StringType) i).setValue(((PasswordCredentials) c).getPassword().getPlainText());
+                    ((CredentialItem.StringType) i)
+                            .setValue(((PasswordCredentials) c).getPassword().getPlainText());
                     continue;
                 }
             }
-            throw new UnsupportedCredentialItem(uri, i.getClass().getName()
-                    + ":" + i.getPromptText());
+            throw new UnsupportedCredentialItem(uri, i.getClass().getName() + ":" + i.getPromptText());
         }
         return true;
     }

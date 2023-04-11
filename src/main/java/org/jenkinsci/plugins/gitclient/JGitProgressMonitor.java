@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.model.TaskListener;
-
 import java.io.PrintStream;
 
 /**
@@ -26,28 +25,31 @@ public class JGitProgressMonitor implements org.eclipse.jgit.lib.ProgressMonitor
     }
 
     /** {@inheritDoc} */
-    public void start(int totalTasks) {
-    }
+    @Override
+    public void start(int totalTasks) {}
 
     /** {@inheritDoc} */
+    @Override
     public void beginTask(String title, int totalWork) {
         log.println(title);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void update(int completed) {
         this.completed += completed;
     }
 
     /** {@inheritDoc} */
-    public void endTask() {
-    }
+    @Override
+    public void endTask() {}
 
     /** {@inheritDoc} */
-    public void showDuration(boolean enabled) {
-    }
+    @Override
+    public void showDuration(boolean enabled) {}
 
     /** {@inheritDoc} */
+    @Override
     public boolean isCancelled() {
         return Thread.currentThread().isInterrupted();
     }

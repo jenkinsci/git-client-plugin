@@ -1,12 +1,11 @@
 package hudson.plugins.git;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.Serializable;
+import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-
-import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * An object in a git repository. Includes the SHA1 and name of the
@@ -59,7 +58,7 @@ public class GitObject implements Serializable {
      * @return {@link java.lang.String} SHA1 of the object.
      */
     @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
-    @Exported(name="SHA1")
+    @Exported(name = "SHA1")
     public String getSHA1String() {
         return sha1 != null ? sha1.name() : null;
     }
@@ -99,7 +98,6 @@ public class GitObject implements Serializable {
             return false;
         }
         final GitObject other = (GitObject) obj;
-        return Objects.equals(this.name, other.name)
-                && Objects.equals(this.sha1, other.sha1);
+        return Objects.equals(this.name, other.name) && Objects.equals(this.sha1, other.sha1);
     }
 }

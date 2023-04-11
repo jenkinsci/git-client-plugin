@@ -6,12 +6,6 @@ import hudson.Main;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
-import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
-
-import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
-import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -19,6 +13,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
+import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
+import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -132,22 +130,33 @@ public class Git implements Serializable {
             LOGGER.log(Level.FINE, "No Jenkins instance, skipping host key checking by default");
             hostKeyFactory = new NoHostKeyVerificationStrategy().getVerifier();
         } else {
-            hostKeyFactory = GitHostKeyVerificationConfiguration.get().getSshHostKeyVerificationStrategy().getVerifier();
+            hostKeyFactory = GitHostKeyVerificationConfiguration.get()
+                    .getSshHostKeyVerificationStrategy()
+                    .getVerifier();
         }
         jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable(hostKeyFactory);
-        GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
+        GitClient git = (repository != null ? repository.act(callable) : callable.invoke(null, null));
         Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
-        if (jenkinsInstance != null && git != null)
+        if (jenkinsInstance != null && git != null) {
             git.setProxy(jenkinsInstance.proxy);
+        }
         return git;
     }
 
-    private GitClient initMockClient(String className, String exe, EnvVars env, File f, TaskListener listener) throws RuntimeException {
+    private GitClient initMockClient(String className, String exe, EnvVars env, File f, TaskListener listener)
+            throws RuntimeException {
         try {
             final Class<?> it = Class.forName(className);
-            final Constructor<?> constructor = it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
-            return (GitClient)constructor.newInstance(exe, env, f, listener);
-        } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
+            final Constructor<?> constructor =
+                    it.getConstructor(String.class, EnvVars.class, File.class, TaskListener.class);
+            return (GitClient) constructor.newInstance(exe, env, f, listener);
+        } catch (ClassNotFoundException
+                | IllegalAccessException
+                | IllegalArgumentException
+                | InstantiationException
+                | NoSuchMethodException
+                | SecurityException
+                | InvocationTargetException e) {
             throw new RuntimeException("Unable to initialize mock GitClient " + className, e);
         }
     }
@@ -159,7 +168,8 @@ public class Git implements Serializable {
      *
      * Uses command line implementation ({@link CliGitAPIImpl}) by default.
      */
-    public static final boolean USE_CLI = Boolean.parseBoolean(System.getProperty(Git.class.getName() + ".useCLI", "true"));
+    public static final boolean USE_CLI =
+            Boolean.parseBoolean(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
     private static final long serialVersionUID = 1L;
 
@@ -171,13 +181,17 @@ public class Git implements Serializable {
             this.hostKeyFactory = hostKeyFactory;
         }
 
+        @Override
         public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
-            if (listener == null) listener = TaskListener.NULL;
-            if (env == null) env = new EnvVars();
+            if (listener == null) {
+                listener = TaskListener.NULL;
+            }
+            if (env == null) {
+                env = new EnvVars();
+            }
 
             if (Main.isUnitTest && System.getProperty(Git.class.getName() + ".mockClient") != null) {
-                return initMockClient(System.getProperty(Git.class.getName() + ".mockClient"),
-                        exe, env, f, listener);
+                return initMockClient(System.getProperty(Git.class.getName() + ".mockClient"), exe, env, f, listener);
             }
 
             if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
@@ -185,7 +199,8 @@ public class Git implements Serializable {
             }
 
             if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                final PreemptiveAuthHttpClientConnectionFactory factory = new PreemptiveAuthHttpClientConnectionFactory();
+                final PreemptiveAuthHttpClientConnectionFactory factory =
+                        new PreemptiveAuthHttpClientConnectionFactory();
                 return new JGitAPIImpl(f, listener, factory, hostKeyFactory);
             }
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient

@@ -1,15 +1,15 @@
 package hudson.plugins.git;
 
+import static org.junit.Assert.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.eclipse.jgit.lib.ObjectId;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import static org.junit.Assert.*;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
 
 @RunWith(Parameterized.class)
 public class GitObjectTest {

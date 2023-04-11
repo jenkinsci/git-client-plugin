@@ -4,12 +4,12 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.util.FormValidation;
+import java.util.Objects;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.util.Objects;
-
-public class ManuallyProvidedKeyVerificationStrategy extends SshHostKeyVerificationStrategy<ManuallyProvidedKeyVerifier> {
+public class ManuallyProvidedKeyVerificationStrategy
+        extends SshHostKeyVerificationStrategy<ManuallyProvidedKeyVerifier> {
 
     private final String approvedHostKeys;
 
@@ -28,7 +28,8 @@ public class ManuallyProvidedKeyVerificationStrategy extends SshHostKeyVerificat
     }
 
     @Extension
-    public static class ManuallyTrustedKeyVerificationStrategyDescriptor extends Descriptor<SshHostKeyVerificationStrategy<ManuallyProvidedKeyVerifier>> {
+    public static class ManuallyTrustedKeyVerificationStrategyDescriptor
+            extends Descriptor<SshHostKeyVerificationStrategy<ManuallyProvidedKeyVerifier>> {
 
         @NonNull
         @Override
@@ -39,13 +40,16 @@ public class ManuallyProvidedKeyVerificationStrategy extends SshHostKeyVerificat
         public FormValidation doCheckApprovedHostKeys(@QueryParameter String approvedHostKeys) {
             return FormValidation.validateRequired(approvedHostKeys);
         }
-
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         ManuallyProvidedKeyVerificationStrategy that = (ManuallyProvidedKeyVerificationStrategy) o;
         return Objects.equals(approvedHostKeys, that.approvedHostKeys);
     }

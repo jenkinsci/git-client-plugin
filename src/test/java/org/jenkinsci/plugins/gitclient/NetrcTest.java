@@ -9,7 +9,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import org.apache.commons.io.IOUtils;
-
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.junit.Before;
@@ -17,8 +16,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class NetrcTest
-{
+public class NetrcTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
@@ -59,37 +57,36 @@ public class NetrcTest
         private final String login;
         private final String password;
 
-        private TestHost(String _machine, String _login, String _password)
-        {
+        private TestHost(String _machine, String _login, String _password) {
             this.machine = _machine;
             this.login = _login;
             this.password = _password;
         }
     }
 
-
-    private void assertCredentials(TestHost host, Credentials cred)
-    {
+    private void assertCredentials(TestHost host, Credentials cred) {
         if (cred == null) {
-            assertTrue("Host." + host.name() + ": Credentials are null, although both login and password are set. (" + host.login + ":" + host.password + ")",
+            assertTrue(
+                    "Host." + host.name() + ": Credentials are null, although both login and password are set. ("
+                            + host.login + ":" + host.password + ")",
                     host.login == null || host.password == null);
-        }
-        else {
-            assertEquals("Host." + host.name() + ": Login mismatch.", host.login, ((UsernamePasswordCredentials)cred).getUserName());
+        } else {
+            assertEquals(
+                    "Host." + host.name() + ": Login mismatch.",
+                    host.login,
+                    ((UsernamePasswordCredentials) cred).getUserName());
             assertEquals("Host." + host.name() + ": Password mismatch.", host.password, cred.getPassword());
         }
     }
 
-    private void copyFileContents(String source, String destination) throws IOException
-    {
+    private void copyFileContents(String source, String destination) throws IOException {
         try (InputStream sourceStream = Files.newInputStream(Paths.get(source));
                 OutputStream out = Files.newOutputStream(Paths.get(destination))) {
             IOUtils.copy(sourceStream, out);
         }
     }
 
-    private void copyResourceContents(String resource, String destination) throws IOException
-    {
+    private void copyResourceContents(String resource, String destination) throws IOException {
         try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource);
                 OutputStream out = Files.newOutputStream(Paths.get(destination))) {
             IOUtils.copy(sourceStream, out);
@@ -97,8 +94,7 @@ public class NetrcTest
     }
 
     @Before
-    public void setup() throws IOException
-    {
+    public void setup() throws IOException {
         testFilePath_1 = folder.newFile(TEST_NETRC_FILE_1).getAbsolutePath();
         copyResourceContents(TEST_NETRC_FILE_1 + ".in", testFilePath_1);
 
@@ -109,25 +105,20 @@ public class NetrcTest
         copyResourceContents(TEST_NETRC_FILE_2 + ".in", testFilePath_2);
     }
 
-
     @Test
-    public void testGetInstanceString()
-    {
+    public void testGetInstanceString() {
         Netrc netrc = Netrc.getInstance(testFilePath_1);
         assertNotNull(netrc);
     }
 
     @Test
-    public void testGetInstanceFile()
-    {
+    public void testGetInstanceFile() {
         Netrc netrc = Netrc.getInstance(new File(testFilePath_1));
         assertNotNull(netrc);
     }
 
-
     @Test
-    public void testGetCredentialsPath()
-    {
+    public void testGetCredentialsPath() {
         Netrc netrc = Netrc.getInstance(testFilePath_1);
         assertNotNull(netrc);
 
@@ -150,10 +141,8 @@ public class NetrcTest
         assertNull("Credentials for H2_04 should be null.", netrc.getCredentials(TestHost.H2_04.machine));
     }
 
-
     @Test
-    public void testGetCredentialsFile()
-    {
+    public void testGetCredentialsFile() {
         Netrc netrc = Netrc.getInstance(new File(testFilePath_1));
         assertNotNull(netrc);
 
@@ -176,10 +165,8 @@ public class NetrcTest
         assertNull("Credentials for H2_04 should be null.", netrc.getCredentials(TestHost.H2_04.machine));
     }
 
-
     @Test
-    public void testGetCredentialsModifyFile() throws IOException
-    {
+    public void testGetCredentialsModifyFile() throws IOException {
         String testFilePath = testFilePath_1 + "_m";
 
         copyFileContents(testFilePath_1, testFilePath);
@@ -200,12 +187,12 @@ public class NetrcTest
         assertCredentials(TestHost.H1_11, netrc.getCredentials(TestHost.H1_11.machine));
         assertCredentials(TestHost.H1_12, netrc.getCredentials(TestHost.H1_12.machine));
 
-
         try {
             Thread.sleep(1500);
-        } catch (InterruptedException e) { /* ignored */ }
+        } catch (InterruptedException e) {
+            /* ignored */
+        }
         copyFileContents(testFilePath_1a, testFilePath);
-
 
         assertCredentials(TestHost.H1_01, netrc.getCredentials(TestHost.H1_01.machine));
         assertCredentials(TestHost.H1_02, netrc.getCredentials(TestHost.H1_02.machine));
@@ -223,13 +210,10 @@ public class NetrcTest
         assertNull("Credentials for H1_11 should be null.", netrc.getCredentials(TestHost.H1_11.machine));
 
         assertCredentials(TestHost.H1_12, netrc.getCredentials(TestHost.H1_12.machine));
-
     }
 
-
     @Test
-    public void testGetCredentialsOtherFile()
-    {
+    public void testGetCredentialsOtherFile() {
         Netrc netrc = Netrc.getInstance(testFilePath_1);
         assertNotNull(netrc);
 
@@ -262,5 +246,4 @@ public class NetrcTest
         assertNull("Credentials for H1_03 should be null.", netrc.getCredentials(TestHost.H1_03.machine));
         assertNull("Credentials for H1_04 should be null.", netrc.getCredentials(TestHost.H1_04.machine));
     }
-
 }

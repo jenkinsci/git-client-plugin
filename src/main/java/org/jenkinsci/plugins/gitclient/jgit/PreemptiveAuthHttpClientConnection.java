@@ -42,6 +42,31 @@
  */
 package org.jenkinsci.plugins.gitclient.jgit;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.Proxy;
+import java.net.SocketAddress;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLException;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpEntity;
@@ -68,32 +93,6 @@ import org.eclipse.jgit.transport.http.apache.TemporaryBufferEntity;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.eclipse.jgit.util.TemporaryBuffer;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
-
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.TrustManager;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.SocketAddress;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * A {@link HttpConnection} which uses {@link HttpClient} and attempts to
@@ -135,11 +134,16 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this(credentialsProvider, urlStr, null);
     }
 
-    public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy) {
+    public PreemptiveAuthHttpClientConnection(
+            final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy) {
         this(credentialsProvider, urlStr, proxy, null);
     }
 
-    public PreemptiveAuthHttpClientConnection(final SmartCredentialsProvider credentialsProvider, final String urlStr, final Proxy proxy, final HttpClient cl) {
+    public PreemptiveAuthHttpClientConnection(
+            final SmartCredentialsProvider credentialsProvider,
+            final String urlStr,
+            final Proxy proxy,
+            final HttpClient cl) {
         this.credentialsProvider = credentialsProvider;
         this.urlStr = urlStr;
         this.proxy = proxy;
@@ -154,16 +158,14 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         final int lastSlash;
         if (originalPath.endsWith(SLASH)) {
             lastSlash = originalPath.lastIndexOf(SLASH, originalPath.length() - 2);
-        }
-        else {
+        } else {
             lastSlash = originalPath.lastIndexOf(SLASH);
         }
         final String pathUpOneLevel = originalPath.substring(0, lastSlash);
         final URIish result;
         if (pathUpOneLevel.length() == 0) {
             result = uri.setPath(null);
-        }
-        else {
+        } else {
             result = uri.setPath(pathUpOneLevel);
         }
         return result;
@@ -177,16 +179,16 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
             final URIish serviceUri;
             try {
                 serviceUri = new URIish(urlStr);
-            }
-            catch (final URISyntaxException e) {
+            } catch (final URISyntaxException e) {
                 throw new Error(e);
             }
-            final HttpHost targetHost = new HttpHost(serviceUri.getHost(), serviceUri.getPort(), serviceUri.getScheme());
+            final HttpHost targetHost =
+                    new HttpHost(serviceUri.getHost(), serviceUri.getPort(), serviceUri.getScheme());
 
             CredentialsProvider clientCredentialsProvider = new SystemDefaultCredentialsProvider();
             if (credentialsProvider.supports(u, p)) {
                 URIish uri = serviceUri;
-                while(uri != null) {
+                while (uri != null) {
                     if (credentialsProvider.get(uri, u, p)) {
                         final String userName = u.getValue();
                         final String password = new String(p.getValue());
@@ -208,12 +210,15 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
             }
 
             final RequestConfig.Builder requestConfigBuilder = RequestConfig.custom();
-            if (readTimeout != null)
+            if (readTimeout != null) {
                 requestConfigBuilder.setSocketTimeout(readTimeout);
-            if (timeout != null)
+            }
+            if (timeout != null) {
                 requestConfigBuilder.setConnectTimeout(timeout);
-            if (followRedirects != null)
+            }
+            if (followRedirects != null) {
                 requestConfigBuilder.setRedirectsEnabled(followRedirects);
+            }
             requestConfigBuilder.setAuthenticationEnabled(true);
             final RequestConfig requestConfig = requestConfigBuilder.build();
 
@@ -238,18 +243,15 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
             // cnorris@walker.example.com
             user = userName.substring(0, firstAt);
             domain = userName.substring(firstAt + 1);
-        }
-        else if (firstSlash != -1) {
+        } else if (firstSlash != -1) {
             // WALKER/cnorris
             domain = userName.substring(0, firstSlash);
             user = userName.substring(firstSlash + 1);
-        }
-        else if (firstBackSlash != -1) {
+        } else if (firstBackSlash != -1) {
             // WALKER\cnorris
             domain = userName.substring(0, firstBackSlash);
             user = userName.substring(firstBackSlash + 1);
-        }
-        else {
+        } else {
             user = userName;
             domain = null;
         }
@@ -273,10 +275,9 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     private SSLContext getSSLContext() {
         if (ctx == null) {
             try {
-                ctx = SSLContext.getInstance("TLS"); //$NON-NLS-1$
+                ctx = SSLContext.getInstance("TLS"); // $NON-NLS-1$
             } catch (NoSuchAlgorithmException e) {
-                throw new IllegalStateException(
-                        HttpApacheText.get().unexpectedSSLContextException, e);
+                throw new IllegalStateException(HttpApacheText.get().unexpectedSSLContextException, e);
             }
         }
         return ctx;
@@ -286,11 +287,13 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         this.entity = new TemporaryBufferEntity(buffer);
     }
 
+    @Override
     public int getResponseCode() throws IOException {
         execute();
         return resp.getStatusLine().getStatusCode();
     }
 
+    @Override
     public URL getURL() {
         try {
             return new URL(urlStr);
@@ -299,13 +302,14 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         }
     }
 
+    @Override
     public String getResponseMessage() throws IOException {
         execute();
         return resp.getStatusLine().getReasonPhrase();
     }
 
     private void execute() throws IOException {
-        if (resp == null)
+        if (resp == null) {
             if (entity != null) {
                 if (req instanceof HttpEntityEnclosingRequest) {
                     HttpEntityEnclosingRequest eReq = (HttpEntityEnclosingRequest) req;
@@ -314,120 +318,147 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
                 resp = getClient().execute(req);
                 entity.getBuffer().close();
                 entity = null;
-            } else
+            } else {
                 resp = getClient().execute(req);
+            }
+        }
     }
 
+    @Override
     public Map<String, List<String>> getHeaderFields() {
         Map<String, List<String>> ret = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (Header hdr : resp.getAllHeaders()) {
             List<String> list = new LinkedList<>();
-            for (HeaderElement hdrElem : hdr.getElements())
+            for (HeaderElement hdrElem : hdr.getElements()) {
                 list.add(hdrElem.toString());
+            }
             ret.put(hdr.getName(), Collections.unmodifiableList(list));
         }
         return Collections.unmodifiableMap(ret);
     }
 
+    @Override
     public List<String> getHeaderFields(@org.eclipse.jgit.annotations.NonNull String name) {
         Map<String, List<String>> allHeaders = getHeaderFields();
         return allHeaders.get(name);
     }
 
+    @Override
     public void setRequestProperty(String name, String value) {
         req.addHeader(name, value);
     }
 
+    @Override
     public void setRequestMethod(String method) {
         this.method = method;
-        if ("GET".equalsIgnoreCase(method)) //$NON-NLS-1$
+        if ("GET".equalsIgnoreCase(method)) { // $NON-NLS-1$
             req = new HttpGet(urlStr);
-        else if ("PUT".equalsIgnoreCase(method)) //$NON-NLS-1$
+        } else if ("PUT".equalsIgnoreCase(method)) { // $NON-NLS-1$
             req = new HttpPut(urlStr);
-        else if ("POST".equalsIgnoreCase(method)) //$NON-NLS-1$
+        } else if ("POST".equalsIgnoreCase(method)) { // $NON-NLS-1$
             req = new HttpPost(urlStr);
-        else {
+        } else {
             this.method = null;
             throw new UnsupportedOperationException();
         }
     }
 
+    @Override
     public void setUseCaches(boolean usecaches) {
         // not needed
     }
 
+    @Override
     public void setConnectTimeout(int timeout) {
         this.timeout = timeout;
     }
 
+    @Override
     public void setReadTimeout(int readTimeout) {
         this.readTimeout = readTimeout;
     }
 
+    @Override
     public String getContentType() {
         HttpEntity responseEntity = resp.getEntity();
         if (responseEntity != null) {
             Header contentType = responseEntity.getContentType();
-            if (contentType != null)
+            if (contentType != null) {
                 return contentType.getValue();
+            }
         }
         return null;
     }
 
+    @Override
     public InputStream getInputStream() throws IOException {
         return resp.getEntity().getContent();
     }
 
     // will return only the first field
+    @Override
     public String getHeaderField(String name) {
         Header header = resp.getFirstHeader(name);
         return (header == null) ? null : header.getValue();
     }
 
+    @Override
     public int getContentLength() {
-        return Integer.parseInt(resp.getFirstHeader("content-length") //$NON-NLS-1$
+        return Integer.parseInt(resp.getFirstHeader("content-length") // $NON-NLS-1$
                 .getValue());
     }
 
+    @Override
     public void setInstanceFollowRedirects(boolean followRedirects) {
         this.followRedirects = followRedirects;
     }
 
+    @Override
     public void setDoOutput(boolean dooutput) {
         // TODO: check whether we can really ignore this.
     }
 
+    @Override
     public void setFixedLengthStreamingMode(int contentLength) {
-        if (entity != null)
+        if (entity != null) {
             throw new IllegalArgumentException();
+        }
         entity = new TemporaryBufferEntity(new TemporaryBuffer.LocalFile(null));
         entity.setContentLength(contentLength);
     }
 
+    @Override
     public OutputStream getOutputStream() {
-        if (entity == null)
+        if (entity == null) {
             entity = new TemporaryBufferEntity(new TemporaryBuffer.LocalFile(null));
+        }
         return entity.getBuffer();
     }
 
+    @Override
     public void setChunkedStreamingMode(int chunklen) {
-        if (entity == null)
+        if (entity == null) {
             entity = new TemporaryBufferEntity(new TemporaryBuffer.LocalFile(null));
+        }
         entity.setChunked(true);
     }
 
+    @Override
     public String getRequestMethod() {
         return method;
     }
 
+    @Override
     public boolean usingProxy() {
         return isUsingProxy;
     }
 
+    @Override
     public void connect() throws IOException {
         execute();
     }
 
+    @Override
     public void setHostnameVerifier(final HostnameVerifier hostnameverifier) {
         this.hostnameverifier = new X509HostnameVerifierImpl(hostnameverifier);
     }
@@ -447,15 +478,14 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         }
 
         @Override
-        public void verify(String host, String[] cns, String[] subjectAlts)
-                throws SSLException {
+        public void verify(String host, String[] cns, String[] subjectAlts) throws SSLException {
             throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host);
         }
 
         @Override
-        public void verify(String host, X509Certificate cert)
-                throws SSLException {
-            throw new UnsupportedOperationException("Unsupported hostname verifier called for " + host + " with X.509 certificate");
+        public void verify(String host, X509Certificate cert) throws SSLException {
+            throw new UnsupportedOperationException(
+                    "Unsupported hostname verifier called for " + host + " with X.509 certificate");
         }
 
         @Override
@@ -466,8 +496,8 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
         }
     }
 
-    public void configure(KeyManager[] km, TrustManager[] tm,
-                          SecureRandom random) throws KeyManagementException {
+    @Override
+    public void configure(KeyManager[] km, TrustManager[] tm, SecureRandom random) throws KeyManagementException {
         getSSLContext().init(km, tm, random);
     }
 }
