@@ -2086,7 +2086,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String getNoProxyHosts() {
         String noProxyHost = proxy.getNoProxyHost();
-        List<String> noProxyHosts = Lists.newArrayList(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
+        List<String> noProxyHosts = new ArrayList<>(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
         return String.join(",", noProxyHosts);
     }
 
