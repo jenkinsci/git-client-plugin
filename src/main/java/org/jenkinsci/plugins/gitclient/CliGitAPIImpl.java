@@ -2428,7 +2428,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
      */
     @NonNull
-    private List<String> extraGitCommandArguments = Collections.<String>emptyList();
+    private List<String> extraGitCommandArguments = Collections.emptyList();
 
     /* Define arguments that will be inserted into every command line git
      * call immediately after the "git" command.  Intended to be used

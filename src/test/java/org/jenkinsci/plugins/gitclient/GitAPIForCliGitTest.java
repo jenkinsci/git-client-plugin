@@ -146,6 +146,7 @@ public class GitAPIForCliGitTest {
         }
     }
 
+    /* Test should move to a class that will also test JGit */
     @Test
     public void testPushFromShallowClone() throws Exception {
         WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);

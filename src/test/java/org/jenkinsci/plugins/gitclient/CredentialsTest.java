@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +23,6 @@ import java.util.StringJoiner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -188,7 +188,7 @@ public class CredentialsTest {
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath() + random.nextInt();
-        String privateKeyData = FileUtils.readFileToString(privateKey, StandardCharsets.UTF_8);
+        String privateKeyData = Files.readString(privateKey.toPath(), StandardCharsets.UTF_8);
         BasicSSHUserPrivateKey.PrivateKeySource privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKeyData);
         String description = "private key from " + privateKey.getPath();
         if (this.passphrase != null) {
@@ -204,8 +204,8 @@ public class CredentialsTest {
     }
 
     private boolean isShallowCloneSupported(String implementation, GitClient gitClient) {
-        if (!implementation.equals("git")) {
-            return false;
+        if (!(gitClient instanceof CliGitAPIImpl)) {
+            return true;
         }
         CliGitAPIImpl cli = (CliGitAPIImpl) gitClient;
         return cli.isAtLeastVersion(1, 9, 0, 0);
@@ -329,16 +329,12 @@ public class CredentialsTest {
     }
 
     private void gitFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
-        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/"+branch+":refs/remotes/origin/"+branch+""));
         FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
-        if (isShallowCloneSupported(gitImpl, git)) {
-            // Reduce network transfer by using shallow clone
-            // JGit does not support shallow clone
-            cmd.shallow(true).depth(1);
-        }
+        // Reduce network transfer by using shallow clone
+        cmd.shallow(true).depth(1);
         cmd.execute();
     }
 

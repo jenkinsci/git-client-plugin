@@ -11,14 +11,11 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -299,9 +296,9 @@ public class GitClientTest {
         if (parentDir != null) {
             parentDir.mkdirs();
         }
-        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+        } catch (IOException ex) {
             throw new GitException(ex);
         }
     }
@@ -576,7 +573,7 @@ public class GitClientTest {
         String badDirName = "CON:";
         File badDir = new File(badDirName);
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
-        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : InvalidPathException.class;
+        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
         assertThrows(expectedExceptionClass,
                      () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
     }
@@ -1011,7 +1008,7 @@ public class GitClientTest {
 
     private void assertFileContent(String fileName, String expectedContent) throws IOException {
         File file = new File(repoRoot, fileName);
-        String actualContent = FileUtils.readFileToString(file, StandardCharsets.UTF_8).trim();
+        String actualContent = Files.readString(file.toPath(), StandardCharsets.UTF_8).trim();
         assertEquals("Incorrect file content in " + fileName, expectedContent, actualContent);
     }
 
@@ -1604,7 +1601,7 @@ public class GitClientTest {
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
         File uuidFile = new File(repoRoot, "uuid.txt");
-        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String fileContent = Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
         String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
                 + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
                 + "size 33";

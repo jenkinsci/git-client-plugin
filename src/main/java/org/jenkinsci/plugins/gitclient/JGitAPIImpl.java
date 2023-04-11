@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
@@ -32,6 +31,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +62,7 @@ import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
@@ -591,9 +592,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new org.jenkinsci.plugins.gitclient.FetchCommand() {
             private URIish url;
             private List<RefSpec> refspecs;
+            private boolean shallow;
             private boolean shouldPrune = false;
-            private boolean tags = true;
             private Integer timeout;
+            private boolean tags = true;
+            private Integer depth = 1;
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -615,9 +618,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand shallow(boolean shallow) {
-                if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
-                }
+                this.shallow = shallow;
                 return this;
             }
 
@@ -635,7 +636,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                this.depth = depth;
                 return this;
             }
 
@@ -669,6 +670,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     fetch.setRefSpecs(allRefSpecs);
                     fetch.setRemoveDeletedRefs(shouldPrune);
                     setTransportTimeout(fetch, "fetch", timeout);
+                    if (shallow) {
+                        if (depth == null) {
+                            depth = 1;
+                        }
+                        fetch.setDepth(depth);
+                    }
                     fetch.call();
                 } catch (GitAPIException e) {
                     throw new GitException(e);
@@ -1103,7 +1110,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(), UTF_8),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), StandardCharsets.UTF_8),sw);
                     sw.write("\n");
                     addNote(sw + normalizeNote(note), namespace);
                 }
@@ -1309,7 +1316,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             rd.reset();
             rd.addAll(DiffEntry.scan(tw));
-            List<DiffEntry> diffs = rd.compute(or, null);
+            List<DiffEntry> diffs;
+            try {
+                diffs = rd.compute(or, null);
+            } catch (CanceledException e) {
+                throw new IOException(e);
+            }
             if (useRawOutput) {
 	            for (DiffEntry diff : diffs) {
 	                pw.printf(":%06o %06o %s %s %s\t%s",
@@ -1370,10 +1382,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String url;
             private String remote = Constants.DEFAULT_REMOTE_NAME;
             private String reference;
+            private boolean shallow,shared;
             private Integer timeout;
-            private boolean shared;
             private boolean tags = true;
             private List<RefSpec> refspecs;
+            private Integer depth = 1;
 
             @Override
             public CloneCommand url(String url) {
@@ -1394,9 +1407,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand shallow(boolean shallow) {
-                if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
-                }
+                this.shallow = shallow;
                 return this;
             }
 
@@ -1443,7 +1454,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                this.depth = depth;
                 return this;
             }
 
@@ -1553,6 +1564,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
                             .setRefSpecs(refspecs);
                     setTransportTimeout(fetch, "fetch", timeout);
+                    if (shallow) {
+                        if (depth == null) {
+                            depth = 1;
+                        }
+                        fetch.setDepth(depth);
+                    }
                     fetch.call();
 
                     StoredConfig config = repository.getConfig();
@@ -2327,14 +2344,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
                 if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit doesn't support shallow clone. This flag is ignored");
+                    listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone. This flag is ignored");
                 }
                 return this;
             }
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit doesn't support shallow clone and therefore depth is meaningless. This flag is ignored");
+                listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
             }
 

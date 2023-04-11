@@ -5,9 +5,8 @@ import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import java.io.File;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,7 +16,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 
@@ -213,9 +211,9 @@ public class GitClientMaintenanceTest {
         if (parentDir != null) {
             parentDir.mkdirs();
         }
-        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+        } catch (IOException ex) {
             throw new GitException(ex);
         }
     }
@@ -244,7 +242,7 @@ public class GitClientMaintenanceTest {
         // Assert loose objects are in the objects directory
         String looseObjects[] = objectsPath.list();
         collector.checkThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
-        collector.checkThat("Missing expected loose objects in objects dir, only found " + Arrays.stream(looseObjects).collect(Collectors.joining(",")),
+        collector.checkThat("Missing expected loose objects in objects dir, only found " + String.join(",", looseObjects),
                 looseObjects.length, is(greaterThan(2))); // Initially loose objects are present
 
         // Run the loose objects maintenance task, will create loose-objects pack file
@@ -255,7 +253,7 @@ public class GitClientMaintenanceTest {
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
         String[] looseObjectPackFile = looseObjectPackFilePath.list((dir1, name) -> name.startsWith("loose-"));
-        collector.checkThat("Missing expected loose objects in git dir, only found " + Arrays.stream(looseObjectPackFile).collect(Collectors.joining(",")),
+        collector.checkThat("Missing expected loose objects in git dir, only found " + String.join(",", looseObjectPackFile),
                 looseObjectPackFile.length, is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
 
         // Clean the loose objects present in the repo.

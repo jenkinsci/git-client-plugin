@@ -17,7 +17,7 @@ Tests help us assure that we're delivering a reliable plugin, and that we've com
 
 === Compiling and testing the plugin
 
-Compile and run the plugin automated tests on Java 8 or Java 11 with:
+Compile and run the plugin automated tests on Java 11 or Java 17 with:
 
 * `mvn clean verify`
 
