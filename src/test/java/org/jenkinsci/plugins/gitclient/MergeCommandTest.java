@@ -7,10 +7,10 @@ import hudson.util.StreamTaskListener;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -68,9 +68,9 @@ public class MergeCommandTest {
     public static void computeDefaultBranchName() throws Exception {
         File configDir = java.nio.file.Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
-        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--global", "--get", "init.defaultBranch");
-        for (int i = 0; i < output.length; i++) {
-            String result = output[i].trim();
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
+        for (String s : output) {
+            String result = s.trim();
             if (result != null && !result.isEmpty()) {
                 defaultBranchName = result;
             }
@@ -92,7 +92,7 @@ public class MergeCommandTest {
         // Create a default branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
         readme = new File(repo, "README.adoc");
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println("# Default Branch README " + randomChar);
         }
         git.add("README.adoc");
@@ -104,7 +104,7 @@ public class MergeCommandTest {
         // Create branch-1
         readmeOne = new File(repo, "README-branch-1.md");
         git.checkoutBranch("branch-1", defaultBranchName);
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# Branch 1 README " + randomChar);
         }
         git.add(readmeOne.getName());
@@ -116,7 +116,7 @@ public class MergeCommandTest {
         assertTrue("Master README missing on branch 1", readme.exists());
 
         // Commit a second change to branch-1
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# Branch 1 README " + randomChar);
             writer.println("");
             writer.println("Second change to branch 1 README");
@@ -131,7 +131,7 @@ public class MergeCommandTest {
 
 
         git.checkoutBranch("branch-2", defaultBranchName);
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println(BRANCH_2_README_CONTENT + randomChar);
             writer.println("");
             writer.println("Changed on branch commit");
@@ -144,7 +144,7 @@ public class MergeCommandTest {
 
         // Commit a second change to default branch
         git.checkout().ref(defaultBranchName).execute();
-        try (PrintWriter writer = new PrintWriter(readme, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readme, StandardCharsets.UTF_8)) {
             writer.println("# Default Branch README " + randomChar);
             writer.println("");
             writer.println("Second commit");
@@ -168,7 +168,7 @@ public class MergeCommandTest {
         git.checkout().ref(defaultBranchName).execute();
         git.branch("branch-conflict");
         git.checkout().ref("branch-conflict").execute();
-        try (PrintWriter writer = new PrintWriter(readmeOne, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(readmeOne, StandardCharsets.UTF_8)) {
             writer.println("# branch-conflict README with conflicting change");
         }
         git.add(readmeOne.getName());
@@ -181,7 +181,7 @@ public class MergeCommandTest {
     }
 
     @Parameterized.Parameters(name = "{0}")
-    public static Collection gitImplementations() {
+    public static Collection<Object[]> gitImplementations() {
         List<Object[]> args = new ArrayList<>();
         String[] implementations = new String[]{"git", "jgit"};
         for (String implementation : implementations) {
@@ -264,7 +264,7 @@ public class MergeCommandTest {
     }
 
     @Test
-    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, FileNotFoundException, IOException {
+    public void testRecursiveTheirsStrategy() throws GitException, InterruptedException, IOException {
         mergeCmd.setStrategy(MergeCommand.Strategy.RECURSIVE_THEIRS).setRevisionToMerge(commit1Branch2).execute();
         assertTrue("branch 2 commit 1 not on default branch after merge", git.revList(defaultBranchName).contains(commit1Branch2));
         assertTrue("README.adoc is missing on master", readme.exists());
@@ -332,9 +332,7 @@ public class MergeCommandTest {
         assertTrue("branch commit 2 not on default branch after merge", git.revList(defaultBranchName).contains(commit2Branch));
         assertTrue("README 1 missing in working directory", readmeOne.exists());
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          mergeCmd.setRevisionToMerge(commitConflict).execute();
-                                      });
+                                      () -> mergeCmd.setRevisionToMerge(commitConflict).execute());
         assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 
@@ -346,9 +344,7 @@ public class MergeCommandTest {
         assertFalse("branch commit 2 on default branch after merge without commit", git.revList(defaultBranchName).contains(commit2Branch));
         assertTrue("README 1 missing in working directory", readmeOne.exists());
         GitException e = assertThrows(GitException.class,
-                                      () -> {
-                                          mergeCmd.setRevisionToMerge(commitConflict).execute();
-                                      });
+                                      () -> mergeCmd.setRevisionToMerge(commitConflict).execute());
         assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 }

@@ -3,67 +3,50 @@ package org.jenkinsci.plugins.gitclient;
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.plugins.git.IGitAPI;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Git API Test which are solely for CLI git,
- * but doesn't need an initialized working repo.
- * These tests are not implemented for JGit.
+ * Git API Tests which doesn't need a working initialized git repo.
+ * Implemented in JUnit 4
  */
 
 @RunWith(Parameterized.class)
-public class GitAPITestCliGitNotIntialized {
+public class GitAPINotIntializedTest {
+
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
-    @Rule
-    public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
-
-    @Rule
-    public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
-
     private int logCount = 0;
-    private final Random random = new Random();
     private static final String LOGGING_STARTED = "Logging started";
     private LogHandler handler = null;
     private TaskListener listener;
     private final String gitImplName;
-
-    private String revParseBranchName = null;
-
-    private int checkoutTimeout = -1;
-    private int cloneTimeout = -1;
-    private int fetchTimeout = -1;
-    private int submoduleUpdateTimeout = -1;
-
 
     WorkspaceWithRepo workspace;
 
@@ -71,14 +54,12 @@ public class GitAPITestCliGitNotIntialized {
     private File testGitDir;
     private CliGitCommand cliGitCommand;
 
-    public GitAPITestCliGitNotIntialized(final String gitImplName) {
-        this.gitImplName = gitImplName;
-    }
+    public GitAPINotIntializedTest(final String gitImplName) { this.gitImplName = gitImplName; }
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
         List<Object[]> arguments = new ArrayList<>();
-        String[] gitImplNames = {"git"};
+        String[] gitImplNames = {"git", "jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
             Object[] item = {gitImplName};
             arguments.add(item);
@@ -89,13 +70,13 @@ public class GitAPITestCliGitNotIntialized {
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
-        /* Allow 2-5 second delay before priming the cache */
+        /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
-        /* 2-5 second delay is small compared to execution time of this test */
+        /* 2-6 second delay is small compared to execution time of this test */
         Random random = new Random();
-        Thread.sleep((2 + random.nextInt(4)) * 1000L); // Wait 2-5 seconds before priming the cache
+        Thread.sleep(2000L + random.nextInt(4000)); // Wait 2-6 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGITAPITest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitAPITestNotInitialized").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
@@ -103,12 +84,6 @@ public class GitAPITestCliGitNotIntialized {
 
     @Before
     public void setUpRepositories() throws Exception {
-        revParseBranchName = null;
-        checkoutTimeout = -1;
-        cloneTimeout = -1;
-        fetchTimeout = -1;
-        submoduleUpdateTimeout = -1;
-
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -125,108 +100,96 @@ public class GitAPITestCliGitNotIntialized {
         cliGitCommand = workspace.getCliGitCommand();
     }
 
-    @After
-    public void afterTearDown() throws Exception {
-        try {
-            String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
-            assertCheckoutTimeout();
-            assertCloneTimeout();
-            assertFetchTimeout();
-            assertSubmoduleUpdateTimeout();
-            assertRevParseCalls(revParseBranchName);
-        } finally {
-            handler.close();
-        }
-    }
-
-    private void assertCheckoutTimeout() {
-        if (checkoutTimeout > 0) {
-            assertSubstringTimeout("git checkout", checkoutTimeout);
-        }
-    }
-
-    private void assertCloneTimeout() {
-        if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git fetch", cloneTimeout);
-        }
-    }
-
-    private void assertFetchTimeout() {
-        if (fetchTimeout > 0) {
-            assertSubstringTimeout("git fetch", fetchTimeout);
-        }
-    }
-
-    private void assertSubmoduleUpdateTimeout() {
-        if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
-        }
-    }
-
-    private void assertSubstringTimeout(final String substring, int expectedTimeout) {
-        if (!(testGitClient instanceof CliGitAPIImpl)) { // Timeout only implemented in CliGitAPIImpl
+    @Test
+    public void testHasGitRepoWithInvalidGitRepo() throws Exception {
+        // Create an empty directory named .git - "corrupt" git repo
+        File emptyDotGitDir = workspace.file(".git");
+        assertTrue("mkdir .git failed", emptyDotGitDir.mkdir());
+        boolean hasGitRepo = testGitClient.hasGitRepo();
+        // Don't assert condition if the temp directory is inside the dev dir.
+        // CLI git searches up the directory tree seeking a '.git' directory.
+        // If it finds such a directory, it uses it.
+        if (emptyDotGitDir.getAbsolutePath().contains("target") && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
             return;
         }
-        List<String> messages = handler.getMessages();
-        List<String> substringMessages = new ArrayList<>();
-        List<String> substringTimeoutMessages = new ArrayList<>();
-        final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
-        final String timeoutRegEx = messageRegEx
-                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
-        for (String message : messages) {
-            if (message.matches(messageRegEx)) {
-                substringMessages.add(message);
-            }
-            if (message.matches(timeoutRegEx)) {
-                substringTimeoutMessages.add(message);
-            }
-        }
-        assertThat(messages, is(not(empty())));
-        assertThat(substringMessages, is(not(empty())));
-        assertThat(substringTimeoutMessages, is(not(empty())));
-        assertEquals(substringMessages, substringTimeoutMessages);
+        assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasGitRepo);
     }
 
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The createRevParseBranch call
-     * creates a branch whose name is unknown to the tests. This
-     * checks that the branch name is not mentioned in a call to
-     * git rev-parse.
-     */
-    private void assertRevParseCalls(String branchName) {
-        if (revParseBranchName == null) {
-            return;
-        }
-        String messages = StringUtils.join(handler.getMessages(), ";");
-        // Linux uses rev-parse without quotes
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
-        // Windows quotes the rev-parse argument
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
+    @Test
+    public void testSetSubmoduleUrl() throws Exception {
+        workspace.cloneRepo(workspace, workspace.localMirror());
+        workspace.launchCommand("git", "checkout", "tests/getSubmodules");
+        testGitClient.submoduleInit();
+
+        String DUMMY = "/dummy";
+        IGitAPI igit = (IGitAPI) testGitClient;
+        igit.setSubmoduleUrl("modules/firewall", DUMMY);
+
+        // create a brand new Git object to make sure it's persisted
+        WorkspaceWithRepo subModuleVerify = new WorkspaceWithRepo(testGitDir, gitImplName, TaskListener.NULL);
+        IGitAPI subModuleIgit = (IGitAPI) subModuleVerify.getGitClient();
+        assertEquals(DUMMY, subModuleIgit.getSubmoduleUrl("modules/firewall"));
     }
 
-    /* Submodule checkout in JGit does not support renamed submodules.
-     * The test branch intentionally includes a renamed submodule, so this test
-     * is not run with JGit.
+    private final String remoteMirrorURL = "https://github.com/jenkinsci/git-client-plugin.git";
+
+    @Issue("JENKINS-23299")
+    @Test
+    public void testGetHeadRev() throws Exception {
+        Map<String, ObjectId> heads = testGitClient.getHeadRev(remoteMirrorURL);
+        ObjectId master = testGitClient.getHeadRev(remoteMirrorURL, "refs/heads/master");
+        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, master, heads.get("refs/heads/master"));
+
+        /* Test with a specific tag reference - JENKINS-23299 */
+        ObjectId knownTag = testGitClient.getHeadRev(remoteMirrorURL, "refs/tags/git-client-1.10.0");
+        ObjectId expectedTag = ObjectId.fromString("1fb23708d6b639c22383c8073d6e75051b2a63aa"); // commit SHA1
+        assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
+    }
+
+
+    /**
+     * Test getHeadRev with wildcard matching in the branch name.
+     * Relies on the branches in the git-client-plugin repository
+     * include at least branches named:
+     *   master
+     *   tests/getSubmodules
+     *
+     * Also relies on a specific return ordering of the values in the
+     * pattern matching performed by getHeadRev, and relies on not
+     * having new branches created which match the patterns and will
+     * occur earlier than the expected value.
      */
     @Test
-    public void testSubmoduleCheckoutSimple() throws Exception {
+    public void testGetHeadRevWildCards() throws Exception {
+        Map<String, ObjectId> heads = testGitClient.getHeadRev(workspace.localMirror());
+        ObjectId master = testGitClient.getHeadRev(workspace.localMirror(), "refs/heads/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
+        ObjectId wildOrigin = testGitClient.getHeadRev(workspace.localMirror(), "*/master");
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
+        ObjectId master1 = testGitClient.getHeadRev(workspace.localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
+        assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
+        ObjectId getSubmodules1 = testGitClient.getHeadRev(workspace.localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
+        ObjectId getSubmodules = testGitClient.getHeadRev(workspace.localMirror(), "N/*et*modul*");
+        assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
+    }
+
+    /* Opening a git repository in a directory with a symbolic git file instead
+     * of a git directory should function properly.
+     */
+    @Test
+    public void testWithRepositoryWorksWithSubmodule() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         assertSubmoduleDirs(testGitDir, false, false);
 
         /* Checkout a branch which includes submodules (in modules directory) */
-        String subBranch = "tests/getSubmodules";
+        String subBranch = testGitClient instanceof CliGitAPIImpl ? "tests/getSubmodules" : "tests/getSubmodules-jgit";
         String subRefName = "origin/" + subBranch;
         testGitClient.checkout().ref(subRefName).branch(subBranch).execute();
-        assertSubmoduleDirs(testGitDir, true, false);
-
+        testGitClient.submoduleInit();
         testGitClient.submoduleUpdate().recursive(true).execute();
-        assertSubmoduleDirs(testGitDir, true, true);
-        assertSubmoduleContents(testGitDir);
         assertSubmoduleRepository(new File(testGitDir, "modules/ntp"));
         assertSubmoduleRepository(new File(testGitDir, "modules/firewall"));
-        assertSubmoduleRepository(new File(testGitDir, "modules/sshkeys"));
     }
 
     private void assertSubmoduleRepository(File submoduleDir) throws Exception {
@@ -250,7 +213,7 @@ public class GitAPITestCliGitNotIntialized {
 
     private static boolean cliGitDefaultsSet = false;
 
-    private void setCliGitDefaults() throws Exception {
+    private void setCliGitDefaults() {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
         }
@@ -278,18 +241,18 @@ public class GitAPITestCliGitNotIntialized {
 
     private void assertFileContains(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
         assertTrue(message, fileContent.contains(expectedContent));
     }
 
     private void assertFileContents(File file, String expectedContent) throws IOException {
         assertFileExists(file);
-        final String fileContent = FileUtils.readFileToString(file, "UTF-8");
+        final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         assertEquals(file + " wrong content", expectedContent, fileContent);
     }
 
-    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) throws IOException {
+    private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) {
         final File modulesDir = new File(repo, "modules");
         final File ntpDir = new File(modulesDir, "ntp");
         final File firewallDir = new File(modulesDir, "firewall");

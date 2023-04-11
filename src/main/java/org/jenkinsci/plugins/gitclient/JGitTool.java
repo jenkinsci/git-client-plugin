@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
@@ -43,6 +44,7 @@ public class JGitTool extends GitTool {
 
     @Extension @Symbol("jgit")
     public static class DescriptorImpl extends GitTool.DescriptorImpl {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "JGit";

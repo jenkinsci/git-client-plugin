@@ -10,7 +10,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -231,12 +230,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutScheme() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof SchemeRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof SchemeRequirement);
         return this;
     }
 
@@ -247,12 +241,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutPath() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof PathRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof PathRequirement);
         return this;
     }
 
@@ -263,12 +252,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutHostname() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof HostnameRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof HostnameRequirement);
         return this;
     }
 
@@ -279,12 +263,7 @@ public class GitURIRequirementsBuilder {
      */
     @NonNull
     public GitURIRequirementsBuilder withoutHostnamePort() {
-        for (Iterator<DomainRequirement> iterator = requirements.iterator(); iterator.hasNext(); ) {
-            DomainRequirement r = iterator.next();
-            if (r instanceof HostnamePortRequirement) {
-                iterator.remove();
-            }
-        }
+        requirements.removeIf(r -> r instanceof HostnamePortRequirement);
         return this;
     }
 

@@ -55,9 +55,9 @@ public class NetrcTest
         H2_03("builder3.example.com", null, null),
         H2_04("builder4.example.com", "jenk", "myvoice");
 
-        private String machine;
-        private String login;
-        private String password;
+        private final String machine;
+        private final String login;
+        private final String password;
 
         private TestHost(String _machine, String _login, String _password)
         {
@@ -76,7 +76,7 @@ public class NetrcTest
         }
         else {
             assertEquals("Host." + host.name() + ": Login mismatch.", host.login, ((UsernamePasswordCredentials)cred).getUserName());
-            assertEquals("Host." + host.name() + ": Password mismatch.", host.password, ((UsernamePasswordCredentials)cred).getPassword());
+            assertEquals("Host." + host.name() + ": Password mismatch.", host.password, cred.getPassword());
         }
     }
 

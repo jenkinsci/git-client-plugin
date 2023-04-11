@@ -19,7 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class GitURIRequirementsBuilderTest {
 
     @Test
-    public void smokes() throws Exception {
+    public void smokes() {
         List<DomainRequirement> list =
                 GitURIRequirementsBuilder.fromUri("ssh://bob@foo.bar.com:8080/path/to/repo.git/").build();
 
@@ -153,7 +153,7 @@ public class GitURIRequirementsBuilderTest {
         assertThat(path, notNullValue());
         assertThat(path.getPath(), is("/path/to/repo.git/"));
 
-        list = GitURIRequirementsBuilder.fromUri("http://bob:bobpass@foo.bar.com:8080/path/to/repo.git/").build();
+        list = GitURIRequirementsBuilder.fromUri("https://bob:bobpass@foo.bar.com:8080/path/to/repo.git/").build();
 
         scheme = firstOrNull(list, SchemeRequirement.class);
         hostname = firstOrNull(list, HostnameRequirement.class);
@@ -161,7 +161,7 @@ public class GitURIRequirementsBuilderTest {
         path = firstOrNull(list, PathRequirement.class);
 
         assertThat(scheme, notNullValue());
-        assertThat(scheme.getScheme(), is("http"));
+        assertThat(scheme.getScheme(), is("https"));
         assertThat(hostname, notNullValue());
         assertThat(hostname.getHostname(), is("foo.bar.com"));
         assertThat(hostnamePort, notNullValue());
@@ -170,7 +170,7 @@ public class GitURIRequirementsBuilderTest {
         assertThat(path, notNullValue());
         assertThat(path.getPath(), is("/path/to/repo.git/"));
 
-        list = GitURIRequirementsBuilder.fromUri("http://foo.bar.com:8080/path/to/repo.git/").build();
+        list = GitURIRequirementsBuilder.fromUri("https://foo.bar.com:8080/path/to/repo.git/").build();
 
         scheme = firstOrNull(list, SchemeRequirement.class);
         hostname = firstOrNull(list, HostnameRequirement.class);
@@ -178,7 +178,7 @@ public class GitURIRequirementsBuilderTest {
         path = firstOrNull(list, PathRequirement.class);
 
         assertThat(scheme, notNullValue());
-        assertThat(scheme.getScheme(), is("http"));
+        assertThat(scheme.getScheme(), is("https"));
         assertThat(hostname, notNullValue());
         assertThat(hostname.getHostname(), is("foo.bar.com"));
         assertThat(hostnamePort, notNullValue());
@@ -187,7 +187,7 @@ public class GitURIRequirementsBuilderTest {
         assertThat(path, notNullValue());
         assertThat(path.getPath(), is("/path/to/repo.git/"));
 
-        list = GitURIRequirementsBuilder.fromUri("http://bob@foo.bar.com/path/to/repo.git/").build();
+        list = GitURIRequirementsBuilder.fromUri("https://bob@foo.bar.com/path/to/repo.git/").build();
 
         scheme = firstOrNull(list, SchemeRequirement.class);
         hostname = firstOrNull(list, HostnameRequirement.class);
@@ -195,14 +195,14 @@ public class GitURIRequirementsBuilderTest {
         path = firstOrNull(list, PathRequirement.class);
 
         assertThat(scheme, notNullValue());
-        assertThat(scheme.getScheme(), is("http"));
+        assertThat(scheme.getScheme(), is("https"));
         assertThat(hostname, notNullValue());
         assertThat(hostname.getHostname(), is("foo.bar.com"));
         assertThat(hostnamePort, nullValue());
         assertThat(path, notNullValue());
         assertThat(path.getPath(), is("/path/to/repo.git/"));
 
-        list = GitURIRequirementsBuilder.fromUri("http://foo.bar.com/path/to/repo.git/").build();
+        list = GitURIRequirementsBuilder.fromUri("https://foo.bar.com/path/to/repo.git/").build();
 
         scheme = firstOrNull(list, SchemeRequirement.class);
         hostname = firstOrNull(list, HostnameRequirement.class);
@@ -210,7 +210,7 @@ public class GitURIRequirementsBuilderTest {
         path = firstOrNull(list, PathRequirement.class);
 
         assertThat(scheme, notNullValue());
-        assertThat(scheme.getScheme(), is("http"));
+        assertThat(scheme.getScheme(), is("https"));
         assertThat(hostname, notNullValue());
         assertThat(hostname.getHostname(), is("foo.bar.com"));
         assertThat(hostnamePort, nullValue());

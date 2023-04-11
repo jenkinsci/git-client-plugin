@@ -3,6 +3,7 @@ package hudson.plugins.git;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Git index / tree entry.
@@ -130,16 +131,16 @@ public class IndexEntry implements Serializable {
             return false;
         }
         final IndexEntry other = (IndexEntry) obj;
-        if ((this.mode == null) ? (other.mode != null) : !this.mode.equals(other.mode)) {
+        if (!Objects.equals(this.mode, other.mode)) {
             return false;
         }
-        if ((this.type == null) ? (other.type != null) : !this.type.equals(other.type)) {
+        if (!Objects.equals(this.type, other.type)) {
             return false;
         }
-        if ((this.object == null) ? (other.object != null) : !this.object.equals(other.object)) {
+        if (!Objects.equals(this.object, other.object)) {
             return false;
         }
-        if ((this.file == null) ? (other.file != null) : !this.file.equals(other.file)) {
+        if (!Objects.equals(this.file, other.file)) {
             return false;
         }
         return true;

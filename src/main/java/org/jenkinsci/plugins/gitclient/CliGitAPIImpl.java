@@ -9,10 +9,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import com.google.common.collect.Lists;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Launcher.LocalLauncher;
 import hudson.Util;
+import hudson.console.HyperlinkNote;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
@@ -64,7 +64,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,6 +71,8 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
@@ -97,7 +98,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * not allow automatic answers to private key passphrase prompts
      * unless there is no controlling terminal associated with the process.
      */
-    public static final boolean USE_SETSID = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
+    public static final boolean USE_SETSID = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".useSETSID", "false"));
 
     /**
      * Set promptForAuthentication=true if you must allow command line git
@@ -124,7 +125,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * run from the desktop environment.  Agents running on the
      * desktop are much less common in the Unix environments.
      */
-    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
+    private static final boolean PROMPT_FOR_AUTHENTICATION = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".promptForAuthentication", "false"));
 
     /**
      * CALL_SETSID decides if command line git can use the setsid program
@@ -181,7 +182,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.forceFetch=false'
      * to prevent 'force' in 'git fetch' with CLI git 2.20 and later.
      */
-    private static final boolean USE_FORCE_FETCH = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
+    private static final boolean USE_FORCE_FETCH = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".forceFetch", "true"));
+
+    private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
     private static final long serialVersionUID = 1;
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
@@ -431,11 +434,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         List<IndexEntry> submodules = lsTree(treeIsh,true);
 
         // Remove anything that isn't a submodule
-        for (Iterator<IndexEntry> it = submodules.iterator(); it.hasNext();) {
-            if (!it.next().getMode().equals("160000")) {
-                it.remove();
-            }
-        }
+        submodules.removeIf(indexEntry -> !indexEntry.getMode().equals("160000"));
         return submodules;
     }
 
@@ -451,7 +450,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.checkRemoteURL=false'
      * to prevent check of remote URL.
      */
-    static boolean CHECK_REMOTE_URL = Boolean.valueOf(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
+    static boolean CHECK_REMOTE_URL = Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".checkRemoteURL", "true"));
 
     /**
      * SECURITY-1534 found that arguments
@@ -828,14 +827,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
                         else {
                             File alternates = new File(workspace, ".git/objects/info/alternates");
-                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
+                            try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset())) {
                                 String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
                                 listener.getLogger().println("Using reference repository: " + reference);
                                 // git implementations on windows also use
                                 w.print(absoluteReference);
-                            } catch (UnsupportedEncodingException ex) {
-                                listener.error("Default character set is an unsupported encoding");
-                            } catch (FileNotFoundException e) {
+                            } catch (IOException e) {
                                 listener.error("Failed to setup reference");
                             }
                         }
@@ -947,15 +944,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 /* See JENKINS-45228 */
                 /* Git merge requires authentication in LFS merges, plugin does not authenticate the git merge command */
-                String defaultRemote = null;
+                String repoUrl = null;
                 try {
-                    defaultRemote = getDefaultRemote();
+                    String defaultRemote = getDefaultRemote();
+                    if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                        repoUrl = getRemoteUrl(defaultRemote);
+                    }
                 } catch (GitException e) {
-                    /* Nothing to do, just keeping defaultRemote = null */
+                    /* Nothing to do, just keeping repoUrl = null */
                 }
 
-                if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                    String repoUrl = getRemoteUrl(defaultRemote);
+                if (repoUrl != null) {
                     StandardCredentials cred = credentials.get(repoUrl);
                     if (cred == null) cred = defaultCredentials;
                     launchCommandWithCredentials(args, workspace, cred, repoUrl);
@@ -1093,7 +1092,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
-     * On Windows command prompt, '^' is an escape character (http://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
+     * On Windows command prompt, '^' is an escape character (https://en.wikipedia.org/wiki/Escape_character#Windows_Command_Prompt)
      * This isn't a problem if 'git' we are executing is git.exe, because '^' is a special character only for the command processor,
      * but if 'git' we are executing is git.cmd (which is the case of msysgit), then the arguments we pass in here ends up getting
      * processed by the command processor, and so 'xyz^{commit}' becomes 'xyz{commit}' and fails.
@@ -1267,7 +1266,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // "git whatchanged" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
-                try (WriterOutputStream w = new WriterOutputStream(out, Charset.forName("UTF-8"))) {
+                try (WriterOutputStream w = new WriterOutputStream(out, StandardCharsets.UTF_8)) {
                     if (launcher.launch().cmds(args).envs(environment).stdout(w).stderr(listener.getLogger()).pwd(workspace).join() != 0)
                         throw new GitException("Error: " + args + " in " + workspace);
                 } catch (IOException e) {
@@ -1880,13 +1879,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         createNote(note,namespace,"add");
     }
 
-    private File createTempFileInSystemDir(String prefix, String suffix) throws IOException {
+    private Path createTempFileInSystemDir(String prefix, String suffix) throws IOException {
         if (isWindows()) {
-            return Files.createTempFile(prefix, suffix).toFile();
+            return Files.createTempFile(prefix, suffix);
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
         FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
-        return Files.createTempFile(prefix, suffix, fileAttribute).toFile();
+        return Files.createTempFile(prefix, suffix, fileAttribute);
     }
 
     /**
@@ -1910,7 +1909,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return temporary file
      * @throws IOException on error
      */
-    File createTempFile(String prefix, String suffix) throws IOException {
+    Path createTempFile(String prefix, String suffix) throws IOException {
         String common_prefix = "jenkins-gitclient-";
         if (prefix == null) {
             prefix = common_prefix;
@@ -1940,7 +1939,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (workspaceTmp.getAbsolutePath().matches(".*[ ()|?*].*")) {
                 return createTempFileInSystemDir(prefix, suffix);
             }
-            return Files.createTempFile(tmpPath, prefix, suffix).toFile();
+            return Files.createTempFile(tmpPath, prefix, suffix);
         } else if (workspaceTmp.getAbsolutePath().contains("%")) {
             /* Avoid Linux expansion of % in ssh arguments */
             return createTempFileInSystemDir(prefix, suffix);
@@ -1952,21 +1951,27 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
         FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
-        return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute).toFile();
+        return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute);
     }
 
-    private void deleteTempFile(File tempFile) {
-        if (tempFile != null && !tempFile.delete() && tempFile.exists()) {
-            listener.getLogger().println("[WARNING] temp file " + tempFile + " not deleted");
+    private void deleteTempFile(Path tempFile) {
+        if (tempFile != null) {
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "temp file " + tempFile + " not deleted", e);
+            }
         }
     }
 
     private void createNote(String note, String namespace, String command ) throws GitException, InterruptedException {
-        File msg = null;
+        Path msg = null;
         try {
             msg = createTempFile("git-note", ".txt");
-            FileUtils.writeStringToFile(msg,note);
-            launchCommand("notes", "--ref=" + namespace, command, "-F", msg.getAbsolutePath());
+            try (Writer w = Files.newBufferedWriter(msg, StandardCharsets.UTF_8)) {
+                w.write(note);
+            }
+            launchCommand("notes", "--ref=" + namespace, command, "-F", msg.toAbsolutePath().toString());
         } catch (IOException | GitException e) {
             throw new GitException("Could not apply note " + note, e);
         } finally {
@@ -2018,12 +2023,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                                 @NonNull URIish url,
                                                 Integer timeout) throws GitException, InterruptedException {
 
-        File key = null;
-        File ssh = null;
-        File askpass = null;
-        File usernameFile = null;
-        File passwordFile = null;
-        File passphrase = null;
+        Path key = null;
+        Path ssh = null;
+        Path askpass = null;
+        Path usernameFile = null;
+        Path passwordFile = null;
+        Path passphrase = null;
+        Path knownHostsTemp = null;
         EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
@@ -2045,18 +2051,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
+                knownHostsTemp = createTempFile("known_hosts","");
                 if (launcher.isUnix()) {
-                    ssh =  createUnixGitSSH(key, userName);
+                    ssh =  createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass =  createUnixSshAskpass(sshUser, passphrase);
                 } else {
-                    ssh = createWindowsGitSSH(key, userName);
+                    ssh = createWindowsGitSSH(key, userName, knownHostsTemp);
                     askpass =  createWindowsSshAskpass(sshUser, passphrase);
                 }
 
                 env = new EnvVars(env);
-                env.put("GIT_SSH", ssh.getAbsolutePath());
+                env.put("GIT_SSH", ssh.toAbsolutePath().toString());
                 env.put("GIT_SSH_VARIANT", "ssh");
-                env.put("SSH_ASKPASS", askpass.getAbsolutePath());
+                env.put("SSH_ASKPASS", askpass.toAbsolutePath().toString());
 
                 // supply a dummy value for DISPLAY if not already present
                 // or else ssh will not invoke SSH_ASKPASS
@@ -2077,8 +2084,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 env = new EnvVars(env);
-                env.put("GIT_ASKPASS", askpass.getAbsolutePath());
-                env.put("SSH_ASKPASS", askpass.getAbsolutePath());
+                env.put("GIT_ASKPASS", askpass.toAbsolutePath().toString());
+                env.put("SSH_ASKPASS", askpass.toAbsolutePath().toString());
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
@@ -2121,13 +2128,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             deleteTempFile(passphrase);
             deleteTempFile(usernameFile);
             deleteTempFile(passwordFile);
+            deleteTempFile(knownHostsTemp);
         }
     }
 
     @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
         justification = "Path operations below intentionally use absolute '/usr/bin/chcon' and '/sys/fs/selinux/enforce' and '/proc/self/attr/current' at this time (as delivered in relevant popular Linux distros)"
         )
-    private Boolean fixSELinuxLabel(File key, String label) {
+    private Boolean fixSELinuxLabel(Path key, String label) {
         // returning false means chcon was tried and failed,
         // maybe caller needs to retry with other logic
         // true means all ok, including nothing needs to be done
@@ -2153,17 +2161,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // A process should always have rights to inspect itself, but
                 // on some systems even this read returns "Invalid argument"
                 if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
-                    BufferedReader br = Files.newBufferedReader(
-                        Paths.get("/proc/self/attr/current"),
-                        Charset.forName("UTF-8"));
                     String s;
-                    try {
+                    try (BufferedReader br = Files.newBufferedReader(Paths.get("/proc/self/attr/current"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
-                    } catch (Throwable t) {
-                        br.close();
-                        throw t;
                     }
-                    br.close();
                     if ("unconfined".equals(s)) {
                         return true;
                     }
@@ -2176,9 +2177,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_proc = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             try {
@@ -2189,17 +2188,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
-                    BufferedReader br = Files.newBufferedReader(
-                        Paths.get("/sys/fs/selinux/enforce"),
-                        Charset.forName("UTF-8"));
                     String s;
-                    try {
+                    try (BufferedReader br = Files.newBufferedReader(Paths.get("/sys/fs/selinux/enforce"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
-                    } catch (Throwable t) {
-                        br.close();
-                        throw t;
                     }
-                    br.close();
                     if ("0".equals(s)) {
                         // Subsystem exists, but told to not get into way at the moment
                         return true;
@@ -2208,9 +2200,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         clue_sysfs = true;
                     }
                 }
-            } catch (SecurityException e) {
-            } catch (FileNotFoundException e) {
-            } catch (IOException e) {
+            } catch (SecurityException | IOException e) {
             }
 
             // If we are here, there were no clear clues about SELinux *not*
@@ -2246,7 +2236,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ArgumentListBuilder args = new ArgumentListBuilder();
             args.add("/usr/bin/chcon");
             args.add("--type=" + label);
-            args.add(key.getPath());
+            args.add(key.toAbsolutePath().toString());
             Launcher.ProcStarter p = launcher.launch().cmds(args.toCommandArray());
             int status = -1;
             String stdout = "";
@@ -2270,7 +2260,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                  * True exceptions are better handled (reported) ASAP, without
                  * caching into failureClues like the noisy log further below.
                  */
-                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e.toString());
+                listener.getLogger().println("Error performing chcon helper command for SELinux: " + command + " :\n" + e);
                 if (status <= 0) { status = 126; } // cause the message and false return below
             }
             if (status > 0) {
@@ -2295,16 +2285,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private File createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException, InterruptedException {
-        File key = createTempFile("ssh", ".key");
-        try (PrintWriter w = new PrintWriter(key, encoding)) {
+    private Path createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException {
+        Path key = createTempFile("ssh", ".key");
+        try (BufferedWriter w = Files.newBufferedWriter(key, Charset.forName(encoding))) {
             List<String> privateKeys = sshUser.getPrivateKeys();
             for (String s : privateKeys) {
-                w.println(s);
+                w.write(s);
+                w.newLine();
             }
         }
         if (launcher.isUnix()) {
-            new FilePath(key).chmod(0400);
+            Files.setPosixFilePermissions(key, Collections.singleton(PosixFilePermission.OWNER_READ));
             fixSELinuxLabel(key, "ssh_home_t");
         } else {
             fixSshKeyOnWindows(key);
@@ -2314,12 +2305,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /* package protected for testability */
-    void fixSshKeyOnWindows(File key) throws GitException {
+    void fixSshKeyOnWindows(Path key) throws GitException {
         if (launcher.isUnix()) return;
 
-        Path file = Paths.get(key.toURI());
-
-        AclFileAttributeView fileAttributeView = Files.getFileAttributeView(file, AclFileAttributeView.class);
+        AclFileAttributeView fileAttributeView = Files.getFileAttributeView(key, AclFileAttributeView.class);
         if (fileAttributeView == null) return;
 
         try {
@@ -2331,8 +2320,43 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 .build();
             fileAttributeView.setAcl(Collections.singletonList(aclEntry));
         } catch (IOException | UnsupportedOperationException e) {
-            throw new GitException("Error updating file permission for \"" + key.getAbsolutePath() + "\"", e);
+            throw new GitException("Error updating file permission for \"" + key.toAbsolutePath() + "\"", e);
         }
+    }
+
+    /* Arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    @NonNull
+    private List<String> extraGitCommandArguments = Collections.emptyList();
+
+    /* Define arguments that will be inserted into every command line git
+     * call immediately after the "git" command.  Intended to be used
+     * for specific testing situations internal to the plugin.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    private void setExtraGitCommandArguments(@NonNull List<String> args) {
+        extraGitCommandArguments = new ArrayList<>(args);
+    }
+
+    /* package protected for use in tests.
+     *
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always on the git command line.
+     *
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     *
+     * NOT INTENDED FOR USE OUTSIDE THE PLUGIN.
+     */
+    void allowFileProtocol() {
+        setExtraGitCommandArguments(Arrays.asList("-c", "protocol.file.allow=always"));
     }
 
     /* Escape all double quotes in filename, then surround filename in double quotes.
@@ -2345,14 +2369,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return "\"" + filename + "\"";
     }
 
-    private File createWindowsSshAskpass(SSHUserPrivateKey sshUser, @NonNull File passphrase) throws IOException {
-        File ssh = File.createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
+    private Path createWindowsSshAskpass(SSHUserPrivateKey sshUser, @NonNull Path passphrase) throws IOException {
+        Path ssh = Files.createTempFile("pass", ".bat");
+        try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
             // avoid echoing command as part of the password
-            w.println("@echo off");
-            w.println("type " + windowsArgEncodeFileName(passphrase.getAbsolutePath()));
+            w.write("@echo off");
+            w.newLine();
+            w.write("type " + windowsArgEncodeFileName(passphrase.toAbsolutePath().toString()));
+            w.newLine();
         }
-        ssh.setExecutable(true, true);
+        ssh.toFile().setExecutable(true, true);
         return ssh;
     }
 
@@ -2366,73 +2392,86 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return "'" + filename + "'";
     }
 
-    private File createUnixSshAskpass(SSHUserPrivateKey sshUser, @NonNull File passphrase) throws IOException {
-        File ssh = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
-            w.println("#!/bin/sh");
-            w.println("cat " + unixArgEncodeFileName(passphrase.getAbsolutePath()));
+    private Path createUnixSshAskpass(SSHUserPrivateKey sshUser, @NonNull Path passphrase) throws IOException {
+        Path ssh = createTempFile("pass", ".sh");
+        try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
+            w.write("#!/bin/sh");
+            w.newLine();
+            w.write("cat " + unixArgEncodeFileName(passphrase.toAbsolutePath().toString()));
+            w.newLine();
         }
-        ssh.setExecutable(true, true);
+        ssh.toFile().setExecutable(true, true);
         // fixSELinuxLabel(ssh, "ssh_exec_t");
         return ssh;
     }
 
-    private File createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds, File usernameFile, File passwordFile) throws IOException {
-        File askpass = createTempFile("pass", ".bat");
-        try (PrintWriter w = new PrintWriter(askpass, encoding)) {
-            w.println("@set arg=%~1");
-            w.println("@if (%arg:~0,8%)==(Username) type " + windowsArgEncodeFileName(usernameFile.getAbsolutePath()));
-            w.println("@if (%arg:~0,8%)==(Password) type " + windowsArgEncodeFileName(passwordFile.getAbsolutePath()));
+    private Path createWindowsStandardAskpass(StandardUsernamePasswordCredentials creds, Path usernameFile, Path passwordFile) throws IOException {
+        Path askpass = createTempFile("pass", ".bat");
+        try (BufferedWriter w = Files.newBufferedWriter(askpass, Charset.forName(encoding))) {
+            w.write("@set arg=%~1");
+            w.newLine();
+            w.write("@if (%arg:~0,8%)==(Username) type " + windowsArgEncodeFileName(usernameFile.toAbsolutePath().toString()));
+            w.newLine();
+            w.write("@if (%arg:~0,8%)==(Password) type " + windowsArgEncodeFileName(passwordFile.toAbsolutePath().toString()));
+            w.newLine();
         }
-        askpass.setExecutable(true, true);
+        askpass.toFile().setExecutable(true, true);
         return askpass;
     }
 
-    private File createUnixStandardAskpass(StandardUsernamePasswordCredentials creds, File usernameFile, File passwordFile) throws IOException {
-        File askpass = createTempFile("pass", ".sh");
-        try (PrintWriter w = new PrintWriter(askpass, encoding)) {
-            w.println("#!/bin/sh");
-            w.println("case \"$1\" in");
-            w.println("Username*) cat " + unixArgEncodeFileName(usernameFile.getAbsolutePath()) + " ;;");
-            w.println("Password*) cat " + unixArgEncodeFileName(passwordFile.getAbsolutePath()) + " ;;");
-            w.println("esac");
+    private Path createUnixStandardAskpass(StandardUsernamePasswordCredentials creds, Path usernameFile, Path passwordFile) throws IOException {
+        Path askpass = createTempFile("pass", ".sh");
+        try (BufferedWriter w = Files.newBufferedWriter(askpass, Charset.forName(encoding))) {
+            w.write("#!/bin/sh");
+            w.newLine();
+            w.write("case \"$1\" in");
+            w.newLine();
+            w.write("Username*) cat " + unixArgEncodeFileName(usernameFile.toAbsolutePath().toString()) + " ;;");
+            w.newLine();
+            w.write("Password*) cat " + unixArgEncodeFileName(passwordFile.toAbsolutePath().toString()) + " ;;");
+            w.newLine();
+            w.write("esac");
+            w.newLine();
         }
-        askpass.setExecutable(true, true);
+        askpass.toFile().setExecutable(true, true);
         // fixSELinuxLabel(askpass, "ssh_exec_t");
         return askpass;
     }
 
-    private File createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
-        String charset = computeCredentialFileCharset("passphrase", "UTF-8");
-        File passphraseFile = createTempFile("phrase", ".txt");
-        try (PrintWriter w = new PrintWriter(passphraseFile, charset)) {
-            w.println(Secret.toString(sshUser.getPassphrase()));
+    private Path createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
+        Charset charset = computeCredentialFileCharset("passphrase", StandardCharsets.UTF_8);
+        Path passphraseFile = createTempFile("phrase", ".txt");
+        try (BufferedWriter w = Files.newBufferedWriter(passphraseFile, charset)) {
+            w.write(Secret.toString(sshUser.getPassphrase()));
+            w.newLine();
         }
         return passphraseFile;
     }
 
-    private File createUsernameFile(StandardUsernamePasswordCredentials userPass) throws IOException {
-        String charset = computeCredentialFileCharset("name", "UTF-8");
-        File usernameFile = createTempFile("username", ".txt");
-        try (PrintWriter w = new PrintWriter(usernameFile, charset)) {
-            w.println(userPass.getUsername());
+    private Path createUsernameFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        Charset charset = computeCredentialFileCharset("name", StandardCharsets.UTF_8);
+        Path usernameFile = createTempFile("username", ".txt");
+        try (BufferedWriter w = Files.newBufferedWriter(usernameFile, charset)) {
+            w.write(userPass.getUsername());
+            w.newLine();
         }
         return usernameFile;
     }
 
-    private File createPasswordFile(StandardUsernamePasswordCredentials userPass) throws IOException {
-        String charset = computeCredentialFileCharset("password", "UTF-8");
-        File passwordFile = createTempFile("password", ".txt");
-        try (PrintWriter w = new PrintWriter(passwordFile, charset)) {
-            w.println(Secret.toString(userPass.getPassword()));
+    private Path createPasswordFile(StandardUsernamePasswordCredentials userPass) throws IOException {
+        Charset charset = computeCredentialFileCharset("password", StandardCharsets.UTF_8);
+        Path passwordFile = createTempFile("password", ".txt");
+        try (BufferedWriter w = Files.newBufferedWriter(passwordFile, charset)) {
+            w.write(Secret.toString(userPass.getPassword()));
+            w.newLine();
         }
         return passwordFile;
     }
 
-    private String computeCredentialFileCharset(String context, String defaultValue) {
+    private Charset computeCredentialFileCharset(String context, Charset defaultValue) {
         String property = CliGitAPIImpl.class.getName() + ".user." + context + ".file.encoding";
         if (isZos() && System.getProperty(property) != null) {
-            String charset = Charset.forName(System.getProperty(property)).toString();
+            Charset charset = Charset.forName(System.getProperty(property));
 	    listener.getLogger().println("Using " + context + " charset '" + charset + "'");
             return charset;
         }
@@ -2557,36 +2596,44 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        throw new RuntimeException("ssh executable not found. The git plugin only supports official git client http://git-scm.com/download/win");
+        throw new RuntimeException("ssh executable not found. The git plugin only supports official git client https://git-scm.com/download/win");
     }
 
-    private File createWindowsGitSSH(File key, String user) throws IOException {
-        File ssh = createTempFile("ssh", ".bat");
+    private Path createWindowsGitSSH(Path key, String user, Path knownHosts) throws IOException {
+        Path ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
 
-        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
-            w.println("@echo off");
-            w.println("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.getAbsolutePath() +"\" -l \"" + user + "\" -o StrictHostKeyChecking=no %* ");
+        try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
+            w.write("@echo off");
+            w.newLine();
+            w.write("\"" + sshexe.getAbsolutePath() + "\" -i \"" + key.toAbsolutePath() +"\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
+            w.newLine();
         }
-        ssh.setExecutable(true, true);
+        ssh.toFile().setExecutable(true, true);
         return ssh;
     }
 
-    private File createUnixGitSSH(File key, String user) throws IOException {
-        File ssh = createTempFile("ssh", ".sh");
-        File ssh_copy = new File(ssh.toString() + "-copy");
+    private Path createUnixGitSSH(Path key, String user, Path knownHosts) throws IOException {
+        Path ssh = createTempFile("ssh", ".sh");
+        Path ssh_copy = Paths.get(ssh.toString() + "-copy");
         boolean isCopied = false;
-        try (PrintWriter w = new PrintWriter(ssh, encoding)) {
-            w.println("#!/bin/sh");
+        try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
+            w.write("#!/bin/sh");
+            w.newLine();
             // ${SSH_ASKPASS} might be ignored if ${DISPLAY} is not set
-            w.println("if [ -z \"${DISPLAY}\" ]; then");
-            w.println("  DISPLAY=:123.456");
-            w.println("  export DISPLAY");
-            w.println("fi");
-            w.println("ssh -i \"" + key.getAbsolutePath() + "\" -l \"" + user + "\" -o StrictHostKeyChecking=no \"$@\"");
+            w.write("if [ -z \"${DISPLAY}\" ]; then");
+            w.newLine();
+            w.write("  DISPLAY=:123.456");
+            w.newLine();
+            w.write("  export DISPLAY");
+            w.newLine();
+            w.write("fi");
+            w.newLine();
+            w.write("ssh -i \"" + key.toAbsolutePath() + "\" -l \"" + user + "\" " + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
+            w.newLine();
         }
-        ssh.setExecutable(true, true);
+        ssh.toFile().setExecutable(true, true);
         //JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         //The following creates a copy of the generated file and deletes the original
         //In case of a failure return the original and delete the copy
@@ -2597,7 +2644,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
             isCopied = true;
-            ssh_copy.setExecutable(true,true);
+            ssh_copy.toFile().setExecutable(true,true);
             // fixSELinuxLabel(ssh_copy, "ssh_exec_t");
             //Deleting original file
             deleteTempFile(ssh);
@@ -2625,7 +2672,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE", justification = "earlier readStderr()/readStdout() call prevents null return")
     private String readProcessIntoString(Proc process, String encoding, boolean useStderr)
-        throws IOException, UnsupportedEncodingException {
+        throws IOException {
         if (useStderr) {
             /* process.getStderr reference is the findbugs warning to be suppressed */
             return IOUtils.toString(process.getStderr(), encoding);
@@ -2643,6 +2690,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // if we haven't already set it.
         if (!env.containsKey("GIT_ASKPASS")) {
             freshEnv.put("GIT_ASKPASS", "echo");
+        }
+        /* Prepend extra git command line arguments if any */
+        if (!extraGitCommandArguments.isEmpty()) {
+            args = args.prepend(extraGitCommandArguments.toArray(new String[0]));
         }
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
@@ -2695,6 +2746,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return stdout;
         } catch (GitException | InterruptedException e) {
+            if (e.getMessage().contains("unsupported option \"accept-new\"")) {
+                listener.getLogger().println(HyperlinkNote.encodeTo("https://plugins.jenkins.io/git-client/#plugin-content-ssh-host-key-verification",
+                        "If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in 'Manage Jenkins' -> 'Configure Global Security' -> 'Git Host Key Verification Configuration'"));
+            }
             throw e;
         } catch (Throwable e) {
             reportFailureClues();
@@ -3066,7 +3121,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     return;
                 } else if(paths.isEmpty() && coreSparseCheckoutConfigEnable) { // deactivating sparse checkout needed
                     deactivatingSparseCheckout = true;
-                    paths = Lists.newArrayList("/*");
+                    paths = Collections.singletonList("/*");
                 } else if(! coreSparseCheckoutConfigEnable) { // activating sparse checkout
                     launchCommand( "config", "core.sparsecheckout", "true" );
                 }
@@ -3077,9 +3132,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 File sparseCheckoutFile = new File(workspace, SPARSE_CHECKOUT_FILE_PATH);
+
                 try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(sparseCheckoutFile.toPath()), StandardCharsets.UTF_8))) {
                     for (String path : paths) {
-                        writer.println(path);
+                        writer.println(environment.expand(path));
                     }
                 } catch (IOException e) {
                     throw new GitException("Could not write sparse checkout file " + sparseCheckoutFile.getAbsolutePath(), e);
@@ -3360,13 +3416,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void commit(String message) throws GitException, InterruptedException {
-        File f = null;
+        Path f = null;
         try {
             f = createTempFile("gitcommit", ".txt");
-            try (OutputStream out = Files.newOutputStream(f.toPath())) {
-                out.write(message.getBytes(Charset.defaultCharset().toString()));
+            try (BufferedWriter w = Files.newBufferedWriter(f, Charset.defaultCharset())) {
+                w.write(message);
             }
-            launchCommand("commit", "-F", f.getAbsolutePath());
+            launchCommand("commit", "-F", f.toAbsolutePath().toString());
 
         } catch (GitException | IOException e) {
             throw new GitException("Cannot commit " + message, e);
@@ -3755,9 +3811,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
 
             BufferedReader rdr = new BufferedReader(new StringReader(result));
-            String line;
+            final String line = rdr.readLine();
 
-            while ((line = rdr.readLine()) != null) {
+            if (line != null) {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
@@ -3845,10 +3901,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             String sha1String = matcher.group(1);
             String tagName = matcher.group(2);
             String trailingText = matcher.group(3);
-            boolean isPeeledRef = false;
-            if (trailingText != null && trailingText.equals("^{}")) { // Line ends with '^{}'
-                isPeeledRef = true;
-            }
+            final boolean isPeeledRef = trailingText != null && trailingText.equals("^{}");
+            // Line ends with '^{}'
             /* Prefer peeled ref if available (for tag commit), otherwise take first tag reference seen */
             if (isPeeledRef || !tagMap.containsKey(tagName)) {
                 tagMap.put(tagName, ObjectId.fromString(sha1String));
@@ -3861,4 +3915,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return tags;
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public boolean maintenance(String task) throws InterruptedException {
+        boolean isExecuted = true;
+        try {
+            listener.getLogger().println("Git maintenance " + task + " started on " + workspace.getName());
+            long startTime = System.currentTimeMillis();
+            if (isAtLeastVersion(2, 30, 0, 0)) {
+                // For prefetch, the command will throw an error for private repo if it has no access.
+                launchCommand("maintenance", "run", "--task=" + task);
+            } else {
+                switch(task) {
+                    case "gc":
+                        launchCommand("gc", "--auto");
+                        break;
+                    case "commit-graph":
+                        if (isAtLeastVersion(2, 19, 0, 0)) {
+                            launchCommand("commit-graph", "write");
+                        } else {
+                            listener.getLogger().println("Error executing commit-graph maintenance task");
+                        }
+                        break;
+                    case "incremental-repack":
+                        if (isAtLeastVersion(2, 25, 0, 0)) {
+                            launchCommand("multi-pack-index", "expire");
+                            launchCommand("multi-pack-index", "repack");
+                        } else {
+                            listener.getLogger().println("Error executing incremental-repack maintenance task");
+                        }
+                        break;
+                    default:
+                        String message = "Invalid legacy git maintenance task " + task + ".";
+                        listener.getLogger().println(message);
+                        throw new GitException(message);
+                }
+            }
+            long endTime = System.currentTimeMillis();
+            listener.getLogger().println("Git maintenance task " + task + " finished on " + workspace.getName() + " in " + (endTime - startTime) + "ms.");
+        } catch (GitException e) {
+            isExecuted = false;
+            listener.getLogger().println("Error executing " + task + " maintenance task");
+            listener.getLogger().println("Mainteance task " + task + " error message: " + e.getMessage());
+        }
+        return isExecuted;
+    }
 }
