@@ -10,6 +10,7 @@ import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -58,9 +59,9 @@ class CliGitCommand {
         ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
         Launcher.ProcStarter p = launcher.launch().cmds(args).envs(env).stdout(bytesOut).stderr(bytesErr).pwd(dir);
         int status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
-        String result = bytesOut.toString("UTF-8");
+        String result = bytesOut.toString(StandardCharsets.UTF_8);
         if (bytesErr.size() > 0) {
-            result = result + "\nstderr not empty:\n" + bytesErr.toString("UTF-8");
+            result = result + "\nstderr not empty:\n" + bytesErr.toString(StandardCharsets.UTF_8);
         }
         output = result.split("[\\n\\r]");
         if (assertProcessStatus) {
@@ -81,7 +82,7 @@ class CliGitCommand {
         }
     }
 
-    private String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
+    String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
         return run(false);

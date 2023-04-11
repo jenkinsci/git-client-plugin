@@ -2,7 +2,8 @@ package org.jenkinsci.plugins.gitclient;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,7 +19,6 @@ import hudson.util.StreamTaskListener;
 import org.apache.commons.io.FileUtils;
 
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 
 import org.junit.After;
@@ -87,35 +87,31 @@ public class PushTest {
     }
 
     @Test
-    public void push() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void push() throws IOException, GitException, InterruptedException {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
     }
 
     @Test
-    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException, URISyntaxException {
+    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
             assertThrows(expectedException,
-                         () -> {
-                             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
-                         });
+                         () -> workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
     }
 
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
-    public static Collection pushParameters() {
+    public static Collection<Object[]> pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
@@ -156,10 +152,9 @@ public class PushTest {
     }
 
     @Before
-    public void createWorkingRepository() throws IOException, InterruptedException, URISyntaxException {
+    public void createWorkingRepository() throws IOException, InterruptedException {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        List<RefSpec> refSpecs = new ArrayList<>();
         workingRepo = temporaryFolder.newFolder();
         workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient.clone_()
@@ -183,7 +178,7 @@ public class PushTest {
     }
 
     @After
-    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException, IOException {
+    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException {
         /* Confirm push reached bare repo */
         if (expectedException == null && !name.getMethodName().contains("Throws")) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
@@ -224,11 +219,11 @@ public class PushTest {
             File added = File.createTempFile("added-", ".txt", cloneRepo);
             String randomContent = java.util.UUID.randomUUID().toString();
             String addedContent = "Initial commit to branch " + branchName + " content '" + randomContent + "'";
-            FileUtils.writeStringToFile(added, addedContent, "UTF-8");
+            Files.writeString(added.toPath(), addedContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
             cloneGitClient.commit("Initial commit to " + branchName + " file " + added.getName() + " with " + randomContent);
             // checkoutOldBranchAndCommitFile needs at least two commits to the branch
-            FileUtils.writeStringToFile(added, "Another revision " + randomContent, "UTF-8");
+            Files.writeString(added.toPath(), "Another revision " + randomContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
             cloneGitClient.commit("Second commit to " + branchName);
 
@@ -242,17 +237,7 @@ public class PushTest {
 
     @AfterClass
     public static void removeBareRepository() throws IOException {
-        /* JGit 5.3.1 has an open file handle leak in this test that does not exist in 5.3.0 and earlier */
-        /* This conditional silences the JGit 5.3.1 failure */
-        if (!isWindows()) {
-            FileUtils.deleteDirectory(bareRepo);
-        } else {
-            try {
-                FileUtils.deleteDirectory(bareRepo);
-            } catch (IOException ioe) {
-                System.err.println("**** Ignored bare repo delete directory cleanup failure:\n" + ioe);
-            }
-        }
+        FileUtils.deleteDirectory(bareRepo);
     }
 
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
@@ -282,7 +267,7 @@ public class PushTest {
         File added = File.createTempFile("added-", ".txt", workingRepo);
         String randomContent = java.util.UUID.randomUUID().toString();
         String addedContent = "Push test " + randomContent;
-        FileUtils.writeStringToFile(added, addedContent, "UTF-8");
+        Files.writeString(added.toPath(), addedContent, StandardCharsets.UTF_8);
         workingGitClient.add(added.getName());
         workingGitClient.commit("Added " + added.getName() + " with " + randomContent);
 

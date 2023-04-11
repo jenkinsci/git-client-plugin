@@ -1,22 +1,14 @@
-#!groovy
+#!/usr/bin/env groovy
 
-buildPlugin(failFast: false)
-
-// Return true if benchmarks should be run
-// Benchmarks run if any of the most recent 3 commits includes the word 'benchmark'
-boolean shouldRunBenchmarks(String branchName) {
-    // Disable benchmarks on master branch for speed
-    // if (branchName.endsWith('master')) { // accept both origin/master and master
-    //     return true;
-    // }
-    def recentCommitMessages
-    node('linux') {
-        checkout scm
-        recentCommitMessages = sh(script: 'git log -n 3', returnStdout: true)
-    }
-    return recentCommitMessages =~ /.*[Bb]enchmark.*/
-}
-
-if (shouldRunBenchmarks(env.BRANCH_NAME)) {
-    runBenchmarks('jmh-report.json')
-}
+/* `buildPlugin` step provided by: https://github.com/jenkins-infra/pipeline-library */
+buildPlugin(
+  // Container agents start faster and are easier to administer
+  useContainerAgent: true,
+  // Show failures on all configurations
+  failFast: false,
+  // Test Java 11 with default release, Java 17 with more recent
+  configurations: [
+    [platform: 'linux',   jdk: '11'], // Linux first for coverage report on ci.jenkins.io
+    [platform: 'windows', jdk: '17', jenkins: '2.389']
+  ]
+)

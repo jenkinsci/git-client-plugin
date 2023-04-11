@@ -7,6 +7,7 @@ import hudson.plugins.git.GitObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 
@@ -72,7 +73,7 @@ public class JGitLightweightTagTest {
         if (parentDir != null) {
             parentDir.mkdirs();
         }
-        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
         }
     }

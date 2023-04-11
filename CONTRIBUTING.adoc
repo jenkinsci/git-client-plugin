@@ -17,7 +17,7 @@ Tests help us assure that we're delivering a reliable plugin, and that we've com
 
 === Compiling and testing the plugin
 
-Compile and run the plugin automated tests on Java 8 or Java 11 with:
+Compile and run the plugin automated tests on Java 11 or Java 17 with:
 
 * `mvn clean verify`
 
@@ -89,4 +89,6 @@ Typical bug review tasks include:
 Git client plugin includes link:https://openjdk.java.net/projects/code-tools/jmh/[Java Microbenchmark Harness (JMH)] benchmark tests to compare the performance of command line git and JGit.
 Run the benchmarks with the command:
 
-* `mvn -P jmh-benchmark test`
+* `mvn -P jmh-benchmark -Dbenchmark.run=true test`
+
+The results can be reviewed visiually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].

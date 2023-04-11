@@ -1,0 +1,13 @@
+<p>Controls how Git plugin verifies the keys presented by the host during SSH connecting.
+<dl>
+    <dt>Known hosts file (default)</dt>
+    <dd>Verifies all host keys using the <code>known_hosts</code> file.</dd>
+    <dt>Accept first connection</dt>
+    <dd>Automatically adds host keys to the <code>known_hosts</code> file if the host has not been seen before, and does not allow connections to previously-seen hosts with modified keys.</dd>
+    <dd> - Note that when using ephemeral agents (ex. cloud agents), this strategy is essentially equivalent to <strong>No verification</strong> because it uses the <code>known_hosts</code> file on the agent. To avoid this, you can pre-configure <code>known_hosts</code> with all relevant hosts when creating the images or templates used to define your agents, or use the <strong>Manually provided keys</strong> or <strong>Known hosts file</strong> strategies.</dd>
+    <dd> - OpenSSH version 7.6 or higher is required to use this option with command line Git.</dd>
+    <dt>Manually provided keys</dt>
+    <dd>Verifies all host keys using a set of keys manually configured here.</dd>
+    <dt>No verification (not recommended)</dt>
+    <dd>Does not verify host keys at all.</dd>
+</dl>

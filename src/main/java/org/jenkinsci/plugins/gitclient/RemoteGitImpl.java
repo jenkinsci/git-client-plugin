@@ -3,7 +3,6 @@ package org.jenkinsci.plugins.gitclient;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.FilePath;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
@@ -32,7 +31,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -922,5 +920,10 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     @Override
     public Set<GitObject> getTags() throws GitException, InterruptedException {
         return proxy.getTags();
+    }
+
+    @Override
+    public boolean maintenance(String task) {
+        return false;
     }
 }
