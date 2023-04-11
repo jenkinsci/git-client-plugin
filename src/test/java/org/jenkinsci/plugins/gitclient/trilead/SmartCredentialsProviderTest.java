@@ -246,17 +246,18 @@ public class SmartCredentialsProviderTest {
 
     @Test
     public void testSimilarUrlsAcceptedForCredentials() {
-            String expectedUsername = "expected-add-credentials-username";
-            String secretValue = "secret-value";
-            Secret secret = Secret.fromString(secretValue);
-            StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        String expectedUsername = "expected-add-credentials-username";
+        String secretValue = "secret-value";
+        Secret secret = Secret.fromString(secretValue);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
 
-            assertFalse(provider.get(gitURI, username, password));
+        assertFalse(provider.get(gitURI, username, password));
 
-            provider.addCredentials(gitURI.toString(), credentials);
+        provider.addCredentials(gitURI.toString(), credentials);
 
-            assertTrue(provider.get(gitURI, username, password));
-            assertTrue(provider.get(gitURISlash, username, password));
-            assertTrue(provider.get(gitURIShort, username, password));
+        assertTrue(provider.get(gitURI, username, password));
+        assertTrue(provider.get(gitURISlash, username, password));
+        assertTrue(provider.get(gitURIShort, username, password));
     }
 }

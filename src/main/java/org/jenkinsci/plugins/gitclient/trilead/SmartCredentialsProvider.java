@@ -5,16 +5,15 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import hudson.model.TaskListener;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * SmartCredentialsProvider class.
@@ -27,10 +26,8 @@ public class SmartCredentialsProvider extends CredentialsProvider {
 
     private StandardCredentials defaultCredentials;
 
-    private Map<String, StandardCredentials> specificCredentials =
-            new HashMap<>();
+    private Map<String, StandardCredentials> specificCredentials = new HashMap<>();
     private static final Logger LOGGER = Logger.getLogger(SmartCredentialsProvider.class.getName());
-
 
     /**
      * Constructor for SmartCredentialsProvider.
