@@ -1,5 +1,7 @@
 package hudson.plugins.git;
 
+import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.EnvVars;
@@ -13,14 +15,6 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolProperty;
 import hudson.util.FormValidation;
-import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.interceptor.RequirePOST;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,8 +22,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static hudson.init.InitMilestone.EXTENSIONS_AUGMENTED;
+import jenkins.model.Jenkins;
+import net.sf.json.JSONObject;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.interceptor.RequirePOST;
 
 /**
  * Information about Git installation. A GitTool is used to select
@@ -52,7 +51,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     }
 
     /** Constant <code>DEFAULT="Default"</code> */
-    public static transient final String DEFAULT = "Default";
+    public static final transient String DEFAULT = "Default";
 
     private static final long serialVersionUID = 1;
 
@@ -98,10 +97,12 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
     }
 
+    @Override
     public GitTool forNode(@NonNull Node node, TaskListener log) throws IOException, InterruptedException {
         return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
+    @Override
     public GitTool forEnvironment(EnvVars environment) {
         return new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
     }
@@ -116,9 +117,9 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         return (DescriptorImpl) jenkinsInstance.getDescriptorOrDie(getClass());
     }
 
-    @Initializer(after=EXTENSIONS_AUGMENTED)
+    @Initializer(after = EXTENSIONS_AUGMENTED)
     public static void onLoaded() {
-        //Creates default tool installation if needed. Uses "git" or migrates data from previous versions
+        // Creates default tool installation if needed. Uses "git" or migrates data from previous versions
 
         Jenkins jenkinsInstance = Jenkins.get();
         DescriptorImpl descriptor = (DescriptorImpl) jenkinsInstance.getDescriptor(GitTool.class);
@@ -126,7 +127,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
         if (installations != null && installations.length > 0) {
             LOGGER.log(Level.FINEST, "Already initialized GitTool, no need to initialize again");
-            //No need to initialize if there's already something
+            // No need to initialize if there's already something
             return;
         }
 
@@ -136,8 +137,8 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         descriptor.save();
     }
 
-
-    @Extension @Symbol("git")
+    @Extension
+    @Symbol("git")
     public static class DescriptorImpl extends ToolDescriptor<GitTool> {
 
         public DescriptorImpl() {
@@ -158,6 +159,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
             return true;
         }
 
+        @Override
         @RequirePOST
         public FormValidation doCheckHome(@QueryParameter File value) {
             Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -167,8 +169,8 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         public GitTool getInstallation(String name) {
-            for(GitTool i : getInstallations()) {
-                if(i.getName().equals(name)) {
+            for (GitTool i : getInstallations()) {
+                if (i.getName().equals(name)) {
                     return i;
                 }
             }
@@ -193,9 +195,10 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         public List<ToolDescriptor<? extends GitTool>> getApplicableDescriptors() {
             List<ToolDescriptor<? extends GitTool>> r = new ArrayList<>();
             Jenkins jenkinsInstance = Jenkins.get();
-            for (ToolDescriptor<?> td : jenkinsInstance.<ToolInstallation,ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
+            for (ToolDescriptor<?> td :
+                    jenkinsInstance.<ToolInstallation, ToolDescriptor<?>>getDescriptorList(ToolInstallation.class)) {
                 if (GitTool.class.isAssignableFrom(td.clazz)) { // This checks cast is allowed
-                    r.add((ToolDescriptor<? extends GitTool>)td); // This is the unchecked cast
+                    r.add((ToolDescriptor<? extends GitTool>) td); // This is the unchecked cast
                 }
             }
             return r;
@@ -206,6 +209,6 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private static boolean isWindows() {
-        return File.pathSeparatorChar==';';
+        return File.pathSeparatorChar == ';';
     }
 }

@@ -1,9 +1,14 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import java.io.File;
-import java.io.IOException;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThrows;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import hudson.model.TaskListener;
+import java.io.File;
+import java.io.IOException;
 import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Rule;
@@ -11,12 +16,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class KnownHostsFileVerifierTest {
@@ -27,7 +26,8 @@ public class KnownHostsFileVerifierTest {
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
-    public TemporaryFolder testFolder = TemporaryFolder.builder().assureDeletion().build();
+    public TemporaryFolder testFolder =
+            TemporaryFolder.builder().assureDeletion().build();
 
     private File fakeKnownHosts;
 
@@ -51,7 +51,6 @@ public class KnownHostsFileVerifierTest {
             jGitConnection.connect(verifier);
         });
         assertThat(exception.getMessage(), is("There was a problem while connecting to bitbucket.org:22"));
-
     }
 
     @Test
@@ -72,7 +71,9 @@ public class KnownHostsFileVerifierTest {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2",
+        fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(
+                "fake2.ssh",
+                "known_hosts_fake2",
                 "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=");
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
@@ -85,13 +86,17 @@ public class KnownHostsFileVerifierTest {
     @Test
     public void testVerifyHostKeyOptionWithDefaultFile() throws Exception {
         KnownHostsFileVerifier verifier = new KnownHostsFileVerifier();
-        assertThat(verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=yes"));
+        assertThat(
+                verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=yes"));
     }
 
     /* Return true if running on a Kubernetes pod on ci.jenkins.io */
     private boolean isKubernetesCI() {
         String kubernetesPort = System.getenv("KUBERNETES_PORT");
         String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null && !kubernetesPort.isEmpty() && buildURL != null && buildURL.startsWith("https://ci.jenkins.io/");
+        return kubernetesPort != null
+                && !kubernetesPort.isEmpty()
+                && buildURL != null
+                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }

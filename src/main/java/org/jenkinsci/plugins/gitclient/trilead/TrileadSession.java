@@ -1,14 +1,13 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
+import static com.trilead.ssh2.ChannelCondition.*;
+
 import com.trilead.ssh2.Connection;
 import com.trilead.ssh2.Session;
-import org.eclipse.jgit.transport.RemoteSession;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-
-import static com.trilead.ssh2.ChannelCondition.*;
+import org.eclipse.jgit.transport.RemoteSession;
 
 /**
  * TrileadSession class.
@@ -62,8 +61,9 @@ public class TrileadSession implements RemoteSession {
         @Override
         public int waitFor() throws InterruptedException {
             int r = s.waitForCondition(EXIT_STATUS, timeout * 1000L);
-            if ((r&EXIT_STATUS)!=0)
+            if ((r & EXIT_STATUS) != 0) {
                 return exitValue();
+            }
 
             // not sure what exception jgit expects
             throw new InterruptedException("Timed out: " + r);
@@ -72,7 +72,9 @@ public class TrileadSession implements RemoteSession {
         @Override
         public int exitValue() {
             Integer i = s.getExitStatus();
-            if (i==null)    throw new IllegalThreadStateException(); // hasn't finished
+            if (i == null) {
+                throw new IllegalThreadStateException(); // hasn't finished
+            }
             return i;
         }
 

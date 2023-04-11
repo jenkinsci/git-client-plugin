@@ -1,9 +1,10 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.*;
+
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +36,6 @@ public class LogHandlerTest {
         String message = "testing flush";
         publishMessage(message);
         handler.flush(); /* no-op */
-
     }
 
     @Test
@@ -89,5 +89,4 @@ public class LogHandlerTest {
         assertEquals("Wrong timeout 1", timeout1, timeouts.get(1).intValue());
         assertEquals("Wrong size list", 2, timeouts.size());
     }
-
 }

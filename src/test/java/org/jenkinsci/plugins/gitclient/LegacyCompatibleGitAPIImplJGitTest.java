@@ -5,5 +5,4 @@ public class LegacyCompatibleGitAPIImplJGitTest extends LegacyCompatibleGitAPIIm
     public LegacyCompatibleGitAPIImplJGitTest() {
         gitImpl = "jgit";
     }
-
 }

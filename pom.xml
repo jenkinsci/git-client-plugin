@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.58</version>
+    <version>4.59</version>
     <relativePath />
   </parent>
 
@@ -73,7 +73,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.361.x</artifactId>
-        <version>1968.vb_14a_29e76128</version>
+        <version>1981.v17df70e84a_a_1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -81,33 +81,26 @@
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.14.3</version>
+        <version>1.14.4</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <dependencies>
     <dependency>
-      <!-- Use httpclient plugin rather than JGit transitive dependency inclusion of Apache httpclient -->
-      <!-- This must be listed before its consumers -->
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>apache-httpcomponents-client-4-api</artifactId>
+      <groupId>io.jenkins</groupId>
+      <artifactId>configuration-as-code</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
-      <!-- This must be listed before its consumers -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
-      <!-- This must be listed before its consumers -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>trilead-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -122,19 +115,30 @@
       </exclusions>
     </dependency>
     <dependency>
+      <!-- Include jgit's Apache HTTP client so that we can avoid
+           automatic NTLM on Windows. See JENKINS-37934 -->
+      <groupId>org.eclipse.jgit</groupId>
+      <artifactId>org.eclipse.jgit.http.apache</artifactId>
+      <version>${jgit.version}</version>
+      <exclusions>
+        <!-- Provided by apache-httpcomponents-client-4-api plugin -->
+        <exclusion>
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpclient</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>httpcore</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
       <!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.server</artifactId>
-      <version>${jgit.version}</version>
-    </dependency>
-    <dependency>
-      <!-- Include jgit's Apache HTTP client so that we can avoid
-           automatic NTLM on Windows. See JENKINS-37934 -->
-      <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
     </dependency>
     <dependency>
@@ -149,6 +153,11 @@
       <version>${jgit.version}</version>
       <exclusions>
         <exclusion>
+          <!-- Prevent inclusion of transitive dependency -->
+          <groupId>net.i2p.crypto</groupId>
+          <artifactId>eddsa</artifactId>
+        </exclusion>
+        <exclusion>
           <!-- Prevent inclusion of transitive dependency, OSGi not needed by git client plugin -->
           <groupId>org.apache.sshd</groupId>
           <artifactId>sshd-osgi</artifactId>
@@ -159,11 +168,6 @@
           <artifactId>sshd-sftp</artifactId>
         </exclusion>
         <exclusion>
-          <!-- Prevent inclusion of transitive dependency -->
-          <groupId>net.i2p.crypto</groupId>
-          <artifactId>eddsa</artifactId>
-        </exclusion>
-        <exclusion>
           <!-- provided by jenkins-core -->
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
@@ -171,8 +175,62 @@
       </exclusions>
     </dependency>
     <dependency>
+      <!-- Use httpclient plugin rather than JGit transitive dependency inclusion of Apache httpclient -->
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>apache-httpcomponents-client-4-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>credentials</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>script-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>ssh-credentials</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>trilead-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.json-simple</groupId>
+      <artifactId>json-simple</artifactId>
+      <version>1.1.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.configuration-as-code</groupId>
+      <artifactId>test-harness</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>nl.jqno.equalsverifier</groupId>
+      <artifactId>equalsverifier</artifactId>
+      <version>3.14.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.10.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>git-server</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <!-- Credentials test requires scm-api -->
@@ -188,65 +246,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>script-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>nl.jqno.equalsverifier</groupId>
-      <artifactId>equalsverifier</artifactId>
-      <version>3.14.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>git-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.googlecode.json-simple</groupId>
-      <artifactId>json-simple</artifactId>
-      <version>1.1.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-text</artifactId>
-      <version>1.10.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>ssh-credentials</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
       <version>3.3</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>credentials</artifactId>
-    </dependency>
-    <!-- JCasC compatibility -->
-    <dependency>
-      <groupId>io.jenkins</groupId>
-      <artifactId>configuration-as-code</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>io.jenkins.configuration-as-code</groupId>
-      <artifactId>test-harness</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -262,6 +269,7 @@
       <url>https://repo.jenkins-ci.org/public/</url>
     </repository>
   </repositories>
+
   <pluginRepositories>
     <pluginRepository>
       <id>repo.jenkins-ci.org</id>
@@ -270,40 +278,6 @@
   </pluginRepositories>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.diffplug.spotless</groupId>
-          <artifactId>spotless-maven-plugin</artifactId>
-          <version>2.35.0</version>
-          <configuration>
-            <!-- define a language-specific format -->
-            <java>
-              <!-- no need to specify files, inferred automatically -->
-              <endWithNewline />
-              <removeUnusedImports />
-            </java>
-            <pom>
-              <sortPom>
-                <encoding>${project.build.sourceEncoding}</encoding>
-                <lineSeparator>\n</lineSeparator>
-                <expandEmptyElements>false</expandEmptyElements>
-                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
-              </sortPom>
-            </pom>
-          </configuration>
-          <executions>
-            <execution>
-              <!-- Runs in verify phase by default -->
-              <goals>
-                <!-- Can be disabled using -Dspotless.check.skip -->
-                <goal>check</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

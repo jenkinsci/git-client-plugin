@@ -1,12 +1,10 @@
 package jmh.benchmark;
 
 import edu.umd.cs.findbugs.annotations.CheckForNull;
-
-import org.junit.Rule;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import org.junit.Rule;
 
 /**
  * Similar to a TemporaryFolder JUnit Rule, it provides a local git repository for the lifetime of a benchmark test.
@@ -25,7 +23,7 @@ public class FolderForBenchmark {
         this.parentFolder = parentFolder;
     }
 
-    protected void before() throws Exception{
+    protected void before() throws Exception {
         create();
     }
 
@@ -48,8 +46,7 @@ public class FolderForBenchmark {
     public File newFile(String fileName) throws IOException {
         File file = new File(getRoot(), fileName);
         if (!file.createNewFile()) {
-            throw new IOException(
-                    "a file with the name '" + fileName + "' already exists in the test folder");
+            throw new IOException("a file with the name '" + fileName + "' already exists in the test folder");
         }
         return file;
     }
@@ -66,7 +63,7 @@ public class FolderForBenchmark {
      * folder.
      */
     public File newFolder(String folder) throws IOException {
-        return newFolder(new String[]{folder});
+        return newFolder(new String[] {folder});
     }
 
     /**
@@ -80,8 +77,7 @@ public class FolderForBenchmark {
             validateFolderName(folderName);
             file = new File(file, folderName);
             if (!file.mkdir() && isLastElementInArray(i, folderNames)) {
-                throw new IOException(
-                        "a folder with the name '" + folderName + "' already exists");
+                throw new IOException("a folder with the name '" + folderName + "' already exists");
             }
         }
         return file;
@@ -118,7 +114,8 @@ public class FolderForBenchmark {
         if (parentFolder == null) {
             createdFolder = Files.createTempDirectory("junit").toFile();
         } else {
-            createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
+            createdFolder =
+                    Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
         }
         return createdFolder;
     }
@@ -128,8 +125,7 @@ public class FolderForBenchmark {
      */
     public File getRoot() {
         if (folder == null) {
-            throw new IllegalStateException(
-                    "the temporary folder has not yet been created");
+            throw new IllegalStateException("the temporary folder has not yet been created");
         }
         return folder;
     }

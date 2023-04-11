@@ -4,11 +4,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.util.Collections;
 import java.util.List;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * JGit as {@link hudson.plugins.git.GitTool}
@@ -35,14 +34,14 @@ public class JGitTool extends GitTool {
         this(Collections.emptyList());
     }
 
-
     /** {@inheritDoc} */
     @Override
     public GitTool.DescriptorImpl getDescriptor() {
         return super.getDescriptor();
     }
 
-    @Extension @Symbol("jgit")
+    @Extension
+    @Symbol("jgit")
     public static class DescriptorImpl extends GitTool.DescriptorImpl {
         @NonNull
         @Override

@@ -2,10 +2,9 @@ package org.jenkinsci.plugins.gitclient;
 
 import hudson.FilePath.FileCallable;
 import hudson.remoting.VirtualChannel;
-import org.eclipse.jgit.lib.Repository;
-
 import java.io.IOException;
 import java.io.Serializable;
+import org.eclipse.jgit.lib.Repository;
 
 /**
  * Code that gets executed on the machine where the working directory is local

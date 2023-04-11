@@ -66,7 +66,9 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
 
     public void notifyCommit(JenkinsRule r) throws Exception {
         synchronousPolling(r);
-        WebResponse webResponse = r.createWebClient().goTo("git/notifyCommit?url=" + bareUrl(), "text/plain").getWebResponse();
+        WebResponse webResponse = r.createWebClient()
+                .goTo("git/notifyCommit?url=" + bareUrl(), "text/plain")
+                .getWebResponse();
         LOGGER.log(Level.FINE, webResponse.getContentAsString());
         for (NameValuePair pair : webResponse.getResponseHeaders()) {
             if (pair.getName().equals("Triggered")) {
@@ -77,7 +79,11 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
     }
 
     public String head() throws Exception {
-        return new RepositoryBuilder().setWorkTree(sampleRepo).build().resolve(Constants.HEAD).name();
+        return new RepositoryBuilder()
+                .setWorkTree(sampleRepo)
+                .build()
+                .resolve(Constants.HEAD)
+                .name();
     }
 
     public File getRoot() {
@@ -92,7 +98,11 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
         final TaskListener procListener = StreamTaskListener.fromStderr();
         final ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            int returnCode = new Launcher.LocalLauncher(procListener).launch().cmds("git", "--version").stdout(out).join();
+            int returnCode = new Launcher.LocalLauncher(procListener)
+                    .launch()
+                    .cmds("git", "--version")
+                    .stdout(out)
+                    .join();
             if (returnCode != 0) {
                 LOGGER.log(Level.WARNING, "Command 'git --version' returned " + returnCode);
             }
@@ -100,22 +110,35 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
             LOGGER.log(Level.WARNING, "Exception checking git version " + ex);
         }
         final String versionOutput = out.toString().trim();
-        final String[] fields = versionOutput.split(" ")[2].replaceAll("msysgit.", "").replaceAll("windows.", "").split("\\.");
+        final String[] fields = versionOutput
+                .split(" ")[2]
+                .replaceAll("msysgit.", "")
+                .replaceAll("windows.", "")
+                .split("\\.");
         final int gitMajor = Integer.parseInt(fields[0]);
         final int gitMinor = Integer.parseInt(fields[1]);
         final int gitPatch = Integer.parseInt(fields[2]);
         if (gitMajor < 1 || gitMajor > 3) {
-            LOGGER.log(Level.WARNING, "Unexpected git major version " + gitMajor + " parsed from '" + versionOutput + "', field:'" + fields[0] + "'");
+            LOGGER.log(
+                    Level.WARNING,
+                    "Unexpected git major version " + gitMajor + " parsed from '" + versionOutput + "', field:'"
+                            + fields[0] + "'");
         }
         if (gitMinor < 0 || gitMinor > 50) {
-            LOGGER.log(Level.WARNING, "Unexpected git minor version " + gitMinor + " parsed from '" + versionOutput + "', field:'" + fields[1] + "'");
+            LOGGER.log(
+                    Level.WARNING,
+                    "Unexpected git minor version " + gitMinor + " parsed from '" + versionOutput + "', field:'"
+                            + fields[1] + "'");
         }
         if (gitPatch < 0 || gitPatch > 20) {
-            LOGGER.log(Level.WARNING, "Unexpected git patch version " + gitPatch + " parsed from '" + versionOutput + "', field:'" + fields[2] + "'");
+            LOGGER.log(
+                    Level.WARNING,
+                    "Unexpected git patch version " + gitPatch + " parsed from '" + versionOutput + "', field:'"
+                            + fields[2] + "'");
         }
 
-        return gitMajor >  neededMajor ||
-                (gitMajor == neededMajor && gitMinor >  neededMinor) ||
-                (gitMajor == neededMajor && gitMinor == neededMinor  && gitPatch >= neededPatch);
+        return gitMajor > neededMajor
+                || (gitMajor == neededMajor && gitMinor > neededMinor)
+                || (gitMajor == neededMajor && gitMinor == neededMinor && gitPatch >= neededPatch);
     }
 }
