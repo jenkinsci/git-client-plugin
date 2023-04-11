@@ -1,5 +1,11 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.*;
+import static org.junit.Assert.assertThrows;
+
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -32,12 +38,17 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.io.FileMatchers.*;
-import static org.junit.Assert.assertThrows;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.lib.ConfigConstants;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.transport.RefSpec;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -118,7 +129,11 @@ public class GitClientCloneTest {
     @Test
     public void test_clone() throws Exception {
         int cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
-        CloneCommand cmd = testGitClient.clone_().timeout(cloneTimeout).url(workspace.localMirror()).repositoryName("origin");
+        CloneCommand cmd = testGitClient
+                .clone_()
+                .timeout(cloneTimeout)
+                .url(workspace.localMirror())
+                .repositoryName("origin");
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
         }
@@ -140,7 +155,8 @@ public class GitClientCloneTest {
         cmd.execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         final String SHA1 = "feedabeefabeadeddeedaccede";
-        GitException gitException = assertThrows(GitException.class,
+        GitException gitException = assertThrows(
+                GitException.class,
                 () -> testGitClient.checkout().ref(SHA1).branch("master").execute());
         assertThat(gitException.getMessage(), is("Could not checkout master with start point " + SHA1));
     }
@@ -160,7 +176,11 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_shallow() throws Exception {
-        CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shallow(true);
+        CloneCommand cmd = testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .shallow(true);
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
         }
@@ -176,7 +196,13 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_shallow_with_depth() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shallow(true).depth(2).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .shallow(true)
+                .depth(2)
+                .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -188,7 +214,13 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_shared() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(true).tags(true).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .shared(true)
+                .tags(true)
+                .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -198,7 +230,13 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_null_branch() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared().tags(false).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .shared()
+                .tags(false)
+                .execute();
         testGitClient.checkout().ref("origin/master").branch(null).execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertAlternateFilePointsToLocalMirror();
@@ -207,7 +245,12 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_unshared() throws IOException, InterruptedException {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").shared(false).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .shared(false)
+                .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -216,7 +259,12 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_reference() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(workspace.localMirror()).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .reference(workspace.localMirror())
+                .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
@@ -224,7 +272,10 @@ public class GitClientCloneTest {
         assertNoObjectsInRepository();
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
-        assertThat("Reference repo logged in: " + messages, handler.containsMessageSubstring("Using reference repository: "), is(true));
+        assertThat(
+                "Reference repo logged in: " + messages,
+                handler.containsMessageSubstring("Using reference repository: "),
+                is(true));
     }
 
     @Test
@@ -406,12 +457,18 @@ public class GitClientCloneTest {
             return;
             /* Reference repository pointing to a shallow checkout is nonsense */
         }
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").reference(SRC_DIR).execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .reference(SRC_DIR)
+                .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(workspace, testGitClient, "origin");
         assertBranchesExist(testGitClient.getBranches(), "master");
         assertAlternatesFileExists();
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        final String alternates =
+                ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         final String expectedContent = SRC_DIR.replace("\\", "/") + "/.git/objects";
         final String actualContent = Files.readString(testGitDir.toPath().resolve(alternates), StandardCharsets.UTF_8);
         assertThat("Alternates file content", actualContent, is(expectedContent));
@@ -421,27 +478,48 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_refspec() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
 
         WorkspaceWithRepo anotherWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
         anotherWorkspace.launchCommand("git", "clone", anotherWorkspace.localMirror(), "./");
-        anotherWorkspace.getGitClient().withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace.getGitClient().withRepository((final Repository implRepo, VirtualChannel channel1) -> {
-            final String realRefspec = realRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-            final String implRefspec = implRepo.getConfig().getString(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
-            assertThat("Refspecs vs. original clone", implRefspec, is(realRefspec));
-            return null;
-        }));
+        anotherWorkspace
+                .getGitClient()
+                .withRepository((final Repository realRepo, VirtualChannel channel) -> anotherWorkspace
+                        .getGitClient()
+                        .withRepository((final Repository implRepo, VirtualChannel channel1) -> {
+                            final String realRefspec = realRepo.getConfig()
+                                    .getString(
+                                            ConfigConstants.CONFIG_REMOTE_SECTION,
+                                            Constants.DEFAULT_REMOTE_NAME,
+                                            "fetch");
+                            final String implRefspec = implRepo.getConfig()
+                                    .getString(
+                                            ConfigConstants.CONFIG_REMOTE_SECTION,
+                                            Constants.DEFAULT_REMOTE_NAME,
+                                            "fetch");
+                            assertThat("Refspecs vs. original clone", implRefspec, is(realRefspec));
+                            return null;
+                        }));
     }
 
     @Test
     public void test_clone_refspecs() throws Exception {
         List<RefSpec> refspecs = Arrays.asList(
                 new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
-                new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x")
-        );
-        testGitClient.clone_().url(workspace.localMirror()).refspecs(refspecs).repositoryName("origin").execute();
+                new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .refspecs(refspecs)
+                .repositoryName("origin")
+                .execute();
         testGitClient.withRepository((Repository workRepo, VirtualChannel channel) -> {
-            String[] fetchRefSpecs = workRepo.getConfig().getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            String[] fetchRefSpecs = workRepo.getConfig()
+                    .getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
             assertThat(fetchRefSpecs.length, is(2));
             assertThat(fetchRefSpecs[0], is("+refs/heads/master:refs/remotes/origin/master"));
             assertThat(fetchRefSpecs[1], is("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
@@ -483,40 +561,61 @@ public class GitClientCloneTest {
 
     @Test
     public void test_clone_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
     }
 
     @Test
     public void test_clone_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
-        testGitClient.clone_().url(workspace.localMirror()).timeout(largerTimeout).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .timeout(largerTimeout)
+                .repositoryName("origin")
+                .execute();
         assertTimeout(testGitClient, "fetch", largerTimeout);
     }
 
     @Test
     public void test_max_timeout_logging() throws Exception {
         int maxTimeout = JGitAPIImpl.MAX_TIMEOUT;
-        testGitClient.clone_().url(workspace.localMirror()).timeout(maxTimeout).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .timeout(maxTimeout)
+                .repositoryName("origin")
+                .execute();
         assertTimeout(testGitClient, "fetch", maxTimeout);
     }
 
     @Test
     public void test_clone_huge_timeout_logging() throws Exception {
         int hugeTimeout = JGitAPIImpl.MAX_TIMEOUT + 1 + random.nextInt(Integer.MAX_VALUE - 1 - JGitAPIImpl.MAX_TIMEOUT);
-        testGitClient.clone_().url(workspace.localMirror()).timeout(hugeTimeout).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .timeout(hugeTimeout)
+                .repositoryName("origin")
+                .execute();
         /* Expect fallback value from JGit for this nonsense timeout value */
         int expectedValue = gitImplName.startsWith("jgit") ? JGitAPIImpl.MAX_TIMEOUT : hugeTimeout;
         assertTimeout(testGitClient, "fetch", expectedValue);
     }
 
     private void assertAlternatesFileExists() {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        final String alternates =
+                ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
     }
 
     private void assertAlternatesFileNotFound() {
-        final String alternates = ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
+        final String alternates =
+                ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(not(anExistingFile())));
     }
 
@@ -530,7 +629,6 @@ public class GitClientCloneTest {
         if (packDir.isDirectory()) {
             assertThat("Pack directory", packDir.list(), is(emptyArray()));
         }
-
     }
 
     // Most tests use this method, expecting a non-bare repo
@@ -602,8 +700,7 @@ public class GitClientCloneTest {
         List<String> substringMessages = new ArrayList<>();
         List<String> substringTimeoutMessages = new ArrayList<>();
         final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
-        final String timeoutRegEx = messageRegEx
-                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
+        final String timeoutRegEx = messageRegEx + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
         for (String message : messages) {
             if (message.matches(messageRegEx)) {
                 substringMessages.add(message);
@@ -618,13 +715,18 @@ public class GitClientCloneTest {
         assertThat("Timeout messages", substringTimeoutMessages, is(substringMessages));
     }
 
-    private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName) throws InterruptedException, IOException {
+    private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName)
+            throws InterruptedException, IOException {
         assertThat("Remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("Updated URL", remotes, containsString(workspace.localMirror()));
     }
 
-    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
+    private void assertLoggedMessage(
+            GitClient gitClient,
+            final String candidateSubstring,
+            final String expectedValue,
+            final boolean expectToFindMatch) {
         List<String> messages = handler.getMessages();
         List<String> candidateMessages = new ArrayList<>();
         List<String> matchedMessages = new ArrayList<>();
@@ -640,11 +742,19 @@ public class GitClientCloneTest {
         }
         assertThat("No messages logged", messages, is(not(empty())));
         if (expectToFindMatch) {
-            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
-            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat(
+                    "No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat(
+                    "Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages
+                            + "\nExpected " + expectedValue,
+                    matchedMessages,
+                    is(not(empty())));
             assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
         } else {
-            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+            assertThat(
+                    "Messages matched substring '" + candidateSubstring + "' unexpectedly",
+                    candidateMessages,
+                    is(empty()));
         }
     }
 

@@ -1,13 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -20,10 +21,10 @@ public class SubmodulePatternStringTest {
     private final String submoduleConfigOutput;
     private final Matcher matcher;
 
-    private static final Pattern SUBMODULE_CONFIG_PATTERN = Pattern.compile(CliGitAPIImpl.SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
+    private static final Pattern SUBMODULE_CONFIG_PATTERN =
+            Pattern.compile(CliGitAPIImpl.SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
 
-    public SubmodulePatternStringTest(String repoUrl, String remoteName)
-    {
+    public SubmodulePatternStringTest(String repoUrl, String remoteName) {
         this.remoteName = remoteName;
         this.submoduleConfigOutput = "submodule." + remoteName + ".url " + repoUrl;
         this.matcher = SUBMODULE_CONFIG_PATTERN.matcher(submoduleConfigOutput);
@@ -51,20 +52,10 @@ public class SubmodulePatternStringTest {
             // "file://gitroot/has space",
         };
         String[] remoteNames = {
-            "has space",
-            "has.url space",
-            "simple",
-            "simple.name",
-            "simple.url.name",
-            "url",
-            "modules/module.named.url"
+            "has space", "has.url space", "simple", "simple.name", "simple.url.name", "url", "modules/module.named.url"
         };
-        String [] suffixes = {
-            "",
-            ".git",
-            ".url",
-            ".url.git",
-            ".git.url",
+        String[] suffixes = {
+            "", ".git", ".url", ".url.git", ".git.url",
         };
         for (String repoUrlParam : repoUrls) {
             for (String repoUrlSuffix : suffixes) {

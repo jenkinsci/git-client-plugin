@@ -18,13 +18,13 @@ public class KnownHostsFileVerificationStrategy extends SshHostKeyVerificationSt
     }
 
     @Extension
-    public static class KnownHostsFileVerificationStrategyDescriptor extends Descriptor<SshHostKeyVerificationStrategy<KnownHostsFileVerifier>> {
+    public static class KnownHostsFileVerificationStrategyDescriptor
+            extends Descriptor<SshHostKeyVerificationStrategy<KnownHostsFileVerifier>> {
 
         @NonNull
         @Override
         public String getDisplayName() {
             return "Known hosts file";
         }
-
     }
 }

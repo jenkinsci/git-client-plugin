@@ -1,9 +1,8 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
-import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
-
 import java.io.File;
+import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
 public abstract class HostKeyVerifierFactory implements SerializableOnlyOverRemoting {
 
@@ -20,5 +19,4 @@ public abstract class HostKeyVerifierFactory implements SerializableOnlyOverRemo
     File getKnownHostsFile() {
         return SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE;
     }
-
 }

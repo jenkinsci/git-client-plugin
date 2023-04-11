@@ -1,27 +1,26 @@
 package org.jenkinsci.plugins.gitclient.cgit;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.theInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -86,8 +85,7 @@ public class GitCommandsExecutorTest {
         List<Callable<String>> commands = asList(
                 erroneousCommand(new RuntimeException("some error")),
                 successfulCommand("some value", commandExecutionTime),
-                successfulCommand("some value", commandExecutionTime)
-        );
+                successfulCommand("some value", commandExecutionTime));
 
         long executionStartMillis = System.currentTimeMillis();
         try {
@@ -115,8 +113,7 @@ public class GitCommandsExecutorTest {
         List<Callable<String>> commands = asList(
                 successfulCommand("some value"),
                 successfulCommand("some value"),
-                erroneousCommand(new RuntimeException("some error"))
-        );
+                erroneousCommand(new RuntimeException("some error")));
 
         try {
             new GitCommandsExecutor(threads, listener).invokeAll(commands);

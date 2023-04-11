@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
+import static org.junit.Assert.*;
+
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
@@ -10,8 +12,6 @@ import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class SmartCredentialsProviderTest {
 
@@ -89,7 +89,8 @@ public class SmartCredentialsProviderTest {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
-        StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
 
         assertFalse(provider.supports(username, password));
         assertFalse(provider.supports(maskedUsername, unmaskedUsername));
@@ -110,7 +111,14 @@ public class SmartCredentialsProviderTest {
 
         assertFalse(provider.supports(maskedStringType, unmaskedStringType));
         /* Check that if any arguments are not supported, method returns false */
-        assertFalse(provider.supports(username, password, maskedUsername, unmaskedUsername, specialStringType, maskedStringType, unmaskedStringType));
+        assertFalse(provider.supports(
+                username,
+                password,
+                maskedUsername,
+                unmaskedUsername,
+                specialStringType,
+                maskedStringType,
+                unmaskedStringType));
         assertNull(specialStringType.getValue()); /* Expected, since nothing has been assigned */
 
         assertTrue(provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, specialStringType));
@@ -147,7 +155,8 @@ public class SmartCredentialsProviderTest {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
-        StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
 
         assertFalse(provider.supports(username, password));
         assertFalse(provider.supports(maskedUsername, unmaskedUsername));
@@ -168,7 +177,14 @@ public class SmartCredentialsProviderTest {
 
         assertFalse(provider.supports(maskedStringType, unmaskedStringType));
         /* Check that if any arguments are not supported, method returns false */
-        assertFalse(provider.supports(username, password, maskedUsername, unmaskedUsername, specialStringType, maskedStringType, unmaskedStringType));
+        assertFalse(provider.supports(
+                username,
+                password,
+                maskedUsername,
+                unmaskedUsername,
+                specialStringType,
+                maskedStringType,
+                unmaskedStringType));
 
         assertTrue(provider.get(null, username, password, maskedUsername, unmaskedUsername, specialStringType));
 
@@ -203,7 +219,8 @@ public class SmartCredentialsProviderTest {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
-        StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         maskedUsername.setValue(credentials);
         assertEquals(credentials, maskedUsername.getValue());
         maskedUsername.clear();
@@ -214,9 +231,11 @@ public class SmartCredentialsProviderTest {
     public void testGetThrowsException() {
         String expectedUsername = "expected-add-credentials-username";
         Secret secret = Secret.fromString("password-secret");
-        StandardUsernamePasswordCredentials credentials = new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
         provider.addCredentials(gitURI.toString(), credentials);
-        assertThrows(UnsupportedCredentialItem.class,
-                     () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
+        assertThrows(
+                UnsupportedCredentialItem.class,
+                () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
     }
 }

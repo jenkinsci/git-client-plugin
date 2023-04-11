@@ -1,9 +1,10 @@
 package hudson.plugins.git;
 
+import static org.junit.Assert.*;
+
 import java.io.File;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class IndexEntryTest {
 
@@ -97,14 +98,14 @@ public class IndexEntryTest {
         IndexEntry entryClone = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), entry.getFile());
         assertEquals(entry, entryClone);
 
-        IndexEntry entryNull1  = new IndexEntry(null, entry.getType(), entry.getObject(), entry.getFile());
+        IndexEntry entryNull1 = new IndexEntry(null, entry.getType(), entry.getObject(), entry.getFile());
         IndexEntry entryNull1a = new IndexEntry(null, entry.getType(), entry.getObject(), entry.getFile());
         assertNotEquals(entry, entryNull1);
         assertNotEquals(entryNull1, entry);
         assertEquals(entryNull1, entryNull1a);
         assertEquals(entryNull1a, entryNull1);
 
-        IndexEntry entryNull2  = new IndexEntry(entry.getMode(), null, entry.getObject(), entry.getFile());
+        IndexEntry entryNull2 = new IndexEntry(entry.getMode(), null, entry.getObject(), entry.getFile());
         IndexEntry entryNull2a = new IndexEntry(entry.getMode(), null, entry.getObject(), entry.getFile());
         assertNotEquals(entry, entryNull2);
         assertNotEquals(entryNull1, entryNull2);
@@ -112,7 +113,7 @@ public class IndexEntryTest {
         assertEquals(entryNull2, entryNull2a);
         assertEquals(entryNull2a, entryNull2);
 
-        IndexEntry entryNull3  = new IndexEntry(entry.getMode(), entry.getType(), null, entry.getFile());
+        IndexEntry entryNull3 = new IndexEntry(entry.getMode(), entry.getType(), null, entry.getFile());
         IndexEntry entryNull3a = new IndexEntry(entry.getMode(), entry.getType(), null, entry.getFile());
         assertNotEquals(entry, entryNull3);
         assertNotEquals(entryNull1, entryNull3);
@@ -122,7 +123,7 @@ public class IndexEntryTest {
         assertEquals(entryNull3, entryNull3a);
         assertEquals(entryNull3a, entryNull3);
 
-        IndexEntry entryNull4  = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), null);
+        IndexEntry entryNull4 = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), null);
         IndexEntry entryNull4a = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), null);
         assertNotEquals(entry, entryNull4);
         assertNotEquals(entryNull1, entryNull4);

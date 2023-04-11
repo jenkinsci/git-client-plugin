@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import java.util.List;
-
 import org.eclipse.jgit.transport.RefSpec;
 
 /**

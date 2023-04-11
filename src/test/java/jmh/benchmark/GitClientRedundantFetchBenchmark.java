@@ -2,6 +2,10 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
@@ -14,11 +18,6 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class GitClientRedundantFetchBenchmark {
 
@@ -42,20 +41,25 @@ public class GitClientRedundantFetchBenchmark {
         File remoteRepoDir;
         URIish urIish;
 
-        @Param({"https://github.com/jenkinsci/jenkins-charm.git",
-                "https://github.com/jenkinsci/parameterized-trigger-plugin.git",
-                "https://github.com/jenkinsci/ec2-plugin.git",
-                "https://github.com/jenkinsci/git-plugin.git",
-                "https://github.com/jenkinsci/jenkins.git"})
+        @Param({
+            "https://github.com/jenkinsci/jenkins-charm.git",
+            "https://github.com/jenkinsci/parameterized-trigger-plugin.git",
+            "https://github.com/jenkinsci/ec2-plugin.git",
+            "https://github.com/jenkinsci/git-plugin.git",
+            "https://github.com/jenkinsci/jenkins.git"
+        })
         String repoUrl;
 
         private File cloneUpstreamRepositoryLocally(File parentDir, String repoUrl) throws Exception {
             String repoName = repoUrl.split("/")[repoUrl.split("/").length - 1];
             File gitRepoDir = new File(parentDir, repoName);
             gitRepoDir.mkdir();
-            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitRepoDir).using("git").getClient();
+            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitRepoDir)
+                    .using("git")
+                    .getClient();
             cloningGitClient.clone_().url(repoUrl).execute();
-//            assertTrue("Unable to create git repo", gitRepoDir.exists());
+            //            assertTrue("Unable to create git repo", gitRepoDir.exists());
             return gitRepoDir;
         }
 
@@ -84,7 +88,10 @@ public class GitClientRedundantFetchBenchmark {
         public void setup() throws Exception {
             tmp.before();
             gitDir = tmp.newFolder();
-            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
+            gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitDir)
+                    .using(gitExe)
+                    .getClient();
 
             // fetching just only the contents of the default branch
             narrowRefSpecs.add(new RefSpec(DEFAULT_BRANCH_REFSPEC));
@@ -96,7 +103,7 @@ public class GitClientRedundantFetchBenchmark {
             gitClient.clone_().url(urIish.toString()).execute();
             System.out.println("Fetching for the first time");
             System.out.println("git client dir is: " + FileUtils.sizeOfDirectory(gitDir));
-//            gitClient.setRemoteUrl("origin", "file:///tmp/experiment/TestProject.git");
+            //            gitClient.setRemoteUrl("origin", "file:///tmp/experiment/TestProject.git");
             System.out.println("Do Setup");
         }
 
@@ -115,8 +122,10 @@ public class GitClientRedundantFetchBenchmark {
     }
 
     @Benchmark
-    public void gitFetchBenchmarkRedundantWithWideRefSpec(ClientState jenkinsState, Blackhole blackhole) throws Exception {
-        FetchCommand incrementalFetch = jenkinsState.gitClient.fetch_().from(jenkinsState.urIish, jenkinsState.wideRefSpecs);
+    public void gitFetchBenchmarkRedundantWithWideRefSpec(ClientState jenkinsState, Blackhole blackhole)
+            throws Exception {
+        FetchCommand incrementalFetch =
+                jenkinsState.gitClient.fetch_().from(jenkinsState.urIish, jenkinsState.wideRefSpecs);
         incrementalFetch.execute();
         System.out.println("Incremental fetch done");
         blackhole.consume(incrementalFetch);
@@ -136,5 +145,4 @@ public class GitClientRedundantFetchBenchmark {
 
         new Runner(options).run();
     }
-
 }

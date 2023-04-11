@@ -1,17 +1,16 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
+import java.io.IOException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
-
-import java.io.File;
-import java.io.IOException;
-
-import static org.junit.Assert.assertEquals;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class GitJenkinsRuleTest {
 
@@ -30,7 +29,6 @@ public class GitJenkinsRuleTest {
         } finally {
             System.clearProperty(Git.class.getName() + ".mockClient");
         }
-
     }
 
     public static class MyMockGitClient extends JGitAPIImpl {

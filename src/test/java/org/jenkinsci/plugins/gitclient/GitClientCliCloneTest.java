@@ -1,13 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.aReadableFile;
+import static org.junit.Assert.assertThrows;
+
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -15,11 +15,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.io.FileMatchers.aReadableFile;
-import static org.junit.Assert.assertThrows;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 
 /*
@@ -64,7 +63,11 @@ public class GitClientCliCloneTest {
 
     @Test
     public void test_checkout_default_timeout_logging() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         testGitClient.checkout().ref("origin/master").execute();
         assertTimeout(testGitClient, "git checkout", CliGitAPIImpl.TIMEOUT);
     }
@@ -72,7 +75,11 @@ public class GitClientCliCloneTest {
     @Test
     public void test_checkout_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         testGitClient.checkout().timeout(largerTimeout).ref("origin/master").execute();
         assertTimeout(testGitClient, "git checkout", largerTimeout);
     }
@@ -80,7 +87,11 @@ public class GitClientCliCloneTest {
     @Test
     public void test_submodule_update_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         testGitClient.checkout().ref("origin/tests/getSubmodules").execute();
         assertTimeout(testGitClient, "git checkout", CliGitAPIImpl.TIMEOUT);
         testGitClient.submoduleUpdate().timeout(largerTimeout).execute();
@@ -90,7 +101,11 @@ public class GitClientCliCloneTest {
     @Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         File lockFile = new File(workspace.getGitFileDir(), "index.lock");
         assertThat("Lock file", lockFile, is(not(aReadableFile())));
         String exceptionMsg = "test checkout intentionally interrupted";
@@ -107,7 +122,11 @@ public class GitClientCliCloneTest {
     @Issue("JENKINS-25353")
     @Test
     public void test_checkout_interrupted_with_existing_lock() throws Exception {
-        testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .execute();
         File lockFile = new File(workspace.getGitFileDir(), "index.lock");
         boolean created = lockFile.createNewFile();
         assertThat("Lock file creation failed " + lockFile.getAbsolutePath(), created, is(true));
@@ -124,7 +143,11 @@ public class GitClientCliCloneTest {
         assertThat("Lock file removed by checkout", lockFile, is(aReadableFile()));
     }
 
-    private void assertLoggedMessage(GitClient gitClient, final String candidateSubstring, final String expectedValue, final boolean expectToFindMatch) {
+    private void assertLoggedMessage(
+            GitClient gitClient,
+            final String candidateSubstring,
+            final String expectedValue,
+            final boolean expectToFindMatch) {
         List<String> messages = handler.getMessages();
         List<String> candidateMessages = new ArrayList<>();
         List<String> matchedMessages = new ArrayList<>();
@@ -140,11 +163,19 @@ public class GitClientCliCloneTest {
         }
         assertThat("No messages logged", messages, is(not(empty())));
         if (expectToFindMatch) {
-            assertThat("No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
-            assertThat("Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages + "\nExpected " + expectedValue, matchedMessages, is(not(empty())));
+            assertThat(
+                    "No messages matched substring '" + candidateSubstring + "'", candidateMessages, is(not(empty())));
+            assertThat(
+                    "Messages matched substring '" + candidateSubstring + "', found: " + candidateMessages
+                            + "\nExpected " + expectedValue,
+                    matchedMessages,
+                    is(not(empty())));
             assertThat("All candidate messages matched", matchedMessages, is(candidateMessages));
         } else {
-            assertThat("Messages matched substring '" + candidateSubstring + "' unexpectedly", candidateMessages, is(empty()));
+            assertThat(
+                    "Messages matched substring '" + candidateSubstring + "' unexpectedly",
+                    candidateMessages,
+                    is(empty()));
         }
     }
 

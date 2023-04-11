@@ -1,9 +1,8 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
-
 import java.io.IOException;
 import java.nio.file.Path;
+import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
 public interface AbstractCliGitHostKeyVerifier extends SerializableOnlyOverRemoting {
 
@@ -14,5 +13,4 @@ public interface AbstractCliGitHostKeyVerifier extends SerializableOnlyOverRemot
      * @throws IOException on input or output error
      */
     String getVerifyHostKeyOption(Path tempKnownHosts) throws IOException;
-
 }

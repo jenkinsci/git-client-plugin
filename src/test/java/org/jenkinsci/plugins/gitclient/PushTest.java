@@ -1,5 +1,18 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
+import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,27 +22,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import static java.util.stream.Collectors.toList;
-
-import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.util.StreamTaskListener;
-
 import org.apache.commons.io.FileUtils;
-
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.URIish;
-
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -91,8 +88,9 @@ public class PushTest {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
-            assertThrows(expectedException,
-                         () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
+            assertThrows(
+                    expectedException,
+                    () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).execute();
         }
@@ -103,8 +101,12 @@ public class PushTest {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
-            assertThrows(expectedException,
-                         () -> workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute());
+            assertThrows(expectedException, () -> workingGitClient
+                    .push()
+                    .to(bareURI)
+                    .ref(refSpec)
+                    .force(true)
+                    .execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
@@ -115,19 +117,12 @@ public class PushTest {
         List<Object[]> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
-            "{0}",
-            "HEAD",
-            "HEAD:{0}",
-            "{0}:{0}",
-            "refs/heads/{0}",
-            "{0}:heads/{0}",
-            "{0}:refs/heads/{0}"
+            "{0}", "HEAD", "HEAD:{0}", "{0}:{0}", "refs/heads/{0}", "{0}:heads/{0}", "{0}:refs/heads/{0}"
         };
         final String[] badRefSpecs = {
             /* ":", // JGit fails with "ERROR: branch is currently checked out" */
             /* ":{0}", // CliGitAPIImpl will delete the remote branch with this refspec */
-            "this/ref/does/not/exist",
-            "src/ref/does/not/exist:dest/ref/does/not/exist"
+            "this/ref/does/not/exist", "src/ref/does/not/exist:dest/ref/does/not/exist"
         };
 
         shuffleArray(implementations);
@@ -156,18 +151,22 @@ public class PushTest {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
         workingRepo = temporaryFolder.newFolder();
-        workingGitClient = Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
-        workingGitClient.clone_()
+        workingGitClient =
+                Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
+        workingGitClient
+                .clone_()
                 .url(bareRepo.getAbsolutePath())
                 .repositoryName("origin")
                 .execute();
-        workingGitClient.checkout()
+        workingGitClient
+                .checkout()
                 .branch(branchName)
                 .deleteBranchIfExist(true)
                 .ref("origin/" + branchName)
                 .execute();
         assertNotNull(bareFirstCommit);
-        assertTrue("Clone does not contain " + bareFirstCommit,
+        assertTrue(
+                "Clone does not contain " + bareFirstCommit,
                 workingGitClient.revList("origin/" + branchName).contains(bareFirstCommit));
         ObjectId workingHead = workingGitClient.getHeadRev(workingRepo.getAbsolutePath(), branchName);
         ObjectId bareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
@@ -205,8 +204,10 @@ public class PushTest {
 
         /* Clone the bare repository into a working copy */
         File cloneRepo = staticTemporaryFolder.newFolder();
-        GitClient cloneGitClient = Git.with(listener, env).in(cloneRepo).using(gitImpl).getClient();
-        cloneGitClient.clone_()
+        GitClient cloneGitClient =
+                Git.with(listener, env).in(cloneRepo).using(gitImpl).getClient();
+        cloneGitClient
+                .clone_()
                 .url(bareRepo.getAbsolutePath())
                 .repositoryName("origin")
                 .execute();
@@ -221,7 +222,8 @@ public class PushTest {
             String addedContent = "Initial commit to branch " + branchName + " content '" + randomContent + "'";
             Files.writeString(added.toPath(), addedContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
-            cloneGitClient.commit("Initial commit to " + branchName + " file " + added.getName() + " with " + randomContent);
+            cloneGitClient.commit(
+                    "Initial commit to " + branchName + " file " + added.getName() + " with " + randomContent);
             // checkoutOldBranchAndCommitFile needs at least two commits to the branch
             Files.writeString(added.toPath(), "Another revision " + randomContent, StandardCharsets.UTF_8);
             cloneGitClient.add(added.getName());
@@ -292,6 +294,6 @@ public class PushTest {
 
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private static boolean isWindows() {
-        return File.pathSeparatorChar==';';
+        return File.pathSeparatorChar == ';';
     }
 }

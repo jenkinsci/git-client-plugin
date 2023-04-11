@@ -74,7 +74,6 @@ public class Branch extends GitObject {
             return false;
         }
         final Branch other = (Branch) obj;
-        return Objects.equals(this.name, other.name)
-                && Objects.equals(this.sha1, other.sha1);
+        return Objects.equals(this.name, other.name) && Objects.equals(this.sha1, other.sha1);
     }
 }

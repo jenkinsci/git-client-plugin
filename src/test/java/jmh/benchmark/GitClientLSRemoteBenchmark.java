@@ -2,15 +2,14 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.jgit.lib.ObjectId;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 public class GitClientLSRemoteBenchmark {
 
@@ -20,11 +19,13 @@ public class GitClientLSRemoteBenchmark {
         @Param({"git", "jgit"})
         String gitExe;
 
-        @Param({"https://github.com/jenkinsci/ec2-plugin.git",
-                "https://github.com/jenkinsci/git-client-plugin.git",
-                "https://github.com/jenkinsci/jenkins.git",
-                "https://github.com/ruby/ruby.git",
-                "https://github.com/kubernetes/kubernetes.git"})
+        @Param({
+            "https://github.com/jenkinsci/ec2-plugin.git",
+            "https://github.com/jenkinsci/git-client-plugin.git",
+            "https://github.com/jenkinsci/jenkins.git",
+            "https://github.com/ruby/ruby.git",
+            "https://github.com/kubernetes/kubernetes.git"
+        })
         String repositoryURL;
 
         final FolderForBenchmark tmp = new FolderForBenchmark();
@@ -41,7 +42,10 @@ public class GitClientLSRemoteBenchmark {
             tmp.before();
             gitDir = tmp.newFolder();
 
-            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
+            gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitDir)
+                    .using(gitExe)
+                    .getClient();
             remoteReferences = new HashMap<>();
 
             System.out.println("Do Setup for: " + gitExe);
@@ -79,8 +83,10 @@ public class GitClientLSRemoteBenchmark {
 
     @Benchmark
     public void gitlsremoteBenchmark(ClientState clientState, Blackhole blackhole) throws Exception {
-        clientState.remoteReferences = clientState.gitClient.getRemoteReferences(clientState.repositoryURL, null, false, false);
-        if (clientState.validateReferences(clientState.repositoryURL, clientState.remoteReferences.keySet().size())) {
+        clientState.remoteReferences =
+                clientState.gitClient.getRemoteReferences(clientState.repositoryURL, null, false, false);
+        if (clientState.validateReferences(
+                clientState.repositoryURL, clientState.remoteReferences.keySet().size())) {
             blackhole.consume(clientState.remoteReferences);
         }
         blackhole.consume(clientState.remoteReferences);

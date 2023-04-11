@@ -1,5 +1,11 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static java.util.Collections.unmodifiableList;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
@@ -9,6 +15,22 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.*;
 import hudson.remoting.VirtualChannel;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -23,29 +45,6 @@ import org.junit.Test;
 import org.jvnet.hudson.test.Issue;
 import org.jvnet.hudson.test.TemporaryDirectoryAllocator;
 import org.objenesis.ObjenesisStd;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.ByteArrayOutputStream;
-import java.io.StringWriter;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
-import static java.util.Collections.unmodifiableList;
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 public abstract class GitAPITestUpdate {
 
@@ -93,8 +92,7 @@ public abstract class GitAPITestUpdate {
         List<String> substringMessages = new ArrayList<>();
         List<String> substringTimeoutMessages = new ArrayList<>();
         final String messageRegEx = ".*\\b" + substring + "\\b.*"; // the expected substring
-        final String timeoutRegEx = messageRegEx
-                + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
+        final String timeoutRegEx = messageRegEx + " [#] timeout=" + expectedTimeout + "\\b.*"; // # timeout=<value>
         for (String message : messages) {
             if (message.matches(messageRegEx)) {
                 substringMessages.add(message);
@@ -132,7 +130,8 @@ public abstract class GitAPITestUpdate {
             final String proxyHost = getSystemProperty("proxyHost", "http.proxyHost", "https.proxyHost");
             final String proxyPort = getSystemProperty("proxyPort", "http.proxyPort", "https.proxyPort");
             final String proxyUser = getSystemProperty("proxyUser", "http.proxyUser", "https.proxyUser");
-            //final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword", "https.proxyPassword");
+            // final String proxyPassword = getSystemProperty("proxyPassword", "http.proxyPassword",
+            // "https.proxyPassword");
             final String noProxyHosts = getSystemProperty("noProxyHosts", "http.noProxyHosts", "https.noProxyHosts");
             if (isBlank(proxyHost) || isBlank(proxyPort)) {
                 return;
@@ -142,7 +141,7 @@ public abstract class GitAPITestUpdate {
             setField(ProxyConfiguration.class, "port", proxyConfig, Integer.parseInt(proxyPort));
             setField(ProxyConfiguration.class, "userName", proxyConfig, proxyUser);
             setField(ProxyConfiguration.class, "noProxyHost", proxyConfig, noProxyHosts);
-            //Password does not work since a set password results in a "Secret" call which expects a running Jenkins
+            // Password does not work since a set password results in a "Secret" call which expects a running Jenkins
             setField(ProxyConfiguration.class, "password", proxyConfig, null);
             setField(ProxyConfiguration.class, "secretPassword", proxyConfig, null);
             gitClient.setProxy(proxyConfig);
@@ -171,8 +170,13 @@ public abstract class GitAPITestUpdate {
 
         String launchCommand(boolean ignoreError, String... args) throws IOException, InterruptedException {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            int st = new Launcher.LocalLauncher(listener).launch().pwd(repo).cmds(args).
-                    envs(env).stdout(out).join();
+            int st = new Launcher.LocalLauncher(listener)
+                    .launch()
+                    .pwd(repo)
+                    .cmds(args)
+                    .envs(env)
+                    .stdout(out)
+                    .join();
             String s = out.toString();
             if (!ignoreError) {
                 if (s == null || s.isEmpty()) {
@@ -281,7 +285,8 @@ public abstract class GitAPITestUpdate {
             if (cachedCliGitAPIImpl != null) {
                 return cachedCliGitAPIImpl;
             }
-            cachedCliGitAPIImpl = (CliGitAPIImpl) Git.with(listener, env).in(repo).using("git").getClient();
+            cachedCliGitAPIImpl = (CliGitAPIImpl)
+                    Git.with(listener, env).in(repo).using("git").getClient();
             return cachedCliGitAPIImpl;
         }
 
@@ -314,6 +319,7 @@ public abstract class GitAPITestUpdate {
             return (IGitAPI) git;
         }
     }
+
     protected WorkingArea w;
 
     protected WorkingArea clone(String src) throws Exception {
@@ -321,7 +327,8 @@ public abstract class GitAPITestUpdate {
         x.launchCommand("git", "clone", src, x.repoPath());
         WorkingArea clonedArea = new WorkingArea(x.repo);
         clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
-        clonedArea.launchCommand("git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
+        clonedArea.launchCommand(
+                "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
         return clonedArea;
     }
 
@@ -381,7 +388,8 @@ public abstract class GitAPITestUpdate {
                     if (isShallow()) {
                         w.launchCommand("git", "clone", "--mirror", repoUrl, destination);
                     } else {
-                        w.launchCommand("git", "clone", "--reference", f.getCanonicalPath(), "--mirror", repoUrl, destination);
+                        w.launchCommand(
+                                "git", "clone", "--reference", f.getCanonicalPath(), "--mirror", repoUrl, destination);
                     }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         renameAndDeleteDir(tempClonePath, cloneDirName);
@@ -471,15 +479,26 @@ public abstract class GitAPITestUpdate {
 
     private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception {
         ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
-        assertNotNull(String.format("Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
-                expectedObjectId, remote, branchSpec), expectedObjectId);
-        assertNotNull(String.format("Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'.",
-                expectedObjectId, remote, branchSpec), actualObjectId);
-        assertEquals(String.format("Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n"
-                + "Actual %s,\nExpected %s\n", branchSpec, remote,
-                StringUtils.join(getBranches(actualObjectId), ", "),
-                StringUtils.join(getBranches(expectedObjectId), ", ")),
-                expectedObjectId, actualObjectId);
+        assertNotNull(
+                String.format(
+                        "Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
+                        expectedObjectId, remote, branchSpec),
+                expectedObjectId);
+        assertNotNull(
+                String.format(
+                        "Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'.",
+                        expectedObjectId, remote, branchSpec),
+                actualObjectId);
+        assertEquals(
+                String.format(
+                        "Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n"
+                                + "Actual %s,\nExpected %s\n",
+                        branchSpec,
+                        remote,
+                        StringUtils.join(getBranches(actualObjectId), ", "),
+                        StringUtils.join(getBranches(expectedObjectId), ", ")),
+                expectedObjectId,
+                actualObjectId);
     }
 
     private List<Branch> getBranches(ObjectId objectId) throws GitException, InterruptedException {
@@ -506,11 +525,26 @@ public abstract class GitAPITestUpdate {
         final String remote = tempRemoteDir.getAbsolutePath();
 
         final String[][] checkBranchSpecs = {
-            {"refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            {"refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            {"refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            {"refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-            {"refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)}
+            {
+                "refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            },
+            {
+                "refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            },
+            {
+                "refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            },
+            {
+                "refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            },
+            {
+                "refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            }
         };
 
         for (String[] branch : checkBranchSpecs) {
@@ -624,7 +658,11 @@ public abstract class GitAPITestUpdate {
          * submodule.
          */
         // w.git.checkout().ref(notSubRefName).execute();
-        w.git.checkout().ref(notSubRefName).branch(notSubBranchName).deleteBranchIfExist(true).execute();
+        w.git.checkout()
+                .ref(notSubRefName)
+                .branch(notSubBranchName)
+                .deleteBranchIfExist(true)
+                .execute();
         assertDirExists(ntpDir);
         assertFileExists(ntpContributingFile);
         assertFileContains(ntpContributingFile, contributingFileContentFromNonsubmoduleBranch);
@@ -771,7 +809,8 @@ public abstract class GitAPITestUpdate {
          * functioning repository object
          */
         submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
-            assertTrue(repo.getDirectory() + " is not a valid repository",
+            assertTrue(
+                    repo.getDirectory() + " is not a valid repository",
                     repo.getObjectDatabase().exists());
             return null;
         });
@@ -895,7 +934,11 @@ public abstract class GitAPITestUpdate {
         }
         w.git.clone_().url(localMirror()).repositoryName("origin").execute();
         checkoutTimeout = 1 + random.nextInt(60 * 24);
-        w.git.checkout().ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME).branch(DEFAULT_MIRROR_BRANCH_NAME).timeout(checkoutTimeout).execute();
+        w.git.checkout()
+                .ref("origin/" + DEFAULT_MIRROR_BRANCH_NAME)
+                .branch(DEFAULT_MIRROR_BRANCH_NAME)
+                .timeout(checkoutTimeout)
+                .execute();
 
         String tagsBefore = w.launchCommand("git", "tag");
         Set<String> tagNamesBefore = w.git.getTagNames(null);
@@ -903,7 +946,11 @@ public abstract class GitAPITestUpdate {
             assertTrue(tag + " not in " + tagsBefore, tagsBefore.contains(tag));
         }
 
-        w.git.checkout().branch("tests/getSubmodules").ref("origin/tests/getSubmodules").timeout(checkoutTimeout).execute();
+        w.git.checkout()
+                .branch("tests/getSubmodules")
+                .ref("origin/tests/getSubmodules")
+                .timeout(checkoutTimeout)
+                .execute();
         w.git.submoduleUpdate().recursive(true).execute();
 
         String tagsAfter = w.launchCommand("git", "tag");
@@ -933,14 +980,16 @@ public abstract class GitAPITestUpdate {
     public void testGetSubmodules() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub_origin").execute();
-        w.git.checkout().ref("sub_origin/tests/getSubmodules").branch("tests/getSubmodules").execute();
+        w.git.checkout()
+                .ref("sub_origin/tests/getSubmodules")
+                .branch("tests/getSubmodules")
+                .execute();
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
                 "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], "
-                + "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609], "
-                + "IndexEntry[mode=160000,type=commit,file=modules/sshkeys,object=689c45ed57f0829735f9a2b16760c14236fe21d9]]",
-                r.toString()
-        );
+                        + "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609], "
+                        + "IndexEntry[mode=160000,type=commit,file=modules/sshkeys,object=689c45ed57f0829735f9a2b16760c14236fe21d9]]",
+                r.toString());
         w.git.submoduleInit();
         w.git.submoduleUpdate().execute();
 
@@ -957,38 +1006,56 @@ public abstract class GitAPITestUpdate {
     public void testSubmoduleUpdateShallow() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
         w.cgit().allowFileProtocol();
-        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.clone_()
+                .url("file://" + remote.file("dir-repository").getAbsolutePath())
+                .repositoryName("origin")
+                .execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
         w.git.submoduleUpdate().shallow(true).execute();
 
-        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+        boolean hasShallowSubmoduleSupport =
+                w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
 
         String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
         assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
 
-        int localSubmoduleCommits = w.cgit().subGit("submodule").revList(defaultBranchName).size();
-        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
-        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits, localSubmoduleCommits);
+        int localSubmoduleCommits =
+                w.cgit().subGit("submodule").revList(defaultBranchName).size();
+        int remoteSubmoduleCommits =
+                remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
+        assertEquals(
+                "submodule commit count didn't match",
+                hasShallowSubmoduleSupport ? 1 : remoteSubmoduleCommits,
+                localSubmoduleCommits);
     }
 
     @Test
     public void testSubmoduleUpdateShallowWithDepth() throws Exception {
         WorkingArea remote = setupRepositoryWithSubmodule();
         w.cgit().allowFileProtocol();
-        w.git.clone_().url("file://" + remote.file("dir-repository").getAbsolutePath()).repositoryName("origin").execute();
+        w.git.clone_()
+                .url("file://" + remote.file("dir-repository").getAbsolutePath())
+                .repositoryName("origin")
+                .execute();
         w.git.checkout().branch(defaultBranchName).ref(defaultRemoteBranchName).execute();
         w.git.submoduleInit();
         w.git.submoduleUpdate().shallow(true).depth(2).execute();
 
-        boolean hasShallowSubmoduleSupport = w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
+        boolean hasShallowSubmoduleSupport =
+                w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
 
         String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
         assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
 
-        int localSubmoduleCommits = w.cgit().subGit("submodule").revList(defaultBranchName).size();
-        int remoteSubmoduleCommits = remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
-        assertEquals("submodule commit count didn't match", hasShallowSubmoduleSupport ? 2 : remoteSubmoduleCommits, localSubmoduleCommits);
+        int localSubmoduleCommits =
+                w.cgit().subGit("submodule").revList(defaultBranchName).size();
+        int remoteSubmoduleCommits =
+                remote.cgit().subGit("dir-submodule").revList(defaultBranchName).size();
+        assertEquals(
+                "submodule commit count didn't match",
+                hasShallowSubmoduleSupport ? 2 : remoteSubmoduleCommits,
+                localSubmoduleCommits);
     }
 
     /**
@@ -1089,11 +1156,15 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testGetHeadRevFromPublicRepoWithInvalidCredential() throws Exception {
         GitClient remoteGit = Git.with(listener, env).using("git").getClient();
-        StandardUsernamePasswordCredentials testCredential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, "bad-id", "bad-desc", "bad-user", "bad-password");
+        StandardUsernamePasswordCredentials testCredential = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL, "bad-id", "bad-desc", "bad-user", "bad-password");
         remoteGit.addDefaultCredentials(testCredential);
         Map<String, ObjectId> heads = remoteGit.getHeadRev(remoteMirrorURL);
         ObjectId defaultBranch = w.git.getHeadRev(remoteMirrorURL, "refs/heads/" + defaultBranchName);
-        assertEquals("URL is " + remoteMirrorURL + ", heads is " + heads, defaultBranch, heads.get("refs/heads/" + defaultBranchName));
+        assertEquals(
+                "URL is " + remoteMirrorURL + ", heads is " + heads,
+                defaultBranch,
+                heads.get("refs/heads/" + defaultBranchName));
     }
 
     /**
@@ -1111,14 +1182,19 @@ public abstract class GitAPITestUpdate {
         w = clone(tempRemoteDir.getAbsolutePath());
         final String remote = tempRemoteDir.getAbsolutePath();
 
-        final String[][] checkBranchSpecs
-                = //TODO: Fix and enable test
+        final String[][] checkBranchSpecs = // TODO: Fix and enable test
                 {
-                    {"a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)}, // {"a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                // {"a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                // {"b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                // {defaultBranchName, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
-                };
+            {
+                "a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+                commits.getProperty("refs/heads/a_tests/b_namespace1/" + ZIP_FILE_DEFAULT_BRANCH_NAME)
+            }, // {"a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+            // commits.getProperty("refs/heads/a_tests/b_namespace2/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+            // {"a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME,
+            // commits.getProperty("refs/heads/a_tests/b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+            // {"b_namespace3/" + ZIP_FILE_DEFAULT_BRANCH_NAME, commits.getProperty("refs/heads/b_namespace3/" +
+            // ZIP_FILE_DEFAULT_BRANCH_NAME)},
+            // {defaultBranchName, commits.getProperty("refs/heads/" + ZIP_FILE_DEFAULT_BRANCH_NAME)},
+        };
 
         for (String[] branch : checkBranchSpecs) {
             final ObjectId objectId = ObjectId.fromString(branch[1]);
@@ -1180,9 +1256,15 @@ public abstract class GitAPITestUpdate {
         /* Push to bare repo */
         w.git.push("origin", defaultBranchName);
         /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId bareHead = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
+        ObjectId bareHead = w.git instanceof CliGitAPIImpl
+                ? bare.head()
+                : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName)
+                        .substring(0, 40));
         assertEquals("Heads don't match", workHead, bareHead);
-        assertEquals("Heads don't match", w.git.getHeadRev(w.repoPath(), defaultBranchName), bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
+        assertEquals(
+                "Heads don't match",
+                w.git.getHeadRev(w.repoPath(), defaultBranchName),
+                bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
 
         /* Commit a new file */
         w.touch("file1");
@@ -1196,15 +1278,26 @@ public abstract class GitAPITestUpdate {
         w.igit().push(origin, defaultBranchName);
 
         /* JGitAPIImpl revParse fails unexpectedly when used here */
-        ObjectId workHead2 = w.git instanceof CliGitAPIImpl ? w.head() : ObjectId.fromString(w.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
-        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl ? bare.head() : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
+        ObjectId workHead2 = w.git instanceof CliGitAPIImpl
+                ? w.head()
+                : ObjectId.fromString(
+                        w.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40));
+        ObjectId bareHead2 = w.git instanceof CliGitAPIImpl
+                ? bare.head()
+                : ObjectId.fromString(bare.launchCommand("git", "rev-parse", defaultBranchName)
+                        .substring(0, 40));
         assertEquals("Working SHA1 != bare SHA1", workHead2, bareHead2);
-        assertEquals("Working SHA1 != bare SHA1", w.git.getHeadRev(w.repoPath(), defaultBranchName), bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
+        assertEquals(
+                "Working SHA1 != bare SHA1",
+                w.git.getHeadRev(w.repoPath(), defaultBranchName),
+                bare.git.getHeadRev(bare.repoPath(), defaultBranchName));
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
-        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+        assertTrue(
+                "Expected '" + expectedSubstring + "' exception message, but was: " + actual,
+                actual.contains(expectedSubstring));
     }
 
     public void assertFixSubmoduleUrlsThrows() throws InterruptedException {
@@ -1227,11 +1320,21 @@ public abstract class GitAPITestUpdate {
      */
     private void baseCheckoutReplacesTrackedChanges(boolean defineBranch) throws Exception {
         w.git.clone_().url(localMirror()).repositoryName("JENKINS-23424").execute();
-        w.git.checkout().ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).branch(DEFAULT_MIRROR_BRANCH_NAME).execute();
+        w.git.checkout()
+                .ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME)
+                .branch(DEFAULT_MIRROR_BRANCH_NAME)
+                .execute();
         if (defineBranch) {
-            w.git.checkout().branch(defaultBranchName).ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).deleteBranchIfExist(true).execute();
+            w.git.checkout()
+                    .branch(defaultBranchName)
+                    .ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME)
+                    .deleteBranchIfExist(true)
+                    .execute();
         } else {
-            w.git.checkout().ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME).deleteBranchIfExist(true).execute();
+            w.git.checkout()
+                    .ref("JENKINS-23424/" + DEFAULT_MIRROR_BRANCH_NAME)
+                    .deleteBranchIfExist(true)
+                    .execute();
         }
 
         /* Confirm first checkout */
@@ -1320,7 +1423,8 @@ public abstract class GitAPITestUpdate {
     private String getDefaultBranchName() throws Exception {
         String defaultBranchValue = "mast" + "er"; // Intentionally split to note this will remain
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, env).in(configDir).using("git").getClient());
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(
+                Git.with(TaskListener.NULL, env).in(configDir).using("git").getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -1338,7 +1442,8 @@ public abstract class GitAPITestUpdate {
     private ObjectId getMirrorHead() throws IOException, InterruptedException {
         if (mirrorHead == null) {
             final String mirrorPath = new File(localMirror()).getAbsolutePath();
-            mirrorHead = ObjectId.fromString(w.launchCommand("git", "--git-dir=" + mirrorPath, "rev-parse", "HEAD").substring(0, 40));
+            mirrorHead = ObjectId.fromString(w.launchCommand("git", "--git-dir=" + mirrorPath, "rev-parse", "HEAD")
+                    .substring(0, 40));
         }
         return mirrorHead;
     }
@@ -1348,7 +1453,10 @@ public abstract class GitAPITestUpdate {
         while (entries.hasMoreElements()) {
             ZipEntry entry = entries.nextElement();
             File entryDestination = new File(outputDir, entry.getName());
-            if (!entryDestination.toPath().normalize().startsWith(outputDir.toPath().normalize())) {
+            if (!entryDestination
+                    .toPath()
+                    .normalize()
+                    .startsWith(outputDir.toPath().normalize())) {
                 throw new RuntimeException("Bad zip entry");
             }
             entryDestination.getParentFile().mkdirs();
@@ -1381,7 +1489,9 @@ public abstract class GitAPITestUpdate {
          * remote repo.
          * 'origin/main' becomes 'origin/m*i?'
          */
-        final ObjectId wildcardEndDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME.replace('a', '*').replace('t', '?').replace('n', '?'));
+        final ObjectId wildcardEndDefaultBranch = w.git.getHeadRev(
+                repoURL,
+                DEFAULT_MIRROR_BRANCH_NAME.replace('a', '*').replace('t', '?').replace('n', '?'));
         assertEquals("wildcard end default branch mismatch", expectedId, wildcardEndDefaultBranch);
     }
 
@@ -1409,7 +1519,8 @@ public abstract class GitAPITestUpdate {
      */
     @Test
     public void testGetRemoteReferencesWithMatchingPattern() throws Exception {
-        Map<String, ObjectId> references = w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
+        Map<String, ObjectId> references =
+                w.git.getRemoteReferences(remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME, true, false);
         assertTrue(references.containsKey("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertFalse(references.containsKey("refs/tags/git-client-1.0.0"));
         references = w.git.getRemoteReferences(remoteMirrorURL, "git-client-*", false, true);
@@ -1441,7 +1552,8 @@ public abstract class GitAPITestUpdate {
 
     @Test
     public void testGetHeadRevRemote() throws Exception {
-        String lsRemote = w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
+        String lsRemote =
+                w.launchCommand("git", "ls-remote", "-h", remoteMirrorURL, "refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME);
         ObjectId lsRemoteId = ObjectId.fromString(lsRemote.substring(0, 40));
         checkHeadRev(remoteMirrorURL, lsRemoteId);
     }
@@ -1461,11 +1573,11 @@ public abstract class GitAPITestUpdate {
         w.git.commit("first");
         ObjectId first = w.head();
         List<String> revisionDetails = w.git.showRevision(first);
-        List<String> commits
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
-        assertTrue("Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
+        List<String> commits = revisionDetails.stream()
+                .filter(detail -> detail.startsWith("commit "))
+                .collect(Collectors.toList());
+        assertTrue(
+                "Commits '" + commits + "' missing " + first.getName(), commits.contains("commit " + first.getName()));
         assertEquals("Commits '" + commits + "' wrong size", 1, commits.size());
     }
 
@@ -1513,7 +1625,9 @@ public abstract class GitAPITestUpdate {
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
         /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
-        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+        assertEquals(
+                "Wrong invalid default remote",
+                w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
                 w.igit().getDefaultRemote("invalid"));
     }
 
@@ -1547,7 +1661,9 @@ public abstract class GitAPITestUpdate {
         assertEquals("Wrong origin default remote", "origin", w.igit().getDefaultRemote("origin"));
         assertEquals("Wrong ndeloof default remote", "ndeloof", w.igit().getDefaultRemote("ndeloof"));
         /* CliGitAPIImpl and JGitAPIImpl return different ordered lists for default remote if invalid */
-        assertEquals("Wrong invalid default remote", w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
+        assertEquals(
+                "Wrong invalid default remote",
+                w.git instanceof CliGitAPIImpl ? "ndeloof" : "origin",
                 w.igit().getDefaultRemote("invalid"));
     }
 
@@ -1578,12 +1694,15 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    private void checkBoundedChangelogSha1(final String sha1Begin, final String sha1End, final String branchName) throws InterruptedException {
+    private void checkBoundedChangelogSha1(final String sha1Begin, final String sha1End, final String branchName)
+            throws InterruptedException {
         StringWriter writer = new StringWriter();
         w.git.changelog(sha1Begin, sha1End, writer);
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
         assertEquals("Wrong bounded changelog line 1 on branch " + branchName, "commit " + sha1End, splitLog[0]);
-        assertTrue("Begin sha1 " + sha1Begin + " not in changelog: " + writer, writer.toString().contains(sha1Begin));
+        assertTrue(
+                "Begin sha1 " + sha1Begin + " not in changelog: " + writer,
+                writer.toString().contains(sha1Begin));
     }
 
     @Test
@@ -1615,18 +1734,16 @@ public abstract class GitAPITestUpdate {
 
         List<String> revisionDetails = w.git.showRevision(from, to, useRawOutput);
 
-        List<String> commits
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
+        List<String> commits = revisionDetails.stream()
+                .filter(detail -> detail.startsWith("commit "))
+                .collect(Collectors.toList());
         assertEquals(2, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b"));
 
-        List<String> diffs
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith(":"))
-                        .collect(Collectors.toList());
+        List<String> diffs = revisionDetails.stream()
+                .filter(detail -> detail.startsWith(":"))
+                .collect(Collectors.toList());
 
         assertTrue(diffs.isEmpty());
     }
@@ -1647,10 +1764,9 @@ public abstract class GitAPITestUpdate {
         w = clone(localMirror());
         ObjectId to = ObjectId.fromString("51de9eda47ca8dcf03b2af58dfff7355585f0d0c");
         List<String> revisionDetails = w.git.showRevision(null, to);
-        List<String> commits
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
+        List<String> commits = revisionDetails.stream()
+                .filter(detail -> detail.startsWith("commit "))
+                .collect(Collectors.toList());
         assertEquals(1, commits.size());
         assertTrue(commits.contains("commit 51de9eda47ca8dcf03b2af58dfff7355585f0d0c"));
     }
@@ -1685,7 +1801,9 @@ public abstract class GitAPITestUpdate {
     public void testCheckoutNullRef() throws Exception {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
-        assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
+        assertTrue(
+                "default branch not current branch in " + branches,
+                branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
         final String branchName = "test-checkout-null-ref-branch-" + UUID.randomUUID();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
@@ -1702,21 +1820,21 @@ public abstract class GitAPITestUpdate {
 
         List<String> revisionDetails = w.git.showRevision(from, to);
 
-        List<String> commits
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith("commit "))
-                        .collect(Collectors.toList());
+        List<String> commits = revisionDetails.stream()
+                .filter(detail -> detail.startsWith("commit "))
+                .collect(Collectors.toList());
         assertEquals(3, commits.size());
         assertTrue(commits.contains("commit 4f2964e476776cf59be3e033310f9177bedbf6a8"));
         // Merge commit is duplicated as have to capture changes that may have been made as part of merge
-        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
-        assertTrue(commits.contains("commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
+        assertTrue(commits.contains(
+                "commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 4f2964e476776cf59be3e033310f9177bedbf6a8)"));
+        assertTrue(commits.contains(
+                "commit b53374617e85537ec46f86911b5efe3e4e2fa54b (from 45e76942914664ee19f31d90e6f2edbfe0d13a46)"));
 
-        List<String> paths
-                = revisionDetails.stream()
-                        .filter(detail -> detail.startsWith(":"))
-                        .map(diff -> diff.substring(diff.indexOf('\t') + 1).trim()) // Windows diff output ^M removed by trim()
-                        .collect(Collectors.toList());
+        List<String> paths = revisionDetails.stream()
+                .filter(detail -> detail.startsWith(":"))
+                .map(diff -> diff.substring(diff.indexOf('\t') + 1).trim()) // Windows diff output ^M removed by trim()
+                .collect(Collectors.toList());
 
         assertTrue(paths.contains(".gitignore"));
         // Some irrelevant changes will be listed due to merge commit
@@ -1759,7 +1877,11 @@ public abstract class GitAPITestUpdate {
             w = clone(gitUrl);
         } else {
             // Leaks an open file - unclear why
-            w.git.clone_().url(gitUrl).repositoryName("origin").reference(localMirror()).execute();
+            w.git.clone_()
+                    .url(gitUrl)
+                    .repositoryName("origin")
+                    .reference(localMirror())
+                    .execute();
         }
         String cgitAllLogEntries = w.cgit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         String igitAllLogEntries = w.igit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
@@ -1795,7 +1917,10 @@ public abstract class GitAPITestUpdate {
         assertTrue("file.2 does not exist", f.exists());
 
         Map<String, ObjectId> heads = w.git.getHeadRev(w.repoPath());
-        assertEquals("Wrong default branch in " + heads, defaultBranch, heads.get("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
+        assertEquals(
+                "Wrong default branch in " + heads,
+                defaultBranch,
+                heads.get("refs/heads/" + DEFAULT_MIRROR_BRANCH_NAME));
         assertEquals("Wrong branch1 in " + heads, branch1, heads.get("refs/heads/branch1"));
         assertEquals("Wrong branch.2 in " + heads, branchDot2, heads.get("refs/heads/branch.2"));
 
@@ -1808,11 +1933,16 @@ public abstract class GitAPITestUpdate {
     public void testCheckout() throws Exception {
         w = clone(localMirror());
         String branches = w.launchCommand("git", "branch", "-l");
-        assertTrue("default branch not current branch in " + branches, branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
+        assertTrue(
+                "default branch not current branch in " + branches,
+                branches.contains("* " + DEFAULT_MIRROR_BRANCH_NAME));
         final String branchName = "test-checkout-branch-" + UUID.randomUUID();
         branches = w.launchCommand("git", "branch", "-l");
         assertFalse("test branch originally listed in " + branches, branches.contains(branchName));
-        w.git.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").branch(branchName).execute(); // git-client-1.6.0
+        w.git.checkout()
+                .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
+                .branch(branchName)
+                .execute(); // git-client-1.6.0
         branches = w.launchCommand("git", "branch", "-l");
         assertTrue("test branch not current branch in " + branches, branches.contains("* " + branchName));
         String sha1 = w.git.revParse("HEAD").name();
@@ -1836,10 +1966,8 @@ public abstract class GitAPITestUpdate {
 
         w.git.clone_().url("file://" + r.repoPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
-        final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/"
-                + defaultBranchName;
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
+        final String remoteBranch = getRemoteBranchPrefix() + Constants.DEFAULT_REMOTE_NAME + "/" + defaultBranchName;
         final String bothBranches = defaultBranchName + "," + "origin/" + defaultBranchName;
         w.git.fetch_().from(remote, refspecs).execute();
         checkoutTimeout = 1 + random.nextInt(60 * 24);
@@ -1897,7 +2025,11 @@ public abstract class GitAPITestUpdate {
         // Merge branch-1 into default branch
         w.git.checkout().ref(defaultBranchName).execute();
         String mergeMessage = "Merge message to be tested.";
-        w.git.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1")).execute();
+        w.git.merge()
+                .setMessage(mergeMessage)
+                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
+                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1"))
+                .execute();
 
         /* JGit handles merge commits in changelog differently than CLI git.  See JENKINS-40023. */
         int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2;
@@ -1943,5 +2075,4 @@ public abstract class GitAPITestUpdate {
 
         return workingArea;
     }
-
 }

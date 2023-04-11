@@ -1,13 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.jgit.lib.ObjectId;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -18,8 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.lib.ObjectId;
 
 public class WorkspaceWithRepo {
 
@@ -40,8 +40,12 @@ public class WorkspaceWithRepo {
         cliGitCommand = new CliGitCommand(gitClient);
     }
 
-    private GitClient setupGitClient(File gitFileDir, @NonNull String gitImplName, TaskListener listener) throws Exception {
-        return Git.with(listener, new EnvVars()).in(gitFileDir).using(gitImplName).getClient();
+    private GitClient setupGitClient(File gitFileDir, @NonNull String gitImplName, TaskListener listener)
+            throws Exception {
+        return Git.with(listener, new EnvVars())
+                .in(gitFileDir)
+                .using(gitImplName)
+                .getClient();
     }
 
     private void renameAndDeleteDir(Path srcDir, String destDirName) {
@@ -68,12 +72,10 @@ public class WorkspaceWithRepo {
         }
     }
 
-
     private boolean isShallow() {
         File shallowMarker = new File(".git", "shallow");
         return shallowMarker.isFile();
     }
-
 
     /**
      * Populate the local mirror of the git client plugin repository.
@@ -111,7 +113,8 @@ public class WorkspaceWithRepo {
                     if (isShallow()) {
                         cliGitCommand.run("clone", "--mirror", repoURL, destination);
                     } else {
-                        cliGitCommand.run("clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, destination);
+                        cliGitCommand.run(
+                                "clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, destination);
                     }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
                         System.err.println("moving tempClonePath to cloneDirName=" + cloneDirName);
@@ -158,8 +161,13 @@ public class WorkspaceWithRepo {
 
     String launchCommand(boolean ignoreError, String... args) throws IOException, InterruptedException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int returnCode = new Launcher.LocalLauncher(listener).launch().pwd(gitFileDir).cmds(args).
-                envs(new EnvVars()).stdout(out).join();
+        int returnCode = new Launcher.LocalLauncher(listener)
+                .launch()
+                .pwd(gitFileDir)
+                .cmds(args)
+                .envs(new EnvVars())
+                .stdout(out)
+                .join();
         String output = out.toString();
         if (!ignoreError) {
             if (output == null || output.isEmpty()) {
@@ -202,11 +210,13 @@ public class WorkspaceWithRepo {
     }
 
     CliGitAPIImpl cgit() throws Exception {
-        return (CliGitAPIImpl) Git.with(listener, new EnvVars()).in(gitFileDir).using("git").getClient();
+        return (CliGitAPIImpl)
+                Git.with(listener, new EnvVars()).in(gitFileDir).using("git").getClient();
     }
 
     JGitAPIImpl jgit() throws Exception {
-        return (JGitAPIImpl) Git.with(listener, new EnvVars()).in(gitFileDir).using("jgit").getClient();
+        return (JGitAPIImpl)
+                Git.with(listener, new EnvVars()).in(gitFileDir).using("jgit").getClient();
     }
 
     ObjectId head() throws IOException, InterruptedException {
