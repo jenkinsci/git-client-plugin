@@ -836,13 +836,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (reference != null && !reference.isEmpty()) {
                     if (isParameterizedReferenceRepository(reference)) {
                         // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
-                        listener.getLogger().println("[INFO] The git reference repository path '" +
-                            reference + "' is parameterized, it may take a few git queries logged " +
-                            "below to resolve it into a particular directory name");
+                        listener.getLogger()
+                                .println("[INFO] The git reference repository path '" + reference
+                                        + "' is parameterized, it may take a few git queries logged "
+                                        + "below to resolve it into a particular directory name");
                     }
                     File referencePath = findParameterizedReferenceRepository(reference, url);
                     if (referencePath == null) {
-                        listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
+                        listener.getLogger()
+                                .println("[ERROR] Could not make File object from reference path, skipping its use: "
+                                        + reference);
                     } else {
                         if (!referencePath.getPath().equals(reference)) {
                             // Note: both these logs are needed, they are used in selftest
@@ -865,12 +868,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         else {
                             File objectsPath = getObjectsFile(referencePath);
                             if (objectsPath == null || !objectsPath.isDirectory())
-                                listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (not a git repo?): " + objectsPath);
+                                listener.getLogger()
+                                        .println(
+                                                "[WARNING] Reference path does not contain an objects directory (not a git repo?): "
+                                                        + objectsPath);
                             else {
                                 // Go behind git's back to write a meta file in new workspace
                                 File alternates = new File(workspace, ".git/objects/info/alternates");
-                                try (PrintWriter w = new PrintWriter(alternates, Charset.defaultCharset().toString())) {
-                                    String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                try (PrintWriter w = new PrintWriter(
+                                        alternates, Charset.defaultCharset().toString())) {
+                                    String absoluteReference =
+                                            objectsPath.getAbsolutePath().replace('\\', '/');
                                     listener.getLogger().println("Using reference repository: " + reference);
                                     // git implementations on windows also use
                                     w.print(absoluteReference);
@@ -1514,8 +1522,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
                         else if (!referencePath.isDirectory())
                             listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
-                        else
-                            args.add("--reference", ref);
+                        else args.add("--reference", ref);
                     } // else handled below in per-module loop
                 }
                 if (shallow) {
@@ -1577,7 +1584,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (isParameterizedReferenceRepository(ref)) {
                         File referencePath = findParameterizedReferenceRepository(ref, strURIish);
                         if (referencePath == null) {
-                            listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + ref);
+                            listener.getLogger()
+                                    .println(
+                                            "[ERROR] Could not make File object from reference path, skipping its use: "
+                                                    + ref);
                         } else {
                             String expRef = null;
                             if (referencePath.getPath().equals(ref)) {
@@ -1590,8 +1600,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 listener.getLogger().println("[WARNING] Reference path does not exist: " + expRef);
                             else if (!referencePath.isDirectory())
                                 listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
-                            else
-                                args.add("--reference", referencePath.getPath());
+                            else args.add("--reference", referencePath.getPath());
                         }
                     }
 
@@ -1709,7 +1718,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public @CheckForNull Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
-        String result = launchCommand( "config", "--local", "--list" );
+        String result = launchCommand("config", "--local", "--list");
         Map<String, String> uriNames = new HashMap<>();
         for (String line : result.split("\\R+")) {
             line = StringUtils.trim(line);
@@ -1729,7 +1738,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 URI uSafe = new URI(u.getScheme(), u.getHost(), u.getPath(), u.getFragment());
                 uriNames.put(uSafe.toString(), remoteName);
                 uriNames.put(uSafe.toASCIIString(), remoteName);
-            } catch (URISyntaxException ue) {} // ignore, move along
+            } catch (URISyntaxException ue) {
+            } // ignore, move along
         }
         return uriNames;
     }
@@ -1737,7 +1747,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public @CheckForNull Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
-        String result = launchCommand( "config", "--local", "--list" );
+        String result = launchCommand("config", "--local", "--list");
         Map<String, String> uriNames = new HashMap<>();
         for (String line : result.split("\\R+")) {
             line = StringUtils.trim(line);
@@ -1755,7 +1765,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 URI uSafe = new URI(u.getScheme(), u.getHost(), u.getPath(), u.getFragment());
                 uriNames.put(uSafe.toString(), remoteName);
                 uriNames.put(uSafe.toASCIIString(), remoteName);
-            } catch (URISyntaxException ue) {} // ignore, move along
+            } catch (URISyntaxException ue) {
+            } // ignore, move along
         }
         return uriNames;
     }
@@ -2944,11 +2955,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (status != 0) {
                 if (workDir == null)
-                    workDir = java.nio.file.Paths.get(".").toAbsolutePath().normalize().toFile();
-                throw new GitException("Command \"" + command +
-                    "\" executed in workdir \"" + workDir.toString() +
-                    "\" returned status code " + status +
-                    ":\nstdout: " + stdout + "\nstderr: " + stderr);
+                    workDir = java.nio.file.Paths.get(".")
+                            .toAbsolutePath()
+                            .normalize()
+                            .toFile();
+                throw new GitException("Command \"" + command + "\" executed in workdir \""
+                        + workDir.toString() + "\" returned status code "
+                        + status + ":\nstdout: "
+                        + stdout + "\nstderr: " + stderr);
             }
 
             return stdout;

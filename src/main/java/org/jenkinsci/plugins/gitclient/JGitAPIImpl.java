@@ -1555,14 +1555,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (reference != null && !reference.isEmpty()) {
                         // Note: keep in sync with similar logic in CliGitAPIImpl.java
                         if (isParameterizedReferenceRepository(reference)) {
-                            // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
-                            listener.getLogger().println("[INFO] The git reference repository path '" +
-                                reference + "'is parameterized, it may take a few git queries logged " +
-                                "below to resolve it into a particular directory name");
+                            // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via
+                            // listener
+                            listener.getLogger()
+                                    .println("[INFO] The git reference repository path '" + reference
+                                            + "'is parameterized, it may take a few git queries logged "
+                                            + "below to resolve it into a particular directory name");
                         }
                         File referencePath = findParameterizedReferenceRepository(reference, url);
                         if (referencePath == null) {
-                            listener.getLogger().println("[ERROR] Could not make File object from reference path, skipping its use: " + reference);
+                            listener.getLogger()
+                                    .println(
+                                            "[ERROR] Could not make File object from reference path, skipping its use: "
+                                                    + reference);
                         } else {
                             if (!referencePath.getPath().equals(reference)) {
                                 // Note: both these logs are needed, they are used in selftest
@@ -1581,16 +1586,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             if (!referencePath.exists())
                                 listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                             else if (!referencePath.isDirectory())
-                                listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
+                                listener.getLogger()
+                                        .println("[WARNING] Reference path is not a directory: " + reference);
                             else {
                                 File objectsPath = getObjectsFile(referencePath);
                                 if (objectsPath == null || !objectsPath.isDirectory())
-                                    listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (no git repo?): " + objectsPath);
+                                    listener.getLogger()
+                                            .println(
+                                                    "[WARNING] Reference path does not contain an objects directory (no git repo?): "
+                                                            + objectsPath);
                                 else {
                                     // Go behind git's back to write a meta file in new workspace
                                     try {
                                         File alternates = new File(workspace, ".git/objects/info/alternates");
-                                        String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                        String absoluteReference =
+                                                objectsPath.getAbsolutePath().replace('\\', '/');
                                         listener.getLogger().println("Using reference repository: " + reference);
                                         // git implementations on windows also use
                                         try (PrintWriter w = new PrintWriter(alternates, "UTF-8")) {

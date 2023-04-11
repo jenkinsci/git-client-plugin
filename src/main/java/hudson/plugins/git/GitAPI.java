@@ -175,7 +175,7 @@ public class GitAPI extends CliGitAPIImpl {
 
     /** {@inheritDoc} */
     public GitClient newGit(String somedir) {
-        return Git.USE_CLI ? super.newGit(somedir) :  jgit.newGit(somedir);
+        return Git.USE_CLI ? super.newGit(somedir) : jgit.newGit(somedir);
     }
 
     /** {@inheritDoc} */

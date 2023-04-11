@@ -142,7 +142,8 @@ public class WorkspaceWithRepo {
                          * deleteRecursive() will discard a clone that
                          * 'lost the race'.
                          */
-                        System.err.println("removing extra tempClonePath, we already (race?) have cloneDirName=" + cloneDirName);
+                        System.err.println(
+                                "removing extra tempClonePath, we already (race?) have cloneDirName=" + cloneDirName);
                         Util.deleteRecursive(tempClonePath.toFile());
                     }
                 } else {

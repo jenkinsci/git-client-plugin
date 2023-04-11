@@ -719,7 +719,6 @@ public interface GitClient {
      */
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
-
     // --- new instance of same applied class
 
     /**
