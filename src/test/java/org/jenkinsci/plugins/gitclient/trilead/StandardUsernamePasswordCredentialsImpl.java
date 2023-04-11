@@ -16,33 +16,38 @@ class StandardUsernamePasswordCredentialsImpl implements StandardUsernamePasswor
         this.password = password;
     }
 
+    @Override
     @NonNull
     public String getDescription() {
         throw new UnsupportedOperationException("Should not be called");
     }
 
+    @Override
     @NonNull
     public String getId() {
         throw new UnsupportedOperationException("Should not be called");
     }
 
+    @Override
     public CredentialsScope getScope() {
         throw new UnsupportedOperationException("Should not be called");
     }
 
+    @Override
     @NonNull
     public CredentialsDescriptor getDescriptor() {
         throw new UnsupportedOperationException("Should not be called");
     }
 
+    @Override
     @NonNull
     public String getUsername() {
         return userName;
     }
 
+    @Override
     @NonNull
     public Secret getPassword() {
         return password;
     }
-
 }

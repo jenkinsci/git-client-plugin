@@ -1,25 +1,16 @@
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.Util;
-import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.IGitAPI;
-import hudson.util.StreamTaskListener;
-import org.apache.commons.lang.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import hudson.Util;
+import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
+import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -28,6 +19,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
 public class GitAPIJGitNotInitializedTest {
@@ -70,7 +69,8 @@ public class GitAPIJGitNotInitializedTest {
         Random random = new Random();
         Thread.sleep(2000L + random.nextInt(3000)); // Wait 2-5 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGitAPITestJGitNotInitialized").toFile();
+        File tempDir =
+                Files.createTempDirectory("PrimeGitAPITestJGitNotInitialized").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);

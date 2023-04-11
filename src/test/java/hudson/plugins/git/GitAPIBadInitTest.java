@@ -1,23 +1,22 @@
 package hudson.plugins.git;
 
-import hudson.EnvVars;
-import hudson.model.TaskListener;
-import hudson.util.StreamTaskListener;
-import org.jenkinsci.plugins.gitclient.GitClient;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+
+import hudson.EnvVars;
+import hudson.model.TaskListener;
+import hudson.util.StreamTaskListener;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import org.jenkinsci.plugins.gitclient.GitClient;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class GitAPIBadInitTest {
 

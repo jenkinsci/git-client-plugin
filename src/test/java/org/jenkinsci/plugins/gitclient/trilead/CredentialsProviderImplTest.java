@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient.trilead;
 
+import static org.junit.Assert.*;
+
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
@@ -13,7 +15,6 @@ import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class CredentialsProviderImplTest {
 
@@ -113,29 +114,33 @@ public class CredentialsProviderImplTest {
             this.username = username;
         }
 
+        @Override
         @NonNull
         public String getDescription() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @Override
         @NonNull
         public String getId() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @Override
         public CredentialsScope getScope() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @Override
         @NonNull
         public CredentialsDescriptor getDescriptor() {
             throw new UnsupportedOperationException("Do not call");
         }
 
+        @Override
         @NonNull
         public String getUsername() {
             return username;
         }
-
     }
 }

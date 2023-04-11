@@ -19,13 +19,13 @@ public class NoHostKeyVerificationStrategy extends SshHostKeyVerificationStrateg
     }
 
     @Extension
-    public static class NoHostKeyVerificationStrategyDescriptor extends Descriptor<SshHostKeyVerificationStrategy<NoHostKeyVerifier>> {
+    public static class NoHostKeyVerificationStrategyDescriptor
+            extends Descriptor<SshHostKeyVerificationStrategy<NoHostKeyVerifier>> {
 
         @NonNull
         @Override
         public String getDisplayName() {
             return "No verification";
         }
-
     }
 }

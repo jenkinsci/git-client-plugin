@@ -4,11 +4,10 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
 import java.util.Collections;
 import java.util.List;
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 /**
  * JGit, configured with the Apache HTTP Client, as {@link hudson.plugins.git.GitTool}
@@ -31,7 +30,8 @@ public class JGitApacheTool extends GitTool {
         return super.getDescriptor();
     }
 
-    @Extension @Symbol(MAGIC_EXENAME)
+    @Extension
+    @Symbol(MAGIC_EXENAME)
     public static class DescriptorImpl extends GitTool.DescriptorImpl {
         @NonNull
         @Override
@@ -44,5 +44,4 @@ public class JGitApacheTool extends GitTool {
      * {@link Git} recognizes this as a magic executable name to use {@link JGitAPIImpl}.
      */
     public static final String MAGIC_EXENAME = "jgitapache";
-
 }

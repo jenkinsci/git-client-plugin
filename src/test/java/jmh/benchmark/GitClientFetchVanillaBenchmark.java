@@ -1,33 +1,33 @@
-//package jmh.benchmark;
+// package jmh.benchmark;
 //
-//import hudson.EnvVars;
-//import hudson.model.TaskListener;
-//import org.eclipse.jgit.transport.RefSpec;
-//import org.eclipse.jgit.transport.URIish;
-//import org.jenkinsci.plugins.gitclient.FetchCommand;
-//import org.jenkinsci.plugins.gitclient.Git;
-//import org.jenkinsci.plugins.gitclient.GitClient;
-//import org.junit.After;
-//import org.junit.Before;
-//import org.junit.Test;
-//import org.junit.runner.RunWith;
-//import org.junit.runners.Parameterized;
+// import hudson.EnvVars;
+// import hudson.model.TaskListener;
+// import org.eclipse.jgit.transport.RefSpec;
+// import org.eclipse.jgit.transport.URIish;
+// import org.jenkinsci.plugins.gitclient.FetchCommand;
+// import org.jenkinsci.plugins.gitclient.Git;
+// import org.jenkinsci.plugins.gitclient.GitClient;
+// import org.junit.After;
+// import org.junit.Before;
+// import org.junit.Test;
+// import org.junit.runner.RunWith;
+// import org.junit.runners.Parameterized;
 //
-//import java.io.File;
-//import java.nio.file.Files;
-//import java.util.ArrayList;
-//import java.util.Collection;
-//import java.util.List;
+// import java.io.File;
+// import java.nio.file.Files;
+// import java.util.ArrayList;
+// import java.util.Collection;
+// import java.util.List;
 //
-//import static org.junit.Assert.assertFalse;
-//import static org.junit.Assert.assertTrue;
+// import static org.junit.Assert.assertFalse;
+// import static org.junit.Assert.assertTrue;
 //
-///**
+/// **
 // * A vanilla benchmark is basically a performance test without JMH, it uses System.nanoTime() to measure the execution
 // * time. This test was created for the sole purpose to "sanity check" the JMH benchmark results.
 // */
-//@RunWith(Parameterized.class)
-//public class GitClientFetchVanillaBenchmark {
+// @RunWith(Parameterized.class)
+// public class GitClientFetchVanillaBenchmark {
 //
 //    String gitExe;
 //
@@ -65,7 +65,8 @@
 //        String repoName = repoUrl.split("/")[repoUrl.split("/").length - 1];
 //        File gitRepoDir = new File(parentDir, repoName);
 //        gitRepoDir.mkdir();
-//        GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitRepoDir).using(gitExe).getClient();
+//        GitClient cloningGitClient = Git.with(TaskListener.NULL, new
+// EnvVars()).in(gitRepoDir).using(gitExe).getClient();
 //        cloningGitClient.clone_().url(repoUrl).execute();
 //        assertTrue("Unable to create git repo", gitRepoDir.exists());
 //        return gitRepoDir;
@@ -142,4 +143,4 @@
 //        long end = System.nanoTime();
 //        System.out.println("The execution time is" + " " + (end - begin));
 //    }
-//}
+// }

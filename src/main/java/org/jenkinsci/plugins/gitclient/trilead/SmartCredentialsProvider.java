@@ -5,13 +5,12 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import hudson.model.TaskListener;
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.URIish;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * SmartCredentialsProvider class.
@@ -24,9 +23,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
 
     private StandardCredentials defaultCredentials;
 
-    private Map<String, StandardCredentials> specificCredentials =
-            new HashMap<>();
-
+    private Map<String, StandardCredentials> specificCredentials = new HashMap<>();
 
     /**
      * Constructor for SmartCredentialsProvider.
@@ -125,22 +122,25 @@ public class SmartCredentialsProvider extends CredentialsProvider {
                 continue;
             }
             if (i instanceof CredentialItem.Username && c instanceof UsernameCredentials) {
-                ((CredentialItem.Username) i).setValue(((UsernameCredentials)c).getUsername());
+                ((CredentialItem.Username) i).setValue(((UsernameCredentials) c).getUsername());
                 continue;
             }
             if (i instanceof CredentialItem.Password && c instanceof PasswordCredentials) {
-                ((CredentialItem.Password) i).setValue(
-                        ((PasswordCredentials) c).getPassword().getPlainText().toCharArray());
+                ((CredentialItem.Password) i)
+                        .setValue(((PasswordCredentials) c)
+                                .getPassword()
+                                .getPlainText()
+                                .toCharArray());
                 continue;
             }
             if (i instanceof CredentialItem.StringType) {
                 if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials) {
-                    ((CredentialItem.StringType) i).setValue(((PasswordCredentials) c).getPassword().getPlainText());
+                    ((CredentialItem.StringType) i)
+                            .setValue(((PasswordCredentials) c).getPassword().getPlainText());
                     continue;
                 }
             }
-            throw new UnsupportedCredentialItem(uri, i.getClass().getName()
-                    + ":" + i.getPromptText());
+            throw new UnsupportedCredentialItem(uri, i.getClass().getName() + ":" + i.getPromptText());
         }
         return true;
     }

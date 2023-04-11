@@ -1,9 +1,21 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
+import java.io.File;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.junit.After;
@@ -14,23 +26,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import java.io.File;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * Git API Test which are solely for CLI git,
  * These tests are not implemented for JGit.
  */
-
 @RunWith(Parameterized.class)
 public class GitAPIForCliGitTest {
 
@@ -95,7 +94,10 @@ public class GitAPIForCliGitTest {
     @BeforeClass
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
+                .in(configDir)
+                .using("git")
+                .getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -157,7 +159,8 @@ public class GitAPIForCliGitTest {
         remote.getGitClient().commit("commit1");
         remote.launchCommand("git", "checkout", "-b", "other");
 
-        workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
+        workspace.launchCommand(
+                "git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
         workspace.launchCommand("git", "pull", "--depth=1", "origin", defaultBranchName);
 
         workspace.touch(testGitDir, "file2", "");
@@ -167,18 +170,25 @@ public class GitAPIForCliGitTest {
 
         try {
             testGitClient.push("origin", defaultBranchName);
-            assertTrue("git < 1.9.0 can push from shallow repository", workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
-            String remoteSha1 = remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
+            assertTrue(
+                    "git < 1.9.0 can push from shallow repository",
+                    workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
+            String remoteSha1 =
+                    remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
             assertEquals(sha1.name(), remoteSha1);
         } catch (GitException ge) {
             // expected for git cli < 1.9.0
             assertExceptionMessageContains(ge, "push from shallow repository");
-            assertFalse("git >= 1.9.0 can't push from shallow repository", workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
+            assertFalse(
+                    "git >= 1.9.0 can't push from shallow repository",
+                    workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
         }
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
-        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+        assertTrue(
+                "Expected '" + expectedSubstring + "' exception message, but was: " + actual,
+                actual.contains(expectedSubstring));
     }
 }

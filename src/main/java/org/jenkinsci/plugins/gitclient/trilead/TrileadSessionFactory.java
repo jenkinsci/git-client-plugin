@@ -3,6 +3,8 @@ package org.jenkinsci.plugins.gitclient.trilead;
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
 import com.trilead.ssh2.Connection;
 import hudson.model.TaskListener;
+import java.io.IOException;
+import java.util.concurrent.locks.ReentrantLock;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -12,9 +14,6 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
 import org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
-
-import java.io.IOException;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Makes JGit uses Trilead for connectivity.
@@ -35,10 +34,13 @@ public class TrileadSessionFactory extends SshSessionFactory {
 
     /** {@inheritDoc} */
     @Override
-    public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms) throws TransportException {
+    public RemoteSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
+            throws TransportException {
         try {
             int p = uri.getPort();
-            if (p<0)    p = 22;
+            if (p < 0) {
+                p = 22;
+            }
             JGitConnection con = new JGitConnection(uri.getHost(), p);
             con.setTCPNoDelay(true);
             if (hostKeyVerifierFactory instanceof AcceptFirstConnectionVerifier) {
@@ -58,12 +60,12 @@ public class TrileadSessionFactory extends SshSessionFactory {
             boolean authenticated;
             if (credentialsProvider instanceof SmartCredentialsProvider) {
                 final SmartCredentialsProvider smart = (SmartCredentialsProvider) credentialsProvider;
-                StandardUsernameCredentialsCredentialItem
-                        item = new StandardUsernameCredentialsCredentialItem("Credentials for " + uri, false);
+                StandardUsernameCredentialsCredentialItem item =
+                        new StandardUsernameCredentialsCredentialItem("Credentials for " + uri, false);
                 authenticated = smart.supports(item)
                         && smart.get(uri, item)
                         && SSHAuthenticator.newInstance(con, item.getValue(), uri.getUser())
-                        .authenticate(smart.listener);
+                                .authenticate(smart.listener);
             } else if (credentialsProvider instanceof CredentialsProviderImpl) {
                 CredentialsProviderImpl sshcp = (CredentialsProviderImpl) credentialsProvider;
 
@@ -71,12 +73,13 @@ public class TrileadSessionFactory extends SshSessionFactory {
             } else {
                 authenticated = false;
             }
-            if (!authenticated && con.isAuthenticationComplete())
+            if (!authenticated && con.isAuthenticationComplete()) {
                 throw new TransportException("Authentication failure");
+            }
 
             return wrap(con);
         } catch (UnsupportedCredentialItem | IOException | InterruptedException e) {
-            throw new TransportException(uri,"Failed to connect",e);
+            throw new TransportException(uri, "Failed to connect", e);
         }
     }
 
