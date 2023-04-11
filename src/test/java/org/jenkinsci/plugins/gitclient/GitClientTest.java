@@ -1,4 +1,3 @@
-
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.EnvVars;
@@ -12,14 +11,11 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import java.io.File;
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -127,11 +123,11 @@ public class GitClientTest {
         } else {
             cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
         }
-        CLI_GIT_REPORTS_DETACHED_SHA1 = cliGitClient.isAtLeastVersion(1, 8, 0, 0);
+        CLI_GIT_REPORTS_DETACHED_SHA1 = true; // Included in CLI git 1.8.0 and later
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
         CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
-        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = cliGitClient.isAtLeastVersion(1, 5, 3, 0);
+        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = true; // Included in CLI git 1.8.0 and later
 
         boolean gitLFSExists;
         boolean gitSparseCheckoutWithLFS;
@@ -257,6 +253,23 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
     }
 
+    /**
+     * Allow local git clones to use the file:// protocol by setting
+     * protocol.file.allow=always on the git command line of the
+     * GitClient argument that is passed.
+     * <p>
+     * Command line git 2.38.1 and patches to earlier versions
+     * disallow local git submodule cloning with the file:// protocol.
+     * The change resolves a security issue but that security issue is
+     * not a threat to these tests.
+     */
+    private void allowFileProtocol(GitClient client) throws Exception {
+        if (client instanceof CliGitAPIImpl) {
+            CliGitAPIImpl cliGit = (CliGitAPIImpl) client;
+            cliGit.allowFileProtocol();
+        }
+    }
+
     private static final String COMMITTED_ONE_TEXT_FILE = "Committed one text file";
 
     private ObjectId commitOneFile() throws Exception {
@@ -283,9 +296,9 @@ public class GitClientTest {
         if (parentDir != null) {
             parentDir.mkdirs();
         }
-        try (PrintWriter writer = new PrintWriter(aFile, "UTF-8")) {
+        try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (FileNotFoundException | UnsupportedEncodingException ex) {
+        } catch (IOException ex) {
             throw new GitException(ex);
         }
     }
@@ -560,7 +573,7 @@ public class GitClientTest {
         String badDirName = "CON:";
         File badDir = new File(badDirName);
         GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
-        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : InvalidPathException.class;
+        Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
         assertThrows(expectedExceptionClass,
                      () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
     }
@@ -957,7 +970,7 @@ public class GitClientTest {
 
     /**
      * Test case for auto local branch creation behviour.
-     * This is essentially a stripped down version of {@link GitAPITestCase#test_branchContainingRemote()}
+     * This is essentially a stripped down version of {@link GitAPITestUpdate#testBranchContainingRemote()}
      * @throws Exception on exceptions occur
      */
     @Test
@@ -995,7 +1008,7 @@ public class GitClientTest {
 
     private void assertFileContent(String fileName, String expectedContent) throws IOException {
         File file = new File(repoRoot, fileName);
-        String actualContent = FileUtils.readFileToString(file, StandardCharsets.UTF_8).trim();
+        String actualContent = Files.readString(file.toPath(), StandardCharsets.UTF_8).trim();
         assertEquals("Incorrect file content in " + fileName, expectedContent, actualContent);
     }
 
@@ -1588,7 +1601,7 @@ public class GitClientTest {
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
         File uuidFile = new File(repoRoot, "uuid.txt");
-        String fileContent = FileUtils.readFileToString(uuidFile, "utf-8").trim();
+        String fileContent = Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
         String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
                 + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
                 + "size 33";
@@ -2107,6 +2120,7 @@ public class GitClientTest {
             expectedDirs = expectedDirsWithoutRename;
         }
         String remote = fetchUpstream(branch);
+        allowFileProtocol(gitClient);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(branch, remote + "/" + branch);
         } else {
@@ -2241,6 +2255,7 @@ public class GitClientTest {
         String upstream = fetchUpstream(oldBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(gitClient);
+        allowFileProtocol(gitClient);
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
@@ -2309,6 +2324,7 @@ public class GitClientTest {
         assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
         GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
         urlRepoClient.init();
+        allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
@@ -2330,6 +2346,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(repoHasSubmoduleClient);
+        allowFileProtocol(repoHasSubmoduleClient);
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
@@ -2356,6 +2373,7 @@ public class GitClientTest {
         assertTrue("Failed to create clone dir", cloneDir.mkdir());
         GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
         cloneGitClient.init();
+        allowFileProtocol(cloneGitClient);
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
         cloneGitClient.checkoutBranch(defaultBranchName, "origin/" + defaultBranchName);
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */

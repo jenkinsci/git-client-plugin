@@ -71,29 +71,22 @@ public class UnsupportedCommand {
 
     // From CloneCommand
     /**
-     * JGit is unsupported if shallow is true.
+     * JGit was unsupported if shallow is true, but is now allowed.
      *
      * @param shallow if true then shallow clone and fetch are enabled
      * @return this for chaining
      */
     public UnsupportedCommand shallow(boolean shallow) {
-        if (shallow) {
-            useJGit = false;
-        }
         return this;
     }
 
     /**
-     * JGit is unsupported if depth is non-null. Could also be supported if
-     * depth is 0, since that means unlimited depth.
+     * JGit was unsupported if depth was non-null.
      *
      * @param depth depth of commits to be fetched into workspace
      * @return this for chaining
      */
     public UnsupportedCommand depth(Integer depth) {
-        if (depth != null) {
-            useJGit = false;
-        }
         return this;
     }
 

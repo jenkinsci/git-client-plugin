@@ -2,55 +2,24 @@ package org.jenkinsci.plugins.gitclient;
 
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 /**
  * CliGitAPIImplTest tests have been ported to GitClientTest
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
-public class CliGitAPIImplTest extends GitAPITestCase {
+public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
 
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
-        setCliGitDefaults();
-        return Git.with(listener, env).in(ws).using("git").getClient();
+        GitClient client = Git.with(listener, env).in(ws).using("git").getClient();
+        return client;
     }
 
     @Override
     protected boolean hasWorkingGetRemoteSymbolicReferences() {
         return ((CliGitAPIImpl)(w.git)).isAtLeastVersion(2,8,0,0);
-    }
-
-    private static boolean cliGitDefaultsSet = false;
-
-    private void setCliGitDefaults() {
-        if (!cliGitDefaultsSet) {
-            CliGitCommand gitCmd = new CliGitCommand(null);
-        }
-        cliGitDefaultsSet = true;
-    }
-
-    /**
-     * Override to run the test and assert its state.
-     *
-     * @throws Throwable if any exception is thrown
-     */
-    protected void runTest() throws Throwable {
-        Method m = getClass().getMethod(getName());
-
-        if (m.getAnnotation(NotImplementedInCliGit.class) != null) {
-            return; // skip this test case
-        }
-        try {
-            m.invoke(this);
-        } catch (InvocationTargetException e) {
-            e.fillInStackTrace();
-            throw e.getTargetException();
-        } catch (IllegalAccessException e) {
-            e.fillInStackTrace();
-            throw e;
-        }
     }
 
     public static class VersionTest {

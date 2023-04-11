@@ -1,9 +1,12 @@
 package jmh.benchmark;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+
 import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Similar to a TemporaryFolder JUnit Rule, it provides a local git repository for the lifetime of a benchmark test.
@@ -110,10 +113,13 @@ public class FolderForBenchmark {
         return createTemporaryFolderIn(getRoot());
     }
 
-    private File createTemporaryFolderIn(File parentFolder) throws IOException {
-        File createdFolder = File.createTempFile("junit", "", parentFolder);
-        createdFolder.delete();
-        createdFolder.mkdir();
+    private File createTemporaryFolderIn(@CheckForNull File parentFolder) throws IOException {
+        File createdFolder;
+        if (parentFolder == null) {
+            createdFolder = Files.createTempDirectory("junit").toFile();
+        } else {
+            createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
+        }
         return createdFolder;
     }
 

@@ -9,13 +9,16 @@ import hudson.remoting.VirtualChannel;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
+import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Git repository access class. Provides local and remote access to a git
@@ -34,6 +37,9 @@ import java.lang.reflect.InvocationTargetException;
  * @author <a href="mailto:nicolas.deloof@gmail.com">Nicolas De Loof</a>
  */
 public class Git implements Serializable {
+
+    private static final Logger LOGGER = Logger.getLogger(Git.class.getName());
+
     private FilePath repository;
     private TaskListener listener;
     private EnvVars env;
@@ -94,7 +100,6 @@ public class Git implements Serializable {
      * @param repository {@link hudson.FilePath} of the git repository.
      * @return a {@link org.jenkinsci.plugins.gitclient.Git} object for repository access
      */
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Published API in Git")
     public Git in(FilePath repository) {
         this.repository = repository;
         return this;
@@ -122,7 +127,14 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable();
+        HostKeyVerifierFactory hostKeyFactory;
+        if (Jenkins.getInstanceOrNull() == null) {
+            LOGGER.log(Level.FINE, "No Jenkins instance, skipping host key checking by default");
+            hostKeyFactory = new NoHostKeyVerificationStrategy().getVerifier();
+        } else {
+            hostKeyFactory = GitHostKeyVerificationConfiguration.get().getSshHostKeyVerificationStrategy().getVerifier();
+        }
+        jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable(hostKeyFactory);
         GitClient git = (repository!=null ? repository.act(callable) : callable.invoke(null,null));
         Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance != null && git != null)
@@ -152,6 +164,13 @@ public class Git implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private class GitAPIMasterToSlaveFileCallable extends jenkins.MasterToSlaveFileCallable<GitClient> {
+
+        private final HostKeyVerifierFactory hostKeyFactory;
+
+        public GitAPIMasterToSlaveFileCallable(HostKeyVerifierFactory hostKeyFactory) {
+            this.hostKeyFactory = hostKeyFactory;
+        }
+
         public GitClient invoke(File f, VirtualChannel channel) throws IOException, InterruptedException {
             if (listener == null) listener = TaskListener.NULL;
             if (env == null) env = new EnvVars();
@@ -162,15 +181,17 @@ public class Git implements Serializable {
             }
 
             if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                return new JGitAPIImpl(f, listener);
+                return new JGitAPIImpl(f, listener, null, hostKeyFactory);
             }
 
             if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
                 final PreemptiveAuthHttpClientConnectionFactory factory = new PreemptiveAuthHttpClientConnectionFactory();
-                return new JGitAPIImpl(f, listener, factory);
+                return new JGitAPIImpl(f, listener, factory, hostKeyFactory);
             }
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
-            return new GitAPI(exe, f, listener, env);
+            GitAPI gitAPI = new GitAPI(exe, f, listener, env);
+            gitAPI.setHostKeyFactory(hostKeyFactory);
+            return gitAPI;
         }
     }
 }

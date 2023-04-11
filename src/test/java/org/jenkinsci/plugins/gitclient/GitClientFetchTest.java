@@ -443,14 +443,7 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().fetch_().from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs).prune(true).execute();
         remoteBranches = newAreaWorkspace.getGitClient().getRemoteBranches();
 
-        /* Git older than 1.7.9 (like 1.7.1 on Red Hat 6) does not prune branch1, don't fail the test
-         * on that old git version.
-         */
-        if (newAreaWorkspace.getGitClient() instanceof CliGitAPIImpl && !workspace.cgit().isAtLeastVersion(1, 7, 9, 0)) {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch1", "origin/branch2", "origin/HEAD"));
-        } else {
-            assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch2", "origin/HEAD"));
-        }
+        assertThat(getBranchNames(remoteBranches), containsInAnyOrder("origin/" + defaultBranchName, "origin/branch2", "origin/HEAD"));
     }
 
     @Test
@@ -474,25 +467,30 @@ public class GitClientFetchTest {
         check_remote_url(workspace, workspace.getGitClient(), "origin");
         assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         assertAlternatesFileExists(testGitDir);
-        /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
         String shallow = ".git" + File.separator + "shallow";
-        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
+    }
+
+    private void fetch_shallow_depth(Integer fetchDepth) throws Exception {
+        testGitClient.setRemoteUrl("origin", workspace.localMirror());
+        testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(fetchDepth).execute();
+        check_remote_url(workspace, workspace.getGitClient(), "origin");
+        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
+        assertAlternatesFileExists(testGitDir);
+        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(true));
+        String shallow = ".git" + File.separator + "shallow";
+        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(true));
     }
 
     @Test
     public void test_fetch_shallow_depth() throws Exception {
-        testGitClient.setRemoteUrl("origin", workspace.localMirror());
-        testGitClient.fetch_().from(new URIish("origin"), Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"))).shallow(true).depth(2).execute();
-        check_remote_url(workspace, workspace.getGitClient(), "origin");
-        assertBranchesExist(testGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
-        assertAlternatesFileExists(testGitDir);
-        /* JGit does not support shallow fetch */
-        boolean hasShallowFetchSupport = testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1, 5, 0, 0);
-        assertThat("isShallow?", workspace.cgit().isShallowRepository(), is(hasShallowFetchSupport));
-        String shallow = ".git" + File.separator + "shallow";
-        assertThat("shallow file existence: " + shallow, new File(testGitDir, shallow).exists(), is(hasShallowFetchSupport));
+        fetch_shallow_depth(2);
+    }
+
+    @Test
+    public void test_fetch_shallow_null_depth() throws Exception {
+        fetch_shallow_depth(null);
     }
 
     @Test
@@ -522,7 +520,7 @@ public class GitClientFetchTest {
     public void test_fetch_default_timeout_logging() throws Exception {
         testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin").execute();
         String randomBranchName = checkoutRandomBranch();
-        testGitClient.fetch_().from(new URIish("origin"), null).prune(true).execute();
+        testGitClient.fetch_().from(new URIish("origin"), null).prune().execute();
         assertTimeout(testGitClient, "fetch", CliGitAPIImpl.TIMEOUT);
         assertRevParseNotCalled(testGitClient, randomBranchName);
     }

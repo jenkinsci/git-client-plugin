@@ -30,7 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @RunWith(Parameterized.class)
-public class GitAPITestJGitNotInitialized {
+public class GitAPIJGitNotInitializedTest {
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
@@ -45,7 +45,7 @@ public class GitAPITestJGitNotInitialized {
 
     private GitClient testGitClient;
 
-    public GitAPITestJGitNotInitialized(final String gitImplName) {
+    public GitAPIJGitNotInitializedTest(final String gitImplName) {
         this.gitImplName = gitImplName;
     }
 
