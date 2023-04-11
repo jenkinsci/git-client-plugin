@@ -1,9 +1,12 @@
 package jmh.benchmark;
 
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+
 import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 /**
  * Similar to a TemporaryFolder JUnit Rule, it provides a local git repository for the lifetime of a benchmark test.
@@ -46,7 +49,7 @@ public class FolderForBenchmark {
         File file = new File(getRoot(), fileName);
         if (!file.createNewFile()) {
             throw new IOException(
-                    "a file with the name \'" + fileName + "\' already exists in the test folder");
+                    "a file with the name '" + fileName + "' already exists in the test folder");
         }
         return file;
     }
@@ -78,7 +81,7 @@ public class FolderForBenchmark {
             file = new File(file, folderName);
             if (!file.mkdir() && isLastElementInArray(i, folderNames)) {
                 throw new IOException(
-                        "a folder with the name \'" + folderName + "\' already exists");
+                        "a folder with the name '" + folderName + "' already exists");
             }
         }
         return file;
@@ -110,10 +113,13 @@ public class FolderForBenchmark {
         return createTemporaryFolderIn(getRoot());
     }
 
-    private File createTemporaryFolderIn(File parentFolder) throws IOException {
-        File createdFolder = File.createTempFile("junit", "", parentFolder);
-        createdFolder.delete();
-        createdFolder.mkdir();
+    private File createTemporaryFolderIn(@CheckForNull File parentFolder) throws IOException {
+        File createdFolder;
+        if (parentFolder == null) {
+            createdFolder = Files.createTempDirectory("junit").toFile();
+        } else {
+            createdFolder = Files.createTempDirectory(parentFolder.toPath(), "junit").toFile();
+        }
         return createdFolder;
     }
 

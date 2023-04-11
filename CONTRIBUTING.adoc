@@ -17,7 +17,7 @@ Tests help us assure that we're delivering a reliable plugin, and that we've com
 
 === Compiling and testing the plugin
 
-Compile and run the plugin automated tests on Java 8 or Java 11 with:
+Compile and run the plugin automated tests on Java 11 or Java 17 with:
 
 * `mvn clean verify`
 
@@ -73,7 +73,7 @@ Steps to test a pull request build are:
 == Reviewing Bug Reports
 
 Git client plugin bug reports are assigned to one of the maintainers by default.
-link:https://issues.jenkins-ci.org/issues/?jql=project%20%3D%20JENKINS%20AND%20status%20in%20(Open)%20AND%20component%20%3D%20git-client-plugin%20and%20assignee%20in%20(rsandell%2Cmarkewaite%2Cfcojfernandez)[Open bug reports] assigned to a maintainer are assumed to have not been reviewed.
+link:https://issues.jenkins.io/issues/?jql=project%20%3D%20JENKINS%20AND%20status%20in%20(Open)%20AND%20component%20%3D%20git-client-plugin%20and%20assignee%20in%20(rsandell%2Cmarkewaite%2Cfcojfernandez)[Open bug reports] assigned to a maintainer are assumed to have not been reviewed.
 When a maintainer completes review of an issue, they include a comment on the bug report and set the 'Assignee' to 'Unassigned'.
 
 Others are welcome to review bug reports, comment on the results of the review, and set the 'Assignee' to 'Unassigned'.
@@ -89,4 +89,6 @@ Typical bug review tasks include:
 Git client plugin includes link:https://openjdk.java.net/projects/code-tools/jmh/[Java Microbenchmark Harness (JMH)] benchmark tests to compare the performance of command line git and JGit.
 Run the benchmarks with the command:
 
-* `mvn -P jmh-benchmark test`
+* `mvn -P jmh-benchmark -Dbenchmark.run=true test`
+
+The results can be reviewed visiually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].

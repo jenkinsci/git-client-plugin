@@ -39,7 +39,7 @@ public class GitCommandsExecutor {
         ExecutorService executorService = null;
         try {
             if (threads == 1) {
-                executorService = MoreExecutors.sameThreadExecutor();
+                executorService = MoreExecutors.newDirectExecutorService();
             } else {
                 ThreadFactory threadFactory = new ExceptionCatchingThreadFactory(new NamingThreadFactory(new DaemonThreadFactory(), GitCommandsExecutor.class.getSimpleName()));
                 executorService = Executors.newFixedThreadPool(threads, threadFactory);

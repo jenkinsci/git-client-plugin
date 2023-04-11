@@ -6,15 +6,13 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import com.google.common.io.Files;
 import hudson.model.Fingerprint;
 import hudson.util.LogTaskListener;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -163,12 +161,8 @@ public class CredentialsTest {
     }
 
     @Before
-    public void enableSETSID() throws IOException, InterruptedException {
-        if (gitImpl.equals("git") && privateKey != null && passphrase != null) {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = true;
-        } else {
-            org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
-        }
+    public void enableSETSID() {
+        CliGitAPIImpl.CALL_SETSID = gitImpl.equals("git") && privateKey != null && passphrase != null;
     }
 
     @After
@@ -187,14 +181,14 @@ public class CredentialsTest {
     }
 
     @After
-    public void disableSETSID() throws IOException, InterruptedException {
+    public void disableSETSID() {
         org.jenkinsci.plugins.gitclient.CliGitAPIImpl.CALL_SETSID = false;
     }
 
     private BasicSSHUserPrivateKey newPrivateKeyCredential(String username, File privateKey) throws IOException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "private-key-" + privateKey.getPath() + random.nextInt();
-        String privateKeyData = Files.toString(privateKey, Charset.forName("UTF-8"));
+        String privateKeyData = Files.readString(privateKey.toPath(), StandardCharsets.UTF_8);
         BasicSSHUserPrivateKey.PrivateKeySource privateKeySource = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource(privateKeyData);
         String description = "private key from " + privateKey.getPath();
         if (this.passphrase != null) {
@@ -209,25 +203,20 @@ public class CredentialsTest {
         return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
     }
 
-    private static boolean isCredentialsSupported() throws IOException, InterruptedException {
-        CliGitAPIImpl cli = (CliGitAPIImpl) Git.with(null, new hudson.EnvVars()).in(CURR_DIR).using("git").getClient();
-        return cli.isAtLeastVersion(1, 7, 9, 0);
-    }
-
-    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) throws IOException, InterruptedException {
-        if (!implementation.equals("git")) {
-            return false;
+    private boolean isShallowCloneSupported(String implementation, GitClient gitClient) {
+        if (!(gitClient instanceof CliGitAPIImpl)) {
+            return true;
         }
         CliGitAPIImpl cli = (CliGitAPIImpl) gitClient;
         return cli.isAtLeastVersion(1, 9, 0, 0);
     }
 
     @Parameterized.Parameters(name = "Impl:{0} User:{2} Pass:{3} Embed:{9} Phrase:{5} URL:{1}")
-    public static Collection gitRepoUrls() throws MalformedURLException, FileNotFoundException, IOException, InterruptedException, ParseException {
+    public static Collection gitRepoUrls() throws IOException, InterruptedException, ParseException {
         List<Object[]> repos = new ArrayList<>();
-        String[] implementations = isCredentialsSupported() ? new String[]{"git", "jgit", "jgitapache"} : new String[]{"jgit", "jgitapache"};
+        String[] implementations = new String[]{"git", "jgit", "jgitapache"};
         for (String implementation : implementations) {
-            /* Add master repository as authentication test with private
+            /* Add upstream repository as authentication test with private
              * key of current user.  Try to test at least one
              * authentication case, even if there is no repos.json file in
              * the external directory.
@@ -340,16 +329,12 @@ public class CredentialsTest {
     }
 
     private void gitFetch(String source, String branch, Boolean allowShallowClone) throws Exception {
-        /* Save some bandwidth with shallow clone for CliGit, not yet available for JGit */
         URIish sourceURI = new URIish(source);
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(new RefSpec("+refs/heads/"+branch+":refs/remotes/origin/"+branch+""));
         FetchCommand cmd = git.fetch_().from(sourceURI, refSpecs).tags(false);
-        if (isShallowCloneSupported(gitImpl, git)) {
-            // Reduce network transfer by using shallow clone
-            // JGit does not support shallow clone
-            cmd.shallow(true).depth(1);
-        }
+        // Reduce network transfer by using shallow clone
+        cmd.shallow(true).depth(1);
         cmd.execute();
     }
 
@@ -362,7 +347,7 @@ public class CredentialsTest {
         return joiner.toString();
     }
 
-    private void addCredential() throws IOException {
+    private void addCredential() {
         //Begin - JENKINS-56257
         //Credential need not be added when supplied in the URL
         if (this.credentialsEmbeddedInURL) {
@@ -486,6 +471,6 @@ public class CredentialsTest {
      * Developers with ~/.ssh/auth-data/repos.json will test all credentials by default.
      */
     private static final String NOT_JENKINS = System.getProperty("JOB_NAME") == null ? "true" : "false";
-    private static final boolean TEST_ALL_CREDENTIALS = Boolean.valueOf(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
+    private static final boolean TEST_ALL_CREDENTIALS = Boolean.parseBoolean(System.getProperty("TEST_ALL_CREDENTIALS", NOT_JENKINS));
     private static final Pattern URL_MUST_MATCH_PATTERN = Pattern.compile(System.getProperty("URL_MUST_MATCH_PATTERN", ".*"));
 }

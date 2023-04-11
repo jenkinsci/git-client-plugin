@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.16</version>
+    <version>4.58</version>
     <relativePath />
   </parent>
 
@@ -13,11 +12,10 @@
   <artifactId>git-client</artifactId>
   <version>${revision}${changelist}</version>
   <packaging>hpi</packaging>
-
   <name>Jenkins Git client plugin</name>
-  <description>Utility plugin for Git support in Jenkins</description>
   <url>https://github.com/jenkinsci/git-client-plugin/blob/master/README.adoc</url>
   <inceptionYear>2013</inceptionYear>
+
   <licenses>
     <license>
       <name>The MIT License (MIT)</name>
@@ -39,30 +37,34 @@
       <url>http://rsandell.com</url>
     </developer>
     <developer>
-      <id>fcojfernandez</id>
-      <name>Francisco J. Fernández</name>
-      <email>fjfernandez@cloudbees.com</email>
+      <id>mramonleon</id>
+      <name>M Ramon Leon</name>
+      <email>rleon@cloudbees.com</email>
+    </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>olamy@apache.org</email>
+      <url>https://about.me/olamy</url>
+      <timezone>Australia/Brisbane</timezone>
     </developer>
   </developers>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
+    <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
+    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
     <tag>${scmTag}</tag>
+    <url>https://github.com/${gitHubRepo}</url>
   </scm>
 
   <properties>
-    <revision>3.6.1</revision>
+    <revision>4.2.1</revision>
     <changelist>-SNAPSHOT</changelist>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
-    <jenkins.version>2.222.4</jenkins.version> <!-- Required for git plugin 4.5.0 -->
-    <java.level>8</java.level>
-    <jgit.version>5.10.0.202012080955-r</jgit.version>
-    <slf4jVersion>1.7.26</slf4jVersion>
+    <jenkins.version>2.361.4</jenkins.version>
+    <jgit.version>6.5.0.202303070854-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
-    <spotbugs.failOnError>true</spotbugs.failOnError>
     <spotbugs.threshold>Medium</spotbugs.threshold>
   </properties>
 
@@ -70,14 +72,39 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.222.x</artifactId>
-        <version>25</version>
+        <artifactId>bom-2.361.x</artifactId>
+        <version>1968.vb_14a_29e76128</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <!-- Resolve dependency management warning from enforcer in parent pom 4.55  -->
+      <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>1.14.3</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
+
   <dependencies>
+    <dependency>
+      <!-- Use httpclient plugin rather than JGit transitive dependency inclusion of Apache httpclient -->
+      <!-- This must be listed before its consumers -->
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>apache-httpcomponents-client-4-api</artifactId>
+    </dependency>
+    <dependency>
+      <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
+      <!-- This must be listed before its consumers -->
+      <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
+      <artifactId>mina-sshd-api-common</artifactId>
+    </dependency>
+    <dependency>
+      <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
+      <!-- This must be listed before its consumers -->
+      <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
+      <artifactId>mina-sshd-api-core</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>trilead-api</artifactId>
@@ -88,96 +115,56 @@
       <version>${jgit.version}</version>
       <exclusions>
         <exclusion>
-          <!-- Provided by apache-httpcomponents-client-4-api -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- Provided by Jenkins core -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jzlib</artifactId>
-        </exclusion>
-        <exclusion>
           <!-- Provided by Jenkins core -->
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
-    <dependency><!-- Include jgit http server so that git-userContent and other
+    <dependency>
+      <!-- Include jgit http server so that git-userContent and other
            plugins can depend on git-client-plugin rather than
            including their own JGit http server version. Avoid class
            loader mismatches and bugs like JENKINS-21756 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.server</artifactId>
       <version>${jgit.version}</version>
-      <exclusions>
-        <exclusion>
-          <!-- Provided by apache-httpcomponents-client-4-api -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- Provided by Jenkins core -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jzlib</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's Apache HTTP client so that we can avoid
+    <dependency>
+      <!-- Include jgit's Apache HTTP client so that we can avoid
            automatic NTLM on Windows. See JENKINS-37934 -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.http.apache</artifactId>
       <version>${jgit.version}</version>
-      <exclusions>
-        <exclusion>
-          <!-- Provided by apache-httpcomponents-client-4-api -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- Provided by apache-httpcomponents-client-4-api -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpcore</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- Provided by Jenkins core -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jzlib</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
-    <dependency><!-- Include jgit's LFS module for eventual large file support -->
+    <dependency>
+      <!-- Include jgit's LFS module for eventual large file support -->
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit.lfs</artifactId>
       <version>${jgit.version}</version>
-      <exclusions>
-        <exclusion>
-          <!-- Provided by apache-httpcomponents-client-4-api -->
-          <groupId>org.apache.httpcomponents</groupId>
-          <artifactId>httpclient</artifactId>
-        </exclusion>
-        <exclusion>
-          <!-- Provided by Jenkins core -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jzlib</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
-      <artifactId>org.eclipse.jgit.ssh.jsch</artifactId>
+      <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion> <!-- provided by jenkins-core -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jzlib</artifactId>
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency, OSGi not needed by git client plugin -->
+          <groupId>org.apache.sshd</groupId>
+          <artifactId>sshd-osgi</artifactId>
         </exclusion>
-        <exclusion> <!-- Provided by jsch plugin -->
-          <groupId>com.jcraft</groupId>
-          <artifactId>jsch</artifactId>
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency, sftp not needed by git client plugin -->
+          <groupId>org.apache.sshd</groupId>
+          <artifactId>sshd-sftp</artifactId>
         </exclusion>
-        <exclusion> <!-- provided by jenkins-core -->
+        <exclusion>
+          <!-- Prevent inclusion of transitive dependency -->
+          <groupId>net.i2p.crypto</groupId>
+          <artifactId>eddsa</artifactId>
+        </exclusion>
+        <exclusion>
+          <!-- provided by jenkins-core -->
           <groupId>org.slf4j</groupId>
           <artifactId>slf4j-api</artifactId>
         </exclusion>
@@ -187,12 +174,14 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>structs</artifactId>
     </dependency>
-    <dependency> <!-- Credentials test requires scm-api -->
+    <dependency>
+      <!-- Credentials test requires scm-api -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency> <!-- Tests require the scm-api-tests jar -->
+    <dependency>
+      <!-- Tests require the scm-api-tests jar -->
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>scm-api</artifactId>
       <classifier>tests</classifier>
@@ -206,19 +195,6 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <!-- Hamcrest 2.x bundles all hamcrest-core functionality in the hamcrest artifact -->
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-      <version>2.2</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -228,7 +204,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.5.4</version>
+      <version>3.14.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -245,7 +221,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.9</version>
+      <version>1.10.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -253,29 +229,10 @@
       <artifactId>ssh-credentials</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>jsch</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>apache-httpcomponents-client-4-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
+      <version>3.3</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.github.spotbugs</groupId>
-      <artifactId>spotbugs-annotations</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.code.findbugs</groupId>
-          <artifactId>jsr305</artifactId>
-        </exclusion>
-      </exclusions>
-      <optional>true</optional>
-      <version>4.2.1</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -313,6 +270,40 @@
   </pluginRepositories>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.35.0</version>
+          <configuration>
+            <!-- define a language-specific format -->
+            <java>
+              <!-- no need to specify files, inferred automatically -->
+              <endWithNewline />
+              <removeUnusedImports />
+            </java>
+            <pom>
+              <sortPom>
+                <encoding>${project.build.sourceEncoding}</encoding>
+                <lineSeparator>\n</lineSeparator>
+                <expandEmptyElements>false</expandEmptyElements>
+                <spaceBeforeCloseEmptyElement>true</spaceBeforeCloseEmptyElement>
+              </sortPom>
+            </pom>
+          </configuration>
+          <executions>
+            <execution>
+              <!-- Runs in verify phase by default -->
+              <goals>
+                <!-- Can be disabled using -Dspotless.check.skip -->
+                <goal>check</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -321,39 +312,23 @@
           <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
           <force>true</force>
-          <failOnError>false</failOnError>
-          <links>
-            <link>http://docs.oracle.com/javase/8/docs/api/</link>
-            <link>http://download.eclipse.org/jgit/site/${jgit.version}/org.eclipse.jgit/apidocs/</link>
-          </links>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jenkins-ci.tools</groupId>
-        <artifactId>maven-hpi-plugin</artifactId>
-        <extensions>true</extensions>
-      </plugin>
-      <plugin>
-        <groupId>com.github.spotbugs</groupId>
-        <artifactId>spotbugs-maven-plugin</artifactId>
-        <version>4.2.0</version>
-        <dependencies>
-          <dependency>
-            <groupId>com.github.spotbugs</groupId>
-            <artifactId>spotbugs</artifactId>
-            <version>4.2.1</version>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>
 
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
+  <profiles>
+    <profile>
+      <id>continuous-integration</id>
+      <activation>
+        <property>
+          <name>env.CI</name>
+        </property>
+      </activation>
+      <properties>
+        <!-- Fork a JVM per core for automated tests on continuous integration servers -->
+        <forkCount>1C</forkCount>
+      </properties>
+    </profile>
+  </profiles>
 </project>

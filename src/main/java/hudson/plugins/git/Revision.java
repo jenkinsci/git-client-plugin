@@ -31,7 +31,8 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param sha1 a {@link org.eclipse.jgit.lib.ObjectId} object.
      */
     public Revision(ObjectId sha1) {
-        this.sha1 = sha1;
+        /* Defensive copy to avoid caller modifying ObjectId after calling this constructor */
+        this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
         this.branches = new ArrayList<>();
     }
 
@@ -42,7 +43,8 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param branches a {@link java.util.Collection} object.
      */
     public Revision(ObjectId sha1, Collection<Branch> branches) {
-        this.sha1 = sha1;
+        /* Defensive copy to avoid caller modifying ObjectId after calling this constructor */
+        this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
         this.branches = branches;
     }
 
@@ -53,7 +55,8 @@ public class Revision implements java.io.Serializable, Cloneable {
      */
     @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
     public ObjectId getSha1() {
-        return sha1;
+        /* Returns an immutable ObjectId to avoid caller modifying ObjectId using returned ObjectId */
+        return (sha1 == null) ? null : sha1.toObjectId();
     }
 
     /**
@@ -73,7 +76,8 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param sha1 a {@link org.eclipse.jgit.lib.ObjectId} object.
      */
     public void setSha1(ObjectId sha1) {
-        this.sha1 = sha1;
+        /* Defensive copy to avoid caller modifying ObjectId after calling this setter */
+        this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
     }
 
     /**

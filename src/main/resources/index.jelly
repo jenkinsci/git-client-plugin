@@ -1,0 +1,4 @@
+<?jelly escape-by-default='true'?>
+<div>
+Utility plugin for Git support in Jenkins
+</div>

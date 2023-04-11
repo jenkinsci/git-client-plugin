@@ -22,6 +22,9 @@ import java.util.concurrent.TimeUnit;
 
 public class GitClientRedundantFetchBenchmark {
 
+    public static final String DEFAULT_BRANCH_REFSPEC = "+refs/heads/master:refs/remotes/origin/master";
+    public static final String ALL_BRANCHES_REFSPEC = "+refs/heads/*:refs/remotes/origin/*";
+
     @State(Scope.Thread)
     public static class ClientState {
 
@@ -83,11 +86,11 @@ public class GitClientRedundantFetchBenchmark {
             gitDir = tmp.newFolder();
             gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
 
-            // fetching just master branch
-            narrowRefSpecs.add(new RefSpec("+refs/heads/master:refs/remotes/origin/master"));
+            // fetching just only the contents of the default branch
+            narrowRefSpecs.add(new RefSpec(DEFAULT_BRANCH_REFSPEC));
 
             // wide refspec
-            wideRefSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
+            wideRefSpecs.add(new RefSpec(ALL_BRANCHES_REFSPEC));
 
             // initialize the test folder for git fetch
             gitClient.clone_().url(urIish.toString()).execute();

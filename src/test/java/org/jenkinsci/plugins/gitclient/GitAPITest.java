@@ -5,8 +5,8 @@ import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
+import hudson.plugins.git.IGitAPI;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
@@ -21,13 +21,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.jvnet.hudson.test.Issue;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
@@ -37,9 +37,11 @@ import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import java.io.File;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,15 +53,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Git API Tests, eventual replacement for GitAPITestCase,
- * Implemented in JUnit 4.
+ * Git API tests implemented in JUnit 4.
  */
 
 @RunWith(Parameterized.class)
 public class GitAPITest {
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
 
     @Rule
     public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
@@ -73,17 +71,17 @@ public class GitAPITest {
     private int logCount = 0;
     private final Random random = new Random();
     private static final String LOGGING_STARTED = "Logging started";
+    private static final String DEFAULT_MIRROR_BRANCH_NAME = "mast" + "er";
     private LogHandler handler = null;
     private TaskListener listener;
     private final String gitImplName;
 
-    private String revParseBranchName = null;
+    /**
+     * Tests that need the default branch name can use this variable.
+     */
+    private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 
     private int checkoutTimeout = -1;
-    private int cloneTimeout = -1;
-    private int fetchTimeout = -1;
-    private int submoduleUpdateTimeout = -1;
-
 
     WorkspaceWithRepo workspace;
 
@@ -109,27 +107,41 @@ public class GitAPITest {
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
-        /* Allow 2-5 second delay before priming the cache */
+        /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
-        /* 2-5 second delay is small compared to execution time of this test */
+        /* 2-6 second delay is small compared to execution time of this test */
         Random random = new Random();
-        Thread.sleep((2 + random.nextInt(4)) * 1000L); // Wait 2-5 seconds before priming the cache
+        Thread.sleep(2000L + random.nextInt(4000)); // Wait 2-6 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGITAPITest").toFile();
+        File tempDir = Files.createTempDirectory("PrimeGitAPITest").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
     }
 
+    /**
+     * Determine the global default branch name.
+     * Command line git is moving towards more inclusive naming.
+     * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
+     * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
+     */
+    @BeforeClass
+    public static void computeDefaultBranchName() throws Exception {
+        File configDir = Files.createTempDirectory("readGitConfig").toFile();
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
+        String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
+        for (String s : output) {
+            String result = s.trim();
+            if (result != null && !result.isEmpty()) {
+                defaultBranchName = result;
+            }
+        }
+        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+    }
+
     @Before
     public void setUpRepositories() throws Exception {
-        final File repoRoot = tempFolder.newFolder();
-
-        revParseBranchName = null;
         checkoutTimeout = -1;
-        cloneTimeout = -1;
-        fetchTimeout = -1;
-        submoduleUpdateTimeout = -1;
 
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
@@ -140,8 +152,6 @@ public class GitAPITest {
         listener = new hudson.util.LogTaskListener(logger, Level.ALL);
         listener.getLogger().println(LOGGING_STARTED);
 
-//        workspace = new WorkspaceWithRepo(repoRoot, gitImplName, listener);
-//        workspace = new WorkspaceWithRepo(temporaryDirectoryAllocator.allocate(), gitImplName, listener);
         workspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
 
         testGitClient = workspace.getGitClient();
@@ -151,15 +161,11 @@ public class GitAPITest {
     }
 
     @After
-    public void afterTearDown() throws Exception {
+    public void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
             assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
             assertCheckoutTimeout();
-            assertCloneTimeout();
-            assertFetchTimeout();
-            assertSubmoduleUpdateTimeout();
-            assertRevParseCalls(revParseBranchName);
         } finally {
             handler.close();
         }
@@ -168,25 +174,6 @@ public class GitAPITest {
     private void assertCheckoutTimeout() {
         if (checkoutTimeout > 0) {
             assertSubstringTimeout("git checkout", checkoutTimeout);
-        }
-    }
-
-    private void assertCloneTimeout() {
-        if (cloneTimeout > 0) {
-            // clone_() uses "git fetch" internally, not "git clone"
-            assertSubstringTimeout("git fetch", cloneTimeout);
-        }
-    }
-
-    private void assertFetchTimeout() {
-        if (fetchTimeout > 0) {
-            assertSubstringTimeout("git fetch", fetchTimeout);
-        }
-    }
-
-    private void assertSubmoduleUpdateTimeout() {
-        if (submoduleUpdateTimeout > 0) {
-            assertSubstringTimeout("git submodule update", submoduleUpdateTimeout);
         }
     }
 
@@ -214,28 +201,11 @@ public class GitAPITest {
         assertEquals(substringMessages, substringTimeoutMessages);
     }
 
-    /* JENKINS-33258 detected many calls to git rev-parse. This checks
-     * those calls are not being made. The createRevParseBranch call
-     * creates a branch whose name is unknown to the tests. This
-     * checks that the branch name is not mentioned in a call to
-     * git rev-parse.
-     */
-    private void assertRevParseCalls(String branchName) {
-        if (revParseBranchName == null) {
-            return;
-        }
-        String messages = StringUtils.join(handler.getMessages(), ";");
-        // Linux uses rev-parse without quotes
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse " + branchName));
-        // Windows quotes the rev-parse argument
-        assertFalse("git rev-parse called: " + messages, handler.containsMessageSubstring("rev-parse \"" + branchName));
-    }
-
     private Collection<String> getBranchNames(Collection<Branch> branches) {
         return branches.stream().map(Branch::getName).collect(toList());
     }
 
-    private void assertBranchesExist(Set<Branch> branches, String... names) throws InterruptedException {
+    private void assertBranchesExist(Set<Branch> branches, String... names) {
         Collection<String> branchNames = getBranchNames(branches);
         for (String name : names) {
             assertThat(branchNames, hasItem(name));
@@ -266,7 +236,7 @@ public class GitAPITest {
         workspace.commitEmpty("init");
         testGitClient.branch("test");
         String branches = workspace.launchCommand("git", "branch", "-l");
-        assertTrue("master branch not listed", branches.contains("master"));
+        assertTrue("default branch not listed", branches.contains(defaultBranchName));
         assertTrue("test branch not listed", branches.contains("test"));
     }
 
@@ -277,11 +247,15 @@ public class GitAPITest {
         testGitClient.deleteBranch("test");
         String branches = workspace.launchCommand("git", "branch", "-l");
         assertFalse("deleted test branch still present", branches.contains("test"));
-        try {
+
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteBranch("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete branch test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteBranch("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete branch test"));
         }
     }
 
@@ -294,11 +268,14 @@ public class GitAPITest {
         String tags = workspace.launchCommand("git", "tag");
         assertFalse("deleted test tag still present", tags.contains("test"));
         assertTrue("expected tag not listed", tags.contains("another"));
-        try {
+        if (testGitClient instanceof JGitAPIImpl) {
+            // JGit does not throw an exception
             testGitClient.deleteTag("test");
-            assertTrue("cgit did not throw an exception", workspace.getGitClient() instanceof JGitAPIImpl);
-        } catch (GitException ge) {
-            assertEquals("Could not delete tag test", ge.getMessage());
+        } else {
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.deleteTag("test");
+            });
+            assertThat(exception.getMessage(), is("Could not delete tag test"));
         }
     }
 
@@ -359,7 +336,7 @@ public class GitAPITest {
         testGitClient.branch("test");
         testGitClient.branch("another");
         Set<Branch> branches = testGitClient.getBranches();
-        assertBranchesExist(branches, "master", "test", "another");
+        assertBranchesExist(branches, defaultBranchName, "test", "another");
         assertEquals(3, branches.size());
     }
 
@@ -502,7 +479,7 @@ public class GitAPITest {
          * double struck small t as the first character of the file
          * name. The last three characters of the file name are three
          * different forms of the a-with-ring character. Refer to
-         * http://unicode.org/reports/tr15/#Detecting_Normalization_Forms
+         * https://unicode.org/reports/tr15/#Detecting_Normalization_Forms
          * for the source of those example characters.
          */
         final String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
@@ -587,7 +564,7 @@ public class GitAPITest {
     public void testPushTags() throws Exception {
         /* Working Repo with commit */
         final String fileName1 = "file1";
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit1");
         ObjectId commit1 = workspace.head();
@@ -598,53 +575,53 @@ public class GitAPITest {
         testGitClient.setRemoteUrl("origin", bare.getGitFileDir().getAbsolutePath());
         Set<Branch> remoteBranchesEmpty = testGitClient.getRemoteBranches();
         assertThat(remoteBranchesEmpty, is(empty()));
-//        testGitClient.push().ref("master").to(new URIish("origin")).execute();
-        testGitClient.push("origin", "master");
-        ObjectId bareCommit1 = bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), "master");
+//        testGitClient.push().ref(defaultBranchName).to(new URIish("origin")).execute();
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit1 = bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertEquals("bare != working", commit1, bareCommit1);
-        assertEquals(commit1, bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), "refs/heads/master"));
+        assertEquals(commit1, bare.getGitClient().getHeadRev(bare.getGitFileDir().getAbsolutePath(), "refs/heads/" + defaultBranchName));
 
         /* Add tag1 to working repo without pushing it to bare repo */
         workspace.tag("tag1");
         assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit1, testGitClient.revParse("tag1"));
-        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(false).execute();
+        testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(false).execute();
         assertFalse("tag1 pushed unexpectedly", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Push tag1 to bare repo */
-        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+        testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
         assertTrue("tag1 not pushed", bare.launchCommand("git", "tag").contains("tag1"));
 
         /* Create a new commit, move tag1 to that commit, attempt push */
-        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName1, fileName1 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName1);
         testGitClient.commit("commit2");
         ObjectId commit2 = workspace.head();
         workspace.tag("tag1", true); /* Tag already exists, move from commit1 to commit2 */
         assertTrue("tag1 wasn't created", testGitClient.tagExists("tag1"));
         assertEquals("tag1 points to wrong commit", commit2, testGitClient.revParse("tag1"));
-        try {
-            testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
-            /* JGit does not throw exception updating existing tag - ugh */
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
+        if (testGitClient instanceof CliGitAPIImpl) {
+            // Modern CLI git should throw exception pushing a change to existing tag
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
+            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
         }
 
-        try {
-            testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+        if (testGitClient instanceof CliGitAPIImpl) {
+            /* CliGit throws exception updating existing tag */
+            Exception exception = assertThrows(GitException.class, () -> {
+                testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
+            });
+            assertThat(exception.getMessage(), containsString("already exists"));
+        } else {
             /* JGit does not throw exception updating existing tag - ugh */
-            /* CliGit before 1.8 does not throw exception updating existing tag - ugh */
-            if (testGitClient instanceof CliGitAPIImpl && workspace.cgit().isAtLeastVersion(1,8,0,0)) {
-                fail("Modern CLI git should throw exception pushing a change to existing tag");
-            }
-        } catch (GitException ge) {
-            assertThat(ge.getMessage(), containsString("already exists"));
+            testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(false).execute();
         }
-        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force(true).execute();
+
+        testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).force().execute();
 
         /* Add tag to working repo without pushing it to the bare
          * repo, tests the default behavior when tags() is not added
@@ -652,17 +629,17 @@ public class GitAPITest {
          */
         workspace.tag("tag3");
         assertTrue("tag3 wasn't created", testGitClient.tagExists("tag3"));
-        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).execute();
+        testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).execute();
         assertFalse("tag3 was pushed", bare.launchCommand("git", "tag").contains("tag3"));
 
         /* Add another tag to working repo and push tags to the bare repo */
         final String fileName2 = "file2";
-        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID().toString());
+        workspace.touch(testGitDir, fileName2, fileName2 + " content " + java.util.UUID.randomUUID());
         testGitClient.add(fileName2);
         testGitClient.commit("commit2");
         workspace.tag("tag2");
         assertTrue("tag2 wasn't created", testGitClient.tagExists("tag2"));
-        testGitClient.push().ref("master").to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
+        testGitClient.push().ref(defaultBranchName).to(new URIish(bare.getGitFileDir().getAbsolutePath())).tags(true).execute();
         assertTrue("tag1 wasn't pushed", bare.launchCommand("git", "tag").contains("tag1"));
         assertTrue("tag2 wasn't pushed", bare.launchCommand("git", "tag").contains("tag2"));
         assertTrue("tag3 wasn't pushed", bare.launchCommand("git", "tag").contains("tag3"));
@@ -690,7 +667,7 @@ public class GitAPITest {
         workspace.cgit().commit(anotherBranchCommitMessage + "\r");
 
         branches = testGitClient.getBranches();
-        assertBranchesExist(branches, "master", "test", "another");
+        assertBranchesExist(branches, defaultBranchName, "test", "another");
         assertEquals(3, branches.size());
         String output = workspace.launchCommand("git", "branch", "-v", "--no-abbrev");
         assertTrue("git branch -v --no-abbrev missing test commit msg: '" + output + "'", output.contains(testBranchCommitMessage));
@@ -717,7 +694,7 @@ public class GitAPITest {
         workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
         workspace.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = testGitClient.getRemoteBranches();
-        assertBranchesExist(branches, "origin/master", "origin/test", "origin/another");
+        assertBranchesExist(branches, "origin/" + defaultBranchName, "origin/test", "origin/another");
         assertEquals(3, branches.size());
     }
 
@@ -819,13 +796,8 @@ public class GitAPITest {
     @Test
     public void testRevparseThrowsExpectedException() throws Exception {
         workspace.commitEmpty("init");
-        try {
-            testGitClient.revParse("unknown-rev-to-parse");
-            fail("Did not throw exception");
-        } catch (GitException ge) {
-            final String msg = ge.getMessage();
-            assertTrue("Wrong exception: " + msg, msg.contains("unknown-rev-to-parse"));
-        }
+        final GitException ex = assertThrows(GitException.class, () -> testGitClient.revParse("unknown-to-rev-parse"));
+        assertThat(ex.getMessage(), containsString("unknown-to-rev-parse"));
     }
 
     @Test
@@ -841,8 +813,8 @@ public class GitAPITest {
         remote.initBareRepo(remote.getGitClient(), true);
         workspace.launchCommand("git", "remote", "add", "origin", remote.getGitFileDir().getAbsolutePath());
 
-        testGitClient.push("origin", "master");
-        String remoteSha1 = remote.launchCommand("git", "rev-parse", "master").substring(0, 40);
+        testGitClient.push("origin", defaultBranchName);
+        String remoteSha1 = remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
         assertEquals(sha1.name(), remoteSha1);
     }
 
@@ -890,9 +862,9 @@ public class GitAPITest {
         workspace1.commitEmpty("c");
         workspace1.launchCommand("git", "remote", "add", "origin", teamWorkspace.getGitFileDir().getAbsolutePath());
 
-        workspace1.launchCommand("git", "push", "origin", "master:b1");
-        workspace1.launchCommand("git", "push", "origin", "master:b2");
-        workspace1.launchCommand("git", "push", "origin", "master");
+        workspace1.launchCommand("git", "push", "origin", defaultBranchName + ":b1");
+        workspace1.launchCommand("git", "push", "origin", defaultBranchName + ":b2");
+        workspace1.launchCommand("git", "push", "origin", defaultBranchName);
 
         workspace2.launchCommand("git", "remote", "add", "origin", teamWorkspace.getGitFileDir().getAbsolutePath());
         workspace2.launchCommand("git", "fetch", "origin");
@@ -900,7 +872,7 @@ public class GitAPITest {
         // at this point both ws1&ws2 have several remote tracking branches
 
         workspace1.launchCommand("git", "push", "origin", ":b1");
-        workspace1.launchCommand("git", "push", "origin", "master:b3");
+        workspace1.launchCommand("git", "push", "origin", defaultBranchName + ":b3");
 
         workspace2.getGitClient().prune(new RemoteConfig(new Config(),"origin"));
 
@@ -984,7 +956,7 @@ public class GitAPITest {
         workspace.touch(testGitDir, "file", "content1");
         testGitClient.add("file");
         testGitClient.commit("commit1");
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         testGitClient.checkout().ref("branch2").execute();
         workspace.touch(testGitDir,"file", "content2");
@@ -992,7 +964,7 @@ public class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit2");
         testGitClient.merge().setStrategy(MergeCommand.Strategy.OURS).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
-        assertEquals("merge didn't selected OURS content", "content2", FileUtils.readFileToString(f, "UTF-8"));
+        assertEquals("merge didn't selected OURS content", "content2", Files.readString(f.toPath(), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -1003,18 +975,15 @@ public class GitAPITest {
         workspace.touch(testGitDir, "file", "content1");
         testGitClient.add("file");
         testGitClient.commit("commit1");
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         testGitClient.checkout().ref("branch2").execute();
         workspace.touch(testGitDir, "file", "content2");
         testGitClient.add("file");
         testGitClient.commit("commit2");
-        try {
-            testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
-            fail();
-        } catch (GitException ge) {
-            //expected
-        }
+
+        assertThrows(GitException.class, () ->
+                testGitClient.merge().setStrategy(MergeCommand.Strategy.RESOLVE).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute());
     }
 
     @Issue("JENKINS-12402")
@@ -1028,7 +997,7 @@ public class GitAPITest {
         testGitClient.commit("commit1");
         final ObjectId branch1 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         testGitClient.checkout().ref("branch2").execute();
         workspace.touch(testGitDir, "file2", "content2");
@@ -1036,15 +1005,15 @@ public class GitAPITest {
         testGitClient.commit("commit2");
         final ObjectId branch2 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
 
-        // The first merge is a fast-forward, master moves to branch1
+        // The first merge is a fast-forward, default branch moves to branch1
         testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
-        assertEquals("Fast-forward merge failed. master and branch1 should be the same.", workspace.head(), branch1);
+        assertEquals("Fast-forward merge failed. default branch and branch1 should be the same.", workspace.head(), branch1);
 
         // The second merge calls for fast-forward (FF), but a merge commit will result
         // This tests that calling for FF gracefully falls back to a commit merge
-        // master moves to a new commit ahead of branch1 and branch2
+        // default branch moves to a new commit ahead of branch1 and branch2
         testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
         // The merge commit (head) should have branch2 and branch1 as parents
         List<ObjectId> revList = testGitClient.revList("HEAD^1");
@@ -1063,7 +1032,7 @@ public class GitAPITest {
         testGitClient.commit("commit1");
         final ObjectId branch1 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         testGitClient.checkout().ref("branch2").execute();
         workspace.touch(testGitDir, "file2", "content2");
@@ -1071,20 +1040,17 @@ public class GitAPITest {
         testGitClient.commit("commit2");
         final ObjectId branch2 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
 
-        // The first merge is a fast-forward only (FF_ONLY), master moves to branch1
+        // The first merge is a fast-forward only (FF_ONLY), default branch moves to branch1
         testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
-        assertEquals("Fast-forward merge failed. master and branch1 should be the same but aren't.", workspace.head(), branch1);
+        assertEquals("Fast-forward merge failed. Default branch and branch1 should be the same but aren't.", workspace.head(), branch1);
 
         // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected to fail
-        try {
+        assertThrows(GitException.class, () -> {
             testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2")).execute();
-            fail("Exception not thrown: the fast-forward only mode should have failed");
-        } catch (GitException ge) {
-            // expected
-            assertEquals("Fast-forward merge abort failed. master and branch1 should still be the same as the merge was aborted.",workspace.head(),branch1);
-        }
+        });
+        assertEquals("Fast-forward merge abort failed. Default branch and branch1 should still be the same as the merge was aborted.", workspace.head(), branch1);
     }
 
     @Test
@@ -1098,7 +1064,7 @@ public class GitAPITest {
         testGitClient.commit("commit1");
         final ObjectId branch1 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.branch("branch2");
         testGitClient.checkout().ref("branch2").execute();
         workspace.touch(testGitDir, "file2", "content2");
@@ -1106,8 +1072,7 @@ public class GitAPITest {
         testGitClient.commit("commit2");
         final ObjectId branch2 = workspace.head();
 
-        testGitClient.checkout().ref("master").execute();
-        final ObjectId master = workspace.head();
+        testGitClient.checkout().ref(defaultBranchName).execute();
 
         // The first merge is normally a fast-forward, but we're calling for a merge commit which is expected to work
         testGitClient.merge().setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
@@ -1146,8 +1111,8 @@ public class GitAPITest {
         testGitClient.add("file2");
         testGitClient.commit("commit2");
 
-        //Merge branch1 with master, squashing both commits
-        testGitClient.checkout().ref("master").execute();
+        //Merge branch1 with default branch, squashing both commits
+        testGitClient.checkout().ref(defaultBranchName).execute();
         testGitClient.merge().setSquash(true).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
 
         //Compare commit counts of before and after commiting the merge, should be  one due to the squashing of commits.
@@ -1174,9 +1139,9 @@ public class GitAPITest {
         testGitClient.add("file2");
         testGitClient.commit("commit2");
 
-        //Merge branch1 with master, without squashing commits.
+        //Merge branch1 with default branch, without squashing commits.
         //Compare commit counts of before and after commiting the merge, should be two due to the no squashing of commits.
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         final int commitCountBefore = testGitClient.revList("HEAD").size();
         testGitClient.merge().setSquash(false).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
         final int commitCountAfter = testGitClient.revList("HEAD").size();
@@ -1195,9 +1160,9 @@ public class GitAPITest {
         testGitClient.add("file1");
         testGitClient.commit("commit1");
 
-        //Merge branch1 with master, without committing the merge.
+        //Merge branch1 with default branch, without committing the merge.
         //Compare commit counts of before and after the merge, should be zero due to the lack of autocommit.
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         final int commitCountBefore = testGitClient.revList("HEAD").size();
         testGitClient.merge().setCommit(false).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
         final int commitCountAfter = testGitClient.revList("HEAD").size();
@@ -1216,9 +1181,9 @@ public class GitAPITest {
         testGitClient.add("file1");
         testGitClient.commit("commit1");
 
-        //Merge branch1 with master, without committing the merge.
+        //Merge branch1 with default branch, without committing the merge.
         //Compare commit counts of before and after the merge, should be two due to the commit of the file and the commit of the merge.
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         final int commitCountBefore = testGitClient.revList("HEAD").size();
         testGitClient.merge().setCommit(true).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
         final int commitCountAfter = testGitClient.revList("HEAD").size();
@@ -1237,8 +1202,8 @@ public class GitAPITest {
         testGitClient.add("file1");
         testGitClient.commit("commit1");
 
-        //Merge branch1 into master
-        testGitClient.checkout().ref("master").execute();
+        //Merge branch1 into default branch
+        testGitClient.checkout().ref(defaultBranchName).execute();
         final String mergeMessage = "Merge message to be tested.";
         testGitClient.merge().setMessage(mergeMessage).setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF).setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1")).execute();
         //Obtain last commit message
@@ -1263,10 +1228,10 @@ public class GitAPITest {
     public void testRebasePassesWithoutConflict() throws Exception {
         workspace.commitEmpty("init");
 
-        //First commit to master
-        workspace.touch(testGitDir, "master_file", "master1");
-        testGitClient.add("master_file");
-        testGitClient.commit("commit-master1");
+        //First commit to default branch
+        workspace.touch(testGitDir, "default_branch_file", "default_branch1");
+        testGitClient.add("default_branch_file");
+        testGitClient.commit("commit-default_branch1");
 
         //Create a feature branch and make a commit
         testGitClient.branch("feature1");
@@ -1275,17 +1240,17 @@ public class GitAPITest {
         testGitClient.add("feature_file");
         testGitClient.commit("commit-feature1");
 
-        //Second commit to master
-        testGitClient.checkout().ref("master").execute();
-        workspace.touch(testGitDir, "master_file", "master2");
-        testGitClient.add("master_file");
-        testGitClient.commit("commit-master2");
+        //Second commit to default branch
+        testGitClient.checkout().ref(defaultBranchName).execute();
+        workspace.touch(testGitDir, "default_branch_file", "default_branch2");
+        testGitClient.add("default_branch_file");
+        testGitClient.commit("commit-default_branch2");
 
-        //Rebase feature commit onto master
+        //Rebase feature commit onto default branch
         testGitClient.checkout().ref("feature1").execute();
-        testGitClient.rebase().setUpstream("master").execute();
+        testGitClient.rebase().setUpstream(defaultBranchName).execute();
 
-        assertThat("Should've rebased feature1 onto master", testGitClient.revList("feature1").contains(testGitClient.revParse("master")));
+        assertThat("Should've rebased feature1 onto default branch", testGitClient.revList("feature1").contains(testGitClient.revParse(defaultBranchName)));
         assertEquals("HEAD should be on the rebased branch", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
         assertThat("Rebased file should be present in the worktree", testGitClient.getWorkTree().child("feature_file").exists());
     }
@@ -1294,10 +1259,10 @@ public class GitAPITest {
     public void testRebaseFailsWithConflict() throws Exception {
         workspace.commitEmpty("init");
 
-        // First commit to master
-        workspace.touch(testGitDir, "file", "master1");
+        // First commit to default branch
+        workspace.touch(testGitDir, "file", "default_branch1");
         testGitClient.add("file");
-        testGitClient.commit("commit-master1");
+        testGitClient.commit("commit-default-branch1");
 
         //Create a feature branch and make a commit
         testGitClient.branch("feature1");
@@ -1306,28 +1271,28 @@ public class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit-feature1");
 
-        //Second commit to master
-        testGitClient.checkout().ref("master").execute();
-        workspace.touch(testGitDir, "file", "master2");
+        //Second commit to default branch
+        testGitClient.checkout().ref(defaultBranchName).execute();
+        workspace.touch(testGitDir, "file", "default-branch2");
         testGitClient.add("file");
-        testGitClient.commit("commit-master2");
+        testGitClient.commit("commit-default-branch2");
 
-        // Rebase feature commit onto master
+        // Rebase feature commit onto default branch
         testGitClient.checkout().ref("feature1").execute();
-        try {
-            testGitClient.rebase().setUpstream("master").execute();
-            fail("Rebase did not throw expected GitException");
-        } catch (GitException ge) {
-            assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
-            Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
-            assertTrue("Workspace is not clean", status.isClean());
-            assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
-            assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
-            assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
-            assertTrue("Workspace has modified files", status.getModified().isEmpty());
-            assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
-            assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
-        }
+        Exception exception = assertThrows(GitException.class, () -> {
+            testGitClient.rebase().setUpstream(defaultBranchName).execute();
+        });
+        assertThat(exception.getMessage(), anyOf(containsString("Failed to rebase " + defaultBranchName),
+                                                 containsString("Could not rebase " + defaultBranchName)));
+        assertEquals("HEAD not reset to the feature branch.", testGitClient.revParse("HEAD").name(), testGitClient.revParse("feature1").name());
+        Status status = new org.eclipse.jgit.api.Git(new FileRepository(new File(testGitDir, ".git"))).status().call();
+        assertTrue("Workspace is not clean", status.isClean());
+        assertFalse("Workspace has uncommitted changes", status.hasUncommittedChanges());
+        assertTrue("Workspace has conflicting changes", status.getConflicting().isEmpty());
+        assertTrue("Workspace has missing changes", status.getMissing().isEmpty());
+        assertTrue("Workspace has modified files", status.getModified().isEmpty());
+        assertTrue("Workspace has removed files", status.getRemoved().isEmpty());
+        assertTrue("Workspace has untracked files", status.getUntracked().isEmpty());
     }
 
     /**
@@ -1338,49 +1303,49 @@ public class GitAPITest {
     public void testJenkins11177() throws Exception {
         workspace.commitEmpty("init");
         final ObjectId base = workspace.head();
-        final ObjectId master = testGitClient.revParse("master");
-        assertEquals(base, master);
+        final ObjectId defaultBranchObjectId = testGitClient.revParse(defaultBranchName);
+        assertEquals(base, defaultBranchObjectId);
 
-        /* Make reference to master ambiguous, verify it is reported ambiguous by rev-parse */
-        workspace.tag("master");
-        final String revParse = workspace.launchCommand("git", "rev-parse", "master");
+        /* Make reference to default branch ambiguous, verify it is reported ambiguous by rev-parse */
+        workspace.tag(defaultBranchName);
+        final String revParse = workspace.launchCommand("git", "rev-parse", defaultBranchName);
         assertTrue("'" + revParse + "' does not contain 'ambiguous'", revParse.contains("ambiguous"));
-        final ObjectId masterTag = testGitClient.revParse("refs/tags/master");
-        assertEquals("masterTag != head", workspace.head(), masterTag);
+        final ObjectId ambiguousTag = testGitClient.revParse("refs/tags/" + defaultBranchName);
+        assertEquals("ambiguousTag != head", workspace.head(), ambiguousTag);
 
-        /* Get reference to ambiguous master */
-        final ObjectId ambiguous = testGitClient.revParse("master");
-        assertEquals("ambiguous != master", ambiguous.toString(), master.toString());
+        /* Get reference to ambiguous branch name */
+        final ObjectId ambiguous = testGitClient.revParse(defaultBranchName);
+        assertEquals("ambiguous != default branch", ambiguous.toString(), defaultBranchObjectId.toString());
 
-        /* Exploring JENKINS-20991 ambigous revision breaks checkout */
-        workspace.touch(testGitDir, "file-master", "content-master");
-        testGitClient.add("file-master");
-        testGitClient.commit("commit1-master");
-        final ObjectId masterTip = workspace.head();
+        /* Exploring JENKINS-20991 ambiguous revision breaks checkout */
+        workspace.touch(testGitDir, "file-default-branch", "content-default-branch");
+        testGitClient.add("file-default-branch");
+        testGitClient.commit("commit1-default-branch");
+        final ObjectId defaultBranchTip = workspace.head();
 
-        workspace.launchCommand("git", "branch", "branch1", masterTip.name());
+        workspace.launchCommand("git", "branch", "branch1", defaultBranchTip.name());
         workspace.launchCommand("git", "checkout", "branch1");
         workspace.touch(testGitDir, "file1", "content1");
         testGitClient.add("file1");
         testGitClient.commit("commit1-branch1");
         final ObjectId branch1 = workspace.head();
 
-        /* JGit checks out the masterTag, while CliGit checks out
-         * master branch.  It is risky that there are different
+        /* JGit checks out the tag, while CliGit checks out
+         * the branch.  It is risky that there are different
          * behaviors between the two implementations, but when a
          * reference is ambiguous, it is safe to assume that
          * resolution of the ambiguous reference is an implementation
          * specific detail. */
-        testGitClient.checkout().ref("master").execute();
+        testGitClient.checkout().ref(defaultBranchName).execute();
         final String messageDetails =
                 ", head=" + workspace.head().name() +
-                ", masterTip=" + masterTip.name() +
-                ", masterTag=" + masterTag.name() +
+                ", defaultBranchTip=" + defaultBranchTip.name() +
+                ", ambiguousTag=" + ambiguousTag.name() +
                 ", branch1=" + branch1.name();
         if (testGitClient instanceof CliGitAPIImpl) {
-            assertEquals("head != master branch" + messageDetails, masterTip, workspace.head());
+            assertEquals("head != default branch" + messageDetails, defaultBranchTip, workspace.head());
         } else {
-            assertEquals("head != master tag" + messageDetails, masterTag, workspace.head());
+            assertEquals("head != ambiguous tag" + messageDetails, ambiguousTag, workspace.head());
         }
     }
 
@@ -1448,7 +1413,7 @@ public class GitAPITest {
         workspace.commitEmpty("c1");
         workspace.tag("t1");
         workspace.commitEmpty("c2");
-        List<ObjectId> revList = testGitClient.revList("master");
+        List<ObjectId> revList = testGitClient.revList(defaultBranchName);
         assertEquals("Wrong list size: " + revList, 2, revList.size());
     }
 
@@ -1486,7 +1451,69 @@ public class GitAPITest {
         // this should overwrite foo
         testGitClient.checkout().ref("t1").execute();
 
-        assertEquals("old", FileUtils.readFileToString(workspace.file("foo"), "UTF-8"));
+        assertEquals("old", Files.readString(workspace.file("foo").toPath(), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void testNoSubmodules() throws Exception {
+        workspace.touch(testGitDir, "committed-file", "committed-file content " + java.util.UUID.randomUUID());
+        testGitClient.add("committed-file");
+        testGitClient.commit("commit1");
+        IGitAPI igit = (IGitAPI) testGitClient;
+        igit.submoduleClean(false);
+        igit.submoduleClean(true);
+        igit.submoduleUpdate().recursive(false).execute();
+        igit.submoduleUpdate().recursive(true).execute();
+        igit.submoduleSync();
+        assertTrue("committed-file missing at commit1", workspace.file("committed-file").exists());
+    }
+
+    @Test
+    public void testHasSubmodules() throws Exception {
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), "tests/getSubmodules:t");
+        testGitClient.checkout().ref("t").execute();
+        assertTrue(testGitClient.hasGitModules());
+
+        workspace.launchCommand("git", "fetch", workspace.localMirror(), DEFAULT_MIRROR_BRANCH_NAME + ":t2");
+        testGitClient.checkout().ref("t2").execute();
+        assertFalse(testGitClient.hasGitModules());
+        IGitAPI igit = (IGitAPI) testGitClient;
+        if (igit instanceof JGitAPIImpl) {
+            assertThrows(UnsupportedOperationException.class, () -> igit.fixSubmoduleUrls("origin", listener));
+        } else if (igit instanceof  CliGitAPIImpl){
+            final GitException ex = assertThrows(GitException.class, () -> igit.fixSubmoduleUrls("origin", listener));
+            assertThat(ex.getMessage(), containsString("Could not determine remote"));
+            assertThat(ex.getMessage(), containsString("origin"));
+        }
+
+    }
+
+    /**
+     * Checks that the ChangelogCommand abort() API does not write
+     * output to the destination.  Does not check that the abort() API
+     * releases resources.
+     */
+    @Test
+    public void testChangeLogAbort() throws Exception {
+        final String logMessage = "changelog-abort-test-commit";
+        workspace.touch(testGitDir, "file-changelog-abort", "changelog abort file contents " + java.util.UUID.randomUUID());
+        testGitClient.add("file-changelog-abort");
+        testGitClient.commit(logMessage);
+        String sha1 = testGitClient.revParse("HEAD").name();
+        ChangelogCommand changelogCommand = testGitClient.changelog();
+        StringWriter writer = new StringWriter();
+        changelogCommand.to(writer);
+
+        /* Abort the changelog, confirm no content was written */
+        changelogCommand.abort();
+        assertEquals("aborted changelog wrote data", "", writer.toString());
+
+        /* Execute the changelog, confirm expected content was written */
+        changelogCommand = testGitClient.changelog();
+        changelogCommand.to(writer);
+        changelogCommand.execute();
+        assertTrue("No log message in " + writer, writer.toString().contains(logMessage));
+        assertTrue("No SHA1 in " + writer, writer.toString().contains(sha1));
     }
 
     private void initializeWorkspace(WorkspaceWithRepo initWorkspace) throws Exception {
