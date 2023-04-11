@@ -814,7 +814,7 @@ public interface GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void submoduleClean(boolean recursive, boolean cleanSubmodule)  throws GitException, InterruptedException;
+    void submoduleClean(boolean recursive, boolean cleanSubmodule) throws GitException, InterruptedException;
 
     /**
      * submoduleInit.
