@@ -4,6 +4,9 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
+import java.io.*;
+import java.util.List;
+import java.util.Set;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -13,13 +16,9 @@ import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 
-import java.io.*;
-import java.util.List;
-import java.util.Set;
-
 /**
  * Backward compatible class to match the one some plugins used from git-plugin.
- * Extends CliGitAPIImpl to implement deprecated IGitAPI methods, but delegates supported methods to the selected git implementation (based on 
+ * Extends CliGitAPIImpl to implement deprecated IGitAPI methods, but delegates supported methods to the selected git implementation (based on
  * {@link org.jenkinsci.plugins.gitclient.Git#USE_CLI}).
  *
  * New implementations should use {@link org.jenkinsci.plugins.gitclient.GitClient}.
@@ -43,7 +42,8 @@ public class GitAPI extends CliGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted
      */
     @Deprecated
-    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment)
+            throws IOException, InterruptedException {
         this(gitExe, new File(repository.getRemote()), listener, environment);
     }
 
@@ -59,7 +59,8 @@ public class GitAPI extends CliGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Deprecated
-    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment, String reference) throws IOException, InterruptedException {
+    public GitAPI(String gitExe, FilePath repository, TaskListener listener, EnvVars environment, String reference)
+            throws IOException, InterruptedException {
         this(gitExe, repository, listener, environment);
     }
 
@@ -74,18 +75,26 @@ public class GitAPI extends CliGitAPIImpl {
      * @throws java.lang.InterruptedException if interrupted.
      */
     @Deprecated
-    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment) throws IOException, InterruptedException {
+    public GitAPI(String gitExe, File repository, TaskListener listener, EnvVars environment)
+            throws IOException, InterruptedException {
         super(gitExe, repository, listener, environment);
 
         // If USE_CLI is forced, don't delegate to JGit client
-        this.jgit = Git.USE_CLI ? null : Git.with(listener, environment).in(repository).using("jgit").getClient();
+        this.jgit = Git.USE_CLI
+                ? null
+                : Git.with(listener, environment).in(repository).using("jgit").getClient();
     }
 
     // --- delegate implemented methods to JGit client
 
     /** {@inheritDoc} */
+    @Override
     public void add(String filePattern) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.add(filePattern); else  jgit.add(filePattern);
+        if (Git.USE_CLI) {
+            super.add(filePattern);
+        } else {
+            jgit.add(filePattern);
+        }
     }
 
     /*
@@ -95,18 +104,25 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public String getRemoteUrl(String name) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.getRemoteUrl(name) :  jgit.getRemoteUrl(name);
+        return Git.USE_CLI ? super.getRemoteUrl(name) : jgit.getRemoteUrl(name);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.push(remoteName, refspec); else  jgit.push(remoteName, refspec);
+        if (Git.USE_CLI) {
+            super.push(remoteName, refspec);
+        } else {
+            jgit.push(remoteName, refspec);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public String getTagMessage(String tagName) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.getTagMessage(tagName) :  jgit.getTagMessage(tagName);
+        return Git.USE_CLI ? super.getTagMessage(tagName) : jgit.getTagMessage(tagName);
     }
 
     /*
@@ -152,13 +168,19 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public GitClient subGit(String subdir) {
-        return Git.USE_CLI ? super.subGit(subdir) :  jgit.subGit(subdir);
+        return Git.USE_CLI ? super.subGit(subdir) : jgit.subGit(subdir);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.setRemoteUrl(name, url); else  jgit.setRemoteUrl(name, url);
+        if (Git.USE_CLI) {
+            super.setRemoteUrl(name, url);
+        } else {
+            jgit.setRemoteUrl(name, url);
+        }
     }
 
     /*
@@ -192,8 +214,9 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public Set<Branch> getBranches() throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.getBranches() :  jgit.getBranches();
+        return Git.USE_CLI ? super.getBranches() : jgit.getBranches();
     }
 
     /*
@@ -209,41 +232,59 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.getRemoteBranches() :  jgit.getRemoteBranches();
+        return Git.USE_CLI ? super.getRemoteBranches() : jgit.getRemoteBranches();
     }
 
     /** {@inheritDoc} */
+    @Override
     public void init() throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.init(); else  jgit.init();
+        if (Git.USE_CLI) {
+            super.init();
+        } else {
+            jgit.init();
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public void deleteBranch(String name) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.deleteBranch(name); else  jgit.deleteBranch(name);
+        if (Git.USE_CLI) {
+            super.deleteBranch(name);
+        } else {
+            jgit.deleteBranch(name);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     @SuppressWarnings("deprecation")
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
-        if (Git.USE_CLI) super.checkout(ref, branch); else  jgit.checkout(ref, branch);
+        if (Git.USE_CLI) {
+            super.checkout(ref, branch);
+        } else {
+            jgit.checkout(ref, branch);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public boolean hasGitRepo() throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.hasGitRepo() :  jgit.hasGitRepo();
+        return Git.USE_CLI ? super.hasGitRepo() : jgit.hasGitRepo();
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean hasGitRepo(boolean checkParentDirectories) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.hasGitRepo(checkParentDirectories) :  jgit.hasGitRepo(checkParentDirectories);
+        return Git.USE_CLI ? super.hasGitRepo(checkParentDirectories) : jgit.hasGitRepo(checkParentDirectories);
     }
 
     /** {@inheritDoc} */
+    @Override
     public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.isCommitInRepo(commit) :  jgit.isCommitInRepo(commit);
+        return Git.USE_CLI ? super.isCommitInRepo(commit) : jgit.isCommitInRepo(commit);
     }
 
     /*
@@ -253,12 +294,19 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public void commit(String message) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.commit(message); else  jgit.commit(message);
+        if (Git.USE_CLI) {
+            super.commit(message);
+        } else {
+            jgit.commit(message);
+        }
     }
 
     /** {@inheritDoc} */
-    public void commit(String message, PersonIdent author, PersonIdent committer) throws GitException, InterruptedException {
+    @Override
+    public void commit(String message, PersonIdent author, PersonIdent committer)
+            throws GitException, InterruptedException {
         if (Git.USE_CLI) {
             super.setAuthor(author);
             super.setCommitter(committer);
@@ -271,26 +319,42 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Override
     @SuppressWarnings("deprecation")
     public void checkout(String ref) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
-        if (Git.USE_CLI) super.checkout(ref); else  jgit.checkout(ref);
+        if (Git.USE_CLI) {
+            super.checkout(ref);
+        } else {
+            jgit.checkout(ref);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public void deleteTag(String tagName) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.deleteTag(tagName); else  jgit.deleteTag(tagName);
+        if (Git.USE_CLI) {
+            super.deleteTag(tagName);
+        } else {
+            jgit.deleteTag(tagName);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     @NonNull
     public Repository getRepository() throws GitException {
-        return Git.USE_CLI ? super.getRepository() :  jgit.getRepository();
+        return Git.USE_CLI ? super.getRepository() : jgit.getRepository();
     }
 
     /** {@inheritDoc} */
+    @Override
     public void tag(String tagName, String comment) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.tag(tagName, comment); else  jgit.tag(tagName, comment);
+        if (Git.USE_CLI) {
+            super.tag(tagName, comment);
+        } else {
+            jgit.tag(tagName, comment);
+        }
     }
 
     /*
@@ -300,25 +364,37 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     @SuppressWarnings("deprecation")
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
-        if (Git.USE_CLI) super.fetch(url, refspecs); else  jgit.fetch(url, refspecs);
+        if (Git.USE_CLI) {
+            super.fetch(url, refspecs);
+        } else {
+            jgit.fetch(url, refspecs);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.fetch(remoteName, refspec); else  jgit.fetch(remoteName, refspec);
+        if (Git.USE_CLI) {
+            super.fetch(remoteName, refspec);
+        } else {
+            jgit.fetch(remoteName, refspec);
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
         fetch(remoteName, new RefSpec[] {refspec});
     }
 
     /** {@inheritDoc} */
+    @Override
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.tagExists(tagName) :  jgit.tagExists(tagName);
+        return Git.USE_CLI ? super.tagExists(tagName) : jgit.tagExists(tagName);
     }
 
     /*
@@ -328,17 +404,28 @@ public class GitAPI extends CliGitAPIImpl {
     */
 
     /** {@inheritDoc} */
+    @Override
     public void clean() throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.clean(); else  jgit.clean();
+        if (Git.USE_CLI) {
+            super.clean();
+        } else {
+            jgit.clean();
+        }
     }
 
     /** {@inheritDoc} */
+    @Override
     public ObjectId revParse(String revName) throws GitException, InterruptedException {
-        return Git.USE_CLI ? super.revParse(revName) :  jgit.revParse(revName);
+        return Git.USE_CLI ? super.revParse(revName) : jgit.revParse(revName);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void branch(String name) throws GitException, InterruptedException {
-        if (Git.USE_CLI) super.branch(name); else  jgit.branch(name);
+        if (Git.USE_CLI) {
+            super.branch(name);
+        } else {
+            jgit.branch(name);
+        }
     }
 }

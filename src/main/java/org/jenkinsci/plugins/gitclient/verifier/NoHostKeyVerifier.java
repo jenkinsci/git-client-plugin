@@ -21,10 +21,10 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
             }
 
             @Override
-            public boolean verifyServerHostKey(String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) {
+            public boolean verifyServerHostKey(
+                    String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) {
                 return true;
             }
         };
     }
-
 }

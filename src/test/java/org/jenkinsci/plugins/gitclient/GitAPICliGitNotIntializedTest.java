@@ -1,23 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
-import org.apache.commons.lang.StringUtils;
-import org.eclipse.jgit.lib.Repository;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,13 +19,21 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.lib.Repository;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Git API Test which are solely for CLI git,
  * but doesn't need an initialized working repo.
  * These tests are not implemented for JGit.
  */
-
 @RunWith(Parameterized.class)
 public class GitAPICliGitNotIntializedTest {
     @Rule
@@ -75,7 +74,8 @@ public class GitAPICliGitNotIntializedTest {
         Random random = new Random();
         Thread.sleep(2000L + random.nextInt(4000)); // Wait 2-6 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGitAPITestCliGitNotInitialized").toFile();
+        File tempDir =
+                Files.createTempDirectory("PrimeGitAPITestCliGitNotInitialized").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
@@ -139,7 +139,8 @@ public class GitAPICliGitNotIntializedTest {
          * functioning repository object
          */
         submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
-            assertTrue(repo.getDirectory() + " is not a valid repository",
+            assertTrue(
+                    repo.getDirectory() + " is not a valid repository",
                     repo.getObjectDatabase().exists());
             return null;
         });

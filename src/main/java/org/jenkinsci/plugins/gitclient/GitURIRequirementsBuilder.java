@@ -7,7 +7,6 @@ import com.cloudbees.plugins.credentials.domains.PathRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +26,7 @@ public class GitURIRequirementsBuilder {
      * URI. Defines one capturing group containing the scheme without the
      * trailing colon and slashes
      */
-    private static final String SCHEME_P = "([a-z][a-z0-9+-]+)://"; //$NON-NLS-1$
+    private static final String SCHEME_P = "([a-z][a-z0-9+-]+)://"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches the optional user/password part (e.g.
@@ -35,7 +34,7 @@ public class GitURIRequirementsBuilder {
      * capturing groups: the first containing the user and the second containing
      * the password
      */
-    private static final String OPT_USER_PWD_P = "(?:([^/:@]+)(?::([^\\\\/]+))?@)?"; //$NON-NLS-1$
+    private static final String OPT_USER_PWD_P = "(?:([^/:@]+)(?::([^\\\\/]+))?@)?"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches the host part of URIs. Defines one
@@ -47,25 +46,25 @@ public class GitURIRequirementsBuilder {
      * Part of a pattern which matches the optional port part of URIs. Defines
      * one capturing group containing the port without the preceding colon.
      */
-    private static final String OPT_PORT_P = "(?::(\\d+))?"; //$NON-NLS-1$
+    private static final String OPT_PORT_P = "(?::(\\d+))?"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches the ~username part (e.g. /~root in
      * git://host.xyz/~root/a.git) of URIs. Defines no capturing group.
      */
-    private static final String USER_HOME_P = "(?:/~(?:[^\\\\/]+))"; //$NON-NLS-1$
+    private static final String USER_HOME_P = "(?:/~(?:[^\\\\/]+))"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches the optional drive letter in paths (e.g.
      * D: in file:///D:/a.txt). Defines no capturing group.
      */
-    private static final String OPT_DRIVE_LETTER_P = "(?:[A-Za-z]:)?"; //$NON-NLS-1$
+    private static final String OPT_DRIVE_LETTER_P = "(?:[A-Za-z]:)?"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches a relative path. Relative paths don't
      * start with slash or drive letters. Defines no capturing group.
      */
-    private static final String RELATIVE_PATH_P = "(?:(?:[^\\\\/]+[\\\\/]+)*[^\\\\/]+[\\\\/]*)"; //$NON-NLS-1$
+    private static final String RELATIVE_PATH_P = "(?:(?:[^\\\\/]+[\\\\/]+)*[^\\\\/]+[\\\\/]*)"; // $NON-NLS-1$
 
     /**
      * Part of a pattern which matches a relative or absolute path. Defines no
@@ -80,58 +79,63 @@ public class GitURIRequirementsBuilder {
      * A pattern matching standard URI: </br>
      * <code>scheme "://" user_password? hostname? portnumber? path</code>
      */
-    private static final Pattern FULL_URI = Pattern.compile("^" // //$NON-NLS-1$
-            + SCHEME_P //
-            + "(?:" // start a group containing hostname and all options only //$NON-NLS-1$
-            // availabe when a hostname is there
-            + OPT_USER_PWD_P //
-            + HOST_P //
-            + OPT_PORT_P //
-            + "(" // open a catpuring group the the user-home-dir part //$NON-NLS-1$
-            + (USER_HOME_P + "?") // //$NON-NLS-1$
-            + "[\\\\/])" // //$NON-NLS-1$
-            + ")?" // close the optional group containing hostname //$NON-NLS-1$
-            + "(.+)?" // //$NON-NLS-1$
-            + "$"); //$NON-NLS-1$
+    private static final Pattern FULL_URI = Pattern.compile(
+            "^" // //$NON-NLS-1$
+                    + SCHEME_P //
+                    + "(?:" // start a group containing hostname and all options only //$NON-NLS-1$
+                    // availabe when a hostname is there
+                    + OPT_USER_PWD_P //
+                    + HOST_P //
+                    + OPT_PORT_P //
+                    + "(" // open a catpuring group the the user-home-dir part //$NON-NLS-1$
+                    + (USER_HOME_P + "?") // //$NON-NLS-1$
+                    + "[\\\\/])" // //$NON-NLS-1$
+                    + ")?" // close the optional group containing hostname //$NON-NLS-1$
+                    + "(.+)?" // //$NON-NLS-1$
+                    + "$"); //$NON-NLS-1$
 
     /**
      * A pattern matching the reference to a local file. This may be an absolute
      * path (maybe even containing windows drive-letters) or a relative path.
      */
-    private static final Pattern LOCAL_FILE = Pattern.compile("^" // //$NON-NLS-1$
-            + "([\\\\/]?" + PATH_P + ")" // //$NON-NLS-1$ //$NON-NLS-2$
-            + "$"); //$NON-NLS-1$
+    private static final Pattern LOCAL_FILE = Pattern.compile(
+            "^" // //$NON-NLS-1$
+                    + "([\\\\/]?" + PATH_P + ")" // //$NON-NLS-1$ //$NON-NLS-2$
+                    + "$"); //$NON-NLS-1$
 
     /**
      * A pattern matching a URI for the scheme 'file' which has only ':/' as
      * separator between scheme and path. Standard file URIs have '://' as
      * separator, but java.io.File.toURI() constructs those URIs.
      */
-    private static final Pattern SINGLE_SLASH_FILE_URI = Pattern.compile("^" // //$NON-NLS-1$
-            + "(file):([\\\\/](?![\\\\/])" // //$NON-NLS-1$
-            + PATH_P //
-            + ")$"); //$NON-NLS-1$
+    private static final Pattern SINGLE_SLASH_FILE_URI = Pattern.compile(
+            "^" // //$NON-NLS-1$
+                    + "(file):([\\\\/](?![\\\\/])" // //$NON-NLS-1$
+                    + PATH_P //
+                    + ")$"); //$NON-NLS-1$
 
     /**
      * A pattern matching a SCP URI's of the form user@host:path/to/repo.git
      */
-    private static final Pattern RELATIVE_SCP_URI = Pattern.compile("^" // //$NON-NLS-1$
-            + OPT_USER_PWD_P //
-            + HOST_P //
-            + ":(" // //$NON-NLS-1$
-            + ("(?:" + USER_HOME_P + "[\\\\/])?") // //$NON-NLS-1$ //$NON-NLS-2$
-            + RELATIVE_PATH_P //
-            + ")$"); //$NON-NLS-1$
+    private static final Pattern RELATIVE_SCP_URI = Pattern.compile(
+            "^" // //$NON-NLS-1$
+                    + OPT_USER_PWD_P //
+                    + HOST_P //
+                    + ":(" // //$NON-NLS-1$
+                    + ("(?:" + USER_HOME_P + "[\\\\/])?") // //$NON-NLS-1$ //$NON-NLS-2$
+                    + RELATIVE_PATH_P //
+                    + ")$"); //$NON-NLS-1$
 
     /**
      * A pattern matching a SCP URI's of the form user@host:/path/to/repo.git
      */
-    private static final Pattern ABSOLUTE_SCP_URI = Pattern.compile("^" // //$NON-NLS-1$
-            + OPT_USER_PWD_P //
-            + "([^\\\\/:]{2,})" // //$NON-NLS-1$
-            + ":(" // //$NON-NLS-1$
-            + "[\\\\/]" + RELATIVE_PATH_P // //$NON-NLS-1$
-            + ")$"); //$NON-NLS-1$
+    private static final Pattern ABSOLUTE_SCP_URI = Pattern.compile(
+            "^" // //$NON-NLS-1$
+                    + OPT_USER_PWD_P //
+                    + "([^\\\\/:]{2,})" // //$NON-NLS-1$
+                    + ":(" // //$NON-NLS-1$
+                    + "[\\\\/]" + RELATIVE_PATH_P // //$NON-NLS-1$
+                    + ")$"); //$NON-NLS-1$
 
     /**
      * The list of requirements.
@@ -190,7 +194,10 @@ public class GitURIRequirementsBuilder {
         if (uri != null) {
             Matcher matcher = SINGLE_SLASH_FILE_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("file").withPath(matcher.group(2)).withoutHostname().withoutHostnamePort();
+                return withScheme("file")
+                        .withPath(matcher.group(2))
+                        .withoutHostname()
+                        .withoutHostnamePort();
             }
             matcher = FULL_URI.matcher(uri);
             if (matcher.matches()) {
@@ -203,21 +210,24 @@ public class GitURIRequirementsBuilder {
                         withHostname(matcher.group(4)).withoutHostnamePort();
                     }
                 } else {
-                    withPath(matcher.group(4)+"/"+matcher.group(7));
+                    withPath(matcher.group(4) + "/" + matcher.group(7));
                 }
                 return this;
             }
             matcher = RELATIVE_SCP_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3),22);
+                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3), 22);
             }
             matcher = ABSOLUTE_SCP_URI.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3),22);
+                return withScheme("ssh").withPath(matcher.group(4)).withHostnamePort(matcher.group(3), 22);
             }
             matcher = LOCAL_FILE.matcher(uri);
             if (matcher.matches()) {
-                return withScheme("file").withPath(matcher.group(2)).withoutHostname().withoutHostnamePort();
+                return withScheme("file")
+                        .withPath(matcher.group(2))
+                        .withoutHostname()
+                        .withoutHostnamePort();
             }
         }
         return withoutScheme().withoutPath().withoutHostname().withoutHostnamePort();
@@ -337,5 +347,4 @@ public class GitURIRequirementsBuilder {
     public List<DomainRequirement> build() {
         return new ArrayList<>(requirements);
     }
-
 }

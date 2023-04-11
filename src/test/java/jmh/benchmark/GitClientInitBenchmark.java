@@ -2,15 +2,14 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.InitCommand;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 
-import java.io.File;
-
-//@JmhBenchmark
+// @JmhBenchmark
 public class GitClientInitBenchmark {
 
     @State(Scope.Thread)
@@ -32,7 +31,10 @@ public class GitClientInitBenchmark {
             tmp.before();
             gitDir = tmp.newFolder();
 
-            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
+            gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitDir)
+                    .using(gitExe)
+                    .getClient();
 
             System.out.println("Do Setup");
         }
@@ -43,7 +45,7 @@ public class GitClientInitBenchmark {
                 // making sure that git init made a git an empty repository
                 File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
                 System.out.println(gitDir.isDirectory());
-            } catch (Exception e){
+            } catch (Exception e) {
                 e.getMessage();
             }
             tmp.after();
@@ -57,5 +59,4 @@ public class GitClientInitBenchmark {
         initCmd.execute();
         blackhole.consume(initCmd);
     }
-
 }

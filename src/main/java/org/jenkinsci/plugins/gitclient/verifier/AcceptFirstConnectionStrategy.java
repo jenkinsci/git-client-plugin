@@ -5,7 +5,7 @@ import hudson.Extension;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class AcceptFirstConnectionStrategy  extends SshHostKeyVerificationStrategy<AcceptFirstConnectionVerifier> {
+public class AcceptFirstConnectionStrategy extends SshHostKeyVerificationStrategy<AcceptFirstConnectionVerifier> {
 
     @DataBoundConstructor
     public AcceptFirstConnectionStrategy() {
@@ -18,13 +18,13 @@ public class AcceptFirstConnectionStrategy  extends SshHostKeyVerificationStrate
     }
 
     @Extension
-    public static class AcceptFirstConnectionStrategyDescriptor extends Descriptor<SshHostKeyVerificationStrategy<AcceptFirstConnectionVerifier>> {
+    public static class AcceptFirstConnectionStrategyDescriptor
+            extends Descriptor<SshHostKeyVerificationStrategy<AcceptFirstConnectionVerifier>> {
 
         @NonNull
         @Override
         public String getDisplayName() {
             return "Accept first connection";
         }
-
     }
 }

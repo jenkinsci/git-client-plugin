@@ -1,11 +1,11 @@
 package hudson.plugins.git;
 
-import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Before;
-import org.junit.Test;
 import static org.junit.Assert.*;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.eclipse.jgit.lib.ObjectId;
+import org.junit.Before;
+import org.junit.Test;
 
 public class TagTest {
 

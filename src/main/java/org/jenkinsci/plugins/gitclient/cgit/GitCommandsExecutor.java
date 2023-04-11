@@ -1,5 +1,11 @@
 package org.jenkinsci.plugins.gitclient.cgit;
 
+import com.google.common.util.concurrent.MoreExecutors;
+import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
+import hudson.util.DaemonThreadFactory;
+import hudson.util.ExceptionCatchingThreadFactory;
+import hudson.util.NamingThreadFactory;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.Callable;
@@ -11,13 +17,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.util.concurrent.MoreExecutors;
-import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
-import hudson.util.DaemonThreadFactory;
-import hudson.util.ExceptionCatchingThreadFactory;
-import hudson.util.NamingThreadFactory;
 
 /**
  * This executor can invoke multiple git commands in parallel using threads.
@@ -41,7 +40,8 @@ public class GitCommandsExecutor {
             if (threads == 1) {
                 executorService = MoreExecutors.newDirectExecutorService();
             } else {
-                ThreadFactory threadFactory = new ExceptionCatchingThreadFactory(new NamingThreadFactory(new DaemonThreadFactory(), GitCommandsExecutor.class.getSimpleName()));
+                ThreadFactory threadFactory = new ExceptionCatchingThreadFactory(
+                        new NamingThreadFactory(new DaemonThreadFactory(), GitCommandsExecutor.class.getSimpleName()));
                 executorService = Executors.newFixedThreadPool(threads, threadFactory);
             }
             invokeAll(executorService, commands);
@@ -55,7 +55,8 @@ public class GitCommandsExecutor {
         }
     }
 
-    private <T> void invokeAll(ExecutorService executorService, Collection<Callable<T>> commands) throws InterruptedException {
+    private <T> void invokeAll(ExecutorService executorService, Collection<Callable<T>> commands)
+            throws InterruptedException {
         CompletionService<T> completionService = new ExecutorCompletionService<>(executorService);
         Iterator<Callable<T>> remainingCommands = commands.iterator();
         int nCommands = commands.size();
@@ -70,7 +71,8 @@ public class GitCommandsExecutor {
         }
     }
 
-    private <T> void submitRemainingCommand(CompletionService<T> completionService, Iterator<Callable<T>> remainingCommands) {
+    private <T> void submitRemainingCommand(
+            CompletionService<T> completionService, Iterator<Callable<T>> remainingCommands) {
         if (remainingCommands.hasNext()) {
             completionService.submit(remainingCommands.next());
         }

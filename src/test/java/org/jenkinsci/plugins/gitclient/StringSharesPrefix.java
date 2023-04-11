@@ -9,12 +9,13 @@ import org.hamcrest.core.SubstringMatcher;
 class StringSharesPrefix extends SubstringMatcher {
     private static final String RELATIONSHIP = "sharing prefix with";
 
-    protected StringSharesPrefix(String relationship, boolean ignoringCase, String substring) { super(RELATIONSHIP, false, substring); }
+    protected StringSharesPrefix(String relationship, boolean ignoringCase, String substring) {
+        super(RELATIONSHIP, false, substring);
+    }
 
     @Override
     protected boolean evalSubstringOf(String s) {
-        return s.startsWith(substring) ||
-               substring.startsWith(s);
+        return s.startsWith(substring) || substring.startsWith(s);
     }
 
     /**
@@ -29,5 +30,7 @@ class StringSharesPrefix extends SubstringMatcher {
      *      the substring that the returned matcher will expect to share a
      *      prefix of any examined string
      */
-    static Matcher<String> sharesPrefix(String prefix) { return new StringSharesPrefix(RELATIONSHIP, false, prefix); }
+    static Matcher<String> sharesPrefix(String prefix) {
+        return new StringSharesPrefix(RELATIONSHIP, false, prefix);
+    }
 }
