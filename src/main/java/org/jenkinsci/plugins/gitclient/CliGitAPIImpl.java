@@ -2084,16 +2084,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * of ProxyConfiguration
      * @return proxy hosts concatenated by commas
      */
-    private String getNoProxyHosts(){
+    private String getNoProxyHosts() {
         String noProxyHost = proxy.getNoProxyHost();
-        List <String> noProxyHosts = Lists.newArrayList(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
-        return String.join(",",noProxyHosts);
+        List<String> noProxyHosts = Lists.newArrayList(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
+        return String.join(",", noProxyHosts);
     }
 
-    private String launchCommandWithCredentials(ArgumentListBuilder args, File workDir,
-                                                StandardCredentials credentials,
-                                                @NonNull URIish url,
-                                                Integer timeout) throws GitException, InterruptedException {
+    private String launchCommandWithCredentials(
+            ArgumentListBuilder args,
+            File workDir,
+            StandardCredentials credentials,
+            @NonNull URIish url,
+            Integer timeout)
+            throws GitException, InterruptedException {
 
         Path key = null;
         Path ssh = null;
