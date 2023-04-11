@@ -1,9 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.util.List;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-
-import java.util.List;
 
 /**
  * FetchCommand interface.
@@ -46,7 +45,7 @@ public interface FetchCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
      */
     FetchCommand shallow(boolean shallow);
-    
+
     /**
      * timeout.
      *

@@ -1,5 +1,16 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -30,28 +41,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-
 import org.apache.commons.io.FileUtils;
-
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.lib.Constants;
-
-import static org.hamcrest.io.FileMatchers.*;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.fail;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -60,7 +58,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -111,17 +108,24 @@ public class GitClientTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private File repoRoot = null;
 
     public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
         this.gitImplName = gitImplName;
-        this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using(gitImplName).getClient();
+        this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(srcRepoDir)
+                .using(gitImplName)
+                .getClient();
 
         CliGitAPIImpl cliGitClient;
         if (this.srcGitClient instanceof CliGitAPIImpl) {
             cliGitClient = (CliGitAPIImpl) this.srcGitClient;
         } else {
-            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(srcRepoDir).using("git").getClient();
+            cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                    .in(srcRepoDir)
+                    .using("git")
+                    .getClient();
         }
         CLI_GIT_REPORTS_DETACHED_SHA1 = true; // Included in CLI git 1.8.0 and later
         CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
@@ -134,9 +138,11 @@ public class GitClientTest {
         try {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
-            String lfsVersionOutput = cliGitClient.launchCommand("lfs", "version").trim();
+            String lfsVersionOutput =
+                    cliGitClient.launchCommand("lfs", "version").trim();
             gitLFSExists = lfsVersionOutput.startsWith("git-lfs");
-            gitSparseCheckoutWithLFS = lfsVersionOutput.matches("git-lfs/[3-9][.].*|git-lfs/2[.]1[0-9].*|git-lfs/2[.][89].*");
+            gitSparseCheckoutWithLFS =
+                    lfsVersionOutput.matches("git-lfs/[3-9][.].*|git-lfs/2[.]1[0-9].*|git-lfs/2[.][89].*");
             // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
             // Intentionally ignores the return value, assumes that failure will throw an exception
             // and disable the git LFS tests
@@ -151,13 +157,15 @@ public class GitClientTest {
         boolean gitLFSConfigured;
         try {
             // If git-lfs is configured then the smudge filter will not be empty
-            gitLFSConfigured = cliGitClient.launchCommand("config", "filter.lfs.smudge").contains("git-lfs");
+            gitLFSConfigured =
+                    cliGitClient.launchCommand("config", "filter.lfs.smudge").contains("git-lfs");
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSConfigured = false;
         }
         CLI_GIT_HAS_GIT_LFS_CONFIGURED = gitLFSConfigured;
-        LFS_SUPPORTS_SPARSE_CHECKOUT = CLI_GIT_HAS_GIT_LFS_CONFIGURED && gitSparseCheckoutWithLFS && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
+        LFS_SUPPORTS_SPARSE_CHECKOUT =
+                CLI_GIT_HAS_GIT_LFS_CONFIGURED && gitSparseCheckoutWithLFS && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -180,24 +188,38 @@ public class GitClientTest {
     @BeforeClass
     public static void mirrorUpstreamRepositoryLocally() throws Exception {
         File currentDir = new File(".");
-        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(currentDir).using("git").getClient();
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
-        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(mirrorParent).using("git").getClient());
+        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars())
+                .in(mirrorParent)
+                .using("git")
+                .getClient());
         if (currentDirIsShallow) {
-            mirrorParentGitCmd.run("clone",
+            mirrorParentGitCmd.run(
+                    "clone",
                     // "--reference", currentDir.getAbsolutePath(), // --reference of shallow repo fails
-                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+                    "--mirror",
+                    "https://github.com/jenkinsci/git-client-plugin");
         } else {
-            mirrorParentGitCmd.run("clone",
-                    "--reference", currentDir.getAbsolutePath(),
-                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+            mirrorParentGitCmd.run(
+                    "clone",
+                    "--reference",
+                    currentDir.getAbsolutePath(),
+                    "--mirror",
+                    "https://github.com/jenkinsci/git-client-plugin");
         }
         File mirrorDir = new File(mirrorParent, "git-client-plugin.git");
         assertTrue("Git client mirror repo not created at " + mirrorDir.getAbsolutePath(), mirrorDir.exists());
-        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars()).in(mirrorDir).using("git").getClient();
+        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(mirrorDir)
+                .using("git")
+                .getClient();
         assertThat(mirrorClient.getTagNames("git-client-1.6.3"), contains("git-client-1.6.3"));
 
         /* Clone from bare mirrorParent/git-client-plugin.git to working mirrorParent/git-client-plugin */
@@ -219,7 +241,10 @@ public class GitClientTest {
     @BeforeClass
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(configDir).using("git").getClient());
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars())
+                .in(configDir)
+                .using("git")
+                .getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -242,7 +267,10 @@ public class GitClientTest {
     @Before
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
-        gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
+        gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRoot)
+                .using(gitImplName)
+                .getClient();
         File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
@@ -340,18 +368,17 @@ public class GitClientTest {
     public void testChangelogVeryLong() throws Exception {
 
         final String gitMessage =
-                        "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut " +
-                        "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate" +
-                        "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer" +
-                        "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis" +
-                        "aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex" +
-                        "eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam" +
-                        "sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus" +
-                        "felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia " +
-                        "nostra, per inceptos himenaeos." +
-                        "\nseis\n" +
-                        "\nasfasfasfasf\n"
-                ;
+                "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut "
+                        + "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate"
+                        + "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer"
+                        + "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis"
+                        + "aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex"
+                        + "eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam"
+                        + "sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus"
+                        + "felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia "
+                        + "nostra, per inceptos himenaeos."
+                        + "\nseis\n"
+                        + "\nasfasfasfasf\n";
         final String content = String.format("A random UUID: %s\n", UUID.randomUUID());
         ObjectId message = commitFile("One-File.txt", content, gitMessage);
 
@@ -443,8 +470,8 @@ public class GitClientTest {
     @Test
     @Issue("JENKINS-43198")
     public void testCleanSubdirGitignore() throws Exception {
-        final String filename1 =  "this_is/not_ok/more/subdirs/file.txt";
-        final String filename2 =  "this_is_also/not_ok_either/more/subdirs/file.txt";
+        final String filename1 = "this_is/not_ok/more/subdirs/file.txt";
+        final String filename2 = "this_is_also/not_ok_either/more/subdirs/file.txt";
         commitFile(".gitignore", "/this_is/not_ok\n/this_is_also/not_ok_either\n", "set up gitignore");
         createFile(filename1, "hi there");
         createFile(filename2, "hi there");
@@ -464,7 +491,8 @@ public class GitClientTest {
         assertThat(gitClient.getTagNames(null), hasItem("has/a/slash"));
     }
 
-    private void assertLogContains(ObjectId commitA, ObjectId commitB, String prefix, String expected) throws GitException, InterruptedException {
+    private void assertLogContains(ObjectId commitA, ObjectId commitB, String prefix, String expected)
+            throws GitException, InterruptedException {
         boolean found = false;
         StringBuilder builder = new StringBuilder();
         for (String revisionMessage : gitClient.showRevision(commitA, commitB)) {
@@ -477,13 +505,15 @@ public class GitClientTest {
         assertTrue("no " + prefix + ", expected: '" + expected + "' in " + builder, found);
     }
 
-    private void assertAuthor(ObjectId commitA, ObjectId commitB, String name, String email) throws GitException, InterruptedException {
+    private void assertAuthor(ObjectId commitA, ObjectId commitB, String name, String email)
+            throws GitException, InterruptedException {
         final String prefix = "author ";
         final String expected = prefix + name + " <" + email + ">";
         assertLogContains(commitA, commitB, prefix, expected);
     }
 
-    private void assertCommitter(ObjectId commitA, ObjectId commitB, String name, String email) throws GitException, InterruptedException {
+    private void assertCommitter(ObjectId commitA, ObjectId commitB, String name, String email)
+            throws GitException, InterruptedException {
         final String prefix = "committer ";
         final String expected = prefix + name + " <" + email + ">";
         assertLogContains(commitA, commitB, prefix, expected);
@@ -556,7 +586,10 @@ public class GitClientTest {
     @Test
     public void testInit_Bare() throws Exception {
         File repoRootTemp = tempFolder.newFolder();
-        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRootTemp)
+                .using(gitImplName)
+                .getClient();
         File tempDir = gitClientTemp.withRepository((repo, channel) -> repo.getDirectory());
         assertFalse("Missing", tempDir.isDirectory());
         gitClientTemp.init_().workspace(repoRootTemp.getPath()).bare(true).execute();
@@ -572,10 +605,16 @@ public class GitClientTest {
         }
         String badDirName = "CON:";
         File badDir = new File(badDirName);
-        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
+        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(badDir)
+                .using(gitImplName)
+                .getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
-        assertThrows(expectedExceptionClass,
-                     () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
+        assertThrows(expectedExceptionClass, () -> badGitClient
+                .init_()
+                .bare(random.nextBoolean())
+                .workspace(badDirName)
+                .execute());
     }
 
     @Test
@@ -585,10 +624,16 @@ public class GitClientTest {
         }
         String badDirName = "/this/directory/is/not/accessible";
         File badDir = new File(badDirName);
-        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(badDir).using(gitImplName).getClient();
+        GitClient badGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(badDir)
+                .using(gitImplName)
+                .getClient();
         Class expectedExceptionClass = gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
-        assertThrows(expectedExceptionClass,
-                     () -> badGitClient.init_().bare(random.nextBoolean()).workspace(badDirName).execute());
+        assertThrows(expectedExceptionClass, () -> badGitClient
+                .init_()
+                .bare(random.nextBoolean())
+                .workspace(badDirName)
+                .execute());
     }
 
     @Test
@@ -632,11 +677,16 @@ public class GitClientTest {
             fileList.append(file.getAbsolutePath());
             fileList.append(" ");
         }
-        assertTrue("Source repo '" + srcRepoDir.getAbsolutePath() + "' not initialized, contains " + fileList, srcGitClient.hasGitRepo());
+        assertTrue(
+                "Source repo '" + srcRepoDir.getAbsolutePath() + "' not initialized, contains " + fileList,
+                srcGitClient.hasGitRepo());
 
         File emptyDir = tempFolder.newFolder();
         assertTrue(emptyDir.exists());
-        GitClient emptyClient = Git.with(TaskListener.NULL, new EnvVars()).in(emptyDir).using(gitImplName).getClient();
+        GitClient emptyClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(emptyDir)
+                .using(gitImplName)
+                .getClient();
         assertFalse("Empty repo '" + emptyDir.getAbsolutePath() + "' initialized", emptyClient.hasGitRepo());
     }
 
@@ -644,7 +694,10 @@ public class GitClientTest {
     public void testHasGitRepoFalse() throws Exception {
         /* Use system temp directory so that no parent directory has a git repository */
         Path tempDir = Files.createTempDirectory("git-client-hasGitRepo");
-        GitClient noRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(tempDir.toFile()).using(gitImplName).getClient();
+        GitClient noRepoClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(tempDir.toFile())
+                .using(gitImplName)
+                .getClient();
         assertFalse("New empty temp dir has a git repo(1)", noRepoClient.hasGitRepo());
         assertFalse("New empty temp dir has a git repo(2)", noRepoClient.hasGitRepo(false));
         assertFalse("New empty temp dir has a git repo(3)", noRepoClient.hasGitRepo(true));
@@ -657,7 +710,10 @@ public class GitClientTest {
         File childDir = tempFolder.newFolder("parentDir", "childDir");
         File parentDir = childDir.getParentFile();
 
-        GitClient parentDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(parentDir).using(gitImplName).getClient();
+        GitClient parentDirClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(parentDir)
+                .using(gitImplName)
+                .getClient();
         assertFalse("Unexpected has git repo before init(1)", parentDirClient.hasGitRepo());
         assertFalse("Unexpected has git repo before init(2)", parentDirClient.hasGitRepo(true));
         assertFalse("Unexpected has git repo before init(3)", parentDirClient.hasGitRepo(false));
@@ -667,7 +723,10 @@ public class GitClientTest {
         assertTrue("Missing git repo after init(2)", parentDirClient.hasGitRepo(true));
         assertTrue("Missing git repo after init(3)", parentDirClient.hasGitRepo(false));
 
-        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars()).in(childDir).using(gitImplName).getClient();
+        GitClient childDirClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(childDir)
+                .using(gitImplName)
+                .getClient();
         assertFalse("Unexpected has child git repo before child init(1)", childDirClient.hasGitRepo());
         assertFalse("Unexpected has child git repo before child init(2)", childDirClient.hasGitRepo(true));
         assertFalse("Unexpected has child git repo before child init(3)", childDirClient.hasGitRepo(false));
@@ -680,7 +739,8 @@ public class GitClientTest {
             assertTrue("Missing parent git repo before child init(1)", childDirClient.hasGitRepo());
         } else {
             // JENKINS-38699 - if an empty .git directory exists, JGit does NOT search upwards to perform operations
-            assertFalse("Unexpected parent git repo detected by JGit before child init(1)", childDirClient.hasGitRepo());
+            assertFalse(
+                    "Unexpected parent git repo detected by JGit before child init(1)", childDirClient.hasGitRepo());
         }
         assertTrue("Missing parent git repo before child init(2)", childDirClient.hasGitRepo(true));
         assertFalse("Unexpected has child repo before child init(3)", childDirClient.hasGitRepo(false));
@@ -702,14 +762,23 @@ public class GitClientTest {
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
         String actual = ge.getMessage().toLowerCase();
-        assertTrue("Expected '" + expectedSubstring + "' exception message, but was: " + actual, actual.contains(expectedSubstring));
+        assertTrue(
+                "Expected '" + expectedSubstring + "' exception message, but was: " + actual,
+                actual.contains(expectedSubstring));
     }
 
     private IGitAPI IGitAPIForTrueBareRepositoryTests() throws IOException, InterruptedException {
         // provides iGitAPI with bare repository initialization
         File repoRootTemp = tempFolder.newFolder();
-        GitClient gitClientTemp = Git.with(TaskListener.NULL,new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
-        gitClientTemp.init_().workspace(repoRootTemp.getAbsolutePath()).bare(true).execute();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRootTemp)
+                .using(gitImplName)
+                .getClient();
+        gitClientTemp
+                .init_()
+                .workspace(repoRootTemp.getAbsolutePath())
+                .bare(true)
+                .execute();
         return (IGitAPI) gitClientTemp;
     }
 
@@ -833,9 +902,9 @@ public class GitClientTest {
     public void testBareRepoInit() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
-        File gitFile = new File(tempDir,".git");
-        File gitObjFile = new File(tempDir,".git/objects");
-        File objFile = new File(tempDir,"objects");
+        File gitFile = new File(tempDir, ".git");
+        File gitObjFile = new File(tempDir, ".git/objects");
+        File objFile = new File(tempDir, "objects");
         assertFalse(".git exists unexpectedly", gitFile.exists());
         assertFalse(".git/objects exists unexpectedly", gitObjFile.exists());
         assertTrue("objects is not a directory", objFile.isDirectory());
@@ -856,7 +925,9 @@ public class GitClientTest {
         gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClient.add(".");
         gitClient.commit("Not-a-bare-repository-false-repoPath-dot-git");
-        assertFalse("repoPath/.git is a bare repository", gitAPI.isBareRepository(repoRoot.getPath() + File.separator + ".git"));
+        assertFalse(
+                "repoPath/.git is a bare repository",
+                gitAPI.isBareRepository(repoRoot.getPath() + File.separator + ".git"));
     }
 
     @Deprecated
@@ -893,9 +964,9 @@ public class GitClientTest {
     public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempRepoDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
-        File dotFile = new File(tempRepoDir,".");
+        File dotFile = new File(tempRepoDir, ".");
         assertTrue("repoPath is not a bare repository", gitAPI.isBareRepository(tempRepoDir.getPath()));
-        assertTrue("abs(.) is not a bare repository",gitAPI.isBareRepository(dotFile.getAbsolutePath()));
+        assertTrue("abs(.) is not a bare repository", gitAPI.isBareRepository(dotFile.getAbsolutePath()));
     }
 
     @Test
@@ -929,7 +1000,10 @@ public class GitClientTest {
     @Test
     public void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
         File repoRootTemp = tempFolder.newFolder();
-        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRootTemp)
+                .using(gitImplName)
+                .getClient();
         gitClientTemp.init();
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
@@ -942,7 +1016,7 @@ public class GitClientTest {
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
 
         try ( // add second remote
-              FileRepository repo = new FileRepository(new File(repoRoot, ".git"))) {
+        FileRepository repo = new FileRepository(new File(repoRoot, ".git"))) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", "upstream", "url", "file://" + repoRootTemp.getPath());
             config.setString("remote", "upstream", "fetch", "+refs/heads/*:refs/remotes/upstream/*");
@@ -950,11 +1024,9 @@ public class GitClientTest {
         }
 
         // fill both remote branches
-        List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
+        List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
         gitClient.fetch_().from(remote, refspecs).execute();
-        refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/upstream/*"));
+        refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/upstream/*"));
         gitClient.fetch_().from(remote, refspecs).execute();
 
         // checkout will fail
@@ -965,7 +1037,6 @@ public class GitClientTest {
             Set<String> refNames = gitClient.getRefNames("refs/heads/");
             assertFalse("RefNames will not contain master", refNames.contains("refs/heads/master"));
         }
-
     }
 
     /**
@@ -976,7 +1047,10 @@ public class GitClientTest {
     @Test
     public void testCheckoutRemoteAutocreatesLocal() throws Exception {
         File repoRootTemp = tempFolder.newFolder();
-        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars()).in(repoRootTemp).using(gitImplName).getClient();
+        GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRootTemp)
+                .using(gitImplName)
+                .getClient();
         gitClientTemp.init();
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
@@ -987,8 +1061,7 @@ public class GitClientTest {
         gitClientTemp.commit("Added " + gitClientTempFile.toURI().toString());
         gitClient.clone_().url("file://" + repoRootTemp.getPath()).execute();
         final URIish remote = new URIish(Constants.DEFAULT_REMOTE_NAME);
-        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec(
-                "refs/heads/*:refs/remotes/origin/*"));
+        final List<RefSpec> refspecs = Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*"));
         gitClient.fetch_().from(remote, refspecs).execute();
         gitClient.checkout().ref(defaultBranchName).execute();
 
@@ -1008,7 +1081,8 @@ public class GitClientTest {
 
     private void assertFileContent(String fileName, String expectedContent) throws IOException {
         File file = new File(repoRoot, fileName);
-        String actualContent = Files.readString(file.toPath(), StandardCharsets.UTF_8).trim();
+        String actualContent =
+                Files.readString(file.toPath(), StandardCharsets.UTF_8).trim();
         assertEquals("Incorrect file content in " + fileName, expectedContent, actualContent);
     }
 
@@ -1028,7 +1102,7 @@ public class GitClientTest {
             objectIds.add(removeBranch.getSHA1());
         }
         boolean modified = false;
-        for (Iterator<Branch> i = filtered.iterator(); i.hasNext();) {
+        for (Iterator<Branch> i = filtered.iterator(); i.hasNext(); ) {
             Branch checkBranch = i.next();
             if (objectIds.contains(checkBranch.getSHA1())) {
                 modified = true;
@@ -1050,7 +1124,8 @@ public class GitClientTest {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
         if (CLI_GIT_REPORTS_DETACHED_SHA1) {
-            gitCmd.assertOutputContains(".*(Not currently on any branch|HEAD detached).*",
+            gitCmd.assertOutputContains(
+                    ".*(Not currently on any branch|HEAD detached).*",
                     ".*" + ref.getName().substring(0, 6) + ".*");
         } else {
             gitCmd.assertOutputContains(".*Not currently on any branch.*");
@@ -1068,7 +1143,9 @@ public class GitClientTest {
         gitCmd.run("tag", "-d", tagName);
     }
 
-    private void fetch(GitClient client, String remote, boolean fetchTags, String firstRefSpec, String... optionalRefSpecs) throws Exception {
+    private void fetch(
+            GitClient client, String remote, boolean fetchTags, String firstRefSpec, String... optionalRefSpecs)
+            throws Exception {
         List<RefSpec> refSpecs = new ArrayList<>();
         RefSpec refSpec = new RefSpec(firstRefSpec);
         refSpecs.add(refSpec);
@@ -1085,10 +1162,15 @@ public class GitClientTest {
                 client.fetch(remote, refSpecs.toArray(new RefSpec[0]));
                 break;
             case 1:
-                URIish repoURL = new URIish(client.withRepository((repo, channel) -> repo.getConfig()).getString("remote", remote, "url"));
+                URIish repoURL = new URIish(client.withRepository((repo, channel) -> repo.getConfig())
+                        .getString("remote", remote, "url"));
                 boolean pruneBranches = random.nextBoolean();
                 if (pruneBranches) {
-                    client.fetch_().from(repoURL, refSpecs).tags(fetchTags).prune(true).execute();
+                    client.fetch_()
+                            .from(repoURL, refSpecs)
+                            .tags(fetchTags)
+                            .prune(true)
+                            .execute();
                 } else {
                     client.fetch_().from(repoURL, refSpecs).tags(fetchTags).execute();
                 }
@@ -1096,7 +1178,8 @@ public class GitClientTest {
         }
     }
 
-    private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs) throws Exception {
+    private void fetch(GitClient client, String remote, String firstRefSpec, String... optionalRefSpecs)
+            throws Exception {
         boolean fetchTags = random.nextBoolean();
         fetch(client, remote, fetchTags, firstRefSpec, optionalRefSpecs);
     }
@@ -1218,8 +1301,7 @@ public class GitClientTest {
         String remote = fetchUpstream(branch);
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         /* Check that exception is thrown trying to create an existing branch */
-        assertThrows(GitException.class,
-                     () -> gitClient.branch("master"));
+        assertThrows(GitException.class, () -> gitClient.branch("master"));
     }
 
     @Test
@@ -1231,8 +1313,7 @@ public class GitClientTest {
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         if (gitImplName.equals("git")) {
             /* Check that exception is thrown trying to commit nothing */
-            assertThrows(GitException.class,
-                         () -> gitClient.commit("This commit contains no changes"));
+            assertThrows(GitException.class, () -> gitClient.commit("This commit contains no changes"));
         } else {
             /* Check that JGit does not throw an exception trying to commit nothing */
             gitClient.commit("This commit contains no changes");
@@ -1248,8 +1329,7 @@ public class GitClientTest {
         gitClient.checkoutBranch(branch, remote + "/" + branch);
         if (gitImplName.equals("git")) {
             /* Check that exception is thrown trying to delete non-existent branch */
-            assertThrows(GitException.class,
-                         () -> gitClient.deleteBranch("ThisBranchDoesNotExist"));
+            assertThrows(GitException.class, () -> gitClient.deleteBranch("ThisBranchDoesNotExist"));
         } else {
             /* Check that JGit does not throw an exception trying to delete non-existent branch */
             gitClient.deleteBranch("ThisBranchDoesNotExist");
@@ -1264,7 +1344,12 @@ public class GitClientTest {
         }
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
-        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+        gitClient
+                .checkout()
+                .branch(branch)
+                .ref(remote + "/" + branch)
+                .lfsRemote(remote)
+                .execute();
 
         assertFileContent("uuid.txt", "5e7733d8acc94636850cb466aec524e4");
     }
@@ -1284,10 +1369,14 @@ public class GitClientTest {
         String file3 = "uuid,3.txt";
         String file4 = "uuid 4.txt";
 
-        String lfsObjectFile1 = ".git/lfs/objects/75/d1/75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e";
-        String lfsObjectFile2 = ".git/lfs/objects/7f/0b/7f0bbf4cdb2bdf3e862c5f00285d362db0b46465ed089775743ce1ebe6c912ce";
-        String lfsObjectFile3 = ".git/lfs/objects/1e/35/1e359899b05181e6a118865d47ed027b9930bc870dffbd9608c609ec3b2a3d16";
-        String lfsObjectFile4 = ".git/lfs/objects/44/a0/44a0d97ff32b5ba6a28ea8a35d1ebbfd8f9a8a2db316e87abd530b4b60153b5c";
+        String lfsObjectFile1 =
+                ".git/lfs/objects/75/d1/75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e";
+        String lfsObjectFile2 =
+                ".git/lfs/objects/7f/0b/7f0bbf4cdb2bdf3e862c5f00285d362db0b46465ed089775743ce1ebe6c912ce";
+        String lfsObjectFile3 =
+                ".git/lfs/objects/1e/35/1e359899b05181e6a118865d47ed027b9930bc870dffbd9608c609ec3b2a3d16";
+        String lfsObjectFile4 =
+                ".git/lfs/objects/44/a0/44a0d97ff32b5ba6a28ea8a35d1ebbfd8f9a8a2db316e87abd530b4b60153b5c";
 
         String expectedContent1 = "5e7733d8acc94636850cb466aec524e4";
         String expectedContent2 = "c49d89a61c3411e9a5555b2af3892239";
@@ -1301,7 +1390,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1321,7 +1415,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Arrays.asList("uuid.txt", "uuid2.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileContent(file2, expectedContent2);
@@ -1342,7 +1441,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid,3.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1); // file present due to workaround
             assertFileContent(file2, expectedContent2); // file present due to workaround
@@ -1362,7 +1466,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid 4.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileNotInWorkingDir(gitClient, file1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1382,7 +1491,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid.t?t");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1402,7 +1516,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid.*");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1422,7 +1541,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("/**/uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1442,7 +1566,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Arrays.asList("/*", "!uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileNotInWorkingDir(gitClient, file1);
             assertFileContent(file2, expectedContent2);
@@ -1462,7 +1591,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths1 = Collections.singletonList("uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths1).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths1)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1474,20 +1608,25 @@ public class GitClientTest {
             assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
             assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
 
-	    if (LFS_SUPPORTS_SPARSE_CHECKOUT) {
-		List<String> sparsePaths2 = Collections.singletonList("uuid2.txt");
-		gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths2).execute();
+            if (LFS_SUPPORTS_SPARSE_CHECKOUT) {
+                List<String> sparsePaths2 = Collections.singletonList("uuid2.txt");
+                gitClient
+                        .checkout()
+                        .ref(remote + "/" + branch)
+                        .lfsRemote(remote)
+                        .sparseCheckoutPaths(sparsePaths2)
+                        .execute();
 
-		assertFileNotInWorkingDir(gitClient, file1);
-		assertFileContent(file2, expectedContent2);
-		assertFileNotInWorkingDir(gitClient, file3);
-		assertFileNotInWorkingDir(gitClient, file4);
+                assertFileNotInWorkingDir(gitClient, file1);
+                assertFileContent(file2, expectedContent2);
+                assertFileNotInWorkingDir(gitClient, file3);
+                assertFileNotInWorkingDir(gitClient, file4);
 
-		assertFileInWorkingDir(gitClient, lfsObjectFile1);
-		assertFileInWorkingDir(gitClient, lfsObjectFile2);
-		assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
-		assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
-	    }
+                assertFileInWorkingDir(gitClient, lfsObjectFile1);
+                assertFileInWorkingDir(gitClient, lfsObjectFile2);
+                assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+                assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
+            }
         }
 
         // it should support switching from non-sparse to sparse checkout
@@ -1509,7 +1648,12 @@ public class GitClientTest {
             assertFileInWorkingDir(gitClient, lfsObjectFile4);
 
             List<String> sparsePaths = Collections.singletonList("uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1529,7 +1673,12 @@ public class GitClientTest {
             assertEmptyWorkingDir(gitClient);
 
             List<String> sparsePaths = Collections.singletonList("uuid.txt");
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).sparseCheckoutPaths(sparsePaths).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .sparseCheckoutPaths(sparsePaths)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileNotInWorkingDir(gitClient, file2);
@@ -1559,11 +1708,17 @@ public class GitClientTest {
     @Test(expected = org.eclipse.jgit.api.errors.JGitInternalException.class)
     public void testCheckoutWithJGitLFS() throws Exception {
         if (!gitImplName.startsWith("jgit") || !CLI_GIT_HAS_GIT_LFS) {
-            throw new org.eclipse.jgit.api.errors.JGitInternalException("Skipping testCheckoutWithJGitLFS for CLI git exception");
+            throw new org.eclipse.jgit.api.errors.JGitInternalException(
+                    "Skipping testCheckoutWithJGitLFS for CLI git exception");
         }
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
-        gitClient.checkout().branch(branch).ref(remote + "/" + branch).lfsRemote(remote).execute();
+        gitClient
+                .checkout()
+                .branch(branch)
+                .ref(remote + "/" + branch)
+                .lfsRemote(remote)
+                .execute();
     }
 
     // If LFS installed and not enabled, throw an exception
@@ -1601,7 +1756,8 @@ public class GitClientTest {
         String remote = fetchLFSTestRepo(branch);
         gitClient.checkout().branch(branch).ref(remote + "/" + branch).execute();
         File uuidFile = new File(repoRoot, "uuid.txt");
-        String fileContent = Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
+        String fileContent =
+                Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
         String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
                 + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
                 + "size 33";
@@ -1623,14 +1779,12 @@ public class GitClientTest {
             commitOneFile();
         }
         String upstream = fetchUpstream("tests/getSubmodules", "tests/notSubmodules");
-        assertThat(gitClient.getRefNames("refs/remotes/upstream/"), hasItems(
-                "refs/remotes/upstream/tests/getSubmodules",
-                "refs/remotes/upstream/tests/notSubmodules"
-        ));
+        assertThat(
+                gitClient.getRefNames("refs/remotes/upstream/"),
+                hasItems("refs/remotes/upstream/tests/getSubmodules", "refs/remotes/upstream/tests/notSubmodules"));
         gitClient.deleteRef("refs/remotes/upstream/tests/notSubmodules");
-        assertThat(gitClient.getRefNames("refs/remotes/upstream/"), hasItems(
-                "refs/remotes/upstream/tests/getSubmodules"
-        ));
+        assertThat(
+                gitClient.getRefNames("refs/remotes/upstream/"), hasItems("refs/remotes/upstream/tests/getSubmodules"));
     }
 
     @Test(expected = GitException.class)
@@ -1781,7 +1935,7 @@ public class GitClientTest {
         assertThat(resultA, contains(commitA));
 
         ObjectId commitB = commitOneFile();
- assertThat(gitClient.revList(defaultBranchName), contains(commitB, commitA));
+        assertThat(gitClient.revList(defaultBranchName), contains(commitB, commitA));
         /* Also test RevListCommand implementation */
         List<ObjectId> resultB = new ArrayList<>();
         gitClient.revList_().to(resultB).reference(defaultBranchName).execute();
@@ -1869,7 +2023,7 @@ public class GitClientTest {
     public void testHasGitModulesFalseNotSubmodule() throws Exception {
         assertModulesDir(false);
         checkoutAndAssertHasGitModules("tests/notSubmodules", false);
-        assertModulesDir(true);  // repo has a modules dir but no submodules
+        assertModulesDir(true); // repo has a modules dir but no submodules
     }
 
     @Test
@@ -1883,7 +2037,8 @@ public class GitClientTest {
         assertModulesDir(true); // repo has a modules dir and submodules
     }
 
-    private void assertSubmoduleStatus(GitClient testGitClient, boolean initialized, String... expectedModules) throws Exception {
+    private void assertSubmoduleStatus(GitClient testGitClient, boolean initialized, String... expectedModules)
+            throws Exception {
         Map<String, Boolean> submodulesFound = new HashMap<>();
         for (String submoduleName : expectedModules) {
             submodulesFound.put("modules/" + submoduleName, Boolean.FALSE);
@@ -1970,7 +2125,8 @@ public class GitClientTest {
         File lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
             if (file.isFile()) {
-                try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8), true)) {
+                try (PrintWriter writer = new PrintWriter(
+                        new OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8), true)) {
                     writer.print(randomString);
                 }
                 lastModifiedFile = file;
@@ -1979,7 +2135,11 @@ public class GitClientTest {
         assertNotNull("No files modified " + repoRoot, lastModifiedFile);
 
         /* Checkout a new branch - verify no files retain modification */
-        gitClient.checkout().branch("master-" + randomUUID).ref(commitA.getName()).execute();
+        gitClient
+                .checkout()
+                .branch("master-" + randomUUID)
+                .ref(commitA.getName())
+                .execute();
 
         lastModifiedFile = null;
         for (File file : repoRoot.listFiles()) {
@@ -1995,13 +2155,17 @@ public class GitClientTest {
         assertNull("Checkout did not revert change in " + lastModifiedFile, lastModifiedFile);
     }
 
-    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs) throws Exception {
+    private void assertSubmoduleDirectories(GitClient gitClient, boolean expectLicense, String... expectedDirs)
+            throws Exception {
         File myRepoRoot = gitClient.withRepository((repo, channel) -> repo.getWorkTree());
         for (String expectedDir : expectedDirs) {
             File dir = new File(myRepoRoot, "modules/" + expectedDir);
             assertTrue("Missing " + expectedDir + " dir (path:" + lastUpdateSubmodulePath + ")", dir.isDirectory());
             File license = new File(dir, "LICENSE");
-            assertEquals("Checking " + expectedDir + " LICENSE (path:" + lastUpdateSubmodulePath + ")", expectLicense, license.isFile());
+            assertEquals(
+                    "Checking " + expectedDir + " LICENSE (path:" + lastUpdateSubmodulePath + ")",
+                    expectLicense,
+                    license.isFile());
         }
     }
 
@@ -2049,10 +2213,18 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(false)
+                        .remoteTracking(false)
+                        .execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(true)
+                        .remoteTracking(false)
+                        .execute();
                 break;
         }
     }
@@ -2081,24 +2253,48 @@ public class GitClientTest {
                 gitClient.submoduleUpdate().recursive(false).execute();
                 break;
             case 3:
-                gitClient.submoduleUpdate().recursive(true).ref(remote + "/" + branch).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(true)
+                        .ref(remote + "/" + branch)
+                        .execute();
                 break;
             case 4:
-                gitClient.submoduleUpdate().recursive(false).ref(remote + "/" + branch).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(false)
+                        .ref(remote + "/" + branch)
+                        .execute();
                 break;
             case 5:
-                gitClient.submoduleUpdate().recursive(false).remoteTracking(false).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(false)
+                        .remoteTracking(false)
+                        .execute();
                 break;
             case 6:
-                gitClient.submoduleUpdate().recursive(true).remoteTracking(false).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(true)
+                        .remoteTracking(false)
+                        .execute();
                 break;
             case 7:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate().recursive(false).remoteTracking(remoteTracking).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(false)
+                        .remoteTracking(remoteTracking)
+                        .execute();
                 break;
             case 8:
                 // testSubModulesUsedFromOtherBranches fails if remoteTracking == true
-                gitClient.submoduleUpdate().recursive(true).remoteTracking(remoteTracking).execute();
+                gitClient
+                        .submoduleUpdate()
+                        .recursive(true)
+                        .remoteTracking(remoteTracking)
+                        .execute();
                 break;
         }
     }
@@ -2124,7 +2320,12 @@ public class GitClientTest {
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(branch, remote + "/" + branch);
         } else {
-            gitClient.checkout().branch(branch).ref(remote + "/" + branch).deleteBranchIfExist(true).execute();
+            gitClient
+                    .checkout()
+                    .branch(branch)
+                    .ref(remote + "/" + branch)
+                    .deleteBranchIfExist(true)
+                    .execute();
         }
 
         gitClient.submoduleInit();
@@ -2141,7 +2342,10 @@ public class GitClientTest {
 
         /* Clone, checkout and submodule update a repository copy before submodule deletion */
         File cloneDir = tempFolder.newFolder();
-        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
+        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(cloneDir)
+                .using(gitImplName)
+                .getClient();
         cloneGitClient.init();
         cloneGitClient.clone_().url(repoRoot.getAbsolutePath()).execute();
         cloneGitClient.checkoutBranch(branch, "origin/" + branch);
@@ -2214,7 +2418,8 @@ public class GitClientTest {
         assertFalse("cloneFirewallDir not deleted " + cloneFirewallDir, cloneFirewallDir.isDirectory());
     }
 
-    private void assertBranches(GitClient client, String... expectedBranchNames) throws GitException, InterruptedException {
+    private void assertBranches(GitClient client, String... expectedBranchNames)
+            throws GitException, InterruptedException {
         List<String> branchNames = new ArrayList<>(); // Arrays.asList(expectedBranchNames);
         for (Branch branch : client.getBranches()) {
             if (branch.getName().startsWith("remotes/")) {
@@ -2259,7 +2464,12 @@ public class GitClientTest {
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
-            gitClient.checkout().branch(oldBranchName).ref(upstream + "/" + oldBranchName).deleteBranchIfExist(true).execute();
+            gitClient
+                    .checkout()
+                    .branch(oldBranchName)
+                    .ref(upstream + "/" + oldBranchName)
+                    .deleteBranchIfExist(true)
+                    .execute();
         }
         assertBranches(gitClient, oldBranchName);
         assertSubmoduleDirectories(gitClient, false, "firewall", "ntp", "sshkeys"); // No submodule init or update yet
@@ -2287,7 +2497,12 @@ public class GitClientTest {
         if (random.nextBoolean()) {
             gitClient.checkoutBranch(oldBranchName, upstream + "/" + oldBranchName);
         } else {
-            gitClient.checkout().branch(oldBranchName).ref(upstream + "/" + oldBranchName).deleteBranchIfExist(true).execute();
+            gitClient
+                    .checkout()
+                    .branch(oldBranchName)
+                    .ref(upstream + "/" + oldBranchName)
+                    .deleteBranchIfExist(true)
+                    .execute();
         }
 
         /* Assertion is wrong! newDirName should not have contents.
@@ -2322,7 +2537,10 @@ public class GitClientTest {
         File baseDir = tempFolder.newFolder();
         File urlRepoDir = new File(baseDir, "my-submodule.url");
         assertTrue("Failed to create URL repo dir", urlRepoDir.mkdir());
-        GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars()).in(urlRepoDir).using(gitImplName).getClient();
+        GitClient urlRepoClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(urlRepoDir)
+                .using(gitImplName)
+                .getClient();
         urlRepoClient.init();
         allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
@@ -2339,7 +2557,10 @@ public class GitClientTest {
         // Add new repository as submodule to repository that ends in .url
         File repoHasSubmodule = new File(baseDir, "has-submodule.url");
         assertTrue("Failed to create repo dir that will have submodule", repoHasSubmodule.mkdir());
-        GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoHasSubmodule).using(gitImplName).getClient();
+        GitClient repoHasSubmoduleClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoHasSubmodule)
+                .using(gitImplName)
+                .getClient();
         repoHasSubmoduleClient.init();
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
@@ -2348,7 +2569,8 @@ public class GitClientTest {
         enableLongPaths(repoHasSubmoduleClient);
         allowFileProtocol(repoHasSubmoduleClient);
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
-        String hasSubmoduleReadmeText = "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
+        String hasSubmoduleReadmeText =
+                "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
         repoHasSubmoduleClient.add("readme");
         repoHasSubmoduleClient.commit("Added README to repo that will include a submodule whose URL ends in '.url'");
@@ -2357,7 +2579,9 @@ public class GitClientTest {
         assertTrue("Failed to create modules dir in repoHasSubmodule", modulesDir.mkdir());
 
         /* The test fails on Windows CLI git if modulesDir is more than about 200 characters, even with long paths enabled */
-        if (this.srcGitClient instanceof CliGitAPIImpl && isWindows() && modulesDir.getCanonicalPath().length() > 200) {
+        if (this.srcGitClient instanceof CliGitAPIImpl
+                && isWindows()
+                && modulesDir.getCanonicalPath().length() > 200) {
             return;
         }
 
@@ -2371,7 +2595,10 @@ public class GitClientTest {
         // Clone repoHasSubmodule to new repository with submodule
         File cloneDir = new File(baseDir, "cloned-submodule");
         assertTrue("Failed to create clone dir", cloneDir.mkdir());
-        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(cloneDir).using(gitImplName).getClient();
+        GitClient cloneGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(cloneDir)
+                .using(gitImplName)
+                .getClient();
         cloneGitClient.init();
         allowFileProtocol(cloneGitClient);
         cloneGitClient.clone_().url(repoHasSubmodule.getAbsolutePath()).execute();
@@ -2421,8 +2648,8 @@ public class GitClientTest {
             return;
         }
         IGitAPI gitAPI = (IGitAPI) gitClient;
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL));
+        GitException e =
+                assertThrows(GitException.class, () -> gitAPI.fixSubmoduleUrls("invalid-remote", TaskListener.NULL));
         assertThat(e.getMessage(), containsString("Could not determine remote"));
     }
 
@@ -2433,8 +2660,7 @@ public class GitClientTest {
             return;
         }
         IGitAPI gitAPI = (IGitAPI) gitClient;
-        assertThrows(UnsupportedOperationException.class,
-                     () -> gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL));
+        assertThrows(UnsupportedOperationException.class, () -> gitAPI.fixSubmoduleUrls("origin", TaskListener.NULL));
     }
 
     private void assertStatusUntrackedContent(GitClient client, boolean expectUntrackedContent) throws Exception {
@@ -2486,8 +2712,10 @@ public class GitClientTest {
 
     // @Issue("JENKINS-14083") // build can't recover from broken submodule path
     // @Issue("JENKINS-15399") // changing submodule URL does not update repository
-    // @Issue("JENKINS-27625") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
-    // @Issue("JENKINS-39350") // local changes inside submodules not reset on checkout (see testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-27625") // local changes inside submodules not reset on checkout (see
+    // testModifiedTrackedFilesReset)
+    // @Issue("JENKINS-39350") // local changes inside submodules not reset on checkout (see
+    // testModifiedTrackedFilesReset)
     // @Issue("JENKINS-22510") // clean after checkout fails to clean revision
     // @Issue("JENKINS-23727") // submodule update did not fail build on timeout
     // @Issue("JENKINS-28748") // submodule update --init fails on large submodule
@@ -2522,7 +2750,8 @@ public class GitClientTest {
 
     @Test
     public void testDescribeSrcCommitPredecessor() throws Exception {
-        assertThat(srcGitClient.describe(upstreamCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
+        assertThat(
+                srcGitClient.describe(upstreamCommitPredecessor.getName()), startsWith("git-client-1.6.3-22-g867e5f1"));
     }
 
     @Test
@@ -2532,17 +2761,23 @@ public class GitClientTest {
 
     @Test
     public void testDescribeTagFromMerge() throws Exception {
-        assertThat(srcGitClient.describe("40d44ffce5fa589605dd6b6ad92ab7235a92b330"), startsWith("git-client-1.0.7-74-g40d44ff"));
+        assertThat(
+                srcGitClient.describe("40d44ffce5fa589605dd6b6ad92ab7235a92b330"),
+                startsWith("git-client-1.0.7-74-g40d44ff"));
     }
 
     @Test
     public void testDescribeTagDeepGraph() throws Exception {
-        assertThat(srcGitClient.describe("640ef19f4157d9a5508d46c3f9ad0c41d7d7ef51"), startsWith("git-client-1.19.0-38-g640ef19"));
+        assertThat(
+                srcGitClient.describe("640ef19f4157d9a5508d46c3f9ad0c41d7d7ef51"),
+                startsWith("git-client-1.19.0-38-g640ef19"));
     }
 
     @Test
     public void testDescribeTagDeeperGraph() throws Exception {
-        assertThat(srcGitClient.describe("88ca6b449dd155a03d7142c9ad5f17fd7ca2b34e"), startsWith("git-client-1.11.0-24-g88ca6b4"));
+        assertThat(
+                srcGitClient.describe("88ca6b449dd155a03d7142c9ad5f17fd7ca2b34e"),
+                startsWith("git-client-1.11.0-24-g88ca6b4"));
     }
 
     @Test(expected = GitException.class)
@@ -2580,7 +2815,11 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_from_empty_repo() throws Exception {
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null).keySet(), hasSize(0));
+        assertThat(
+                gitClient
+                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
+                        .keySet(),
+                hasSize(0));
     }
 
     @Test
@@ -2589,7 +2828,8 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
                 hasEntry(Constants.HEAD, "refs/heads/" + defaultBranchName));
     }
 
@@ -2599,7 +2839,11 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null).keySet(), hasSize(0));
+        assertThat(
+                gitClient
+                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
+                        .keySet(),
+                hasSize(0));
     }
 
     @Test
@@ -2608,14 +2852,19 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
                 hasEntry(Constants.HEAD, "refs/heads/master"));
     }
 
     @Test
     public void testgetRemoteSymbolicReferences_with_non_matching_pattern() throws Exception {
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), "non-matching-pattern").keySet(), hasSize(0));
+        assertThat(
+                gitClient
+                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), "non-matching-pattern")
+                        .keySet(),
+                hasSize(0));
     }
 
     @Test
@@ -2624,7 +2873,8 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
                 hasEntry(Constants.HEAD, "refs/heads/" + defaultBranchName));
     }
 
@@ -2634,7 +2884,11 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD).keySet(), hasSize(0));
+        assertThat(
+                gitClient
+                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD)
+                        .keySet(),
+                hasSize(0));
     }
 
     @Test
@@ -2643,7 +2897,8 @@ public class GitClientTest {
             return;
         }
         commitOneFile("A-Single-File-Commit");
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
                 hasEntry(Constants.HEAD, "refs/heads/master"));
     }
 
@@ -2663,9 +2918,11 @@ public class GitClientTest {
         gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("symbolic-ref", Constants.HEAD, "refs/heads/new-branch");
 
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
                 hasEntry(Constants.HEAD, "refs/heads/new-branch"));
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
+        assertThat(
+                gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
                 hasEntry(Constants.HEAD, "refs/heads/new-branch"));
     }
 
@@ -2690,7 +2947,11 @@ public class GitClientTest {
         if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
             return;
         }
-        assertThat(gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD).keySet(), hasSize(0));
+        assertThat(
+                gitClient
+                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD)
+                        .keySet(),
+                hasSize(0));
     }
 
     @Test(expected = GitException.class)
@@ -2765,9 +3026,9 @@ public class GitClientTest {
         //            1         2         3         4         5         6         7         8
         //   12345678901234567890123456789012345678901234567890123456789012345678901234567890
         final String longFirstLine =
-            "The first line of this commit message is longer than 72 characters to show JENKINS-29977";
+                "The first line of this commit message is longer than 72 characters to show JENKINS-29977";
         final String longBody =
-            "The body of this commit message is also longer than 72 characters though that is not part of JENKINS-29977";
+                "The body of this commit message is also longer than 72 characters though that is not part of JENKINS-29977";
         // Intentionally randomize whether the commit message body ends with a newline character
         final String commitMessage = longFirstLine + "\n\n" + longBody + (random.nextBoolean() ? "\n" : "");
         final ObjectId commit = commitOneFile(commitMessage);
@@ -2835,9 +3096,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 7, 10, 4),
-                new CliGitAPIImplTest.VersionTest(true, 1, 7, 10, 3),
-                new CliGitAPIImplTest.VersionTest(false, 1, 7, 10, 5)
+            new CliGitAPIImplTest.VersionTest(true, 1, 7, 10, 4),
+            new CliGitAPIImplTest.VersionTest(true, 1, 7, 10, 3),
+            new CliGitAPIImplTest.VersionTest(false, 1, 7, 10, 5)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.7.10.4", versions);
     }
@@ -2848,10 +3109,10 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 0, 1, 0),
-                new CliGitAPIImplTest.VersionTest(true, 2, 0, 0, 0),
-                new CliGitAPIImplTest.VersionTest(false, 2, 0, 2, 0),
-                new CliGitAPIImplTest.VersionTest(false, 2, 1, 0, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 0, 1, 0),
+            new CliGitAPIImplTest.VersionTest(true, 2, 0, 0, 0),
+            new CliGitAPIImplTest.VersionTest(false, 2, 0, 2, 0),
+            new CliGitAPIImplTest.VersionTest(false, 2, 1, 0, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.0.1", versions);
     }
@@ -2862,15 +3123,15 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 0, 0, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 99, 99),
-                new CliGitAPIImplTest.VersionTest(false, 2, 0, 1, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 0, 0, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 99, 99),
+            new CliGitAPIImplTest.VersionTest(false, 2, 0, 1, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.0.0.rc0", versions);
         cliGitAPIImplTest.assertVersionOutput("git version 2.0.0.rc2", versions);
         cliGitAPIImplTest.assertVersionOutput("git version 2.0.0", versions);
         cliGitAPIImplTest.assertVersionOutput("git version 2.0", versions); // mythical version
-        cliGitAPIImplTest.assertVersionOutput("git version 2", versions);   // mythical version
+        cliGitAPIImplTest.assertVersionOutput("git version 2", versions); // mythical version
     }
 
     @Test
@@ -2879,9 +3140,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 0, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 99, 99),
-                new CliGitAPIImplTest.VersionTest(false, 1, 9, 1, 0)
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 0, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 99, 99),
+            new CliGitAPIImplTest.VersionTest(false, 1, 9, 1, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.9.0", versions);
     }
@@ -2892,9 +3153,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 0, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 7, 99, 0),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 1, 0)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 0, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 7, 99, 0),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 1, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.0.msysgit.0", versions);
     }
@@ -2905,9 +3166,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 99),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 4, 1)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 99),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 4, 1)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.4.msysgit.0", versions);
     }
@@ -2918,9 +3179,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 5, 2),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 5, 1),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 5, 3)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 5, 2),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 5, 1),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 5, 3)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.5.2.msysgit.0", versions);
     }
@@ -2931,9 +3192,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 0, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 99, 0),
-                new CliGitAPIImplTest.VersionTest(false, 1, 9, 0, 1)
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 0, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 99, 0),
+            new CliGitAPIImplTest.VersionTest(false, 1, 9, 0, 1)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.9.0.msysgit.0", versions);
     }
@@ -2944,9 +3205,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 2, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 1, 99),
-                new CliGitAPIImplTest.VersionTest(false, 1, 9, 2, 1)
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 2, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 1, 99),
+            new CliGitAPIImplTest.VersionTest(false, 1, 9, 2, 1)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.9.2.msysgit.0", versions);
     }
@@ -2957,9 +3218,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 4, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 9, 3, 99),
-                new CliGitAPIImplTest.VersionTest(false, 1, 9, 4, 1)
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 4, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 9, 3, 99),
+            new CliGitAPIImplTest.VersionTest(false, 1, 9, 4, 1)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.9.4.msysgit.0", versions);
     }
@@ -2970,9 +3231,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 5, 0, 1),
-                new CliGitAPIImplTest.VersionTest(true, 2, 5, 0, 0),
-                new CliGitAPIImplTest.VersionTest(false, 2, 5, 0, 2)
+            new CliGitAPIImplTest.VersionTest(true, 2, 5, 0, 1),
+            new CliGitAPIImplTest.VersionTest(true, 2, 5, 0, 0),
+            new CliGitAPIImplTest.VersionTest(false, 2, 5, 0, 2)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.5.0.windows.1", versions);
     }
@@ -2983,11 +3244,11 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 10, 1, 1),
-                new CliGitAPIImplTest.VersionTest(true, 2, 10, 1, 0),
-                new CliGitAPIImplTest.VersionTest(true, 2, 10, 0, 1),
-                new CliGitAPIImplTest.VersionTest(false, 2, 10, 1, 2),
-                new CliGitAPIImplTest.VersionTest(false, 2, 10, 2, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 10, 1, 1),
+            new CliGitAPIImplTest.VersionTest(true, 2, 10, 1, 0),
+            new CliGitAPIImplTest.VersionTest(true, 2, 10, 0, 1),
+            new CliGitAPIImplTest.VersionTest(false, 2, 10, 1, 2),
+            new CliGitAPIImplTest.VersionTest(false, 2, 10, 2, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.10.1.windows.1", versions);
     }
@@ -2998,9 +3259,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 2, 1),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 2, 0),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 2, 2)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 2, 1),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 2, 0),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 2, 2)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.2.1", versions);
     }
@@ -3011,10 +3272,10 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 7, 1, 0),
-                new CliGitAPIImplTest.VersionTest(true, 1, 7, 0, 99),
-                new CliGitAPIImplTest.VersionTest(false, 1, 7, 1, 1),
-                new CliGitAPIImplTest.VersionTest(false, 1, 7, 2, 0)
+            new CliGitAPIImplTest.VersionTest(true, 1, 7, 1, 0),
+            new CliGitAPIImplTest.VersionTest(true, 1, 7, 0, 99),
+            new CliGitAPIImplTest.VersionTest(false, 1, 7, 1, 1),
+            new CliGitAPIImplTest.VersionTest(false, 1, 7, 2, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.7.1", versions);
     }
@@ -3025,9 +3286,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 5),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 4),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 4, 6)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 5),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 4, 4),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 4, 6)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.4.5", versions);
     }
@@ -3038,9 +3299,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 2),
-                new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 1),
-                new CliGitAPIImplTest.VersionTest(false, 1, 8, 3, 3)
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 2),
+            new CliGitAPIImplTest.VersionTest(true, 1, 8, 3, 1),
+            new CliGitAPIImplTest.VersionTest(false, 1, 8, 3, 3)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 1.8.3.2", versions);
     }
@@ -3051,9 +3312,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 2, 2, 0),
-                new CliGitAPIImplTest.VersionTest(true, 2, 2, 1, 0),
-                new CliGitAPIImplTest.VersionTest(false, 2, 2, 3, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 2, 2, 0),
+            new CliGitAPIImplTest.VersionTest(true, 2, 2, 1, 0),
+            new CliGitAPIImplTest.VersionTest(false, 2, 2, 3, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.2.2", versions);
     }
@@ -3064,9 +3325,9 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 3, 0, 0),
-                new CliGitAPIImplTest.VersionTest(true, 2, 2, 9, 0),
-                new CliGitAPIImplTest.VersionTest(false, 2, 3, 1, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 3, 0, 0),
+            new CliGitAPIImplTest.VersionTest(true, 2, 2, 9, 0),
+            new CliGitAPIImplTest.VersionTest(false, 2, 3, 1, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.3.0", versions);
     }
@@ -3077,11 +3338,11 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImplTest.VersionTest[] versions = {
-                new CliGitAPIImplTest.VersionTest(true, 2, 3, 5, 0),
-                new CliGitAPIImplTest.VersionTest(true, 2, 2, 9, 9),
-                new CliGitAPIImplTest.VersionTest(false, 2, 3, 5, 1),
-                new CliGitAPIImplTest.VersionTest(false, 2, 4, 0, 0),
-                new CliGitAPIImplTest.VersionTest(false, 3, 0, 0, 0)
+            new CliGitAPIImplTest.VersionTest(true, 2, 3, 5, 0),
+            new CliGitAPIImplTest.VersionTest(true, 2, 2, 9, 9),
+            new CliGitAPIImplTest.VersionTest(false, 2, 3, 5, 1),
+            new CliGitAPIImplTest.VersionTest(false, 2, 4, 0, 0),
+            new CliGitAPIImplTest.VersionTest(false, 3, 0, 0, 0)
         };
         cliGitAPIImplTest.assertVersionOutput("git version 2.3.5", versions);
     }
@@ -3103,9 +3364,9 @@ public class GitClientTest {
             return;
         }
         String gitBranchOutput =
-                "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n" +
-                        "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n" +
-                        "  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message\n";
+                "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n"
+                        + "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n"
+                        + "  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message\n";
 
         cliGitAPIImplTest.setTimeoutVisibleInCurrentTest(false);
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), cliGitAPIImplTest.listener, cliGitAPIImplTest.env);

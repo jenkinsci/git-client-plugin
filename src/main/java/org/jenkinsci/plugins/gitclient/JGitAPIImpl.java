@@ -11,18 +11,21 @@ import static org.eclipse.jgit.lib.Constants.R_TAGS;
 import static org.eclipse.jgit.lib.Constants.typeString;
 import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK;
 import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
-import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT; // Default timeout
+import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT_LOG_PREFIX;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -46,21 +49,22 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
 import org.eclipse.jgit.api.FetchCommand;
-import org.eclipse.jgit.api.SubmoduleUpdateCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.LsRemoteCommand;
-import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
+import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.RebaseCommand.Operation;
+import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
+import org.eclipse.jgit.api.SubmoduleUpdateCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
@@ -103,27 +107,19 @@ import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
 import org.eclipse.jgit.transport.HttpTransport;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
+import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.PushResult;
-import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
-
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.plugins.git.GitObject;
-import org.eclipse.jgit.api.RebaseCommand.Operation;
-import org.eclipse.jgit.api.RebaseResult;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 
 /**
@@ -151,12 +147,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     @Deprecated
-    JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
+    JGitAPIImpl(
+            File workspace,
+            TaskListener listener,
+            final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory) {
         this(workspace, listener, httpConnectionFactory, null);
     }
 
-    JGitAPIImpl(File workspace, TaskListener listener, final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory, HostKeyVerifierFactory hostKeyFactory) {
-        /* If workspace is null, then default to current directory to match 
+    JGitAPIImpl(
+            File workspace,
+            TaskListener listener,
+            final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory,
+            HostKeyVerifierFactory hostKeyFactory) {
+        /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
@@ -221,13 +224,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void setAuthor(String name, String email) throws GitException {
-        author = new PersonIdent(name,email);
+        author = new PersonIdent(name, email);
     }
 
     /** {@inheritDoc} */
     @Override
     public void setCommitter(String name, String email) throws GitException {
-        committer = new PersonIdent(name,email);
+        committer = new PersonIdent(name, email);
     }
 
     /**
@@ -310,17 +313,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException {
 
-                if(! sparseCheckoutPaths.isEmpty()) {
+                if (!sparseCheckoutPaths.isEmpty()) {
                     listener.getLogger().println("[ERROR] JGit doesn't support sparse checkout.");
                     throw new UnsupportedOperationException("not implemented yet");
                 }
 
-                if (branch == null)
+                if (branch == null) {
                     doCheckoutWithResetAndRetry(ref);
-                else if (deleteBranch)
+                } else if (deleteBranch) {
                     doCheckoutWithResetAndRetryAndCleanBranch(branch, ref);
-                else
+                } else {
                     doCheckout(ref, branch);
+                }
             }
         };
     }
@@ -347,7 +351,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } catch (GitAPIException e) {
                     throw new GitException("Could not reset the workspace before checkout of " + ref, e);
                 } catch (JGitInternalException e) {
-                    if (e.getCause() instanceof LockFailedException){
+                    if (e.getCause() instanceof LockFailedException) {
                         throw new GitLockFailedException("Could not lock repository. Please try again", e);
                     } else {
                         throw e;
@@ -373,17 +377,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("No matching revision for " + ref + " found.");
                 }
                 if (remoteTrackingBranches.size() > 1) {
-                    throw new GitException("Found more than one matching remote tracking branches for  " + ref + " : " + remoteTrackingBranches);
+                    throw new GitException("Found more than one matching remote tracking branches for  " + ref + " : "
+                            + remoteTrackingBranches);
                 }
 
                 String matchingRemoteBranch = remoteTrackingBranches.get(0);
-                listener.getLogger().format("[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'", ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
+                listener.getLogger()
+                        .format(
+                                "[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'",
+                                ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
 
-                git(repo).checkout()
-                    .setCreateBranch(true)
-                    .setName(ref)
-                    .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
-                    .setStartPoint(matchingRemoteBranch).call();
+                git(repo)
+                        .checkout()
+                        .setCreateBranch(true)
+                        .setName(ref)
+                        .setUpstreamMode(SetupUpstreamMode.SET_UPSTREAM)
+                        .setStartPoint(matchingRemoteBranch)
+                        .call();
                 return;
             } catch (CheckoutConflictException e) {
                 closeRepo(repo); /* Ready to reuse repo */
@@ -391,8 +401,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // see the test case GitAPITest.testLocalCheckoutConflict. so in this case we manually
                 // clean up the conflicts and try it again
 
-                if (retried)
+                if (retried) {
                     throw new GitException("Could not checkout " + ref, e);
+                }
                 retried = true;
                 repo = getRepository(); /* Reusing repo declared and assigned earlier */
                 for (String path : e.getConflictingPaths()) {
@@ -404,20 +415,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             } catch (IOException | GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
             } catch (JGitInternalException e) {
-                if (Pattern.matches("Cannot lock.+", e.getMessage())){
+                if (Pattern.matches("Cannot lock.+", e.getMessage())) {
                     throw new GitLockFailedException("Could not lock repository. Please try again", e);
                 } else {
                     throw e;
                 }
             } finally {
-                if (repo != null) repo.close();
+                if (repo != null) {
+                    repo.close();
+                }
             }
         }
     }
 
     private void doCheckout(String ref, String branch) throws GitException {
         try (Repository repo = getRepository()) {
-            git(repo).checkout().setName(branch).setCreateBranch(true).setForce(true).setStartPoint(ref).call();
+            git(repo)
+                    .checkout()
+                    .setName(branch)
+                    .setCreateBranch(true)
+                    .setForce(true)
+                    .setStartPoint(ref)
+                    .call();
         } catch (GitAPIException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }
@@ -428,21 +447,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             RefUpdate refUpdate = repo.updateRef(R_HEADS + branch);
             refUpdate.setNewObjectId(repo.resolve(ref));
             switch (refUpdate.forceUpdate()) {
-            case NOT_ATTEMPTED:
-            case LOCK_FAILURE:
-            case REJECTED:
-            case REJECTED_CURRENT_BRANCH:
-            case IO_FAILURE:
-            case RENAMED:
-                throw new GitException("Could not update " + branch + " to " + ref);
+                case NOT_ATTEMPTED:
+                case LOCK_FAILURE:
+                case REJECTED:
+                case REJECTED_CURRENT_BRANCH:
+                case IO_FAILURE:
+                case RENAMED:
+                    throw new GitException("Could not update " + branch + " to " + ref);
             }
 
             doCheckoutWithResetAndRetry(branch);
         } catch (IOException e) {
-            throw new GitException("Could not checkout " + branch +  " with start point " + ref, e);
+            throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
         }
     }
-
 
     /** {@inheritDoc} */
     @Override
@@ -463,8 +481,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void commit(String message) throws GitException {
         try (Repository repo = getRepository()) {
             CommitCommand cmd = git(repo).commit().setMessage(message).setAuthor(author);
-            if (committer!=null)
-                cmd.setCommitter(new PersonIdent(committer,new Date()));
+            if (committer != null) {
+                cmd.setCommitter(new PersonIdent(committer, new Date()));
+            }
             cmd.call();
         } catch (GitAPIException e) {
             throw new GitException(e);
@@ -530,7 +549,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public void tag(String name, String message) throws GitException {
         try (Repository repo = getRepository()) {
-            git(repo).tag().setName(name).setMessage(message).setForceUpdate(true).call();
+            git(repo)
+                    .tag()
+                    .setName(name)
+                    .setMessage(message)
+                    .setForceUpdate(true)
+                    .call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -540,7 +564,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public boolean tagExists(String tagName) throws GitException {
         try (Repository repo = getRepository()) {
-            Ref tag =  repo.exactRef(R_TAGS + tagName);
+            Ref tag = repo.exactRef(R_TAGS + tagName);
             return tag != null;
         } catch (IOException e) {
             throw new GitException(e);
@@ -557,10 +581,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         /* Range check for timeoutInMinutes */
         if (timeoutInMinutes > MAX_TIMEOUT) {
-            listener.getLogger().println("[WARNING] JGit ignoring timeout " + timeoutInMinutes + " > " + MAX_TIMEOUT + " for " + operationName);
+            listener.getLogger()
+                    .println("[WARNING] JGit ignoring timeout " + timeoutInMinutes + " > " + MAX_TIMEOUT + " for "
+                            + operationName);
             timeoutInMinutes = MAX_TIMEOUT;
         } else if (timeoutInMinutes < 1) {
-            listener.getLogger().println("[WARNING] JGit ignoring timeout " + timeoutInMinutes + " < 1 for " + operationName);
+            listener.getLogger()
+                    .println("[WARNING] JGit ignoring timeout " + timeoutInMinutes + " < 1 for " + operationName);
             timeoutInMinutes = TIMEOUT; /* Use system default timeout */
         }
 
@@ -569,7 +596,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             timeoutInSeconds = Math.multiplyExact(timeoutInMinutes, 60);
         } catch (ArithmeticException ae) {
-            listener.getLogger().println("[WARNING] JGit ignoring excessive " + timeoutInMinutes + " minute timeout for " + operationName);
+            listener.getLogger()
+                    .println("[WARNING] JGit ignoring excessive " + timeoutInMinutes + " minute timeout for "
+                            + operationName);
         }
 
         transport.setTimeout(timeoutInSeconds);
@@ -640,10 +669,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
 
                     List<RefSpec> allRefSpecs = new ArrayList<>();
-                    if (refspecs != null)
-                        for (RefSpec rs: refspecs)
-                            if (rs != null)
+                    if (refspecs != null) {
+                        for (RefSpec rs : refspecs) {
+                            if (rs != null) {
                                 allRefSpecs.add(rs);
+                            }
+                        }
+                    }
 
                     FetchCommand fetch = git.fetch();
                     fetch.setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS);
@@ -696,14 +728,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void fetch(String remoteName, RefSpec... refspec) throws GitException {
         try (Repository repo = getRepository()) {
             FetchCommand fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
-            if (remoteName != null) fetch.setRemote(remoteName);
+            if (remoteName != null) {
+                fetch.setRemote(remoteName);
+            }
             fetch.setCredentialsProvider(getProvider());
 
             List<RefSpec> refSpecs = new ArrayList<>();
-            if (refspec != null && refspec.length > 0)
-                for (RefSpec rs: refspec)
-                    if (rs != null)
+            if (refspec != null && refspec.length > 0) {
+                for (RefSpec rs : refspec) {
+                    if (rs != null) {
                         refSpecs.add(rs);
+                    }
+                }
+            }
             fetch.setRefSpecs(refSpecs);
             setTransportTimeout(fetch, "fetch", TIMEOUT);
             fetch.call();
@@ -721,77 +758,77 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void ref(String refName) throws GitException, InterruptedException {
-	refName = refName.replace(' ', '_');
-	try (Repository repo = getRepository()) {
-	    RefUpdate refUpdate = repo.updateRef(refName);
-	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
-	    switch (refUpdate.forceUpdate()) {
-	    case NOT_ATTEMPTED:
-	    case LOCK_FAILURE:
-	    case REJECTED:
-	    case REJECTED_CURRENT_BRANCH:
-	    case IO_FAILURE:
-	    case RENAMED:
-		throw new GitException("Could not update " + refName + " to HEAD");
-	    }
-	} catch (IOException e) {
-	    throw new GitException("Could not update " + refName + " to HEAD", e);
-	}
+        refName = refName.replace(' ', '_');
+        try (Repository repo = getRepository()) {
+            RefUpdate refUpdate = repo.updateRef(refName);
+            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            switch (refUpdate.forceUpdate()) {
+                case NOT_ATTEMPTED:
+                case LOCK_FAILURE:
+                case REJECTED:
+                case REJECTED_CURRENT_BRANCH:
+                case IO_FAILURE:
+                case RENAMED:
+                    throw new GitException("Could not update " + refName + " to HEAD");
+            }
+        } catch (IOException e) {
+            throw new GitException("Could not update " + refName + " to HEAD", e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean refExists(String refName) throws GitException, InterruptedException {
-	refName = refName.replace(' ', '_');
-	try (Repository repo = getRepository()) {
-	    Ref ref = repo.findRef(refName);
-	    return ref != null;
-	} catch (IOException e) {
-	    throw new GitException("Error checking ref " + refName, e);
-	}
+        refName = refName.replace(' ', '_');
+        try (Repository repo = getRepository()) {
+            Ref ref = repo.findRef(refName);
+            return ref != null;
+        } catch (IOException e) {
+            throw new GitException("Error checking ref " + refName, e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public void deleteRef(String refName) throws GitException, InterruptedException {
-	refName = refName.replace(' ', '_');
-	try (Repository repo = getRepository()) {
-	    RefUpdate refUpdate = repo.updateRef(refName);
-	    // Required, even though this is a forced delete.
-	    refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
-	    refUpdate.setForceUpdate(true);
-	    switch (refUpdate.delete()) {
-	    case NOT_ATTEMPTED:
-	    case LOCK_FAILURE:
-	    case REJECTED:
-	    case REJECTED_CURRENT_BRANCH:
-	    case IO_FAILURE:
-	    case RENAMED:
-		throw new GitException("Could not delete " + refName);
-	    }
-	} catch (IOException e) {
-	    throw new GitException("Could not delete " + refName, e);
-	}
+        refName = refName.replace(' ', '_');
+        try (Repository repo = getRepository()) {
+            RefUpdate refUpdate = repo.updateRef(refName);
+            // Required, even though this is a forced delete.
+            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setForceUpdate(true);
+            switch (refUpdate.delete()) {
+                case NOT_ATTEMPTED:
+                case LOCK_FAILURE:
+                case REJECTED:
+                case REJECTED_CURRENT_BRANCH:
+                case IO_FAILURE:
+                case RENAMED:
+                    throw new GitException("Could not delete " + refName);
+            }
+        } catch (IOException e) {
+            throw new GitException("Could not delete " + refName, e);
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public Set<String> getRefNames(String refPrefix) throws GitException, InterruptedException {
-	if (refPrefix.isEmpty()) {
-	    refPrefix = RefDatabase.ALL;
-	} else {
-	    refPrefix = refPrefix.replace(' ', '_');
-	}
-	try (Repository repo = getRepository()) {
-	    List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
-	    Set<String> refs = new HashSet<>(refList.size());
-	    for (Ref ref : refList) {
-		refs.add(ref.getName());
-	    }
-	    return refs;
-	} catch (IOException e) {
-	    throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
-	}
+        if (refPrefix.isEmpty()) {
+            refPrefix = RefDatabase.ALL;
+        } else {
+            refPrefix = refPrefix.replace(' ', '_');
+        }
+        try (Repository repo = getRepository()) {
+            List<Ref> refList = repo.getRefDatabase().getRefsByPrefix(refPrefix);
+            Set<String> refs = new HashSet<>(refList.size());
+            for (Ref ref : refList) {
+                refs.add(ref.getName());
+            }
+            return refs;
+        } catch (IOException e) {
+            throw new GitException("Error retrieving refs with prefix " + refPrefix, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -821,18 +858,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             lsRemote.setCredentialsProvider(getProvider());
             setTransportTimeout(lsRemote, "ls-remote", TIMEOUT);
             Collection<Ref> refs = lsRemote.call();
-                for (final Ref r : refs) {
-                    final String refName = r.getName();
-                    final ObjectId refObjectId =
-                            r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
-                    if (regexPattern != null) {
-                        if (refName.matches(regexPattern)) {
-                            references.put(refName, refObjectId);
-                        }
-                    } else {
+            for (final Ref r : refs) {
+                final String refName = r.getName();
+                final ObjectId refObjectId = r.getPeeledObjectId() != null ? r.getPeeledObjectId() : r.getObjectId();
+                if (regexPattern != null) {
+                    if (refName.matches(regexPattern)) {
                         references.put(refName, refObjectId);
                     }
+                } else {
+                    references.put(refName, refObjectId);
                 }
+            }
         } catch (JGitInternalException | GitAPIException | IOException e) {
             throw new GitException(e);
         }
@@ -873,11 +909,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /* Adapted from https://stackoverflow.com/questions/1247772/is-there-an-equivalent-of-java-util-regex-for-glob-type-patterns */
-    private String createRefRegexFromGlob(String glob)
-    {
+    private String createRefRegexFromGlob(String glob) {
         StringBuilder out = new StringBuilder();
         out.append('^');
-        if(!glob.startsWith("refs/")) {
+        if (!glob.startsWith("refs/")) {
             out.append(".*/");
         }
         out.append(replaceGlobCharsWithRegExChars(glob));
@@ -885,27 +920,26 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return out.toString();
     }
 
-    private String replaceGlobCharsWithRegExChars(String glob)
-    {
+    private String replaceGlobCharsWithRegExChars(String glob) {
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < glob.length(); ++i) {
             final char c = glob.charAt(i);
-            switch(c) {
-            case '*':
-                out.append(".*");
-                break;
-            case '?':
-                out.append('.');
-                break;
-            case '.':
-                out.append("\\.");
-                break;
-            case '\\':
-                out.append("\\\\");
-                break;
-            default:
-                out.append(c);
-                break;
+            switch (c) {
+                case '*':
+                    out.append(".*");
+                    break;
+                case '?':
+                    out.append('.');
+                    break;
+                case '.':
+                    out.append("\\.");
+                    break;
+                case '\\':
+                    out.append("\\\\");
+                    break;
+                default:
+                    out.append(c);
+                    break;
             }
         }
         return out.toString();
@@ -915,7 +949,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
         try (Repository repo = openDummyRepository();
-             final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
+                final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
             final String branchName = extractBranchNameFromBranchSpec(branchSpec);
             String regexBranch = createRefRegexFromGlob(branchName);
 
@@ -946,7 +980,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public String getRemoteUrl(String name) throws GitException {
         try (Repository repo = getRepository()) {
-            return repo.getConfig().getString("remote",name,"url");
+            return repo.getConfig().getString("remote", name, "url");
         }
     }
 
@@ -956,8 +990,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      */
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                        justification = "JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @NonNull
     @Override
     public Repository getRepository() throws GitException {
@@ -1016,7 +1049,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             cmd.setMessage(normalizeNote(note));
             cmd.setNotesRef(qualifyNotesNamespace(namespace));
             try (ObjectReader or = repo.newObjectReader();
-                 RevWalk walk = new RevWalk(or)) {
+                    RevWalk walk = new RevWalk(or)) {
                 cmd.setObjectId(walk.parseAny(head));
                 cmd.call();
             }
@@ -1032,13 +1065,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private String normalizeNote(String note) {
         note = note.trim();
-        note = note.replaceAll("\r\n","\n").replaceAll("\n{3,}","\n\n");
+        note = note.replaceAll("\r\n", "\n").replaceAll("\n{3,}", "\n\n");
         note += "\n";
         return note;
     }
 
     private String qualifyNotesNamespace(String namespace) {
-        if (!namespace.startsWith("refs/")) namespace = "refs/notes/"+namespace;
+        if (!namespace.startsWith("refs/")) {
+            namespace = "refs/notes/" + namespace;
+        }
         return namespace;
     }
 
@@ -1051,16 +1086,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             ShowNoteCommand cmd = git(repo).notesShow();
             cmd.setNotesRef(qualifyNotesNamespace(namespace));
             try (ObjectReader or = repo.newObjectReader();
-                 RevWalk walk = new RevWalk(or)) {
+                    RevWalk walk = new RevWalk(or)) {
                 cmd.setObjectId(walk.parseAny(head));
                 Note n = cmd.call();
 
-                if (n==null) {
-                    addNote(note,namespace);
+                if (n == null) {
+                    addNote(note, namespace);
                 } else {
                     ObjectLoader ol = or.open(n.getData());
                     StringWriter sw = new StringWriter();
-                    IOUtils.copy(new InputStreamReader(ol.openStream(), StandardCharsets.UTF_8),sw);
+                    IOUtils.copy(new InputStreamReader(ol.openStream(), StandardCharsets.UTF_8), sw);
                     sw.write("\n");
                     addNote(sw + normalizeNote(note), namespace);
                 }
@@ -1160,15 +1195,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (out == null) {
                     throw new IllegalStateException(); // Match CliGitAPIImpl
                 }
-                try (PrintWriter pw = new PrintWriter(out,false)) {
-                    RawFormatter formatter= new RawFormatter();
+                try (PrintWriter pw = new PrintWriter(out, false)) {
+                    RawFormatter formatter = new RawFormatter();
                     if (!hasIncludedRev) {
                         /* If no rev has been included, assume HEAD */
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
                         // git whatachanged doesn't show the merge commits unless -m is given
-                        if (commit.getParentCount()>1)  continue;
+                        if (commit.getParentCount() > 1) {
+                            continue;
+                        }
 
                         formatter.format(commit, null, pw, true);
                     }
@@ -1186,18 +1223,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     class RawFormatter {
         private boolean hasNewPath(DiffEntry d) {
-            return d.getChangeType()==ChangeType.COPY || d.getChangeType()==ChangeType.RENAME;
+            return d.getChangeType() == ChangeType.COPY || d.getChangeType() == ChangeType.RENAME;
         }
 
         private String statusOf(DiffEntry d) {
             switch (d.getChangeType()) {
-            case ADD:       return "A";
-            case MODIFY:    return "M";
-            case DELETE:    return "D";
-            case RENAME:    return "R"+d.getScore();
-            case COPY:      return "C"+d.getScore();
-            default:
-                throw new AssertionError("Unexpected change type: "+d.getChangeType());
+                case ADD:
+                    return "A";
+                case MODIFY:
+                    return "M";
+                case DELETE:
+                    return "D";
+                case RENAME:
+                    return "R" + d.getScore();
+                case COPY:
+                    return "C" + d.getScore();
+                default:
+                    throw new AssertionError("Unexpected change type: " + d.getChangeType());
             }
         }
 
@@ -1212,17 +1254,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Optional parent commit to produce the diff against. This only matters
          *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
          */
-        @SuppressFBWarnings(value = "VA_FORMAT_STRING_USES_NEWLINE",
+        @SuppressFBWarnings(
+                value = "VA_FORMAT_STRING_USES_NEWLINE",
                 justification = "Windows git implementation requires specific line termination")
         void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
-            if (parent!=null)
+            if (parent != null) {
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
-            else
+            } else {
                 pw.printf("commit %s\n", commit.name());
+            }
 
             pw.printf("tree %s\n", commit.getTree().name());
-            for (RevCommit p : commit.getParents())
-                pw.printf("parent %s\n",p.name());
+            for (RevCommit p : commit.getParents()) {
+                pw.printf("parent %s\n", p.name());
+            }
             FastDateFormat iso = FastDateFormat.getInstance(ISO_8601);
             PersonIdent a = commit.getAuthorIdent();
             pw.printf("author %s <%s> %s\n", a.getName(), a.getEmailAddress(), iso.format(a.getWhen()));
@@ -1231,63 +1276,66 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             // indent commit messages by 4 chars
             String msg = commit.getFullMessage();
-            if (msg.endsWith("\n")) msg=msg.substring(0,msg.length()-1);
-            msg = msg.replace("\n","\n    ");
-            msg="\n    "+msg+"\n";
+            if (msg.endsWith("\n")) {
+                msg = msg.substring(0, msg.length() - 1);
+            }
+            msg = msg.replace("\n", "\n    ");
+            msg = "\n    " + msg + "\n";
 
             pw.println(msg);
 
             // see man git-diff-tree for the format
             try (Repository repo = getRepository();
-                 ObjectReader or = repo.newObjectReader();
-                 TreeWalk tw = new TreeWalk(or)) {
-            if (parent != null) {
-                /* Caller provided a parent commit, use it */
-                tw.reset(parent.getTree(), commit.getTree());
-            } else {
-                if (commit.getParentCount() > 0) {
-                    /* Caller failed to provide parent, but a parent
-                     * is available, so use the parent in the walk
-                     */
-                    tw.reset(commit.getParent(0).getTree(), commit.getTree());
+                    ObjectReader or = repo.newObjectReader();
+                    TreeWalk tw = new TreeWalk(or)) {
+                if (parent != null) {
+                    /* Caller provided a parent commit, use it */
+                    tw.reset(parent.getTree(), commit.getTree());
                 } else {
-                    /* First commit in repo has 0 parent count, but
-                     * the TreeWalk requires exactly two nodes for its
-                     * walk.  Use the same node twice to satisfy
-                     * TreeWalk. See JENKINS-22343 for details.
-                     */
-                    tw.reset(commit.getTree(), commit.getTree());
+                    if (commit.getParentCount() > 0) {
+                        /* Caller failed to provide parent, but a parent
+                         * is available, so use the parent in the walk
+                         */
+                        tw.reset(commit.getParent(0).getTree(), commit.getTree());
+                    } else {
+                        /* First commit in repo has 0 parent count, but
+                         * the TreeWalk requires exactly two nodes for its
+                         * walk.  Use the same node twice to satisfy
+                         * TreeWalk. See JENKINS-22343 for details.
+                         */
+                        tw.reset(commit.getTree(), commit.getTree());
+                    }
                 }
-            }
-            tw.setRecursive(true);
-            tw.setFilter(TreeFilter.ANY_DIFF);
+                tw.setRecursive(true);
+                tw.setFilter(TreeFilter.ANY_DIFF);
 
-            final RenameDetector rd = new RenameDetector(repo);
+                final RenameDetector rd = new RenameDetector(repo);
 
-            rd.reset();
-            rd.addAll(DiffEntry.scan(tw));
-            List<DiffEntry> diffs;
-            try {
-                diffs = rd.compute(or, null);
-            } catch (CanceledException e) {
-                throw new IOException(e);
-            }
-            if (useRawOutput) {
-	            for (DiffEntry diff : diffs) {
-	                pw.printf(":%06o %06o %s %s %s\t%s",
-	                        diff.getOldMode().getBits(),
-	                        diff.getNewMode().getBits(),
-	                        diff.getOldId().name(),
-	                        diff.getNewId().name(),
-	                        statusOf(diff),
-	                        diff.getChangeType()==ChangeType.ADD ? diff.getNewPath() : diff.getOldPath());
+                rd.reset();
+                rd.addAll(DiffEntry.scan(tw));
+                List<DiffEntry> diffs;
+                try {
+                    diffs = rd.compute(or, null);
+                } catch (CanceledException e) {
+                    throw new IOException(e);
+                }
+                if (useRawOutput) {
+                    for (DiffEntry diff : diffs) {
+                        pw.printf(
+                                ":%06o %06o %s %s %s\t%s",
+                                diff.getOldMode().getBits(),
+                                diff.getNewMode().getBits(),
+                                diff.getOldId().name(),
+                                diff.getNewId().name(),
+                                statusOf(diff),
+                                diff.getChangeType() == ChangeType.ADD ? diff.getNewPath() : diff.getOldPath());
 
-	                if (hasNewPath(diff)) {
-	                    pw.printf(" %s",diff.getNewPath()); // copied to
-	                }
-	                pw.println();
-	                pw.println();
-	            }
+                        if (hasNewPath(diff)) {
+                            pw.printf(" %s", diff.getNewPath()); // copied to
+                        }
+                        pw.println();
+                        pw.println();
+                    }
                 }
             }
         }
@@ -1304,7 +1352,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             Git git = git(repo);
             git.reset().setMode(HARD).call();
-            git.clean().setCleanDirectories(true).setIgnore(false).setForce(cleanSubmodule).call();
+            git.clean()
+                    .setCleanDirectories(true)
+                    .setIgnore(false)
+                    .setForce(cleanSubmodule)
+                    .call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -1332,7 +1384,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String url;
             private String remote = Constants.DEFAULT_REMOTE_NAME;
             private String reference;
-            private boolean shallow,shared;
+            private boolean shallow, shared;
             private Integer timeout;
             private boolean tags = true;
             private List<RefSpec> refspecs;
@@ -1386,8 +1438,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand timeout(Integer timeout) {
-            	this.timeout = timeout;
-            	return this;
+                this.timeout = timeout;
+                return this;
             }
 
             @Override
@@ -1408,8 +1460,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                                justification = "JGit interaction with spotbugs")
+            @SuppressFBWarnings(
+                    value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
+                    justification = "JGit interaction with spotbugs")
             private RepositoryBuilder newRepositoryBuilder() {
                 RepositoryBuilder builder = new RepositoryBuilder();
                 builder.setGitDir(new File(workspace, Constants.DOT_GIT)).readEnvironment();
@@ -1422,8 +1475,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 try {
                     // the directory needs to be clean or else JGit complains
-                    if (workspace.exists())
+                    if (workspace.exists()) {
                         Util.deleteContentsRecursive(workspace);
+                    }
 
                     // since jgit clone/init commands do not support object references (e.g. alternates),
                     // we build the repository directly using the RepositoryBuilder
@@ -1435,12 +1489,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             // we use origin as reference
                             reference = url;
                         } else {
-                            listener.getLogger().println("[WARNING] Both 'shared' and 'reference' are used, shared is ignored.");
+                            listener.getLogger()
+                                    .println("[WARNING] Both 'shared' and 'reference' are used, shared is ignored.");
                         }
                     }
 
-                    if (reference != null && !reference.isEmpty())
+                    if (reference != null && !reference.isEmpty()) {
                         builder.addAlternateObjectDirectory(new File(reference));
+                    }
 
                     repository = builder.build();
                     repository.create();
@@ -1448,23 +1504,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     // the repository builder does not create the alternates file
                     if (reference != null && !reference.isEmpty()) {
                         File referencePath = new File(reference);
-                        if (!referencePath.exists())
+                        if (!referencePath.exists()) {
                             listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                        else if (!referencePath.isDirectory())
+                        } else if (!referencePath.isDirectory()) {
                             listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                        else {
+                        } else {
                             // reference path can either be a normal or a base repository
                             File objectsPath = new File(referencePath, ".git/objects");
                             if (!objectsPath.isDirectory()) {
                                 // reference path is bare repo
                                 objectsPath = new File(referencePath, "objects");
                             }
-                            if (!objectsPath.isDirectory())
-                                listener.getLogger().println("[WARNING] Reference path does not contain an objects directory (no git repo?): " + objectsPath);
-                            else {
+                            if (!objectsPath.isDirectory()) {
+                                listener.getLogger()
+                                        .println(
+                                                "[WARNING] Reference path does not contain an objects directory (no git repo?): "
+                                                        + objectsPath);
+                            } else {
                                 try {
                                     File alternates = new File(workspace, ".git/objects/info/alternates");
-                                    String absoluteReference = objectsPath.getAbsolutePath().replace('\\', '/');
+                                    String absoluteReference =
+                                            objectsPath.getAbsolutePath().replace('\\', '/');
                                     listener.getLogger().println("Using reference repository: " + reference);
                                     // git implementations on windows also use
                                     try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
@@ -1484,9 +1544,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     repository = getRepository();
 
                     if (refspecs == null) {
-                        refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/"+remote+"/*"));
+                        refspecs =
+                                Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + remote + "/*"));
                     }
-                    FetchCommand fetch = new Git(repository).fetch()
+                    FetchCommand fetch = new Git(repository)
+                            .fetch()
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setRemote(url)
                             .setCredentialsProvider(getProvider())
@@ -1503,13 +1565,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     StoredConfig config = repository.getConfig();
                     config.setString("remote", remote, "url", url);
-                    config.setStringList("remote", remote, "fetch", refspecs.stream().map(Object::toString).collect(Collectors.toList()));
+                    config.setStringList(
+                            "remote",
+                            remote,
+                            "fetch",
+                            refspecs.stream().map(Object::toString).collect(Collectors.toList()));
                     config.save();
 
                 } catch (GitAPIException | IOException e) {
                     throw new GitException(e);
                 } finally {
-                    if (repository != null) repository.close();
+                    if (repository != null) {
+                        repository.close();
+                    }
                 }
             }
         };
@@ -1556,7 +1624,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         return this;
                     }
 
-                    listener.getLogger().println("[WARNING] JGit doesn't fully support merge strategies. This flag is ignored");
+                    listener.getLogger()
+                            .println("[WARNING] JGit doesn't fully support merge strategies. This flag is ignored");
                 }
                 return this;
             }
@@ -1574,7 +1643,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public MergeCommand setSquash(boolean squash){
+            public MergeCommand setSquash(boolean squash) {
                 this.squash = squash;
                 return this;
             }
@@ -1596,10 +1665,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
                     MergeResult mergeResult;
-                    if (strategy != null)
-                        mergeResult = git.merge().setMessage(comment).setStrategy(strategy).setFastForward(fastForwardMode).setSquash(squash).setCommit(commit).include(rev).call();
-                    else
-                        mergeResult = git.merge().setMessage(comment).setFastForward(fastForwardMode).setSquash(squash).setCommit(commit).include(rev).call();
+                    if (strategy != null) {
+                        mergeResult = git.merge()
+                                .setMessage(comment)
+                                .setStrategy(strategy)
+                                .setFastForward(fastForwardMode)
+                                .setSquash(squash)
+                                .setCommit(commit)
+                                .include(rev)
+                                .call();
+                    } else {
+                        mergeResult = git.merge()
+                                .setMessage(comment)
+                                .setFastForward(fastForwardMode)
+                                .setSquash(squash)
+                                .setCommit(commit)
+                                .include(rev)
+                                .call();
+                    }
                     if (!mergeResult.getMergeStatus().isSuccessful()) {
                         git.reset().setMode(HARD).call();
                         throw new GitException("Failed to merge " + rev);
@@ -1656,7 +1739,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
-                    RebaseResult rebaseResult = git.rebase().setUpstream(upstream).call();
+                    RebaseResult rebaseResult =
+                            git.rebase().setUpstream(upstream).call();
                     if (!rebaseResult.getStatus().isSuccessful()) {
                         git.rebase().setOperation(Operation.ABORT).call();
                         throw new GitException("Failed to rebase " + upstream);
@@ -1682,8 +1766,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public String getTagMessage(String tagName) throws GitException {
         try (Repository repo = getRepository();
-            ObjectReader or = repo.newObjectReader();
-            RevWalk walk = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk walk = new RevWalk(or)) {
             return walk.parseTag(repo.resolve(tagName)).getFullMessage().trim();
         } catch (IOException e) {
             throw new GitException(e);
@@ -1694,8 +1778,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public List<IndexEntry> getSubmodules(String treeIsh) throws GitException {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk w = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk w = new RevWalk(or)) {
             List<IndexEntry> r = new ArrayList<>();
 
             RevTree t = w.parseTree(repo.resolve(treeIsh));
@@ -1725,7 +1809,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public Set<String> getTagNames(String tagPattern) throws GitException {
-        if (tagPattern == null) tagPattern = "*";
+        if (tagPattern == null) {
+            tagPattern = "*";
+        }
 
         Set<String> tags = new HashSet<>();
         try (Repository repo = getRepository()) {
@@ -1734,7 +1820,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             for (String name : tagList.keySet()) {
                 matcher.reset();
                 matcher.append(name);
-                if (matcher.isMatch()) tags.add(name);
+                if (matcher.isMatch()) {
+                    tags.add(name);
+                }
             }
         } catch (InvalidPatternException e) {
             throw new GitException(e);
@@ -1746,7 +1834,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public Set<String> getRemoteTagNames(String tagPattern) throws GitException {
         /* BUG: Lists local tag names, not remote tag names */
-        if (tagPattern == null) tagPattern = "*";
+        if (tagPattern == null) {
+            tagPattern = "*";
+        }
 
         try (Repository repo = getRepository()) {
             Set<String> tags = new HashSet<>();
@@ -1756,7 +1846,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 String name = ref.getName().substring(R_TAGS.length());
                 matcher.reset();
                 matcher.append(name);
-                if (matcher.isMatch()) tags.add(name);
+                if (matcher.isMatch()) {
+                    tags.add(name);
+                }
             }
             return tags;
         } catch (IOException | InvalidPatternException e) {
@@ -1815,8 +1907,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             File dotGit = new File(workspace, gitDirectory);
             return dotGit.exists();
         } catch (SecurityException ex) {
-            throw new GitException("Security error when trying to check for .git. Are you sure you have correct permissions?",
-                                   ex);
+            throw new GitException(
+                    "Security error when trying to check for .git. Are you sure you have correct permissions?", ex);
         } catch (Exception e) {
             throw new GitException("Couldn't check for .git", e);
         }
@@ -1858,16 +1950,19 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Set<String> listRemoteBranches(String remote) throws NotSupportedException, TransportException, URISyntaxException {
+    private Set<String> listRemoteBranches(String remote)
+            throws NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
-            try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote",remote,"url")))) {
+            try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote", remote, "url")))) {
                 tn.setCredentialsProvider(getProvider());
                 try (final FetchConnection c = tn.openFetch()) {
                     for (final Ref r : c.getRefs()) {
-                        if (r.getName().startsWith(R_HEADS))
-                            branches.add("refs/remotes/"+remote+"/"+r.getName().substring(R_HEADS.length()));
+                        if (r.getName().startsWith(R_HEADS)) {
+                            branches.add(
+                                    "refs/remotes/" + remote + "/" + r.getName().substring(R_HEADS.length()));
+                        }
                     }
                 }
             }
@@ -1927,28 +2022,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException {
                 try (Repository repo = getRepository()) {
-                    RefSpec ref = (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
-                    listener.getLogger().println("RefSpec is \""+ref+"\".");
+                    RefSpec ref =
+                            (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
+                    listener.getLogger().println("RefSpec is \"" + ref + "\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     if (remote == null) {
                         throw new GitException("PushCommand requires a remote repository URL");
                     }
-                    config.setString("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url", remote.toPrivateASCIIString());
-                    org.eclipse.jgit.api.PushCommand pc = g.push().setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl").setRefSpecs(ref)
+                    config.setString(
+                            "remote",
+                            "org_jenkinsci_plugins_gitclient_JGitAPIImpl",
+                            "url",
+                            remote.toPrivateASCIIString());
+                    org.eclipse.jgit.api.PushCommand pc = g.push()
+                            .setRemote("org_jenkinsci_plugins_gitclient_JGitAPIImpl")
+                            .setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setCredentialsProvider(getProvider())
                             .setForce(force);
-                    if(tags) {
+                    if (tags) {
                         pc.setPushTags();
                     }
                     setTransportTimeout(pc, "push", timeout);
                     Iterable<PushResult> results = pc.call();
-                    for(PushResult result:results) for(RemoteRefUpdate update:result.getRemoteUpdates()) {
-                        RemoteRefUpdate.Status status = update.getStatus();
-                        if(!OK.equals(status)&&!UP_TO_DATE.equals(status)) {
-                            throw new GitException(update.getMessage() + " " + status + " for '" + ref +
-                                "' refspec '" + refspec + "' to " + remote.toPrivateASCIIString());
+                    for (PushResult result : results) {
+                        for (RemoteRefUpdate update : result.getRemoteUpdates()) {
+                            RemoteRefUpdate.Status status = update.getStatus();
+                            if (!OK.equals(status) && !UP_TO_DATE.equals(status)) {
+                                throw new GitException(update.getMessage() + " " + status + " for '" + ref
+                                        + "' refspec '" + refspec + "' to " + remote.toPrivateASCIIString());
+                            }
                         }
                     }
                     config.unset("remote", "org_jenkinsci_plugins_gitclient_JGitAPIImpl", "url");
@@ -1966,32 +2070,40 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              */
             private String fixRefSpec(@NonNull String srcRefspec, Repository repository) throws IOException {
                 int colon = srcRefspec.indexOf(':');
-                String[] specs = new String[]{(colon != -1 ? srcRefspec.substring(0, colon) : srcRefspec).trim(), srcRefspec.substring(colon + 1).trim()};
+                String[] specs = new String[] {
+                    (colon != -1 ? srcRefspec.substring(0, colon) : srcRefspec).trim(),
+                    srcRefspec.substring(colon + 1).trim()
+                };
                 for (int spec = 0; spec < specs.length; spec++) {
                     if (specs[spec].isEmpty() || "HEAD".equalsIgnoreCase(specs[spec])) {
                         switch (spec) {
                             default:
                             case 0:
-                                break; //empty / HEAD for the first ref. if fine for JGit (see https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
-                            case 1: //empty second ref. generally means to push "matching" branches, hard to implement the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
+                                break; // empty / HEAD for the first ref. if fine for JGit (see
+                                // https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                            case 1: // empty second ref. generally means to push "matching" branches, hard to implement
+                                // the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
                                 specs[spec] = repository.getFullBranch();
                                 break;
                         }
                     } else if (!specs[spec].startsWith("refs/") && !specs[spec].startsWith("+refs/")) {
                         switch (spec) {
                             default:
-                            case 0: //for the source ref. we use the repository to determine what should be pushed
+                            case 0: // for the source ref. we use the repository to determine what should be pushed
                                 Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
                                     throw new IOException(String.format("Ref %s not found.", specs[spec]));
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
-                            case 1: //for the target ref. we can't use the repository, so we try our best to determine the ref.
+                            case 1: // for the target ref. we can't use the repository, so we try our best to determine
+                                // the ref.
                                 if (!specs[spec].startsWith("/")) {
                                     specs[spec] = "/" + specs[spec];
                                 }
-                                if (!specs[spec].startsWith("/heads/") && !specs[spec].startsWith("/remotes/") && !specs[spec].startsWith("/tags/")) {
+                                if (!specs[spec].startsWith("/heads/")
+                                        && !specs[spec].startsWith("/remotes/")
+                                        && !specs[spec].startsWith("/tags/")) {
                                     specs[spec] = "/heads" + specs[spec];
                                 }
                                 specs[spec] = "refs" + specs[spec];
@@ -2010,8 +2122,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.jenkinsci.plugins.gitclient.RevListCommand} object.
      */
     @Override
-    public RevListCommand revList_()
-    {
+    public RevListCommand revList_() {
         return new RevListCommand() {
             private boolean all;
             private boolean nowalk;
@@ -2048,13 +2159,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public RevListCommand to(List<ObjectId> revs){
+            public RevListCommand to(List<ObjectId> revs) {
                 this.out = revs;
                 return this;
             }
 
             @Override
-            public RevListCommand reference(String reference){
+            public RevListCommand reference(String reference) {
                 this.refspec = reference;
                 return this;
             }
@@ -2062,12 +2173,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException {
                 if (firstParent) {
-                  throw new UnsupportedOperationException("not implemented yet");
+                    throw new UnsupportedOperationException("not implemented yet");
                 }
 
                 try (Repository repo = getRepository();
-                     ObjectReader or = repo.newObjectReader();
-                     RevWalk walk = new RevWalk(or)) {
+                        ObjectReader or = repo.newObjectReader();
+                        RevWalk walk = new RevWalk(or)) {
 
                     if (nowalk) {
                         if (out == null) {
@@ -2085,12 +2196,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         return;
                     }
 
-                    if (all)
-                    {
+                    if (all) {
                         markAllRefs(walk);
-                    }
-                    else if (refspec != null)
-                    {
+                    } else if (refspec != null) {
                         walk.markStart(walk.parseCommit(repo.resolve(refspec)));
                     }
 
@@ -2150,11 +2258,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public ObjectId revParse(String revName) throws GitException {
         try (Repository repo = getRepository()) {
             ObjectId id = repo.resolve(revName + "^{commit}");
-            if (id == null)
-                throw new GitException("Unknown git object "+ revName);
+            if (id == null) {
+                throw new GitException("Unknown git object " + revName);
+            }
             return id;
         } catch (IOException e) {
-            throw new GitException("Failed to resolve git reference "+ revName, e);
+            throw new GitException("Failed to resolve git reference " + revName, e);
         }
     }
 
@@ -2168,13 +2277,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk w = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk w = new RevWalk(or)) {
             w.markStart(w.parseCommit(to));
-            if (from!=null)
+            if (from != null) {
                 w.markUninteresting(w.parseCommit(from));
-            else
+            } else {
                 w.setRevFilter(MaxCountRevFilter.create(1));
+            }
 
             List<String> r = new ArrayList<>();
             StringWriter sw = new StringWriter();
@@ -2182,12 +2292,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try (PrintWriter pw = new PrintWriter(sw)) {
                 for (RevCommit c : w) {
                     // do not duplicate merge commits unless using raw output
-                    if (c.getParentCount()<=1 || !useRawOutput) {
-                        f.format(c,null,pw,useRawOutput);
+                    if (c.getParentCount() <= 1 || !useRawOutput) {
+                        f.format(c, null, pw, useRawOutput);
                     } else {
                         // the effect of the -m option, which makes the diff produce for each parent of a merge commit
                         for (RevCommit p : c.getParents()) {
-                            f.format(c,p,pw,useRawOutput);
+                            f.format(c, p, pw, useRawOutput);
                         }
                     }
 
@@ -2241,9 +2351,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand submoduleUpdate() {
         return new org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand() {
-            private boolean recursive      = false;
+            private boolean recursive = false;
             private boolean remoteTracking = false;
-            private String  ref            = null;
+            private String ref = null;
             private Integer timeout;
 
             @Override
@@ -2279,14 +2389,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand shallow(boolean shallow) {
                 if (shallow) {
-                    listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone. This flag is ignored");
+                    listener.getLogger()
+                            .println("[WARNING] JGit submodules do not support shallow clone. This flag is ignored");
                 }
                 return this;
             }
 
             @Override
             public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand depth(Integer depth) {
-                listener.getLogger().println("[WARNING] JGit submodules do not support shallow clone and therefore depth is meaningless. This flag is ignored");
+                listener.getLogger()
+                        .println(
+                                "[WARNING] JGit submodules do not support shallow clone and therefore depth is meaningless. This flag is ignored");
                 return this;
             }
 
@@ -2299,12 +2412,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // being. But if some brave soul wants to test this, feel free to provide
                 // an implementation similar to the one in the CliGitAPIImpl class using
                 // an ExecutorService.
-                listener.getLogger().println("[WARNING] JGit doesn't support updating submodules in parallel. This flag is ignored");
+                listener.getLogger()
+                        .println(
+                                "[WARNING] JGit doesn't support updating submodules in parallel. This flag is ignored");
                 return this;
             }
 
             @Override
-            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand useBranch(String submodule, String branchname) {
+            public org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand useBranch(
+                    String submodule, String branchname) {
                 return this;
             }
 
@@ -2337,10 +2453,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
-
-
-
-
     //
     //
     // Legacy Implementation of IGitAPI
@@ -2362,7 +2474,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     @Override
     public void push(RemoteConfig repository, String refspec) throws GitException, InterruptedException {
-        push(repository.getName(),refspec);
+        push(repository.getName(), refspec);
     }
 
     /** {@inheritDoc} */
@@ -2396,32 +2508,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * and keep them across resets, but I'm not sure how to do it.
      */
     @Override
-    public List<Branch> getBranchesContaining(String revspec, boolean allBranches) throws GitException, InterruptedException {
+    public List<Branch> getBranchesContaining(String revspec, boolean allBranches)
+            throws GitException, InterruptedException {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk walk = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk walk = new RevWalk(or)) {
             walk.setRetainBody(false);
-            walk.sort(RevSort.TOPO);// so that by the time we hit target we have all that we want
+            walk.sort(RevSort.TOPO); // so that by the time we hit target we have all that we want
 
             ObjectId id = repo.resolve(revspec);
-            if (id==null)   throw new GitException("Invalid commit: "+revspec);
+            if (id == null) {
+                throw new GitException("Invalid commit: " + revspec);
+            }
             RevCommit target = walk.parseCommit(id);
 
-            // we can track up to 24 flags at a time in JGit, so that's how many branches we will traverse in every iteration
+            // we can track up to 24 flags at a time in JGit, so that's how many branches we will traverse in every
+            // iteration
             List<RevFlag> flags = new ArrayList<>(24);
-            for (int i=0; i<24; i++)
+            for (int i = 0; i < 24; i++) {
                 flags.add(walk.newFlag("branch" + i));
+            }
             walk.carry(flags);
 
-            List<Branch> result = new ArrayList<>();  // we'll built up the return value in here
+            List<Branch> result = new ArrayList<>(); // we'll built up the return value in here
 
             List<Ref> branches = getAllBranchRefs(allBranches);
             while (!branches.isEmpty()) {
-                List<Ref> batch = branches.subList(0,Math.min(flags.size(),branches.size()));
-                branches = branches.subList(batch.size(),branches.size());  // remaining
+                List<Ref> batch = branches.subList(0, Math.min(flags.size(), branches.size()));
+                branches = branches.subList(batch.size(), branches.size()); // remaining
 
                 walk.reset();
-                int idx=0;
+                int idx = 0;
                 for (Ref r : batch) {
                     RevCommit c = walk.parseCommit(r.getObjectId());
                     walk.markStart(c);
@@ -2435,12 +2552,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 for (RevCommit c : walk) {
-                    if (c.equals(target))
+                    if (c.equals(target)) {
                         break;
+                    }
                 }
 
-
-                idx=0;
+                idx = 0;
                 for (Ref r : batch) {
                     if (target.has(flags.get(idx))) {
                         result.add(new Branch(r));
@@ -2460,8 +2577,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
                 final String branchName = r.getName();
-                if (branchName.startsWith(R_HEADS)
-                        || (originBranches && branchName.startsWith(R_REMOTES))) {
+                if (branchName.startsWith(R_HEADS) || (originBranches && branchName.startsWith(R_REMOTES))) {
                     branches.add(r);
                 }
             }
@@ -2474,16 +2590,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ObjectId mergeBase(ObjectId id1, ObjectId id2) {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk walk = new RevWalk(or)) {
-            walk.setRetainBody(false);  // we don't need the body for this computation
+                ObjectReader or = repo.newObjectReader();
+                RevWalk walk = new RevWalk(or)) {
+            walk.setRetainBody(false); // we don't need the body for this computation
             walk.setRevFilter(RevFilter.MERGE_BASE);
 
             walk.markStart(walk.parseCommit(id1));
             walk.markStart(walk.parseCommit(id2));
 
             RevCommit base = walk.next();
-            if (base==null)     return null;    // no common base
+            if (base == null) {
+                return null; // no common base
+            }
             return base.getId();
         } catch (IOException e) {
             throw new GitException(e);
@@ -2495,14 +2613,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public String getAllLogEntries(String branch) {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk walk = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk walk = new RevWalk(or)) {
             StringBuilder w = new StringBuilder();
             markAllRefs(walk);
             walk.setRetainBody(false);
 
             for (RevCommit c : walk) {
-                w.append('\'').append(c.name()).append('#').append(c.getCommitTime()).append("'\n");
+                w.append('\'')
+                        .append(c.name())
+                        .append('#')
+                        .append(c.getCommitTime())
+                        .append("'\n");
             }
             return w.toString().trim();
         } catch (IOException e) {
@@ -2570,7 +2692,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             v = repo.getConfig().getString("submodule", name, "url");
         }
-        if (v==null)    throw new GitException("No such submodule: "+name);
+        if (v == null) {
+            throw new GitException("No such submodule: " + name);
+        }
         return v.trim();
     }
 
@@ -2639,10 +2763,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             final RevWalk w = new RevWalk(or); // How to dispose of this ?
             w.setRetainBody(false);
 
-            Map<ObjectId,Ref> tags = new HashMap<>();
+            Map<ObjectId, Ref> tags = new HashMap<>();
             for (Ref r : repo.getTags().values()) {
                 ObjectId key = repo.peel(r).getPeeledObjectId();
-                if (key==null)  key = r.getObjectId();
+                if (key == null) {
+                    key = r.getObjectId();
+                }
                 tags.put(key, r);
             }
 
@@ -2679,31 +2805,35 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 public String describe(ObjectId tip) throws IOException {
-                    return String.format("%s-%d-g%s", tag.getName().substring(R_TAGS.length()),
-                            depth, or.abbreviate(tip).name());
+                    return String.format(
+                            "%s-%d-g%s",
+                            tag.getName().substring(R_TAGS.length()),
+                            depth,
+                            or.abbreviate(tip).name());
                 }
             }
-            List<Candidate> candidates = new ArrayList<>();    // all the candidates we find
+            List<Candidate> candidates = new ArrayList<>(); // all the candidates we find
 
             ObjectId tipId = repo.resolve(tip);
 
             Ref lucky = tags.get(tipId);
-            if (lucky!=null)
+            if (lucky != null) {
                 return lucky.getName().substring(R_TAGS.length());
+            }
 
             w.markStart(w.parseCommit(tipId));
 
             int maxCandidates = 10;
 
-            int seen = 0;   // commit seen thus far
+            int seen = 0; // commit seen thus far
             RevCommit c;
-            while ((c=w.next())!=null) {
+            while ((c = w.next()) != null) {
                 if (!c.hasAny(allFlags)) {
                     // if a tag already dominates this commit,
                     // then there's no point in picking a tag on this commit
                     // since the one that dominates it is always more preferable
                     Ref t = tags.get(c);
-                    if (t!=null) {
+                    if (t != null) {
                         Candidate cd = new Candidate(c, t);
                         candidates.add(cd);
                         cd.depth = seen;
@@ -2721,8 +2851,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // if we have search going for enough tags, we wil start closing down.
                 // JGit can only give us a finite number of bits, so we can't track
                 // all tags even if we wanted to.
-                if (candidates.size()>=maxCandidates)
+                if (candidates.size() >= maxCandidates) {
                     break;
+                }
 
                 // TODO: if all the commits in the queue of RevWalk has allFlags
                 // there's no point in continuing search as we'll not discover any more
@@ -2733,11 +2864,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             // at this point we aren't adding any more tags to our search,
             // but we still need to count all the depths correctly.
-            while ((c=w.next())!=null) {
+            while ((c = w.next()) != null) {
                 if (c.hasAll(allFlags)) {
                     // no point in visiting further from here, so cut the search here
-                    for (RevCommit p : c.getParents())
+                    for (RevCommit p : c.getParents()) {
                         p.add(RevFlag.SEEN);
+                    }
                 } else {
                     for (Candidate cd : candidates) {
                         if (!cd.reaches(c)) {
@@ -2747,8 +2879,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
             }
 
-            if (candidates.isEmpty())
-                throw new GitException("No tags can describe "+tip);
+            if (candidates.isEmpty()) {
+                throw new GitException("No tags can describe " + tip);
+            }
 
             // if all the nodes are dominated by all the tags, the walk stops
             candidates.sort(Comparator.comparingInt((Candidate o) -> o.depth));
@@ -2764,8 +2897,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public List<IndexEntry> lsTree(String treeIsh, boolean recursive) throws GitException, InterruptedException {
         try (Repository repo = getRepository();
-             ObjectReader or = repo.newObjectReader();
-             RevWalk w = new RevWalk(or)) {
+                ObjectReader or = repo.newObjectReader();
+                RevWalk w = new RevWalk(or)) {
             TreeWalk tree = new TreeWalk(or);
             tree.addTree(w.parseTree(repo.resolve(treeIsh)));
             tree.setRecursive(recursive);
@@ -2791,7 +2924,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void reset(boolean hard) throws GitException, InterruptedException {
         try (Repository repo = getRepository()) {
             ResetCommand reset = new ResetCommand(repo);
-            reset.setMode(hard?HARD:MIXED);
+            reset.setMode(hard ? HARD : MIXED);
             reset.call();
         } catch (GitAPIException e) {
             throw new GitException(e);
@@ -2799,8 +2932,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                        justification = "JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @Deprecated
     @Override
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
@@ -2823,7 +2955,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } catch (IOException ioe) {
             throw new GitException(ioe);
         } finally {
-            if (repo != null) repo.close();
+            if (repo != null) {
+                repo.close();
+            }
         }
         return isBare;
     }
@@ -2833,17 +2967,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public String getDefaultRemote(String _default_) throws GitException, InterruptedException {
         Set<String> remotes = getConfig(null).getSubsections("remote");
-        if (remotes.contains(_default_))    return _default_;
-        else    return remotes.stream().findFirst().orElse(null);
+        if (remotes.contains(_default_)) {
+            return _default_;
+        } else {
+            return remotes.stream().findFirst().orElse(null);
+        }
     }
 
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                        justification = "JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
-        try (Repository repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
+        try (Repository repo =
+                new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", name, "url", url);
             config.save();
@@ -2859,10 +2996,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getConfig(GIT_DIR).getString("remote", name, "url");
     }
 
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                        justification = "JGit interaction with spotbugs")
+    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     private StoredConfig getConfig(String GIT_DIR) throws GitException {
-        try (Repository repo = isBlank(GIT_DIR) ? getRepository() : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
+        try (Repository repo = isBlank(GIT_DIR)
+                ? getRepository()
+                : new RepositoryBuilder().setWorkTree(new File(GIT_DIR)).build()) {
             return repo.getConfig();
         } catch (IOException ioe) {
             throw new GitException(ioe);
@@ -2903,6 +3041,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         listener.getLogger().println("JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.");
         return false;
     }
+
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;

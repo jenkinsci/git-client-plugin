@@ -1,12 +1,11 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import org.junit.rules.TemporaryFolder;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import org.junit.rules.TemporaryFolder;
 
 public class KnownHostsTestUtil {
 
@@ -28,7 +27,7 @@ public class KnownHostsTestUtil {
     }
 
     public File createFakeKnownHosts(String dir, String name, String fileContent) throws IOException {
-        File fakeKnownHosts = createFakeKnownHosts(dir , name);
+        File fakeKnownHosts = createFakeKnownHosts(dir, name);
         byte[] fakeKnownHostsBytes = fileContent.getBytes(StandardCharsets.UTF_8);
         Files.write(fakeKnownHosts.toPath(), fakeKnownHostsBytes);
         return fakeKnownHosts;

@@ -1,15 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.assertTrue;
+
 import hudson.FilePath;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-
 import org.eclipse.jgit.lib.ObjectId;
-
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,10 +25,7 @@ public class GitTest {
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitImplementation() {
-        return Arrays.asList(new Object[][]{
-            {"git"},
-            {"jgit"}
-        });
+        return Arrays.asList(new Object[][] {{"git"}, {"jgit"}});
     }
 
     private final String implementation;
@@ -47,7 +42,11 @@ public class GitTest {
         assertTrue("Wrong default client type", git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
         git = Git.with(null, null).using(implementation);
-        assertTrue("Wrong client type", implementation.equals("git") ? git.getClient() instanceof CliGitAPIImpl : git.getClient() instanceof JGitAPIImpl);
+        assertTrue(
+                "Wrong client type",
+                implementation.equals("git")
+                        ? git.getClient() instanceof CliGitAPIImpl
+                        : git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
 
@@ -61,7 +60,11 @@ public class GitTest {
     @Test
     public void testIn_FileUsing() throws IOException, InterruptedException {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
-        assertTrue("Wrong client type", implementation.equals("git") ? git.getClient() instanceof CliGitAPIImpl : git.getClient() instanceof JGitAPIImpl);
+        assertTrue(
+                "Wrong client type",
+                implementation.equals("git")
+                        ? git.getClient() instanceof CliGitAPIImpl
+                        : git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
 
@@ -75,15 +78,22 @@ public class GitTest {
     @Test
     public void testIn_FilePathUsing() throws IOException, InterruptedException {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
-        assertTrue("Wrong client type", implementation.equals("git") ? git.getClient() instanceof CliGitAPIImpl : git.getClient() instanceof JGitAPIImpl);
+        assertTrue(
+                "Wrong client type",
+                implementation.equals("git")
+                        ? git.getClient() instanceof CliGitAPIImpl
+                        : git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
 
     @Test
     public void testUsing() throws IOException, InterruptedException {
         Git git = new Git(null, null).using(implementation);
-        assertTrue("Wrong client type", implementation.equals("git") ? git.getClient() instanceof CliGitAPIImpl : git.getClient() instanceof JGitAPIImpl);
+        assertTrue(
+                "Wrong client type",
+                implementation.equals("git")
+                        ? git.getClient() instanceof CliGitAPIImpl
+                        : git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
-
 }

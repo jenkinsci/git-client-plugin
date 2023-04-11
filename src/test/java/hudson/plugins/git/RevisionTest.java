@@ -1,10 +1,11 @@
 package hudson.plugins.git;
 
+import static org.junit.Assert.*;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import org.eclipse.jgit.lib.ObjectId;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class RevisionTest {
 

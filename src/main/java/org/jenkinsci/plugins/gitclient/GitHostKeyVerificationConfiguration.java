@@ -17,8 +17,7 @@ public class GitHostKeyVerificationConfiguration extends GlobalConfiguration imp
     private SshHostKeyVerificationStrategy<? extends HostKeyVerifierFactory> sshHostKeyVerificationStrategy;
 
     @Override
-    public @NonNull
-    GlobalConfigurationCategory getCategory() {
+    public @NonNull GlobalConfigurationCategory getCategory() {
         return GlobalConfigurationCategory.get(GlobalConfigurationCategory.Security.class);
     }
 
@@ -30,7 +29,8 @@ public class GitHostKeyVerificationConfiguration extends GlobalConfiguration imp
         return Main.isUnitTest ? new NoHostKeyVerificationStrategy() : new KnownHostsFileVerificationStrategy();
     }
 
-    public void setSshHostKeyVerificationStrategy(SshHostKeyVerificationStrategy<? extends HostKeyVerifierFactory> sshHostKeyVerificationStrategy) {
+    public void setSshHostKeyVerificationStrategy(
+            SshHostKeyVerificationStrategy<? extends HostKeyVerifierFactory> sshHostKeyVerificationStrategy) {
         this.sshHostKeyVerificationStrategy = sshHostKeyVerificationStrategy;
         save();
     }

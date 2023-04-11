@@ -35,7 +35,13 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setStrategy(Strategy strategy);
 
     enum Strategy {
-        DEFAULT, RESOLVE, RECURSIVE, OCTOPUS, OURS, SUBTREE, RECURSIVE_THEIRS;
+        DEFAULT,
+        RESOLVE,
+        RECURSIVE,
+        OCTOPUS,
+        OURS,
+        SUBTREE,
+        RECURSIVE_THEIRS;
 
         @Override
         public String toString() {
@@ -54,13 +60,13 @@ public interface MergeCommand extends GitCommand {
     MergeCommand setGitPluginFastForwardMode(GitPluginFastForwardMode fastForwardMode);
 
     enum GitPluginFastForwardMode {
-        FF,        // Default option, fast forward update the branch pointer only
-        FF_ONLY,   // Create a merge commit even for a fast forward
-        NO_FF;     // Abort unless the merge is a fast forward
+        FF, // Default option, fast forward update the branch pointer only
+        FF_ONLY, // Create a merge commit even for a fast forward
+        NO_FF; // Abort unless the merge is a fast forward
 
         @Override
         public String toString() {
-            return "--"+name().toLowerCase(Locale.ENGLISH).replace("_","-"); // Avoid Turkish 'i' issue
+            return "--" + name().toLowerCase(Locale.ENGLISH).replace("_", "-"); // Avoid Turkish 'i' issue
         }
     }
 

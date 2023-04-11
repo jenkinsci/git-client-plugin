@@ -1,5 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.*;
+
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
@@ -20,7 +22,6 @@ import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,7 +47,9 @@ public class FilePermissionsTest {
 
     @BeforeClass
     public static void createTestRepo() throws IOException, InterruptedException {
-        if (isWindows()) return;
+        if (isWindows()) {
+            return;
+        }
         repo = Files.createTempDirectory(null).toFile();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
@@ -65,7 +68,10 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars()).in(configDir).using("git").getClient());
+        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
+                .in(configDir)
+                .using("git")
+                .getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -78,7 +84,9 @@ public class FilePermissionsTest {
 
     @AfterClass
     public static void verifyTestRepo() throws IOException, InterruptedException {
-        if (isWindows()) return;
+        if (isWindows()) {
+            return;
+        }
         File newRepo = null;
         try {
             newRepo = cloneTestRepo(repo);
@@ -98,7 +106,10 @@ public class FilePermissionsTest {
 
     private static File cloneTestRepo(File repo) throws IOException, InterruptedException {
         File newRepo = Files.createTempDirectory(null).toFile();
-        GitClient git = Git.with(listener, new hudson.EnvVars()).in(newRepo).using("git").getClient();
+        GitClient git = Git.with(listener, new hudson.EnvVars())
+                .in(newRepo)
+                .using("git")
+                .getClient();
         String repoURL = repo.toURI().toURL().toString();
         git.clone_().repositoryName("origin").url(repoURL).execute();
         git.checkoutBranch(defaultBranchName, "origin/" + defaultBranchName);
@@ -114,11 +125,13 @@ public class FilePermissionsTest {
         String rwx = permString(staticPerm);
         Set<PosixFilePermission> expected = PosixFilePermissions.fromString(rwx);
         Path path = FileSystems.getDefault().getPath(file.getPath());
-        PosixFileAttributes attrs = Files.getFileAttributeView(path, PosixFileAttributeView.class).readAttributes();
-        assertEquals(fileName + " OWNER_EXECUTE (execute) perm mismatch, expected: " + expected + ", was actually: " + attrs.permissions(),
-                     expected.contains(PosixFilePermission.OWNER_EXECUTE),
-                     attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE)
-                     );
+        PosixFileAttributes attrs =
+                Files.getFileAttributeView(path, PosixFileAttributeView.class).readAttributes();
+        assertEquals(
+                fileName + " OWNER_EXECUTE (execute) perm mismatch, expected: " + expected + ", was actually: "
+                        + attrs.permissions(),
+                expected.contains(PosixFilePermission.OWNER_EXECUTE),
+                attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE));
     }
 
     @After
@@ -184,15 +197,15 @@ public class FilePermissionsTest {
     }
 
     private static String permString(int filePermission) {
-        return String.valueOf((filePermission & 0400) != 0 ? 'r' : '-') +
-                ((filePermission & 0200) != 0 ? 'w' : '-') +
-                ((filePermission & 0100) != 0 ? 'x' : '-') +
-                ((filePermission & 0040) != 0 ? 'r' : '-') +
-                ((filePermission & 0020) != 0 ? 'w' : '-') +
-                ((filePermission & 0010) != 0 ? 'x' : '-') +
-                ((filePermission & 0004) != 0 ? 'r' : '-') +
-                ((filePermission & 0002) != 0 ? 'w' : '-') +
-                ((filePermission & 0001) != 0 ? 'x' : '-');
+        return String.valueOf((filePermission & 0400) != 0 ? 'r' : '-')
+                + ((filePermission & 0200) != 0 ? 'w' : '-')
+                + ((filePermission & 0100) != 0 ? 'x' : '-')
+                + ((filePermission & 0040) != 0 ? 'r' : '-')
+                + ((filePermission & 0020) != 0 ? 'w' : '-')
+                + ((filePermission & 0010) != 0 ? 'x' : '-')
+                + ((filePermission & 0004) != 0 ? 'r' : '-')
+                + ((filePermission & 0002) != 0 ? 'w' : '-')
+                + ((filePermission & 0001) != 0 ? 'x' : '-');
     }
 
     private Set<PosixFilePermission> filePerms(int filePermission) {

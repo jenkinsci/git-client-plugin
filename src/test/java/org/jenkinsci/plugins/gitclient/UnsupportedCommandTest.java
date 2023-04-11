@@ -23,15 +23,15 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.*;
+
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class UnsupportedCommandTest {
 
@@ -248,8 +248,7 @@ public class UnsupportedCommandTest {
 
     private static class FakeCredentials implements StandardCredentials {
 
-        public FakeCredentials() {
-        }
+        public FakeCredentials() {}
 
         @NonNull
         @Override

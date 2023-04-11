@@ -1,15 +1,14 @@
 package hudson.plugins.git;
 
 import hudson.model.TaskListener;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.List;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.List;
 
 /**
  * IGitAPI interface.
@@ -28,7 +27,7 @@ public interface IGitAPI extends GitClient {
      * @throws java.lang.InterruptedException if interrupted.
      * @see GitClient#hasGitModules
      */
-    boolean hasGitModules( String treeIsh ) throws GitException, InterruptedException;
+    boolean hasGitModules(String treeIsh) throws GitException, InterruptedException;
 
     /**
      * Returns URL of remote name in repository GIT_DIR.
@@ -60,7 +59,7 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    String getDefaultRemote( String _default_ ) throws GitException, InterruptedException;
+    String getDefaultRemote(String _default_) throws GitException, InterruptedException;
 
     /**
      * Returns true if this repositry is bare.
@@ -119,9 +118,9 @@ public interface IGitAPI extends GitClient {
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fixSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException;
+    void fixSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException;
 
-    void setupSubmoduleUrls( String remote, TaskListener listener ) throws GitException, InterruptedException;
+    void setupSubmoduleUrls(String remote, TaskListener listener) throws GitException, InterruptedException;
 
     /**
      * Retrieve commits based on refspec from repository.
@@ -267,9 +266,11 @@ public interface IGitAPI extends GitClient {
     List<Tag> getTagsOnCommit(String revName) throws GitException, IOException, InterruptedException;
 
     /** {@inheritDoc} */
+    @Override
     void changelog(String revFrom, String revTo, OutputStream fos) throws GitException, InterruptedException;
 
     /** {@inheritDoc} */
+    @Override
     void checkoutBranch(String branch, String commitish) throws GitException, InterruptedException;
 
     /**

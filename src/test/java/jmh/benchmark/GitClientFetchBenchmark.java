@@ -2,6 +2,9 @@ package jmh.benchmark;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import jenkins.benchmark.jmh.JmhBenchmark;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
@@ -10,11 +13,6 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 
 /**
  * A JMH micro-benchmark performance test, it aims to compare the performance of git-fetch using both "git" and "jgit"
@@ -43,7 +41,10 @@ public class GitClientFetchBenchmark {
             tmp.before();
             gitDir = tmp.newFolder();
 
-            gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitDir).using(gitExe).getClient();
+            gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitDir)
+                    .using(gitExe)
+                    .getClient();
 
             // fetching all branches
             refSpecs.add(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
@@ -84,19 +85,24 @@ public class GitClientFetchBenchmark {
          * Cairo: (93.54 MiB) https://github.com/cairoshell/cairoshell.git
          * Samba: (324.26 MiB) https://github.com/samba-team/samba.git
          */
-        @Param({"https://github.com/stephenc/java-logging-benchmarks.git",
-                "https://github.com/uutils/coreutils.git",
-                "https://github.com/freedesktop/cairo.git",
-                "https://github.com/samba-team/samba.git"})
+        @Param({
+            "https://github.com/stephenc/java-logging-benchmarks.git",
+            "https://github.com/uutils/coreutils.git",
+            "https://github.com/freedesktop/cairo.git",
+            "https://github.com/samba-team/samba.git"
+        })
         String repoUrl;
 
         private File cloneUpstreamRepositoryLocally(File parentDir, String repoUrl) throws Exception {
             String repoName = repoUrl.split("/")[repoUrl.split("/").length - 1];
             File gitRepoDir = new File(parentDir, repoName);
             gitRepoDir.mkdir();
-            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars()).in(gitRepoDir).using("git").getClient();
+            GitClient cloningGitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(gitRepoDir)
+                    .using("git")
+                    .getClient();
             cloningGitClient.clone_().url(repoUrl).execute();
-//            assertTrue("Unable to create git repo", gitRepoDir.exists());
+            //            assertTrue("Unable to create git repo", gitRepoDir.exists());
             return gitRepoDir;
         }
 
@@ -118,7 +124,8 @@ public class GitClientFetchBenchmark {
     }
 
     @Benchmark
-    public void gitFetchBenchmark(ClientState gitClientState, CloneRepoState cloneRepoState, Blackhole blackhole) throws Exception {
+    public void gitFetchBenchmark(ClientState gitClientState, CloneRepoState cloneRepoState, Blackhole blackhole)
+            throws Exception {
         FetchCommand fetch = gitClientState.gitClient.fetch_().from(cloneRepoState.urIish, gitClientState.refSpecs);
         fetch.execute();
         blackhole.consume(fetch);

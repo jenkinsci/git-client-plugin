@@ -50,18 +50,18 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     @Override
     public boolean supports(CredentialItem... items) {
-        if (!(cred instanceof StandardUsernamePasswordCredentials))
+        if (!(cred instanceof StandardUsernamePasswordCredentials)) {
             return false;
+        }
 
         for (CredentialItem i : items) {
-            if (i instanceof CredentialItem.Username)
+            if (i instanceof CredentialItem.Username) {
                 continue;
-
-            else if (i instanceof CredentialItem.Password)
+            } else if (i instanceof CredentialItem.Password) {
                 continue;
-
-            else
+            } else {
                 return false;
+            }
         }
         return true;
     }
@@ -73,8 +73,9 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     @Override
     public boolean get(URIish uri, CredentialItem... items) throws UnsupportedCredentialItem {
-        if (!(cred instanceof StandardUsernamePasswordCredentials))
+        if (!(cred instanceof StandardUsernamePasswordCredentials)) {
             return false;
+        }
         StandardUsernamePasswordCredentials _cred = (StandardUsernamePasswordCredentials) cred;
 
         for (CredentialItem i : items) {
@@ -83,19 +84,17 @@ public class CredentialsProviderImpl extends CredentialsProvider {
                 continue;
             }
             if (i instanceof CredentialItem.Password) {
-                ((CredentialItem.Password) i).setValue(
-                        _cred.getPassword().getPlainText().toCharArray());
+                ((CredentialItem.Password) i)
+                        .setValue(_cred.getPassword().getPlainText().toCharArray());
                 continue;
             }
             if (i instanceof CredentialItem.StringType) {
                 if (i.getPromptText().equals("Password: ")) {
-                    ((CredentialItem.StringType) i).setValue(
-                            _cred.getPassword().getPlainText());
+                    ((CredentialItem.StringType) i).setValue(_cred.getPassword().getPlainText());
                     continue;
                 }
             }
-            throw new UnsupportedCredentialItem(uri, i.getClass().getName()
-                    + ":" + i.getPromptText());
+            throw new UnsupportedCredentialItem(uri, i.getClass().getName() + ":" + i.getPromptText());
         }
         return true;
     }

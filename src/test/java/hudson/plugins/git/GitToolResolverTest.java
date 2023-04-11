@@ -1,18 +1,17 @@
 package hudson.plugins.git;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.tools.AbstractCommandInstaller;
 import hudson.tools.BatchCommandInstaller;
 import hudson.tools.CommandInstaller;
 import hudson.tools.InstallSourceProperty;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,8 +40,10 @@ public class GitToolResolverTest {
         AbstractCommandInstaller installer = isWindows()
                 ? new BatchCommandInstaller(label, command, toolHome)
                 : new CommandInstaller(label, command, toolHome);
-        GitTool t = new GitTool("myGit", null, Collections.singletonList(
-                new InstallSourceProperty(Collections.singletonList(installer))));
+        GitTool t = new GitTool(
+                "myGit",
+                null,
+                Collections.singletonList(new InstallSourceProperty(Collections.singletonList(installer))));
         t.getDescriptor().setInstallations(t);
 
         GitTool defaultTool = GitTool.getDefaultInstallation();

@@ -57,7 +57,12 @@ class CliGitCommand {
     private String[] run(boolean assertProcessStatus) throws IOException, InterruptedException {
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
         ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
-        Launcher.ProcStarter p = launcher.launch().cmds(args).envs(env).stdout(bytesOut).stderr(bytesErr).pwd(dir);
+        Launcher.ProcStarter p = launcher.launch()
+                .cmds(args)
+                .envs(env)
+                .stdout(bytesOut)
+                .stderr(bytesErr)
+                .pwd(dir);
         int status = p.start().joinWithTimeout(1, TimeUnit.MINUTES, listener);
         String result = bytesOut.toString(StandardCharsets.UTF_8);
         if (bytesErr.size() > 0) {
@@ -78,7 +83,8 @@ class CliGitCommand {
             notFound.removeIf(line::matches);
         }
         if (!notFound.isEmpty()) {
-            fail(Arrays.toString(output) + " did not match all strings in notFound: " + Arrays.toString(expectedRegExes));
+            fail(Arrays.toString(output) + " did not match all strings in notFound: "
+                    + Arrays.toString(expectedRegExes));
         }
     }
 
