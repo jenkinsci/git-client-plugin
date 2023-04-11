@@ -1,15 +1,14 @@
 package hudson.plugins.git;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import static java.util.stream.Collectors.joining;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
-
-import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * SHA1 in the object tree and the collection of branches that
@@ -125,8 +124,7 @@ public class Revision implements java.io.Serializable, Cloneable {
         Revision clone;
         try {
             clone = (Revision) super.clone();
-        }
-        catch (CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
         clone.branches = new ArrayList<>(branches);

@@ -1,24 +1,15 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.model.TaskListener;
 import hudson.plugins.git.IGitAPI;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
-import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.Repository;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.jvnet.hudson.test.Issue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -30,12 +21,20 @@ import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
 /**
  * Git API Tests which doesn't need a working initialized git repo.
  * Implemented in JUnit 4
  */
-
 @RunWith(Parameterized.class)
 public class GitAPINotIntializedTest {
 
@@ -54,7 +53,9 @@ public class GitAPINotIntializedTest {
     private File testGitDir;
     private CliGitCommand cliGitCommand;
 
-    public GitAPINotIntializedTest(final String gitImplName) { this.gitImplName = gitImplName; }
+    public GitAPINotIntializedTest(final String gitImplName) {
+        this.gitImplName = gitImplName;
+    }
 
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
@@ -76,7 +77,8 @@ public class GitAPINotIntializedTest {
         Random random = new Random();
         Thread.sleep(2000L + random.nextInt(4000)); // Wait 2-6 seconds before priming the cache
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
-        File tempDir = Files.createTempDirectory("PrimeGitAPITestNotInitialized").toFile();
+        File tempDir =
+                Files.createTempDirectory("PrimeGitAPITestNotInitialized").toFile();
         WorkspaceWithRepo cache = new WorkspaceWithRepo(tempDir, "git", mirrorListener);
         cache.localMirror();
         Util.deleteRecursive(tempDir);
@@ -109,7 +111,8 @@ public class GitAPINotIntializedTest {
         // Don't assert condition if the temp directory is inside the dev dir.
         // CLI git searches up the directory tree seeking a '.git' directory.
         // If it finds such a directory, it uses it.
-        if (emptyDotGitDir.getAbsolutePath().contains("target") && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
+        if (emptyDotGitDir.getAbsolutePath().contains("target")
+                && emptyDotGitDir.getAbsolutePath().contains("tmp")) {
             return;
         }
         assertFalse("Invalid Git repo reported as valid in " + emptyDotGitDir.getAbsolutePath(), hasGitRepo);
@@ -146,7 +149,6 @@ public class GitAPINotIntializedTest {
         assertEquals("Wrong SHA1 for git-client-1.10.0 tag", expectedTag, knownTag);
     }
 
-
     /**
      * Test getHeadRev with wildcard matching in the branch name.
      * Relies on the branches in the git-client-plugin repository
@@ -166,9 +168,11 @@ public class GitAPINotIntializedTest {
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master);
         ObjectId wildOrigin = testGitClient.getHeadRev(workspace.localMirror(), "*/master");
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), wildOrigin);
-        ObjectId master1 = testGitClient.getHeadRev(workspace.localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
+        ObjectId master1 = testGitClient.getHeadRev(
+                workspace.localMirror(), "not-a-real-origin-but-allowed/m*ster"); // matches master
         assertEquals("heads is " + heads, heads.get("refs/heads/master"), master1);
-        ObjectId getSubmodules1 = testGitClient.getHeadRev(workspace.localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
+        ObjectId getSubmodules1 =
+                testGitClient.getHeadRev(workspace.localMirror(), "X/g*[b]m*dul*"); // matches tests/getSubmodules
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules1);
         ObjectId getSubmodules = testGitClient.getHeadRev(workspace.localMirror(), "N/*et*modul*");
         assertEquals("heads is " + heads, heads.get("refs/heads/tests/getSubmodules"), getSubmodules);
@@ -200,7 +204,8 @@ public class GitAPINotIntializedTest {
          * functioning repository object
          */
         submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
-            assertTrue(repo.getDirectory() + " is not a valid repository",
+            assertTrue(
+                    repo.getDirectory() + " is not a valid repository",
                     repo.getObjectDatabase().exists());
             return null;
         });

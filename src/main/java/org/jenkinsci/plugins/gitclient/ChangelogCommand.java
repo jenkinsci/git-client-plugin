@@ -1,8 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import org.eclipse.jgit.lib.ObjectId;
-
 import java.io.Writer;
+import org.eclipse.jgit.lib.ObjectId;
 
 /**
  * Command builder for generating changelog in the format {@code GitSCM} expects.

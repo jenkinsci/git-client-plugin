@@ -1,28 +1,27 @@
 package hudson.plugins.git;
 
-import org.junit.Test;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThrows;
+
+import org.junit.Test;
 
 public class GitLockFailedExceptionTest {
 
     @Test
     public void throwsGitLockFailedException() {
-        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class,
-                                                         () -> {
-                                                             throw new GitLockFailedException();
-                                                         });
+        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
+            throw new GitLockFailedException();
+        });
         assertThat(lockFailed.getMessage(), is(nullValue()));
     }
 
     @Test
     public void throwsGitLockFailedExceptionWithMessage() {
         String message = "My local exception message";
-        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class,
-                                                         () -> {
-                                                             throw new GitLockFailedException(message);
-                                                         });
+        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
+            throw new GitLockFailedException(message);
+        });
         assertThat(lockFailed.getMessage(), is(message));
     }
 
@@ -30,10 +29,9 @@ public class GitLockFailedExceptionTest {
     public void throwsGitLockFailedExceptionWithCause() {
         String message = "My git exception message";
         GitException e = new GitException(message);
-        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class,
-                                                         () -> {
-                                                             throw new GitLockFailedException(e);
-                                                         });
+        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
+            throw new GitLockFailedException(e);
+        });
         assertThat(lockFailed.getMessage(), is("hudson.plugins.git.GitException: " + message));
     }
 
@@ -42,11 +40,9 @@ public class GitLockFailedExceptionTest {
         String message = "My git exception message";
         GitException e = new GitException(message);
         String lockMessage = "My lock message that is not part of the GitException";
-        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class,
-                                                         () -> {
-                                                             throw new GitLockFailedException(lockMessage, e);
-                                                         });
+        GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
+            throw new GitLockFailedException(lockMessage, e);
+        });
         assertThat(lockFailed.getMessage(), is(lockMessage));
     }
-
 }

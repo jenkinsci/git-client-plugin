@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.io.FileMatchers.anExistingDirectory;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
@@ -16,25 +20,18 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.apache.commons.io.FileUtils;
-
-import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Constants;
-
+import org.eclipse.jgit.lib.ObjectId;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.rules.ErrorCollector;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ErrorCollector;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
 /**
  * Git client maintenance tests.
@@ -88,24 +85,41 @@ public class GitClientMaintenanceTest {
     @BeforeClass
     public static void mirrorUpstreamRepositoryLocally() throws Exception {
         File currentDir = new File(".");
-        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(currentDir).using("git").getClient();
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
-        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars()).in(mirrorParent).using("git").getClient());
+        CliGitCommand mirrorParentGitCmd = new CliGitCommand(Git.with(TaskListener.NULL, new EnvVars())
+                .in(mirrorParent)
+                .using("git")
+                .getClient());
         if (currentDirIsShallow) {
-            mirrorParentGitCmd.run("clone",
+            mirrorParentGitCmd.run(
+                    "clone",
                     // "--reference", currentDir.getAbsolutePath(), // --reference of shallow repo fails
-                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+                    "--mirror",
+                    "https://github.com/jenkinsci/git-client-plugin");
         } else {
-            mirrorParentGitCmd.run("clone",
-                    "--reference", currentDir.getAbsolutePath(),
-                    "--mirror", "https://github.com/jenkinsci/git-client-plugin");
+            mirrorParentGitCmd.run(
+                    "clone",
+                    "--reference",
+                    currentDir.getAbsolutePath(),
+                    "--mirror",
+                    "https://github.com/jenkinsci/git-client-plugin");
         }
         File mirrorDir = new File(mirrorParent, "git-client-plugin.git");
-        assertThat("Git client mirror repo not created at " + mirrorDir.getAbsolutePath(), mirrorDir, is(anExistingDirectory()));
-        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars()).in(mirrorDir).using("git").getClient();
+        assertThat(
+                "Git client mirror repo not created at " + mirrorDir.getAbsolutePath(),
+                mirrorDir,
+                is(anExistingDirectory()));
+        GitClient mirrorClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(mirrorDir)
+                .using("git")
+                .getClient();
         assertThat(mirrorClient.getTagNames("git-client-1.6.3"), contains("git-client-1.6.3"));
 
         /* Clone from bare mirrorParent/git-client-plugin.git to working mirrorParent/git-client-plugin */
@@ -133,7 +147,10 @@ public class GitClientMaintenanceTest {
         repoRoot = tempFolder.newFolder();
         handler = new LogHandler();
         TaskListener listener = newListener(handler);
-        gitClient = Git.with(listener, new EnvVars()).in(repoRoot).using(gitImplName).getClient();
+        gitClient = Git.with(listener, new EnvVars())
+                .in(repoRoot)
+                .using(gitImplName)
+                .getClient();
         File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
         collector.checkThat("Premature " + gitDir, gitDir, is(not(anExistingDirectory())));
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
@@ -223,8 +240,8 @@ public class GitClientMaintenanceTest {
             return "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks.";
         }
         return expectedResult
-            ? "Git maintenance task " + maintenanceTask + " finished"
-            : "Error executing " + maintenanceTask + " maintenance task";
+                ? "Git maintenance task " + maintenanceTask + " finished"
+                : "Error executing " + maintenanceTask + " maintenance task";
     }
 
     @Test
@@ -242,8 +259,10 @@ public class GitClientMaintenanceTest {
         // Assert loose objects are in the objects directory
         String looseObjects[] = objectsPath.list();
         collector.checkThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
-        collector.checkThat("Missing expected loose objects in objects dir, only found " + String.join(",", looseObjects),
-                looseObjects.length, is(greaterThan(2))); // Initially loose objects are present
+        collector.checkThat(
+                "Missing expected loose objects in objects dir, only found " + String.join(",", looseObjects),
+                looseObjects.length,
+                is(greaterThan(2))); // Initially loose objects are present
 
         // Run the loose objects maintenance task, will create loose-objects pack file
         boolean isExecuted = gitClient.maintenance("loose-objects");
@@ -253,8 +272,10 @@ public class GitClientMaintenanceTest {
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
         String[] looseObjectPackFile = looseObjectPackFilePath.list((dir1, name) -> name.startsWith("loose-"));
-        collector.checkThat("Missing expected loose objects in git dir, only found " + String.join(",", looseObjectPackFile),
-                looseObjectPackFile.length, is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
+        collector.checkThat(
+                "Missing expected loose objects in git dir, only found " + String.join(",", looseObjectPackFile),
+                looseObjectPackFile.length,
+                is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
 
         // Clean the loose objects present in the repo.
         isExecuted = gitClient.maintenance("loose-objects");
@@ -273,7 +294,8 @@ public class GitClientMaintenanceTest {
 
         // Run incremental repack maintenance task
         // Need to create pack files to use incremental repack
-        collector.checkThat(gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenace
+        collector.checkThat(
+                gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenace
 
         collector.checkThat(gitClient.maintenance(maintenanceTask), is(incrementalRepackSupported));
 
@@ -323,8 +345,8 @@ public class GitClientMaintenanceTest {
         collector.checkThat(gitClient.maintenance(maintenanceTask), is(false));
 
         String expectedMessage = gitImplName.startsWith("jgit")
-            ? "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks."
-            : "Error executing invalid-maintenance-task maintenance task";
+                ? "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks."
+                : "Error executing invalid-maintenance-task maintenance task";
         collector.checkThat(handler.getMessages(), hasItem(expectedMessage));
     }
 }

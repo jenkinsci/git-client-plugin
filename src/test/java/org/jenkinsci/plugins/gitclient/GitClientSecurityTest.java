@@ -1,9 +1,14 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,10 +17,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -24,14 +27,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import org.jvnet.hudson.test.Issue;
-
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Git client security tests,
@@ -59,6 +55,7 @@ public class GitClientSecurityTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
     private File repoRoot = null;
 
     public GitClientSecurityTest(final String badRemoteUrl, final boolean enableRemoteCheckUrl) {
@@ -73,7 +70,10 @@ public class GitClientSecurityTest {
     static {
         CliGitAPIImpl tempGitClient;
         try {
-            tempGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars()).in(SRC_REPO_DIR).using("git").getClient();
+            tempGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                    .in(SRC_REPO_DIR)
+                    .using("git")
+                    .getClient();
         } catch (Exception e) {
             tempGitClient = null;
         }
@@ -115,14 +115,13 @@ public class GitClientSecurityTest {
      */
     private static boolean enableRemoteCheck(String attack) {
         boolean enabled = CONFIG_RANDOM.nextBoolean();
-        if (!enabled &&
-            !CLI_GIT_SUPPORTS_OPERAND_SEPARATOR &&
-            (attack.equals("-q")
-             || attack.equals("--quiet")
-             || attack.equals("-t")
-             || attack.equals("--tags")
-             || attack.startsWith("--upload-pack=")
-            )) {
+        if (!enabled
+                && !CLI_GIT_SUPPORTS_OPERAND_SEPARATOR
+                && (attack.equals("-q")
+                        || attack.equals("--quiet")
+                        || attack.equals("-t")
+                        || attack.equals("--tags")
+                        || attack.startsWith("--upload-pack="))) {
             enabled = true;
         }
         return enabled;
@@ -178,7 +177,10 @@ public class GitClientSecurityTest {
     @Before
     public void setGitClient() throws IOException, InterruptedException {
         repoRoot = tempFolder.newFolder();
-        gitClient = Git.with(TaskListener.NULL, new EnvVars()).in(repoRoot).using("git").getClient();
+        gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                .in(repoRoot)
+                .using("git")
+                .getClient();
         File gitDir = gitClient.getRepository().getDirectory();
         assertFalse("Already found " + gitDir, gitDir.isDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
@@ -257,7 +259,8 @@ public class GitClientSecurityTest {
 
     @After
     public void checkMarkerFile() {
-        if (enableRemoteCheckUrl) { /* If remote checking is disabled, marker file is expected in several cases */
+        if (enableRemoteCheckUrl) {
+            /* If remote checking is disabled, marker file is expected in several cases */
             File markerFile = new File(markerFileName);
             assertFalse("Marker file '" + markerFileName + "' detected after test", markerFile.exists());
         }
@@ -267,8 +270,7 @@ public class GitClientSecurityTest {
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.getHeadRev(badRemoteUrl));
+        GitException e = assertThrows(GitException.class, () -> gitClient.getHeadRev(badRemoteUrl));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
@@ -276,8 +278,8 @@ public class GitClientSecurityTest {
     @Issue("SECURITY-1534")
     public void testGetHeadRev_String_String_SECURITY_1534() {
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.getHeadRev(badRemoteUrl, DEFAULT_BRANCH_NAME));
+        GitException e =
+                assertThrows(GitException.class, () -> gitClient.getHeadRev(badRemoteUrl, DEFAULT_BRANCH_NAME));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
@@ -287,8 +289,9 @@ public class GitClientSecurityTest {
         boolean headsOnly = random.nextBoolean();
         boolean tagsOnly = random.nextBoolean();
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.getRemoteReferences(badRemoteUrl, "*" + DEFAULT_BRANCH_NAME, headsOnly, tagsOnly));
+        GitException e = assertThrows(
+                GitException.class,
+                () -> gitClient.getRemoteReferences(badRemoteUrl, "*" + DEFAULT_BRANCH_NAME, headsOnly, tagsOnly));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
@@ -299,8 +302,8 @@ public class GitClientSecurityTest {
             return;
         }
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.getRemoteSymbolicReferences(badRemoteUrl, DEFAULT_BRANCH_NAME));
+        GitException e = assertThrows(
+                GitException.class, () -> gitClient.getRemoteSymbolicReferences(badRemoteUrl, DEFAULT_BRANCH_NAME));
         assertThat(e.getMessage(), containsString(expectedMessage));
     }
 
@@ -312,8 +315,9 @@ public class GitClientSecurityTest {
         RefSpec refSpec = new RefSpec(refSpecString);
         refSpecs.add(refSpec);
         URIish badRepoUrl = new URIish(badRemoteUrl.trim());
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.fetch_().from(badRepoUrl, refSpecs).execute());
+        GitException e = assertThrows(
+                GitException.class,
+                () -> gitClient.fetch_().from(badRepoUrl, refSpecs).execute());
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRepoUrl.toPrivateASCIIString()));
         }
@@ -324,8 +328,7 @@ public class GitClientSecurityTest {
     public void testFetch_String_SECURITY_1534() throws Exception {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.fetch("origin", refSpec));
+        GitException e = assertThrows(GitException.class, () -> gitClient.fetch("origin", refSpec));
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRemoteUrl.trim()));
         }
@@ -336,8 +339,7 @@ public class GitClientSecurityTest {
     public void testFetch_String_RefSpec_SECURITY_1534() throws Exception {
         RefSpec refSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         gitClient.setRemoteUrl("origin", badRemoteUrl);
-        GitException e = assertThrows(GitException.class,
-                                      () -> gitClient.fetch("origin", refSpec, refSpec, refSpec));
+        GitException e = assertThrows(GitException.class, () -> gitClient.fetch("origin", refSpec, refSpec, refSpec));
         if (enableRemoteCheckUrl) {
             assertThat(e.getMessage(), containsString("Invalid remote URL: " + badRemoteUrl.trim()));
         }
