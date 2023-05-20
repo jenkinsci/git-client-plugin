@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -82,7 +83,10 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
             }
 
             if (!isValid) {
-                LOGGER.log(Level.WARNING, "Host key {0} was not accepted.", hostnamePort);
+                LOGGER.log(
+                        Level.FINER,
+                        "Host key for {0} was not accepted on accept first verifier known hosts file {1}",
+                        new Object[] {hostnamePort, path.toString()});
                 listener.getLogger().printf("Host key for host %s was not accepted.%n", hostnamePort);
             }
 
@@ -93,6 +97,15 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
                 File knownHostsFile, String hostnamePort, String serverHostKeyAlgorithm, byte[] serverHostKey)
                 throws IOException {
             listener.getLogger().println("Adding " + hostnamePort + " to " + knownHostsFile.toPath());
+            LOGGER.log(
+                    Level.FINEST,
+                    "Adding {0} to known hosts {1} in accept first verifier with host key {2} {3}",
+                    new Object[] {
+                        hostnamePort,
+                        knownHostsFile.toPath().toString(),
+                        serverHostKeyAlgorithm,
+                        Base64.getEncoder().encodeToString(serverHostKey)
+                    });
             KnownHosts.addHostkeyToFile(
                     knownHostsFile,
                     new String[] {KnownHosts.createHashedHostname(hostnamePort)},
