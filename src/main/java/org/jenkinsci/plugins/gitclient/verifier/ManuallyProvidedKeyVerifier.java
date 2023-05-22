@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,6 +26,10 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         return tempKnownHosts -> {
             Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             listener.getLogger().println("Verifying host key using manually-configured host key entries");
+            LOGGER.log(
+                    Level.FINEST,
+                    "Verifying manually-configured host keys entry in {0} with host keys {1}",
+                    new Object[] {tempKnownHosts.toAbsolutePath(), approvedHostKeys});
             String userKnownHostsFileFlag;
             if (File.pathSeparatorChar
                     == ';') { // check whether on Windows or not without sending Functions over remoting
@@ -71,6 +76,9 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                 String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
             listener.getLogger()
                     .printf("Verifying host key for %s using manually-configured host key entries %n", hostname);
+            LOGGER.log(Level.FINEST, "Verifying host {0}:{1} with manually-configured host key {2} {3}", new Object[] {
+                hostname, port, serverHostKeyAlgorithm, Base64.getEncoder().encodeToString(serverHostKey)
+            });
             return verifyServerHostKey(
                     listener, getKnownHosts(), hostname, port, serverHostKeyAlgorithm, serverHostKey);
         }
