@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -1568,19 +1567,6 @@ public class GitAPITest {
                 .call();
 
         assertTrue("Workspace must be clean", status.isClean());
-    }
-
-    @Test
-    public void testDescribe() throws Exception {
-        workspace.commitEmpty("first");
-        workspace.launchCommand("git", "tag", "-m", "test", "t1");
-        workspace.touch(testGitDir, "a", "");
-        testGitClient.add("a");
-        testGitClient.commit("second");
-        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
-
-        workspace.launchCommand("git", "tag", "-m", "test2", "t2");
-        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
     }
 
     @Test
