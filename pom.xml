@@ -61,7 +61,6 @@
     <revision>4.2.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.361.4</jenkins.version>
     <jgit.version>6.5.0.202303070854-r</jgit.version>
