@@ -52,7 +52,7 @@ public class GitToolConfiguratorJenkinsRuleTest {
     }
 
     @Rule
-    public JenkinsRule j = new JenkinsRule();
+    public JenkinsRule r = new JenkinsRule();
 
     @Test
     public void testDescribeGitToolEmptyProperties() throws Exception {
