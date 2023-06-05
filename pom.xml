@@ -60,6 +60,8 @@
   <properties>
     <revision>4.3.1</revision>
     <changelist>-SNAPSHOT</changelist>
+    <!-- TODO: Remove when updated to plugin bill of materials that includes this version -->
+    <configuration-as-code-plugin.version>1647.ve39ca_b_829b_42</configuration-as-code-plugin.version>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.387.3</jenkins.version>
@@ -84,6 +86,7 @@
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
+      <version>${configuration-as-code-plugin.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -202,6 +205,7 @@
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
       <artifactId>test-harness</artifactId>
+      <version>${configuration-as-code-plugin.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
