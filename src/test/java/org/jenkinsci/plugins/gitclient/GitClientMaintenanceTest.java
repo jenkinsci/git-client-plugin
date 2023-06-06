@@ -275,7 +275,7 @@ public class GitClientMaintenanceTest {
         // CLI git 2.41 adds a new ".rev" suffixed file that is ignored in these assertions
         List<String> fileNames = Arrays.asList(looseObjectPackFile);
         List<String> requiredSuffixes = Arrays.asList(".idx", ".pack");
-        requiredSuffixes.forEach(expected -> assertThat(fileNames, hasItem(endsWith(expected))));
+        requiredSuffixes.forEach(expected -> collector.checkThat(fileNames, hasItem(endsWith(expected))));
 
         // Clean the loose objects present in the repo.
         isExecuted = gitClient.maintenance("loose-objects");
