@@ -60,6 +60,8 @@
   <properties>
     <revision>4.3.1</revision>
     <changelist>-SNAPSHOT</changelist>
+    <!-- Character set tests fail unless file.encoding is set -->
+    <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.387.3</jenkins.version>
