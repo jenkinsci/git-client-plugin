@@ -4,6 +4,8 @@
 buildPlugin(
   // Container agents start faster and are easier to administer
   useContainerAgent: true,
+  // Disable artifact caching proxy
+  useArtifactCachingProxy: false,
   // Show failures on all configurations
   failFast: false,
   // Test Java 11 with minimum Jenkins version, Java 17 with a more recent version
