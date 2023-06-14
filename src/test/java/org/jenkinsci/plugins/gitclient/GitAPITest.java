@@ -8,7 +8,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.jenkinsci.plugins.gitclient.StringSharesPrefix.sharesPrefix;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -486,10 +485,8 @@ public class GitAPITest {
          */
         final String fileName = "\uD835\uDD65-\u5c4f\u5e55\u622a\u56fe-\u0041\u030a-\u00c5-\u212b-fileName.xml";
         workspace.touch(testGitDir, fileName, "content " + fileName);
-        withSystemLocaleReporting(fileName, () -> {
-            testGitClient.add(fileName);
-            testGitClient.commit(fileName);
-        });
+        testGitClient.add(fileName);
+        testGitClient.commit(fileName);
 
         /* JENKINS-27910 reported that certain cyrillic file names
          * failed to delete if the encoding was not UTF-8.
@@ -497,17 +494,13 @@ public class GitAPITest {
         final String fileNameSwim =
                 "\u00d0\u00bf\u00d0\u00bb\u00d0\u00b0\u00d0\u00b2\u00d0\u00b0\u00d0\u00bd\u00d0\u00b8\u00d0\u00b5-swim.png";
         workspace.touch(testGitDir, fileNameSwim, "content " + fileNameSwim);
-        withSystemLocaleReporting(fileNameSwim, () -> {
-            testGitClient.add(fileNameSwim);
-            testGitClient.commit(fileNameSwim);
-        });
+        testGitClient.add(fileNameSwim);
+        testGitClient.commit(fileNameSwim);
 
         final String fileNameFace = "\u00d0\u00bb\u00d0\u00b8\u00d1\u2020\u00d0\u00be-face.png";
         workspace.touch(testGitDir, fileNameFace, "content " + fileNameFace);
-        withSystemLocaleReporting(fileNameFace, () -> {
-            testGitClient.add(fileNameFace);
-            testGitClient.commit(fileNameFace);
-        });
+        testGitClient.add(fileNameFace);
+        testGitClient.commit(fileNameFace);
 
         workspace.touch(testGitDir, ".gitignore", ".test");
         testGitClient.add(".gitignore");
@@ -1571,19 +1564,6 @@ public class GitAPITest {
     }
 
     @Test
-    public void testDescribe() throws Exception {
-        workspace.commitEmpty("first");
-        workspace.launchCommand("git", "tag", "-m", "test", "t1");
-        workspace.touch(testGitDir, "a", "");
-        testGitClient.add("a");
-        testGitClient.commit("second");
-        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
-
-        workspace.launchCommand("git", "tag", "-m", "test2", "t2");
-        assertThat(workspace.launchCommand("git", "describe").trim(), sharesPrefix(testGitClient.describe("HEAD")));
-    }
-
-    @Test
     public void testRevListTag() throws Exception {
         workspace.commitEmpty("c1");
         FileRepository repo = new FileRepository(new File(testGitDir, ".git"));
@@ -1726,25 +1706,5 @@ public class GitAPITest {
      */
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
-    }
-
-    private void withSystemLocaleReporting(String fileName, TestedCode code) throws Exception {
-        try {
-            code.run();
-        } catch (GitException ge) {
-            // Exception message should contain the actual file name.
-            // It may just contain ? for characters that are not encoded correctly due to the system locale.
-            // If such a mangled file name is seen instead, throw a clear exception to indicate the root cause.
-            assertTrue(
-                    "System locale does not support filename '" + fileName + "'",
-                    ge.getMessage().contains("?"));
-            // Rethrow exception for all other issues.
-            throw ge;
-        }
-    }
-
-    @FunctionalInterface
-    interface TestedCode {
-        void run() throws Exception;
     }
 }

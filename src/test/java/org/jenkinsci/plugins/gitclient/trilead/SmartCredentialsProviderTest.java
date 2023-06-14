@@ -18,6 +18,8 @@ public class SmartCredentialsProviderTest {
     private TaskListener listener;
     private SmartCredentialsProvider provider;
     private final URIish gitURI;
+    private final URIish gitURISlash;
+    private final URIish gitURIShort;
     private CredentialItem.Username username;
     private CredentialItem.Password password;
     private CredentialItem.StringType maskedStringType;
@@ -32,7 +34,10 @@ public class SmartCredentialsProviderTest {
     private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
     public SmartCredentialsProviderTest() throws URISyntaxException {
-        gitURI = new URIish("git://example.com/someone/somewhere.git");
+        String baseUri = "git://example.com/someone/somewhere";
+        gitURI = new URIish(baseUri + ".git");
+        gitURISlash = new URIish(baseUri + ".git/");
+        gitURIShort = new URIish(baseUri);
     }
 
     @Before
@@ -237,5 +242,22 @@ public class SmartCredentialsProviderTest {
         assertThrows(
                 UnsupportedCredentialItem.class,
                 () -> provider.get(gitURI, username, password, maskedUsername, unmaskedUsername, maskedStringType));
+    }
+
+    @Test
+    public void testSimilarUrlsAcceptedForCredentials() {
+        String expectedUsername = "expected-add-credentials-username";
+        String secretValue = "secret-value";
+        Secret secret = Secret.fromString(secretValue);
+        StandardUsernamePasswordCredentials credentials =
+                new StandardUsernamePasswordCredentialsImpl(expectedUsername, secret);
+
+        assertFalse(provider.get(gitURI, username, password));
+
+        provider.addCredentials(gitURI.toString(), credentials);
+
+        assertTrue(provider.get(gitURI, username, password));
+        assertTrue(provider.get(gitURISlash, username, password));
+        assertTrue(provider.get(gitURIShort, username, password));
     }
 }
