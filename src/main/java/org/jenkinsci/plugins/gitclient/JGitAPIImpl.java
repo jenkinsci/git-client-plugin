@@ -1601,7 +1601,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                         String absoluteReference =
                                                 objectsPath.getAbsolutePath().replace('\\', '/');
                                         listener.getLogger().println("Using reference repository: " + reference);
-                                        try (PrintWriter w = new PrintWriter(alternates, "UTF-8")) {
+                                        try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
                                             // git implementations on windows also use
                                             w.print(absoluteReference);
                                         }
