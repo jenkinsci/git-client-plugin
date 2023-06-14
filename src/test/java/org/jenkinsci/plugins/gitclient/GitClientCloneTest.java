@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
@@ -715,7 +714,7 @@ public class GitClientCloneTest {
                 new File(_testGitDir, alternates),
                 is(anExistingFile()));
         final String expectedContent = _testAltDir.replace("\\", "/") + "/objects";
-        final String actualContent = FileUtils.readFileToString(new File(_testGitDir, alternates), "UTF-8");
+        final String actualContent = Files.readString(testGitDir.toPath().resolve(alternates), StandardCharsets.UTF_8);
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
