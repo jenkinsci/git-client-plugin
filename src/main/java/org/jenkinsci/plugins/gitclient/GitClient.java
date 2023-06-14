@@ -735,7 +735,7 @@ public interface GitClient {
     /**
      * subGit.
      *
-     * @return a IGitAPI implementation to manage git submodule repository
+     * @return an {@link IGitAPI} implementation to manage git submodule repository
      * @param subdir a {@link java.lang.String} object.
      */
     GitClient subGit(String subdir);
