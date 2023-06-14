@@ -724,7 +724,7 @@ public interface GitClient {
     /**
      * newGit.
      *
-     * @return a IGitAPI implementation to manage another git repository
+     * @return an {@link IGitAPI} implementation to manage another git repository
      *   with same general settings and implementation as the current one.
      * @param somedir a {@link java.lang.String} object.
      */
