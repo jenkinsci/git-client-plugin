@@ -837,15 +837,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (isParameterizedReferenceRepository(reference)) {
                         // LegacyCompatibleGitAPIImpl.java has a logging trace, but not into build console via listener
                         listener.getLogger()
-                                .println("[INFO] The git reference repository path '" + reference
-                                        + "' is parameterized, it may take a few git queries logged "
+                                .println("[INFO] The git reference repository path '" + reference + "' "
+                                        + "is parameterized, it may take a few git queries logged "
                                         + "below to resolve it into a particular directory name");
                     }
                     File referencePath = findParameterizedReferenceRepository(reference, url);
                     if (referencePath == null) {
                         listener.getLogger()
-                                .println("[ERROR] Could not make File object from reference path, skipping its use: "
-                                        + reference);
+                                .println("[ERROR] Could not make File object from reference path, "
+                                        + "skipping its use: " + reference);
                     } else {
                         if (!referencePath.getPath().equals(reference)) {
                             // Note: both these logs are needed, they are used in selftest
@@ -861,18 +861,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             reference = referencePath.getPath();
                         }
 
-                        if (!referencePath.exists())
+                        if (!referencePath.exists()) {
                             listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                        else if (!referencePath.isDirectory())
+                        } else if (!referencePath.isDirectory()) {
                             listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                        else {
+                        } else {
                             File objectsPath = getObjectsFile(referencePath);
-                            if (objectsPath == null || !objectsPath.isDirectory())
+                            if (objectsPath == null || !objectsPath.isDirectory()) {
                                 listener.getLogger()
-                                        .println(
-                                                "[WARNING] Reference path does not contain an objects directory (not a git repo?): "
-                                                        + objectsPath);
-                            else {
+                                        .println("[WARNING] Reference path does not contain an objects directory "
+                                                + "(not a git repo?): " + objectsPath);
+                            } else {
                                 // Go behind git's back to write a meta file in new workspace
                                 File alternates = new File(workspace, ".git/objects/info/alternates");
                                 try (PrintWriter w = new PrintWriter(
@@ -1518,11 +1517,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if ((ref != null) && !ref.isEmpty()) {
                     if (!isParameterizedReferenceRepository(ref)) {
                         File referencePath = new File(ref);
-                        if (!referencePath.exists())
+                        if (!referencePath.exists()) {
                             listener.getLogger().println("[WARNING] Reference path does not exist: " + ref);
-                        else if (!referencePath.isDirectory())
+                        } else if (!referencePath.isDirectory()) {
                             listener.getLogger().println("[WARNING] Reference path is not a directory: " + ref);
-                        else args.add("--reference", ref);
+                        } else {
+                            args.add("--reference", ref);
+                        }
                     } // else handled below in per-module loop
                 }
                 if (shallow) {
@@ -1585,9 +1586,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         File referencePath = findParameterizedReferenceRepository(ref, strURIish);
                         if (referencePath == null) {
                             listener.getLogger()
-                                    .println(
-                                            "[ERROR] Could not make File object from reference path, skipping its use: "
-                                                    + ref);
+                                    .println("[ERROR] Could not make File object from reference path, "
+                                            + "skipping its use: " + ref);
                         } else {
                             String expRef = null;
                             if (referencePath.getPath().equals(ref)) {
@@ -1596,11 +1596,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 expRef = referencePath.getPath();
                                 expRef += " (expanded from " + ref + ")";
                             }
-                            if (!referencePath.exists())
-                                listener.getLogger().println("[WARNING] Reference path does not exist: " + expRef);
-                            else if (!referencePath.isDirectory())
-                                listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
-                            else args.add("--reference", referencePath.getPath());
+                            if (!referencePath.exists()) {
+                                listener.getLogger()
+                                        .println("[WARNING] Reference path does not exist: " + expRef);
+                            } else if (!referencePath.isDirectory()) {
+                                listener.getLogger()
+                                        .println("[WARNING] Reference path is not a directory: " + expRef);
+                            } else {
+                                args.add("--reference", referencePath.getPath());
+                            }
                         }
                     }
 
@@ -2959,10 +2963,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .toAbsolutePath()
                             .normalize()
                             .toFile();
-                throw new GitException("Command \"" + command + "\" executed in workdir \""
-                        + workDir.toString() + "\" returned status code "
-                        + status + ":\nstdout: "
-                        + stdout + "\nstderr: " + stderr);
+                throw new GitException("Command \"" + command
+                        + "\" executed in workdir \"" + workDir.toString()
+                        + "\" returned status code " + status
+                        + ":\nstdout: " + stdout
+                        + "\nstderr: " + stderr);
             }
 
             return stdout;
