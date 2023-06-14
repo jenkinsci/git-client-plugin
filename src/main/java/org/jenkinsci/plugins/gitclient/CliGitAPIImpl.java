@@ -1597,11 +1597,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                 expRef += " (expanded from " + ref + ")";
                             }
                             if (!referencePath.exists()) {
-                                listener.getLogger()
-                                        .println("[WARNING] Reference path does not exist: " + expRef);
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + expRef);
                             } else if (!referencePath.isDirectory()) {
-                                listener.getLogger()
-                                        .println("[WARNING] Reference path is not a directory: " + expRef);
+                                listener.getLogger().println("[WARNING] Reference path is not a directory: " + expRef);
                             } else {
                                 args.add("--reference", referencePath.getPath());
                             }

@@ -468,8 +468,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         LOGGER.log(
-                Level.FINEST,
-                "normalizeGitUrl('" + url + "', " + checkLocalPaths.toString() + ") => " + urlNormalized);
+                Level.FINEST, "normalizeGitUrl('" + url + "', " + checkLocalPaths.toString() + ") => " + urlNormalized);
         return urlNormalized;
     }
 
@@ -636,8 +635,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             LOGGER.log(
                     Level.FINE,
-                    "getSubmodulesUrls(): looking at basename-like subdirs under base refrepo '"
-                            + referenceBaseDirAbs + "', per arrDirnames: " + arrDirnames.toString());
+                    "getSubmodulesUrls(): looking at basename-like subdirs under base refrepo '" + referenceBaseDirAbs
+                            + "', per arrDirnames: " + arrDirnames.toString());
 
             for (String dirname : arrDirnames) {
                 f = new File(dirname);
@@ -666,8 +665,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             String uriNorm = normalizeGitUrl(uri, true);
                             LOGGER.log(
                                     Level.FINE,
-                                    "getSubmodulesUrls(): checking uri='" + uri
-                                            + "' (uriNorm='" + uriNorm + "') vs needle");
+                                    "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm
+                                            + "') vs needle");
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 result = new LinkedHashSet<>();
                                 result.add(new String[] {dirname, uri, uriNorm, remoteName});
@@ -815,9 +814,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         for (String dirname : arrDirnames) {
             // Note that here dirnames deal in absolutes
             f = new File(dirname);
-            LOGGER.log(
-                    Level.FINEST,
-                    "getSubmodulesUrls(): probing dir '" + dirname + "' if it exists");
+            LOGGER.log(Level.FINEST, "getSubmodulesUrls(): probing dir '" + dirname + "' if it exists");
             if (f.exists() && f.isDirectory()) {
                 // No checks for ".git" or "objects" this time, already checked above
                 // by getObjectsFile(). Probably should not check exists/dir either,
@@ -845,12 +842,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             String uriNorm = normalizeGitUrl(uri, true);
                             LOGGER.log(
                                     Level.FINE,
-                                    "getSubmodulesUrls(): checking uri='" + uri
-                                            + "' (uriNorm='" + uriNorm + "') vs needle");
+                                    "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm
+                                            + "') vs needle");
                             if (needle != null
                                     && needleNorm != null
-                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))
-                            ) {
+                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))) {
                                 result = new LinkedHashSet<>();
                                 result.add(new String[] {dirname, uri, uriNorm, remoteName});
                                 return new SimpleEntry<>(true, result);
@@ -875,24 +871,21 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Here is a good spot to recurse this routine into a
                 // subdir that is already a known git workspace, to
                 // add its data to list and/or return a found needle.
-                LOGGER.log(
-                        Level.FINE,
-                        "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
-                SimpleEntry<Boolean, LinkedHashSet<String[]>> subEntriesRet =
-                        getSubmodulesUrls(dirname, needle, false);
+                LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
+                SimpleEntry<Boolean, LinkedHashSet<String[]>> subEntriesRet = getSubmodulesUrls(dirname, needle, false);
                 Boolean subEntriesExactMatched = subEntriesRet.getKey();
                 LinkedHashSet<String[]> subEntries = subEntriesRet.getValue();
                 LOGGER.log(
                         Level.FINE,
-                        "getSubmodulesUrls(): returned from recursing into dir '" + dirname
-                                + "' with " + subEntries.size() + " found mappings");
+                        "getSubmodulesUrls(): returned from recursing into dir '" + dirname + "' with "
+                                + subEntries.size() + " found mappings");
                 if (!subEntries.isEmpty()) {
                     if (needle != null && subEntriesExactMatched) {
                         // We found nothing... until now! Bubble it up!
                         LOGGER.log(
                                 Level.FINE,
-                                "getSubmodulesUrls(): got an exact needle match from recursing into dir '"
-                                        + dirname + "': " + subEntries.iterator().next()[0]);
+                                "getSubmodulesUrls(): got an exact needle match from recursing into dir '" + dirname
+                                        + "': " + subEntries.iterator().next()[0]);
                         return subEntriesRet;
                     }
                     // ...else collect results to inspect and/or propagate later
@@ -1061,25 +1054,17 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // Note: Initially we expect the reference to be a realistic dirname
         // with a special suffix to substitute after the logic below, so the
         // referencePath for that verbatim funny string should not exist now:
-        if (!referencePath.exists()
-                && isParameterizedReferenceRepository(reference)
-                && url != null
-                && !url.isEmpty()
-        ) {
+        if (!referencePath.exists() && isParameterizedReferenceRepository(reference) && url != null && !url.isEmpty()) {
             // Drop the trailing keyword to know the root refrepo dirname
             String referenceBaseDir = reference.replaceAll("/\\$\\{GIT_[^\\}]*\\}$", "");
 
             File referenceBaseDirFile = new File(referenceBaseDir);
             if (!referenceBaseDirFile.exists()) {
-                LOGGER.log(
-                        Level.WARNING,
-                        "Base Git reference directory " + referenceBaseDir + " does not exist");
+                LOGGER.log(Level.WARNING, "Base Git reference directory " + referenceBaseDir + " does not exist");
                 return null;
             }
             if (!referenceBaseDirFile.isDirectory()) {
-                LOGGER.log(
-                        Level.WARNING,
-                        "Base Git reference directory " + referenceBaseDir + " is not a directory");
+                LOGGER.log(Level.WARNING, "Base Git reference directory " + referenceBaseDir + " is not a directory");
                 return null;
             }
 
@@ -1107,26 +1092,21 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             String referenceExpanded = null;
             if (reference.endsWith("/${GIT_URL_SHA256}")) {
                 // This may be the more portable solution with regard to filesystems
-                referenceExpanded = reference.replaceAll(
-                        "\\$\\{GIT_URL_SHA256\\}$",
-                        DigestUtils.sha256Hex(urlNormalized));
+                referenceExpanded =
+                        reference.replaceAll("\\$\\{GIT_URL_SHA256\\}$", DigestUtils.sha256Hex(urlNormalized));
             } else if (reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")) {
                 // The safest option - fall back to parent directory if
                 // the expanded one does not have git repo data right now:
                 // it allows to gradually convert a big combined reference
                 // repository into smaller chunks without breaking builds.
-                referenceExpanded = reference.replaceAll(
-                        "\\$\\{GIT_URL_SHA256_FALLBACK\\}$",
-                        DigestUtils.sha256Hex(urlNormalized));
-                if (getObjectsFile(referenceExpanded) == null
-                        && getObjectsFile(referenceExpanded + ".git") == null
-                ) {
+                referenceExpanded =
+                        reference.replaceAll("\\$\\{GIT_URL_SHA256_FALLBACK\\}$", DigestUtils.sha256Hex(urlNormalized));
+                if (getObjectsFile(referenceExpanded) == null && getObjectsFile(referenceExpanded + ".git") == null) {
                     // chop it off, use main directory
                     referenceExpanded = referenceBaseDir;
                 }
             } else if (reference.endsWith("/${GIT_URL_BASENAME}")
-                    || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")
-            ) {
+                    || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
                 // This may be the more portable solution with regard to filesystems
                 // First try with original user-provided casing of the URL (if local
                 // dirs were cloned manually)
@@ -1140,17 +1120,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 needleBasename = needleBasename.replaceAll(".git$", "");
 
                 if (reference.endsWith("/${GIT_URL_BASENAME}")) {
-                    referenceExpanded = reference.replaceAll(
-                            "\\$\\{GIT_URL_BASENAME\\}$",
-                            needleBasename);
+                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
                 } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
-                    referenceExpanded = reference.replaceAll(
-                            "\\$\\{GIT_URL_BASENAME_FALLBACK\\}$",
-                            needleBasename);
+                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", needleBasename);
                     if (url.equals(urlNormalized)
                             && getObjectsFile(referenceExpanded) == null
-                            && getObjectsFile(referenceExpanded + ".git") == null
-                    ) {
+                            && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory (only if we do not check urlNormalized separately below)
                         referenceExpanded = referenceBaseDir;
                     }
@@ -1158,8 +1133,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
                 if (!url.equals(urlNormalized)
                         && getObjectsFile(referenceExpanded) == null
-                        && getObjectsFile(referenceExpanded + ".git") == null
-                ) {
+                        && getObjectsFile(referenceExpanded + ".git") == null) {
                     // Retry with automation-ready normalized URL
                     sep = urlNormalized.lastIndexOf("/");
                     if (sep < 0) {
@@ -1170,24 +1144,17 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     needleBasename = needleBasename.replaceAll(".git$", "");
 
                     if (reference.endsWith("/${GIT_URL_BASENAME}")) {
-                        referenceExpanded = reference.replaceAll(
-                                "\\$\\{GIT_URL_BASENAME\\}$",
-                                needleBasename);
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
                     } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
-                        referenceExpanded = reference.replaceAll(
-                                "\\$\\{GIT_URL_BASENAME_FALLBACK\\}$",
-                                needleBasename);
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", needleBasename);
                         if (getObjectsFile(referenceExpanded) == null
-                                && getObjectsFile(referenceExpanded + ".git") == null
-                        ) {
+                                && getObjectsFile(referenceExpanded + ".git") == null) {
                             // chop it off, use main directory
                             referenceExpanded = referenceBaseDir;
                         }
                     }
                 }
-            } else if (reference.endsWith("/${GIT_SUBMODULES}")
-                    || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")
-            ) {
+            } else if (reference.endsWith("/${GIT_SUBMODULES}") || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
                 // Here we employ git submodules - so we can reliably match
                 // remote URLs (easily multiple) to particular modules, and
                 // yet keep separate git index directories per module with
@@ -1231,19 +1198,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     }
                     LOGGER.log(
                             Level.FINE,
-                            "findParameterizedReferenceRepository(): got referenceExpanded='"
-                                    + referenceExpanded + "' from subEntries");
+                            "findParameterizedReferenceRepository(): got referenceExpanded='" + referenceExpanded
+                                    + "' from subEntries");
                     if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")
                             && getObjectsFile(referenceExpanded) == null
-                            && getObjectsFile(referenceExpanded + ".git") == null
-                    ) {
+                            && getObjectsFile(referenceExpanded + ".git") == null) {
                         // chop it off, use main directory
                         referenceExpanded = referenceBaseDir;
                     }
                 } else {
-                    LOGGER.log(
-                            Level.FINE,
-                            "findParameterizedReferenceRepository(): got no subEntries");
+                    LOGGER.log(Level.FINE, "findParameterizedReferenceRepository(): got no subEntries");
                     // If there is no hit, the non-fallback mode suggests a new
                     // directory name to host the submodule (same rules as for
                     // the refrepo forks' co-hosting friendly basename search),
@@ -1258,18 +1222,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     needleBasename = needleBasename.replaceAll(".git$", "");
 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
-                        referenceExpanded = reference.replaceAll(
-                                "\\$\\{GIT_SUBMODULES\\}$",
-                                needleBasename);
-                    }
-                    else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
-                        referenceExpanded = reference.replaceAll(
-                                "\\$\\{GIT_SUBMODULES\\}$",
-                                needleBasename);
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
+                    } else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
                         if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")
                                 && getObjectsFile(referenceExpanded) == null
-                                && getObjectsFile(referenceExpanded + ".git") == null
-                        ) {
+                                && getObjectsFile(referenceExpanded + ".git") == null) {
                             // chop it off, use main directory
                             referenceExpanded = referenceBaseDir;
                         }
@@ -1288,8 +1246,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             LOGGER.log(
                     Level.INFO,
-                    "After resolving the parameterized Git reference repository, "
-                            + "decided to use '" + reference + "' directory for URL '" + url + "'");
+                    "After resolving the parameterized Git reference repository, " + "decided to use '" + reference
+                            + "' directory for URL '" + url + "'");
         } // if referencePath is the replaceable token and not existing directory
 
         if (!referencePath.exists() && !reference.endsWith(".git")) {

@@ -1583,8 +1583,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             }
 
                             if (!referencePath.exists()) {
-                                listener.getLogger()
-                                        .println("[WARNING] Reference path does not exist: " + reference);
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
                             } else if (!referencePath.isDirectory()) {
                                 listener.getLogger()
                                         .println("[WARNING] Reference path is not a directory: " + reference);

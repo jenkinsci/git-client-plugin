@@ -363,8 +363,7 @@ public class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n"
-                + "wsRefrepo='" + wsRefrepo);
+        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" + "wsRefrepo='" + wsRefrepo);
 
         testGitClient
                 .clone_()
@@ -398,7 +397,7 @@ public class GitClientCloneTest {
             assertBranchesExist(testGitClient.getBranches(), "master");
             assertNoObjectsInRepository();
         } // else Skip: Missing if clone failed - currently would,
-          // with bogus path above and not pre-created path structure
+        // with bogus path above and not pre-created path structure
     }
 
     @Test
@@ -433,8 +432,7 @@ public class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n"
-                + "wsRefrepo='" + wsRefrepo);
+        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" + "wsRefrepo='" + wsRefrepo);
 
         testGitClient
                 .clone_()
@@ -470,7 +468,7 @@ public class GitClientCloneTest {
             assertBranchesExist(testGitClient.getBranches(), "master");
             assertNoObjectsInRepository();
         } // else Skip: Missing if clone failed - currently would,
-          // with bogus path above and not pre-created path structure
+        // with bogus path above and not pre-created path structure
     }
 
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
@@ -658,13 +656,11 @@ public class GitClientCloneTest {
     }
 
     // Most tests use this method, expecting a non-bare repo
-    private void assertAlternateFilePointsToLocalMirror()
-            throws IOException, InterruptedException {
+    private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
         assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
     }
 
-    private void assertAlternateFilePointsToLocalWorkspaceMirror()
-            throws IOException, InterruptedException {
+    private void assertAlternateFilePointsToLocalWorkspaceMirror() throws IOException, InterruptedException {
         assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
     }
 
@@ -686,13 +682,11 @@ public class GitClientCloneTest {
     }
 
     // Similar for bare repos, without ".git/" dir
-    private void assertAlternateFilePointsToLocalBareMirror()
-            throws IOException, InterruptedException {
+    private void assertAlternateFilePointsToLocalBareMirror() throws IOException, InterruptedException {
         assertAlternateFilePointsToLocalBareMirror(testGitDir);
     }
 
-    private void assertAlternateFilePointsToLocalBareMirror(File _testGitDir)
-            throws IOException, InterruptedException {
+    private void assertAlternateFilePointsToLocalBareMirror(File _testGitDir) throws IOException, InterruptedException {
         assertAlternateFilePointsToLocalBareMirror(_testGitDir.getPath());
     }
 
