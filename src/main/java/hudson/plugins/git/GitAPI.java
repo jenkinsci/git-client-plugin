@@ -174,11 +174,13 @@ public class GitAPI extends CliGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Override
     public GitClient newGit(String somedir) {
         return Git.USE_CLI ? super.newGit(somedir) : jgit.newGit(somedir);
     }
 
     /** {@inheritDoc} */
+    @Override
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
         if (Git.USE_CLI) {
             super.setRemoteUrl(name, url);
