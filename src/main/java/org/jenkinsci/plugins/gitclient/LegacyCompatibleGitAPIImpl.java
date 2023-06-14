@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -629,7 +630,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 arrDirnames.add(referenceBaseDirAbs + "/" + needleNormBasename + ".git");
             }
 
-            needleSha = org.apache.commons.codec.digest.DigestUtils.sha256Hex(needleNorm);
+            needleSha = DigestUtils.sha256Hex(needleNorm);
             arrDirnames.add(referenceBaseDirAbs + "/" + needleSha);
             arrDirnames.add(referenceBaseDirAbs + "/" + needleSha + ".git");
 
@@ -1108,7 +1109,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // This may be the more portable solution with regard to filesystems
                 referenceExpanded = reference.replaceAll(
                         "\\$\\{GIT_URL_SHA256\\}$",
-                        org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                        DigestUtils.sha256Hex(urlNormalized));
             } else if (reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")) {
                 // The safest option - fall back to parent directory if
                 // the expanded one does not have git repo data right now:
@@ -1116,7 +1117,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // repository into smaller chunks without breaking builds.
                 referenceExpanded = reference.replaceAll(
                         "\\$\\{GIT_URL_SHA256_FALLBACK\\}$",
-                        org.apache.commons.codec.digest.DigestUtils.sha256Hex(urlNormalized));
+                        DigestUtils.sha256Hex(urlNormalized));
                 if (getObjectsFile(referenceExpanded) == null
                         && getObjectsFile(referenceExpanded + ".git") == null
                 ) {
