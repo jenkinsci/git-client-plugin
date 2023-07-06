@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <!--
+    Exclusions in this section have been triaged and determined to be
+    false positives.
+  -->
+  <Match>
+    <!-- intentional and accepted that it is not restored -->
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+    <Class name="hudson.plugins.git.GitTool" />
+    <Field name="DEFAULT" />
+  </Match>
+  <Match>
+    <!-- intentional and accepted that it is not restored -->
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+    <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl" />
+    <Field name="launcher" />
+  </Match>
+  <Match>
+    <!-- intentional and accepted that it is not restored -->
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
+    <Class name="org.jenkinsci.plugins.gitclient.RemoteGitImpl$CommandInvocationHandler" />
+    <Field name="channel" />
+  </Match>
+  <Match>
+    <!-- Common pattern in Jenkins plugins -->
+    <Bug pattern="MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR" />
+    <Or>
+      <Class name="hudson.plugins.git.GitTool$DescriptorImpl" />
+    </Or>
+  </Match>
+  <Match>
+    <!-- Common pattern in Jenkins plugins -->
+    <Bug pattern="SE_INNER_CLASS" />
+    <Or>
+      <Class name="org.jenkinsci.plugins.gitclient.Git$GitAPIMasterToSlaveFileCallable" />
+      <Class name="org.jenkinsci.plugins.gitclient.RemoteGitImpl$CommandInvocationHandler$GitCommandMasterToSlaveCallable" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier$AcceptFirstConnectionJGitHostKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.KnownHostsFileVerifier$KnownHostsFileJGitHostKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier$1" />
+    </Or>
+  </Match>
+  <Match>
+    <!-- Common pattern in Jenkins plugins -->
+    <Bug pattern="SE_NO_SERIALVERSIONID" />
+    <Or>
+      <Class name="org.jenkinsci.plugins.gitclient.Git$GitAPIMasterToSlaveFileCallable" />
+      <Class name="org.jenkinsci.plugins.gitclient.RemoteGitImpl$CommandInvocationHandler$GitCommandMasterToSlaveCallable" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionVerifier$AcceptFirstConnectionJGitHostKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.KnownHostsFileVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.KnownHostsFileVerifier$KnownHostsFileJGitHostKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.ManuallyProvidedKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.ManuallyProvidedKeyVerifier$ManuallyProvidedKeyJGitHostKeyVerifier" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier" />
+   </Or>
+  </Match>
+  <Match>
+    <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON" />
+    <Or>
+      <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl$1Candidate" />
+      <Class name="org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier" />
+    </Or>
+  </Match>
+
+  <!--
+    Here lies technical debt. Exclusions in this section have not yet
+    been triaged. When working on this section, pick an exclusion to
+    triage, then:
+
+    - Add a @SuppressFBWarnings(value = "[...]", justification = "[...]")
+      annotation if it is a false positive.  Indicate the reason why
+      it is a false positive, then remove the exclusion from this
+      section.
+
+    - If it is not a false positive, fix the bug, then remove the
+      exclusion from this section.
+   -->
+  <Match>
+    <Bug pattern="REC_CATCH_EXCEPTION" />
+    <Class name="org.jenkinsci.plugins.gitclient.CliGitAPIImpl" />
+    <Method name="hasGitRepo" />
+  </Match>
+  <Match>
+    <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE" />
+    <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl" />
+    <Method name="hasGitRepo" />
+  </Match>
+</FindBugsFilter>
