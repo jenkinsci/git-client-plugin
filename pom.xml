@@ -69,6 +69,7 @@
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
+    <jenkins-test-harness.version>2049.vb_50b_5058e582</jenkins-test-harness.version>
   </properties>
 
   <dependencyManagement>
