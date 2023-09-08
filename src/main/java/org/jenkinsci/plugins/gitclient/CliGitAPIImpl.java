@@ -2850,7 +2850,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .println(
                                 HyperlinkNote.encodeTo(
                                         "https://plugins.jenkins.io/git-client/#plugin-content-ssh-host-key-verification",
-                                        "If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in 'Manage Jenkins' -> 'Configure Global Security' -> 'Git Host Key Verification Configuration'"));
+                                        "If you are using OpenSSH < 7.6 please choose another strategy to verify ssh host key in 'Manage Jenkins' -> 'Security' -> 'Git Host Key Verification Configuration'"));
             }
             throw e;
         } catch (Throwable e) {

@@ -52,7 +52,7 @@ JGit is *disabled by default* when the git client plugin is installed.
 [#enabling-jgit]
 === Enabling JGit
 
-Click the "*Add Git*" button in the "*Global Tool Configuration*" section under "*Manage Jenkins*" to add JGit or JGit with Apache HTTP Client as a git implementation.
+Click the "*Add Git*" button in the "*Tools*" section under "*Manage Jenkins*" to add JGit or JGit with Apache HTTP Client as a git implementation.
 
 image::images/enable-jgit.png[Enable JGit or JGit with Apache HTTP Client]
 
