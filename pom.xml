@@ -58,7 +58,7 @@
   </scm>
 
   <properties>
-    <revision>4.4.1</revision>
+    <revision>4.5.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
