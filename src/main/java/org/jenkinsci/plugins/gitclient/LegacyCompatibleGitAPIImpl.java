@@ -250,10 +250,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 LOGGER.log(
                         Level.FINEST,
                         "getObjectsFile(): found an fGit '" + fGit.getAbsolutePath() + "' which is NOT a directory");
-                BufferedReader reader = null;
-                try {
+                try (BufferedReader reader =
+                        new BufferedReader(new InputStreamReader(new FileInputStream(fGit), "UTF-8"))) {
                     String line;
-                    reader = new BufferedReader(new InputStreamReader(new FileInputStream(fGit), "UTF-8"));
                     while ((line = reader.readLine()) != null) {
                         String[] parts = line.split(":", 2);
                         if (parts.length >= 2) {
@@ -294,16 +293,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             Level.SEVERE,
                             "getObjectsFile(): failed to parse '" + fGit.getAbsolutePath() + "': " + e.toString());
                     objects = null;
-                }
-                try {
-                    if (reader != null) {
-                        reader.close();
-                    }
-                } catch (IOException e) {
-                    LOGGER.log(
-                            Level.SEVERE,
-                            "getObjectsFile(): failed to close file after parsing '" + fGit.getAbsolutePath() + "': "
-                                    + e.toString());
                 }
             }
         } else {
