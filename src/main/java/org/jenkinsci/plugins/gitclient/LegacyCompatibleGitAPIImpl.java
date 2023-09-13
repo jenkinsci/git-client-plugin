@@ -22,6 +22,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -400,7 +401,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
             justification = "Path operations below intentionally use absolute '/' in some cases")
     public static String normalizeGitUrl(String url, Boolean checkLocalPaths) {
-        String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase();
+        String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase(Locale.ENGLISH);
         if (!url.contains("://")) {
             if (!url.startsWith("/") && !url.startsWith(".")) {
                 // Not an URL with schema, not an absolute or relative pathname
@@ -605,7 +606,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // FS object.
             arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename);
             arrDirnames.add(referenceBaseDirAbs + "/" + needleBasename + ".git");
-            needleBasenameLC = needleBasename.toLowerCase();
+            needleBasenameLC = needleBasename.toLowerCase(Locale.ENGLISH);
             if (!needleBasenameLC.equals(needleBasename)) {
                 // Retry with lowercased dirname
                 arrDirnames.add(referenceBaseDirAbs + "/" + needleBasenameLC);
