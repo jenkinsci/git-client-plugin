@@ -58,7 +58,7 @@ public class CredentialsTest {
 
     // Required for credentials use
     @ClassRule
-    public static final JenkinsRule j = new JenkinsRule();
+    public static final JenkinsRule r = new JenkinsRule();
 
     private final String gitImpl;
     private final String gitRepoURL;

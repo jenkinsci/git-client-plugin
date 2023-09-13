@@ -23,8 +23,6 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
-import com.gargoylesoftware.htmlunit.WebResponse;
-import com.gargoylesoftware.htmlunit.util.NameValuePair;
 import hudson.Launcher;
 import hudson.model.TaskListener;
 import hudson.util.StreamTaskListener;
@@ -36,6 +34,8 @@ import java.util.logging.Logger;
 import jenkins.scm.impl.mock.AbstractSampleDVCSRepoRule;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.htmlunit.WebResponse;
+import org.htmlunit.util.NameValuePair;
 import org.jvnet.hudson.test.JenkinsRule;
 
 /**

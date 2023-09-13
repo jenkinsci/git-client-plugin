@@ -15,7 +15,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 public class GitJenkinsRuleTest {
 
     @Rule
-    public JenkinsRule j = new JenkinsRule();
+    public JenkinsRule r = new JenkinsRule();
 
     @Test
     public void testMockClient() throws IOException, InterruptedException {
