@@ -5,8 +5,6 @@ import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import junit.framework.TestCase;
 import org.junit.Test;
 import org.objenesis.ObjenesisStd;
@@ -37,15 +35,7 @@ public class CliGitAPIImplNoProxyHostTest extends TestCase {
         setField(ProxyConfiguration.class, "secretPassword", proxyConfig, null);
 
         cliGit.setProxy(proxyConfig);
-
-        try {
-            Method getNoProxyHosts = CliGitAPIImpl.class.getDeclaredMethod("getNoProxyHosts");
-            getNoProxyHosts.setAccessible(true);
-            String returnValue = (String) getNoProxyHosts.invoke(cliGit, null);
-            assertEquals("NO_PROXY hosts are not set correctly", noProxyHosts, returnValue);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
-        }
+        assertEquals("NO_PROXY hosts are not set correctly", noProxyHosts, cliGit.getNoProxyHosts());
     }
 
     private void setField(Class<?> clazz, String fieldName, Object object, Object value)

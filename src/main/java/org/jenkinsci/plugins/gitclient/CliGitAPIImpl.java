@@ -2082,10 +2082,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Provides all the no proxy hosts from proxy object
-     * of ProxyConfiguration
+     * of ProxyConfiguration.  Package protected for testing.
      * @return proxy hosts concatenated by commas
      */
-    private String getNoProxyHosts() {
+    String getNoProxyHosts() {
         String noProxyHost = proxy.getNoProxyHost();
         List<String> noProxyHosts = new ArrayList<>(Arrays.asList(noProxyHost.split("[\t\n,|]+")));
         return String.join(",", noProxyHosts);
