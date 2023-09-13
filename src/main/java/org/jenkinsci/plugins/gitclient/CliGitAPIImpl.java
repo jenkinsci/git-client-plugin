@@ -1577,10 +1577,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         listener.error("Invalid repository for " + sModuleName);
                         throw new GitException("Invalid repository for " + sModuleName);
                     }
-                    String strURIish = null;
-                    if (urIish != null) {
-                        strURIish = urIish.toPrivateString();
-                    }
+                    String strURIish = urIish.toPrivateString();
 
                     if (isParameterizedReferenceRepository(ref)) {
                         File referencePath = findParameterizedReferenceRepository(ref, strURIish);
