@@ -24,7 +24,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 public class GitToolTest {
 
     @ClassRule
-    public static JenkinsRule j = new JenkinsRule();
+    public static JenkinsRule r = new JenkinsRule();
 
     private GitTool gitTool;
 
@@ -41,7 +41,7 @@ public class GitToolTest {
 
     @Test
     public void testForNode() throws Exception {
-        DumbSlave agent = j.createSlave();
+        DumbSlave agent = r.createSlave();
         agent.setMode(Node.Mode.EXCLUSIVE);
         TaskListener log = StreamTaskListener.fromStdout();
         GitTool newTool = gitTool.forNode(agent, log);

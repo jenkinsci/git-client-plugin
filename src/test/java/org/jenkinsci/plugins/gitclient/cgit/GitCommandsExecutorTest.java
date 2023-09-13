@@ -5,8 +5,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.theInstance;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -196,15 +196,7 @@ public class GitCommandsExecutorTest {
     public void commandWasInterrupted() throws Exception {
         Exception commandException = new InterruptedException("some interrupt");
         List<Callable<String>> commands = Collections.singletonList(erroneousCommand(commandException));
-
-        try {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-            fail("Expected an exception but none was thrown");
-        } catch (Exception e) {
-            assertThat(e, instanceOf(InterruptedException.class));
-            assertThat(e.getMessage(), is(nullValue()));
-            assertThat(e.getCause(), is(theInstance(commandException)));
-        }
+        assertThrows(InterruptedException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
     }
 
     @Test

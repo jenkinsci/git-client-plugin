@@ -272,10 +272,10 @@ public class GitClientMaintenanceTest {
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
         String[] looseObjectPackFile = looseObjectPackFilePath.list((dir1, name) -> name.startsWith("loose-"));
-        collector.checkThat(
-                "Missing expected loose objects in git dir, only found " + String.join(",", looseObjectPackFile),
-                looseObjectPackFile.length,
-                is(2)); // Contains loose-${hash}.pack and loose-${hash}.idx
+        // CLI git 2.41 adds a new ".rev" suffixed file that is ignored in these assertions
+        List<String> fileNames = Arrays.asList(looseObjectPackFile);
+        List<String> requiredSuffixes = Arrays.asList(".idx", ".pack");
+        requiredSuffixes.forEach(expected -> collector.checkThat(fileNames, hasItem(endsWith(expected))));
 
         // Clean the loose objects present in the repo.
         isExecuted = gitClient.maintenance("loose-objects");
