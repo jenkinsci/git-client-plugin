@@ -1,22 +1,29 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
+
 import hudson.EnvVars;
 import hudson.ProxyConfiguration;
 import hudson.model.TaskListener;
 import java.io.File;
-import junit.framework.TestCase;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
  * Test that checks all the no proxy hosts are added or not.
  */
-public class CliGitAPIImplNoProxyHostTest extends TestCase {
+public class CliGitAPIImplNoProxyHostTest {
 
     private CliGitAPIImpl cliGit;
 
+    @Before
+    public void createCliGit() {
+        cliGit = new CliGitAPIImpl("git", new File("."), TaskListener.NULL, new EnvVars());
+    }
+
     @Test
     public void test_no_proxy_host_is_set_correctly() throws NoSuchFieldException, IllegalAccessException {
-        cliGit = new CliGitAPIImpl("git", new File("."), TaskListener.NULL, new EnvVars());
 
         final String proxyHost = "172.16.1.13";
         final int proxyPort = 3128;
@@ -27,6 +34,11 @@ public class CliGitAPIImplNoProxyHostTest extends TestCase {
         ProxyConfiguration proxyConfig =
                 new ProxyConfiguration(proxyHost, proxyPort, proxyUser, proxyPassword, noProxyHosts);
         cliGit.setProxy(proxyConfig);
-        assertEquals("NO_PROXY hosts are not set correctly", noProxyHosts, cliGit.getNoProxyHosts());
+        assertThat(cliGit.getNoProxyHosts(), is(noProxyHosts));
+    }
+
+    @Test
+    public void test_default_value() {
+        assertThat(cliGit.getNoProxyHosts(), is(""));
     }
 }
