@@ -332,6 +332,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this.listener = listener;
         this.gitExe = gitExe;
         this.environment = environment;
+        this.proxy = null;
 
         if (isZos() && System.getProperty("ibm.system.encoding") != null) {
             this.encoding =
