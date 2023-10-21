@@ -1,8 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.eclipse.jgit.lib.Constants.HEAD;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
 import hudson.EnvVars;
