@@ -11,10 +11,11 @@ public class TaskListenerLogger {
      *
      * @param listener the task listener that will print log.
      * @param printDetailedLogs is a boolean value. If it is true the log is printed.
-     * @param msg the message to be printed in the log.
+     * @param msg the message
+     *           to be printed in the log.
      */
     public void printLogs(TaskListener listener, boolean printDetailedLogs, String msg) {
-        if(printDetailedLogs) {
+        if (printDetailedLogs) {
             listener.getLogger().print(msg);
         }
     }

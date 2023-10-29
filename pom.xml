@@ -240,6 +240,17 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/org.jenkins-ci.plugins.workflow/workflow-cps -->
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-cps</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins.workflow</groupId>
+      <artifactId>workflow-job</artifactId>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
