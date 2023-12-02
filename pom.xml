@@ -58,14 +58,14 @@
   </scm>
 
   <properties>
-    <revision>4.5.1</revision>
+    <revision>4.6.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.387.3</jenkins.version>
-    <jgit.version>6.7.0.202309050840-r</jgit.version>
+    <jgit.version>6.8.0.202311291450-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
