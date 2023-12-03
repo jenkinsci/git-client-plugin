@@ -25,12 +25,6 @@ Credential support is provided by the https://plugins.jenkins.io/credentials[Jen
 
 toc::[]
 
-[#changelog]
-== Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
-
-Release notes have been recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] since git client plugin 2.8.1.
-Prior release notes were recorded in the git client plugin repository link:https://github.com/jenkinsci/git-client-plugin/blob/91c7435dffb489c1e0eb0252c7992c61054b822e/CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
-
 [#implementations]
 == Implementations
 
@@ -180,7 +174,6 @@ security:
       manuallyProvidedKeyVerificationStrategy:
         approvedHostKeys: |-
           bitbucket.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIazEu89wgQZ4bqs3d63QSMzYVa0MuJ2e2gKTKqu+UUO
-          git.assembla.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN+whKLd9tzS4IIbZD7rCgly2LNxlvxef4JvwSaL/YZ7
           github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
           gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf
 ----
@@ -269,3 +262,9 @@ If it is not used in those cases, the agent may block on some authenticated git 
 This setting can be helpful with link:https://plugins.jenkins.io/swarm/[Jenkins swarm agents] and inbound agents started from a terminal emulator.
 +
 Default is `false` so that `setsid` is not used.
+
+[#changelog]
+== Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
+
+Release notes have been recorded in https://github.com/jenkinsci/git-client-plugin/releases[GitHub] since git client plugin 2.8.1.
+Prior release notes were recorded in the git client plugin repository link:https://github.com/jenkinsci/git-client-plugin/blob/91c7435dffb489c1e0eb0252c7992c61054b822e/CHANGELOG.adoc#changelog-moved-to-github-releases[change log].
