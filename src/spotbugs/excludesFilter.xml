@@ -5,6 +5,24 @@
     false positives.
   -->
   <Match>
+    <!-- Jenkins plugins generally not vulnerable to Finalizer attacks -->
+    <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    <Or>
+      <Class name="hudson.plugins.git.GitAPI" />
+      <Class name="org.jenkinsci.plugins.gitclient.JGitAPIImpl$FileRepositoryImpl" />
+      <Class name="org.jenkinsci.plugins.gitclient.trilead.TrileadSession$ProcessImpl" />
+    </Or>
+  </Match>
+  <Match>
+    <!-- These primitive attributes need to be public to preserve the API -->
+    <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE" />
+    <Class name="hudson.plugins.git.Tag" />
+    <Or>
+      <Field name="commitMessage" />
+      <Field name="commitSHA1" />
+    </Or>
+  </Match>
+  <Match>
     <!-- intentional and accepted that it is not restored -->
     <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED" />
     <Class name="hudson.plugins.git.GitTool" />

@@ -67,6 +67,7 @@
     <jenkins.version>2.401.3</jenkins.version>
     <jgit.version>6.8.0.202311291450-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
+    <spotbugs-maven-plugin.version>4.8.2.0</spotbugs-maven-plugin.version>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
   </properties>
