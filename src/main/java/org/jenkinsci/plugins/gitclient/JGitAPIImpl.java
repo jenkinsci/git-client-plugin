@@ -1554,7 +1554,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     FetchCommand fetch = new Git(repository)
                             .fetch()
                             .setProgressMonitor(new JGitProgressMonitor(listener))
-                            .setRemote(url.trim())
+                            .setRemote(url)
                             .setCredentialsProvider(getProvider())
                             .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
                             .setRefSpecs(refspecs);
