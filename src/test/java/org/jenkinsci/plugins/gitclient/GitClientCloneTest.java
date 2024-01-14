@@ -40,6 +40,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.jvnet.hudson.test.Issue;
 
 @RunWith(Parameterized.class)
 public class GitClientCloneTest {
@@ -328,11 +329,16 @@ public class GitClientCloneTest {
                         }));
     }
 
+    private String randomSpace() {
+        return random.nextBoolean() ? " " : "";
+    }
+
     @Test
+    @Issue("JENKINS-70303") // spaces at start or end of refspec should be ignored
     public void test_clone_refspecs() throws Exception {
         List<RefSpec> refspecs = Arrays.asList(
-                new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
-                new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
+                new RefSpec(randomSpace() + "+refs/heads/master:refs/remotes/origin/master" + randomSpace()),
+                new RefSpec(randomSpace() + "+refs/heads/1.4.x:refs/remotes/origin/1.4.x" + randomSpace()));
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
