@@ -4,6 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import hudson.EnvVars;
+import hudson.Launcher;
+import hudson.model.TaskListener;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -13,20 +18,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import hudson.EnvVars;
-import hudson.Launcher;
-import hudson.model.TaskListener;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.StreamTaskListener;
-
 /**
  * Run a command line git command, return output as array of String, optionally
  * assert on contents of command output.
  *
  * @author Mark Waite
  */
-class
-CliGitCommand {
+class CliGitCommand {
 
     private final TaskListener listener;
     private final transient Launcher launcher;
