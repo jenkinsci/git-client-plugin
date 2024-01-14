@@ -1,28 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Launcher.LocalLauncher;
-import hudson.Proc;
-import hudson.Util;
-import hudson.console.HyperlinkNote;
-import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitLockFailedException;
-import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IGitAPI;
-import hudson.plugins.git.IndexEntry;
-import hudson.plugins.git.Revision;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.Secret;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -68,6 +45,30 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Launcher.LocalLauncher;
+import hudson.Proc;
+import hudson.Util;
+import hudson.console.HyperlinkNote;
+import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
+import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.Secret;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
@@ -798,7 +799,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<>(refspecs);
+                List<RefSpec> refSpecsList = new ArrayList<RefSpec>();
+                for (RefSpec ref: refspecs) {
+                    refSpecsList.add(new RefSpec(ref.toString().trim()));
+                }
+                this.refspecs = refSpecsList;
                 return this;
             }
 
@@ -870,8 +875,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (refspecs == null) {
-                    refspecs = Collections.singletonList(
-                            new RefSpec("+refs/heads/*:refs/remotes/" + origin.trim() + "/*"));
+                    refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*".trim()));
                 }
                 fetch_().from(urIish, refspecs)
                         .shallow(shallow)
@@ -881,7 +885,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .execute();
                 setRemoteUrl(origin, url);
                 for (RefSpec refSpec : refspecs) {
-                    launchCommand("config", "--add", "remote." + origin + ".fetch", refSpec.toString());
+                    launchCommand("config", "--add", "remote." + origin + ".fetch", refSpec.toString().trim());
                 }
             }
         };
