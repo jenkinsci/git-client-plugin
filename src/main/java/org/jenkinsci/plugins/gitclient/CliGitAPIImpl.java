@@ -871,7 +871,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (refspecs == null) {
                     refspecs = Collections.singletonList(
-                            new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*".trim()));
+                            new RefSpec("+refs/heads/*:refs/remotes/" + origin.trim() + "/*"));
                 }
                 fetch_().from(urIish, refspecs)
                         .shallow(shallow)
