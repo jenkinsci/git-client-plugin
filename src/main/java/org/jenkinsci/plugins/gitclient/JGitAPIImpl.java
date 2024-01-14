@@ -267,7 +267,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CheckoutCommand ref(String ref) {
-                this.ref = ref.trim();
+                this.ref = (ref != null) ? ref.trim() : ref;
                 return this;
             }
 
