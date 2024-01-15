@@ -50,7 +50,7 @@ public class Branch extends GitObject {
      */
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(name, sha1);
     }
 
     /**
