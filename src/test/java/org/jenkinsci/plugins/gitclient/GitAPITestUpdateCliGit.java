@@ -2,7 +2,9 @@ package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import hudson.plugins.git.GitException;
 import java.io.File;
