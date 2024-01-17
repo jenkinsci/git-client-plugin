@@ -1,8 +1,13 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static java.util.stream.Collectors.toList;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyArray;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.Assert.assertThrows;
 
