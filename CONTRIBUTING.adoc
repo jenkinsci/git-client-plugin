@@ -39,13 +39,12 @@ Please don't introduce new spotbugs output.
 * `mvn spotbugs:check` to analyze project using link:https://spotbugs.github.io/[Spotbugs].
 * `mvn spotbugs:gui` to review Spotbugs report using GUI
 
-Code formatting in the git client plugin varies between files.
-Try to maintain reasonable consistency with the existing files where feasible.
+=== Code formatting
 
-Please *don't reformat a file* without discussing with the current maintainers.
-There are many closed pull requests with label 'link:https://github.com/jenkinsci/git-client-plugin/milestone/2?closed=1[Later]' that may develop conflicts due to whitespace changes.
+Source code and pom file formatting is maintained by the `spotless` maven plugin.
+Before submitting a pull request, confirm the formatting is correct with:
 
-New code should follow the link:https://github.com/jenkinsci/scm-api-plugin/blob/master/CONTRIBUTING.md#code-style-guidelines[SCM API code style guidelines].
+* `mvn spotless:apply`
 
 [[pull-request-review]]
 == Reviewing Pull Requests
