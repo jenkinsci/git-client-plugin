@@ -676,7 +676,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
 
                     List<RefSpec> allRefSpecs = new ArrayList<>();
-                    if (refspecs != null) {
+                    if (!refspecs.isEmpty() && refspecs != null) {
                         for (RefSpec rs : refspecs) {
                             allRefSpecs.add(rs);
                         }
