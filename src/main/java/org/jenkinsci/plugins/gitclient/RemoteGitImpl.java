@@ -493,13 +493,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     /** {@inheritDoc} */
     @Override
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
-        List<RefSpec> trimmedRefSpecs = new ArrayList<>();
-        for (RefSpec rs : refspec) {
-            if (rs != null) {
-                trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
-            }
-        }
-        proxy.fetch(remoteName, (RefSpec) trimmedRefSpecs);
+        proxy.fetch(remoteName, refspec);
     }
 
     /** {@inheritDoc} */
