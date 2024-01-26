@@ -1,5 +1,18 @@
 package org.jenkinsci.plugins.gitclient;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.io.Writer;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
@@ -16,18 +29,6 @@ import hudson.plugins.git.Tag;
 import hudson.remoting.Channel;
 import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.io.Writer;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -480,31 +481,43 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     @Override
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
-        proxy.fetch(url, refspecs);
+        List<RefSpec> trimmedRefSpecs = new ArrayList<>();
+        for (RefSpec rs : refspecs) {
+            if (rs != null) {
+                trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
+            }
+        }
+        proxy.fetch(url, trimmedRefSpecs);
     }
 
     /** {@inheritDoc} */
     @Override
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
-        proxy.fetch(remoteName, refspec);
+        List<RefSpec> trimmedRefSpecs = new ArrayList<>();
+        for (RefSpec rs : refspec) {
+            if (rs != null) {
+                trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
+            }
+        }
+        proxy.fetch(remoteName, (RefSpec) trimmedRefSpecs);
     }
 
     /** {@inheritDoc} */
     @Override
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
-        fetch(remoteName, new RefSpec[] {refspec});
+        fetch(remoteName, new RefSpec[] { new RefSpec(refspec.toString().trim())});
     }
 
     /** {@inheritDoc} */
     @Override
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
-        proxy.push(remoteName, refspec);
+        proxy.push(remoteName, refspec.trim());
     }
 
     /** {@inheritDoc} */
     @Override
     public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        proxy.push(url, refspec);
+        proxy.push(url, refspec.trim());
     }
 
     /** {@inheritDoc} */

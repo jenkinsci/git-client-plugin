@@ -1,12 +1,15 @@
 package hudson.plugins.git;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
-import java.io.*;
-import java.util.List;
-import java.util.Set;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
@@ -113,9 +116,9 @@ public class GitAPI extends CliGitAPIImpl {
     @Override
     public void push(String remoteName, String refspec) throws GitException, InterruptedException {
         if (Git.USE_CLI) {
-            super.push(remoteName, refspec);
+            super.push(remoteName, refspec.trim());
         } else {
-            jgit.push(remoteName, refspec);
+            jgit.push(remoteName, refspec.trim());
         }
     }
 
@@ -368,10 +371,16 @@ public class GitAPI extends CliGitAPIImpl {
     @SuppressWarnings("deprecation")
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
+        List<RefSpec> trimmedRefSpecs = new ArrayList<>();
+        for (RefSpec rs : refspecs) {
+            if (rs != null) {
+                trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
+            }
+        }
         if (Git.USE_CLI) {
-            super.fetch(url, refspecs);
+            super.fetch(url, trimmedRefSpecs);
         } else {
-            jgit.fetch(url, refspecs);
+            jgit.fetch(url, trimmedRefSpecs);
         }
     }
 
