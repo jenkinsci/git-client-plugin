@@ -626,8 +626,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
                 List<RefSpec> trimmedRefSpecs = new ArrayList<>();
-                for (RefSpec rs : refspecs) {
-                    if (rs != null) {
+                if (!refspecs.isEmpty() && refspecs != null) {
+                    for (RefSpec rs : refspecs) {
                         trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
                     }
                 }
@@ -678,9 +678,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     List<RefSpec> allRefSpecs = new ArrayList<>();
                     if (refspecs != null) {
                         for (RefSpec rs : refspecs) {
-                            if (rs != null) {
-                                allRefSpecs.add(rs);
-                            }
+                            allRefSpecs.add(rs);
                         }
                     }
 

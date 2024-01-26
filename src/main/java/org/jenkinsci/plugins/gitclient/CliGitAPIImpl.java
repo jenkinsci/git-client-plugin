@@ -535,8 +535,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
                 List<RefSpec> trimmedRefSpecs = new ArrayList<>();
-                for (RefSpec rs : refspecs) {
-                    if (rs != null) {
+                if (refspecs != null) {
+                    for (RefSpec rs : refspecs) {
                         trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
                     }
                 }
@@ -627,9 +627,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (refspecs != null) {
                     for (RefSpec rs : refspecs) {
-                        if (rs != null) {
-                            args.add(rs.toString().trim());
-                        }
+                        args.add(rs.toString().trim());
                     }
                 }
 

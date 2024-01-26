@@ -482,8 +482,8 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         /* Intentionally using the deprecated method because the replacement method is not serializable. */
         List<RefSpec> trimmedRefSpecs = new ArrayList<>();
-        for (RefSpec rs : refspecs) {
-            if (rs != null) {
+        if (refspecs != null) {
+            for (RefSpec rs : refspecs) {
                 trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
             }
         }
