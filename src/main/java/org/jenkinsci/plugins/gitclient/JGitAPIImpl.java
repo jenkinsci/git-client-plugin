@@ -625,7 +625,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
-                List<RefSpec> trimmedRefSpecs = new ArrayList<RefSpec>();
+                List<RefSpec> trimmedRefSpecs = new ArrayList<>();
                 for (RefSpec rs : refspecs) {
                     if (rs != null) {
                         trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
@@ -1439,7 +1439,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                List<RefSpec> refSpecsList = new ArrayList<RefSpec>();
+                List<RefSpec> refSpecsList = new ArrayList<>();
                 for (RefSpec ref : refspecs) {
                     refSpecsList.add(new RefSpec(ref.toString().trim()));
                 }
