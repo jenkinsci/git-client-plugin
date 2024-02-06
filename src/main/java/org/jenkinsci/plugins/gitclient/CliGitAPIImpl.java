@@ -2480,9 +2480,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("cat " + unixArgEncodeFileName(passphrase.toAbsolutePath().toString()));
             w.newLine();
         }
-        ssh.toFile().setExecutable(true, true);
-        // fixSELinuxLabel(ssh, "ssh_exec_t");
-        return ssh;
+        return createNonBusyExecutable(ssh);
     }
 
     private Path createWindowsStandardAskpass(
@@ -2519,9 +2517,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("esac");
             w.newLine();
         }
-        askpass.toFile().setExecutable(true, true);
-        // fixSELinuxLabel(askpass, "ssh_exec_t");
-        return askpass;
+        return createNonBusyExecutable(askpass);
     }
 
     private Path createPassphraseFile(SSHUserPrivateKey sshUser) throws IOException {
@@ -2709,8 +2705,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private Path createUnixGitSSH(Path key, String user, Path knownHosts) throws IOException {
         Path ssh = createTempFile("ssh", ".sh");
-        Path ssh_copy = Paths.get(ssh.toString() + "-copy");
-        boolean isCopied = false;
         try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
             w.write("#!/bin/sh");
             w.newLine();
@@ -2727,30 +2721,40 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
         }
-        ssh.toFile().setExecutable(true, true);
+        return createNonBusyExecutable(ssh);
+    }
+
+    private Path createNonBusyExecutable(Path p) throws IOException {
+        p.toFile().setExecutable(true, true);
+        Path p_copy = Paths.get(p.toString() + "-copy");
+
         // JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         // The following creates a copy of the generated file and deletes the original
         // In case of a failure return the original and delete the copy
-        String fromLocation = ssh.toString();
-        String toLocation = ssh_copy.toString();
+        // The "cp" command prevents having an open write file handle in the JVM process.
+        // Otherwise an unrelated thread of the JVM may fork a new process and inherits the open
+        // write file handle, which then leads to the "Text file busy" issue.
+        String fromLocation = p.toString();
+        String toLocation = p_copy.toString();
         // Copying ssh file
         // fixSELinuxLabel(ssh, "ssh_exec_t");
+        boolean isCopied = false;
         try {
             new ProcessBuilder("cp", fromLocation, toLocation).start().waitFor();
             isCopied = true;
-            ssh_copy.toFile().setExecutable(true, true);
+            p_copy.toFile().setExecutable(true, true);
             // fixSELinuxLabel(ssh_copy, "ssh_exec_t");
             // Deleting original file
-            deleteTempFile(ssh);
+            deleteTempFile(p);
         } catch (InterruptedException ie) {
             // Delete the copied file in case of failure
             if (isCopied) {
-                deleteTempFile(ssh_copy);
+                deleteTempFile(p_copy);
             }
             // Previous operation failed. Return original file
-            return ssh;
+            return p;
         }
-        return ssh_copy;
+        return p_copy;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
