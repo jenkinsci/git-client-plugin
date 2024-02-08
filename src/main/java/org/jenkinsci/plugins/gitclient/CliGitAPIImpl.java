@@ -71,6 +71,7 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
 
@@ -2150,6 +2151,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 env = new EnvVars(env);
                 env.put("GIT_ASKPASS", askpass.toAbsolutePath().toString());
                 env.put("SSH_ASKPASS", askpass.toAbsolutePath().toString());
+            } else if (credentials instanceof StringCredentials) {
+                var stringCred = (StringCredentials) credentials;
+                listener.getLogger().println("using GIT_CONFIG to set token header " + stringCred.getDescription());
+
+                env = new EnvVars(env);
+                env.put("GIT_CONFIG_COUNT", "0");
+                env.put("GIT_CONFIG_KEY_0", "http.extraHeader");
+                env.put("GIT_CONFIG_VALUE_0", "Authorization: Bearer " + stringCred.getSecret());
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
