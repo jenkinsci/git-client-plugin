@@ -2151,6 +2151,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 env = new EnvVars(env);
                 env.put("GIT_ASKPASS", askpass.toAbsolutePath().toString());
                 env.put("SSH_ASKPASS", askpass.toAbsolutePath().toString());
+
             } else if (credentials instanceof StringCredentials) {
                 var stringCred = (StringCredentials) credentials;
                 listener.getLogger().println("using GIT_CONFIG to set token header " + stringCred.getDescription());
