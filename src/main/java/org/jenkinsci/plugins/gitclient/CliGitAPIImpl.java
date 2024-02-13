@@ -2157,7 +2157,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger().println("using GIT_CONFIG to set token header " + stringCred.getDescription());
 
                 env = new EnvVars(env);
-                env.put("GIT_CONFIG_COUNT", "0");
+                env.put("GIT_CONFIG_COUNT", "1");
                 env.put("GIT_CONFIG_KEY_0", "http.extraHeader");
                 env.put("GIT_CONFIG_VALUE_0", "Authorization: Bearer " + stringCred.getSecret());
             }
