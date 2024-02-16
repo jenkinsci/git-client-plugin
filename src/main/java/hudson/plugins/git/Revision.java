@@ -5,7 +5,7 @@ import static java.util.stream.Collectors.joining;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
@@ -22,7 +22,7 @@ public class Revision implements java.io.Serializable, Cloneable {
     private static final long serialVersionUID = -7203898556389073882L;
 
     private ObjectId sha1;
-    private List<Branch> branches;
+    private Collection<Branch> branches;
 
     /**
      * Constructor for Revision.
@@ -41,7 +41,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param sha1 a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param branches a {@link java.util.Collection} object.
      */
-    public Revision(ObjectId sha1, List<Branch> branches) {
+    public Revision(ObjectId sha1, Collection<Branch> branches) {
         /* Defensive copy to avoid caller modifying ObjectId after calling this constructor */
         this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
         this.branches = branches;
@@ -85,7 +85,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @return a {@link java.util.Collection} object.
      */
     @Exported(name = "branch")
-    public List<Branch> getBranches() {
+    public Collection<Branch> getBranches() {
         return branches;
     }
 
@@ -94,7 +94,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @param branches a {@link java.util.Collection} object.
      */
-    public void setBranches(List<Branch> branches) {
+    public void setBranches(Collection<Branch> branches) {
         this.branches = branches;
     }
 
