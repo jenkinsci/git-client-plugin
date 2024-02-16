@@ -5,7 +5,7 @@ import static java.util.stream.Collectors.joining;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
@@ -21,8 +21,8 @@ import org.kohsuke.stapler.export.ExportedBean;
 public class Revision implements java.io.Serializable, Cloneable {
     private static final long serialVersionUID = -7203898556389073882L;
 
-    ObjectId sha1;
-    Collection<Branch> branches;
+    private ObjectId sha1;
+    private List<Branch> branches;
 
     /**
      * Constructor for Revision.
@@ -41,7 +41,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @param sha1 a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param branches a {@link java.util.Collection} object.
      */
-    public Revision(ObjectId sha1, Collection<Branch> branches) {
+    public Revision(ObjectId sha1, List<Branch> branches) {
         /* Defensive copy to avoid caller modifying ObjectId after calling this constructor */
         this.sha1 = (sha1 == null) ? null : sha1.toObjectId();
         this.branches = branches;
@@ -85,7 +85,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      * @return a {@link java.util.Collection} object.
      */
     @Exported(name = "branch")
-    public Collection<Branch> getBranches() {
+    public List<Branch> getBranches() {
         return branches;
     }
 
@@ -94,7 +94,7 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @param branches a {@link java.util.Collection} object.
      */
-    public void setBranches(Collection<Branch> branches) {
+    public void setBranches(List<Branch> branches) {
         this.branches = branches;
     }
 
@@ -121,14 +121,14 @@ public class Revision implements java.io.Serializable, Cloneable {
 
     @Override
     public Revision clone() {
-        Revision clone;
         try {
-            clone = (Revision) super.clone();
+            Revision clone = (Revision) super.clone();
+            clone.branches = new ArrayList<>(branches);
+            return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
-        clone.branches = new ArrayList<>(branches);
-        return clone;
+        
     }
 
     @Override
