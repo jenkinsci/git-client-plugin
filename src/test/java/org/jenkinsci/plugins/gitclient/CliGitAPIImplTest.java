@@ -14,6 +14,8 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
         GitClient client = Git.with(listener, env).in(ws).using("git").getClient();
+        client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        client.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         return client;
     }
 
