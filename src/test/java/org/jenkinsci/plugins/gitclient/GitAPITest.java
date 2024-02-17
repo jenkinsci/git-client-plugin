@@ -14,6 +14,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -42,6 +43,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -91,6 +93,12 @@ public class GitAPITest {
         this.gitImplName = gitImplName;
     }
 
+    public static EnvVars getConfigNoSystemEnvsVars() {
+        EnvVars envVars = new EnvVars();
+        envVars.put("GIT_CONFIG_NOSYSTEM", "1");
+        return envVars;
+    }
+
     @Parameterized.Parameters(name = "{0}")
     public static Collection gitObjects() {
         List<Object[]> arguments = new ArrayList<>();
@@ -104,6 +112,7 @@ public class GitAPITest {
 
     @BeforeClass
     public static void loadLocalMirror() throws Exception {
+        SystemReader.getInstance().getUserConfig().clear();
         /* Prime the local mirror cache before other tests run */
         /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
@@ -126,10 +135,11 @@ public class GitAPITest {
     @BeforeClass
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
-                .in(configDir)
-                .using("git")
-                .getClient());
+        CliGitCommand getDefaultBranchNameCmd =
+                new CliGitCommand(Git.with(TaskListener.NULL, getConfigNoSystemEnvsVars())
+                        .in(configDir)
+                        .using("git")
+                        .getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -1697,6 +1707,8 @@ public class GitAPITest {
         final String emailAddress = "root@mydomain.com";
         initCliGitCommand.run("config", "user.name", userName);
         initCliGitCommand.run("config", "user.email", emailAddress);
+        initCliGitCommand.run("config", "commit.gpgsign", "false");
+        initCliGitCommand.run("config", "tag.gpgSign", "false");
         initGitClient.setAuthor(userName, emailAddress);
         initGitClient.setCommitter(userName, emailAddress);
     }

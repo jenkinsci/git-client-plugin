@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.jenkinsci.plugins.gitclient.GitAPITest.getConfigNoSystemEnvsVars;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -77,7 +78,7 @@ public abstract class GitAPITestUpdate {
     protected int submoduleUpdateTimeout = -1;
     protected final Random random = new Random();
 
-    protected hudson.EnvVars env = new hudson.EnvVars();
+    protected hudson.EnvVars env = getConfigNoSystemEnvsVars();
 
     private static boolean firstRun = true;
 
@@ -338,6 +339,7 @@ public abstract class GitAPITestUpdate {
         clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
         clonedArea.launchCommand(
                 "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
+
         return clonedArea;
     }
 
