@@ -169,6 +169,8 @@ public class GitAPITest {
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
         initializeWorkspace(workspace);
+        testGitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        testGitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
     }
 
     @After
@@ -469,6 +471,8 @@ public class GitAPITest {
         workspace1.getCliGitCommand().run("config", "user.email", emailAddress);
         workspace1.getGitClient().setAuthor(userName, emailAddress);
         workspace1.getGitClient().setCommitter(userName, emailAddress);
+        workspace1.getGitClient().config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        workspace1.getGitClient().config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         workspace1.commitEmpty("init");
 
         testGitClient.clean();

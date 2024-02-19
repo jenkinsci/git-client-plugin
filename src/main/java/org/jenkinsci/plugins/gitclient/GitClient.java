@@ -1009,7 +1009,7 @@ public interface GitClient {
     /**
      * Execute git config at local level
      * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
-     * @param key configuration section ${code user.name}
+     * @param key configuration section ${code user.name} format section[.subsection].name
      * @param value configuration value
      * @throws GitException
      * @throws InterruptedException

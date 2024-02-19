@@ -8,10 +8,7 @@ import java.io.File;
 public class JGitAPIImplTest extends GitAPITestUpdate {
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
-        GitClient client = Git.with(listener, env).in(ws).using("jgit").getClient();
-        client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        client.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
-        return client;
+        return Git.with(listener, env).in(ws).using("jgit").getClient();
     }
 
     @Override

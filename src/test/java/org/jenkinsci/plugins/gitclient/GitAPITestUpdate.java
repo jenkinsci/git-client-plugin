@@ -209,6 +209,8 @@ public abstract class GitAPITestUpdate {
             CliGitCommand gitCmd = new CliGitCommand(git);
             gitCmd.run("config", "user.name", userName);
             gitCmd.run("config", "user.email", emailAddress);
+            gitCmd.run("config", "--local", "commit.gpgsign", "false");
+            gitCmd.run("config", "--local", "tag.gpgSign", "false");
             git.setAuthor(userName, emailAddress);
             git.setCommitter(userName, emailAddress);
             return this;
@@ -334,12 +336,14 @@ public abstract class GitAPITestUpdate {
 
     protected WorkingArea clone(String src) throws Exception {
         WorkingArea x = new WorkingArea();
+        FileUtils.cleanDirectory(new File(x.repoPath()));
         x.launchCommand("git", "clone", src, x.repoPath());
         WorkingArea clonedArea = new WorkingArea(x.repo);
         clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
         clonedArea.launchCommand(
                 "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
-
+        clonedArea.launchCommand("git", "config", "commit.gpgsign", "false");
+        clonedArea.launchCommand("git", "config", "tag.gpgSign", "false");
         return clonedArea;
     }
 

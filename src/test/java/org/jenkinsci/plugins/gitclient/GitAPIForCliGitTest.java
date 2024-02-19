@@ -134,6 +134,8 @@ public class GitAPIForCliGitTest {
         final String emailAddress = "root@mydomain.com";
         initCliGitCommand.run("config", "user.name", userName);
         initCliGitCommand.run("config", "user.email", emailAddress);
+        initCliGitCommand.run("config", "commit.gpgsign", "false");
+        initCliGitCommand.run("config", "tag.gpgSign", "false");
         initGitClient.setAuthor(userName, emailAddress);
         initGitClient.setCommitter(userName, emailAddress);
     }
