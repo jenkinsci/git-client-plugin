@@ -128,7 +128,6 @@ public class Revision implements java.io.Serializable, Cloneable {
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
-        
     }
 
     @Override
