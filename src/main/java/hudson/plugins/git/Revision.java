@@ -21,8 +21,8 @@ import org.kohsuke.stapler.export.ExportedBean;
 public class Revision implements java.io.Serializable, Cloneable {
     private static final long serialVersionUID = -7203898556389073882L;
 
-    private ObjectId sha1;
-    private Collection<Branch> branches;
+    ObjectId sha1;
+    Collection<Branch> branches;
 
     /**
      * Constructor for Revision.
@@ -121,13 +121,13 @@ public class Revision implements java.io.Serializable, Cloneable {
 
     @Override
     public Revision clone() {
+        Revision clone;
         try {
-            Revision clone = (Revision) super.clone();
-            clone.branches = new ArrayList<>(branches);
-            return clone;
+            clone = (Revision) super.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
+        
     }
 
     @Override
