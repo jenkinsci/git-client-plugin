@@ -93,7 +93,7 @@ public class GitAPITest {
         this.gitImplName = gitImplName;
     }
 
-    public static EnvVars getConfigNoSystemEnvsVars() {
+    public static EnvVars getConfigNoSystemEnvVars() {
         EnvVars envVars = new EnvVars();
         envVars.put("GIT_CONFIG_NOSYSTEM", "1");
         return envVars;
@@ -136,7 +136,7 @@ public class GitAPITest {
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd =
-                new CliGitCommand(Git.with(TaskListener.NULL, getConfigNoSystemEnvsVars())
+                new CliGitCommand(Git.with(TaskListener.NULL, getConfigNoSystemEnvVars())
                         .in(configDir)
                         .using("git")
                         .getClient());
