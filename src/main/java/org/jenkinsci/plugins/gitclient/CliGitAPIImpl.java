@@ -2849,7 +2849,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             return stdout;
         } catch (GitException | InterruptedException e) {
-            if (e.getMessage().contains("unsupported option \"accept-new\"")) {
+            if (e.getMessage() != null && e.getMessage().contains("unsupported option \"accept-new\"")) {
                 listener.getLogger()
                         .println(
                                 HyperlinkNote.encodeTo(
