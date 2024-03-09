@@ -1066,4 +1066,9 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     public boolean maintenance(String task) {
         return false;
     }
+
+    @Override
+    public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
+        proxy.config(configLevel, key, value);
+    }
 }

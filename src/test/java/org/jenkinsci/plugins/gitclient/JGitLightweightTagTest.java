@@ -55,6 +55,8 @@ public class JGitLightweightTagTest {
                 .getClient();
         repoRootGitDir = gitClient.withRepository((r, channel) -> r.getDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         assertThat(repoRootGitDir, is(anExistingDirectory()));
     }
 
