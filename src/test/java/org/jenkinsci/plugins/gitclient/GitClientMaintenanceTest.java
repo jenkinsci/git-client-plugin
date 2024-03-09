@@ -167,6 +167,9 @@ public class GitClientMaintenanceTest {
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.run("config", "user.name", "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client.maintenance@example.com");
+        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+
         if (gitClient instanceof CliGitAPIImpl) {
             CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
             if (!cliGitClient.isAtLeastVersion(1, 8, 0, 0)) {

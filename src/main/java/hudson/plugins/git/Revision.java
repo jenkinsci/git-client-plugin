@@ -121,14 +121,13 @@ public class Revision implements java.io.Serializable, Cloneable {
 
     @Override
     public Revision clone() {
-        Revision clone;
         try {
-            clone = (Revision) super.clone();
+            Revision clone = (Revision) super.clone();
+            clone.branches = new ArrayList<>(branches);
+            return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Error cloning Revision", e);
         }
-        clone.branches = new ArrayList<>(branches);
-        return clone;
     }
 
     @Override
