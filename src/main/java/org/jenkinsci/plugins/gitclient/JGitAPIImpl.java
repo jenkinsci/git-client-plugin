@@ -3039,13 +3039,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
         if (configLevel != ConfigLevel.LOCAL) {
-            throw new GitException("jgit provider do not support not local level config");
+            throw new GitException("JGit only supports local level config");
         }
         // we support key in the format section[.subsection].name
         String[] keys = key.split("\\.");
         String section, subsection = null, name;
         if (keys.length < 2 || keys.length > 3) {
-            throw new GitException("key must be in the format section[.subsection].name");
+            throw new GitException("key '" + key + "' not in expected format of 'section[.subsection].name'");
         }
         if (keys.length == 2) {
             section = keys[0];
