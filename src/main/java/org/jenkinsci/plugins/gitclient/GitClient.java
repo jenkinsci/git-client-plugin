@@ -1038,4 +1038,24 @@ public interface GitClient {
      * @throws InterruptedException if underlying git operation fails.
      */
     boolean maintenance(String task) throws InterruptedException;
+
+    /**
+     * Execute git config at local level
+     * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
+     * @param key configuration section ${code user.name} format section[.subsection].name
+     * @param value configuration value
+     * @throws GitException
+     * @throws InterruptedException
+     */
+    void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
+
+    /**
+     * config level (see git documentation)
+     *
+     */
+    enum ConfigLevel {
+        LOCAL,
+        SYSTEM,
+        GLOBAL;
+    }
 }
