@@ -151,6 +151,8 @@ public class GitClientFetchTest {
         testGitClient.init();
         cliGitCommand.run("config", "user.name", "Vojtěch GitClientFetchTest Zweibrücken-Šafařík");
         cliGitCommand.run("config", "user.email", "email.by.git.client.test@example.com");
+        cliGitCommand.run("config", "--local", "commit.gpgsign", "false");
+        cliGitCommand.run("config", "--local", "tag.gpgSign", "false");
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
@@ -548,6 +550,8 @@ public class GitClientFetchTest {
         newAreaWorkspace.getGitClient().init();
         newAreaWorkspace.launchCommand("git", "config", "user.name", "Vojtěch fetch from URL Zweibrücken-Šafařík");
         newAreaWorkspace.launchCommand("git", "config", "user.email", "email.by.git.fetch.test@example.com");
+        newAreaWorkspace.launchCommand("git", "config", "--local", "commit.gpgsign", "false");
+        newAreaWorkspace.launchCommand("git", "config", "--local", "tag.gpgSign", "false");
         newAreaWorkspace.launchCommand("git", "commit", "--allow-empty", "-m", "init");
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 

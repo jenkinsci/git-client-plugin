@@ -4074,4 +4074,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         return isExecuted;
     }
+
+    @Override
+    public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
+        ArgumentListBuilder args = new ArgumentListBuilder("config");
+        if (configLevel != null) {
+            args.add("--" + configLevel.toString().toLowerCase(Locale.getDefault()));
+        } else {
+            args.add("--" + ConfigLevel.LOCAL.toString().toLowerCase(Locale.getDefault()));
+        }
+        args.add(key, value);
+        launchCommand(args);
+    }
 }

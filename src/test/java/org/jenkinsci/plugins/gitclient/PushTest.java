@@ -174,6 +174,8 @@ public class PushTest {
         CliGitCommand gitCmd = new CliGitCommand(workingGitClient);
         gitCmd.run("config", "user.name", "Vojtěch PushTest working repo Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.run("config", "--local", "tag.gpgSign", "false");
     }
 
     @After
@@ -214,6 +216,8 @@ public class PushTest {
         CliGitCommand gitCmd = new CliGitCommand(cloneGitClient);
         gitCmd.run("config", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.run("config", "--local", "tag.gpgSign", "false");
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */

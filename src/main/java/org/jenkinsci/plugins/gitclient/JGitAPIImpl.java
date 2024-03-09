@@ -3036,6 +3036,34 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return false;
     }
 
+    @Override
+    public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
+        if (configLevel != ConfigLevel.LOCAL) {
+            throw new GitException("jgit provider do not support not local level config");
+        }
+        // we support key in the format section[.subsection].name
+        String[] keys = key.split("\\.");
+        String section, subsection = null, name;
+        if (keys.length < 2 || keys.length > 3) {
+            throw new GitException("key must be in the format section[.subsection].name");
+        }
+        if (keys.length == 2) {
+            section = keys[0];
+            name = keys[1];
+        } else {
+            section = keys[0];
+            subsection = keys[1];
+            name = keys[2];
+        }
+        StoredConfig storedConfig = getRepository().getConfig();
+        storedConfig.setString(section, subsection, name, value);
+        try {
+            storedConfig.save();
+        } catch (IOException e) {
+            throw new GitException(e);
+        }
+    }
+
     private static class FileRepositoryImpl extends FileRepository {
 
         private final File tempDir;
