@@ -13,8 +13,7 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
 
     @Override
     protected GitClient setupGitAPI(File ws) throws Exception {
-        GitClient client = Git.with(listener, env).in(ws).using("git").getClient();
-        return client;
+        return Git.with(listener, env).in(ws).using("git").getClient();
     }
 
     @Override

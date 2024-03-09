@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.jenkinsci.plugins.gitclient.GitAPITest.getConfigNoSystemEnvVars;
 import static org.junit.Assert.*;
 
 import hudson.model.TaskListener;
@@ -20,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -46,10 +49,11 @@ public class FilePermissionsTest {
     private static File repo;
 
     @BeforeClass
-    public static void createTestRepo() throws IOException, InterruptedException {
+    public static void createTestRepo() throws IOException, InterruptedException, ConfigInvalidException {
         if (isWindows()) {
             return;
         }
+        SystemReader.getInstance().getUserConfig().clear();
         repo = Files.createTempDirectory(null).toFile();
         Git.with(listener, new hudson.EnvVars()).in(repo).getClient().init();
     }
@@ -68,10 +72,11 @@ public class FilePermissionsTest {
     @BeforeClass
     public static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
-        CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
-                .in(configDir)
-                .using("git")
-                .getClient());
+        CliGitCommand getDefaultBranchNameCmd =
+                new CliGitCommand(Git.with(TaskListener.NULL, getConfigNoSystemEnvVars())
+                        .in(configDir)
+                        .using("git")
+                        .getClient());
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -174,7 +179,7 @@ public class FilePermissionsTest {
         Files.writeString(added.toPath(), content, StandardCharsets.UTF_8);
         assertTrue(fileName + " doesn't exist", added.exists());
 
-        GitClient git = Git.with(listener, new hudson.EnvVars()).in(repo).getClient();
+        GitClient git = Git.with(listener, getConfigNoSystemEnvVars()).in(repo).getClient();
         git.add(fileName);
         git.commit("Added " + fileName);
         Path path = FileSystems.getDefault().getPath(added.getPath());
@@ -190,7 +195,7 @@ public class FilePermissionsTest {
         assertTrue(fileName + " doesn't exist", modified.exists());
         Files.writeString(modified.toPath(), content, StandardCharsets.UTF_8);
 
-        GitClient git = Git.with(listener, new hudson.EnvVars()).in(repo).getClient();
+        GitClient git = Git.with(listener, getConfigNoSystemEnvVars()).in(repo).getClient();
         git.add(fileName);
         git.commit("Modified " + fileName);
         assertTrue(fileName + " doesn't exist", modified.exists());

@@ -169,6 +169,8 @@ public class RemoteGitImplTest {
         byte[] content = ("File " + fileName).getBytes();
         Files.write(localFile.toPath(), content);
         remoteGit.init();
+        remoteGit.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        remoteGit.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         remoteGit.add(fileName);
     }
 
