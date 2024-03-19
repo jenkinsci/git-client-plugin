@@ -1,15 +1,15 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Base64;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
@@ -34,53 +34,55 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
             if (File.pathSeparatorChar
                     == ';') { // check whether on Windows or not without sending Functions over remoting
                 // no escaping for windows because created temp file can't contain spaces
-                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", tempKnownHosts.toAbsolutePath());
+                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", escapePath(tempKnownHosts));
             } else {
                 // escaping needed in case job name contains spaces
-                userKnownHostsFileFlag = String.format(
-                        " -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"",
-                        tempKnownHosts.toAbsolutePath().toString().replace(" ", "\\ "));
+                userKnownHostsFileFlag =
+                        String.format(" -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"", escapePath(tempKnownHosts));
             }
             return "-o StrictHostKeyChecking=yes " + userKnownHostsFileFlag;
         };
     }
 
+    private static String escapePath(Path path) {
+        if (File.pathSeparatorChar == ';') // check whether on Windows or not without sending Functions over remoting
+        {
+            return path.toAbsolutePath().toString();
+        }
+        return path.toAbsolutePath().toString().replace(" ", "\\ ");
+    }
+
+    @NonNull
+    @Override
+    public File getKnownHostsFile() {
+        try {
+            Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+            Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            return tempKnownHosts.toFile();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        KnownHosts knownHosts;
-        try {
-            knownHosts = approvedHostKeys != null ? new KnownHosts(approvedHostKeys.toCharArray()) : new KnownHosts();
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
-            knownHosts = new KnownHosts();
-        }
-        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, knownHosts);
+        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, this);
     }
 
     public static class ManuallyProvidedKeyJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        private final TaskListener listener;
+        private File knownHostsFile;
 
-        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, KnownHosts knownHosts) {
-            super(knownHosts);
-            this.listener = listener;
+        public ManuallyProvidedKeyJGitHostKeyVerifier(
+                TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
         }
 
         @Override
-        public String[] getServerHostKeyAlgorithms(Connection connection) throws IOException {
-            return getPreferredServerHostkeyAlgorithmOrder(connection);
-        }
-
-        @Override
-        public boolean verifyServerHostKey(
-                String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
-            listener.getLogger()
-                    .printf("Verifying host key for %s using manually-configured host key entries %n", hostname);
-            LOGGER.log(Level.FINEST, "Verifying host {0}:{1} with manually-configured host key {2} {3}", new Object[] {
-                hostname, port, serverHostKeyAlgorithm, Base64.getEncoder().encodeToString(serverHostKey)
-            });
-            return verifyServerHostKey(
-                    listener, getKnownHosts(), hostname, port, serverHostKeyAlgorithm, serverHostKey);
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 }

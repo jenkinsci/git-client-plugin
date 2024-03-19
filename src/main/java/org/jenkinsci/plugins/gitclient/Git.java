@@ -14,7 +14,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 
@@ -42,6 +41,7 @@ public class Git implements Serializable {
     private TaskListener listener;
     private EnvVars env;
     private String exe;
+    private HostKeyVerifierFactory hostKeyFactory;
 
     /**
      * Constructor for a Git object. Either <code>Git.with(listener, env)</code>
@@ -116,6 +116,11 @@ public class Git implements Serializable {
         return this;
     }
 
+    public Git withHostKeyVerifierFactory(HostKeyVerifierFactory hostKeyFactory) {
+        this.hostKeyFactory = hostKeyFactory;
+        return this;
+    }
+
     /**
      * {@link org.jenkinsci.plugins.gitclient.GitClient} implementation. The {@link org.jenkinsci.plugins.gitclient.GitClient} interface
      * provides the key operations which can be performed on a git repository.
@@ -125,14 +130,15 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        HostKeyVerifierFactory hostKeyFactory;
-        if (Jenkins.getInstanceOrNull() == null) {
-            LOGGER.log(Level.FINE, "No Jenkins instance, skipping host key checking by default");
-            hostKeyFactory = new NoHostKeyVerificationStrategy().getVerifier();
-        } else {
-            hostKeyFactory = GitHostKeyVerificationConfiguration.get()
-                    .getSshHostKeyVerificationStrategy()
-                    .getVerifier();
+        if (this.hostKeyFactory == null) {
+            if (Jenkins.getInstanceOrNull() == null) {
+                LOGGER.log(Level.FINE, "No Jenkins instance, skipping host key checking by default");
+                this.hostKeyFactory = new NoHostKeyVerificationStrategy().getVerifier();
+            } else {
+                this.hostKeyFactory = GitHostKeyVerificationConfiguration.get()
+                        .getSshHostKeyVerificationStrategy()
+                        .getVerifier();
+            }
         }
         jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable(hostKeyFactory);
         GitClient git = (repository != null ? repository.act(callable) : callable.invoke(null, null));
@@ -199,9 +205,7 @@ public class Git implements Serializable {
             }
 
             if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                final PreemptiveAuthHttpClientConnectionFactory factory =
-                        new PreemptiveAuthHttpClientConnectionFactory();
-                return new JGitAPIImpl(f, listener, factory, hostKeyFactory);
+                return new JGitAPIImpl(f, listener, hostKeyFactory);
             }
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
             GitAPI gitAPI = new GitAPI(exe, f, listener, env);
