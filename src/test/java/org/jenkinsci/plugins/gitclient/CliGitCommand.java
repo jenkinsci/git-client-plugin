@@ -1,6 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import hudson.EnvVars;
 import hudson.Launcher;
