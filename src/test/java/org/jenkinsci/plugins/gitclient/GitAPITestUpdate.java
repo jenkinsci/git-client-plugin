@@ -211,6 +211,7 @@ public abstract class GitAPITestUpdate {
             gitCmd.run("config", "user.email", emailAddress);
             gitCmd.run("config", "--local", "commit.gpgsign", "false");
             gitCmd.run("config", "--local", "tag.gpgSign", "false");
+            gitCmd.run("config", "--local", "gpg.format", "openpgp");
             git.setAuthor(userName, emailAddress);
             git.setCommitter(userName, emailAddress);
             return this;
@@ -344,6 +345,7 @@ public abstract class GitAPITestUpdate {
                 "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
         clonedArea.launchCommand("git", "config", "commit.gpgsign", "false");
         clonedArea.launchCommand("git", "config", "tag.gpgSign", "false");
+        clonedArea.launchCommand("git", "config", "gpg.format", "openpgp");
         return clonedArea;
     }
 

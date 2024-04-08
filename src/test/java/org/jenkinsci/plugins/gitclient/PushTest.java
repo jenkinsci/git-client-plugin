@@ -176,6 +176,7 @@ public class PushTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
     }
 
     @After
@@ -218,6 +219,8 @@ public class PushTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "gpg.format", "openpgp");
+
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */

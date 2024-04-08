@@ -169,6 +169,7 @@ public class GitClientMaintenanceTest {
         gitCmd.run("config", "user.email", "email.from.git.client.maintenance@example.com");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
 
         if (gitClient instanceof CliGitAPIImpl) {
             CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;

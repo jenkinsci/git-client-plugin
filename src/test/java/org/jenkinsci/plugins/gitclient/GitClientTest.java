@@ -206,6 +206,7 @@ public class GitClientTest {
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
         currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
         currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
+        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
@@ -296,6 +297,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
     }
 
     /**
@@ -1027,6 +1029,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClientTemp.add(".");
@@ -1090,6 +1093,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.by.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         return gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
     }
@@ -2573,6 +2577,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         File readme = new File(urlRepoDir, "readme");
         String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
@@ -2594,6 +2599,7 @@ public class GitClientTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(repoHasSubmoduleClient);
         allowFileProtocol(repoHasSubmoduleClient);

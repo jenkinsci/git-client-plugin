@@ -153,6 +153,7 @@ public class GitClientFetchTest {
         cliGitCommand.run("config", "user.email", "email.by.git.client.test@example.com");
         cliGitCommand.run("config", "--local", "commit.gpgsign", "false");
         cliGitCommand.run("config", "--local", "tag.gpgSign", "false");
+        cliGitCommand.run("config", "--local", "gpg.format", "openpgp");
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */

@@ -83,6 +83,9 @@ public class LegacyCompatibleGitAPIImplTest {
         gitCmd.run("config", "user.email", "email.from.git.client.test@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        // if the system running the tests has gpg.format=ssh then this will fail as GpgConf does not support the enum
+        // so just set it to something valid - even if it is not usable
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         assertIsGitRepo(repo);
     }
 

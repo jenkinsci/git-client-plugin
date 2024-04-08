@@ -94,6 +94,8 @@ public class MergeCommandTest {
         gitCmd.run("config", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "commit.gpgsign", "false");
         gitCmd.run("config", "tag.gpgSign", "false");
+        gitCmd.run("config", "gpg.format", "openpgp");
+
 
         // Create a default branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
