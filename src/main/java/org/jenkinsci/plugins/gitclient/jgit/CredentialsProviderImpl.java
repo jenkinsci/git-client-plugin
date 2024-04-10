@@ -14,7 +14,7 @@ import org.eclipse.jgit.transport.URIish;
  * <p>
  * For HTTP transport we work through {@link CredentialsProvider},
  * in which case this must be supplied with a {@link StandardUsernamePasswordCredentials}.
- * For SSH transport, {@link MinaSessionFactory}
+ * For SSH transport, {@link com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey}
  * downcasts {@link CredentialsProvider} to this class.
  *
  * @author Kohsuke Kawaguchi
