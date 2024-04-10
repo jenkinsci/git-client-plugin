@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.jgit;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -12,10 +12,10 @@ import org.eclipse.jgit.transport.URIish;
  * Provides the credential to authenticate Git connection.
  *
  * <p>
- * For HTTP transport we work through {@link org.eclipse.jgit.transport.CredentialsProvider},
- * in which case this must be supplied with a {@link com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials}.
- * For SSH transport, {@link org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory}
- * downcasts {@link org.eclipse.jgit.transport.CredentialsProvider} to this class.
+ * For HTTP transport we work through {@link CredentialsProvider},
+ * in which case this must be supplied with a {@link StandardUsernamePasswordCredentials}.
+ * For SSH transport, {@link MinaSessionFactory}
+ * downcasts {@link CredentialsProvider} to this class.
  *
  * @author Kohsuke Kawaguchi
  */
@@ -29,8 +29,8 @@ public class CredentialsProviderImpl extends CredentialsProvider {
     /**
      * Constructor for CredentialsProviderImpl.
      *
-     * @param listener a {@link hudson.model.TaskListener} object.
-     * @param cred a {@link com.cloudbees.plugins.credentials.common.StandardUsernameCredentials} object.
+     * @param listener a {@link TaskListener} object.
+     * @param cred a {@link StandardUsernameCredentials} object.
      */
     public CredentialsProviderImpl(TaskListener listener, StandardUsernameCredentials cred) {
         this.listener = listener;

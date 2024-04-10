@@ -5,7 +5,6 @@ import java.net.Proxy;
 import java.net.URL;
 import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
 public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnectionFactory {
 

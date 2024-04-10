@@ -1,11 +1,11 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.model.TaskListener;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
@@ -18,16 +18,17 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        return new AbstractJGitHostKeyVerifier(new KnownHosts()) {
+        return new AbstractJGitHostKeyVerifier((clientSession, socketAddress, publicKey) -> true) {
 
             @Override
-            public String[] getServerHostKeyAlgorithms(Connection connection) {
-                return new String[0];
-            }
-
-            @Override
-            public boolean verifyServerHostKey(
-                    String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) {
+            boolean verifyServerHostKey(
+                    TaskListener taskListener,
+                    ServerKeyVerifier serverKeyVerifier,
+                    String hostname,
+                    int port,
+                    String serverHostKeyAlgorithm,
+                    byte[] serverHostKey)
+                    throws IOException {
                 LOGGER.log(
                         Level.FINEST,
                         "No host key verifier, host {0}:{1} not verified with host key {2} {3}",

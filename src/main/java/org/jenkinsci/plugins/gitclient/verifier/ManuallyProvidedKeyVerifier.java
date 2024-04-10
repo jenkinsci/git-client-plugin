@@ -1,7 +1,5 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +8,7 @@ import java.nio.file.Files;
 import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 
 public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
@@ -47,40 +46,44 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        KnownHosts knownHosts;
-        try {
-            knownHosts = approvedHostKeys != null ? new KnownHosts(approvedHostKeys.toCharArray()) : new KnownHosts();
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
-            knownHosts = new KnownHosts();
-        }
-        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, knownHosts);
+
+        // FIXME check this
+        //        KnownHosts knownHosts;
+        //        try {
+        //            knownHosts = approvedHostKeys != null ? new KnownHosts(approvedHostKeys.toCharArray()) : new
+        // KnownHosts();
+        //        } catch (IOException e) {
+        //            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
+        //            knownHosts = new KnownHosts();
+        //        }
+        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, (clientSession, socketAddress, publicKey) -> false);
     }
 
     public static class ManuallyProvidedKeyJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
         private final TaskListener listener;
 
-        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, KnownHosts knownHosts) {
-            super(knownHosts);
+        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, ServerKeyVerifier serverKeyVerifier) {
+            super(serverKeyVerifier);
             this.listener = listener;
         }
 
         @Override
-        public String[] getServerHostKeyAlgorithms(Connection connection) throws IOException {
-            return getPreferredServerHostkeyAlgorithmOrder(connection);
-        }
-
-        @Override
         public boolean verifyServerHostKey(
-                String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
+                TaskListener taskListener,
+                ServerKeyVerifier serverKeyVerifier,
+                String hostname,
+                int port,
+                String serverHostKeyAlgorithm,
+                byte[] serverHostKey)
+                throws IOException {
             listener.getLogger()
                     .printf("Verifying host key for %s using manually-configured host key entries %n", hostname);
             LOGGER.log(Level.FINEST, "Verifying host {0}:{1} with manually-configured host key {2} {3}", new Object[] {
                 hostname, port, serverHostKeyAlgorithm, Base64.getEncoder().encodeToString(serverHostKey)
             });
-            return verifyServerHostKey(
-                    listener, getKnownHosts(), hostname, port, serverHostKeyAlgorithm, serverHostKey);
+            return super.verifyServerHostKey(
+                    listener, serverKeyVerifier, hostname, port, serverHostKeyAlgorithm, serverHostKey);
         }
     }
 }

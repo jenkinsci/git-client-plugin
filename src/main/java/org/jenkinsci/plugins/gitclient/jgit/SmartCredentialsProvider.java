@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.jgit;
 
 import com.cloudbees.plugins.credentials.common.PasswordCredentials;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
@@ -32,7 +32,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     /**
      * Constructor for SmartCredentialsProvider.
      *
-     * @param listener a {@link hudson.model.TaskListener} object.
+     * @param listener a {@link TaskListener} object.
      */
     public SmartCredentialsProvider(TaskListener listener) {
         this.listener = listener;
@@ -63,7 +63,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
      * Adds credentials to be used when there are not url specific credentials defined.
      *
      * @param credentials the credentials to use.
-     * @see #addCredentials(String, com.cloudbees.plugins.credentials.common.StandardCredentials)
+     * @see #addCredentials(String, StandardCredentials)
      * @since 1.2.0
      */
     public synchronized void addDefaultCredentials(StandardCredentials credentials) {

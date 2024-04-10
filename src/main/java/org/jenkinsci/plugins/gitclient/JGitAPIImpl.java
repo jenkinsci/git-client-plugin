@@ -50,6 +50,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -111,15 +112,17 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.SshConstants;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
-import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
+import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 
 /**
@@ -166,13 +169,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
-        SshSessionFactory.setInstance(new TrileadSessionFactory(hostKeyFactory, listener));
+        SshSessionFactory.setInstance(buildSshdSessionFactory());
 
         if (httpConnectionFactory != null) {
             httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
             // allow override of HttpConnectionFactory to avoid JENKINS-37934
             HttpTransport.setConnectionFactory(httpConnectionFactory);
         }
+    }
+
+    protected SshdSessionFactory buildSshdSessionFactory() {
+        return new SshdSessionFactoryBuilder()
+                // CHECK could it be different on slave?
+                .setHomeDirectory(SystemUtils.getUserHome())
+                .setSshDirectory(new File(SystemUtils.getUserHome(), SshConstants.SSH_DIR))
+                .withDefaultConnectorFactory()
+                .build(null);
     }
 
     /**

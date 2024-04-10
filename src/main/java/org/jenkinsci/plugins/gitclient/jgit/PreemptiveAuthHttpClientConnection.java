@@ -92,7 +92,6 @@ import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.apache.TemporaryBufferEntity;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.eclipse.jgit.util.TemporaryBuffer;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
 /**
  * A {@link HttpConnection} which uses {@link HttpClient} and attempts to
