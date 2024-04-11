@@ -178,7 +178,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    protected SshdSessionFactory buildSshdSessionFactory() {
+    private SshdSessionFactory buildSshdSessionFactory() {
         return new SshdSessionFactoryBuilder()
                 // CHECK could it be different on slave?
                 .setHomeDirectory(SystemUtils.getUserHome())

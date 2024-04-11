@@ -54,7 +54,7 @@ public class AcceptFirstConnectionVerifierTest {
         // FIXME ol
         //        jGitConnection.connect(verifier);
         // assertThat(file, is(anExistingFile()));
-        //assertThat(
+        // assertThat(
         //        Files.readAllLines(file.toPath()),
         //        hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
@@ -162,7 +162,7 @@ public class AcceptFirstConnectionVerifierTest {
         List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
         assertThat(actual, hasItem(bitbucketFileContent));
         // FIXME ol
-        //assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+        // assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
     }
 
     @Test
