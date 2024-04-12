@@ -33,8 +33,14 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,9 +52,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import io.vavr.Function2;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -80,6 +89,9 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
+import org.eclipse.jgit.internal.transport.sshd.JGitServerKeyVerifier;
+import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -112,18 +124,25 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.SshConstants;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.sshd.KeyPasswordProvider;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
+import org.eclipse.jgit.transport.sshd.SshdSession;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
+import org.eclipse.jgit.util.FS;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
+import org.jenkinsci.plugins.gitclient.verifier.AbstractJGitHostKeyVerifier;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
+import org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -169,8 +188,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
-        SshSessionFactory.setInstance(buildSshdSessionFactory());
-
+        SshSessionFactory.setInstance(buildSshdSessionFactory(hostKeyFactory.forJGit(listener)));
         if (httpConnectionFactory != null) {
             httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
             // allow override of HttpConnectionFactory to avoid JENKINS-37934
@@ -178,12 +196,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private SshdSessionFactory buildSshdSessionFactory() {
+    private SshdSessionFactory buildSshdSessionFactory(AbstractJGitHostKeyVerifier abstractJGitHostKeyVerifier) {
         return new SshdSessionFactoryBuilder()
-                // CHECK could it be different on slave?
                 .setHomeDirectory(SystemUtils.getUserHome())
-                .setSshDirectory(new File(SystemUtils.getUserHome(), SshConstants.SSH_DIR))
-                .withDefaultConnectorFactory()
+                .setSshDirectory(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE)
+                .setKeyPasswordProvider(new Function<CredentialsProvider, KeyPasswordProvider>() {
+                    @Override
+                    public KeyPasswordProvider apply(CredentialsProvider credentialsProvider) {
+                        return null;
+                    }
+                })
+                .setConfigStoreFactory((home, config, localUserName) ->
+                    new OpenSshConfigFile(home, config, localUserName) {
+                        @Override
+                        public HostEntry lookup(String hostName, int port, String userName) {
+                            HostEntry hostEntry = super.lookup(hostName, port, userName);
+                            return abstractJGitHostKeyVerifier.customizeHostEntry(hostEntry);
+                        }
+                })
                 .build(null);
     }
 

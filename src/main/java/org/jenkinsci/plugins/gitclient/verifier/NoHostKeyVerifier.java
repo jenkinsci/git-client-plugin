@@ -6,6 +6,8 @@ import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
+import org.eclipse.jgit.transport.SshConstants;
 
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
@@ -18,27 +20,11 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        return new AbstractJGitHostKeyVerifier((clientSession, socketAddress, publicKey) -> true) {
-
+        return new AbstractJGitHostKeyVerifier(listener) {
             @Override
-            boolean verifyServerHostKey(
-                    TaskListener taskListener,
-                    ServerKeyVerifier serverKeyVerifier,
-                    String hostname,
-                    int port,
-                    String serverHostKeyAlgorithm,
-                    byte[] serverHostKey)
-                    throws IOException {
-                LOGGER.log(
-                        Level.FINEST,
-                        "No host key verifier, host {0}:{1} not verified with host key {2} {3}",
-                        new Object[] {
-                            hostname,
-                            port,
-                            serverHostKeyAlgorithm,
-                            Base64.getEncoder().encodeToString(serverHostKey)
-                        });
-                return true;
+            public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
+                hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING,SshConstants.NO);
+                return hostEntry;
             }
         };
     }

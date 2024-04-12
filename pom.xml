@@ -239,6 +239,12 @@
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>git-server</artifactId>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jenkins-ci.plugins</groupId>
+          <artifactId>trilead-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <!-- Credentials test requires scm-api -->

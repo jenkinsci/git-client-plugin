@@ -3,12 +3,15 @@ package org.jenkinsci.plugins.gitclient.verifier;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
+import org.eclipse.jgit.transport.SshConstants;
 
 public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
 
@@ -25,75 +28,32 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        KnownHostsServerKeyVerifier knownHosts = new KnownHostsServerKeyVerifier(
-                (clientSession, socketAddress, publicKey) -> false,
-                getKnownHostsFile().toPath());
-
-        return new AcceptFirstConnectionJGitHostKeyVerifier(listener, knownHosts);
+        return new AcceptFirstConnectionJGitHostKeyVerifier(listener);
     }
 
     public class AcceptFirstConnectionJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        private final TaskListener listener;
-
-        public AcceptFirstConnectionJGitHostKeyVerifier(TaskListener listener, ServerKeyVerifier serverKeyVerifier) {
-            super(serverKeyVerifier);
-            this.listener = listener;
+        public AcceptFirstConnectionJGitHostKeyVerifier(TaskListener listener) {
+            super(listener);
         }
 
         @Override
-        public boolean verifyServerHostKey(
-                TaskListener taskListener,
-                ServerKeyVerifier serverKeyVerifier,
-                String hostname,
-                int port,
-                String serverHostKeyAlgorithm,
-                byte[] serverHostKey)
-                throws IOException {
-
-            listener.getLogger()
-                    .printf(
-                            "Verifying host key for %s using %s %n",
-                            hostname, getKnownHostsFile().toPath());
-            File knownHostsFile = getKnownHostsFile();
-            Path path = Paths.get(knownHostsFile.getAbsolutePath());
-            String hostnamePort = hostname + ":" + port;
-            boolean isValid = false;
-
-            if (!isValid) {
-                LOGGER.log(
-                        Level.FINER,
-                        "Host key for {0} was not accepted on accept first verifier known hosts file {1}",
-                        new Object[] {hostnamePort, path.toString()});
-                listener.getLogger().printf("Host key for host %s was not accepted.%n", hostnamePort);
+        public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
+            Path knowHostPath = getKnownHostsFile().toPath();
+            // know_hosts
+            if(Files.notExists(knowHostPath)){
+                try {
+                    Files.createDirectories(knowHostPath.getParent());
+                    Files.createFile(knowHostPath);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
+            // accept new
+            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING,"accept-new");
+            hostEntry.setValue(SshConstants.HASH_KNOWN_HOSTS,SshConstants.YES);
 
-            return isValid;
+            return hostEntry;
         }
-        //
-        //        private void writeToFile(
-        //                File knownHostsFile, String hostnamePort, String serverHostKeyAlgorithm, byte[] serverHostKey)
-        //                throws IOException {
-        //            listener.getLogger().println("Adding " + hostnamePort + " to " + knownHostsFile.toPath());
-        //            LOGGER.log(
-        //                    Level.FINEST,
-        //                    "Adding {0} to known hosts {1} in accept first verifier with host key {2} {3}",
-        //                    new Object[] {
-        //                        hostnamePort,
-        //                        knownHostsFile.toPath().toString(),
-        //                        serverHostKeyAlgorithm,
-        //                        Base64.getEncoder().encodeToString(serverHostKey)
-        //                    });
-        //            KnownHosts.addHostkeyToFile(
-        //                    knownHostsFile,
-        //                    new String[] {KnownHosts.createHashedHostname(hostnamePort)},
-        //                    serverHostKeyAlgorithm,
-        //                    serverHostKey);
-        //            getKnownHosts()
-        //                    .addHostkey(
-        //                            new String[] {KnownHosts.createHashedHostname(hostnamePort)},
-        //                            serverHostKeyAlgorithm,
-        //                            serverHostKey);
-        //        }
     }
 }
