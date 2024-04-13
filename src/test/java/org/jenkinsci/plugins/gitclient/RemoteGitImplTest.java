@@ -73,11 +73,6 @@ public class RemoteGitImplTest {
                 .in(localFolder)
                 .using(gitImplName)
                 .getClient();
-        // if the system running the tests has gpg.format=ssh then this will fail as GpgConf does not support the enum
-        // so just set it to something valid - even if it is not usable
-        CliGitCommand gitCmd = new CliGitCommand(defaultClient);
-        gitCmd.run("config", "--local", "commit.sign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         remoteGit = new RemoteGitImpl(defaultClient);
     }
 

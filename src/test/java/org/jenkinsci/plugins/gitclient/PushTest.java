@@ -221,7 +221,6 @@ public class PushTest {
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "gpg.format", "openpgp");
 
-
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */
             File added = File.createTempFile("added-", ".txt", cloneRepo);

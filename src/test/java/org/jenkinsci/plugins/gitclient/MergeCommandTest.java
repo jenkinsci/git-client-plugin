@@ -96,7 +96,6 @@ public class MergeCommandTest {
         gitCmd.run("config", "tag.gpgSign", "false");
         gitCmd.run("config", "gpg.format", "openpgp");
 
-
         // Create a default branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');
         readme = new File(repo, "README.adoc");
