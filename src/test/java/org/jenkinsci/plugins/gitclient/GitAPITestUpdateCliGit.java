@@ -77,7 +77,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
                 .execute();
         w.git.submoduleInit();
         w.git.submoduleUpdate().threads(3).execute();
-
+        Thread.sleep(3000);
         assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
         assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
         // JGit submodule implementation doesn't handle renamed submodules

@@ -81,6 +81,8 @@ public class LegacyCompatibleGitAPIImplTest {
         CliGitCommand gitCmd = new CliGitCommand(git);
         gitCmd.run("config", "user.name", "Vojtěch legacy Zweibrücken-Šafařík");
         gitCmd.run("config", "user.email", "email.from.git.client.test@example.com");
+        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.run("config", "--local", "tag.gpgSign", "false");
         assertIsGitRepo(repo);
     }
 
