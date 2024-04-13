@@ -90,11 +90,11 @@ public class MergeCommandTest {
         git = Git.with(listener, env).in(repo).using(gitImpl).getClient();
         git.init_().workspace(repo.getAbsolutePath()).execute();
         CliGitCommand gitCmd = new CliGitCommand(git);
-        gitCmd.run("config", "user.name", "Vojtěch MergeCommandTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "commit.gpgsign", "false");
-        gitCmd.run("config", "tag.gpgSign", "false");
-        gitCmd.run("config", "gpg.format", "openpgp");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch MergeCommandTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
 
         // Create a default branch
         char randomChar = (char) ((new Random()).nextInt(26) + 'a');

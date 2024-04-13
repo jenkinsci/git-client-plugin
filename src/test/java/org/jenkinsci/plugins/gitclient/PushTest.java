@@ -215,11 +215,11 @@ public class PushTest {
                 .repositoryName("origin")
                 .execute();
         CliGitCommand gitCmd = new CliGitCommand(cloneGitClient);
-        gitCmd.run("config", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "gpg.format", "openpgp");
+        gitCmd.run("config", "--local", "gpg.format", "openpgp");
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */
