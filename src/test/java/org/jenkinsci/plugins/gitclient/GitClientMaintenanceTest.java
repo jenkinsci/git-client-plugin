@@ -165,8 +165,8 @@ public class GitClientMaintenanceTest {
         collector.checkThat("Missing " + gitDir, gitDir, is(anExistingDirectory()));
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client.maintenance@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client.maintenance@example.com");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");

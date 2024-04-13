@@ -467,8 +467,8 @@ public class GitAPITest {
         workspace1.getGitClient().init();
         final String userName = "root";
         final String emailAddress = "root@mydomain.com";
-        workspace1.getCliGitCommand().run("config", "user.name", userName);
-        workspace1.getCliGitCommand().run("config", "user.email", emailAddress);
+        workspace1.getCliGitCommand().run("config", "--local", "user.name", userName);
+        workspace1.getCliGitCommand().run("config", "--local", "user.email", emailAddress);
         workspace1.getGitClient().setAuthor(userName, emailAddress);
         workspace1.getGitClient().setCommitter(userName, emailAddress);
         workspace1.getGitClient().config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
@@ -1709,10 +1709,10 @@ public class GitAPITest {
         initGitClient.init();
         final String userName = "root";
         final String emailAddress = "root@mydomain.com";
-        initCliGitCommand.run("config", "user.name", userName);
-        initCliGitCommand.run("config", "user.email", emailAddress);
-        initCliGitCommand.run("config", "commit.gpgsign", "false");
-        initCliGitCommand.run("config", "tag.gpgSign", "false");
+        initCliGitCommand.run("config", "--local", "user.name", userName);
+        initCliGitCommand.run("config", "--local", "user.email", emailAddress);
+        initCliGitCommand.run("config", "--local", "commit.gpgsign", "false");
+        initCliGitCommand.run("config", "--local", "tag.gpgSign", "false");
         initGitClient.setAuthor(userName, emailAddress);
         initGitClient.setCommitter(userName, emailAddress);
     }

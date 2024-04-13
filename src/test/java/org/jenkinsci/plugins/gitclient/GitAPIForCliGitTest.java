@@ -132,10 +132,10 @@ public class GitAPIForCliGitTest {
         initGitClient.init();
         final String userName = "root";
         final String emailAddress = "root@mydomain.com";
-        initCliGitCommand.run("config", "user.name", userName);
-        initCliGitCommand.run("config", "user.email", emailAddress);
-        initCliGitCommand.run("config", "commit.gpgsign", "false");
-        initCliGitCommand.run("config", "tag.gpgSign", "false");
+        initCliGitCommand.run("config", "--local", "user.name", userName);
+        initCliGitCommand.run("config", "--local", "user.email", emailAddress);
+        initCliGitCommand.run("config", "--local", "commit.gpgsign", "false");
+        initCliGitCommand.run("config", "--local", "tag.gpgSign", "false");
         initGitClient.setAuthor(userName, emailAddress);
         initGitClient.setCommitter(userName, emailAddress);
     }

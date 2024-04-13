@@ -207,8 +207,8 @@ public abstract class GitAPITestUpdate {
             String userName = "root";
             String emailAddress = "root@mydomain.com";
             CliGitCommand gitCmd = new CliGitCommand(git);
-            gitCmd.run("config", "user.name", userName);
-            gitCmd.run("config", "user.email", emailAddress);
+            gitCmd.run("config", "--local", "user.name", userName);
+            gitCmd.run("config", "--local", "user.email", emailAddress);
             gitCmd.run("config", "--local", "commit.gpgsign", "false");
             gitCmd.run("config", "--local", "tag.gpgSign", "false");
             gitCmd.run("config", "--local", "gpg.format", "openpgp");
@@ -340,12 +340,12 @@ public abstract class GitAPITestUpdate {
         FileUtils.cleanDirectory(new File(x.repoPath()));
         x.launchCommand("git", "clone", src, x.repoPath());
         WorkingArea clonedArea = new WorkingArea(x.repo);
-        clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
+        clonedArea.launchCommand("git", "config", "--local", "user.name", "Vojtěch Zweibrücken-Šafařík");
         clonedArea.launchCommand(
-                "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
-        clonedArea.launchCommand("git", "config", "commit.gpgsign", "false");
-        clonedArea.launchCommand("git", "config", "tag.gpgSign", "false");
-        clonedArea.launchCommand("git", "config", "gpg.format", "openpgp");
+                "git", "config", "--local", "user.email", "email.address.from.git.client.plugin.test@example.com");
+        clonedArea.launchCommand("git", "config", "--local", "commit.gpgsign", "false");
+        clonedArea.launchCommand("git", "config", "--local", "tag.gpgSign", "false");
+        clonedArea.launchCommand("git", "config", "--local", "gpg.format", "openpgp");
         return clonedArea;
     }
 

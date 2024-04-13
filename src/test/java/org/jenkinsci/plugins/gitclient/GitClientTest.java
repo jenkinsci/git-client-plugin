@@ -293,8 +293,8 @@ public class GitClientTest {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
         gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");
@@ -1025,8 +1025,8 @@ public class GitClientTest {
                 .getClient();
         gitClientTemp.init();
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");
@@ -1089,8 +1089,8 @@ public class GitClientTest {
 
     private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws IOException, InterruptedException {
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.by.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.by.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");
@@ -2573,8 +2573,8 @@ public class GitClientTest {
         urlRepoClient.init();
         allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");
@@ -2595,8 +2595,8 @@ public class GitClientTest {
                 .getClient();
         repoHasSubmoduleClient.init();
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
         gitCmd.run("config", "--local", "commit.gpgsign", "false");
         gitCmd.run("config", "--local", "tag.gpgSign", "false");
         gitCmd.run("config", "--local", "gpg.format", "openpgp");
