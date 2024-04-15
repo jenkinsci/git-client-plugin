@@ -17,5 +17,4 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
     }
 
     public abstract OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry);
-
 }

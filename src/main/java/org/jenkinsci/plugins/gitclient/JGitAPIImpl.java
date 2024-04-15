@@ -14,6 +14,7 @@ import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT_LOG_PREFIX;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -33,14 +34,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.security.KeyPair;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -52,12 +49,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.vavr.Function2;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -90,8 +86,6 @@ import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
-import org.eclipse.jgit.internal.transport.sshd.JGitServerKeyVerifier;
-import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -125,16 +119,12 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.SshConfigStore;
-import org.eclipse.jgit.transport.SshConstants;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.sshd.KeyPasswordProvider;
-import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.eclipse.jgit.transport.sshd.SshdSession;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
-import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.FS;
@@ -156,6 +146,7 @@ import org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy;
  */
 public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private static final long serialVersionUID = 1L;
+    private static final Logger LOGGER = Logger.getLogger(JGitAPIImpl.class.getName());
 
     private final TaskListener listener;
     private PersonIdent author, committer;
@@ -188,7 +179,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
-        SshSessionFactory.setInstance(buildSshdSessionFactory(hostKeyFactory.forJGit(listener)));
+        SshSessionFactory.setInstance(
+                buildSshdSessionFactory(hostKeyFactory.forJGit(listener), asSmartCredentialsProvider()));
         if (httpConnectionFactory != null) {
             httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
             // allow override of HttpConnectionFactory to avoid JENKINS-37934
@@ -196,25 +188,88 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private SshdSessionFactory buildSshdSessionFactory(AbstractJGitHostKeyVerifier abstractJGitHostKeyVerifier) {
-        return new SshdSessionFactoryBuilder()
-                .setHomeDirectory(SystemUtils.getUserHome())
-                .setSshDirectory(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE)
-                .setKeyPasswordProvider(new Function<CredentialsProvider, KeyPasswordProvider>() {
+    private SshdSessionFactory buildSshdSessionFactory(
+            AbstractJGitHostKeyVerifier abstractJGitHostKeyVerifier, SmartCredentialsProvider credentialsProvider) {
+
+        if (Files.notExists(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath())) {
+            try {
+                Files.createDirectories(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE
+                        .getParentFile()
+                        .toPath());
+                Files.createFile(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath());
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "cannot create knowhosts file", e);
+            }
+        }
+        return new SshdSessionFactory() {
+            private Path tmpKey;
+
+            @Override
+            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String localUserName) {
+                return new OpenSshConfigFile(homeDir, configFile, localUserName) {
                     @Override
-                    public KeyPasswordProvider apply(CredentialsProvider credentialsProvider) {
-                        return null;
+                    public HostEntry lookup(String hostName, int port, String userName) {
+                        HostEntry hostEntry = super.lookup(hostName, port, userName);
+                        return abstractJGitHostKeyVerifier.customizeHostEntry(hostEntry);
                     }
-                })
-                .setConfigStoreFactory((home, config, localUserName) ->
-                    new OpenSshConfigFile(home, config, localUserName) {
-                        @Override
-                        public HostEntry lookup(String hostName, int port, String userName) {
-                            HostEntry hostEntry = super.lookup(hostName, port, userName);
-                            return abstractJGitHostKeyVerifier.customizeHostEntry(hostEntry);
+                };
+            }
+
+            @Override
+            public File getHomeDirectory() {
+                return SystemUtils.getUserHome();
+            }
+
+            @Override
+            public File getSshDirectory() {
+                return SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.getParentFile();
+            }
+
+            @Override
+            public SshdSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
+                    throws TransportException {
+                SshdSession sshdSession = super.getSession(uri, credentialsProvider, fs, tms);
+                sshdSession.addCloseListener(sshdSession1 -> {
+                    if (tmpKey != null) {
+                        try {
+                            Files.deleteIfExists(tmpKey);
+                        } catch (IOException e) {
+                            if (LOGGER.isLoggable(Level.FINE))
+                                LOGGER.log(Level.FINE, "ignore fail to delete tmp key", e);
                         }
-                })
-                .build(null);
+                    }
+                });
+                return sshdSession;
+            }
+
+            @Override
+            protected List<Path> getDefaultIdentities(File sshDir) {
+                SSHUserPrivateKey sshUserPrivateKey = credentialsProvider.getCredentials().values().stream()
+                        .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
+                        .map(SSHUserPrivateKey.class::cast)
+                        .findFirst()
+                        .orElse(null);
+                if (sshUserPrivateKey != null) {
+                    try {
+                        // be sure parent directories are here
+                        Files.createDirectories(sshDir.getAbsoluteFile().toPath());
+                        tmpKey = Files.createTempFile(sshDir.getAbsoluteFile().toPath(), "key", ".priv");
+                        tmpKey.toFile().deleteOnExit();
+                        Files.write(tmpKey, sshUserPrivateKey.getPrivateKeys());
+                        return Collections.singletonList(tmpKey);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e.getMessage(), e);
+                    }
+                }
+                return super.getDefaultIdentities(sshDir);
+            }
+
+            @Override
+            protected String getDefaultPreferredAuthentications() {
+                // TODO do we really need/want password?
+                return "publickey,password";
+            }
+        };
     }
 
     /**

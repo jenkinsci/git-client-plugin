@@ -6,10 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.transport.SshConstants;
 
@@ -35,7 +33,7 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
         Path knowHostPath = getKnownHostsFile().toPath();
-        if(Files.notExists(knowHostPath)){
+        if (Files.notExists(knowHostPath)) {
             try {
                 logHint(listener);
                 Files.createDirectories(knowHostPath.getParent());
@@ -55,7 +53,7 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
         @Override
         public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
-            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING,SshConstants.YES);
+            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, SshConstants.YES);
             return hostEntry;
         }
     }

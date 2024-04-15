@@ -59,6 +59,14 @@ public class SmartCredentialsProvider extends CredentialsProvider {
         specificCredentials.put(normalizeURI(url), credentials);
     }
 
+    public Map<String, StandardCredentials> getCredentials() {
+        Map<String, StandardCredentials> allCredentials = new HashMap<>();
+        // doCheckUrl is using defaultCredentials only
+        allCredentials.put("", defaultCredentials);
+        allCredentials.putAll(specificCredentials);
+        return allCredentials;
+    }
+
     /**
      * Adds credentials to be used when there are not url specific credentials defined.
      *

@@ -1,15 +1,10 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.KnownHostsServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.transport.SshConstants;
 
@@ -41,7 +36,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
         public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
             Path knowHostPath = getKnownHostsFile().toPath();
             // know_hosts
-            if(Files.notExists(knowHostPath)){
+            if (Files.notExists(knowHostPath)) {
                 try {
                     Files.createDirectories(knowHostPath.getParent());
                     Files.createFile(knowHostPath);
@@ -50,8 +45,8 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
                 }
             }
             // accept new
-            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING,"accept-new");
-            hostEntry.setValue(SshConstants.HASH_KNOWN_HOSTS,SshConstants.YES);
+            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, "accept-new");
+            hostEntry.setValue(SshConstants.HASH_KNOWN_HOSTS, SshConstants.YES);
 
             return hostEntry;
         }

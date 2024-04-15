@@ -6,10 +6,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.transport.SshConstants;
 
@@ -39,15 +37,15 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                 userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", escapePath(tempKnownHosts));
             } else {
                 // escaping needed in case job name contains spaces
-                userKnownHostsFileFlag = String.format(
-                        " -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"",escapePath(tempKnownHosts));
+                userKnownHostsFileFlag =
+                        String.format(" -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"", escapePath(tempKnownHosts));
             }
             return "-o StrictHostKeyChecking=yes " + userKnownHostsFileFlag;
         };
     }
 
     private static String escapePath(Path path) {
-        if (File.pathSeparatorChar== ';') // check whether on Windows or not without sending Functions over remoting
+        if (File.pathSeparatorChar == ';') // check whether on Windows or not without sending Functions over remoting
         {
             return path.toAbsolutePath().toString();
         }
@@ -82,7 +80,8 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
             try {
                 Path tempKnownHosts = Files.createTempFile("known_hosts", "");
-                Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+                Files.write(
+                        tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
                 hostEntry.setValue(SshConstants.USER_KNOWN_HOSTS_FILE, escapePath(tempKnownHosts));
                 return hostEntry;
             } catch (IOException e) {

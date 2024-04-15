@@ -2,12 +2,6 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
 import java.io.File;
-import java.nio.file.Path;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.sshd.KeyPasswordProvider;
 import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
 public abstract class HostKeyVerifierFactory implements SerializableOnlyOverRemoting {
