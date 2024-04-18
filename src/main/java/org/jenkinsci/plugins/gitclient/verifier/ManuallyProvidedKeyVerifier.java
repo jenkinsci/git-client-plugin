@@ -8,6 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
+import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.transport.SshConstants;
 
@@ -84,6 +87,20 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                         tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
                 hostEntry.setValue(SshConstants.USER_KNOWN_HOSTS_FILE, escapePath(tempKnownHosts));
                 return hostEntry;
+            } catch (IOException e) {
+                getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public ServerKeyVerifier getServerKeyVerifier() {
+            try {
+                Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+                Files.write(
+                        tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+                return new DefaultKnownHostsServerKeyVerifier(
+                        AcceptAllServerKeyVerifier.INSTANCE, true, tempKnownHosts);
             } catch (IOException e) {
                 getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
                 throw new RuntimeException(e);

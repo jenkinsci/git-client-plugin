@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
@@ -17,4 +18,6 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
     }
 
     public abstract OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry);
+
+    public abstract ServerKeyVerifier getServerKeyVerifier();
 }

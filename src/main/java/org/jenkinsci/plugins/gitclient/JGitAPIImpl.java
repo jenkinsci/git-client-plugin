@@ -179,8 +179,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // to avoid rogue plugins from clobbering what we use, always
         // make a point of overwriting it with ours.
+        // SshdSessionFactoryBuilder builder = new SshdSessionFactoryBuilder();
         SshSessionFactory.setInstance(
                 buildSshdSessionFactory(hostKeyFactory.forJGit(listener), asSmartCredentialsProvider()));
+        //        SshSessionFactory.setInstance(new JenkinsSshdSessionFactory(
+        //                hostKeyFactory.forJGit(listener).getServerKeyVerifier(), asSmartCredentialsProvider()));
         if (httpConnectionFactory != null) {
             httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
             // allow override of HttpConnectionFactory to avoid JENKINS-37934
@@ -190,7 +193,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private SshdSessionFactory buildSshdSessionFactory(
             AbstractJGitHostKeyVerifier abstractJGitHostKeyVerifier, SmartCredentialsProvider credentialsProvider) {
-
         if (Files.notExists(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath())) {
             try {
                 Files.createDirectories(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE
@@ -232,6 +234,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 sshdSession.addCloseListener(sshdSession1 -> {
                     if (tmpKey != null) {
                         try {
+                            listener.getLogger().println("deleting");
                             Files.deleteIfExists(tmpKey);
                         } catch (IOException e) {
                             if (LOGGER.isLoggable(Level.FINE))
