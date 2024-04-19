@@ -1011,8 +1011,8 @@ public interface GitClient {
      * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
      * @param key configuration section ${code user.name} format section[.subsection].name
      * @param value configuration value
-     * @throws GitException
-     * @throws InterruptedException
+     * @throws GitException on Git exception
+     * @throws InterruptedException on thread interruption
      */
     void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
 
