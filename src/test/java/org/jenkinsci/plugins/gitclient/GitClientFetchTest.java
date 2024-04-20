@@ -148,12 +148,8 @@ public class GitClientFetchTest {
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
-        testGitClient.init();
-        cliGitCommand.run("config", "--local", "user.name", "Vojtěch GitClientFetchTest Zweibrücken-Šafařík");
-        cliGitCommand.run("config", "--local", "user.email", "email.by.git.client.test@example.com");
-        cliGitCommand.run("config", "--local", "commit.gpgsign", "false");
-        cliGitCommand.run("config", "--local", "tag.gpgSign", "false");
-        cliGitCommand.run("config", "--local", "gpg.format", "openpgp");
+        workspace.initializeWorkspace(
+                "Vojtěch GitClientFetchTest Zweibrücken-Šafařík", "email.by.git.client.test@example.com");
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
@@ -548,12 +544,8 @@ public class GitClientFetchTest {
     @Test
     public void test_fetch_from_url() throws Exception {
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
-        newAreaWorkspace.getGitClient().init();
-        newAreaWorkspace.launchCommand(
-                "git", "config", "--local", "user.name", "Vojtěch fetch from URL Zweibrücken-Šafařík");
-        newAreaWorkspace.launchCommand("git", "config", "--local", "user.email", "email.by.git.fetch.test@example.com");
-        newAreaWorkspace.launchCommand("git", "config", "--local", "commit.gpgsign", "false");
-        newAreaWorkspace.launchCommand("git", "config", "--local", "tag.gpgSign", "false");
+        newAreaWorkspace.initializeWorkspace(
+                "Vojtěch fetch from URL Zweibrücken-Šafařík", "email.by.git.fetch.test@example.com");
         newAreaWorkspace.launchCommand("git", "commit", "--allow-empty", "-m", "init");
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 
