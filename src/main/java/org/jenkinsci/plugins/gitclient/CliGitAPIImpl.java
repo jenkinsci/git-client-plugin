@@ -1581,7 +1581,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Reset submodules
      *
-     * @param recursive if true, will recursively reset submodules (requres git&gt;=1.6.5)
+     * @param recursive if true, will recursively reset submodules (requires git&gt;=1.6.5)
      * @param hard if true, the --hard argument will be passed to submodule reset
      * @throws hudson.plugins.git.GitException if executing the git command fails
      * @throws java.lang.InterruptedException if git command interrupted

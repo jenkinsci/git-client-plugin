@@ -306,7 +306,7 @@ public class GitClientMaintenanceTest {
         // Run incremental repack maintenance task
         // Need to create pack files to use incremental repack
         collector.checkThat(
-                gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenace
+                gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenance
 
         collector.checkThat(gitClient.maintenance(maintenanceTask), is(incrementalRepackSupported));
 
