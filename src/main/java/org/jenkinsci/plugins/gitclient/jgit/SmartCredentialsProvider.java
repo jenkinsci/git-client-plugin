@@ -60,11 +60,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     }
 
     public Map<String, StandardCredentials> getCredentials() {
-        Map<String, StandardCredentials> allCredentials = new HashMap<>();
-        // doCheckUrl is using defaultCredentials only
-        allCredentials.put("", defaultCredentials);
-        allCredentials.putAll(specificCredentials);
-        return allCredentials;
+        return new HashMap<>(specificCredentials);
     }
 
     /**

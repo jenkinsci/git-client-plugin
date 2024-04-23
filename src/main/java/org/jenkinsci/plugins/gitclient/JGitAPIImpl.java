@@ -38,6 +38,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,6 +58,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
+import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -130,7 +132,6 @@ import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.FS;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
-import org.jenkinsci.plugins.gitclient.verifier.AbstractJGitHostKeyVerifier;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 import org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy;
 
@@ -151,7 +152,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
-    private transient CredentialsProvider provider;
+    private static final ThreadLocal<CredentialsProvider> provider = new ThreadLocal<>();
+    private static final ThreadLocal<HostKeyVerifierFactory> hostKeyVerifierFactory = new ThreadLocal<>();
+    private static final ThreadLocal<TaskListener> listenerThreadLocal = new ThreadLocal<>();
+
+    static {
+        HttpTransport.setConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory());
+        SshSessionFactory.setInstance(buildSshdSessionFactory());
+    }
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
@@ -176,23 +184,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
-
-        // to avoid rogue plugins from clobbering what we use, always
-        // make a point of overwriting it with ours.
-        // SshdSessionFactoryBuilder builder = new SshdSessionFactoryBuilder();
-        SshSessionFactory.setInstance(
-                buildSshdSessionFactory(hostKeyFactory.forJGit(listener), asSmartCredentialsProvider()));
-        //        SshSessionFactory.setInstance(new JenkinsSshdSessionFactory(
-        //                hostKeyFactory.forJGit(listener).getServerKeyVerifier(), asSmartCredentialsProvider()));
-        if (httpConnectionFactory != null) {
-            httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
-            // allow override of HttpConnectionFactory to avoid JENKINS-37934
-            HttpTransport.setConnectionFactory(httpConnectionFactory);
-        }
+        hostKeyVerifierFactory.set(hostKeyFactory);
+        listenerThreadLocal.set(listener);
     }
 
-    private SshdSessionFactory buildSshdSessionFactory(
-            AbstractJGitHostKeyVerifier abstractJGitHostKeyVerifier, SmartCredentialsProvider credentialsProvider) {
+    private static SshdSessionFactory buildSshdSessionFactory() {
         if (Files.notExists(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath())) {
             try {
                 Files.createDirectories(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE
@@ -212,7 +208,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     @Override
                     public HostEntry lookup(String hostName, int port, String userName) {
                         HostEntry hostEntry = super.lookup(hostName, port, userName);
-                        return abstractJGitHostKeyVerifier.customizeHostEntry(hostEntry);
+                        return hostKeyVerifierFactory.get().forJGit(null).customizeHostEntry(hostEntry);
                     }
                 };
             }
@@ -228,26 +224,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public SshdSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
-                    throws TransportException {
-                SshdSession sshdSession = super.getSession(uri, credentialsProvider, fs, tms);
-                sshdSession.addCloseListener(sshdSession1 -> {
-                    if (tmpKey != null) {
-                        try {
-                            listener.getLogger().println("deleting");
-                            Files.deleteIfExists(tmpKey);
-                        } catch (IOException e) {
-                            if (LOGGER.isLoggable(Level.FINE))
-                                LOGGER.log(Level.FINE, "ignore fail to delete tmp key", e);
-                        }
-                    }
-                });
-                return sshdSession;
-            }
-
-            @Override
-            protected List<Path> getDefaultIdentities(File sshDir) {
-                SSHUserPrivateKey sshUserPrivateKey = credentialsProvider.getCredentials().values().stream()
+            protected Iterable<KeyPair> getDefaultKeys(File sshDir) {
+                SmartCredentialsProvider smartCredentialsProvider = JGitAPIImpl.getProvider();
+                // credentials have been added for the target repo only so we assume we have only the good one here
+                SSHUserPrivateKey sshUserPrivateKey = smartCredentialsProvider.getCredentials().values().stream()
                         .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
                         .map(SSHUserPrivateKey.class::cast)
                         .findFirst()
@@ -259,12 +239,28 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         tmpKey = Files.createTempFile(sshDir.getAbsoluteFile().toPath(), "key", ".priv");
                         tmpKey.toFile().deleteOnExit();
                         Files.write(tmpKey, sshUserPrivateKey.getPrivateKeys());
-                        return Collections.singletonList(tmpKey);
+                        FileKeyPairProvider fileKeyPairProvider = new FileKeyPairProvider(tmpKey);
+                        return fileKeyPairProvider.loadKeys(null);
                     } catch (IOException e) {
                         throw new RuntimeException(e.getMessage(), e);
                     }
                 }
-                return super.getDefaultIdentities(sshDir);
+                return Collections.emptyList();
+            }
+
+            @Override
+            public SshdSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
+                    throws TransportException {
+                SshdSession sshdSession = super.getSession(uri, credentialsProvider, fs, tms);
+                sshdSession.addCloseListener(sshdSession1 -> {
+                    try {
+                        Files.deleteIfExists(tmpKey);
+                    } catch (IOException e) {
+                        // ignore
+                        LOGGER.log(Level.FINE, "fail to delete file " + tmpKey, e);
+                    }
+                });
+                return sshdSession;
             }
 
             @Override
@@ -296,10 +292,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
-        if (!(provider instanceof SmartCredentialsProvider)) {
-            provider = new SmartCredentialsProvider(listener);
+        if (!(provider.get() instanceof SmartCredentialsProvider)) {
+            provider.set(new SmartCredentialsProvider(listener));
         }
-        return ((SmartCredentialsProvider) provider);
+        return (SmartCredentialsProvider) provider.get();
     }
 
     /**
@@ -307,12 +303,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
-    public synchronized void setCredentialsProvider(CredentialsProvider prov) {
-        this.provider = prov;
+    public static void setCredentialsProvider(CredentialsProvider prov) {
+        provider.set(prov);
     }
 
-    private synchronized CredentialsProvider getProvider() {
-        return provider;
+    public static SmartCredentialsProvider getProvider() {
+        return (SmartCredentialsProvider) provider.get();
     }
 
     /** {@inheritDoc} */

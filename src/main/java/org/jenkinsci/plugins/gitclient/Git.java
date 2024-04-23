@@ -14,7 +14,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
 
@@ -199,9 +198,7 @@ public class Git implements Serializable {
             }
 
             if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                final PreemptiveAuthHttpClientConnectionFactory factory =
-                        new PreemptiveAuthHttpClientConnectionFactory();
-                return new JGitAPIImpl(f, listener, factory, hostKeyFactory);
+                return new JGitAPIImpl(f, listener, null, hostKeyFactory);
             }
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
             GitAPI gitAPI = new GitAPI(exe, f, listener, env);
