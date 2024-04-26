@@ -12,7 +12,7 @@ public abstract class SshHostKeyVerificationStrategy<T extends HostKeyVerifierFa
         extends AbstractDescribableImpl<SshHostKeyVerificationStrategy<T>> implements ExtensionPoint {
 
     public static final String KNOWN_HOSTS_DEFAULT =
-            Paths.get("target", ".ssh", "known_hosts").toString();
+            Paths.get(System.getProperty("user.home"), ".ssh", "known_hosts").toString();
     private static final String JGIT_KNOWN_HOSTS_PROPERTY =
             SshHostKeyVerificationStrategy.class.getName() + ".jgit_known_hosts_file";
     private static final String JGIT_KNOWN_HOSTS_FILE_PATH =

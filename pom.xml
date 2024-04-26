@@ -284,6 +284,15 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy.jgit_known_hosts_file>${project.build.directory}/ssh/know_hosts</org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy.jgit_known_hosts_file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <fixTags>param,return,throws,link</fixTags>

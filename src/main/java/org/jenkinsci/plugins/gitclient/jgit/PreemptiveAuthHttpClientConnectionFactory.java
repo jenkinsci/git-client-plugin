@@ -25,11 +25,6 @@ public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnection
     }
 
     protected HttpConnection innerCreate(final URL url, final Proxy proxy) {
-        CredentialsProvider credentialsProvider = JGitAPIImpl.getProvider();
-        if (credentialsProvider == null) {
-            throw new IllegalStateException(NEED_CREDENTIALS_PROVIDER);
-        }
-
         return new PreemptiveAuthHttpClientConnection(JGitAPIImpl.getProvider(), url.toString(), proxy);
     }
 }

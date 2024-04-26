@@ -185,7 +185,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
                     new HttpHost(serviceUri.getHost(), serviceUri.getPort(), serviceUri.getScheme());
 
             CredentialsProvider clientCredentialsProvider = new SystemDefaultCredentialsProvider();
-            if (credentialsProvider.supports(u, p)) {
+            if (credentialsProvider != null && credentialsProvider.supports(u, p)) {
                 URIish uri = serviceUri;
                 while (uri != null) {
                     if (credentialsProvider.get(uri, u, p)) {
