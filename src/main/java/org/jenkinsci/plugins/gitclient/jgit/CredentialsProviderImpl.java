@@ -19,7 +19,6 @@ import org.eclipse.jgit.transport.URIish;
  * @author Kohsuke Kawaguchi
  */
 public class CredentialsProviderImpl extends CredentialsProvider {
-    public final TaskListener listener;
     /**
      * Credential that should be used.
      */
@@ -27,12 +26,20 @@ public class CredentialsProviderImpl extends CredentialsProvider {
 
     /**
      * Constructor for CredentialsProviderImpl.
-     *
+     * @deprecated
      * @param listener a {@link hudson.model.TaskListener} object.
      * @param cred a {@link com.cloudbees.plugins.credentials.common.StandardUsernameCredentials} object.
      */
+    @Deprecated(forRemoval = true, since = "4.7.1")
     public CredentialsProviderImpl(TaskListener listener, StandardUsernameCredentials cred) {
-        this.listener = listener;
+        this.cred = cred;
+    }
+
+    /**
+     * Constructor for CredentialsProviderImpl.
+     * @param cred a {@link com.cloudbees.plugins.credentials.common.StandardUsernameCredentials} object.
+     */
+    public CredentialsProviderImpl(StandardUsernameCredentials cred) {
         this.cred = cred;
     }
 
