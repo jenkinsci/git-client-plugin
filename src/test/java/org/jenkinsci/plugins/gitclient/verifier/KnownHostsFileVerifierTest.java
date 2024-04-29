@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -46,7 +45,7 @@ public class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
+//        JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
 
         // Should throw exception because hostkey for 'bitbucket.org:22' is not in known_hosts file
         // FIXME ol
@@ -64,7 +63,7 @@ public class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
         // Should not fail because hostkey for 'github.com:22' is in known_hosts
         // FIXME ol
         //        jGitConnection.connect(verifier);
@@ -82,7 +81,7 @@ public class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
         AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
         // Should not fail because hostkey for 'github.com:22' is in known_hosts with algorithm 'ecdsa-sha2-nistp256
         // FIXME ol
         //        jGitConnection.connect(verifier);

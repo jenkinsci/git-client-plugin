@@ -16,7 +16,7 @@ public abstract class HostKeyVerifierFactory implements SerializableOnlyOverRemo
      */
     public abstract AbstractJGitHostKeyVerifier forJGit(TaskListener listener);
 
-    File getKnownHostsFile() {
+    public File getKnownHostsFile() {
         return SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE;
     }
 }

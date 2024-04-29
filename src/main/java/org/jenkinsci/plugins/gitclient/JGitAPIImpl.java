@@ -55,6 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -74,6 +75,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.SubmoduleUpdateCommand;
 import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -88,6 +90,7 @@ import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
+import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -122,9 +125,12 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.eclipse.jgit.transport.sshd.SshdSession;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -152,14 +158,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
-    private static final ThreadLocal<CredentialsProvider> provider = new ThreadLocal<>();
-    private static final ThreadLocal<HostKeyVerifierFactory> hostKeyVerifierFactory = new ThreadLocal<>();
-    private static final ThreadLocal<TaskListener> listenerThreadLocal = new ThreadLocal<>();
-
-    static {
-        HttpTransport.setConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory());
-        SshSessionFactory.setInstance(buildSshdSessionFactory());
-    }
+    private HostKeyVerifierFactory hostKeyVerifierFactory;
+    private CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
@@ -184,17 +184,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
-        hostKeyVerifierFactory.set(hostKeyFactory);
-        listenerThreadLocal.set(listener);
+        hostKeyVerifierFactory = hostKeyFactory;
     }
 
-    private static SshdSessionFactory buildSshdSessionFactory() {
-        if (Files.notExists(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath())) {
+    private SshdSessionFactory buildSshdSessionFactory() {
+        if (hostKeyVerifierFactory != null && Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
             try {
-                Files.createDirectories(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE
+                Files.createDirectories(hostKeyVerifierFactory.getKnownHostsFile()
                         .getParentFile()
                         .toPath());
-                Files.createFile(SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.toPath());
+                Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
             } catch (IOException e) {
                 LOGGER.log(Level.SEVERE, "cannot create knowhosts file", e);
             }
@@ -208,7 +207,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     @Override
                     public HostEntry lookup(String hostName, int port, String userName) {
                         HostEntry hostEntry = super.lookup(hostName, port, userName);
-                        return hostKeyVerifierFactory.get().forJGit(null).customizeHostEntry(hostEntry);
+                        return hostKeyVerifierFactory.forJGit(null).customizeHostEntry(hostEntry);
                     }
                 };
             }
@@ -220,12 +219,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public File getSshDirectory() {
-                return SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE.getParentFile();
+                return hostKeyVerifierFactory.getKnownHostsFile().getParentFile();
+            }
+
+            @Override
+            protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
+                return new OpenSshServerKeyDatabase(true,
+                        Collections.singletonList(hostKeyVerifierFactory.getKnownHostsFile().toPath()));
             }
 
             @Override
             protected Iterable<KeyPair> getDefaultKeys(File sshDir) {
-                SmartCredentialsProvider smartCredentialsProvider = JGitAPIImpl.getProvider();
+                SmartCredentialsProvider smartCredentialsProvider = getProvider();
                 // credentials have been added for the target repo only so we assume we have only the good one here
                 SSHUserPrivateKey sshUserPrivateKey = smartCredentialsProvider.getCredentials().values().stream()
                         .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
@@ -292,10 +297,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
-        if (!(provider.get() instanceof SmartCredentialsProvider)) {
-            provider.set(new SmartCredentialsProvider(listener));
+        if (!(provider instanceof SmartCredentialsProvider)) {
+            provider = new SmartCredentialsProvider(listener);
         }
-        return (SmartCredentialsProvider) provider.get();
+        return (SmartCredentialsProvider) provider;
     }
 
     /**
@@ -303,12 +308,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
-    public static void setCredentialsProvider(CredentialsProvider prov) {
-        provider.set(prov);
+    public void setCredentialsProvider(CredentialsProvider prov) {
+        provider = prov;
     }
 
-    public static SmartCredentialsProvider getProvider() {
-        return (SmartCredentialsProvider) provider.get();
+    public SmartCredentialsProvider getProvider() {
+        return asSmartCredentialsProvider();
     }
 
     /** {@inheritDoc} */
@@ -933,6 +938,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getRemoteReferences(url, null, true, false);
     }
 
+    private TransportConfigCallback getTransportConfigCallback() {
+        return transport -> {
+            if (transport instanceof SshTransport) {
+                ((SshTransport) transport).setSshSessionFactory(buildSshdSessionFactory());
+            }
+            if(transport instanceof HttpTransport) {
+                ((TransportHttp)transport).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            }
+        };
+    }
+
     /** {@inheritDoc} */
     @Override
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
@@ -952,6 +968,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             lsRemote.setRemote(url);
             lsRemote.setCredentialsProvider(getProvider());
+            lsRemote.setTransportConfigCallback(getTransportConfigCallback());
             setTransportTimeout(lsRemote, "ls-remote", TIMEOUT);
             Collection<Ref> refs = lsRemote.call();
             for (final Ref r : refs) {

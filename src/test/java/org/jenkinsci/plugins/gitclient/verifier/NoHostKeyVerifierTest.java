@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.is;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.nio.file.Paths;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -24,7 +23,7 @@ public class NoHostKeyVerifierTest {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
         // Should not fail because verifyServerHostKey always true
         // FIXME ol
         //        jGitConnection.connect(verifier.forJGit(TaskListener.NULL));

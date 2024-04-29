@@ -14,6 +14,12 @@ public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnection
             "The " + PreemptiveAuthHttpClientConnectionFactory.class.getName()
                     + " needs to be provided a credentials provider";
 
+    private SmartCredentialsProvider provider;
+
+    public PreemptiveAuthHttpClientConnectionFactory(SmartCredentialsProvider provider) {
+        this.provider = provider;
+    }
+
     @Override
     public HttpConnection create(final URL url) throws IOException {
         return innerCreate(url, null);
@@ -25,6 +31,6 @@ public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnection
     }
 
     protected HttpConnection innerCreate(final URL url, final Proxy proxy) {
-        return new PreemptiveAuthHttpClientConnection(JGitAPIImpl.getProvider(), url.toString(), proxy);
+        return new PreemptiveAuthHttpClientConnection(this.provider, url.toString(), proxy);
     }
 }

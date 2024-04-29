@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +35,7 @@ public class ManuallyProvidedKeyVerifierTest {
     @Test
     public void connectWhenHostKeyProvidedForOtherHostNameThenShouldFail() {
         verifier = new ManuallyProvidedKeyVerifier(hostKey).forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
+//        JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
 
         // Should fail because hostkey for 'bitbucket.org:22' is not manually provided
         // FIXME ol
@@ -53,7 +52,7 @@ public class ManuallyProvidedKeyVerifierTest {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
         verifier = new ManuallyProvidedKeyVerifier(hostKey).forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // Should not fail because hostkey for 'github.com:22' was provided
         // FIXME ol
@@ -65,7 +64,7 @@ public class ManuallyProvidedKeyVerifierTest {
         verifier = new ManuallyProvidedKeyVerifier(
                         "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9OOOO")
                 .forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // FIXME ol
         //        Exception exception = assertThrows(IOException.class, () -> {
@@ -83,7 +82,7 @@ public class ManuallyProvidedKeyVerifierTest {
         verifier = new ManuallyProvidedKeyVerifier(
                         "github.com:22 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl")
                 .forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // Should not fail because hostkey for 'github.com:22' was provided
         // FIXME ol
@@ -99,7 +98,7 @@ public class ManuallyProvidedKeyVerifierTest {
         verifier = new ManuallyProvidedKeyVerifier(
                         "|1|L95XQhkJWMDrDLdtkT1oH7hj2ec=|A2ocjuIDw2x+SOhTnRU3IGjqai0= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=")
                 .forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // Should not fail because hostkey for 'github.com:22' was provided
         // FIXME ol
@@ -115,7 +114,7 @@ public class ManuallyProvidedKeyVerifierTest {
         verifier = new ManuallyProvidedKeyVerifier(
                         "|1|Sps9q6AJcYKtFor8T+uOUSdidVc=|liZf9T3FN9jJG2NPwUXK9b/YB+g= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=")
                 .forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // Should not fail because hostkey for 'github.com' was provided
         // FIXME ol
@@ -127,7 +126,7 @@ public class ManuallyProvidedKeyVerifierTest {
         verifier = new ManuallyProvidedKeyVerifier(
                         "github.com:33 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl")
                 .forJGit(TaskListener.NULL);
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // FIXME ol
         //        Exception exception = assertThrows(IOException.class, () -> {
