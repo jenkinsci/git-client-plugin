@@ -578,7 +578,7 @@ public interface GitClient {
      * Check if a ref exists. Equivalent to comparing the return code of <code>git show-ref</code> to zero.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
-     * @return True if the ref exists, false otherwse.
+     * @return True if the ref exists, false otherwise.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -1011,8 +1011,8 @@ public interface GitClient {
      * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
      * @param key configuration section ${code user.name} format section[.subsection].name
      * @param value configuration value
-     * @throws GitException
-     * @throws InterruptedException
+     * @throws GitException on Git exception
+     * @throws InterruptedException on thread interruption
      */
     void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
 

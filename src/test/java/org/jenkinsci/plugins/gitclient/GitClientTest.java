@@ -1059,7 +1059,7 @@ public class GitClientTest {
     }
 
     /**
-     * Test case for auto local branch creation behviour.
+     * Test case for auto local branch creation behaviour.
      * This is essentially a stripped down version of {@link GitAPITestUpdate#testBranchContainingRemote()}
      * @throws Exception on exceptions occur
      */
@@ -2531,7 +2531,7 @@ public class GitClientTest {
         }
 
         /* Assertion is wrong! newDirName should not have contents.
-         * Or rather, I think the code is wrong, newDirName shoud not have contents,
+         * Or rather, I think the code is wrong, newDirName should not have contents,
          * since the branch being checked out does not include newDirName submodule.
          * How many installations depend on that unexpected behavior?
          */
