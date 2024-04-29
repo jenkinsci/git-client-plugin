@@ -32,7 +32,9 @@ public class AcceptFirstConnectionVerifierTest {
             + " ssh-ed25519"
             + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
-    private static final String KEY_ecdsa_sha2_nistp256 = "";
+    private static final String KEY_ecdsa_sha2_nistp256 = "|1|owDOW+8aankl2aFSPKPIXsIf31E=|lGZ9BEWUfa9HoQteyYE5wIqHJdo=,|1|eGv/ezgtZ9YMw7OHcykKKOvAINk=|3lpkF7XiveRl/D7XvTOMc3ra2kU="
+            + " ecdsa-sha2-nistp256"
+            + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
     @Rule
     public TemporaryFolder testFolder =
@@ -70,7 +72,7 @@ public class AcceptFirstConnectionVerifierTest {
             assertThat(file, is(anExistingFile()));
             assertThat(
                     Files.readAllLines(file.toPath()),
-                    hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+                    hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
         }
 
 
@@ -167,7 +169,7 @@ public class AcceptFirstConnectionVerifierTest {
             JGitAPIImpl jGitAPI = (JGitAPIImpl) new Git(StreamTaskListener.fromStderr(), new EnvVars()).using("jgit")
                     .withHostKeyVerifierFactory(acceptFirstConnectionVerifier)
                     .getClient();
-            jGitAPI.getHeadRev("git@github.com:jenkinsci:22/git-client-plugin.git");
+            jGitAPI.getHeadRev("git@github.com:22:jenkinsci/git-client-plugin.git");
         } catch (Exception e) {
             assertThat(e.getCause(), instanceOf(TransportException.class));
             assertThat(e.getCause().getMessage(), containsString("Cannot log in at github.com"));
@@ -210,7 +212,7 @@ public class AcceptFirstConnectionVerifierTest {
         } finally {
             List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
             assertThat(actual, hasItem(bitbucketFileContent));
-            assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+            assertThat(actual, hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
         }
     }
 
