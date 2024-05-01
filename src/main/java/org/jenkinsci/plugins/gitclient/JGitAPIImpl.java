@@ -55,7 +55,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -124,7 +123,6 @@ import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.eclipse.jgit.transport.SshConfigStore;
-import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
@@ -139,7 +137,6 @@ import org.eclipse.jgit.util.FS;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
-import org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy;
 
 /**
  * GitClient pure Java implementation using JGit.
@@ -190,7 +187,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public SshdSessionFactory buildSshdSessionFactory(@NonNull final HostKeyVerifierFactory hostKeyVerifierFactory) {
         if (Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
             try {
-                Files.createDirectories(hostKeyVerifierFactory.getKnownHostsFile()
+                Files.createDirectories(hostKeyVerifierFactory
+                        .getKnownHostsFile()
                         .getParentFile()
                         .toPath());
                 Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
@@ -224,8 +222,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
-                return new OpenSshServerKeyDatabase(true,
-                        Collections.singletonList(hostKeyVerifierFactory.getKnownHostsFile().toPath()));
+                return new OpenSshServerKeyDatabase(
+                        true,
+                        Collections.singletonList(
+                                hostKeyVerifierFactory.getKnownHostsFile().toPath()));
             }
 
             @Override
@@ -943,8 +943,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (transport instanceof SshTransport) {
                 ((SshTransport) transport).setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
             }
-            if(transport instanceof HttpTransport) {
-                ((TransportHttp)transport).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            if (transport instanceof HttpTransport) {
+                ((TransportHttp) transport)
+                        .setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
             }
         };
     }

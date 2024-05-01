@@ -1,5 +1,10 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
+import static org.eclipse.jgit.transport.SshSessionFactory.getLocalUserName;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
+import hudson.util.ReflectionUtils;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -13,10 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-
-import hudson.model.StreamBuildListener;
-import hudson.model.TaskListener;
-import hudson.util.ReflectionUtils;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
@@ -38,10 +39,6 @@ import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.sshd.IdentityPasswordProvider;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.junit.rules.TemporaryFolder;
-
-import static org.eclipse.jgit.transport.SshSessionFactory.getLocalUserName;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 
 public class KnownHostsTestUtil {
 
@@ -80,25 +77,33 @@ public class KnownHostsTestUtil {
         return Files.readAllLines(file.toPath());
     }
 
-    protected static JGitClientSession connectToHost(String host, int port, File knownHostsFile, AbstractJGitHostKeyVerifier verifier, Predicate<JGitClientSession> asserts) throws IOException {
+    protected static JGitClientSession connectToHost(
+            String host,
+            int port,
+            File knownHostsFile,
+            AbstractJGitHostKeyVerifier verifier,
+            Predicate<JGitClientSession> asserts)
+            throws IOException {
 
         HostConfigEntryResolver configFile = new JGitSshConfig(createSshConfigStore(knownHostsFile, verifier));
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
-                //.filePasswordProvider((sessionContext, namedResource, i) -> "foo")
+                // .filePasswordProvider((sessionContext, namedResource, i) -> "foo")
                 .hostConfigEntryResolver(configFile)
                 .serverKeyVerifier(new JGitServerKeyVerifier(getServerKeyDatabase(knownHostsFile)))
                 .compressionFactories(new ArrayList<>(BuiltinCompressions.VALUES))
-                .build()){
+                .build()) {
             client.start();
             // just to avoid NPE
             JGitSshClient jgitClient = (JGitSshClient) client;
             jgitClient.setKeyPasswordProviderFactory(() -> new IdentityPasswordProvider(null));
 
             ConnectFuture connectFuture = client.connect(getLocalUserName(), host, port);
-            JGitClientSession s = (JGitClientSession) connectFuture.verify(Duration.ofMillis(30000)).getClientSession();
+            JGitClientSession s = (JGitClientSession)
+                    connectFuture.verify(Duration.ofMillis(30000)).getClientSession();
             // make a simple call to force keys exchange
-            Method method = ReflectionUtils.findMethod(s.getClass(),"getServices"); // sendKexInit //"doKexNegotiation");
+            Method method =
+                    ReflectionUtils.findMethod(s.getClass(), "getServices"); // sendKexInit //"doKexNegotiation");
             assert method != null;
             method.setAccessible(true);
             Object response = ReflectionUtils.invokeMethod(method, s);
@@ -107,12 +112,11 @@ public class KnownHostsTestUtil {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
     }
 
-
     protected static boolean checkKeys(JGitClientSession s) {
-        ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(s.getServerKeyVerifier(), "No server key verifier");
+        ServerKeyVerifier serverKeyVerifier =
+                Objects.requireNonNull(s.getServerKeyVerifier(), "No server key verifier");
         IoSession networkSession = s.getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
         PublicKey serverKey = Objects.requireNonNull(s.getServerKey(), "No server key to verify");
@@ -124,7 +128,8 @@ public class KnownHostsTestUtil {
         boolean verified = false;
         if (serverKey instanceof OpenSshCertificate) {
             // check if we trust the CA
-            verified = serverKeyVerifier.verifyServerKey(s, remoteAddress, ((OpenSshCertificate) serverKey).getCaPubKey());
+            verified =
+                    serverKeyVerifier.verifyServerKey(s, remoteAddress, ((OpenSshCertificate) serverKey).getCaPubKey());
 
             if (!verified) {
                 // fallback to actual public host key
@@ -139,8 +144,10 @@ public class KnownHostsTestUtil {
         return verified;
     }
 
-    protected static SshConfigStore createSshConfigStore(@NonNull File knownHost, @NonNull AbstractJGitHostKeyVerifier verifier) {
-        return new OpenSshConfigFile(knownHost.getParentFile(), new File(knownHost.getParentFile(), "fakeconfig"), getLocalUserName()) {
+    protected static SshConfigStore createSshConfigStore(
+            @NonNull File knownHost, @NonNull AbstractJGitHostKeyVerifier verifier) {
+        return new OpenSshConfigFile(
+                knownHost.getParentFile(), new File(knownHost.getParentFile(), "fakeconfig"), getLocalUserName()) {
             @Override
             public HostEntry lookup(String hostName, int port, String userName) {
                 HostEntry hostEntry = super.lookup(hostName, port, userName);
@@ -152,6 +159,4 @@ public class KnownHostsTestUtil {
     protected static ServerKeyDatabase getServerKeyDatabase(File knownHostFile) {
         return new OpenSshServerKeyDatabase(true, Collections.singletonList(knownHostFile.toPath()));
     }
-
-
 }

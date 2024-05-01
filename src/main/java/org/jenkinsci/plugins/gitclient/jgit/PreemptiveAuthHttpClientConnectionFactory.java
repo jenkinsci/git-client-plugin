@@ -3,10 +3,8 @@ package org.jenkinsci.plugins.gitclient.jgit;
 import java.io.IOException;
 import java.net.Proxy;
 import java.net.URL;
-import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.HttpConnectionFactory;
-import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
 
 public class PreemptiveAuthHttpClientConnectionFactory implements HttpConnectionFactory {
 

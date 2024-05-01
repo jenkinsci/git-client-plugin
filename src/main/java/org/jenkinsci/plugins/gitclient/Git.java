@@ -116,7 +116,7 @@ public class Git implements Serializable {
         return this;
     }
 
-    public Git withHostKeyVerifierFactory(HostKeyVerifierFactory hostKeyFactory){
+    public Git withHostKeyVerifierFactory(HostKeyVerifierFactory hostKeyFactory) {
         this.hostKeyFactory = hostKeyFactory;
         return this;
     }
@@ -130,7 +130,7 @@ public class Git implements Serializable {
      * @throws java.lang.InterruptedException if interrupted.
      */
     public GitClient getClient() throws IOException, InterruptedException {
-        if(this.hostKeyFactory == null) {
+        if (this.hostKeyFactory == null) {
             if (Jenkins.getInstanceOrNull() == null) {
                 LOGGER.log(Level.FINE, "No Jenkins instance, skipping host key checking by default");
                 this.hostKeyFactory = new NoHostKeyVerificationStrategy().getVerifier();

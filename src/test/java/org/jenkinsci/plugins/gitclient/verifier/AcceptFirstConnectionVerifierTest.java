@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-
 import org.awaitility.Awaitility;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -29,9 +28,10 @@ public class AcceptFirstConnectionVerifierTest {
             + " ssh-ed25519"
             + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
-    private static final String KEY_ecdsa_sha2_nistp256 = "|1|owDOW+8aankl2aFSPKPIXsIf31E=|lGZ9BEWUfa9HoQteyYE5wIqHJdo=,|1|eGv/ezgtZ9YMw7OHcykKKOvAINk=|3lpkF7XiveRl/D7XvTOMc3ra2kU="
-            + " ecdsa-sha2-nistp256"
-            + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
+    private static final String KEY_ecdsa_sha2_nistp256 =
+            "|1|owDOW+8aankl2aFSPKPIXsIf31E=|lGZ9BEWUfa9HoQteyYE5wIqHJdo=,|1|eGv/ezgtZ9YMw7OHcykKKOvAINk=|3lpkF7XiveRl/D7XvTOMc3ra2kU="
+                    + " ecdsa-sha2-nistp256"
+                    + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
     @Rule
     public TemporaryFolder testFolder =
@@ -55,21 +55,28 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, file, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(file, is(anExistingFile()));
-            try {
-                assertThat(
-                        Files.readAllLines(file.toPath()),
-                        hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        file,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(file, is(anExistingFile()));
+                            try {
+                                assertThat(
+                                        Files.readAllLines(file.toPath()),
+                                        hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(
+                                                KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -83,22 +90,29 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, mockedKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(mockedKnownHosts, is(anExistingFile()));
-            try {
-                // Should connect and do not add new line because keys are equal
-                assertThat(mockedKnownHosts, is(anExistingFile()));
-                assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
-
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(mockedKnownHosts, is(anExistingFile()));
+                            try {
+                                // Should connect and do not add new line because keys are equal
+                                assertThat(mockedKnownHosts, is(anExistingFile()));
+                                assertThat(
+                                        Files.readAllLines(mockedKnownHosts.toPath()),
+                                        is(Collections.singletonList(hostKeyEntry)));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -112,21 +126,28 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, mockedKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(mockedKnownHosts, is(anExistingFile()));
-            try {
-                assertThat(mockedKnownHosts, is(anExistingFile()));
-                assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(hostKeyEntry)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
-
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(mockedKnownHosts, is(anExistingFile()));
+                            try {
+                                assertThat(mockedKnownHosts, is(anExistingFile()));
+                                assertThat(
+                                        Files.readAllLines(mockedKnownHosts.toPath()),
+                                        is(Collections.singletonList(hostKeyEntry)));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -141,20 +162,28 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, mockedKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(mockedKnownHosts, is(anExistingFile()));
-            try {
-                assertThat(mockedKnownHosts, is(anExistingFile()));
-                assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(fileContent)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(mockedKnownHosts, is(anExistingFile()));
+                            try {
+                                assertThat(mockedKnownHosts, is(anExistingFile()));
+                                assertThat(
+                                        Files.readAllLines(mockedKnownHosts.toPath()),
+                                        is(Collections.singletonList(fileContent)));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -168,30 +197,38 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, mockedKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(mockedKnownHosts, is(anExistingFile()));
-            try {
-                assertThat(mockedKnownHosts, is(anExistingFile()));
-                assertThat(Files.readAllLines(mockedKnownHosts.toPath()), is(Collections.singletonList(fileContent)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(mockedKnownHosts, is(anExistingFile()));
+                            try {
+                                assertThat(mockedKnownHosts, is(anExistingFile()));
+                                assertThat(
+                                        Files.readAllLines(mockedKnownHosts.toPath()),
+                                        is(Collections.singletonList(fileContent)));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
 
         AbstractJGitHostKeyVerifier verifier = acceptFirstConnectionVerifier.forJGit(TaskListener.NULL);
-//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+        //        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
 
         // FIXME ol
         //        Exception exception = assertThrows(IOException.class, () -> {
         //            jGitConnection.connect(verifier);
         //        });
-        //        assertThat(exception.getMessage(), containsString("There was a problem while connecting to github.com:22"));
-
+        //        assertThat(exception.getMessage(), containsString("There was a problem while connecting to
+        // github.com:22"));
 
     }
 
@@ -208,22 +245,30 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, fakeKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(fakeKnownHosts, is(anExistingFile()));
-            try {
-                List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
-                assertThat(actual, hasItem(bitbucketFileContent));
-                assertThat(actual, hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
-
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        fakeKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(fakeKnownHosts, is(anExistingFile()));
+                            try {
+                                List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
+                                assertThat(actual, hasItem(bitbucketFileContent));
+                                assertThat(
+                                        actual,
+                                        hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(
+                                                KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -238,22 +283,29 @@ public class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, mockedKnownHosts, acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            // Should have first connection and create a file
-            assertThat(mockedKnownHosts, is(anExistingFile()));
-            try {
-                List<String> actual = Files.readAllLines(mockedKnownHosts.toPath());
-                assertThat(actual, hasItem(fileContent));
-                assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return true;
-        }).close();
-
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should have first connection and create a file
+                            assertThat(mockedKnownHosts, is(anExistingFile()));
+                            try {
+                                List<String> actual = Files.readAllLines(mockedKnownHosts.toPath());
+                                assertThat(actual, hasItem(fileContent));
+                                assertThat(
+                                        actual,
+                                        hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                            return true;
+                        })
+                .close();
     }
 
     /* Return true if running on a Kubernetes pod on ci.jenkins.io */

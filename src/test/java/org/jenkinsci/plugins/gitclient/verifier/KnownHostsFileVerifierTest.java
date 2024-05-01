@@ -21,13 +21,12 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class KnownHostsFileVerifierTest {
 
-    private static final String FILE_CONTENT =
-            "|1|x2OaBkti6peaNPX1ftYHvWscOqk=|dYFtgxb3j9bwB8gHGMBnV7tTzJ8="
+    private static final String FILE_CONTENT = "|1|x2OaBkti6peaNPX1ftYHvWscOqk=|dYFtgxb3j9bwB8gHGMBnV7tTzJ8="
             + " ssh-ecdsa-sha2-nistp256"
             + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
-//            "|1|MMHhyJWbis6eLbmW7/vVMgWL01M=|OT564q9RmLIALJ94imtE4PaCewU="
-//            + " ssh-ed25519"
-//            + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+    //            "|1|MMHhyJWbis6eLbmW7/vVMgWL01M=|OT564q9RmLIALJ94imtE4PaCewU="
+    //            + " ssh-ed25519"
+    //            + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
@@ -49,14 +48,19 @@ public class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("bitbucket.org", 22, fakeKnownHosts, knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "bitbucket.org",
+                        22,
+                        fakeKnownHosts,
+                        knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
+                            return true;
+                        })
+                .close();
     }
-
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
@@ -67,12 +71,18 @@ public class KnownHostsFileVerifierTest {
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
         // Should not fail because hostkey for 'github.com:22' is in known_hosts
-        KnownHostsTestUtil.connectToHost("github.com", 22, fakeKnownHosts, knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        fakeKnownHosts,
+                        knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -87,14 +97,20 @@ public class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
-        KnownHostsTestUtil.connectToHost("github.com", 22, fakeKnownHosts, knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
-            assertThat(s.isOpen(), is(true));
-            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-            return true;
-        }).close();
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        fakeKnownHosts,
+                        knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            return true;
+                        })
+                .close();
 
-//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+        //        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
         // Should not fail because hostkey for 'github.com:22' is in known_hosts with algorithm 'ecdsa-sha2-nistp256
         // FIXME ol
         //        jGitConnection.connect(verifier);
