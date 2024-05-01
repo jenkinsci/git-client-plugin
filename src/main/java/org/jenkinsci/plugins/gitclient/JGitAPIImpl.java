@@ -187,8 +187,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         hostKeyVerifierFactory = hostKeyFactory;
     }
 
-    private SshdSessionFactory buildSshdSessionFactory() {
-        if (hostKeyVerifierFactory != null && Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
+    public SshdSessionFactory buildSshdSessionFactory(@NonNull final HostKeyVerifierFactory hostKeyVerifierFactory) {
+        if (Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
             try {
                 Files.createDirectories(hostKeyVerifierFactory.getKnownHostsFile()
                         .getParentFile()
@@ -941,7 +941,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private TransportConfigCallback getTransportConfigCallback() {
         return transport -> {
             if (transport instanceof SshTransport) {
-                ((SshTransport) transport).setSshSessionFactory(buildSshdSessionFactory());
+                ((SshTransport) transport).setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
             }
             if(transport instanceof HttpTransport) {
                 ((TransportHttp)transport).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));

@@ -5,25 +5,29 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
+import org.awaitility.Awaitility;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
-// FIXME ol
-@Ignore("TODO")
 @RunWith(MockitoJUnitRunner.class)
 public class KnownHostsFileVerifierTest {
 
-    private static final String FILE_CONTENT = "|1|MMHhyJWbis6eLbmW7/vVMgWL01M=|OT564q9RmLIALJ94imtE4PaCewU="
+    private static final String FILE_CONTENT =
+            "|1|x2OaBkti6peaNPX1ftYHvWscOqk=|dYFtgxb3j9bwB8gHGMBnV7tTzJ8="
             + " ssh-ed25519"
-            + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+            + " AAAAC3NzaC1lZDI1NTE5AAAAIIazEu89wgQZ4bqs3d63QSMzYVa0MuJ2e2gKTKqu+UUO";
+//            "|1|MMHhyJWbis6eLbmW7/vVMgWL01M=|OT564q9RmLIALJ94imtE4PaCewU="
+//            + " ssh-ed25519"
+//            + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
@@ -40,20 +44,19 @@ public class KnownHostsFileVerifierTest {
     }
 
     @Test
-    public void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws IOException {
+    public void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws Exception {
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2", FILE_CONTENT);
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
-        AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
-//        JGitConnection jGitConnection = new JGitConnection("bitbucket.org", 22);
 
-        // Should throw exception because hostkey for 'bitbucket.org:22' is not in known_hosts file
-        // FIXME ol
-        //        Exception exception = assertThrows(IOException.class, () -> {
-        //            jGitConnection.connect(verifier);
-        //        });
-        //        assertThat(exception.getMessage(), is("There was a problem while connecting to bitbucket.org:22"));
+        KnownHostsTestUtil.connectToHost("bitbucket.org", 22, fakeKnownHosts, knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
+            assertThat(s.isOpen(), is(true));
+            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+            return true;
+        }).close();
     }
+
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
@@ -62,11 +65,14 @@ public class KnownHostsFileVerifierTest {
         }
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
-        AbstractJGitHostKeyVerifier verifier = knownHostsFileVerifier.forJGit(TaskListener.NULL);
-//        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
+
         // Should not fail because hostkey for 'github.com:22' is in known_hosts
-        // FIXME ol
-        //        jGitConnection.connect(verifier);
+        KnownHostsTestUtil.connectToHost("github.com", 22, fakeKnownHosts, knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()), s -> {
+            assertThat(s.isOpen(), is(true));
+            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+            return true;
+        }).close();
     }
 
     @Test

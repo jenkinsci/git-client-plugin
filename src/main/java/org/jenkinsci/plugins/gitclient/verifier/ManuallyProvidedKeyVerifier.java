@@ -74,6 +74,8 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
         private final String approvedHostKeys;
 
+        private File knownHostsFile;
+
         public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, String approvedHostKeys) {
             super(listener);
             this.approvedHostKeys = approvedHostKeys;
@@ -86,6 +88,7 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                 Files.write(
                         tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
                 hostEntry.setValue(SshConstants.USER_KNOWN_HOSTS_FILE, escapePath(tempKnownHosts));
+                knownHostsFile = tempKnownHosts.toFile();
                 return hostEntry;
             } catch (IOException e) {
                 getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
@@ -99,12 +102,17 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                 Path tempKnownHosts = Files.createTempFile("known_hosts", "");
                 Files.write(
                         tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+                knownHostsFile = tempKnownHosts.toFile();
                 return new DefaultKnownHostsServerKeyVerifier(
                         AcceptAllServerKeyVerifier.INSTANCE, true, tempKnownHosts);
             } catch (IOException e) {
                 getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
                 throw new RuntimeException(e);
             }
+        }
+
+        protected File getKnownHostsFile() {
+            return this.knownHostsFile;
         }
     }
 }
