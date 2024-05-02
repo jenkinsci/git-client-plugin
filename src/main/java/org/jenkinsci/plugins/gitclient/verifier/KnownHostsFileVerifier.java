@@ -39,8 +39,13 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
         if (Files.notExists(knowHostPath)) {
             try {
                 logHint(listener);
-                Files.createDirectories(knowHostPath.getParent());
-                Files.createFile(knowHostPath);
+                Path parent = knowHostPath.getParent();
+                if(parent!=null) {
+                    Files.createDirectories(parent);
+                    Files.createFile(knowHostPath);
+                } else {
+                    throw new IllegalArgumentException("knowHostPath parent cannot be null");
+                }
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
             }

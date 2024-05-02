@@ -155,8 +155,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private final TaskListener listener;
     private PersonIdent author, committer;
 
-    private HostKeyVerifierFactory hostKeyVerifierFactory;
-    private CredentialsProvider provider;
+    private final HostKeyVerifierFactory hostKeyVerifierFactory;
+    private transient CredentialsProvider provider;
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
@@ -296,7 +296,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         asSmartCredentialsProvider().addDefaultCredentials(credentials);
     }
 
-    private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
+    private SmartCredentialsProvider asSmartCredentialsProvider() {
         if (!(provider instanceof SmartCredentialsProvider)) {
             provider = new SmartCredentialsProvider(listener);
         }
