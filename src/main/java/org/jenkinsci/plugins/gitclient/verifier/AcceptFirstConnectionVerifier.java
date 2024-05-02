@@ -4,8 +4,6 @@ import hudson.model.TaskListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
 import java.util.logging.Logger;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
@@ -44,7 +42,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
             if (Files.notExists(knowHostPath)) {
                 try {
                     Path parent = knowHostPath.getParent();
-                    if(parent!=null) {
+                    if (parent != null) {
                         Files.createDirectories(parent);
                         Files.createFile(knowHostPath);
                     } else {

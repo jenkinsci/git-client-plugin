@@ -40,7 +40,7 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
             try {
                 logHint(listener);
                 Path parent = knowHostPath.getParent();
-                if(parent!=null) {
+                if (parent != null) {
                     Files.createDirectories(parent);
                     Files.createFile(knowHostPath);
                 } else {
