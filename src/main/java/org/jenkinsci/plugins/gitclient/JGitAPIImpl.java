@@ -793,7 +793,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
-
+                    fetch.setTransportConfigCallback(getTransportConfigCallback());
                     fetch.setRefSpecs(allRefSpecs);
                     fetch.setRemoveDeletedRefs(shouldPrune);
                     setTransportTimeout(fetch, "fetch", timeout);
@@ -833,7 +833,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 fetch.setRemote(remoteName);
             }
             fetch.setCredentialsProvider(getProvider());
-
+            fetch.setTransportConfigCallback(getTransportConfigCallback());
             List<RefSpec> refSpecs = new ArrayList<>();
             if (refspec != null && refspec.length > 0) {
                 for (RefSpec rs : refspec) {
@@ -1004,6 +1004,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
             lsRemote.setRemote(url);
             lsRemote.setCredentialsProvider(getProvider());
+            lsRemote.setTransportConfigCallback(getTransportConfigCallback());
             setTransportTimeout(lsRemote, "ls-remote", TIMEOUT);
             Collection<Ref> refs = lsRemote.call();
             for (final Ref r : refs) {
@@ -1666,6 +1667,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setRemote(url)
                             .setCredentialsProvider(getProvider())
+                            .setTransportConfigCallback(getTransportConfigCallback())
                             .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
                             .setRefSpecs(refspecs);
                     setTransportTimeout(fetch, "fetch", timeout);
@@ -2154,6 +2156,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setCredentialsProvider(getProvider())
+                            .setTransportConfigCallback(getTransportConfigCallback())
                             .setForce(force);
                     if (tags) {
                         pc.setPushTags();
@@ -2546,6 +2549,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     SubmoduleUpdateCommand update = git(repo).submoduleUpdate();
                     update.setCredentialsProvider(getProvider());
+                    update.setTransportConfigCallback(getTransportConfigCallback());
                     setTransportTimeout(update, "update", timeout);
                     update.call();
                     if (recursive) {
