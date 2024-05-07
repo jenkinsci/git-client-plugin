@@ -9,6 +9,9 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
     private TaskListener taskListener;
 
+    public static final String HOST_KEY_ALGORITHM_PROPERTY_KEY =
+            AbstractJGitHostKeyVerifier.class + ".hostKeyAlgorithms";
+
     protected AbstractJGitHostKeyVerifier(TaskListener taskListener) {
         this.taskListener = taskListener;
     }
@@ -20,4 +23,12 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
     public abstract OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry);
 
     public abstract ServerKeyVerifier getServerKeyVerifier();
+
+    /**
+     * to set key algorithm for host.
+     * @return the key algorithms for host key (default empty)
+     */
+    public String getHostKeyAlgorithms() {
+        return System.getProperty(HOST_KEY_ALGORITHM_PROPERTY_KEY, "");
+    }
 }

@@ -17,6 +17,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,6 +40,16 @@ public class AcceptFirstConnectionVerifierTest {
             TemporaryFolder.builder().assureDeletion().build();
 
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
+
+    @BeforeClass
+    public static void setHostKeyAlgo() {
+        System.setProperty(AbstractJGitHostKeyVerifier.HOST_KEY_ALGORITHM_PROPERTY_KEY, "ecdsa-sha2-nistp256");
+    }
+
+    @AfterClass
+    public static void unsetHostKeyAlgo() {
+        System.clearProperty(AbstractJGitHostKeyVerifier.HOST_KEY_ALGORITHM_PROPERTY_KEY);
+    }
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
@@ -84,13 +96,15 @@ public class AcceptFirstConnectionVerifierTest {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        //String hostKeyEntry =
-        //        "|1|WIo7bO1jHBJNeDU+fr2jilINo7I=|la2mWYq2yebKmyoL1acdWfRYr2w= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+        // String hostKeyEntry =
+        //        "|1|WIo7bO1jHBJNeDU+fr2jilINo7I=|la2mWYq2yebKmyoL1acdWfRYr2w= ssh-ed25519
+        // AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         // |1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= is github.com:22
-        //String hostKeyEntry =
-        //        "|1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+        // String hostKeyEntry =
+        //        "|1|I9eFW1PcZ6UvKPt6iHmYwTXTo54=|PyasyFX5Az4w9co6JTn7rHkeFII= ssh-ed25519
+        // AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         String hostKeyEntry =
-                "|1|FJGXVAi7jMQIsl1J6uE6KnCiteM=|xlH92KQ91GuBgRxvRbU/sBo60Bo=,|1|lzAFcGSIP38m4EbxyqM4cf178qI=|olgwLCzC/KhNrxfC9YMoLqRgpN4= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
+                "|1|FJGXVAi7jMQIsl1J6uE6KnCiteM=|xlH92KQ91GuBgRxvRbU/sBo60Bo= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());

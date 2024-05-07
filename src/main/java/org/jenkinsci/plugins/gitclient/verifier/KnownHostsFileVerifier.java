@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -62,6 +63,9 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
         @Override
         public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
             hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, SshConstants.YES);
+            if (StringUtils.isNotEmpty(getHostKeyAlgorithms())) {
+                hostEntry.setValue(SshConstants.HOST_KEY_ALGORITHMS, getHostKeyAlgorithms());
+            }
             return hostEntry;
         }
 
