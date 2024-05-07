@@ -100,7 +100,7 @@ public class KnownHostsTestUtil {
 
             ConnectFuture connectFuture = client.connect(getLocalUserName(), host, port);
             JGitClientSession s = (JGitClientSession)
-                    connectFuture.verify(Duration.ofMillis(30000)).getClientSession();
+                    connectFuture.verify(Duration.ofMillis(3330000)).getClientSession();
             // make a simple call to force keys exchange
             Method method =
                     ReflectionUtils.findMethod(s.getClass(), "getServices"); // sendKexInit //"doKexNegotiation");

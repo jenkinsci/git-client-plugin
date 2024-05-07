@@ -55,8 +55,6 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
             // accept new
             hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, "accept-new");
             hostEntry.setValue(SshConstants.HASH_KNOWN_HOSTS, SshConstants.YES);
-            hostEntry.setValue(
-                    SshConstants.USER_KNOWN_HOSTS_FILE, knowHostPath.toFile().getAbsolutePath());
             return hostEntry;
         }
 
