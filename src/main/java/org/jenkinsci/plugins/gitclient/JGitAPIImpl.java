@@ -37,7 +37,7 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -58,7 +58,8 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
-import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -129,11 +130,9 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
-import org.eclipse.jgit.transport.sshd.SshdSession;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.util.FS;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
 import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
@@ -157,6 +156,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private transient CredentialsProvider provider;
+
+    static {
+        // TODO should we have this configurable?
+        // to avoid any registration of using "net.i2p.crypto.eddsa.EdDSASecurityProvider";
+        LOGGER.info("configuring SecurityUtils, isRegistrationCompleted:" + SecurityUtils.isRegistrationCompleted());
+        SecurityUtils.setDefaultProviderChoice(new BouncyCastleSecurityProviderRegistrar());
+        LOGGER.info("SecurityUtils.isEDDSACurveSupported():" + SecurityUtils.isEDDSACurveSupported());
+
+        LOGGER.info("SecurityUtils.getRegisteredProviders():" + SecurityUtils.getRegisteredProviders());
+    }
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
@@ -196,9 +205,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 LOGGER.log(Level.SEVERE, "cannot create knowhosts file", e);
             }
         }
-        return new SshdSessionFactory() {
-            private Path tmpKey;
 
+        return new SshdSessionFactory() {
             @Override
             protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String localUserName) {
                 return new OpenSshConfigFile(homeDir, configFile, localUserName) {
@@ -239,33 +247,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .orElse(null);
                 if (sshUserPrivateKey != null) {
                     try {
-                        // be sure parent directories are here
-                        Files.createDirectories(sshDir.getAbsoluteFile().toPath());
-                        tmpKey = Files.createTempFile(sshDir.getAbsoluteFile().toPath(), "key", ".priv");
-                        tmpKey.toFile().deleteOnExit();
-                        Files.write(tmpKey, sshUserPrivateKey.getPrivateKeys());
-                        FileKeyPairProvider fileKeyPairProvider = new FileKeyPairProvider(tmpKey);
-                        return fileKeyPairProvider.loadKeys(null);
-                    } catch (IOException e) {
+                        String keys = String.join(System.lineSeparator(), sshUserPrivateKey.getPrivateKeys());
+                        return SecurityUtils.loadKeyPairIdentities(
+                                null, () -> "key", IOUtils.toInputStream(keys, StandardCharsets.UTF_8), null);
+                    } catch (IOException | GeneralSecurityException e) {
                         throw new RuntimeException(e.getMessage(), e);
                     }
                 }
                 return Collections.emptyList();
-            }
-
-            @Override
-            public SshdSession getSession(URIish uri, CredentialsProvider credentialsProvider, FS fs, int tms)
-                    throws TransportException {
-                SshdSession sshdSession = super.getSession(uri, credentialsProvider, fs, tms);
-                sshdSession.addCloseListener(sshdSession1 -> {
-                    try {
-                        Files.deleteIfExists(tmpKey);
-                    } catch (IOException e) {
-                        // ignore
-                        LOGGER.log(Level.FINE, "fail to delete file " + tmpKey, e);
-                    }
-                });
-                return sshdSession;
             }
 
             @Override
