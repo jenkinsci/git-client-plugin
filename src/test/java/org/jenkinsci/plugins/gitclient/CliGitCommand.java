@@ -28,6 +28,7 @@ class CliGitCommand {
     private final transient Launcher launcher;
     private final EnvVars env;
     private final File dir;
+    private final GitClient gitClient;
     private String[] output;
     private ArgumentListBuilder args;
 
@@ -37,8 +38,18 @@ class CliGitCommand {
         env = new EnvVars();
         if (client != null) {
             dir = client.getRepository().getWorkTree();
+            gitClient = client;
         } else {
             dir = new File(".");
+            try {
+                client = Git.with(TaskListener.NULL, new EnvVars())
+                        .in(dir)
+                        .using("git")
+                        .getClient();
+            } catch (IOException | InterruptedException e) {
+                // Will assign null to gitClient
+            }
+            gitClient = client;
         }
         args = null;
     }
@@ -54,14 +65,14 @@ class CliGitCommand {
     }
 
     void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
-        run("config", "--local", "user.name", userName);
-        run("config", "--local", "user.email", userEmail);
-        run("config", "--local", "commit.gpgsign", "false");
-        run("config", "--local", "tag.gpgSign", "false");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", userName);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", userEmail);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         // if the system running the tests has gpg.format=ssh then
         // this will fail as GpgConf does not support the enum so just
         // set it to something valid - even if it is not usable
-        run("config", "--local", "gpg.format", "openpgp");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
     }
 
     String[] run(String... arguments) throws IOException, InterruptedException {
