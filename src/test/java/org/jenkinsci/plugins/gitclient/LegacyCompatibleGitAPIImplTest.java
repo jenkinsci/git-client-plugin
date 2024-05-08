@@ -80,7 +80,6 @@ public class LegacyCompatibleGitAPIImplTest {
         git.init();
         CliGitCommand gitCmd = new CliGitCommand(git);
         gitCmd.initializeRepository("Vojtěch legacy Zweibrücken-Šafařík", "email.from.git.client.test@example.com");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
         assertIsGitRepo(repo);
     }
 

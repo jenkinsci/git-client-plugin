@@ -327,6 +327,11 @@ public abstract class GitAPITestUpdate {
         IGitAPI igit() {
             return (IGitAPI) git;
         }
+
+        void initializeWorkingArea(String userName, String userEmail) throws IOException, InterruptedException {
+            CliGitCommand gitCmd = new CliGitCommand(git);
+            gitCmd.initializeRepository(userName, userEmail);
+        }
     }
 
     protected WorkingArea w;
@@ -336,12 +341,8 @@ public abstract class GitAPITestUpdate {
         FileUtils.cleanDirectory(new File(x.repoPath()));
         x.launchCommand("git", "clone", src, x.repoPath());
         WorkingArea clonedArea = new WorkingArea(x.repo);
-        clonedArea.launchCommand("git", "config", "--local", "user.name", "Vojtěch Zweibrücken-Šafařík");
-        clonedArea.launchCommand(
-                "git", "config", "--local", "user.email", "email.address.from.git.client.plugin.test@example.com");
-        clonedArea.launchCommand("git", "config", "--local", "commit.gpgsign", "false");
-        clonedArea.launchCommand("git", "config", "--local", "tag.gpgSign", "false");
-        clonedArea.launchCommand("git", "config", "--local", "gpg.format", "openpgp");
+        clonedArea.initializeWorkingArea(
+                "Vojtěch Zweibrücken-Šafařík", "email.address.from.git.client.plugin.test@example.com");
         return clonedArea;
     }
 

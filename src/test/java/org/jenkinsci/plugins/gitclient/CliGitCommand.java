@@ -31,9 +31,7 @@ class CliGitCommand {
     private String[] output;
     private ArgumentListBuilder args;
 
-    CliGitCommand(GitClient client, String... arguments) {
-        args = new ArgumentListBuilder("git");
-        args.add(arguments);
+    CliGitCommand(GitClient client) {
         listener = StreamTaskListener.NULL;
         launcher = new Launcher.LocalLauncher(listener);
         env = new EnvVars();
@@ -42,6 +40,13 @@ class CliGitCommand {
         } else {
             dir = new File(".");
         }
+        args = null;
+    }
+
+    CliGitCommand(GitClient client, String... arguments) {
+        this(client);
+        args = new ArgumentListBuilder("git");
+        args.add(arguments);
     }
 
     void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
