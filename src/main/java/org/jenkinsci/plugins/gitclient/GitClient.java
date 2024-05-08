@@ -578,7 +578,7 @@ public interface GitClient {
      * Check if a ref exists. Equivalent to comparing the return code of <code>git show-ref</code> to zero.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
-     * @return True if the ref exists, false otherwse.
+     * @return True if the ref exists, false otherwise.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */

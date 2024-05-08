@@ -1521,7 +1521,7 @@ public abstract class GitAPITestUpdate {
      * actually expire.
      *
      * @see #setTimeoutVisibleInCurrentTest(boolean)
-     * @return true if timout is expected to be visible in the current test
+     * @return true if timeout is expected to be visible in the current test
      */
     protected boolean getTimeoutVisibleInCurrentTest() {
         return timeoutVisibleInCurrentTest;

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.81</version>
+    <version>4.82</version>
     <relativePath />
   </parent>
 
@@ -64,7 +64,7 @@
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.version>2.414.3</jenkins.version>
+    <jenkins.version>2.426.3</jenkins.version>
     <jgit.version>6.9.0.202403050737-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
@@ -75,8 +75,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.414.x</artifactId>
-        <version>2982.vdce2153031a_0</version>
+        <artifactId>bom-2.426.x</artifactId>
+        <version>3023.v02a_987a_b_3ff9</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -259,7 +259,7 @@
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
-      <version>3.3</version>
+      <version>3.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

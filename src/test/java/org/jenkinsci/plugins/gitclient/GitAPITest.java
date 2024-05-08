@@ -228,7 +228,7 @@ public class GitAPITest {
         workspace.launchCommand("git", "remote", "add", "ndeloof", "git@github.com:ndeloof/git-client-plugin.git");
         String remoteUrl = workspace.getGitClient().getRemoteUrl("origin");
         assertEquals(
-                "unexepected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
+                "unexpected remote URL " + remoteUrl, "https://github.com/jenkinsci/git-client-plugin.git", remoteUrl);
     }
 
     @Test
@@ -1251,7 +1251,7 @@ public class GitAPITest {
                 .setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1"))
                 .execute();
 
-        // Compare commit counts of before and after commiting the merge, should be  one due to the squashing of
+        // Compare commit counts of before and after committing the merge, should be  one due to the squashing of
         // commits.
         final int commitCountBefore = testGitClient.revList("HEAD").size();
         testGitClient.commit("commitMerge");
@@ -1278,7 +1278,7 @@ public class GitAPITest {
         testGitClient.commit("commit2");
 
         // Merge branch1 with default branch, without squashing commits.
-        // Compare commit counts of before and after commiting the merge, should be two due to the no squashing of
+        // Compare commit counts of before and after committing the merge, should be two due to the no squashing of
         // commits.
         testGitClient.checkout().ref(defaultBranchName).execute();
         final int commitCountBefore = testGitClient.revList("HEAD").size();
