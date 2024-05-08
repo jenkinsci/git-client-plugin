@@ -49,6 +49,10 @@ class CliGitCommand {
         args.add(arguments);
     }
 
+    void initializeRepository() throws IOException, InterruptedException {
+        initializeRepository("git-client-user", "git-client-user@example.com");
+    }
+
     void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
         run("config", "--local", "user.name", userName);
         run("config", "--local", "user.email", userEmail);

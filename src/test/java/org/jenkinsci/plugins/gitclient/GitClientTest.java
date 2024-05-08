@@ -204,9 +204,8 @@ public class GitClientTest {
                 .using("git")
                 .getClient();
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
-        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
-        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
+        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
+        gitCmd.initializeRepository();
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
@@ -290,8 +289,6 @@ public class GitClientTest {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
         gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
     }
