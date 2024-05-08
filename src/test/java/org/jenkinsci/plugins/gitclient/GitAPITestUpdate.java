@@ -207,11 +207,7 @@ public abstract class GitAPITestUpdate {
             String userName = "root";
             String emailAddress = "root@mydomain.com";
             CliGitCommand gitCmd = new CliGitCommand(git);
-            gitCmd.run("config", "--local", "user.name", userName);
-            gitCmd.run("config", "--local", "user.email", emailAddress);
-            gitCmd.run("config", "--local", "commit.gpgsign", "false");
-            gitCmd.run("config", "--local", "tag.gpgSign", "false");
-            gitCmd.run("config", "--local", "gpg.format", "openpgp");
+            gitCmd.initializeRepository(userName, emailAddress);
             git.setAuthor(userName, emailAddress);
             git.setCommitter(userName, emailAddress);
             return this;

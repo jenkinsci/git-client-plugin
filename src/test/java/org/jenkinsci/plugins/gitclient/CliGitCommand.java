@@ -44,6 +44,17 @@ class CliGitCommand {
         }
     }
 
+    void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
+        run("config", "--local", "user.name", userName);
+        run("config", "--local", "user.email", userEmail);
+        run("config", "--local", "commit.gpgsign", "false");
+        run("config", "--local", "tag.gpgSign", "false");
+        // if the system running the tests has gpg.format=ssh then
+        // this will fail as GpgConf does not support the enum so just
+        // set it to something valid - even if it is not usable
+        run("config", "--local", "gpg.format", "openpgp");
+    }
+
     String[] run(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);

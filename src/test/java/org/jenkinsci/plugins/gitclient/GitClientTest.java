@@ -293,11 +293,7 @@ public class GitClientTest {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
         gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
     }
 
     /**
@@ -1025,11 +1021,7 @@ public class GitClientTest {
                 .getClient();
         gitClientTemp.init();
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClientTemp.add(".");
@@ -1089,11 +1081,7 @@ public class GitClientTest {
 
     private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws IOException, InterruptedException {
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
-        gitCmd.run("config", "--local", "user.email", "email.by.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
+        gitCmd.initializeRepository("Vojtěch GitClientTest temp Zweibrücken-Šafařík", "email.by.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         return gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
     }
@@ -2573,11 +2561,7 @@ public class GitClientTest {
         urlRepoClient.init();
         allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
-        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
         File readme = new File(urlRepoDir, "readme");
         String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
@@ -2595,11 +2579,8 @@ public class GitClientTest {
                 .getClient();
         repoHasSubmoduleClient.init();
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
-        gitCmd.run("config", "--local", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
-        gitCmd.run("config", "--local", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "gpg.format", "openpgp");
+        gitCmd.initializeRepository(
+                "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík", "email.from.git.client@example.com");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(repoHasSubmoduleClient);
         allowFileProtocol(repoHasSubmoduleClient);

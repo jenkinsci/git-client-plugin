@@ -240,10 +240,7 @@ public class WorkspaceWithRepo {
 
     void initializeWorkspace(String userName, String emailAddress) throws Exception {
         this.gitClient.init();
-        this.cliGitCommand.run("config", "--local", "user.name", userName);
-        this.cliGitCommand.run("config", "--local", "user.email", emailAddress);
-        this.cliGitCommand.run("config", "--local", "commit.gpgsign", "false");
-        this.cliGitCommand.run("config", "--local", "tag.gpgSign", "false");
+        this.cliGitCommand.initializeRepository(userName, emailAddress);
         this.gitClient.setAuthor(userName, emailAddress);
         this.gitClient.setCommitter(userName, emailAddress);
     }
