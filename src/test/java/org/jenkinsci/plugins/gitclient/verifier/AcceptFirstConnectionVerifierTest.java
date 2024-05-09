@@ -309,10 +309,12 @@ public class AcceptFirstConnectionVerifierTest {
                         22,
                         mockedKnownHosts,
                         acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
-                        s -> {
-                            assertThat(s.isOpen(), is(true));
-                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                        session -> {
+                            assertThat(session.isOpen(), is(true));
+                            Awaitility.await()
+                                    .atMost(Duration.ofSeconds(45))
+                                    .until(() -> session.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(session), is(true));
                             // Should have first connection and create a file
                             assertThat(mockedKnownHosts, is(anExistingFile()));
                             try {
