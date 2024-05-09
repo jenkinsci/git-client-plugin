@@ -233,4 +233,15 @@ public class WorkspaceWithRepo {
     CliGitCommand getCliGitCommand() {
         return this.cliGitCommand;
     }
+
+    void initializeWorkspace() throws Exception {
+        initializeWorkspace("root", "root@mydomain.com");
+    }
+
+    void initializeWorkspace(String userName, String emailAddress) throws Exception {
+        this.gitClient.init();
+        this.cliGitCommand.initializeRepository(userName, emailAddress);
+        this.gitClient.setAuthor(userName, emailAddress);
+        this.gitClient.setCommitter(userName, emailAddress);
+    }
 }

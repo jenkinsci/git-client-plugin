@@ -169,16 +169,16 @@ public class RemoteGitImplTest {
         byte[] content = ("File " + fileName).getBytes();
         Files.write(localFile.toPath(), content);
         remoteGit.init();
-        remoteGit.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        remoteGit.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
+        CliGitCommand gitCmd = new CliGitCommand(defaultClient);
+        gitCmd.initializeRepository();
         remoteGit.add(fileName);
     }
 
     private ObjectId firstCommit(String fileName) throws Exception {
         firstAdd(fileName);
         CliGitCommand gitCmd = new CliGitCommand(defaultClient);
-        gitCmd.run("config", "user.name", "Vojtěch remote Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.remote.test@example.com");
+        gitCmd.run("config", "--local", "user.name", "Vojtěch remote Zweibrücken-Šafařík");
+        gitCmd.run("config", "--local", "user.email", "email.from.git.remote.test@example.com");
         remoteGit.commit("Adding the " + fileName + " file");
         return remoteGit.revParse("HEAD");
     }
