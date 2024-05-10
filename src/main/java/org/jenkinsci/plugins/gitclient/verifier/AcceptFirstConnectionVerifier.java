@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Logger;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
@@ -56,7 +55,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
             // accept new
             hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, "accept-new");
             hostEntry.setValue(SshConstants.HASH_KNOWN_HOSTS, SshConstants.YES);
-            if (StringUtils.isNotEmpty(getHostKeyAlgorithms())) {
+            if (getHostKeyAlgorithms() != null && !getHostKeyAlgorithms().isEmpty()) {
                 hostEntry.setValue(SshConstants.HOST_KEY_ALGORITHMS, getHostKeyAlgorithms());
             }
             return hostEntry;

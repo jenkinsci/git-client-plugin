@@ -995,6 +995,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
+    private void decorateTransport(Transport tn) {
+        if (tn instanceof SshTransport) {
+            ((SshTransport) tn).setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
+        }
+        if (tn instanceof HttpTransport) {
+            ((TransportHttp) tn).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
@@ -1112,7 +1121,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
             final String branchName = extractBranchNameFromBranchSpec(branchSpec);
             String regexBranch = createRefRegexFromGlob(branchName);
-
+            decorateTransport(tn);
             tn.setCredentialsProvider(getProvider());
             try (FetchConnection c = tn.openFetch()) {
                 for (final Ref r : c.getRefs()) {
@@ -2117,6 +2126,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote", remote, "url")))) {
+                decorateTransport(tn);
                 tn.setCredentialsProvider(getProvider());
                 try (final FetchConnection c = tn.openFetch()) {
                     for (final Ref r : c.getRefs()) {
