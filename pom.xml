@@ -245,23 +245,8 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.0</version>
+      <version>4.2.1</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>git-server</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>net.i2p.crypto</groupId>
-          <artifactId>eddsa</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.jenkins-ci.plugins</groupId>
-          <artifactId>git-client</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <!-- Credentials test requires scm-api -->
