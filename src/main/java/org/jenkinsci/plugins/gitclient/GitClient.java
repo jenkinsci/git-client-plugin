@@ -1010,8 +1010,8 @@ public interface GitClient {
      * Execute git config at the specified configuration level.
      * If value is null, the key will be removed from the configuration.
      *
-     * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
-     * @param key configuration section ${code user.name} format section[.subsection].name
+     * @param configLevel configuration level that will be modified. If null, then {@link ConfigLevel#LOCAL} will be used.
+     * @param key configuration section expressed as {@code section[.subsection].name}
      * @param value configuration value.  If null, the key will be removed from the configuration (unset)
      * @throws GitException on Git exception
      * @throws InterruptedException on thread interruption
@@ -1020,8 +1020,8 @@ public interface GitClient {
 
     /**
      * Level of git configuration that will be adjusted by configuration changes.
-     * Refer to the git documentation for more details.
      *
+     * @see <a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration">Git configuration documentation</a>
      */
     enum ConfigLevel {
         /** Configure the current repository. */
