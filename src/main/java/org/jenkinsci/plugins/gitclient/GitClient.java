@@ -1007,7 +1007,9 @@ public interface GitClient {
     boolean maintenance(String task) throws InterruptedException;
 
     /**
-     * Execute git config at local level.  If value is null, the key will be removed from the configuration.
+     * Execute git config at the specified configuration level.
+     * If value is null, the key will be removed from the configuration.
+     *
      * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
      * @param key configuration section ${code user.name} format section[.subsection].name
      * @param value configuration value.  If null, the key will be removed from the configuration (unset)
