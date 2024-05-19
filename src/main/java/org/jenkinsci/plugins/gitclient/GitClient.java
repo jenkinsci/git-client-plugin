@@ -1007,22 +1007,26 @@ public interface GitClient {
     boolean maintenance(String task) throws InterruptedException;
 
     /**
-     * Execute git config at local level
+     * Execute git config at local level.  If value is null, the key will be removed from the configuration.
      * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
      * @param key configuration section ${code user.name} format section[.subsection].name
-     * @param value configuration value
+     * @param value configuration value.  If null, the key will be removed from the configuration (unset)
      * @throws GitException on Git exception
      * @throws InterruptedException on thread interruption
      */
     void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
 
     /**
-     * config level (see git documentation)
+     * Level of git configuration that will be adjusted by configuration changes.
+     * Refer to the git documentation for more details.
      *
      */
     enum ConfigLevel {
+        /** Configure the current repository. */
         LOCAL,
+        /** Configure the current user. */
         SYSTEM,
+        /** Configure all users. */
         GLOBAL;
     }
 }
