@@ -75,6 +75,14 @@ class CliGitCommand {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
     }
 
+    void removeRepositorySettings() throws IOException, InterruptedException {
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", null);
+    }
+
     String[] run(String... arguments) throws IOException, InterruptedException {
         args = new ArgumentListBuilder("git");
         args.add(arguments);

@@ -204,8 +204,6 @@ public class GitClientTest {
                 .using("git")
                 .getClient();
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
-        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
-        gitCmd.initializeRepository();
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
@@ -266,6 +264,28 @@ public class GitClientTest {
             }
         }
         assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+    }
+
+    @BeforeClass
+    public static void addLocalGitConfigChanges() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
+        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
+        gitCmd.initializeRepository();
+    }
+
+    @AfterClass
+    public static void removeLocalGitConfigChanges() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
+        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
+        gitCmd.removeRepositorySettings();
     }
 
     @AfterClass

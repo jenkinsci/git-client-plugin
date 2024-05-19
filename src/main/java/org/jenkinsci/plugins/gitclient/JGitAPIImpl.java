@@ -3036,6 +3036,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
         if (configLevel != ConfigLevel.LOCAL) {
@@ -3056,7 +3057,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             name = keys[2];
         }
         StoredConfig storedConfig = getRepository().getConfig();
-        storedConfig.setString(section, subsection, name, value);
+        if (value != null) {
+            storedConfig.setString(section, subsection, name, value);
+        } else {
+            storedConfig.unset(section, subsection, name);
+        }
         try {
             storedConfig.save();
         } catch (IOException e) {
