@@ -97,24 +97,15 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
+      <!-- https://github.com/jenkinsci/mina-sshd-api-plugin/pull/98 -->
+      <version>2.12.1-108.v3a_48e2042a_a_a_</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
-    </dependency>
-    <!-- this could be optional? -->
-    <dependency>
-      <groupId>net.i2p.crypto</groupId>
-      <artifactId>eddsa</artifactId>
-      <version>0.3.0</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.bouncycastle</groupId>
-      <artifactId>bcprov-jdk18on</artifactId>
-      <version>1.77</version>
-      <optional>true</optional>
+      <!-- https://github.com/jenkinsci/mina-sshd-api-plugin/pull/98 -->
+      <version>2.12.1-108.v3a_48e2042a_a_a_</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
