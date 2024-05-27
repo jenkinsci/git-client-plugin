@@ -155,74 +155,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private transient CredentialsProvider provider;
-
-    //        static {
-    //            // to avoid any registration of using "net.i2p.crypto.eddsa.EdDSASecurityProvider";
-    //            ClassLoader orig = Thread.currentThread().getContextClassLoader();
-    //
-    //            try {
-    //                 Thread.currentThread()
-    //                        .setContextClassLoader(Jenkins.get().getPlugin("git-client").getWrapper().classLoader);
-    //                LOGGER.info(
-    //                        "configuring SecurityUtils, isRegistrationCompleted:" +
-    //                SecurityUtils.isRegistrationCompleted());
-    //                ///SecurityUtils.setDefaultProviderChoice(new BouncyCastleSecurityProviderRegistrar());
-    //                LOGGER.info("SecurityUtils.isEDDSACurveSupported():" + SecurityUtils.isEDDSACurveSupported());
-    //
-    //                LOGGER.info("SecurityUtils.getRegisteredProviders():" + SecurityUtils.getRegisteredProviders());
-    //            } catch (Throwable e) {
-    //                e.printStackTrace();
-    //            } finally {
-    //                Thread.currentThread().setContextClassLoader(orig);
-    //            }
-    //        }
-    //
-    //        static {
-    //            try {
-    //                Class<?> clazz = Jenkins.get()
-    //                        .getPlugin("git-client")
-    //                        .getWrapper()
-    //                        .classLoader
-    //                        .loadClass("org.bouncycastle.jce.provider.BouncyCastleProvider");
-    //                System.out.println("yup: " + clazz);
-    //            } catch (ClassNotFoundException e) {
-    //                e.printStackTrace();
-    //            }
-    //
-    //        try {
-    //            Class<?> clazz = Jenkins.get()
-    //                    .getPlugin("git")
-    //                    .getWrapper()
-    //                    .classLoader
-    //                    .loadClass("net.i2p.crypto.eddsa.EdDSASecurityProvider");
-    //            System.out.println("yup: " + clazz);
-    //        } catch (Throwable e) {
-    //            e.printStackTrace();
-    //        }
-    //
-    //            try {
-    //                org.bouncycastle.jce.provider.BouncyCastleProvider foo =
-    //                        new org.bouncycastle.jce.provider.BouncyCastleProvider();
-    //                int size = foo.size();
-    //                System.out.println("size: " + size);
-    //                Thread.currentThread()
-    //                        .getContextClassLoader()
-    //                        .loadClass("org.bouncycastle.jce.provider.BouncyCastleProvider");
-    //            } catch (Throwable e) {
-    //                e.printStackTrace();
-    //            }
-    //
-    //        try {
-    //            net.i2p.crypto.eddsa.EdDSASecurityProvider foo = new net.i2p.crypto.eddsa.EdDSASecurityProvider();
-    //            int size = foo.size();
-    //            System.out.println("size: " + size);
-    //
-    // Thread.currentThread().getContextClassLoader().loadClass("net.i2p.crypto.eddsa.EdDSASecurityProvider");
-    //        } catch (Throwable e) {
-    //            e.printStackTrace();
-    //        }
-    //    }
-
+    
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
