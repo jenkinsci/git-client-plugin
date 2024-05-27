@@ -66,6 +66,8 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.426.3</jenkins.version>
     <jgit.version>6.9.0.202403050737-r</jgit.version>
+    <!-- https://github.com/jenkinsci/mina-sshd-api-plugin/pull/98 -->
+    <mina.api.version>2.12.1-110.v314128fb_2a_5d</mina.api.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -97,15 +99,13 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
-      <!-- https://github.com/jenkinsci/mina-sshd-api-plugin/pull/98 -->
-      <version>2.12.1-108.v3a_48e2042a_a_a_</version>
+      <version>${mina.api.version}</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
-      <!-- https://github.com/jenkinsci/mina-sshd-api-plugin/pull/98 -->
-      <version>2.12.1-108.v3a_48e2042a_a_a_</version>
+      <version>${mina.api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
