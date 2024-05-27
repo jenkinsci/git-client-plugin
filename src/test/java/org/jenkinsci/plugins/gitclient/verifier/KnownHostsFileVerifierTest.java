@@ -21,12 +21,9 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class KnownHostsFileVerifierTest {
 
-    private static final String FILE_CONTENT = "|1|x2OaBkti6peaNPX1ftYHvWscOqk=|dYFtgxb3j9bwB8gHGMBnV7tTzJ8="
-            + " ssh-ecdsa-sha2-nistp256"
+    private static final String FILE_CONTENT = "github.com"
+            + " ecdsa-sha2-nistp256"
             + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
-    //            "|1|MMHhyJWbis6eLbmW7/vVMgWL01M=|OT564q9RmLIALJ94imtE4PaCewU="
-    //            + " ssh-ed25519"
-    //            + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule

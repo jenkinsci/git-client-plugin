@@ -155,7 +155,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private transient CredentialsProvider provider;
-    
+
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
