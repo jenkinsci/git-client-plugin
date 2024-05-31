@@ -22,7 +22,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
         return new AcceptFirstConnectionJGitHostKeyVerifier(listener, this);
     }
 
-    public class AcceptFirstConnectionJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
+    public static class AcceptFirstConnectionJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
         public AcceptFirstConnectionJGitHostKeyVerifier(
                 TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {

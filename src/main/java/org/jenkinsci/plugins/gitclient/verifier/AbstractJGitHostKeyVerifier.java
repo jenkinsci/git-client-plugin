@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.List;
@@ -39,26 +40,36 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
     public ServerKeyDatabase getServerKeyDatabase() {
         ServerKeyDatabase.Configuration configuration = getServerKeyDatabaseConfiguration();
-        return new OpenSshServerKeyDatabase(
+        return new JenkinsServerKeyDatabase(
                 askAboutKnowHostFile(),
                 Collections.singletonList(
-                        hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
-            @Override
-            public List<PublicKey> lookup(
-                    String connectAddress, InetSocketAddress remoteAddress, Configuration config) {
-                return super.lookup(connectAddress, remoteAddress, configuration);
-            }
+                        hostKeyVerifierFactory.getKnownHostsFile().toPath()),
+                configuration);
+    }
 
-            @Override
-            public boolean accept(
-                    String connectAddress,
-                    InetSocketAddress remoteAddress,
-                    PublicKey serverKey,
-                    Configuration config,
-                    CredentialsProvider provider) {
-                return super.accept(connectAddress, remoteAddress, serverKey, configuration, provider);
-            }
-        };
+    protected static class JenkinsServerKeyDatabase extends OpenSshServerKeyDatabase {
+        private final ServerKeyDatabase.Configuration configuration;
+
+        public JenkinsServerKeyDatabase(
+                boolean askAboutNewFile, List<Path> defaultFiles, ServerKeyDatabase.Configuration configuration) {
+            super(askAboutNewFile, defaultFiles);
+            this.configuration = configuration;
+        }
+
+        @Override
+        public List<PublicKey> lookup(String connectAddress, InetSocketAddress remoteAddress, Configuration config) {
+            return super.lookup(connectAddress, remoteAddress, this.configuration);
+        }
+
+        @Override
+        public boolean accept(
+                String connectAddress,
+                InetSocketAddress remoteAddress,
+                PublicKey serverKey,
+                Configuration config,
+                CredentialsProvider provider) {
+            return super.accept(connectAddress, remoteAddress, serverKey, this.configuration, provider);
+        }
     }
 
     protected boolean askAboutKnowHostFile() {

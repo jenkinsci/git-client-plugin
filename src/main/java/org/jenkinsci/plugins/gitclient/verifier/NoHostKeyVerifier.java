@@ -20,6 +20,11 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     public static class NoHostJGitKeyVerifier extends AbstractJGitHostKeyVerifier {
 
+        /***
+         * let's make spotbugs happy....
+         */
+        private static final long serialVersionUID = 1L;
+
         public NoHostJGitKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
             super(listener, hostKeyVerifierFactory);
         }
