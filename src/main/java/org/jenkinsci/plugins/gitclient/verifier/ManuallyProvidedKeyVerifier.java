@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
@@ -8,11 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
-import org.eclipse.jgit.transport.SshConstants;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
@@ -55,6 +52,20 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         return path.toAbsolutePath().toString().replace(" ", "\\ ");
     }
 
+
+    @NonNull
+    @Override
+    public File getKnownHostsFile() {
+        try {
+            Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+            Files.write(
+                    tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            return tempKnownHosts.toFile();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
 
@@ -67,7 +78,7 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         //            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
         //            knownHosts = new KnownHosts();
         //        }
-        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, approvedHostKeys);
+        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, approvedHostKeys, this);
     }
 
     public static class ManuallyProvidedKeyJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
@@ -76,43 +87,15 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
         private File knownHostsFile;
 
-        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, String approvedHostKeys) {
-            super(listener);
+        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, String approvedHostKeys, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
             this.approvedHostKeys = approvedHostKeys;
         }
 
-        @Override
-        public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
-            try {
-                Path tempKnownHosts = Files.createTempFile("known_hosts", "");
-                Files.write(
-                        tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-                hostEntry.setValue(SshConstants.USER_KNOWN_HOSTS_FILE, escapePath(tempKnownHosts));
-                knownHostsFile = tempKnownHosts.toFile();
-                return hostEntry;
-            } catch (IOException e) {
-                getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
-                throw new RuntimeException(e);
-            }
-        }
 
         @Override
-        public ServerKeyVerifier getServerKeyVerifier() {
-            try {
-                Path tempKnownHosts = Files.createTempFile("known_hosts", "");
-                Files.write(
-                        tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-                knownHostsFile = tempKnownHosts.toFile();
-                return new DefaultKnownHostsServerKeyVerifier(
-                        AcceptAllServerKeyVerifier.INSTANCE, true, tempKnownHosts);
-            } catch (IOException e) {
-                getTaskListener().error("cannot write temporary know_hosts file: " + e.getMessage());
-                throw new RuntimeException(e);
-            }
-        }
-
-        protected File getKnownHostsFile() {
-            return this.knownHostsFile;
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 }

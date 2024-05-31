@@ -14,13 +14,11 @@ import java.nio.file.Files;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSessionCreator;
@@ -28,16 +26,10 @@ import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.eclipse.jgit.annotations.NonNull;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.internal.transport.sshd.JGitClientSession;
 import org.eclipse.jgit.internal.transport.sshd.JGitServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.sshd.JGitSshClient;
-import org.eclipse.jgit.internal.transport.sshd.JGitSshConfig;
-import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
-import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.sshd.IdentityPasswordProvider;
-import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.junit.rules.TemporaryFolder;
 
 public class KnownHostsTestUtil {
@@ -85,12 +77,9 @@ public class KnownHostsTestUtil {
             Predicate<JGitClientSession> asserts)
             throws IOException {
 
-        HostConfigEntryResolver configFile = new JGitSshConfig(createSshConfigStore(knownHostsFile, verifier));
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
-                // .filePasswordProvider((sessionContext, namedResource, i) -> "foo")
-                .hostConfigEntryResolver(configFile)
-                .serverKeyVerifier(new JGitServerKeyVerifier(getServerKeyDatabase(knownHostsFile)))
+                .serverKeyVerifier(new JGitServerKeyVerifier(verifier.getServerKeyDatabase()))
                 .compressionFactories(new ArrayList<>(BuiltinCompressions.VALUES))
                 .build()) {
             client.start();
@@ -144,19 +133,4 @@ public class KnownHostsTestUtil {
         return verified;
     }
 
-    protected static SshConfigStore createSshConfigStore(
-            @NonNull File knownHost, @NonNull AbstractJGitHostKeyVerifier verifier) {
-        return new OpenSshConfigFile(
-                knownHost.getParentFile(), new File(knownHost.getParentFile(), "fakeconfig"), getLocalUserName()) {
-            @Override
-            public HostEntry lookup(String hostName, int port, String userName) {
-                HostEntry hostEntry = super.lookup(hostName, port, userName);
-                return verifier.customizeHostEntry(hostEntry);
-            }
-        };
-    }
-
-    protected static ServerKeyDatabase getServerKeyDatabase(File knownHostFile) {
-        return new OpenSshServerKeyDatabase(true, Collections.singletonList(knownHostFile.toPath()));
-    }
 }

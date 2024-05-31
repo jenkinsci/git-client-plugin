@@ -88,7 +88,6 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
@@ -122,7 +121,6 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
@@ -196,16 +194,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
 
         return new SshdSessionFactory() {
-            @Override
-            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String localUserName) {
-                return new OpenSshConfigFile(homeDir, configFile, localUserName) {
-                    @Override
-                    public HostEntry lookup(String hostName, int port, String userName) {
-                        HostEntry hostEntry = super.lookup(hostName, port, userName);
-                        return hostKeyVerifierFactory.forJGit(null).customizeHostEntry(hostEntry);
-                    }
-                };
-            }
 
             @Override
             public File getHomeDirectory() {
@@ -219,10 +207,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
-                return new OpenSshServerKeyDatabase(
-                        true,
-                        Collections.singletonList(
-                                hostKeyVerifierFactory.getKnownHostsFile().toPath()));
+                return hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase();
             }
 
             @Override

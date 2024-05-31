@@ -6,6 +6,7 @@ import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.transport.SshConstants;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
@@ -18,17 +19,18 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        return new AbstractJGitHostKeyVerifier(listener) {
-            @Override
-            public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
-                hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, SshConstants.NO);
-                return hostEntry;
-            }
+        return new NoHostJGitKeyVerifier(listener, this);
+    }
 
-            @Override
-            public ServerKeyVerifier getServerKeyVerifier() {
-                return AcceptAllServerKeyVerifier.INSTANCE;
-            }
-        };
+    public static class NoHostJGitKeyVerifier extends AbstractJGitHostKeyVerifier {
+
+        public NoHostJGitKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
+        }
+
+        @Override
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_ANY);
+        }
     }
 }

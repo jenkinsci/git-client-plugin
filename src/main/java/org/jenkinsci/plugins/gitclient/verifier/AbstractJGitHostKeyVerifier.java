@@ -1,9 +1,18 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
+import jenkins.util.SystemProperties;
+import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
+
+import java.net.InetSocketAddress;
+import java.security.PublicKey;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Supplier;
 
 public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOverRemoting {
 
@@ -12,23 +21,81 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
     public static final String HOST_KEY_ALGORITHM_PROPERTY_KEY =
             AbstractJGitHostKeyVerifier.class + ".hostKeyAlgorithms";
 
-    protected AbstractJGitHostKeyVerifier(TaskListener taskListener) {
+
+    private final HostKeyVerifierFactory hostKeyVerifierFactory;
+
+    protected AbstractJGitHostKeyVerifier(TaskListener taskListener, HostKeyVerifierFactory hostKeyVerifierFactory) {
         this.taskListener = taskListener;
+        this.hostKeyVerifierFactory = hostKeyVerifierFactory;
     }
 
     public TaskListener getTaskListener() {
         return taskListener;
     }
 
-    public abstract OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry);
+    public HostKeyVerifierFactory getHostKeyVerifierFactory() {
+        return hostKeyVerifierFactory;
+    }
 
-    public abstract ServerKeyVerifier getServerKeyVerifier();
+    protected abstract ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration();
 
-    /**
-     * to set key algorithm for host.
-     * @return the key algorithms for host key (default empty)
-     */
-    public String getHostKeyAlgorithms() {
-        return System.getProperty(HOST_KEY_ALGORITHM_PROPERTY_KEY, "");
+    public ServerKeyDatabase getServerKeyDatabase() {
+        ServerKeyDatabase.Configuration configuration = getServerKeyDatabaseConfiguration();
+        return new OpenSshServerKeyDatabase(
+                askAboutKnowHostFile(),
+                Collections.singletonList(
+                        hostKeyVerifierFactory.getKnownHostsFile().toPath())){
+            @Override
+            public List<PublicKey> lookup(String connectAddress, InetSocketAddress remoteAddress, Configuration config) {
+                return super.lookup(connectAddress, remoteAddress, configuration);
+            }
+
+            @Override
+            public boolean accept(String connectAddress, InetSocketAddress remoteAddress, PublicKey serverKey, Configuration config, CredentialsProvider provider) {
+                return super.accept(connectAddress, remoteAddress, serverKey, configuration, provider);
+            }
+        };
+    }
+
+    protected boolean askAboutKnowHostFile() {
+        return true;
+    }
+
+    protected static class DefaultConfiguration implements ServerKeyDatabase.Configuration {
+
+        private final HostKeyVerifierFactory hostKeyVerifierFactory;
+
+        private final Supplier<StrictHostKeyChecking> supplier;
+
+        protected DefaultConfiguration(@NonNull HostKeyVerifierFactory hostKeyVerifierFactory,@NonNull Supplier<StrictHostKeyChecking> supplier){
+            this.hostKeyVerifierFactory = hostKeyVerifierFactory;
+            this.supplier = supplier;
+        }
+
+        @Override
+        public List<String> getUserKnownHostsFiles() {
+            return List.of(hostKeyVerifierFactory.getKnownHostsFile().getAbsolutePath());
+        }
+
+        @Override
+        public List<String> getGlobalKnownHostsFiles() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public boolean getHashKnownHosts() {
+            // configurable?
+            return true;
+        }
+
+        @Override
+        public String getUsername() {
+            return SystemProperties.getString("user.name");
+        }
+
+        @Override
+        public StrictHostKeyChecking getStrictHostKeyChecking() {
+            return supplier.get();
+        }
     }
 }

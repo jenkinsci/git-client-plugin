@@ -8,11 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.DefaultKnownHostsServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
-import org.eclipse.jgit.transport.SshConstants;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
@@ -50,27 +46,18 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
                 LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
             }
         }
-        return new KnownHostsFileJGitHostKeyVerifier(listener);
+        return new KnownHostsFileJGitHostKeyVerifier(listener, this);
     }
 
     public static class KnownHostsFileJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        public KnownHostsFileJGitHostKeyVerifier(TaskListener listener) {
-            super(listener);
+        public KnownHostsFileJGitHostKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
         }
 
         @Override
-        public OpenSshConfigFile.HostEntry customizeHostEntry(OpenSshConfigFile.HostEntry hostEntry) {
-            hostEntry.setValue(SshConstants.STRICT_HOST_KEY_CHECKING, SshConstants.YES);
-            if (getHostKeyAlgorithms() != null && !getHostKeyAlgorithms().isEmpty()) {
-                hostEntry.setValue(SshConstants.HOST_KEY_ALGORITHMS, getHostKeyAlgorithms());
-            }
-            return hostEntry;
-        }
-
-        @Override
-        public ServerKeyVerifier getServerKeyVerifier() {
-            return new DefaultKnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, true);
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 
