@@ -57,7 +57,9 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
         @Override
         public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
-            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 

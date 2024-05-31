@@ -88,7 +88,6 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -209,6 +208,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
                 return hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase();
             }
+
+            //            @Override
+            //            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String
+            // localUserName) {
+            //                return super.createSshConfigStore(homeDir, configFile, localUserName);
+            //            }
 
             @Override
             protected Iterable<KeyPair> getDefaultKeys(File sshDir) {

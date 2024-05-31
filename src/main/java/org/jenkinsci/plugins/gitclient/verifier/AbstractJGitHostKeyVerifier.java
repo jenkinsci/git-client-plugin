@@ -2,17 +2,16 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.model.TaskListener;
-import jenkins.util.SystemProperties;
-import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
-import org.eclipse.jgit.transport.CredentialsProvider;
-import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
-import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
-
 import java.net.InetSocketAddress;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
+import jenkins.util.SystemProperties;
+import org.eclipse.jgit.internal.transport.sshd.OpenSshServerKeyDatabase;
+import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
+import org.jenkinsci.remoting.SerializableOnlyOverRemoting;
 
 public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOverRemoting {
 
@@ -20,7 +19,6 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
     public static final String HOST_KEY_ALGORITHM_PROPERTY_KEY =
             AbstractJGitHostKeyVerifier.class + ".hostKeyAlgorithms";
-
 
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
 
@@ -44,14 +42,20 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
         return new OpenSshServerKeyDatabase(
                 askAboutKnowHostFile(),
                 Collections.singletonList(
-                        hostKeyVerifierFactory.getKnownHostsFile().toPath())){
+                        hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
             @Override
-            public List<PublicKey> lookup(String connectAddress, InetSocketAddress remoteAddress, Configuration config) {
+            public List<PublicKey> lookup(
+                    String connectAddress, InetSocketAddress remoteAddress, Configuration config) {
                 return super.lookup(connectAddress, remoteAddress, configuration);
             }
 
             @Override
-            public boolean accept(String connectAddress, InetSocketAddress remoteAddress, PublicKey serverKey, Configuration config, CredentialsProvider provider) {
+            public boolean accept(
+                    String connectAddress,
+                    InetSocketAddress remoteAddress,
+                    PublicKey serverKey,
+                    Configuration config,
+                    CredentialsProvider provider) {
                 return super.accept(connectAddress, remoteAddress, serverKey, configuration, provider);
             }
         };
@@ -67,7 +71,9 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
         private final Supplier<StrictHostKeyChecking> supplier;
 
-        protected DefaultConfiguration(@NonNull HostKeyVerifierFactory hostKeyVerifierFactory,@NonNull Supplier<StrictHostKeyChecking> supplier){
+        protected DefaultConfiguration(
+                @NonNull HostKeyVerifierFactory hostKeyVerifierFactory,
+                @NonNull Supplier<StrictHostKeyChecking> supplier) {
             this.hostKeyVerifierFactory = hostKeyVerifierFactory;
             this.supplier = supplier;
         }

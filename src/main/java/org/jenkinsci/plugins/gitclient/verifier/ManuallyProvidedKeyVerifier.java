@@ -52,14 +52,12 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         return path.toAbsolutePath().toString().replace(" ", "\\ ");
     }
 
-
     @NonNull
     @Override
     public File getKnownHostsFile() {
         try {
             Path tempKnownHosts = Files.createTempFile("known_hosts", "");
-            Files.write(
-                    tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             return tempKnownHosts.toFile();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -87,15 +85,17 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
         private File knownHostsFile;
 
-        public ManuallyProvidedKeyJGitHostKeyVerifier(TaskListener listener, String approvedHostKeys, HostKeyVerifierFactory hostKeyVerifierFactory) {
+        public ManuallyProvidedKeyJGitHostKeyVerifier(
+                TaskListener listener, String approvedHostKeys, HostKeyVerifierFactory hostKeyVerifierFactory) {
             super(listener, hostKeyVerifierFactory);
             this.approvedHostKeys = approvedHostKeys;
         }
 
-
         @Override
         public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
-            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 }

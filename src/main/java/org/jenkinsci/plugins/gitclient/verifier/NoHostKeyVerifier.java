@@ -2,10 +2,6 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
 import java.util.logging.Logger;
-import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
-import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
-import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
-import org.eclipse.jgit.transport.SshConstants;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
@@ -30,7 +26,9 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
         @Override
         public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
-            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(this.getHostKeyVerifierFactory(), () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_ANY);
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_ANY);
         }
     }
 }

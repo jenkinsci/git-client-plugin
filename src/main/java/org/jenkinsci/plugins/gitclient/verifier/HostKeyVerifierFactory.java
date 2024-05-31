@@ -21,5 +21,4 @@ public abstract class HostKeyVerifierFactory implements SerializableOnlyOverRemo
     public File getKnownHostsFile() {
         return SshHostKeyVerificationStrategy.JGIT_KNOWN_HOSTS_FILE;
     }
-
 }
