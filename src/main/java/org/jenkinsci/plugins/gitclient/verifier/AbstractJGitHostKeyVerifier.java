@@ -18,9 +18,6 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
     private TaskListener taskListener;
 
-    public static final String HOST_KEY_ALGORITHM_PROPERTY_KEY =
-            AbstractJGitHostKeyVerifier.class + ".hostKeyAlgorithms";
-
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
 
     protected AbstractJGitHostKeyVerifier(TaskListener taskListener, HostKeyVerifierFactory hostKeyVerifierFactory) {

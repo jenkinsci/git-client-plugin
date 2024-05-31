@@ -37,6 +37,8 @@ import java.io.Writer;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.util.ArrayList;
@@ -55,6 +57,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jenkins.util.SystemProperties;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.time.FastDateFormat;
@@ -120,6 +123,7 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
+import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
@@ -152,6 +156,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private transient CredentialsProvider provider;
+
+    public static final String SSH_CONFIG_PATH = JGitAPIImpl.class + ".sshConfigPath";
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
@@ -209,11 +215,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase();
             }
 
-            //            @Override
-            //            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String
-            // localUserName) {
-            //                return super.createSshConfigStore(homeDir, configFile, localUserName);
-            //            }
+            @Override
+            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String localUserName) {
+                String configFilePath = SystemProperties.getString(SSH_CONFIG_PATH);
+                if (configFilePath == null) {
+                    return super.createSshConfigStore(homeDir, configFile, localUserName);
+                }
+                Path path = Paths.get(configFilePath);
+                return super.createSshConfigStore(path.toFile().getParentFile(), path.toFile(), localUserName);
+            }
 
             @Override
             protected Iterable<KeyPair> getDefaultKeys(File sshDir) {

@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -43,12 +44,12 @@ public class AcceptFirstConnectionVerifierTest {
 
     @BeforeClass
     public static void setHostKeyAlgo() {
-        System.setProperty(AbstractJGitHostKeyVerifier.HOST_KEY_ALGORITHM_PROPERTY_KEY, "ecdsa-sha2-nistp256");
+        System.setProperty(JGitAPIImpl.SSH_CONFIG_PATH, new File("src/test/resources/ssh_config").getAbsolutePath());
     }
 
     @AfterClass
     public static void unsetHostKeyAlgo() {
-        System.clearProperty(AbstractJGitHostKeyVerifier.HOST_KEY_ALGORITHM_PROPERTY_KEY);
+        System.clearProperty(JGitAPIImpl.SSH_CONFIG_PATH);
     }
 
     @Test

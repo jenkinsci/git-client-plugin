@@ -1,0 +1,3 @@
+Host github
+  Hostname github.com
+  HostKeyAlgorithms ecdsa-sha2-nistp256
