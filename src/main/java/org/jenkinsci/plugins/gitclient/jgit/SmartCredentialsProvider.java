@@ -10,6 +10,8 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
@@ -29,7 +31,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
 
     private StandardCredentials defaultCredentials;
 
-    private Map<String, StandardCredentials> specificCredentials = new HashMap<>();
+    private final ConcurrentMap<String, StandardCredentials> specificCredentials = new ConcurrentHashMap<>();
     private static final Logger LOGGER = Logger.getLogger(SmartCredentialsProvider.class.getName());
 
     /**
@@ -46,7 +48,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
      *
      * @since 1.2.0
      */
-    public synchronized void clearCredentials() {
+    public void clearCredentials() {
         defaultCredentials = null;
         specificCredentials.clear();
     }
@@ -58,7 +60,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
      * @param credentials the credentials to use.
      * @since 1.2.0
      */
-    public synchronized void addCredentials(String url, StandardCredentials credentials) {
+    public void addCredentials(String url, StandardCredentials credentials) {
         specificCredentials.put(normalizeURI(url), credentials);
     }
 
@@ -87,7 +89,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
 
     /** {@inheritDoc} */
     @Override
-    public synchronized boolean supports(CredentialItem... credentialItems) {
+    public boolean supports(CredentialItem... credentialItems) {
         items:
         for (CredentialItem item : credentialItems) {
             if (supports(defaultCredentials, item)) {
@@ -121,8 +123,8 @@ public class SmartCredentialsProvider extends CredentialsProvider {
 
     /** {@inheritDoc} */
     @Override
-    public synchronized boolean get(URIish uri, CredentialItem... credentialItems) throws UnsupportedCredentialItem {
-        StandardCredentials c = specificCredentials.get(uri == null ? null : normalizeURI(uri.toString()));
+    public boolean get(URIish uri, CredentialItem... credentialItems) throws UnsupportedCredentialItem {
+        StandardCredentials c = uri == null ? null : specificCredentials.get(normalizeURI(uri.toString()));
         if (c == null) {
             c = defaultCredentials;
         }
