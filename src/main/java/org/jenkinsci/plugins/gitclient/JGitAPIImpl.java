@@ -40,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -91,6 +90,7 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -123,14 +123,13 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.SshConfigStore;
 import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.URIish;
-import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
@@ -198,60 +197,41 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        return new SshdSessionFactory() {
-
-            @Override
-            public File getHomeDirectory() {
-                return SystemUtils.getUserHome();
-            }
-
-            @Override
-            public File getSshDirectory() {
-                return hostKeyVerifierFactory.getKnownHostsFile().getParentFile();
-            }
-
-            @Override
-            protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
-                return hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase();
-            }
-
-            @Override
-            protected SshConfigStore createSshConfigStore(File homeDir, File configFile, String localUserName) {
-                String configFilePath = SystemProperties.getString(SSH_CONFIG_PATH);
-                if (configFilePath == null) {
-                    return super.createSshConfigStore(homeDir, configFile, localUserName);
-                }
-                Path path = Paths.get(configFilePath);
-                return super.createSshConfigStore(path.toFile().getParentFile(), path.toFile(), localUserName);
-            }
-
-            @Override
-            protected Iterable<KeyPair> getDefaultKeys(File sshDir) {
-                SmartCredentialsProvider smartCredentialsProvider = getProvider();
-                // credentials have been added for the target repo only so we assume we have only the good one here
-                SSHUserPrivateKey sshUserPrivateKey = smartCredentialsProvider.getCredentials().values().stream()
-                        .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
-                        .map(SSHUserPrivateKey.class::cast)
-                        .findFirst()
-                        .orElse(null);
-                if (sshUserPrivateKey != null) {
-                    try {
-                        String keys = String.join(System.lineSeparator(), sshUserPrivateKey.getPrivateKeys());
-                        return SecurityUtils.loadKeyPairIdentities(
-                                null, () -> "key", IOUtils.toInputStream(keys, StandardCharsets.UTF_8), null);
-                    } catch (IOException | GeneralSecurityException e) {
-                        throw new RuntimeException(e.getMessage(), e);
+        SshdSessionFactoryBuilder builder = new SshdSessionFactoryBuilder()
+                .setHomeDirectory(SystemUtils.getUserHome())
+                .setServerKeyDatabase(
+                        (file, file2) -> hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase())
+                .setSshDirectory(hostKeyVerifierFactory.getKnownHostsFile().getParentFile())
+                .setConfigStoreFactory((homeDir, configFile, localUserName) -> {
+                    String configFilePath = SystemProperties.getString(SSH_CONFIG_PATH);
+                    if (configFilePath == null) {
+                        return new OpenSshConfigFile(homeDir, configFile, localUserName);
                     }
-                }
-                return Collections.emptyList();
-            }
+                    Path path = Paths.get(configFilePath);
+                    return new OpenSshConfigFile(path.toFile().getParentFile(), path.toFile(), localUserName);
+                })
+                .setDefaultKeysProvider(file -> {
+                    SmartCredentialsProvider smartCredentialsProvider = getProvider();
+                    // credentials have been added for the target repo only so we assume we have only the good one here
+                    SSHUserPrivateKey sshUserPrivateKey = smartCredentialsProvider.getCredentials().values().stream()
+                            .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
+                            .map(SSHUserPrivateKey.class::cast)
+                            .findFirst()
+                            .orElse(null);
+                    if (sshUserPrivateKey != null) {
+                        try {
+                            String keys = String.join(System.lineSeparator(), sshUserPrivateKey.getPrivateKeys());
+                            return SecurityUtils.loadKeyPairIdentities(
+                                    null, () -> "key", IOUtils.toInputStream(keys, StandardCharsets.UTF_8), null);
+                        } catch (IOException | GeneralSecurityException e) {
+                            throw new RuntimeException(e.getMessage(), e);
+                        }
+                    }
+                    return Collections.emptyList();
+                })
+                .setPreferredAuthentications("publickey,password");
 
-            @Override
-            protected String getDefaultPreferredAuthentications() {
-                // TODO do we really need/want password?
-                return "publickey,password";
-            }
-        };
+        return builder.build(null);
     }
 
     /**

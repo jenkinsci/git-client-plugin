@@ -5,8 +5,11 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import hudson.model.TaskListener;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang.StringUtils;
@@ -60,7 +63,9 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     }
 
     public Map<String, StandardCredentials> getCredentials() {
-        return new HashMap<>(specificCredentials);
+        Map<String, StandardCredentials> credentialsMap = new HashMap<>(specificCredentials);
+        credentialsMap.put("", defaultCredentials);
+        return credentialsMap;
     }
 
     /**
@@ -77,7 +82,7 @@ public class SmartCredentialsProvider extends CredentialsProvider {
     /** {@inheritDoc} */
     @Override
     public boolean isInteractive() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -121,6 +126,28 @@ public class SmartCredentialsProvider extends CredentialsProvider {
         if (c == null) {
             c = defaultCredentials;
         }
+
+        if (c == null) {
+            Optional<Map.Entry<String, StandardCredentials>> optionalStringStandardCredentialsMapEntry =
+                    specificCredentials.entrySet().stream()
+                            .filter(stringStandardCredentialsEntry -> {
+                                try {
+                                    URI repoUri = new URI(stringStandardCredentialsEntry.getKey());
+                                    return (uri.getScheme() != null
+                                                    && uri.getScheme().equals(repoUri.getScheme()))
+                                            && uri.getHost().equals(repoUri.getHost())
+                                            && uri.getPort() == repoUri.getPort();
+                                } catch (URISyntaxException e) {
+                                    // ignore
+                                    return false;
+                                }
+                            })
+                            .findAny();
+            c = optionalStringStandardCredentialsMapEntry
+                    .map(Map.Entry::getValue)
+                    .orElse(null);
+        }
+
         if (c == null) {
             if (uri != null) {
                 LOGGER.log(Level.FINE, () -> "No credentials provided for " + uri);
