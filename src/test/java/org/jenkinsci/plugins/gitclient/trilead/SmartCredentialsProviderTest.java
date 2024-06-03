@@ -218,7 +218,7 @@ public class SmartCredentialsProviderTest {
 
     @Test
     public void testIsInteractive() {
-        assertFalse(provider.isInteractive());
+        assertTrue(provider.isInteractive());
     }
 
     @Test
