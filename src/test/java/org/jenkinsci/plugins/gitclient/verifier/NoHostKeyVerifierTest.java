@@ -20,7 +20,6 @@ public class NoHostKeyVerifierTest {
 
     @Test
     public void testVerifyServerHostKey() throws IOException {
-        assertThat(Runtime.getRuntime().availableProcessors(), is(0));
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
