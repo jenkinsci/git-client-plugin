@@ -95,7 +95,7 @@ public class AuthzTest {
         }
 
         Path testRepo = Files.createTempDirectory("git-client-test");
-        GitClient client = buildClient(testRepo, standardCredentials);
+        GitClient client = buildClient(testRepo, standardCredentials, repoUrl);
         Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
         assertThat(rev, is(anEmptyMap()));
         client.clone(repoUrl, "master", false, null);
@@ -111,17 +111,18 @@ public class AuthzTest {
         client.commit("Very usefull commit");
         client.push().to(new URIish(repoUrl)).execute();
         testRepo = Files.createTempDirectory("git-client-test");
-        client = buildClient(testRepo, standardCredentials);
+        client = buildClient(testRepo, standardCredentials, repoUrl);
         rev = client.getHeadRev(repoUrl);
         assertThat(rev, aMapWithSize(1));
     }
 
-    protected GitClient buildClient(Path repo, StandardCredentials standardCredentials) throws Exception {
+    protected GitClient buildClient(Path repo, StandardCredentials standardCredentials, String url) throws Exception {
         GitClient client = Git.with(TaskListener.NULL, new EnvVars())
                 .using("jgit")
                 .withHostKeyVerifierFactory(new NoHostKeyVerifier())
                 .in(repo.toFile())
                 .getClient();
+        client.addCredentials(url, standardCredentials);
         client.addDefaultCredentials(standardCredentials);
         return client;
     }

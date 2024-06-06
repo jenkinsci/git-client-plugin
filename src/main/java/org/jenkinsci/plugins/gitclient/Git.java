@@ -205,7 +205,7 @@ public class Git implements Serializable {
             }
 
             if (JGitApacheTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
-                return new JGitAPIImpl(f, listener, null, hostKeyFactory);
+                return new JGitAPIImpl(f, listener, hostKeyFactory);
             }
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
             GitAPI gitAPI = new GitAPI(exe, f, listener, env);

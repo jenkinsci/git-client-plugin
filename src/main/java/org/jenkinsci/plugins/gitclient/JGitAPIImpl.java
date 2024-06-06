@@ -161,7 +161,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
-        this(workspace, listener, null);
+        this(workspace, listener, (HostKeyVerifierFactory)null);
     }
 
     @Deprecated
@@ -172,10 +172,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this(workspace, listener, httpConnectionFactory, null);
     }
 
+    @Deprecated
     JGitAPIImpl(
             File workspace,
             TaskListener listener,
             final PreemptiveAuthHttpClientConnectionFactory httpConnectionFactory,
+            HostKeyVerifierFactory hostKeyFactory) {
+        /* If workspace is null, then default to current directory to match
+         * CliGitAPIImpl behavior */
+        super(workspace == null ? new File(".") : workspace, hostKeyFactory);
+        this.listener = listener;
+        hostKeyVerifierFactory = hostKeyFactory;
+    }
+
+    JGitAPIImpl(
+            File workspace,
+            TaskListener listener,
             HostKeyVerifierFactory hostKeyFactory) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
@@ -193,7 +205,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .toPath());
                 Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
             } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "cannot create knowhosts file", e);
+                LOGGER.log(Level.SEVERE, "cannot create know hosts file", e);
             }
         }
 
@@ -254,7 +266,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         asSmartCredentialsProvider().addDefaultCredentials(credentials);
     }
 
-    private SmartCredentialsProvider asSmartCredentialsProvider() {
+    private synchronized SmartCredentialsProvider asSmartCredentialsProvider() {
         if (!(provider instanceof SmartCredentialsProvider)) {
             provider = new SmartCredentialsProvider(listener);
         }
@@ -266,7 +278,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
-    public void setCredentialsProvider(CredentialsProvider prov) {
+    public synchronized void setCredentialsProvider(CredentialsProvider prov) {
         provider = prov;
     }
 
