@@ -2,6 +2,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -148,15 +149,5 @@ public class ManuallyProvidedKeyVerifierTest {
 
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
-    }
-
-    /* Return true if running on a Kubernetes pod on ci.jenkins.io */
-    private boolean isKubernetesCI() {
-        String kubernetesPort = System.getenv("KUBERNETES_PORT");
-        String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null
-                && !kubernetesPort.isEmpty()
-                && buildURL != null
-                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }

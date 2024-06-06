@@ -10,6 +10,8 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.github.sparsick.testcontainers.gitserver.GitServerVersions;
+import com.github.sparsick.testcontainers.gitserver.http.BasicAuthenticationCredentials;
+import com.github.sparsick.testcontainers.gitserver.http.GitHttpServerContainer;
 import com.github.sparsick.testcontainers.gitserver.plain.GitServerContainer;
 import com.github.sparsick.testcontainers.gitserver.plain.SshIdentity;
 import hudson.EnvVars;
@@ -25,50 +27,78 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
+import org.testcontainers.containers.GenericContainer;
 
-public class AuthzSshTest {
-
-    private GitServerContainer containerUnderTest = new GitServerContainer(GitServerVersions.V2_45.getDockerImageName())
-            .withGitRepo("someRepo")
-            .withGitPassword("FrenchCheeseRocks!1234567") // very complicated password
-            // .withCopyExistingGitRepoToContainer("target/test-classes/git-repository")
-            .withSshKeyAuth();
-
-    @Before
-    public void setup() throws Exception {
-        containerUnderTest.start();
-    }
-
-    @After
-    public void cleanup() throws Exception {
-        containerUnderTest.stop();
-    }
+public class AuthzTest {
 
     @Test
     public void sshKeyAuth() throws Exception {
-        SshIdentity sshIdentity = containerUnderTest.getSshClientIdentity();
-        BasicSSHUserPrivateKey sshUserPrivateKey = getBasicSSHUserPrivateKey(sshIdentity);
-        testRepo(sshUserPrivateKey);
+        try (GitServerContainer containerUnderTest = new GitServerContainer(
+                        GitServerVersions.V2_45.getDockerImageName())
+                .withGitRepo("someRepo")
+                .withGitPassword("FrenchCheeseRocks!1234567") // very complicated password
+                .withSshKeyAuth()) {
+            containerUnderTest.start();
+            SshIdentity sshIdentity = containerUnderTest.getSshClientIdentity();
+            BasicSSHUserPrivateKey sshUserPrivateKey = getBasicSSHUserPrivateKey(sshIdentity);
+            testRepo(sshUserPrivateKey, containerUnderTest);
+        }
     }
 
     @Test
     public void sshWithPassword() throws Exception {
-        SshIdentity sshIdentity = containerUnderTest.getSshClientIdentity();
-        StandardCredentials standardCredentials = new UsernamePasswordCredentialsImpl(
-                CredentialsScope.GLOBAL, "username-password", "description", "", containerUnderTest.getGitPassword());
-        testRepo(standardCredentials);
+        try (GitServerContainer containerUnderTest = new GitServerContainer(
+                        GitServerVersions.V2_45.getDockerImageName())
+                .withGitRepo("someRepo")
+                .withGitPassword("FrenchCheeseRocks!1234567") // very complicated password
+                .withSshKeyAuth()) {
+            containerUnderTest.start();
+            StandardCredentials standardCredentials = new UsernamePasswordCredentialsImpl(
+                    CredentialsScope.GLOBAL,
+                    "username-password",
+                    "description",
+                    "",
+                    containerUnderTest.getGitPassword());
+            testRepo(standardCredentials, containerUnderTest);
+        }
     }
 
-    protected void testRepo(StandardCredentials standardCredentials) throws Exception {
+    @Test
+    public void httpWithPassword() throws Exception {
+        BasicAuthenticationCredentials credentials = new BasicAuthenticationCredentials("testuser", "testPassword");
+        try (GitHttpServerContainer containerUnderTest =
+                new GitHttpServerContainer(GitServerVersions.V2_45.getDockerImageName(), credentials)) {
+            containerUnderTest.start();
+            StandardCredentials standardCredentials = new UsernamePasswordCredentialsImpl(
+                    CredentialsScope.GLOBAL,
+                    "username-password",
+                    "description",
+                    containerUnderTest.getBasicAuthCredentials().getUsername(),
+                    containerUnderTest.getBasicAuthCredentials().getPassword());
+            testRepo(standardCredentials, containerUnderTest);
+        }
+    }
+
+    protected void testRepo(StandardCredentials standardCredentials, GenericContainer<?> containerUnderTest)
+            throws Exception {
+        String repoUrl = null;
+        if (containerUnderTest instanceof GitServerContainer) {
+            repoUrl = ((GitServerContainer) containerUnderTest)
+                    .getGitRepoURIAsSSH()
+                    .toString();
+        }
+        if (containerUnderTest instanceof GitHttpServerContainer) {
+            repoUrl = ((GitHttpServerContainer) containerUnderTest)
+                    .getGitRepoURIAsHttp()
+                    .toString();
+        }
+
         Path testRepo = Files.createTempDirectory("git-client-test");
         GitClient client = buildClient(testRepo, standardCredentials);
-        Map<String, ObjectId> rev =
-                client.getHeadRev(containerUnderTest.getGitRepoURIAsSSH().toString());
+        Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
         assertThat(rev, is(anEmptyMap()));
-        client.clone(containerUnderTest.getGitRepoURIAsSSH().toString(), "master", false, null);
+        client.clone(repoUrl, "master", false, null);
         client.config(GitClient.ConfigLevel.LOCAL, "user.name", "Someone");
         client.config(GitClient.ConfigLevel.LOCAL, "user.email", "someone@beer.com");
         client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
@@ -79,12 +109,10 @@ public class AuthzSshTest {
         Files.write(testFile, "Hello".getBytes(StandardCharsets.UTF_8));
         client.add("test*");
         client.commit("Very usefull commit");
-        client.push()
-                .to(new URIish(containerUnderTest.getGitRepoURIAsSSH().toString()))
-                .execute();
+        client.push().to(new URIish(repoUrl)).execute();
         testRepo = Files.createTempDirectory("git-client-test");
         client = buildClient(testRepo, standardCredentials);
-        rev = client.getHeadRev(containerUnderTest.getGitRepoURIAsSSH().toString());
+        rev = client.getHeadRev(repoUrl);
         assertThat(rev, aMapWithSize(1));
     }
 
