@@ -30,6 +30,15 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
 
+/**
+ * <p>This class is testing authz using jgit implementation against</p>
+ * <ul>
+ *     <li>git ssh server using private key</li>
+ *     <li>git ssh server using password</li>
+ *     <li>git http server using password</li>
+ * </ul>
+ *
+ */
 public class AuthzTest {
 
     @Test
@@ -108,11 +117,12 @@ public class AuthzTest {
         Files.createFile(testFile);
         Files.write(testFile, "Hello".getBytes(StandardCharsets.UTF_8));
         client.add("test*");
-        client.commit("Very usefull commit");
+        client.commit("Very useful change");
         client.push().to(new URIish(repoUrl)).execute();
         testRepo = Files.createTempDirectory("git-client-test");
         client = buildClient(testRepo, standardCredentials, repoUrl);
         rev = client.getHeadRev(repoUrl);
+        // check there is now one ref remotely after the push
         assertThat(rev, aMapWithSize(1));
     }
 
