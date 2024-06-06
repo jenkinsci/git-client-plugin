@@ -32,7 +32,7 @@ public class CredentialsProviderImpl extends CredentialsProvider {
      */
     @Deprecated(forRemoval = true, since = "4.7.1")
     public CredentialsProviderImpl(TaskListener listener, StandardUsernameCredentials cred) {
-        this.cred = cred;
+        this(cred);
     }
 
     /**

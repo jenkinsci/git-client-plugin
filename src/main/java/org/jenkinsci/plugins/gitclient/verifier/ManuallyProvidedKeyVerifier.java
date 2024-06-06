@@ -66,29 +66,16 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-
-        // FIXME check this
-        //        KnownHosts knownHosts;
-        //        try {
-        //            knownHosts = approvedHostKeys != null ? new KnownHosts(approvedHostKeys.toCharArray()) : new
-        // KnownHosts();
-        //        } catch (IOException e) {
-        //            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
-        //            knownHosts = new KnownHosts();
-        //        }
-        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, approvedHostKeys, this);
+        return new ManuallyProvidedKeyJGitHostKeyVerifier(listener, this);
     }
 
     public static class ManuallyProvidedKeyJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        private final String approvedHostKeys;
-
         private File knownHostsFile;
 
         public ManuallyProvidedKeyJGitHostKeyVerifier(
-                TaskListener listener, String approvedHostKeys, HostKeyVerifierFactory hostKeyVerifierFactory) {
+                TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
             super(listener, hostKeyVerifierFactory);
-            this.approvedHostKeys = approvedHostKeys;
         }
 
         @Override
