@@ -6,11 +6,9 @@ import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKube
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
-
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
-
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +44,6 @@ public class NoHostKeyVerifierTest {
                         })
                 .close();
     }
-
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {

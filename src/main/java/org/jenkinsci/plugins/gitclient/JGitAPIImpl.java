@@ -161,7 +161,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
-        this(workspace, listener, (HostKeyVerifierFactory)null);
+        this(workspace, listener, (HostKeyVerifierFactory) null);
     }
 
     @Deprecated
@@ -185,10 +185,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         hostKeyVerifierFactory = hostKeyFactory;
     }
 
-    JGitAPIImpl(
-            File workspace,
-            TaskListener listener,
-            HostKeyVerifierFactory hostKeyFactory) {
+    JGitAPIImpl(File workspace, TaskListener listener, HostKeyVerifierFactory hostKeyFactory) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
