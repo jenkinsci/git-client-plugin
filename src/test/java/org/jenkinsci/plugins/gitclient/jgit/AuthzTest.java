@@ -27,7 +27,9 @@ import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Assume;
 import org.junit.Test;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 
 /**
@@ -43,6 +45,7 @@ public class AuthzTest {
 
     @Test
     public void sshKeyAuth() throws Exception {
+        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         try (GitServerContainer containerUnderTest = new GitServerContainer(
                         GitServerVersions.V2_45.getDockerImageName())
                 .withGitRepo("someRepo")
@@ -57,6 +60,7 @@ public class AuthzTest {
 
     @Test
     public void sshWithPassword() throws Exception {
+        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         try (GitServerContainer containerUnderTest = new GitServerContainer(
                         GitServerVersions.V2_45.getDockerImageName())
                 .withGitRepo("someRepo")
@@ -75,6 +79,7 @@ public class AuthzTest {
 
     @Test
     public void httpWithPassword() throws Exception {
+        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         BasicAuthenticationCredentials credentials = new BasicAuthenticationCredentials("testuser", "testPassword");
         try (GitHttpServerContainer containerUnderTest =
                 new GitHttpServerContainer(GitServerVersions.V2_45.getDockerImageName(), credentials)) {
