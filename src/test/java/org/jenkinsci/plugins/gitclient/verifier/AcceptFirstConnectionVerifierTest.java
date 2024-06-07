@@ -277,21 +277,14 @@ public class AcceptFirstConnectionVerifierTest {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
                             assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-                            // Should have first connection and create a file
-                            assertThat(fakeKnownHosts, is(anExistingFile()));
-                            try {
-                                List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
-                                assertThat(actual, hasItem(bitbucketFileContent));
-                                assertThat(
-                                        actual,
-                                        hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(
-                                                KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
                             return true;
                         })
                 .close();
+        List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
+        assertThat(actual, hasItem(bitbucketFileContent));
+        assertThat(
+                actual,
+                hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
     }
 
     @Test
