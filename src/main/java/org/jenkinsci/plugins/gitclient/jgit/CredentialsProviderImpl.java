@@ -26,7 +26,7 @@ public class CredentialsProviderImpl extends CredentialsProvider {
 
     /**
      * Constructor for CredentialsProviderImpl.
-     * @deprecated
+     * @deprecated use {@link #CredentialsProviderImpl(StandardUsernameCredentials)}
      * @param listener a {@link hudson.model.TaskListener} object.
      * @param cred a {@link com.cloudbees.plugins.credentials.common.StandardUsernameCredentials} object.
      */
