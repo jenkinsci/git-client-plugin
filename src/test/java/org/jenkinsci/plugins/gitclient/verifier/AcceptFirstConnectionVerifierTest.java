@@ -132,7 +132,6 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    @Ignore("cannot verify a non hash host while we store hash host")
     public void testVerifyServerHostKeyWhenHostnameWithoutPort() throws Exception {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
