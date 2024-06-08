@@ -65,9 +65,7 @@
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.426.3</jenkins.version>
-    <jgit.version>6.9.0.202403050737-r</jgit.version>
-    <!-- TODO remove when bom version contains this or higher -->
-    <mina.api.version>2.12.1-111.v06de17b_e0ed5</mina.api.version>
+    <jgit.version>6.10.0.202406032230-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -78,8 +76,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-2.426.x</artifactId>
-        <!--- remove mina.api.version when bom contains mina 2.12.1-111.v06de17b_e0ed5 or higher -->
-        <version>3105.v672692894683</version>
+        <version>3120.v4d898e1e9fc4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
