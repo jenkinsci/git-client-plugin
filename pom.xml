@@ -66,8 +66,6 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.version>2.426.3</jenkins.version>
     <jgit.version>6.10.0.202406032230-r</jgit.version>
-    <!-- TODO remove when bom version contains this or higher -->
-    <mina.api.version>2.12.1-111.v06de17b_e0ed5</mina.api.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -99,13 +97,11 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
-      <version>${mina.api.version}</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
-      <version>${mina.api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
