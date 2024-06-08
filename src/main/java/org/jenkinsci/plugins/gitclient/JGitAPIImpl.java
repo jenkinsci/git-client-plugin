@@ -202,7 +202,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .toPath());
                 Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
             } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "cannot create know hosts file", e);
+                LOGGER.log(Level.SEVERE, "could not create known hosts file", e);
             }
         }
 
