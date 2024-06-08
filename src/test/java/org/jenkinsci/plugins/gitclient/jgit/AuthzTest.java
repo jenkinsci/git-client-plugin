@@ -19,6 +19,7 @@ import hudson.model.TaskListener;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.FileUtils;
@@ -122,7 +123,12 @@ public class AuthzTest {
             Path testFile = testRepo.resolve("test.txt");
             Files.deleteIfExists(testFile);
             Files.createFile(testFile);
-            Files.write(testFile, "Hello".getBytes(StandardCharsets.UTF_8));
+            Files.writeString(
+                    testFile,
+                    "Hello",
+                    StandardCharsets.UTF_8,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING);
             client.add("test*");
             client.commit("Very useful change");
             client.push().to(new URIish(repoUrl)).execute();
