@@ -19,12 +19,12 @@ import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.jenkinsci.plugins.gitclient.JGitAPIImpl;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.jvnet.hudson.test.FlagRule;
 
 public class AcceptFirstConnectionVerifierTest {
 
@@ -43,15 +43,9 @@ public class AcceptFirstConnectionVerifierTest {
 
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
 
-    @BeforeClass
-    public static void setHostKeyAlgo() {
-        System.setProperty(JGitAPIImpl.SSH_CONFIG_PATH, new File("src/test/resources/ssh_config").getAbsolutePath());
-    }
-
-    @AfterClass
-    public static void unsetHostKeyAlgo() {
-        System.clearProperty(JGitAPIImpl.SSH_CONFIG_PATH);
-    }
+    @ClassRule
+    public static FlagRule<String> flagRule = FlagRule.systemProperty(
+            JGitAPIImpl.SSH_CONFIG_PATH, new File("src/test/resources/ssh_config").getAbsolutePath());
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
