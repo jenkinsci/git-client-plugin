@@ -1246,7 +1246,8 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testGetRemoteSymbolicReferencesWithMatchingPattern() throws Exception {
         if (!hasWorkingGetRemoteSymbolicReferences()) {
-            return; // JUnit 3 replacement for assumeThat
+            /* Do not distract warnings system by using assumeThat to skip tests */
+            return;
         }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
@@ -1803,7 +1804,8 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testGetRemoteSymbolicReferences() throws Exception {
         if (!hasWorkingGetRemoteSymbolicReferences()) {
-            return; // JUnit 3 replacement for assumeThat
+            /* Do not distract warnings system by using assumeThat to skip tests */
+            return;
         }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
@@ -1902,9 +1904,6 @@ public abstract class GitAPITestUpdate {
         }
         String cgitAllLogEntries = w.cgit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         String igitAllLogEntries = w.igit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
-        if (!cgitAllLogEntries.equals(igitAllLogEntries)) {
-            return; // JUnit 3 does not honor @Ignore annotation
-        }
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 
