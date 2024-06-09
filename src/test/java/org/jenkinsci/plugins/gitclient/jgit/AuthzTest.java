@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.Git;
@@ -30,7 +29,9 @@ import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 
@@ -44,6 +45,10 @@ import org.testcontainers.containers.GenericContainer;
  *
  */
 public class AuthzTest {
+
+    @Rule
+    public TemporaryFolder testFolder =
+            TemporaryFolder.builder().assureDeletion().build();
 
     @Test
     public void sshKeyAuth() throws Exception {
@@ -109,41 +114,35 @@ public class AuthzTest {
                     .getGitRepoURIAsHttp()
                     .toString();
         }
-        Path testRepo = Files.createTempDirectory("git-client-test");
-        try {
-            GitClient client = buildClient(testRepo, standardCredentials, repoUrl);
-            Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
-            assertThat(rev, is(anEmptyMap()));
-            client.clone(repoUrl, "master", false, null);
-            client.config(GitClient.ConfigLevel.LOCAL, "user.name", "Someone");
-            client.config(GitClient.ConfigLevel.LOCAL, "user.email", "someone@beer.com");
-            client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-            client.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
-            client.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
-            Path testFile = testRepo.resolve("test.txt");
-            Files.deleteIfExists(testFile);
-            Files.createFile(testFile);
-            Files.writeString(
-                    testFile,
-                    "Hello",
-                    StandardCharsets.UTF_8,
-                    StandardOpenOption.WRITE,
-                    StandardOpenOption.TRUNCATE_EXISTING);
-            client.add("test*");
-            client.commit("Very useful change");
-            client.push().to(new URIish(repoUrl)).execute();
-        } finally {
-            FileUtils.deleteDirectory(testRepo.toFile());
-        }
-        try {
-            testRepo = Files.createTempDirectory("git-client-test");
-            GitClient client = buildClient(testRepo, standardCredentials, repoUrl);
-            Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
-            // check there is now one ref remotely after the push
-            assertThat(rev, aMapWithSize(1));
-        } finally {
-            FileUtils.deleteDirectory(testRepo.toFile());
-        }
+        Path testRepo = testFolder.newFolder().toPath();
+
+        GitClient client = buildClient(testRepo, standardCredentials, repoUrl);
+        Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
+        assertThat(rev, is(anEmptyMap()));
+        client.clone(repoUrl, "master", false, null);
+        client.config(GitClient.ConfigLevel.LOCAL, "user.name", "Someone");
+        client.config(GitClient.ConfigLevel.LOCAL, "user.email", "someone@beer.com");
+        client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        client.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
+        client.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
+        Path testFile = testRepo.resolve("test.txt");
+        Files.deleteIfExists(testFile);
+        Files.createFile(testFile);
+        Files.writeString(
+                testFile,
+                "Hello",
+                StandardCharsets.UTF_8,
+                StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING);
+        client.add("test*");
+        client.commit("Very useful change");
+        client.push().to(new URIish(repoUrl)).execute();
+
+        testRepo = testFolder.newFolder().toPath();
+        client = buildClient(testRepo, standardCredentials, repoUrl);
+        rev = client.getHeadRev(repoUrl);
+        // check there is now one ref remotely after the push
+        assertThat(rev, aMapWithSize(1));
     }
 
     protected GitClient buildClient(Path repo, StandardCredentials standardCredentials, String url) throws Exception {
