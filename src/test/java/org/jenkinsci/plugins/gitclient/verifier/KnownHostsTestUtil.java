@@ -135,11 +135,12 @@ public class KnownHostsTestUtil {
 
     /* Return true if running on a Kubernetes pod on ci.jenkins.io */
     public static boolean isKubernetesCI() {
-        String kubernetesPort = System.getenv("KUBERNETES_PORT");
-        String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null
-                && !kubernetesPort.isEmpty()
-                && buildURL != null
-                && buildURL.startsWith("https://ci.jenkins.io/");
+        return false;
+        //        String kubernetesPort = System.getenv("KUBERNETES_PORT");
+        //        String buildURL = System.getenv("BUILD_URL");
+        //        return kubernetesPort != null
+        //                && !kubernetesPort.isEmpty()
+        //                && buildURL != null
+        //                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }
