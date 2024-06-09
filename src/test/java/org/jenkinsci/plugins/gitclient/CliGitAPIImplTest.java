@@ -16,6 +16,7 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
         return Git.with(listener, env).in(ws).using("git").getClient();
     }
 
+    /* TODO: Remove when RHEL 7 and derivatives are no longer supported */
     @Override
     protected boolean hasWorkingGetRemoteSymbolicReferences() {
         return ((CliGitAPIImpl) (w.git)).isAtLeastVersion(2, 8, 0, 0);

@@ -1219,6 +1219,7 @@ public abstract class GitAPITestUpdate {
         }
     }
 
+    /* TODO: Remove when RHEL 7 and derivatives are no longer supported */
     protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
 
     private Properties parseLsRemote(File file) throws IOException {
@@ -1239,7 +1240,8 @@ public abstract class GitAPITestUpdate {
     protected abstract String getRemoteBranchPrefix();
 
     /**
-     * Test getRemoteSymbolicReferences with listing all references
+     * Test getRemoteSymbolicReferences by listing references that match HEAD.
+     * TODO: Remove when RHEL 7 and derivatives are no longer supported
      */
     @Test
     public void testGetRemoteSymbolicReferencesWithMatchingPattern() throws Exception {
@@ -1796,6 +1798,7 @@ public abstract class GitAPITestUpdate {
 
     /**
      * Test getRemoteSymbolicReferences with listing all references
+     * TODO: Remove when RHEL 7 and derivatives are no longer supported
      */
     @Test
     public void testGetRemoteSymbolicReferences() throws Exception {
