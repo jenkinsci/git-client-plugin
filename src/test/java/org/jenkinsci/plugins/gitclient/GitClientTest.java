@@ -110,11 +110,6 @@ public class GitClientTest {
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_HAS_GIT_LFS;
     private final boolean CLI_GIT_HAS_GIT_LFS_CONFIGURED;
-    private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
-    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
-    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
-    private final boolean CLI_GIT_SUPPORTS_SYMREF;
-    private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
     private final boolean LFS_SUPPORTS_SPARSE_CHECKOUT;
 
     @Rule
@@ -138,11 +133,6 @@ public class GitClientTest {
                     .using("git")
                     .getClient();
         }
-        CLI_GIT_REPORTS_DETACHED_SHA1 = true; // Included in CLI git 1.8.0 and later
-        CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
-        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = true; // Included in CLI git 1.8.0 and later
 
         boolean gitLFSExists;
         boolean gitSparseCheckoutWithLFS;
@@ -1157,13 +1147,9 @@ public class GitClientTest {
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
-        if (CLI_GIT_REPORTS_DETACHED_SHA1) {
-            gitCmd.assertOutputContains(
-                    ".*(Not currently on any branch|HEAD detached).*",
-                    ".*" + ref.getName().substring(0, 6) + ".*");
-        } else {
-            gitCmd.assertOutputContains(".*Not currently on any branch.*");
-        }
+        gitCmd.assertOutputContains(
+                ".*(Not currently on any branch|HEAD detached).*",
+                ".*" + ref.getName().substring(0, 6) + ".*");
     }
 
     private void assertBranch(GitClient client, String branchName) throws Exception {
@@ -1978,9 +1964,6 @@ public class GitClientTest {
 
     @Test
     public void testRevListNoWalk() throws Exception {
-        if (!CLI_GIT_SUPPORTS_REV_LIST_NO_WALK) {
-            return;
-        }
         ObjectId commitA = commitOneFile();
         List<ObjectId> resultA = new ArrayList<>();
         gitClient.revList_().to(resultA).reference(commitA.name()).nowalk(true).execute();
@@ -2108,7 +2091,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+        if (!gitImplName.equals("git") || isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2131,7 +2114,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+        if (!gitImplName.equals("git") || isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2337,7 +2320,7 @@ public class GitClientTest {
     @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SUBMODULE_DEINIT || isWindows()) {
+        if (isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2847,19 +2830,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testgetRemoteSymbolicReferences_from_empty_repo() throws Exception {
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
     public void testgetRemoteSymbolicReferences_null() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
@@ -2868,22 +2839,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_null_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
-        commitOneFile("A-Single-File-Commit");
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
-    public void testgetRemoteSymbolicReferences_null_old_git_use_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
@@ -2902,9 +2857,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_with_matching_pattern() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
@@ -2912,23 +2864,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
-        commitOneFile("A-Single-File-Commit");
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
-    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git_with_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
+    public void testgetRemoteSymbolicReferences_with_matching_pattern_old() throws Exception {
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
@@ -2937,9 +2873,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_with_non_default_HEAD() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
 
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
@@ -2961,15 +2894,12 @@ public class GitClientTest {
 
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax");
-        }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
     }
 
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax_old_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
+        if (gitImplName.equals("git")) {
             throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax_old_jgit");
         }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
@@ -2977,7 +2907,7 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_URI_Syntax_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
+        if (!gitImplName.equals("git")) {
             return;
         }
         assertThat(
