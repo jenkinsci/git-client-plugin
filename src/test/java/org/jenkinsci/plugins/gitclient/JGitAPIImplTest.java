@@ -11,7 +11,6 @@ public class JGitAPIImplTest extends GitAPITestUpdate {
         return Git.with(listener, env).in(ws).using("jgit").getClient();
     }
 
-    /* TODO: Remove when RHEL 7 and derivatives are no longer supported */
     @Override
     protected boolean hasWorkingGetRemoteSymbolicReferences() {
         return true; // JGit 5.10 has getRemoteSymbolicReferences, prior did not
