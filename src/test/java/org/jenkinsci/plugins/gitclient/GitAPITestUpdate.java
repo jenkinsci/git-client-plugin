@@ -1219,8 +1219,6 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    protected abstract boolean hasWorkingGetRemoteSymbolicReferences();
-
     private Properties parseLsRemote(File file) throws IOException {
         Properties properties = new Properties();
         Pattern pattern = Pattern.compile("([a-f0-9]{40})\\s*(.*)");
@@ -1243,10 +1241,6 @@ public abstract class GitAPITestUpdate {
      */
     @Test
     public void testGetRemoteSymbolicReferencesWithMatchingPattern() throws Exception {
-        if (!hasWorkingGetRemoteSymbolicReferences()) {
-            /* Do not distract warnings system by using assumeThat to skip tests */
-            return;
-        }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
         assertThat(references.size(), is(1));
@@ -1800,10 +1794,6 @@ public abstract class GitAPITestUpdate {
      */
     @Test
     public void testGetRemoteSymbolicReferences() throws Exception {
-        if (!hasWorkingGetRemoteSymbolicReferences()) {
-            /* Do not distract warnings system by using assumeThat to skip tests */
-            return;
-        }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
     }
