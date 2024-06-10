@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import hudson.Util;
@@ -156,21 +155,10 @@ public class GitAPIForCliGitTest {
         testGitClient.commit("commit2");
         ObjectId sha1 = workspace.head();
 
-        try {
-            testGitClient.push("origin", defaultBranchName);
-            assertTrue(
-                    "git < 1.9.0 can push from shallow repository",
-                    workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
-            String remoteSha1 =
-                    remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
-            assertEquals(sha1.name(), remoteSha1);
-        } catch (GitException ge) {
-            // expected for git cli < 1.9.0
-            assertExceptionMessageContains(ge, "push from shallow repository");
-            assertFalse(
-                    "git >= 1.9.0 can't push from shallow repository",
-                    workspace.cgit().isAtLeastVersion(1, 9, 0, 0));
-        }
+        testGitClient.push("origin", defaultBranchName);
+        String remoteSha1 =
+                remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
+        assertEquals(sha1.name(), remoteSha1);
     }
 
     private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {

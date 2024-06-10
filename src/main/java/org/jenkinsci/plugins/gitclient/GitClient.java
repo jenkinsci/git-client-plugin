@@ -653,8 +653,7 @@ public interface GitClient {
      * @param remoteRepoUrl Remote repository URL.
      * @param pattern       Only references matching the given pattern are displayed.
      * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
-     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
-     * (e.g. command line Git prior to 2.8.0).
+     * symbolic references or if the command line git version does not support reporting symbolic references.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException  if interrupted.
      */

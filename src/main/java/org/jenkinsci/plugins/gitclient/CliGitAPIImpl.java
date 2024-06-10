@@ -1499,10 +1499,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if (isAtLeastVersion(1, 8, 4, 0)) {
                         args.add("--depth=" + depth);
-                    } else {
-                        listener.getLogger()
-                                .println(
-                                        "[WARNING] Git client older than 1.8.4 doesn't support shallow submodule updates. This flag is ignored.");
                     }
                 }
 
@@ -1749,7 +1745,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Returns true if this repository is configured as a shallow clone.
-     * Shallow clone requires command line git 1.9 or later.
      * @return true if this repository is configured as a shallow clone
      */
     public boolean isShallowRepository() {
@@ -2930,10 +2925,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (tags) {
                     args.add("--tags");
-                }
-
-                if (!isAtLeastVersion(1, 9, 0, 0) && isShallowRepository()) {
-                    throw new GitException("Can't push from shallow repository using git client older than 1.9.0");
                 }
 
                 StandardCredentials cred = credentials.get(remote.toPrivateString());
