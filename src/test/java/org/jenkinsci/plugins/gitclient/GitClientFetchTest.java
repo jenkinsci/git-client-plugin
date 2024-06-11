@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.io.FileMatchers.*;
+import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.Assert.assertThrows;
 
 import hudson.Util;
@@ -109,6 +109,7 @@ public class GitClientFetchTest {
                 .in(configDir)
                 .using("git")
                 .getClient());
+
         String[] output = getDefaultBranchNameCmd.runWithoutAssert("config", "--get", "init.defaultBranch");
         for (String s : output) {
             String result = s.trim();
@@ -150,6 +151,10 @@ public class GitClientFetchTest {
         cliGitCommand = workspace.getCliGitCommand();
         workspace.initializeWorkspace(
                 "Vojtěch GitClientFetchTest Zweibrücken-Šafařík", "email.by.git.client.test@example.com");
+    }
+
+    private String randomSpace() {
+        return random.nextBoolean() ? " " : "";
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
@@ -214,7 +219,7 @@ public class GitClientFetchTest {
                 is(commit2));
 
         /* Fetch new change into newArea repo */
-        RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
+        RefSpec defaultRefSpec = new RefSpec(randomSpace() + "+refs/heads/*:refs/remotes/origin/*" + randomSpace());
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
         newAreaWorkspace.launchCommand("git", "config", "--local", "fetch.prune", "false");

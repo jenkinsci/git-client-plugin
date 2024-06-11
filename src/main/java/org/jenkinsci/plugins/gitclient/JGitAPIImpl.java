@@ -14,18 +14,6 @@ import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT_LOG_PREFIX;
 
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.FilePath;
-import hudson.Util;
-import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitLockFailedException;
-import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IndexEntry;
-import hudson.plugins.git.Revision;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -49,6 +37,19 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.FilePath;
+import hudson.Util;
+import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
+import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.FastDateFormat;
 import org.eclipse.jgit.api.AddNoteCommand;
@@ -624,7 +625,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand from(URIish remote, List<RefSpec> refspecs) {
                 this.url = remote;
-                this.refspecs = refspecs;
+                List<RefSpec> trimmedRefSpecs = new ArrayList<>();
+                if (refspecs != null && !refspecs.isEmpty()) {
+                    for (RefSpec rs : refspecs) {
+                        trimmedRefSpecs.add(new RefSpec(rs.toString().trim()));
+                    }
+                }
+                this.refspecs = trimmedRefSpecs;
                 return this;
             }
 
@@ -669,11 +676,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     Git git = git(repo);
 
                     List<RefSpec> allRefSpecs = new ArrayList<>();
-                    if (refspecs != null) {
+                    if (refspecs != null && !refspecs.isEmpty()) {
                         for (RefSpec rs : refspecs) {
-                            if (rs != null) {
-                                allRefSpecs.add(rs);
-                            }
+                            allRefSpecs.add(rs);
                         }
                     }
 
@@ -1432,7 +1437,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<>(refspecs);
+                List<RefSpec> refSpecsList = new ArrayList<>();
+                for (RefSpec ref : refspecs) {
+                    refSpecsList.add(new RefSpec(ref.toString().trim()));
+                }
+                this.refspecs = refSpecsList;
                 return this;
             }
 
@@ -1992,7 +2001,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public PushCommand ref(String refspec) {
-                this.refspec = refspec;
+                this.refspec = refspec.trim();
                 return this;
             }
 
@@ -2023,8 +2032,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             public void execute() throws GitException {
                 try (Repository repo = getRepository()) {
                     RefSpec ref =
-                            (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
-                    listener.getLogger().println("RefSpec is \"" + ref + "\".");
+                            (refspec != null) ? new RefSpec(fixRefSpec(refspec.trim(), repo)) : Transport.REFSPEC_PUSH_ALL;
+                    listener.getLogger().println("RefSpec is \"" + ref.toString().trim() + "\".");
                     Git g = git(repo);
                     Config config = g.getRepository().getConfig();
                     if (remote == null) {

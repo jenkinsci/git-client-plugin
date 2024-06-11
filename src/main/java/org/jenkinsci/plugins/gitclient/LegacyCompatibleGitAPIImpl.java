@@ -3,6 +3,13 @@ package org.jenkinsci.plugins.gitclient;
 import static java.util.Arrays.copyOfRange;
 import static org.apache.commons.lang.StringUtils.join;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.IGitAPI;
@@ -10,12 +17,6 @@ import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
 import hudson.plugins.git.Tag;
 import hudson.remoting.Channel;
-import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -107,7 +108,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     @Override
     @Deprecated
     public void fetch(String repository, String refspec) throws GitException, InterruptedException {
-        fetch(repository, new RefSpec(refspec));
+        fetch(repository, new RefSpec(refspec.trim()));
     }
 
     /** {@inheritDoc} */
@@ -146,7 +147,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     @Override
     @Deprecated
     public void push(URIish url, String refspec) throws GitException, InterruptedException {
-        push().ref(refspec).to(url).execute();
+        push().ref(refspec.trim()).to(url).execute();
     }
 
     /** {@inheritDoc} */
@@ -159,7 +160,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         }
 
         try {
-            push(new URIish(url), refspec);
+            push(new URIish(url), refspec.trim());
         } catch (URISyntaxException e) {
             throw new GitException("bad repository URL", e);
         }
