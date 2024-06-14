@@ -1639,7 +1639,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Reset submodules
      *
-     * @param recursive if true, will recursively reset submodules (requres git&gt;=1.6.5)
+     * @param recursive if true, will recursively reset submodules (requires git&gt;=1.6.5)
      * @param hard if true, the --hard argument will be passed to submodule reset
      * @throws hudson.plugins.git.GitException if executing the git command fails
      * @throws java.lang.InterruptedException if git command interrupted
@@ -4201,6 +4201,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return isExecuted;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder("config");
@@ -4209,7 +4210,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         } else {
             args.add("--" + ConfigLevel.LOCAL.toString().toLowerCase(Locale.getDefault()));
         }
-        args.add(key, value);
+        if (value != null) {
+            args.add(key, value);
+        } else {
+            args.add("--unset", key);
+        }
         launchCommand(args);
     }
 }

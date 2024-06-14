@@ -204,8 +204,6 @@ public class GitClientTest {
                 .using("git")
                 .getClient();
         boolean currentDirIsShallow = currentDirCliGit.isShallowRepository();
-        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        currentDirCliGit.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
 
         mirrorParent = Files.createTempDirectory("mirror").toFile();
         /* Clone mirror into mirrorParent/git-client-plugin.git as a bare repo */
@@ -268,6 +266,28 @@ public class GitClientTest {
         assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
     }
 
+    @BeforeClass
+    public static void addLocalGitConfigChanges() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
+        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
+        gitCmd.initializeRepository();
+    }
+
+    @AfterClass
+    public static void removeLocalGitConfigChanges() throws Exception {
+        File currentDir = new File(".");
+        CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
+                .in(currentDir)
+                .using("git")
+                .getClient();
+        CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
+        gitCmd.removeRepositorySettings();
+    }
+
     @AfterClass
     public static void removeMirrorAndSrcRepos() throws Exception {
         try {
@@ -289,13 +309,8 @@ public class GitClientTest {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
         assertTrue("Missing " + gitDir, gitDir.isDirectory());
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
     }
 
     /**
@@ -1023,10 +1038,7 @@ public class GitClientTest {
                 .getClient();
         gitClientTemp.init();
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         FilePath gitClientTempFile = gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
         gitClientTemp.add(".");
@@ -1059,7 +1071,7 @@ public class GitClientTest {
     }
 
     /**
-     * Test case for auto local branch creation behviour.
+     * Test case for auto local branch creation behaviour.
      * This is essentially a stripped down version of {@link GitAPITestUpdate#testBranchContainingRemote()}
      * @throws Exception on exceptions occur
      */
@@ -1086,10 +1098,7 @@ public class GitClientTest {
 
     private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws IOException, InterruptedException {
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest temp Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.by.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch GitClientTest temp Zweibrücken-Šafařík", "email.by.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
         return gitClientFilePath.createTextTempFile("aPre", ".txt", "file contents");
     }
@@ -2531,7 +2540,7 @@ public class GitClientTest {
         }
 
         /* Assertion is wrong! newDirName should not have contents.
-         * Or rather, I think the code is wrong, newDirName shoud not have contents,
+         * Or rather, I think the code is wrong, newDirName should not have contents,
          * since the branch being checked out does not include newDirName submodule.
          * How many installations depend on that unexpected behavior?
          */
@@ -2569,10 +2578,7 @@ public class GitClientTest {
         urlRepoClient.init();
         allowFileProtocol(urlRepoClient);
         CliGitCommand gitCmd = new CliGitCommand(urlRepoClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
         File readme = new File(urlRepoDir, "readme");
         String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
         Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
@@ -2590,10 +2596,8 @@ public class GitClientTest {
                 .getClient();
         repoHasSubmoduleClient.init();
         gitCmd = new CliGitCommand(repoHasSubmoduleClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository(
+                "Vojtěch GitClientTest repo submodule Zweibrücken-Šafařík", "email.from.git.client@example.com");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
         enableLongPaths(repoHasSubmoduleClient);
         allowFileProtocol(repoHasSubmoduleClient);

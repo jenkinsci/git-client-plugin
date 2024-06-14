@@ -600,7 +600,7 @@ public interface GitClient {
      * Check if a ref exists. Equivalent to comparing the return code of <code>git show-ref</code> to zero.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
-     * @return True if the ref exists, false otherwse.
+     * @return True if the ref exists, false otherwise.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -1040,22 +1040,28 @@ public interface GitClient {
     boolean maintenance(String task) throws InterruptedException;
 
     /**
-     * Execute git config at local level
-     * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
-     * @param key configuration section ${code user.name} format section[.subsection].name
-     * @param value configuration value
-     * @throws GitException
-     * @throws InterruptedException
+     * Execute git config at the specified configuration level.
+     * If value is null, the key will be removed from the configuration.
+     *
+     * @param configLevel configuration level that will be modified. If null, then {@link ConfigLevel#LOCAL} will be used.
+     * @param key configuration section expressed as {@code section[.subsection].name}
+     * @param value configuration value.  If null, the key will be removed from the configuration (unset)
+     * @throws GitException on Git exception
+     * @throws InterruptedException on thread interruption
      */
     void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
 
     /**
-     * config level (see git documentation)
+     * Level of git configuration that will be adjusted by configuration changes.
      *
+     * @see <a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration">Git configuration documentation</a>
      */
     enum ConfigLevel {
+        /** Configure the current repository. */
         LOCAL,
+        /** Configure the current user. */
         SYSTEM,
+        /** Configure all users. */
         GLOBAL;
     }
 }

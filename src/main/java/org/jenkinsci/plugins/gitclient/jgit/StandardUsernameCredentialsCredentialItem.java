@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.jgit;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import org.eclipse.jgit.transport.CredentialItem;

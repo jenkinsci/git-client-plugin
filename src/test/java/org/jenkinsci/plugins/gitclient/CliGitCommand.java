@@ -28,20 +28,59 @@ class CliGitCommand {
     private final transient Launcher launcher;
     private final EnvVars env;
     private final File dir;
+    private final GitClient gitClient;
     private String[] output;
     private ArgumentListBuilder args;
 
-    CliGitCommand(GitClient client, String... arguments) {
-        args = new ArgumentListBuilder("git");
-        args.add(arguments);
+    CliGitCommand(GitClient client) {
         listener = StreamTaskListener.NULL;
         launcher = new Launcher.LocalLauncher(listener);
         env = new EnvVars();
         if (client != null) {
             dir = client.getRepository().getWorkTree();
+            gitClient = client;
         } else {
             dir = new File(".");
+            try {
+                client = Git.with(TaskListener.NULL, new EnvVars())
+                        .in(dir)
+                        .using("git")
+                        .getClient();
+            } catch (IOException | InterruptedException e) {
+                // Will assign null to gitClient
+            }
+            gitClient = client;
         }
+        args = null;
+    }
+
+    CliGitCommand(GitClient client, String... arguments) {
+        this(client);
+        args = new ArgumentListBuilder("git");
+        args.add(arguments);
+    }
+
+    void initializeRepository() throws IOException, InterruptedException {
+        initializeRepository("git-client-user", "git-client-user@example.com");
+    }
+
+    void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", userName);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", userEmail);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
+        // if the system running the tests has gpg.format=ssh then
+        // this will fail as GpgConf does not support the enum so just
+        // set it to something valid - even if it is not usable
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
+    }
+
+    void removeRepositorySettings() throws IOException, InterruptedException {
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", null);
     }
 
     String[] run(String... arguments) throws IOException, InterruptedException {

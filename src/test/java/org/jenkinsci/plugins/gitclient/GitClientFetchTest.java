@@ -148,11 +148,8 @@ public class GitClientFetchTest {
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
         cliGitCommand = workspace.getCliGitCommand();
-        testGitClient.init();
-        cliGitCommand.run("config", "user.name", "Vojtěch GitClientFetchTest Zweibrücken-Šafařík");
-        cliGitCommand.run("config", "user.email", "email.by.git.client.test@example.com");
-        cliGitCommand.run("config", "--local", "commit.gpgsign", "false");
-        cliGitCommand.run("config", "--local", "tag.gpgSign", "false");
+        workspace.initializeWorkspace(
+                "Vojtěch GitClientFetchTest Zweibrücken-Šafařík", "email.by.git.client.test@example.com");
     }
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
@@ -220,7 +217,7 @@ public class GitClientFetchTest {
         RefSpec defaultRefSpec = new RefSpec("+refs/heads/*:refs/remotes/origin/*");
         List<RefSpec> refSpecs = new ArrayList<>();
         refSpecs.add(defaultRefSpec);
-        newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+        newAreaWorkspace.launchCommand("git", "config", "--local", "fetch.prune", "false");
         newAreaWorkspace
                 .getGitClient()
                 .fetch(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs);
@@ -421,7 +418,7 @@ public class GitClientFetchTest {
         try {
             /* Fetch parent/a into newArea repo - fails for
              * CliGitAPIImpl, succeeds for JGitAPIImpl */
-            newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+            newAreaWorkspace.launchCommand("git", "config", "--local", "fetch.prune", "false");
             newAreaWorkspace
                     .getGitClient()
                     .fetch(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs);
@@ -518,7 +515,7 @@ public class GitClientFetchTest {
         List<RefSpec> refSpecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/origin/*"));
 
         /* Fetch without prune should leave branch1 in newArea */
-        newAreaWorkspace.launchCommand("git", "config", "fetch.prune", "false");
+        newAreaWorkspace.launchCommand("git", "config", "--local", "fetch.prune", "false");
         newAreaWorkspace
                 .getGitClient()
                 .fetch_()
@@ -547,11 +544,8 @@ public class GitClientFetchTest {
     @Test
     public void test_fetch_from_url() throws Exception {
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
-        newAreaWorkspace.getGitClient().init();
-        newAreaWorkspace.launchCommand("git", "config", "user.name", "Vojtěch fetch from URL Zweibrücken-Šafařík");
-        newAreaWorkspace.launchCommand("git", "config", "user.email", "email.by.git.fetch.test@example.com");
-        newAreaWorkspace.launchCommand("git", "config", "--local", "commit.gpgsign", "false");
-        newAreaWorkspace.launchCommand("git", "config", "--local", "tag.gpgSign", "false");
+        newAreaWorkspace.initializeWorkspace(
+                "Vojtěch fetch from URL Zweibrücken-Šafařík", "email.by.git.fetch.test@example.com");
         newAreaWorkspace.launchCommand("git", "commit", "--allow-empty", "-m", "init");
         String sha1 = newAreaWorkspace.launchCommand("git", "rev-list", "--no-walk", "--max-count=1", "HEAD");
 

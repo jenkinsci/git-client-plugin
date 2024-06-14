@@ -207,10 +207,7 @@ public abstract class GitAPITestUpdate {
             String userName = "root";
             String emailAddress = "root@mydomain.com";
             CliGitCommand gitCmd = new CliGitCommand(git);
-            gitCmd.run("config", "user.name", userName);
-            gitCmd.run("config", "user.email", emailAddress);
-            gitCmd.run("config", "--local", "commit.gpgsign", "false");
-            gitCmd.run("config", "--local", "tag.gpgSign", "false");
+            gitCmd.initializeRepository(userName, emailAddress);
             git.setAuthor(userName, emailAddress);
             git.setCommitter(userName, emailAddress);
             return this;
@@ -330,6 +327,11 @@ public abstract class GitAPITestUpdate {
         IGitAPI igit() {
             return (IGitAPI) git;
         }
+
+        void initializeWorkingArea(String userName, String userEmail) throws IOException, InterruptedException {
+            CliGitCommand gitCmd = new CliGitCommand(git);
+            gitCmd.initializeRepository(userName, userEmail);
+        }
     }
 
     protected WorkingArea w;
@@ -339,11 +341,8 @@ public abstract class GitAPITestUpdate {
         FileUtils.cleanDirectory(new File(x.repoPath()));
         x.launchCommand("git", "clone", src, x.repoPath());
         WorkingArea clonedArea = new WorkingArea(x.repo);
-        clonedArea.launchCommand("git", "config", "user.name", "Vojtěch Zweibrücken-Šafařík");
-        clonedArea.launchCommand(
-                "git", "config", "user.email", "email.address.from.git.client.plugin.test@example.com");
-        clonedArea.launchCommand("git", "config", "commit.gpgsign", "false");
-        clonedArea.launchCommand("git", "config", "tag.gpgSign", "false");
+        clonedArea.initializeWorkingArea(
+                "Vojtěch Zweibrücken-Šafařík", "email.address.from.git.client.plugin.test@example.com");
         return clonedArea;
     }
 
@@ -1240,12 +1239,13 @@ public abstract class GitAPITestUpdate {
     protected abstract String getRemoteBranchPrefix();
 
     /**
-     * Test getRemoteSymbolicReferences with listing all references
+     * Test getRemoteSymbolicReferences by listing references that match HEAD.
      */
     @Test
     public void testGetRemoteSymbolicReferencesWithMatchingPattern() throws Exception {
         if (!hasWorkingGetRemoteSymbolicReferences()) {
-            return; // JUnit 3 replacement for assumeThat
+            /* Do not distract warnings system by using assumeThat to skip tests */
+            return;
         }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, Constants.HEAD);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
@@ -1519,7 +1519,7 @@ public abstract class GitAPITestUpdate {
      * actually expire.
      *
      * @see #setTimeoutVisibleInCurrentTest(boolean)
-     * @return true if timout is expected to be visible in the current test
+     * @return true if timeout is expected to be visible in the current test
      */
     protected boolean getTimeoutVisibleInCurrentTest() {
         return timeoutVisibleInCurrentTest;
@@ -1801,7 +1801,8 @@ public abstract class GitAPITestUpdate {
     @Test
     public void testGetRemoteSymbolicReferences() throws Exception {
         if (!hasWorkingGetRemoteSymbolicReferences()) {
-            return; // JUnit 3 replacement for assumeThat
+            /* Do not distract warnings system by using assumeThat to skip tests */
+            return;
         }
         Map<String, String> references = w.git.getRemoteSymbolicReferences(remoteMirrorURL, null);
         assertThat(references, hasEntry(is(Constants.HEAD), is(Constants.R_HEADS + DEFAULT_JGIT_BRANCH_NAME)));
@@ -1900,9 +1901,6 @@ public abstract class GitAPITestUpdate {
         }
         String cgitAllLogEntries = w.cgit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
         String igitAllLogEntries = w.igit().getAllLogEntries("origin/" + DEFAULT_MIRROR_BRANCH_NAME);
-        if (!cgitAllLogEntries.equals(igitAllLogEntries)) {
-            return; // JUnit 3 does not honor @Ignore annotation
-        }
         assertEquals(cgitAllLogEntries, igitAllLogEntries);
     }
 

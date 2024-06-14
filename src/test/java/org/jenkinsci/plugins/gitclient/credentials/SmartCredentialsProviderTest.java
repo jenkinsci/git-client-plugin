@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.credentials;
 
 import static org.junit.Assert.*;
 
@@ -10,6 +10,8 @@ import java.net.URISyntaxException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
+import org.jenkinsci.plugins.gitclient.jgit.StandardUsernameCredentialsCredentialItem;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -216,7 +218,7 @@ public class SmartCredentialsProviderTest {
 
     @Test
     public void testIsInteractive() {
-        assertFalse(provider.isInteractive());
+        assertTrue(provider.isInteractive());
     }
 
     @Test

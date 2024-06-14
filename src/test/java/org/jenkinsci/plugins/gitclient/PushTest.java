@@ -172,10 +172,8 @@ public class PushTest {
         ObjectId bareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
         assertEquals("Initial checkout of " + branchName + " has different HEAD than bare repo", bareHead, workingHead);
         CliGitCommand gitCmd = new CliGitCommand(workingGitClient);
-        gitCmd.run("config", "user.name", "Vojtěch PushTest working repo Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository(
+                "Vojtěch PushTest working repo Zweibrücken-Šafařík", "email.from.git.client@example.com");
     }
 
     @After
@@ -214,10 +212,7 @@ public class PushTest {
                 .repositoryName("origin")
                 .execute();
         CliGitCommand gitCmd = new CliGitCommand(cloneGitClient);
-        gitCmd.run("config", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch PushTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */
