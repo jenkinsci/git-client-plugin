@@ -1,11 +1,8 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.model.TaskListener;
-import java.util.Base64;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
@@ -18,27 +15,25 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        return new AbstractJGitHostKeyVerifier(new KnownHosts()) {
+        return new NoHostJGitKeyVerifier(listener, this);
+    }
 
-            @Override
-            public String[] getServerHostKeyAlgorithms(Connection connection) {
-                return new String[0];
-            }
+    public static class NoHostJGitKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-            @Override
-            public boolean verifyServerHostKey(
-                    String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) {
-                LOGGER.log(
-                        Level.FINEST,
-                        "No host key verifier, host {0}:{1} not verified with host key {2} {3}",
-                        new Object[] {
-                            hostname,
-                            port,
-                            serverHostKeyAlgorithm,
-                            Base64.getEncoder().encodeToString(serverHostKey)
-                        });
-                return true;
-            }
-        };
+        /***
+         * let's make spotbugs happy....
+         */
+        private static final long serialVersionUID = 1L;
+
+        public NoHostJGitKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
+        }
+
+        @Override
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_ANY);
+        }
     }
 }

@@ -1,4 +1,4 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.credentials;
 
 import static org.junit.Assert.*;
 
@@ -13,6 +13,7 @@ import java.net.URISyntaxException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.gitclient.jgit.CredentialsProviderImpl;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,7 +34,7 @@ public class CredentialsProviderImplTest {
         Secret secret = Secret.fromString(SECRET_VALUE);
         listener = StreamTaskListener.fromStdout();
         StandardUsernameCredentials cred = new StandardUsernamePasswordCredentialsImpl(USER_NAME, secret);
-        provider = new CredentialsProviderImpl(listener, cred);
+        provider = new CredentialsProviderImpl(cred);
     }
 
     @Test
@@ -98,7 +99,7 @@ public class CredentialsProviderImplTest {
     public void testSupportsDisallowed() {
         listener = StreamTaskListener.fromStdout();
         StandardUsernameCredentials badCred = new MyUsernameCredentialsImpl(USER_NAME);
-        CredentialsProviderImpl badProvider = new CredentialsProviderImpl(listener, badCred);
+        CredentialsProviderImpl badProvider = new CredentialsProviderImpl(badCred);
         CredentialItem.Username username = new CredentialItem.Username();
         assertNull(username.getValue());
         assertFalse(badProvider.supports(username));

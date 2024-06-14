@@ -2,11 +2,14 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
 
+import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.IOException;
 import java.nio.file.Paths;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
+import java.time.Duration;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,13 +23,26 @@ public class NoHostKeyVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKey() throws IOException {
+    public void verifyServerHostKey() throws IOException {
         if (isKubernetesCI()) {
             return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
         }
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-        // Should not fail because verifyServerHostKey always true
-        jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
+
+        NoHostKeyVerifier acceptFirstConnectionVerifier = new NoHostKeyVerifier();
+
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        null,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should not fail because verifyServerHostKey always true
+                            return true;
+                        })
+                .close();
     }
 
     @Test
@@ -34,15 +50,5 @@ public class NoHostKeyVerifierTest {
         assertThat(
                 verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get("")),
                 is("-o StrictHostKeyChecking=no"));
-    }
-
-    /* Return true if running on a Kubernetes pod on ci.jenkins.io */
-    private boolean isKubernetesCI() {
-        String kubernetesPort = System.getenv("KUBERNETES_PORT");
-        String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null
-                && !kubernetesPort.isEmpty()
-                && buildURL != null
-                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }

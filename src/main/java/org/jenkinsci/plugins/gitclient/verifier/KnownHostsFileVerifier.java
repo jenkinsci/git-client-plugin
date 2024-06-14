@@ -1,15 +1,14 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.console.HyperlinkNote;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Base64;
+import java.nio.file.Path;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
@@ -32,51 +31,35 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        KnownHosts knownHosts;
-        try {
-            if (Files.exists(getKnownHostsFile().toPath())) {
-                knownHosts = new KnownHosts(getKnownHostsFile());
-            } else {
+        Path knowHostPath = getKnownHostsFile().toPath();
+        if (Files.notExists(knowHostPath)) {
+            try {
                 logHint(listener);
-                knownHosts = new KnownHosts();
+                Path parent = knowHostPath.getParent();
+                if (parent != null) {
+                    Files.createDirectories(parent);
+                    Files.createFile(knowHostPath);
+                } else {
+                    throw new IllegalArgumentException("knowHostPath parent cannot be null");
+                }
+            } catch (IOException e) {
+                LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
             }
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
-            knownHosts = new KnownHosts();
         }
-        return new KnownHostsFileJGitHostKeyVerifier(listener, knownHosts);
+        return new KnownHostsFileJGitHostKeyVerifier(listener, this);
     }
 
-    public class KnownHostsFileJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
+    public static class KnownHostsFileJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        private final TaskListener listener;
-
-        public KnownHostsFileJGitHostKeyVerifier(TaskListener listener, KnownHosts knownHosts) {
-            super(knownHosts);
-            this.listener = listener;
+        public KnownHostsFileJGitHostKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
         }
 
         @Override
-        public String[] getServerHostKeyAlgorithms(Connection connection) throws IOException {
-            return getPreferredServerHostkeyAlgorithmOrder(connection);
-        }
-
-        @Override
-        public boolean verifyServerHostKey(
-                String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
-            listener.getLogger()
-                    .printf(
-                            "Verifying host key for %s using %s %n",
-                            hostname, getKnownHostsFile().toPath());
-            LOGGER.log(Level.FINEST, "Verifying {0}:{1} in known hosts file {2} with host key {3} {4}", new Object[] {
-                hostname,
-                port,
-                SshHostKeyVerificationStrategy.KNOWN_HOSTS_DEFAULT,
-                serverHostKeyAlgorithm,
-                Base64.getEncoder().encodeToString(serverHostKey)
-            });
-            return verifyServerHostKey(
-                    listener, getKnownHosts(), hostname, port, serverHostKeyAlgorithm, serverHostKey);
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.REQUIRE_MATCH);
         }
     }
 
