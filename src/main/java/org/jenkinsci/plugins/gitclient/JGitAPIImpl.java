@@ -42,6 +42,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -201,10 +204,22 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public SshdSessionFactory buildSshdSessionFactory(@NonNull final HostKeyVerifierFactory hostKeyVerifierFactory) {
         if (Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
             try {
-                Files.createDirectories(hostKeyVerifierFactory
-                        .getKnownHostsFile()
-                        .getParentFile()
-                        .toPath());
+                if (isWindows()) {
+                    Files.createDirectories(hostKeyVerifierFactory
+                            .getKnownHostsFile()
+                            .getParentFile()
+                            .toPath());
+                } else {
+                    Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rwx------");
+                    FileAttribute<Set<PosixFilePermission>> fileAttribute =
+                            PosixFilePermissions.asFileAttribute(ownerOnly);
+                    Files.createDirectories(
+                            hostKeyVerifierFactory
+                                    .getKnownHostsFile()
+                                    .getParentFile()
+                                    .toPath(),
+                            fileAttribute);
+                }
                 Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
             } catch (IOException e) {
                 LOGGER.log(Level.SEVERE, "could not create known hosts file", e);
@@ -3230,5 +3245,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // ignore
             }
         }
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }
