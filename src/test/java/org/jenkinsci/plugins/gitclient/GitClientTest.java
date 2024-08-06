@@ -117,7 +117,7 @@ public class GitClientTest {
 
     private File repoRoot = null;
 
-    public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
+    public GitClientTest(final String gitImplName) throws Exception {
         this.gitImplName = gitImplName;
         this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(srcRepoDir)
@@ -288,7 +288,7 @@ public class GitClientTest {
     }
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)
@@ -340,7 +340,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -348,8 +348,6 @@ public class GitClientTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (IOException ex) {
-            throw new GitException(ex);
         }
     }
 
@@ -593,7 +591,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testGetRepository() {
+    public void testGetRepository() throws Exception {
         File expectedRepo = new File(repoRoot, ".git");
         assertEquals(expectedRepo, gitClient.getRepository().getDirectory());
     }
@@ -789,7 +787,7 @@ public class GitClientTest {
                 actual.contains(expectedSubstring));
     }
 
-    private IGitAPI IGitAPIForTrueBareRepositoryTests() throws IOException, InterruptedException {
+    private IGitAPI IGitAPIForTrueBareRepositoryTests() throws Exception {
         // provides iGitAPI with bare repository initialization
         File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
@@ -806,14 +804,14 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareDot() throws InterruptedException, IOException {
+    public void testIsBareRepositoryBareDot() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue(". is not a bare repository", gitAPI.isBareRepository("."));
     }
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryWorkingDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingDotGit() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -825,7 +823,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareDotGit() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         /* Bare repository does not have a .git directory.  This is
          * another no-such-location test but is included here for
@@ -849,7 +847,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryWorkingNoSuchLocation() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNoSuchLocation() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -869,7 +867,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareNoSuchLocation() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNoSuchLocation() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         try {
             assertTrue("non-existent location is in a bare repository", gitAPI.isBareRepository("no-such-location"));
@@ -884,14 +882,14 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareEmptyString() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareEmptyString() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("empty string is not a bare repository", gitAPI.isBareRepository(""));
     }
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingEmptyString() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingEmptyString() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -903,14 +901,14 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareNoArg() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNoArg() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("no arg is not a bare repository", gitAPI.isBareRepository());
     }
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingNoArg() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNoArg() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -921,7 +919,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testBareRepoInit() throws IOException, InterruptedException {
+    public void testBareRepoInit() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
         File gitFile = new File(tempDir, ".git");
@@ -940,7 +938,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingRepoPathDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingRepoPathDotGit() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -954,7 +952,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingNull() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNull() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -971,7 +969,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareNull() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNull() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         try {
             assertTrue("null is not a bare repository", gitAPI.isBareRepository(null));
@@ -983,7 +981,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
+    public void test_isBareRepository_bare_repoPath() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempRepoDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
         File dotFile = new File(tempRepoDir, ".");
@@ -1086,7 +1084,7 @@ public class GitClientTest {
         assertThat(refNames, contains("refs/heads/" + defaultBranchName));
     }
 
-    private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws IOException, InterruptedException {
+    private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
         gitCmd.initializeRepository("Vojtěch GitClientTest temp Zweibrücken-Šafařík", "email.by.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
@@ -2452,7 +2450,7 @@ public class GitClientTest {
      * than 256 characters and that the checkout operation will
      * attempt to create a directory path greater than 256 characters.
      */
-    private void enableLongPaths(GitClient gitClient) throws InterruptedException {
+    private void enableLongPaths(GitClient gitClient) throws Exception {
         CliGitAPIImpl cliGitClient;
         if (gitClient instanceof CliGitAPIImpl && isWindows()) {
             /* Enable core.longpaths prior to fetch on Windows -
@@ -3322,7 +3320,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_git_branch_with_line_breaks_and_long_strings() {
+    public void test_git_branch_with_line_breaks_and_long_strings() throws Exception {
         if (!gitImplName.equals("git")) {
             return;
         }

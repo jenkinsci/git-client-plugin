@@ -14,7 +14,6 @@ import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -151,7 +150,7 @@ public class GitClientMaintenanceTest {
     private boolean looseObjectsSupported = true;
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         handler = new LogHandler();
         TaskListener listener = newListener(handler);
@@ -232,7 +231,7 @@ public class GitClientMaintenanceTest {
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -240,8 +239,6 @@ public class GitClientMaintenanceTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (IOException ex) {
-            throw new GitException(ex);
         }
     }
 

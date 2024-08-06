@@ -153,7 +153,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_repositoryName() throws IOException, InterruptedException {
+    public void test_clone_repositoryName() throws Exception {
         CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("upstream");
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
@@ -204,7 +204,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_shared() throws IOException, InterruptedException {
+    public void test_clone_shared() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -220,7 +220,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_null_branch() throws IOException, InterruptedException {
+    public void test_clone_null_branch() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -235,7 +235,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_unshared() throws IOException, InterruptedException {
+    public void test_clone_unshared() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -272,7 +272,7 @@ public class GitClientCloneTest {
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
 
     @Test
-    public void test_clone_reference_working_repo() throws IOException, InterruptedException {
+    public void test_clone_reference_working_repo() throws Exception {
         assertThat(new File(SRC_DIR + File.separator + ".git"), is(anExistingDirectory()));
         final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
         if (shallowFile.exists()) {
@@ -500,7 +500,7 @@ public class GitClientCloneTest {
     }
 
     private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName)
-            throws InterruptedException, IOException {
+            throws Exception {
         assertThat("Remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("Updated URL", remotes, containsString(workspace.localMirror()));

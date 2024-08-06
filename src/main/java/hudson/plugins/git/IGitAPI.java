@@ -138,7 +138,7 @@ public interface IGitAPI extends GitClient {
      * @param remoteRepository remote configuration from which refs will be retrieved
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(RemoteConfig remoteRepository) throws InterruptedException;
+    void fetch(RemoteConfig remoteRepository) throws GitException, InterruptedException;
 
     /**
      * Retrieve commits from default remote.
@@ -281,7 +281,7 @@ public interface IGitAPI extends GitClient {
      * @return a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws InterruptedException;
+    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws GitException, InterruptedException;
 
     /**
      * showRevision.
@@ -304,5 +304,5 @@ public interface IGitAPI extends GitClient {
      */
     @Restricted(NoExternalUse.class)
     @Deprecated
-    String getAllLogEntries(String branch) throws InterruptedException;
+    String getAllLogEntries(String branch) throws GitException, InterruptedException;
 }

@@ -10,7 +10,6 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -155,7 +154,7 @@ public class GitClientSecurityTest {
     }
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)

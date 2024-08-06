@@ -257,7 +257,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
+    public <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException {
         return proxy.withRepository(callable);
     }
 
@@ -386,13 +386,13 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException {
+    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws GitException, InterruptedException {
         return getGitAPI().mergeBase(sha1, sha12);
     }
 
     /** {@inheritDoc} */
     @Override
-    public String getAllLogEntries(String branch) throws InterruptedException {
+    public String getAllLogEntries(String branch) throws GitException, InterruptedException {
         return getGitAPI().getAllLogEntries(branch);
     }
 
@@ -945,7 +945,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+    public void fetch(RemoteConfig remoteRepository) throws GitException, InterruptedException {
         getGitAPI().fetch(remoteRepository);
     }
 

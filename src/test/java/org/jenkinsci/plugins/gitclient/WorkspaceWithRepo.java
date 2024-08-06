@@ -8,6 +8,7 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -166,7 +167,7 @@ public class WorkspaceWithRepo {
         return output;
     }
 
-    void initBareRepo(GitClient gitClient, boolean bare) throws InterruptedException {
+    void initBareRepo(GitClient gitClient, boolean bare) throws GitException, InterruptedException {
         gitClient.init_().workspace(gitFileDir.getAbsolutePath()).bare(bare).execute();
     }
 
@@ -206,7 +207,7 @@ public class WorkspaceWithRepo {
                 Git.with(listener, new EnvVars()).in(gitFileDir).using("jgit").getClient();
     }
 
-    ObjectId head() throws IOException, InterruptedException {
+    ObjectId head() throws GitException, IOException, InterruptedException {
         return gitClient.revParse("HEAD");
     }
 

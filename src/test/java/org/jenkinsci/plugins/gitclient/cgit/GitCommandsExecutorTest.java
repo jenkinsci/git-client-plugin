@@ -172,6 +172,8 @@ public class GitCommandsExecutorTest {
                 new GitCommandsExecutor(threads, listener).invokeAll(commands);
             } catch (InterruptedException e) {
                 isCallerInterrupted.set(true);
+            } catch (GitException x) {
+                throw new AssertionError(x);
             }
         });
 

@@ -83,7 +83,7 @@ public class MergeCommandTest {
     }
 
     @Before
-    public void createMergeTestRepo() throws IOException, InterruptedException {
+    public void createMergeTestRepo() throws Exception {
         EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStdout();
         File repo = tempFolder.newFolder();

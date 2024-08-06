@@ -4,7 +4,6 @@ import static org.junit.Assert.assertTrue;
 
 import hudson.FilePath;
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import org.eclipse.jgit.lib.ObjectId;
@@ -37,7 +36,7 @@ public class GitTest {
     }
 
     @Test
-    public void testWith() throws IOException, InterruptedException {
+    public void testWith() throws Exception {
         Git git = Git.with(null, null);
         assertTrue("Wrong default client type", git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
@@ -51,14 +50,14 @@ public class GitTest {
     }
 
     @Test
-    public void testIn_File() throws IOException, InterruptedException {
+    public void testIn_File() throws Exception {
         Git git = new Git(null, null).in(new File("."));
         assertTrue("Wrong client type", git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
 
     @Test
-    public void testIn_FileUsing() throws IOException, InterruptedException {
+    public void testIn_FileUsing() throws Exception {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
         assertTrue(
                 "Wrong client type",
@@ -69,14 +68,14 @@ public class GitTest {
     }
 
     @Test
-    public void testIn_FilePath() throws IOException, InterruptedException {
+    public void testIn_FilePath() throws Exception {
         Git git = new Git(null, null).in(new FilePath(new File(".")));
         assertTrue("Wrong client type", git.getClient() instanceof JGitAPIImpl);
         assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
     }
 
     @Test
-    public void testIn_FilePathUsing() throws IOException, InterruptedException {
+    public void testIn_FilePathUsing() throws Exception {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
         assertTrue(
                 "Wrong client type",
@@ -87,7 +86,7 @@ public class GitTest {
     }
 
     @Test
-    public void testUsing() throws IOException, InterruptedException {
+    public void testUsing() throws Exception {
         Git git = new Git(null, null).using(implementation);
         assertTrue(
                 "Wrong client type",
