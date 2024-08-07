@@ -64,7 +64,8 @@
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.470</jenkins.baseline>
+    <jenkins.baseline>2.462</jenkins.baseline>
+    <!-- TODO JENKINS-73339 until in parent POM -->
     <!-- <jenkins.version>${jenkins.baseline}.3</jenkins.version> -->
     <jenkins.version>2.471-rc35177.b_db_d5fa_b_389a_</jenkins.version>
     <jgit.version>7.0.0.202407311305-m2</jgit.version>
@@ -80,8 +81,7 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <!-- <artifactId>bom-${jenkins.baseline}.x</artifactId> -->
-        <artifactId>bom-weekly</artifactId>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
         <version>3234.v5ca_5154341ef</version>
         <type>pom</type>
         <scope>import</scope>

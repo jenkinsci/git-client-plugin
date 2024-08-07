@@ -109,11 +109,11 @@ public class GitClientSecurityTest {
 
     @Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() {
-        markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
+        markerFileName = markerFileName.formatted(CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
             /* insert markerFileName into test data */
-            String formattedPrefix = String.format(prefix, markerFileName);
+            String formattedPrefix = prefix.formatted(markerFileName);
 
             /* Random remote URL with prefix */
             String firstChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
