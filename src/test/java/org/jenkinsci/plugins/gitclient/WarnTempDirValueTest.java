@@ -84,7 +84,7 @@ public class WarnTempDirValueTest {
     }
 
     @Test
-    public void noWarningForDefaultValue() throws IOException, InterruptedException {
+    public void noWarningForDefaultValue() throws Exception {
         EnvVars env = new hudson.EnvVars();
         assertFalse(env.get(envVarName, "/tmp").contains(" "));
         GitClient git = Git.with(listener, env).in(repo).using("git").getClient();
@@ -94,7 +94,7 @@ public class WarnTempDirValueTest {
 
     @Test
     @Issue("JENKINS-22706")
-    public void warnWhenValueContainsSpaceCharacter() throws IOException, InterruptedException {
+    public void warnWhenValueContainsSpaceCharacter() throws Exception {
         EnvVars env = new hudson.EnvVars();
         assertFalse(env.get(envVarName, "/tmp").contains(" "));
         env.put(envVarName, "/tmp/has a space/");

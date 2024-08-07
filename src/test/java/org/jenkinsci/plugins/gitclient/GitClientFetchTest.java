@@ -21,7 +21,6 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -623,7 +622,7 @@ public class GitClientFetchTest {
     }
 
     private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName)
-            throws InterruptedException, IOException {
+            throws Exception {
         assertThat("Wrong remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("remote URL has not been updated", remotes.contains(workspace.localMirror()), is(true));

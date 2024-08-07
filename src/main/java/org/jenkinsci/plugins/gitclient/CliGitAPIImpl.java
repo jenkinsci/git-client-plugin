@@ -465,7 +465,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * custom pack programs. Reject a URL if it includes invalid
      * content.
      */
-    private void addCheckedRemoteUrl(@NonNull ArgumentListBuilder args, @NonNull String url) {
+    private void addCheckedRemoteUrl(@NonNull ArgumentListBuilder args, @NonNull String url) throws GitException {
         String trimmedUrl = url.trim();
         /* Don't check for invalid args if URL starts with known good cases.
          * Known good cases include:
@@ -1211,7 +1211,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @SuppressFBWarnings(
             value = "RV_DONT_JUST_NULL_CHECK_READLINE",
             justification = "Only needs first line, exception if multiple detected")
-    private @CheckForNull String firstLine(String result) {
+    private @CheckForNull String firstLine(String result) throws GitException {
         BufferedReader reader = new BufferedReader(new StringReader(result));
         String line;
         try {
@@ -2355,7 +2355,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Path createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException {
+    private Path createSshKeyFile(SSHUserPrivateKey sshUser) throws GitException, IOException {
         Path key = createTempFile("ssh", ".key");
         try (BufferedWriter w = Files.newBufferedWriter(key, Charset.forName(encoding))) {
             List<String> privateKeys = sshUser.getPrivateKeys();
@@ -2951,7 +2951,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param fos output of "git branch -v --no-abbrev"
      * @return a {@link java.util.Set} object.
      */
-    /*package*/ Set<Branch> parseBranches(String fos) {
+    /*package*/ Set<Branch> parseBranches(String fos) throws GitException {
         // JENKINS-34309 if the commit message contains line breaks,
         // "git branch -v --no-abbrev" output will include CR (Carriage Return) characters.
         // Replace all CR characters to avoid interpreting them as line endings
@@ -3473,7 +3473,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
+    public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
         if (commit == null) {
             return false;
         }
@@ -3910,7 +3910,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws GitException, InterruptedException {
         try {
             String result;
             try {
@@ -3926,7 +3926,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
-        } catch (IOException | GitException e) {
+        } catch (IOException e) {
             throw new GitException("Error parsing merge base", e);
         }
 
@@ -3936,7 +3936,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public String getAllLogEntries(String branch) throws InterruptedException {
+    public String getAllLogEntries(String branch) throws GitException, InterruptedException {
         // BROKEN: --all and branch are conflicting.
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
     }

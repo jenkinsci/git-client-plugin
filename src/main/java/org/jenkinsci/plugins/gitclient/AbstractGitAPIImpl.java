@@ -23,7 +23,7 @@ import org.eclipse.jgit.lib.Repository;
 abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     /** {@inheritDoc} */
     @Override
-    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
+    public <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException {
         try (Repository repo = getRepository()) {
             return callable.invoke(repo, FilePath.localChannel);
         }
@@ -40,7 +40,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     /** {@inheritDoc} */
     @Override
-    public void setAuthor(PersonIdent p) {
+    public void setAuthor(PersonIdent p) throws GitException {
         if (p != null) {
             setAuthor(p.getName(), p.getEmailAddress());
         }
@@ -48,7 +48,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
 
     /** {@inheritDoc} */
     @Override
-    public void setCommitter(PersonIdent p) {
+    public void setCommitter(PersonIdent p) throws GitException {
         if (p != null) {
             setCommitter(p.getName(), p.getEmailAddress());
         }

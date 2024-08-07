@@ -1250,7 +1250,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     @Override
-    public ChangelogCommand changelog() {
+    public ChangelogCommand changelog() throws GitException {
         return new ChangelogCommand() {
             private Repository repo = getRepository();
             private ObjectReader or = repo.newObjectReader();
@@ -1259,7 +1259,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean hasIncludedRev = false;
 
             @Override
-            public ChangelogCommand excludes(String rev) {
+            public ChangelogCommand excludes(String rev) throws GitException {
                 try {
                     return excludes(repo.resolve(rev));
                 } catch (IOException e) {
@@ -1268,7 +1268,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand excludes(ObjectId rev) {
+            public ChangelogCommand excludes(ObjectId rev) throws GitException {
                 try {
                     walk.markUninteresting(walk.lookupCommit(rev));
                     return this;
@@ -1278,7 +1278,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand includes(String rev) {
+            public ChangelogCommand includes(String rev) throws GitException {
                 try {
                     includes(repo.resolve(rev));
                     hasIncludedRev = true;
@@ -1289,7 +1289,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand includes(ObjectId rev) {
+            public ChangelogCommand includes(ObjectId rev) throws GitException {
                 try {
                     walk.markStart(walk.lookupCommit(rev));
                     hasIncludedRev = true;
@@ -1396,7 +1396,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         @SuppressFBWarnings(
                 value = "VA_FORMAT_STRING_USES_NEWLINE",
                 justification = "Windows git implementation requires specific line termination")
-        void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
+        void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput)
+                throws GitException, IOException {
             if (parent != null) {
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
             } else {
@@ -2091,7 +2092,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private Set<String> listRemoteBranches(String remote)
-            throws NotSupportedException, TransportException, URISyntaxException {
+            throws GitException, NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
@@ -2453,7 +2454,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Iterable<JGitAPIImpl> submodules() throws IOException {
+    private Iterable<JGitAPIImpl> submodules() throws GitException, IOException {
         List<JGitAPIImpl> submodules = new ArrayList<>();
         try (Repository repo = getRepository()) {
             SubmoduleWalk generator = SubmoduleWalk.forIndex(repo);
@@ -2709,7 +2710,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private List<Ref> getAllBranchRefs(boolean originBranches) {
+    private List<Ref> getAllBranchRefs(boolean originBranches) throws GitException {
         List<Ref> branches = new ArrayList<>();
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
@@ -2725,7 +2726,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) {
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws GitException {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk walk = new RevWalk(or)) {
@@ -2748,7 +2749,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public String getAllLogEntries(String branch) {
+    public String getAllLogEntries(String branch) throws GitException {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk walk = new RevWalk(or)) {
@@ -2772,14 +2773,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Adds all the refs as start commits.
      */
-    private void markAllRefs(RevWalk walk) throws IOException {
+    private void markAllRefs(RevWalk walk) throws GitException, IOException {
         markRefs(walk, unused -> true);
     }
 
     /**
      * Adds all matching refs as start commits.
      */
-    private void markRefs(RevWalk walk, Predicate<Ref> filter) throws IOException {
+    private void markRefs(RevWalk walk, Predicate<Ref> filter) throws GitException, IOException {
         try (Repository repo = getRepository()) {
             for (Ref r : repo.getAllRefs().values()) {
                 if (filter.test(r)) {

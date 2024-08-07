@@ -38,7 +38,7 @@ class Netrc {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
      */
-    public static Netrc getInstance() {
+    public static Netrc getInstance() throws GitException {
         File netrc = getDefaultFile();
         return getInstance(netrc);
     }
@@ -49,7 +49,7 @@ class Netrc {
      * @param netrcPath a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
      */
-    public static Netrc getInstance(@NonNull String netrcPath) {
+    public static Netrc getInstance(@NonNull String netrcPath) throws GitException {
         File netrc = new File(netrcPath);
         return netrc.exists() ? getInstance(new File(netrcPath)) : null;
     }
@@ -60,7 +60,7 @@ class Netrc {
      * @param netrc a {@link java.io.File} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.Netrc} object.
      */
-    public static Netrc getInstance(File netrc) {
+    public static Netrc getInstance(File netrc) throws GitException {
         return new Netrc(netrc).parse();
     }
 
@@ -79,7 +79,7 @@ class Netrc {
      * @param host a {@link java.lang.String} object.
      * @return a {@link org.apache.http.auth.Credentials} object.
      */
-    public synchronized Credentials getCredentials(String host) {
+    public synchronized Credentials getCredentials(String host) throws GitException {
         if (!this.netrc.exists()) {
             return null;
         }
@@ -93,7 +93,7 @@ class Netrc {
         this.netrc = netrc;
     }
 
-    private synchronized Netrc parse() {
+    private synchronized Netrc parse() throws GitException {
         if (!netrc.exists()) {
             return this;
         }

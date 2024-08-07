@@ -202,7 +202,7 @@ public abstract class GitAPITestUpdate {
             return repo.getAbsolutePath();
         }
 
-        GitAPITestUpdate.WorkingArea init() throws IOException, InterruptedException {
+        GitAPITestUpdate.WorkingArea init() throws GitException, IOException, InterruptedException {
             git.init();
             String userName = "root";
             String emailAddress = "root@mydomain.com";
@@ -213,7 +213,7 @@ public abstract class GitAPITestUpdate {
             return this;
         }
 
-        GitAPITestUpdate.WorkingArea init(boolean bare) throws IOException, InterruptedException {
+        GitAPITestUpdate.WorkingArea init(boolean bare) throws GitException, IOException, InterruptedException {
             git.init_().workspace(repoPath()).bare(bare).execute();
             return this;
         }
@@ -317,7 +317,7 @@ public abstract class GitAPITestUpdate {
         /**
          * Obtain the current HEAD revision
          */
-        ObjectId head() throws IOException, InterruptedException {
+        ObjectId head() throws GitException, IOException, InterruptedException {
             return git.revParse("HEAD");
         }
 
@@ -328,7 +328,8 @@ public abstract class GitAPITestUpdate {
             return (IGitAPI) git;
         }
 
-        void initializeWorkingArea(String userName, String userEmail) throws IOException, InterruptedException {
+        void initializeWorkingArea(String userName, String userEmail)
+                throws GitException, IOException, InterruptedException {
             CliGitCommand gitCmd = new CliGitCommand(git);
             gitCmd.initializeRepository(userName, userEmail);
         }
@@ -1392,7 +1393,7 @@ public abstract class GitAPITestUpdate {
 
     @Deprecated
     @Test
-    public void testLsTreeNonRecursive() throws IOException, InterruptedException {
+    public void testLsTreeNonRecursive() throws Exception {
         w.init();
         w.touch("file1", "file1 fixed content");
         w.git.add("file1");
@@ -1409,7 +1410,7 @@ public abstract class GitAPITestUpdate {
 
     @Deprecated
     @Test
-    public void testLsTreeRecursive() throws IOException, InterruptedException {
+    public void testLsTreeRecursive() throws Exception {
         w.init();
         assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
         w.touch("dir1/file1", "dir1/file1 fixed content");
@@ -1479,7 +1480,7 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    private void checkHeadRev(String repoURL, ObjectId expectedId) throws InterruptedException {
+    private void checkHeadRev(String repoURL, ObjectId expectedId) throws Exception {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
 
@@ -1595,7 +1596,7 @@ public abstract class GitAPITestUpdate {
      */
     @Deprecated
     @Test
-    public void testReset() throws IOException, InterruptedException {
+    public void testReset() throws Exception {
         w.init();
         /* No valid HEAD yet - nothing to reset, should give no error */
         w.igit().reset(false);
@@ -1704,7 +1705,7 @@ public abstract class GitAPITestUpdate {
     }
 
     private void checkBoundedChangelogSha1(final String sha1Begin, final String sha1End, final String branchName)
-            throws InterruptedException {
+            throws GitException, InterruptedException {
         StringWriter writer = new StringWriter();
         w.git.changelog(sha1Begin, sha1End, writer);
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog

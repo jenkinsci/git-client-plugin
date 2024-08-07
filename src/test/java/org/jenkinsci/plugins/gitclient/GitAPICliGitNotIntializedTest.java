@@ -153,7 +153,7 @@ public class GitAPICliGitNotIntializedTest {
 
     private static boolean cliGitDefaultsSet = false;
 
-    private void setCliGitDefaults() {
+    private void setCliGitDefaults() throws Exception {
         if (!cliGitDefaultsSet) {
             CliGitCommand gitCmd = new CliGitCommand(null);
         }

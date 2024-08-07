@@ -121,14 +121,14 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetAuthor_String_String() {
+    public void testSetAuthor_String_String() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setAuthor(name, email);
     }
 
     @Test
-    public void testSetAuthor_PersonIdent() {
+    public void testSetAuthor_PersonIdent() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         PersonIdent p = new PersonIdent(name, email);
@@ -136,14 +136,14 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetCommitter_String_String() {
+    public void testSetCommitter_String_String() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setCommitter(name, email);
     }
 
     @Test
-    public void testSetCommitter_PersonIdent() {
+    public void testSetCommitter_PersonIdent() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         PersonIdent p = new PersonIdent(name, email);
