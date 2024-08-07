@@ -63,12 +63,13 @@
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <java.version>17</java.version>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.462</jenkins.baseline>
     <!-- <jenkins.version>${jenkins.baseline}.3</jenkins.version> -->
     <jenkins.version>2.463</jenkins.version>
     <jgit.version>7.0.0.202407311305-m2</jgit.version>
+    <!-- TODO JENKINS-73339 until in parent POM -->
+    <maven.compiler.release>17</maven.compiler.release>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
