@@ -63,12 +63,14 @@
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <java.version>17</java.version>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.470</jenkins.baseline>
     <!-- <jenkins.version>${jenkins.baseline}.3</jenkins.version> -->
     <jenkins.version>2.471-rc35177.b_db_d5fa_b_389a_</jenkins.version>
     <jgit.version>7.0.0.202407311305-m2</jgit.version>
+    <!-- TODO JENKINS-73339 until in parent POM -->
+    <jenkins-test-harness.version>2250.v03a_1295b_0a_30</jenkins-test-harness.version>
+    <maven.compiler.release>17</maven.compiler.release>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
