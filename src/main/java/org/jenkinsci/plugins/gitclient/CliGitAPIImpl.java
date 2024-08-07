@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
@@ -1976,7 +1975,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return createTempFileInSystemDir(prefix, suffix);
             }
         }
-        Path tmpPath = Paths.get(workspaceTmp.getAbsolutePath());
+        Path tmpPath = Path.of(workspaceTmp.getAbsolutePath());
         if (workspaceTmp.getAbsolutePath().contains("%")) {
             // Avoid ssh token expansion on all platforms
             return createTempFileInSystemDir(prefix, suffix);
@@ -2098,8 +2097,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         try {
-            if (credentials instanceof SSHUserPrivateKey) {
-                SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
+            if (credentials instanceof SSHUserPrivateKey sshUser) {
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
                 key = createSshKeyFile(sshUser);
@@ -2130,8 +2128,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     env.put("DISPLAY", ":");
                 }
 
-            } else if (credentials instanceof StandardUsernamePasswordCredentials) {
-                StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
+            } else if (credentials instanceof StandardUsernamePasswordCredentials userPass) {
                 listener.getLogger().println("using GIT_ASKPASS to set credentials " + userPass.getDescription());
 
                 usernameFile = createUsernameFile(userPass);
@@ -2207,7 +2204,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // "untrusted" key files.
         // Check that tools exist and then if SELinux subsystem is activated
         // Otherwise calling the tools just pollutes build log with errors
-        if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
+        if (Files.isExecutable(Path.of("/usr/bin/chcon"))) {
             // SELinux may actually forbid us to read system paths, so
             // there are a couple of ways to try checking if it is enabled
             // (whether this run needs to worry about security labels) and
@@ -2222,10 +2219,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try {
                 // A process should always have rights to inspect itself, but
                 // on some systems even this read returns "Invalid argument"
-                if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
+                if (Files.isRegularFile(Path.of("/proc/self/attr/current"))) {
                     String s;
                     try (BufferedReader br =
-                            Files.newBufferedReader(Paths.get("/proc/self/attr/current"), StandardCharsets.UTF_8)) {
+                            Files.newBufferedReader(Path.of("/proc/self/attr/current"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
                     }
                     if ("unconfined".equals(s)) {
@@ -2244,16 +2241,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             try {
-                if (!Files.isDirectory(Paths.get("/sys/fs/selinux"))) {
+                if (!Files.isDirectory(Path.of("/sys/fs/selinux"))) {
                     // Assuming that lack of rights to read this is an
                     // exception caught below, not a false return here?
                     return true;
                 }
 
-                if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
+                if (Files.isRegularFile(Path.of("/sys/fs/selinux/enforce"))) {
                     String s;
                     try (BufferedReader br =
-                            Files.newBufferedReader(Paths.get("/sys/fs/selinux/enforce"), StandardCharsets.UTF_8)) {
+                            Files.newBufferedReader(Path.of("/sys/fs/selinux/enforce"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
                     }
                     if ("0".equals(s)) {
@@ -2292,10 +2289,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (!clue_sysfs && !clue_proc) { // && !clue_ls
                 listener.getLogger()
-                        .println("[INFO] SELinux is present on the host "
-                                + "and we could not confirm that it does not apply actively: "
-                                + "will try to relabel temporary files now; this may complain "
-                                + "if context labeling not applicable after all");
+                        .println(
+                                """
+                                [INFO] SELinux is present on the host \
+                                and we could not confirm that it does not apply actively: \
+                                will try to relabel temporary files now; this may complain \
+                                if context labeling not applicable after all\
+                                """);
             }
 
             ArgumentListBuilder args = new ArgumentListBuilder();
@@ -2721,7 +2721,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private Path createNonBusyExecutable(Path p) throws IOException {
         p.toFile().setExecutable(true, true);
-        Path p_copy = Paths.get(p.toString() + "-copy");
+        Path p_copy = Path.of(p.toString() + "-copy");
 
         // JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         // The following creates a copy of the generated file and deletes the original

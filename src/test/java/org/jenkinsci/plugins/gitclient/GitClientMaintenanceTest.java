@@ -169,8 +169,7 @@ public class GitClientMaintenanceTest {
                 "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík",
                 "email.from.git.client.maintenance@example.com");
 
-        if (gitClient instanceof CliGitAPIImpl) {
-            CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        if (gitClient instanceof CliGitAPIImpl cliGitClient) {
             if (!cliGitClient.isAtLeastVersion(1, 8, 0, 0)) {
                 incrementalRepackSupported = false;
                 commitGraphSupported = false;
@@ -219,7 +218,7 @@ public class GitClientMaintenanceTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        final String content = String.format("A random maintenance UUID: %s\n", UUID.randomUUID());
+        final String content = "A random maintenance UUID: %s\n".formatted(UUID.randomUUID());
         return commitFile("One-Maintenance-File.txt", content, commitMessage);
     }
 

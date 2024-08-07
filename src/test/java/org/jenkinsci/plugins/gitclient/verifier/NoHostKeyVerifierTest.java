@@ -7,7 +7,7 @@ import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKube
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -48,7 +48,7 @@ public class NoHostKeyVerifierTest {
     @Test
     public void testVerifyHostKeyOption() throws IOException {
         assertThat(
-                verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get("")),
+                verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Path.of("")),
                 is("-o StrictHostKeyChecking=no"));
     }
 }

@@ -2,7 +2,7 @@ package jmh.benchmark;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import jenkins.benchmark.jmh.BenchmarkFinder;
 import org.junit.Test;
@@ -29,7 +29,7 @@ public class BenchmarkRunner {
     public void runJmhBenchmarks() throws Exception {
         if (!shouldRunBenchmarks()) {
             String msg = "{\"benchmark.run\": false, \"reason\": \"Benchmark not run because benchmark.run is false\"}";
-            Files.write(Paths.get("jmh-report.json"), msg.getBytes(StandardCharsets.UTF_8));
+            Files.write(Path.of("jmh-report.json"), msg.getBytes(StandardCharsets.UTF_8));
             return;
         }
         ChainedOptionsBuilder options = new OptionsBuilder()

@@ -91,7 +91,7 @@ public class IndexEntry implements Serializable {
      */
     @Override
     public String toString() {
-        return String.format("IndexEntry[mode=%s,type=%s,file=%s,object=%s]", mode, type, file, object);
+        return "IndexEntry[mode=%s,type=%s,file=%s,object=%s]".formatted(mode, type, file, object);
     }
 
     /**

@@ -39,7 +39,7 @@ public class Branch extends GitObject {
      */
     @Override
     public String toString() {
-        return String.format("Branch %s(%s)", name, getSHA1String());
+        return "Branch %s(%s)".formatted(name, getSHA1String());
     }
 
     /**

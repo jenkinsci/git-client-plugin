@@ -22,9 +22,12 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class KnownHostsFileVerifierTest {
 
-    private static final String FILE_CONTENT = "github.com"
-            + " ecdsa-sha2-nistp256"
-            + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
+    private static final String FILE_CONTENT =
+            """
+            github.com\
+             ecdsa-sha2-nistp256\
+             AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=\
+            """;
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
