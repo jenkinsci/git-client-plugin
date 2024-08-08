@@ -195,7 +195,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     EnvVars environment;
     private Map<String, StandardCredentials> credentials = new HashMap<>();
     private StandardCredentials defaultCredentials;
-    private StandardCredentials lfsCredentials;
     private final String encoding;
 
     /* If we fail some helper tool (e.g. SELinux chcon) do not make noise
@@ -672,10 +671,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) {
-            cred = defaultCredentials;
-        }
+        StandardCredentials cred = getCredentials(url);
         launchCommandWithCredentials(args, workspace, cred, url);
     }
 
@@ -3162,23 +3158,49 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    StandardCredentials cred = null;
+                    String checkoutUrl = null;
+                    if (isAtLeastVersion(2, 27, 0, 0)) {
+                        String result = firstLine(launchCommand(
+                                "config", "--get", "--default", "''", "remote.origin.partialclonefilter"));
+                        if (result != null && !result.isBlank()) {
+                            checkoutUrl = launchCommand("config", "--get", "--default", "''", "remote.origin.url")
+                                    .trim(); // TODO: how to get the url correctly (and compatible with the
+                            // unit tests)?
+                            // checkoutUrl = getRemoteUrl("origin"); // fails with unit tests
+                            if (checkoutUrl.isBlank()) {
+                                checkoutUrl = null;
+                            } else {
+                                cred = getCredentials(checkoutUrl);
+                            }
+                        }
+                    }
+
+                    if (checkoutUrl != null) {
+                        try {
+                            // credentials are needed for instance for blobless clone and are simply not used in
+                            // "standard" cases
+                            launchCommandWithCredentials(args, workspace, cred, new URIish(checkoutUrl), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + checkoutUrl, e);
+                        }
+                    } else {
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    }
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
-                        StandardCredentials cred = lfsCredentials;
-                        if (cred == null) {
-                            cred = credentials.get(url);
-                        }
-                        if (cred == null) {
-                            cred = defaultCredentials;
+                        StandardCredentials lfsCred = lfsCredentials;
+                        if (lfsCred == null) {
+                            lfsCred = getCredentials(url);
                         }
                         ArgumentListBuilder lfsArgs = new ArgumentListBuilder();
                         lfsArgs.add("lfs");
                         lfsArgs.add("pull");
                         lfsArgs.add(lfsRemote);
                         try {
-                            launchCommandWithCredentials(lfsArgs, workspace, cred, new URIish(url), timeout);
+                            launchCommandWithCredentials(lfsArgs, workspace, lfsCred, new URIish(url), timeout);
                         } catch (URISyntaxException e) {
                             throw new GitException("Invalid URL " + url, e);
                         }
@@ -3722,10 +3744,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         args.add("-h");
         addCheckedRemoteUrl(args, url);
 
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) {
-            cred = defaultCredentials;
-        }
+        StandardCredentials cred = getCredentials(url);
 
         String result = launchCommandWithCredentials(args, null, cred, url);
 
@@ -3750,10 +3769,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             args.add("-h");
         }
 
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) {
-            cred = defaultCredentials;
-        }
+        StandardCredentials cred = getCredentials(url);
 
         addCheckedRemoteUrl(args, url);
 
@@ -3782,10 +3798,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             args.add(pattern);
         }
 
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) {
-            cred = defaultCredentials;
-        }
+        StandardCredentials cred = getCredentials(url);
 
         String result = launchCommandWithCredentials(args, null, cred, url);
 
@@ -3825,10 +3838,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.add(pattern);
             }
 
-            StandardCredentials cred = credentials.get(url);
-            if (cred == null) {
-                cred = defaultCredentials;
-            }
+            StandardCredentials cred = getCredentials(url);
 
             String result = launchCommandWithCredentials(args, null, cred, url);
 
@@ -3868,10 +3878,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         ArgumentListBuilder args = new ArgumentListBuilder();
         URIish uri = repository.getURIs().get(0);
         String url = uri.toPrivateString();
-        StandardCredentials cred = credentials.get(url);
-        if (cred == null) {
-            cred = defaultCredentials;
-        }
+        StandardCredentials cred = getCredentials(url);
 
         args.add("push");
         addCheckedRemoteUrl(args, url);
@@ -3972,6 +3979,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         return false;
+    }
+
+    private StandardCredentials getCredentials(String url) {
+        StandardCredentials cred = credentials.get(url);
+        if (cred == null) {
+            cred = defaultCredentials;
+        }
+        return cred;
     }
 
     /** {@inheritDoc} */
