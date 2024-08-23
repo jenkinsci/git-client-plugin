@@ -68,7 +68,7 @@
     <!-- <jenkins.version>${jenkins.baseline}.3</jenkins.version> -->
     <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
     <jenkins.version>2.463</jenkins.version>
-    <jgit.version>7.0.0.202407311305-m2</jgit.version>
+    <jgit.version>7.0.0.202408202050-m3</jgit.version>
     <!-- TODO JENKINS-73339 until in parent POM -->
     <maven.compiler.release>17</maven.compiler.release>
     <spotbugs.effort>Max</spotbugs.effort>
