@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.86</version>
+    <version>4.87</version>
     <relativePath />
   </parent>
 
@@ -67,8 +67,8 @@
     <jenkins.baseline>2.462</jenkins.baseline>
     <!-- <jenkins.version>${jenkins.baseline}.3</jenkins.version> -->
     <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
-    <jenkins.version>2.471-rc35177.b_db_d5fa_b_389a_</jenkins.version>
-    <jgit.version>7.0.0.202408202050-m3</jgit.version>
+    <jenkins.version>2.475</jenkins.version>
+    <jgit.version>7.0.0.202409031743-r</jgit.version>
     <!-- TODO JENKINS-73339 until in parent POM -->
     <jenkins-test-harness.version>2254.vcff7a_d4969e5</jenkins-test-harness.version>
     <maven.compiler.release>17</maven.compiler.release>
@@ -82,7 +82,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>3289.v3ff9637cd241</version>
+        <version>3334.v18e2a_2f48356</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -228,7 +228,7 @@
     <dependency>
       <groupId>io.github.sparsick.testcontainers.gitserver</groupId>
       <artifactId>testcontainers-gitserver</artifactId>
-      <version>0.8.0</version>
+      <version>0.9.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
