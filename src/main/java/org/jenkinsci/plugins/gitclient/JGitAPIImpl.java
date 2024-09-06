@@ -476,7 +476,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (repo.resolve(ref) != null) {
                     // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/)
-                    git(repo).checkout().setName(ref).setForce(true).call();
+                    git(repo).checkout().setName(ref).setForceRefUpdate(true).call();
                     return;
                 }
 
@@ -550,7 +550,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     .checkout()
                     .setName(branch)
                     .setCreateBranch(true)
-                    .setForce(true)
+                    .setForceRefUpdate(true)
                     .setStartPoint(ref)
                     .call();
         } catch (GitAPIException e) {
@@ -2063,7 +2063,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         final boolean found;
         try (Repository repo = getRepository()) {
-            found = repo.hasObject(commit);
+            try {
+                found = repo.getObjectDatabase().has(commit);
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
         }
         return found;
     }
@@ -2903,7 +2907,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Map<ObjectId, Ref> tags = new HashMap<>();
             for (Ref r : repo.getTags().values()) {
-                ObjectId key = repo.peel(r).getPeeledObjectId();
+                ObjectId key = repo.getRefDatabase().peel(r).getPeeledObjectId();
                 if (key == null) {
                     key = r.getObjectId();
                 }
@@ -3157,9 +3161,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 String tagName = entry.getKey();
                 Ref tagRef = entry.getValue();
                 if (!tagRef.isPeeled()) {
-                    Ref peeledRef = repo.peel(tagRef);
-                    if (peeledRef.getPeeledObjectId() != null) {
-                        tagRef = peeledRef; // Use peeled ref instead of annotated ref
+                    try {
+                        Ref peeledRef = repo.getRefDatabase().peel(tagRef);
+                        if (peeledRef.getPeeledObjectId() != null) {
+                            tagRef = peeledRef; // Use peeled ref instead of annotated ref
+                        }
+                    } catch (IOException ioe) {
+                        throw new GitException(ioe);
                     }
                 }
                 /* Packed lightweight (non-annotated) tags can wind up peeled with no peeled obj ID */
