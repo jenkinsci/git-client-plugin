@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -80,15 +80,15 @@ public class NetrcTest {
     }
 
     private void copyFileContents(String source, String destination) throws IOException {
-        try (InputStream sourceStream = Files.newInputStream(Paths.get(source));
-                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+        try (InputStream sourceStream = Files.newInputStream(Path.of(source));
+                OutputStream out = Files.newOutputStream(Path.of(destination))) {
             IOUtils.copy(sourceStream, out);
         }
     }
 
     private void copyResourceContents(String resource, String destination) throws IOException {
         try (InputStream sourceStream = this.getClass().getClassLoader().getResourceAsStream(resource);
-                OutputStream out = Files.newOutputStream(Paths.get(destination))) {
+                OutputStream out = Files.newOutputStream(Path.of(destination))) {
             IOUtils.copy(sourceStream, out);
         }
     }

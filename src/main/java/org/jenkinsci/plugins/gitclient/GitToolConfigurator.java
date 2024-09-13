@@ -101,8 +101,7 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
             return toolProperties;
         }
         final Configurator<ToolProperty> configurator = context.lookupOrFail(ToolProperty.class);
-        if (props instanceof Sequence) {
-            Sequence s = (Sequence) props;
+        if (props instanceof Sequence s) {
             for (CNode cNode : s) {
                 toolProperties.add(configurator.configure(cNode, context));
             }
