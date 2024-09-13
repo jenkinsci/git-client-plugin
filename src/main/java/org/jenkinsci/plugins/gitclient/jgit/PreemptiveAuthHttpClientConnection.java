@@ -261,8 +261,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     private static void configureProxy(final HttpClientBuilder builder, final Proxy proxy) {
         if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
             final SocketAddress socketAddress = proxy.address();
-            if (socketAddress instanceof InetSocketAddress) {
-                final InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+            if (socketAddress instanceof InetSocketAddress inetSocketAddress) {
                 final String proxyHost = inetSocketAddress.getHostName();
                 final int proxyPort = inetSocketAddress.getPort();
                 final HttpHost httpHost = new HttpHost(proxyHost, proxyPort);
@@ -310,8 +309,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     private void execute() throws IOException {
         if (resp == null) {
             if (entity != null) {
-                if (req instanceof HttpEntityEnclosingRequest) {
-                    HttpEntityEnclosingRequest eReq = (HttpEntityEnclosingRequest) req;
+                if (req instanceof HttpEntityEnclosingRequest eReq) {
                     eReq.setEntity(entity);
                 }
                 resp = getClient().execute(req);

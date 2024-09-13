@@ -79,11 +79,11 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                 parameterTypes[i] = paramTypes[i].getName();
             }
             for (int i = 0; i < args.length; i++) {
-                if (args[i] instanceof OutputStream) {
-                    args[i] = new RemoteOutputStream((OutputStream) args[i]);
+                if (args[i] instanceof OutputStream stream) {
+                    args[i] = new RemoteOutputStream(stream);
                 }
-                if (args[i] instanceof Writer) {
-                    args[i] = new RemoteWriter((Writer) args[i]);
+                if (args[i] instanceof Writer writer) {
+                    args[i] = new RemoteWriter(writer);
                 }
             }
         }
