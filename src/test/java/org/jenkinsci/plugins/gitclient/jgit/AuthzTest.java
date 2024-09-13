@@ -104,19 +104,15 @@ public class AuthzTest {
     protected void testRepo(StandardCredentials standardCredentials, GenericContainer<?> containerUnderTest)
             throws Exception {
         String repoUrl = null;
-        if (containerUnderTest instanceof GitServerContainer) {
-            repoUrl = ((GitServerContainer) containerUnderTest)
-                    .getGitRepoURIAsSSH()
-                    .toString();
+        if (containerUnderTest instanceof GitServerContainer container) {
+            repoUrl = container.getGitRepoURIAsSSH().toString();
             // ssh://git@localhost:33011/srv/git/someRepo.git
             // we don't want the user part of the uri or jgit will use this user
             // and we want to be sure to test our implementation with dynamic user
             repoUrl = StringUtils.remove(repoUrl, "git@");
         }
-        if (containerUnderTest instanceof GitHttpServerContainer) {
-            repoUrl = ((GitHttpServerContainer) containerUnderTest)
-                    .getGitRepoURIAsHttp()
-                    .toString();
+        if (containerUnderTest instanceof GitHttpServerContainer container) {
+            repoUrl = container.getGitRepoURIAsHttp().toString();
         }
 
         Path testRepo = testFolder.newFolder().toPath();

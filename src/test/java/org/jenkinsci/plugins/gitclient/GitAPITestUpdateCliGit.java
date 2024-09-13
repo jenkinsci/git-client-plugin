@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 
 import hudson.plugins.git.GitException;
 import java.io.File;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -38,7 +38,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         }
         assertFixSubmoduleUrlsThrows();
 
-        String shallow = Paths.get(".git", "modules", "module", "1", "shallow").toString();
+        String shallow = Path.of(".git", "modules", "module", "1", "shallow").toString();
         assertFalse("shallow file existence: " + shallow, w.exists(shallow));
     }
 

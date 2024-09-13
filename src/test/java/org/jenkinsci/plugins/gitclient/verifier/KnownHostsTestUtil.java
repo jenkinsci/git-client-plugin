@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -81,7 +81,7 @@ public class KnownHostsTestUtil {
 
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
-                .hostConfigEntryResolver(new ConfigFileHostEntryResolver(Paths.get("src/test/resources/ssh_config")))
+                .hostConfigEntryResolver(new ConfigFileHostEntryResolver(Path.of("src/test/resources/ssh_config")))
                 .serverKeyVerifier(new JGitServerKeyVerifier(verifier.getServerKeyDatabase()))
                 .compressionFactories(new ArrayList<>(BuiltinCompressions.VALUES))
                 .build()) {
@@ -118,14 +118,13 @@ public class KnownHostsTestUtil {
         }
 
         boolean verified = false;
-        if (serverKey instanceof OpenSshCertificate) {
+        if (serverKey instanceof OpenSshCertificate certificate) {
             // check if we trust the CA
-            verified =
-                    serverKeyVerifier.verifyServerKey(s, remoteAddress, ((OpenSshCertificate) serverKey).getCaPubKey());
+            verified = serverKeyVerifier.verifyServerKey(s, remoteAddress, certificate.getCaPubKey());
 
             if (!verified) {
                 // fallback to actual public host key
-                serverKey = ((OpenSshCertificate) serverKey).getCertPubKey();
+                serverKey = certificate.getCertPubKey();
             }
         }
 

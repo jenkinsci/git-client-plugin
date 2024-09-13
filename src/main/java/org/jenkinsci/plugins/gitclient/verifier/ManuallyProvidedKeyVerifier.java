@@ -34,11 +34,11 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
             if (File.pathSeparatorChar
                     == ';') { // check whether on Windows or not without sending Functions over remoting
                 // no escaping for windows because created temp file can't contain spaces
-                userKnownHostsFileFlag = String.format(" -o UserKnownHostsFile=%s", escapePath(tempKnownHosts));
+                userKnownHostsFileFlag = " -o UserKnownHostsFile=%s".formatted(escapePath(tempKnownHosts));
             } else {
                 // escaping needed in case job name contains spaces
                 userKnownHostsFileFlag =
-                        String.format(" -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"", escapePath(tempKnownHosts));
+                        " -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"".formatted(escapePath(tempKnownHosts));
             }
             return "-o StrictHostKeyChecking=yes " + userKnownHostsFileFlag;
         };

@@ -41,7 +41,6 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -236,7 +235,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 .setConfigStoreFactory((homeDir, configFile, localUserName) -> {
                     String configFilePath = SystemProperties.getString(SSH_CONFIG_PATH);
                     if (configFilePath != null) {
-                        Path path = Paths.get(configFilePath);
+                        Path path = Path.of(configFilePath);
                         homeDir = path.toFile().getParentFile();
                         configFile = path.toFile();
                     }
@@ -955,8 +954,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private TransportConfigCallback getTransportConfigCallback() {
         return transport -> {
-            if (transport instanceof SshTransport) {
-                ((SshTransport) transport).setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
+            if (transport instanceof SshTransport sshTransport) {
+                sshTransport.setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
             }
             if (transport instanceof HttpTransport) {
                 ((TransportHttp) transport)
@@ -966,8 +965,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private void decorateTransport(Transport tn) {
-        if (tn instanceof SshTransport) {
-            ((SshTransport) tn).setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
+        if (tn instanceof SshTransport transport) {
+            transport.setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
         }
         if (tn instanceof HttpTransport) {
             ((TransportHttp) tn).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
@@ -2239,7 +2238,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             case 0: // for the source ref. we use the repository to determine what should be pushed
                                 Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
-                                    throw new IOException(String.format("Ref %s not found.", specs[spec]));
+                                    throw new IOException("Ref %s not found.".formatted(specs[spec]));
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
@@ -2947,11 +2946,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 public String describe(ObjectId tip) throws IOException {
-                    return String.format(
-                            "%s-%d-g%s",
-                            tag.getName().substring(R_TAGS.length()),
-                            depth,
-                            or.abbreviate(tip).name());
+                    return "%s-%d-g%s"
+                            .formatted(
+                                    tag.getName().substring(R_TAGS.length()),
+                                    depth,
+                                    or.abbreviate(tip).name());
                 }
             }
             List<Candidate> candidates = new ArrayList<>(); // all the candidates we find
@@ -3049,7 +3048,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             while (tree.next()) {
                 RevObject rev = w.parseAny(tree.getObjectId(0));
                 r.add(new IndexEntry(
-                        String.format("%06o", tree.getRawMode(0)),
+                        "%06o".formatted(tree.getRawMode(0)),
                         typeString(rev.getType()),
                         tree.getObjectId(0).name(),
                         tree.getNameString()));
