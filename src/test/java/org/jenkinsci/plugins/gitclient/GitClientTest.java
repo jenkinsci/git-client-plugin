@@ -3330,9 +3330,11 @@ public class GitClientTest {
         }
         // Embedded \r (carriage return) must be retained in the gitBranchOutput
         String gitBranchOutput =
-                "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n"
-                        + "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n"
-                        + "  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message\n";
+                """
+                * (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks very-long-string-with-more-than-44-characters
+                  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks very-long-string-with-more-than-44-characters and some more text
+                  remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message
+                """;
 
         cliGitAPIImplTest.setTimeoutVisibleInCurrentTest(false);
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), cliGitAPIImplTest.listener, cliGitAPIImplTest.env);

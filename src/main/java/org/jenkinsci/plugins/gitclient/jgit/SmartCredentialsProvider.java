@@ -169,9 +169,9 @@ public class SmartCredentialsProvider extends CredentialsProvider {
                 password.setValue(credentials.getPassword().getPlainText().toCharArray());
                 continue;
             }
-            if (i instanceof CredentialItem.StringType) {
+            if (i instanceof CredentialItem.StringType type) {
                 if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials credentials) {
-                    ((CredentialItem.StringType) i)
+                    type
                             .setValue(credentials.getPassword().getPlainText());
                     continue;
                 }
