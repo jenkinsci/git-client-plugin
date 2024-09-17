@@ -3008,10 +3008,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         try (Repository db = getRepository()) {
-            Map<String, Ref> refs = db.getAllRefs();
+            List<Ref> refs;
+            try {
+                refs = db.getRefDatabase().getRefs();
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
             Set<Branch> branches = new HashSet<>();
 
-            for (Ref candidate : refs.values()) {
+            for (Ref candidate : refs) {
                 if (candidate.getName().startsWith(Constants.R_REMOTES)) {
                     Branch buildBranch = new Branch(candidate);
                     if (!GitClient.quietRemoteBranches) {
