@@ -217,6 +217,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
         return lsTree(treeIsh, false);

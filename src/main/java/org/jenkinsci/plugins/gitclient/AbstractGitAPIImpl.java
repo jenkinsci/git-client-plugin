@@ -30,6 +30,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void commit(String message, PersonIdent author, PersonIdent committer)
             throws GitException, InterruptedException {
@@ -55,6 +56,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void changelog(String revFrom, String revTo, OutputStream outputStream)
             throws GitException, InterruptedException {
@@ -79,12 +81,14 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void checkout(String commit) throws GitException, InterruptedException {
         checkout().ref(commit).execute();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void checkout(String ref, String branch) throws GitException, InterruptedException {
         checkout().ref(ref).branch(branch).execute();
@@ -97,6 +101,7 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void merge(ObjectId rev) throws GitException, InterruptedException {
         merge().setRevisionToMerge(rev).execute();
@@ -142,21 +147,25 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void submoduleUpdate(boolean recursive) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).execute();
     }
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void submoduleUpdate(boolean recursive, String reference) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).ref(reference).execute();
     }
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void submoduleUpdate(boolean recursive, boolean remoteTracking) throws GitException, InterruptedException {
         submoduleUpdate().recursive(recursive).remoteTracking(remoteTracking).execute();
     }
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void submoduleUpdate(boolean recursive, boolean remoteTracking, String reference)
             throws GitException, InterruptedException {

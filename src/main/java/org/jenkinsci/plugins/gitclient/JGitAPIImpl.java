@@ -743,6 +743,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
                 return prune(true);
@@ -832,14 +833,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param refspecs a {@link java.util.List} object.
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
+     * @deprecated
      */
     @Override
+    @Deprecated
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated
     public void fetch(String remoteName, RefSpec... refspec) throws GitException {
         try (Repository repo = getRepository()) {
             FetchCommand fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
@@ -866,6 +870,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated
     public void fetch(String remoteName, RefSpec refspec) throws GitException {
         fetch(remoteName, new RefSpec[] {refspec});
     }
@@ -876,7 +881,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         refName = refName.replace(' ', '_');
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(refName);
-            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setNewObjectId(repo.exactRef(HEAD).getObjectId());
             switch (refUpdate.forceUpdate()) {
                 case NOT_ATTEMPTED:
                 case LOCK_FAILURE:
@@ -1127,9 +1132,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @deprecated
      */
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @NonNull
+    @Deprecated
     @Override
     public Repository getRepository() throws GitException {
         try {
@@ -1541,6 +1548,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shallow() {
                 return shallow(true);
@@ -1552,6 +1560,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shared() {
                 return shared(true);
@@ -1587,6 +1596,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand noCheckout() {
                 // this.noCheckout = true; ignored, we never do a checkout
@@ -2141,6 +2151,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public PushCommand force() {
                 return force(true);
@@ -2276,6 +2287,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private List<ObjectId> out;
 
+            @Deprecated
             @Override
             public RevListCommand all() {
                 return all(true);
@@ -2293,6 +2305,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public RevListCommand firstParent() {
                 return firstParent(true);
@@ -2619,6 +2632,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
         // For the reasons of backward compatibility - we do not query remote branches here.
