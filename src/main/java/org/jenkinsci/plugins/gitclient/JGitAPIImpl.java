@@ -482,7 +482,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 List<String> remoteTrackingBranches = new ArrayList<>();
                 for (String remote : repo.getRemoteNames()) {
                     // look for exactly ONE remote tracking branch
-                    String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
+                    String matchingRemoteBranch = R_REMOTES + remote + "/" + ref;
                     if (repo.exactRef(matchingRemoteBranch) != null) {
                         remoteTrackingBranches.add(matchingRemoteBranch);
                     }
@@ -500,7 +500,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger()
                         .format(
                                 "[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'",
-                                ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
+                                ref, removeStart(matchingRemoteBranch, R_REMOTES));
 
                 git(repo)
                         .checkout()
@@ -876,7 +876,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         refName = refName.replace(' ', '_');
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(refName);
-            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setNewObjectId(repo.exactRef(HEAD).getObjectId());
             switch (refUpdate.forceUpdate()) {
                 case NOT_ATTEMPTED:
                 case LOCK_FAILURE:
@@ -910,7 +910,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(refName);
             // Required, even though this is a forced delete.
-            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setNewObjectId(repo.exactRef(HEAD).getObjectId());
             refUpdate.setForceUpdate(true);
             switch (refUpdate.delete()) {
                 case NOT_ATTEMPTED:
@@ -1020,7 +1020,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (pattern != null) {
             regexPattern = replaceGlobCharsWithRegExChars(pattern);
         }
-        if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
+        if (regexPattern != null && !HEAD.matches(regexPattern)) {
             return references;
         }
         try (Repository repo = openDummyRepository()) {
