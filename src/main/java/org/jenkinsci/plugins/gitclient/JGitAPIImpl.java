@@ -2090,7 +2090,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Set<String> branches = listRemoteBranches(remote);
 
-            for (Ref r : new ArrayList<>(gitRepo.getAllRefs().values())) {
+            for (Ref r : new ArrayList<>(gitRepo.getRefDatabase().getRefs())) {
                 if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
                     // delete this ref
                     RefUpdate update = gitRepo.updateRef(r.getName());
@@ -2347,7 +2347,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         out.add(c.copy());
 
                         if (all) {
-                            for (Ref r : repo.getAllRefs().values()) {
+                            for (Ref r : repo.getRefDatabase().getRefs()) {
                                 c = walk.parseCommit(r.getObjectId());
                                 out.add(c.copy());
                             }
@@ -2730,7 +2730,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private List<Ref> getAllBranchRefs(boolean originBranches) throws GitException {
         List<Ref> branches = new ArrayList<>();
         try (Repository repo = getRepository()) {
-            for (Ref r : repo.getAllRefs().values()) {
+            List<Ref> refs;
+            try {
+                refs = repo.getRefDatabase().getRefs();
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
+            for (Ref r : refs) {
                 final String branchName = r.getName();
                 if (branchName.startsWith(R_HEADS) || (originBranches && branchName.startsWith(R_REMOTES))) {
                     branches.add(r);
@@ -2799,7 +2805,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private void markRefs(RevWalk walk, Predicate<Ref> filter) throws GitException, IOException {
         try (Repository repo = getRepository()) {
-            for (Ref r : repo.getAllRefs().values()) {
+            for (Ref r : repo.getRefDatabase().getRefs()) {
                 if (filter.test(r)) {
                     RevCommit c = walk.parseCommit(r.getObjectId());
                     walk.markStart(c);
@@ -2919,7 +2925,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.setRetainBody(false);
 
             Map<ObjectId, Ref> tags = new HashMap<>();
-            for (Ref r : repo.getTags().values()) {
+            for (Ref r : repo.getRefDatabase().getRefsByPrefix(R_TAGS)) {
                 ObjectId key = repo.getRefDatabase().peel(r).getPeeledObjectId();
                 if (key == null) {
                     key = r.getObjectId();
