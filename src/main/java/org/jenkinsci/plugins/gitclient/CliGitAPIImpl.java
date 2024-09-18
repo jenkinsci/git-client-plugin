@@ -533,6 +533,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public FetchCommand prune() {
                 return prune(true);
@@ -637,12 +638,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         listener.getLogger().println("Fetching upstream changes" + (remoteName != null ? " from " + remoteName : ""));
@@ -679,6 +682,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
         fetch(remoteName, new RefSpec[] {refspec});
@@ -733,6 +737,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shared() {
                 return shared(true);
@@ -744,6 +749,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shallow() {
                 return shallow(true);
@@ -755,6 +761,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand noCheckout() {
                 // this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the
@@ -2884,6 +2891,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public PushCommand force() {
                 return force(true);
@@ -3361,6 +3369,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private List<ObjectId> out;
 
+            @Deprecated
             @Override
             public RevListCommand all() {
                 return all(true);
@@ -3381,6 +3390,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public RevListCommand firstParent() {
                 return firstParent(true);
@@ -3582,6 +3592,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @NonNull
+    @Deprecated
     @Override
     public Repository getRepository() throws GitException {
         try {
