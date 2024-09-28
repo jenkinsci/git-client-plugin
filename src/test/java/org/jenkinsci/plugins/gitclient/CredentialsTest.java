@@ -14,6 +14,7 @@ import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
+import hudson.model.Descriptor.FormException;
 import hudson.model.Fingerprint;
 import hudson.util.LogTaskListener;
 import java.io.File;
@@ -137,7 +138,7 @@ public class CredentialsTest {
     }
 
     @Before
-    public void setUp() throws IOException, InterruptedException {
+    public void setUp() throws FormException, IOException, InterruptedException {
         git = null;
         repo = tempFolder.newFolder();
         /* Use a repo with a special character in name - JENKINS-43931 */
@@ -212,7 +213,8 @@ public class CredentialsTest {
         return new BasicSSHUserPrivateKey(scope, id, username, privateKeySource, this.passphrase, description);
     }
 
-    private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password) {
+    private StandardUsernamePasswordCredentials newUsernamePasswordCredential(String username, String password)
+            throws FormException {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String id = "username-" + username + "-password-" + password + random.nextInt();
         return new UsernamePasswordCredentialsImpl(scope, id, "desc: " + id, username, password);
