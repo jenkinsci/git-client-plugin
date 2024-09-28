@@ -87,7 +87,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testAddCredentials() {
+    public void testAddCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String url = "https://github.com/jenkinsci/git-client-plugin";
@@ -99,7 +99,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetCredentials() {
+    public void testSetCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String username = "user";
@@ -110,7 +110,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testAddDefaultCredentials() {
+    public void testAddDefaultCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String username = "user";
