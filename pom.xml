@@ -65,7 +65,7 @@
     <jenkins.version>2.477</jenkins.version>
     <jgit.version>7.0.0.202409031743-r</jgit.version>
     <!-- TODO JENKINS-73339 until in parent POM -->
-    <jenkins-test-harness.version>2289.vfd344a_6d1660</jenkins-test-harness.version>
+    <jenkins-test-harness.version>2299.v7e8d22e797d3</jenkins-test-harness.version>
     <maven.compiler.release>17</maven.compiler.release>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
