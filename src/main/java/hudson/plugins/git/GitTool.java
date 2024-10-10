@@ -27,7 +27,7 @@ import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
 
 /**
@@ -153,7 +153,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         }
 
         @Override
-        public boolean configure(StaplerRequest req, JSONObject json) {
+        public boolean configure(StaplerRequest2 req, JSONObject json) {
             setInstallations(req.bindJSONToList(clazz, json.get("tool")).toArray(new GitTool[0]));
             save();
             return true;

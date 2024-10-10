@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.88</version>
+    <version>5.1</version>
     <relativePath />
   </parent>
 
@@ -53,7 +53,7 @@
   </scm>
 
   <properties>
-    <revision>6.0.1</revision>
+    <revision>6.1.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -62,10 +62,8 @@
     <jenkins.baseline>2.462</jenkins.baseline>
     <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
     <!-- <jenkins.version>${jenkins.baseline}.1</jenkins.version> -->
-    <jenkins.version>2.463</jenkins.version>
+    <jenkins.version>2.479</jenkins.version>
     <jgit.version>7.0.0.202409031743-r</jgit.version>
-    <!-- TODO JENKINS-73339 until in parent POM -->
-    <maven.compiler.release>17</maven.compiler.release>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
