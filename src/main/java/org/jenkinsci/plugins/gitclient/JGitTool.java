@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
+import java.io.Serial;
 import java.util.Collections;
 import java.util.List;
 import org.jenkinsci.Symbol;
@@ -15,6 +16,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * @author Kohsuke Kawaguchi
  */
 public class JGitTool extends GitTool {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

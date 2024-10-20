@@ -183,7 +183,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
+    @Serial
     private static final long serialVersionUID = 1;
+
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     static final String TIMEOUT_LOG_PREFIX = " # timeout=";

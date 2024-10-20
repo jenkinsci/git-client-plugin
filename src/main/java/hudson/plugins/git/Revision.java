@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.joining;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.eclipse.jgit.lib.ObjectId;
@@ -19,6 +20,7 @@ import org.kohsuke.stapler.export.ExportedBean;
  */
 @ExportedBean(defaultVisibility = 999)
 public class Revision implements java.io.Serializable, Cloneable {
+    @Serial
     private static final long serialVersionUID = -7203898556389073882L;
 
     ObjectId sha1;

@@ -8,6 +8,7 @@ import hudson.plugins.git.GitAPI;
 import hudson.remoting.VirtualChannel;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -177,6 +178,7 @@ public class Git implements Serializable {
     public static final boolean USE_CLI =
             Boolean.parseBoolean(System.getProperty(Git.class.getName() + ".useCLI", "true"));
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private class GitAPIMasterToSlaveFileCallable extends jenkins.MasterToSlaveFileCallable<GitClient> {
