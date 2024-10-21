@@ -1,10 +1,13 @@
 package hudson.plugins.git;
 
+import java.io.Serial;
+
 /**
  * Exception which reports failure to lock a git repository. Lock failures are
  * a special case and may indicate that a retry attempt might succeed.
  */
 public class GitLockFailedException extends GitException {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
