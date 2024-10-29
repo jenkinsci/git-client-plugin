@@ -113,7 +113,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     /** {@inheritDoc} */
     @Override
     @Deprecated
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+    public void fetch(RemoteConfig remoteRepository) throws GitException, InterruptedException {
         // Assume there is only 1 URL for simplicity
         fetch(remoteRepository.getURIs().get(0), remoteRepository.getFetchRefSpecs());
     }
@@ -217,6 +217,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public final List<IndexEntry> lsTree(String treeIsh) throws GitException, InterruptedException {
         return lsTree(treeIsh, false);

@@ -10,7 +10,6 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -109,11 +108,11 @@ public class GitClientSecurityTest {
 
     @Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() {
-        markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
+        markerFileName = markerFileName.formatted(CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
             /* insert markerFileName into test data */
-            String formattedPrefix = String.format(prefix, markerFileName);
+            String formattedPrefix = prefix.formatted(markerFileName);
 
             /* Random remote URL with prefix */
             String firstChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
@@ -155,7 +154,7 @@ public class GitClientSecurityTest {
     }
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)

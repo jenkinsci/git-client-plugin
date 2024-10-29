@@ -202,7 +202,7 @@ public abstract class GitAPITestUpdate {
             return repo.getAbsolutePath();
         }
 
-        GitAPITestUpdate.WorkingArea init() throws IOException, InterruptedException {
+        GitAPITestUpdate.WorkingArea init() throws GitException, IOException, InterruptedException {
             git.init();
             String userName = "root";
             String emailAddress = "root@mydomain.com";
@@ -213,7 +213,7 @@ public abstract class GitAPITestUpdate {
             return this;
         }
 
-        GitAPITestUpdate.WorkingArea init(boolean bare) throws IOException, InterruptedException {
+        GitAPITestUpdate.WorkingArea init(boolean bare) throws GitException, IOException, InterruptedException {
             git.init_().workspace(repoPath()).bare(bare).execute();
             return this;
         }
@@ -288,8 +288,8 @@ public abstract class GitAPITestUpdate {
          * JGit impl.
          */
         CliGitAPIImpl cgit() throws Exception {
-            if (git instanceof CliGitAPIImpl) {
-                return (CliGitAPIImpl) git;
+            if (git instanceof CliGitAPIImpl impl) {
+                return impl;
             }
             if (cachedCliGitAPIImpl != null) {
                 return cachedCliGitAPIImpl;
@@ -317,7 +317,7 @@ public abstract class GitAPITestUpdate {
         /**
          * Obtain the current HEAD revision
          */
-        ObjectId head() throws IOException, InterruptedException {
+        ObjectId head() throws GitException, IOException, InterruptedException {
             return git.revParse("HEAD");
         }
 
@@ -328,7 +328,8 @@ public abstract class GitAPITestUpdate {
             return (IGitAPI) git;
         }
 
-        void initializeWorkingArea(String userName, String userEmail) throws IOException, InterruptedException {
+        void initializeWorkingArea(String userName, String userEmail)
+                throws GitException, IOException, InterruptedException {
             CliGitCommand gitCmd = new CliGitCommand(git);
             gitCmd.initializeRepository(userName, userEmail);
         }
@@ -494,23 +495,24 @@ public abstract class GitAPITestUpdate {
     private void checkGetHeadRev(String remote, String branchSpec, ObjectId expectedObjectId) throws Exception {
         ObjectId actualObjectId = w.git.getHeadRev(remote, branchSpec);
         assertNotNull(
-                String.format(
-                        "Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'.",
-                        expectedObjectId, remote, branchSpec),
+                "Expected ObjectId is null expectedObjectId '%s', remote '%s', branchSpec '%s'."
+                        .formatted(expectedObjectId, remote, branchSpec),
                 expectedObjectId);
         assertNotNull(
-                String.format(
-                        "Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'.",
-                        expectedObjectId, remote, branchSpec),
+                "Actual ObjectId is null. expectedObjectId '%s', remote '%s', branchSpec '%s'."
+                        .formatted(expectedObjectId, remote, branchSpec),
                 actualObjectId);
         assertEquals(
-                String.format(
-                        "Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':\n"
-                                + "Actual %s,\nExpected %s\n",
-                        branchSpec,
-                        remote,
-                        StringUtils.join(getBranches(actualObjectId), ", "),
-                        StringUtils.join(getBranches(expectedObjectId), ", ")),
+                ("""
+                        Actual ObjectId differs from expected one for branchSpec '%s', remote '%s':
+                        Actual %s,
+                        Expected %s
+                        """)
+                        .formatted(
+                                branchSpec,
+                                remote,
+                                StringUtils.join(getBranches(actualObjectId), ", "),
+                                StringUtils.join(getBranches(expectedObjectId), ", ")),
                 expectedObjectId,
                 actualObjectId);
     }
@@ -1000,9 +1002,11 @@ public abstract class GitAPITestUpdate {
                 .execute();
         List<IndexEntry> r = w.git.getSubmodules("HEAD");
         assertEquals(
-                "[IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], "
-                        + "IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609], "
-                        + "IndexEntry[mode=160000,type=commit,file=modules/sshkeys,object=689c45ed57f0829735f9a2b16760c14236fe21d9]]",
+                """
+                [IndexEntry[mode=160000,type=commit,file=modules/firewall,object=978c8b223b33e203a5c766ecf79704a5ea9b35c8], \
+                IndexEntry[mode=160000,type=commit,file=modules/ntp,object=b62fabbc2bb37908c44ded233e0f4bf479e45609], \
+                IndexEntry[mode=160000,type=commit,file=modules/sshkeys,object=689c45ed57f0829735f9a2b16760c14236fe21d9]]\
+                """,
                 r.toString());
         w.git.submoduleInit();
         w.git.submoduleUpdate().execute();
@@ -1031,7 +1035,7 @@ public abstract class GitAPITestUpdate {
         boolean hasShallowSubmoduleSupport =
                 w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
 
-        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        String shallow = Path.of(".git", "modules", "submodule", "shallow").toString();
         assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
 
         int localSubmoduleCommits =
@@ -1059,7 +1063,7 @@ public abstract class GitAPITestUpdate {
         boolean hasShallowSubmoduleSupport =
                 w.git instanceof CliGitAPIImpl && w.cgit().isAtLeastVersion(1, 8, 4, 0);
 
-        String shallow = Paths.get(".git", "modules", "submodule", "shallow").toString();
+        String shallow = Path.of(".git", "modules", "submodule", "shallow").toString();
         assertEquals("shallow file existence: " + shallow, hasShallowSubmoduleSupport, w.exists(shallow));
 
         int localSubmoduleCommits =
@@ -1392,7 +1396,7 @@ public abstract class GitAPITestUpdate {
 
     @Deprecated
     @Test
-    public void testLsTreeNonRecursive() throws IOException, InterruptedException {
+    public void testLsTreeNonRecursive() throws Exception {
         w.init();
         w.touch("file1", "file1 fixed content");
         w.git.add("file1");
@@ -1409,7 +1413,7 @@ public abstract class GitAPITestUpdate {
 
     @Deprecated
     @Test
-    public void testLsTreeRecursive() throws IOException, InterruptedException {
+    public void testLsTreeRecursive() throws Exception {
         w.init();
         assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
         w.touch("dir1/file1", "dir1/file1 fixed content");
@@ -1479,7 +1483,7 @@ public abstract class GitAPITestUpdate {
         }
     }
 
-    private void checkHeadRev(String repoURL, ObjectId expectedId) throws InterruptedException {
+    private void checkHeadRev(String repoURL, ObjectId expectedId) throws Exception {
         final ObjectId originDefaultBranch = w.git.getHeadRev(repoURL, DEFAULT_MIRROR_BRANCH_NAME);
         assertEquals("origin default branch mismatch", expectedId, originDefaultBranch);
 
@@ -1595,7 +1599,7 @@ public abstract class GitAPITestUpdate {
      */
     @Deprecated
     @Test
-    public void testReset() throws IOException, InterruptedException {
+    public void testReset() throws Exception {
         w.init();
         /* No valid HEAD yet - nothing to reset, should give no error */
         w.igit().reset(false);
@@ -1704,7 +1708,7 @@ public abstract class GitAPITestUpdate {
     }
 
     private void checkBoundedChangelogSha1(final String sha1Begin, final String sha1End, final String branchName)
-            throws InterruptedException {
+            throws GitException, InterruptedException {
         StringWriter writer = new StringWriter();
         w.git.changelog(sha1Begin, sha1End, writer);
         String splitLog[] = writer.toString().split("[\\n\\r]", 3); // Extract first line of changelog
@@ -2062,9 +2066,9 @@ public abstract class GitAPITestUpdate {
         WorkingArea submoduleWorkingArea = new WorkingArea(submoduleDir).init();
 
         for (int commit = 1; commit <= 5; commit++) {
-            submoduleWorkingArea.touch("file", String.format("submodule content-%d", commit));
+            submoduleWorkingArea.touch("file", "submodule content-%d".formatted(commit));
             submoduleWorkingArea.cgit().add("file");
-            submoduleWorkingArea.cgit().commit(String.format("submodule commit-%d", commit));
+            submoduleWorkingArea.cgit().commit("submodule commit-%d".formatted(commit));
         }
 
         WorkingArea repositoryWorkingArea = new WorkingArea(repositoryDir).init();

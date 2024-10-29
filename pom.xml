@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.83</version>
+    <version>5.2</version>
     <relativePath />
   </parent>
 
@@ -37,11 +37,6 @@
       <url>http://rsandell.com</url>
     </developer>
     <developer>
-      <id>mramonleon</id>
-      <name>M Ramon Leon</name>
-      <email>rleon@cloudbees.com</email>
-    </developer>
-    <developer>
       <id>olamy</id>
       <name>Olivier Lamy</name>
       <email>olamy@apache.org</email>
@@ -58,14 +53,17 @@
   </scm>
 
   <properties>
-    <revision>5.0.1</revision>
+    <revision>6.1.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.version>2.440.3</jenkins.version>
-    <jgit.version>6.10.0.202406032230-r</jgit.version>
+    <jenkins.baseline>2.479</jenkins.baseline>
+    <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
+    <!-- <jenkins.version>${jenkins.baseline}.1</jenkins.version> -->
+    <jenkins.version>${jenkins.baseline}</jenkins.version>
+    <jgit.version>7.0.0.202409031743-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -75,8 +73,8 @@
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-2.440.x</artifactId>
-        <version>3135.v6d6c1f6b_3572</version>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
+        <version>3559.vb_5b_81183b_d23</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -216,7 +214,7 @@
     <dependency>
       <groupId>io.github.sparsick.testcontainers.gitserver</groupId>
       <artifactId>testcontainers-gitserver</artifactId>
-      <version>0.8.0</version>
+      <version>0.10.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -238,13 +236,13 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.16.1</version>
+      <version>3.17.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.1</version>
+      <version>4.2.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -274,7 +272,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.19.8</version>
+      <version>1.20.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

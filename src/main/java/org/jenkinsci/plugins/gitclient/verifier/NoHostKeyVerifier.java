@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import hudson.model.TaskListener;
+import java.io.Serial;
 import java.util.logging.Logger;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
@@ -23,6 +24,7 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
         /***
          * let's make spotbugs happy....
          */
+        @Serial
         private static final long serialVersionUID = 1L;
 
         public NoHostJGitKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {

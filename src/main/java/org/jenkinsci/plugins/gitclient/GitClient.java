@@ -130,7 +130,7 @@ public interface GitClient {
      * @throws java.io.IOException in case of IO error
      * @throws java.lang.InterruptedException if interrupted
      */
-    <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException;
+    <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException;
 
     /**
      * The working tree of this repository.
@@ -857,7 +857,7 @@ public interface GitClient {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand changelog();
+    ChangelogCommand changelog() throws GitException;
 
     /**
      * Appends to an existing git-note on the current HEAD commit.

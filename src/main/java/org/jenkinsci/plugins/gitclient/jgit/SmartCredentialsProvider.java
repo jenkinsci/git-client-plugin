@@ -156,26 +156,22 @@ public class SmartCredentialsProvider extends CredentialsProvider {
             return false;
         }
         for (CredentialItem i : credentialItems) {
-            if (i instanceof StandardUsernameCredentialsCredentialItem && c instanceof StandardUsernameCredentials) {
-                ((StandardUsernameCredentialsCredentialItem) i).setValue((StandardUsernameCredentials) c);
+            if (i instanceof StandardUsernameCredentialsCredentialItem item
+                    && c instanceof StandardUsernameCredentials credentials) {
+                item.setValue(credentials);
                 continue;
             }
-            if (i instanceof CredentialItem.Username && c instanceof UsernameCredentials) {
-                ((CredentialItem.Username) i).setValue(((UsernameCredentials) c).getUsername());
+            if (i instanceof CredentialItem.Username username && c instanceof UsernameCredentials credentials) {
+                username.setValue(credentials.getUsername());
                 continue;
             }
-            if (i instanceof CredentialItem.Password && c instanceof PasswordCredentials) {
-                ((CredentialItem.Password) i)
-                        .setValue(((PasswordCredentials) c)
-                                .getPassword()
-                                .getPlainText()
-                                .toCharArray());
+            if (i instanceof CredentialItem.Password password && c instanceof PasswordCredentials credentials) {
+                password.setValue(credentials.getPassword().getPlainText().toCharArray());
                 continue;
             }
-            if (i instanceof CredentialItem.StringType) {
-                if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials) {
-                    ((CredentialItem.StringType) i)
-                            .setValue(((PasswordCredentials) c).getPassword().getPlainText());
+            if (i instanceof CredentialItem.StringType t) {
+                if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials credentials) {
+                    t.setValue(credentials.getPassword().getPlainText());
                     continue;
                 }
             }

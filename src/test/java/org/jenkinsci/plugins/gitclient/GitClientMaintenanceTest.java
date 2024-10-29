@@ -14,7 +14,6 @@ import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -151,7 +150,7 @@ public class GitClientMaintenanceTest {
     private boolean looseObjectsSupported = true;
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         handler = new LogHandler();
         TaskListener listener = newListener(handler);
@@ -169,8 +168,7 @@ public class GitClientMaintenanceTest {
                 "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík",
                 "email.from.git.client.maintenance@example.com");
 
-        if (gitClient instanceof CliGitAPIImpl) {
-            CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        if (gitClient instanceof CliGitAPIImpl cliGitClient) {
             if (!cliGitClient.isAtLeastVersion(1, 8, 0, 0)) {
                 incrementalRepackSupported = false;
                 commitGraphSupported = false;
@@ -219,7 +217,7 @@ public class GitClientMaintenanceTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        final String content = String.format("A random maintenance UUID: %s\n", UUID.randomUUID());
+        final String content = "A random maintenance UUID: %s\n".formatted(UUID.randomUUID());
         return commitFile("One-Maintenance-File.txt", content, commitMessage);
     }
 
@@ -232,7 +230,7 @@ public class GitClientMaintenanceTest {
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -240,8 +238,6 @@ public class GitClientMaintenanceTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (IOException ex) {
-            throw new GitException(ex);
         }
     }
 

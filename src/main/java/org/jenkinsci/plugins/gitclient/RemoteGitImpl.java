@@ -18,6 +18,7 @@ import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
@@ -79,11 +80,11 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                 parameterTypes[i] = paramTypes[i].getName();
             }
             for (int i = 0; i < args.length; i++) {
-                if (args[i] instanceof OutputStream) {
-                    args[i] = new RemoteOutputStream((OutputStream) args[i]);
+                if (args[i] instanceof OutputStream stream) {
+                    args[i] = new RemoteOutputStream(stream);
                 }
-                if (args[i] instanceof Writer) {
-                    args[i] = new RemoteWriter((Writer) args[i]);
+                if (args[i] instanceof Writer writer) {
+                    args[i] = new RemoteWriter(writer);
                 }
             }
         }
@@ -107,6 +108,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                     "Method not found: " + methodName + "(" + String.join(",", parameterTypes) + ")");
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
     }
 
@@ -156,6 +158,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
             }
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
 
         private class GitCommandMasterToSlaveCallable
@@ -257,7 +260,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException {
+    public <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException {
         return proxy.withRepository(callable);
     }
 
@@ -386,13 +389,13 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws InterruptedException {
+    public ObjectId mergeBase(ObjectId sha1, ObjectId sha12) throws GitException, InterruptedException {
         return getGitAPI().mergeBase(sha1, sha12);
     }
 
     /** {@inheritDoc} */
     @Override
-    public String getAllLogEntries(String branch) throws InterruptedException {
+    public String getAllLogEntries(String branch) throws GitException, InterruptedException {
         return getGitAPI().getAllLogEntries(branch);
     }
 
@@ -945,7 +948,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
-    public void fetch(RemoteConfig remoteRepository) throws InterruptedException {
+    public void fetch(RemoteConfig remoteRepository) throws GitException, InterruptedException {
         getGitAPI().fetch(remoteRepository);
     }
 
@@ -1043,6 +1046,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
         proxy.setProxy(proxyConfiguration);
     }
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /** {@inheritDoc} */

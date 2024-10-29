@@ -147,7 +147,7 @@ public class PushTest {
     }
 
     @Before
-    public void createWorkingRepository() throws IOException, InterruptedException {
+    public void createWorkingRepository() throws Exception {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
         workingRepo = temporaryFolder.newFolder();
