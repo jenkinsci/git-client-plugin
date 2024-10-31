@@ -47,7 +47,7 @@ public class JGitLightweightTagTest {
     private File repoRootGitDir; // .git directory in temporary repository
 
     @Before
-    public void setGitClientEtc() throws IOException, InterruptedException {
+    public void setGitClientEtc() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)

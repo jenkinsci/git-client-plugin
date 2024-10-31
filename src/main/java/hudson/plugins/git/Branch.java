@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.io.Serial;
 import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
@@ -8,6 +9,7 @@ import org.eclipse.jgit.lib.Ref;
  * Represents a git branch.
  */
 public class Branch extends GitObject {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -39,7 +41,7 @@ public class Branch extends GitObject {
      */
     @Override
     public String toString() {
-        return String.format("Branch %s(%s)", name, getSHA1String());
+        return "Branch %s(%s)".formatted(name, getSHA1String());
     }
 
     /**

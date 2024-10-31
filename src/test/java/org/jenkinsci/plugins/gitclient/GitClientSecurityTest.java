@@ -10,7 +10,6 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -63,10 +62,6 @@ public class GitClientSecurityTest {
         this.enableRemoteCheckUrl = enableRemoteCheckUrl;
     }
 
-    /* Capabilities of command line git in current environment */
-    private static final boolean CLI_GIT_SUPPORTS_OPERAND_SEPARATOR;
-    private static final boolean CLI_GIT_SUPPORTS_SYMREF;
-
     static {
         CliGitAPIImpl tempGitClient;
         try {
@@ -76,13 +71,6 @@ public class GitClientSecurityTest {
                     .getClient();
         } catch (Exception e) {
             tempGitClient = null;
-        }
-        if (tempGitClient != null) {
-            CLI_GIT_SUPPORTS_OPERAND_SEPARATOR = tempGitClient.isAtLeastVersion(2, 8, 0, 0);
-            CLI_GIT_SUPPORTS_SYMREF = tempGitClient.isAtLeastVersion(2, 8, 0, 0);
-        } else {
-            CLI_GIT_SUPPORTS_OPERAND_SEPARATOR = false;
-            CLI_GIT_SUPPORTS_SYMREF = false;
         }
     }
 
@@ -100,23 +88,14 @@ public class GitClientSecurityTest {
      *
      * This function returns a randomly selected value to enable or
      * disable the repository URL check based on the contents of the
-     * attack string. If remote check is selected to be disabled and
-     * the command line git implementation does not have full support
-     * for the '--' separator between options and operands and the
+     * attack string. If remote check is selected to be disabled and the
      * attack is one of a known list of strings, then this function
      * will always return 'true' so that the remote checks will be
      * enabled.
-     *
-     * Returning 'false' in those cases on certain older command line
-     * git implementations (git 1.8.3 on CentOS 7, git 2.7.4 on Ubuntu
-     * 16) would cause the tested code to not throw an exception
-     * because those command line git versions do not fully support
-     * '--' to separate options and operands.
      */
     private static boolean enableRemoteCheck(String attack) {
         boolean enabled = CONFIG_RANDOM.nextBoolean();
         if (!enabled
-                && !CLI_GIT_SUPPORTS_OPERAND_SEPARATOR
                 && (attack.equals("-q")
                         || attack.equals("--quiet")
                         || attack.equals("-t")
@@ -129,11 +108,11 @@ public class GitClientSecurityTest {
 
     @Parameterized.Parameters(name = "{1},{0}")
     public static Collection testConfiguration() {
-        markerFileName = String.format(markerFileName, CONFIG_RANDOM.nextInt()); // Unique enough file name
+        markerFileName = markerFileName.formatted(CONFIG_RANDOM.nextInt()); // Unique enough file name
         List<Object[]> arguments = new ArrayList<>();
         for (String prefix : BAD_REMOTE_URL_PREFIXES) {
             /* insert markerFileName into test data */
-            String formattedPrefix = String.format(prefix, markerFileName);
+            String formattedPrefix = prefix.formatted(markerFileName);
 
             /* Random remote URL with prefix */
             String firstChar = CONFIG_RANDOM.nextBoolean() ? " " : "";
@@ -175,7 +154,7 @@ public class GitClientSecurityTest {
     }
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)
@@ -298,9 +277,6 @@ public class GitClientSecurityTest {
     @Test
     @Issue("SECURITY-1534")
     public void testGetRemoteSymbolicReferences_SECURITY_1534() {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         String expectedMessage = enableRemoteCheckUrl ? "Invalid remote URL: " + badRemoteUrl : badRemoteUrl.trim();
         GitException e = assertThrows(
                 GitException.class, () -> gitClient.getRemoteSymbolicReferences(badRemoteUrl, DEFAULT_BRANCH_NAME));

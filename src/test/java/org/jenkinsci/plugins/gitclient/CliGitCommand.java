@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.StreamTaskListener;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +33,7 @@ class CliGitCommand {
     private String[] output;
     private ArgumentListBuilder args;
 
-    CliGitCommand(GitClient client) {
+    CliGitCommand(GitClient client) throws GitException {
         listener = StreamTaskListener.NULL;
         launcher = new Launcher.LocalLauncher(listener);
         env = new EnvVars();
@@ -54,17 +55,18 @@ class CliGitCommand {
         args = null;
     }
 
-    CliGitCommand(GitClient client, String... arguments) {
+    CliGitCommand(GitClient client, String... arguments) throws GitException {
         this(client);
         args = new ArgumentListBuilder("git");
         args.add(arguments);
     }
 
-    void initializeRepository() throws IOException, InterruptedException {
+    void initializeRepository() throws GitException, IOException, InterruptedException {
         initializeRepository("git-client-user", "git-client-user@example.com");
     }
 
-    void initializeRepository(String userName, String userEmail) throws IOException, InterruptedException {
+    void initializeRepository(String userName, String userEmail)
+            throws GitException, IOException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", userName);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", userEmail);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
@@ -75,7 +77,7 @@ class CliGitCommand {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
     }
 
-    void removeRepositorySettings() throws IOException, InterruptedException {
+    void removeRepositorySettings() throws GitException, IOException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", null);

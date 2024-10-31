@@ -85,18 +85,17 @@ public class CredentialsProviderImpl extends CredentialsProvider {
         StandardUsernamePasswordCredentials _cred = (StandardUsernamePasswordCredentials) cred;
 
         for (CredentialItem i : items) {
-            if (i instanceof CredentialItem.Username) {
-                ((CredentialItem.Username) i).setValue(_cred.getUsername());
+            if (i instanceof CredentialItem.Username username) {
+                username.setValue(_cred.getUsername());
                 continue;
             }
-            if (i instanceof CredentialItem.Password) {
-                ((CredentialItem.Password) i)
-                        .setValue(_cred.getPassword().getPlainText().toCharArray());
+            if (i instanceof CredentialItem.Password password) {
+                password.setValue(_cred.getPassword().getPlainText().toCharArray());
                 continue;
             }
-            if (i instanceof CredentialItem.StringType) {
+            if (i instanceof CredentialItem.StringType type) {
                 if (i.getPromptText().equals("Password: ")) {
-                    ((CredentialItem.StringType) i).setValue(_cred.getPassword().getPlainText());
+                    type.setValue(_cred.getPassword().getPlainText());
                     continue;
                 }
             }

@@ -12,11 +12,6 @@ public class JGitApacheAPIImplTest extends GitAPITestUpdate {
     }
 
     @Override
-    protected boolean hasWorkingGetRemoteSymbolicReferences() {
-        return true; // JGit 5.10 gets remote symbolic references, prior did not
-    }
-
-    @Override
     protected boolean getTimeoutVisibleInCurrentTest() {
         return true; // git client plugin 3.11.0 supports JGit timeout
     }

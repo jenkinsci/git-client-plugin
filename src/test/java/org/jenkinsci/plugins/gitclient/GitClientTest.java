@@ -39,7 +39,6 @@ import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -110,11 +109,6 @@ public class GitClientTest {
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_HAS_GIT_LFS;
     private final boolean CLI_GIT_HAS_GIT_LFS_CONFIGURED;
-    private final boolean CLI_GIT_REPORTS_DETACHED_SHA1;
-    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_DEINIT;
-    private final boolean CLI_GIT_SUPPORTS_SUBMODULE_RENAME;
-    private final boolean CLI_GIT_SUPPORTS_SYMREF;
-    private final boolean CLI_GIT_SUPPORTS_REV_LIST_NO_WALK;
     private final boolean LFS_SUPPORTS_SPARSE_CHECKOUT;
 
     @Rule
@@ -122,7 +116,7 @@ public class GitClientTest {
 
     private File repoRoot = null;
 
-    public GitClientTest(final String gitImplName) throws IOException, InterruptedException {
+    public GitClientTest(final String gitImplName) throws Exception {
         this.gitImplName = gitImplName;
         this.srcGitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(srcRepoDir)
@@ -130,19 +124,14 @@ public class GitClientTest {
                 .getClient();
 
         CliGitAPIImpl cliGitClient;
-        if (this.srcGitClient instanceof CliGitAPIImpl) {
-            cliGitClient = (CliGitAPIImpl) this.srcGitClient;
+        if (this.srcGitClient instanceof CliGitAPIImpl impl) {
+            cliGitClient = impl;
         } else {
             cliGitClient = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
                     .in(srcRepoDir)
                     .using("git")
                     .getClient();
         }
-        CLI_GIT_REPORTS_DETACHED_SHA1 = true; // Included in CLI git 1.8.0 and later
-        CLI_GIT_SUPPORTS_SUBMODULE_DEINIT = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        CLI_GIT_SUPPORTS_SUBMODULE_RENAME = cliGitClient.isAtLeastVersion(1, 9, 0, 0);
-        CLI_GIT_SUPPORTS_SYMREF = cliGitClient.isAtLeastVersion(2, 8, 0, 0);
-        CLI_GIT_SUPPORTS_REV_LIST_NO_WALK = true; // Included in CLI git 1.8.0 and later
 
         boolean gitLFSExists;
         boolean gitSparseCheckoutWithLFS;
@@ -298,7 +287,7 @@ public class GitClientTest {
     }
 
     @Before
-    public void setGitClient() throws IOException, InterruptedException {
+    public void setGitClient() throws Exception {
         repoRoot = tempFolder.newFolder();
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)
@@ -324,8 +313,7 @@ public class GitClientTest {
      * not a threat to these tests.
      */
     private void allowFileProtocol(GitClient client) throws Exception {
-        if (client instanceof CliGitAPIImpl) {
-            CliGitAPIImpl cliGit = (CliGitAPIImpl) client;
+        if (client instanceof CliGitAPIImpl cliGit) {
             cliGit.allowFileProtocol();
         }
     }
@@ -337,7 +325,7 @@ public class GitClientTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        final String content = String.format("A random UUID: %s\n", UUID.randomUUID());
+        final String content = "A random UUID: %s\n".formatted(UUID.randomUUID());
         return commitFile("One-File.txt", content, commitMessage);
     }
 
@@ -350,7 +338,7 @@ public class GitClientTest {
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -358,8 +346,6 @@ public class GitClientTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (IOException ex) {
-            throw new GitException(ex);
         }
     }
 
@@ -400,18 +386,21 @@ public class GitClientTest {
     public void testChangelogVeryLong() throws Exception {
 
         final String gitMessage =
-                "Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut "
-                        + "posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate"
-                        + "sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer"
-                        + "massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis"
-                        + "aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex"
-                        + "eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam"
-                        + "sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus"
-                        + "felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia "
-                        + "nostra, per inceptos himenaeos."
-                        + "\nseis\n"
-                        + "\nasfasfasfasf\n";
-        final String content = String.format("A random UUID: %s\n", UUID.randomUUID());
+                """
+                Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut \
+                posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate\
+                sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer\
+                massa purus, scelerisque id iaculis ut, blandit vitae velit. Pellentesque lobortis\
+                aliquet felis, vel laoreet ipsum tincidunt at. Mauris tellus est, cursus vitae ex\
+                eget, venenatis auctor eros. Sed sagittis porta odio. Donec ut interdum massa. Aliquam\
+                sagittis, mi sit amet sollicitudin elementum, velit quam eleifend nisl, in rhoncus\
+                felis nibh eu nibh. Class aptent taciti sociosqu ad litora torquent per conubia \
+                nostra, per inceptos himenaeos.
+                seis
+
+                asfasfasfasf
+                """;
+        final String content = "A random UUID: %s\n".formatted(UUID.randomUUID());
         ObjectId message = commitFile("One-File.txt", content, gitMessage);
 
         ChangelogCommand changelog = gitClient.changelog();
@@ -603,7 +592,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testGetRepository() {
+    public void testGetRepository() throws Exception {
         File expectedRepo = new File(repoRoot, ".git");
         assertEquals(expectedRepo, gitClient.getRepository().getDirectory());
     }
@@ -799,7 +788,7 @@ public class GitClientTest {
                 actual.contains(expectedSubstring));
     }
 
-    private IGitAPI IGitAPIForTrueBareRepositoryTests() throws IOException, InterruptedException {
+    private IGitAPI IGitAPIForTrueBareRepositoryTests() throws Exception {
         // provides iGitAPI with bare repository initialization
         File repoRootTemp = tempFolder.newFolder();
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
@@ -816,14 +805,14 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareDot() throws InterruptedException, IOException {
+    public void testIsBareRepositoryBareDot() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue(". is not a bare repository", gitAPI.isBareRepository("."));
     }
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryWorkingDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingDotGit() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -835,7 +824,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareDotGit() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         /* Bare repository does not have a .git directory.  This is
          * another no-such-location test but is included here for
@@ -859,7 +848,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryWorkingNoSuchLocation() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNoSuchLocation() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -879,7 +868,7 @@ public class GitClientTest {
 
     @Test
     @Deprecated
-    public void testIsBareRepositoryBareNoSuchLocation() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNoSuchLocation() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         try {
             assertTrue("non-existent location is in a bare repository", gitAPI.isBareRepository("no-such-location"));
@@ -894,14 +883,14 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareEmptyString() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareEmptyString() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("empty string is not a bare repository", gitAPI.isBareRepository(""));
     }
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingEmptyString() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingEmptyString() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -913,14 +902,14 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareNoArg() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNoArg() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         assertTrue("no arg is not a bare repository", gitAPI.isBareRepository());
     }
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingNoArg() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNoArg() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -931,7 +920,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testBareRepoInit() throws IOException, InterruptedException {
+    public void testBareRepoInit() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
         File gitFile = new File(tempDir, ".git");
@@ -950,7 +939,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingRepoPathDotGit() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingRepoPathDotGit() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -964,7 +953,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryWorkingNull() throws IOException, InterruptedException {
+    public void testIsBareRepositoryWorkingNull() throws Exception {
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).bare(true).execute();
         IGitAPI gitAPI = (IGitAPI) gitClient;
         FilePath gitClientFilePath = gitClient.getWorkTree();
@@ -981,7 +970,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void testIsBareRepositoryBareNull() throws IOException, InterruptedException {
+    public void testIsBareRepositoryBareNull() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         try {
             assertTrue("null is not a bare repository", gitAPI.isBareRepository(null));
@@ -993,7 +982,7 @@ public class GitClientTest {
 
     @Deprecated
     @Test
-    public void test_isBareRepository_bare_repoPath() throws IOException, InterruptedException {
+    public void test_isBareRepository_bare_repoPath() throws Exception {
         IGitAPI gitAPI = IGitAPIForTrueBareRepositoryTests();
         File tempRepoDir = gitAPI.withRepository((repo, channel) -> repo.getWorkTree());
         File dotFile = new File(tempRepoDir, ".");
@@ -1096,7 +1085,7 @@ public class GitClientTest {
         assertThat(refNames, contains("refs/heads/" + defaultBranchName));
     }
 
-    private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws IOException, InterruptedException {
+    private static FilePath getClientTmpFilePath(GitClient gitClientTemp) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(gitClientTemp);
         gitCmd.initializeRepository("Vojtěch GitClientTest temp Zweibrücken-Šafařík", "email.by.client@example.com");
         FilePath gitClientFilePath = gitClientTemp.getWorkTree();
@@ -1157,13 +1146,9 @@ public class GitClientTest {
     private void assertDetachedHead(GitClient client, ObjectId ref) throws Exception {
         CliGitCommand gitCmd = new CliGitCommand(client);
         gitCmd.run("status");
-        if (CLI_GIT_REPORTS_DETACHED_SHA1) {
-            gitCmd.assertOutputContains(
-                    ".*(Not currently on any branch|HEAD detached).*",
-                    ".*" + ref.getName().substring(0, 6) + ".*");
-        } else {
-            gitCmd.assertOutputContains(".*Not currently on any branch.*");
-        }
+        gitCmd.assertOutputContains(
+                ".*(Not currently on any branch|HEAD detached).*",
+                ".*" + ref.getName().substring(0, 6) + ".*");
     }
 
     private void assertBranch(GitClient client, String branchName) throws Exception {
@@ -1792,9 +1777,12 @@ public class GitClientTest {
         File uuidFile = new File(repoRoot, "uuid.txt");
         String fileContent =
                 Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
-        String expectedContent = "version https://git-lfs.github.com/spec/v1\n"
-                + "oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e\n"
-                + "size 33";
+        String expectedContent =
+                """
+                version https://git-lfs.github.com/spec/v1
+                oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e
+                size 33\
+                """;
         assertEquals("Incorrect non-LFS file contents in " + uuidFile, expectedContent, fileContent);
     }
 
@@ -1978,9 +1966,6 @@ public class GitClientTest {
 
     @Test
     public void testRevListNoWalk() throws Exception {
-        if (!CLI_GIT_SUPPORTS_REV_LIST_NO_WALK) {
-            return;
-        }
         ObjectId commitA = commitOneFile();
         List<ObjectId> resultA = new ArrayList<>();
         gitClient.revList_().to(resultA).reference(commitA.name()).nowalk(true).execute();
@@ -2108,7 +2093,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleUpdateRecursiveRenameModule() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+        if (!gitImplName.equals("git") || isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2131,7 +2116,7 @@ public class GitClientTest {
     @Test
     public void testSubmoduleRenameModuleUpdateRecursive() throws Exception {
         // JGit implementation doesn't handle renamed submodules
-        if (!gitImplName.equals("git") || !CLI_GIT_SUPPORTS_SUBMODULE_RENAME || isWindows()) {
+        if (!gitImplName.equals("git") || isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2337,7 +2322,7 @@ public class GitClientTest {
     @Issue("JENKINS-37419") // Git plugin checking out non-existent submodule from different branch
     @Test
     public void testOutdatedSubmodulesNotRemoved() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SUBMODULE_DEINIT || isWindows()) {
+        if (isWindows()) {
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
@@ -2469,14 +2454,14 @@ public class GitClientTest {
      * than 256 characters and that the checkout operation will
      * attempt to create a directory path greater than 256 characters.
      */
-    private void enableLongPaths(GitClient gitClient) throws InterruptedException {
+    private void enableLongPaths(GitClient gitClient) throws Exception {
         CliGitAPIImpl cliGitClient;
-        if (gitClient instanceof CliGitAPIImpl && isWindows()) {
+        if (gitClient instanceof CliGitAPIImpl impl && isWindows()) {
             /* Enable core.longpaths prior to fetch on Windows -
              * testSubmodulesUsedFromOtherBranches submodule test will
              * fail with default Windows location otherwise
              */
-            cliGitClient = (CliGitAPIImpl) gitClient;
+            cliGitClient = impl;
             cliGitClient.launchCommand("config", "core.longpaths", "true");
         }
     }
@@ -2581,7 +2566,7 @@ public class GitClientTest {
         gitCmd.initializeRepository("Vojtěch GitClientTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
         File readme = new File(urlRepoDir, "readme");
         String readmeText = "This repo includes .url in its directory name (" + random.nextInt() + ")";
-        Files.write(Paths.get(readme.getAbsolutePath()), readmeText.getBytes());
+        Files.write(Path.of(readme.getAbsolutePath()), readmeText.getBytes());
         urlRepoClient.add("readme");
         urlRepoClient.commit("Added README to repo used as a submodule");
         /* Enable long paths to prevent checkout failure on default Windows workspace with MSI installer */
@@ -2604,7 +2589,7 @@ public class GitClientTest {
         File hasSubmoduleReadme = new File(repoHasSubmodule, "readme");
         String hasSubmoduleReadmeText =
                 "Repo has a submodule that includes .url in its directory name (" + random.nextInt() + ")";
-        Files.write(Paths.get(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
+        Files.write(Path.of(hasSubmoduleReadme.getAbsolutePath()), hasSubmoduleReadmeText.getBytes());
         repoHasSubmoduleClient.add("readme");
         repoHasSubmoduleClient.commit("Added README to repo that will include a submodule whose URL ends in '.url'");
         String moduleDirBaseName = "module.named.url";
@@ -2847,19 +2832,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testgetRemoteSymbolicReferences_from_empty_repo() throws Exception {
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
     public void testgetRemoteSymbolicReferences_null() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
@@ -2868,22 +2841,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_null_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
-        commitOneFile("A-Single-File-Commit");
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
-    public void testgetRemoteSymbolicReferences_null_old_git_use_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), null),
@@ -2902,9 +2859,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_with_matching_pattern() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
@@ -2912,23 +2866,7 @@ public class GitClientTest {
     }
 
     @Test
-    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
-        commitOneFile("A-Single-File-Commit");
-        assertThat(
-                gitClient
-                        .getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD)
-                        .keySet(),
-                hasSize(0));
-    }
-
-    @Test
-    public void testgetRemoteSymbolicReferences_with_matching_pattern_old_git_with_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
+    public void testgetRemoteSymbolicReferences_with_matching_pattern_old() throws Exception {
         commitOneFile("A-Single-File-Commit");
         assertThat(
                 gitClient.getRemoteSymbolicReferences(repoRoot.getAbsolutePath(), Constants.HEAD),
@@ -2937,9 +2875,6 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_with_non_default_HEAD() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            return;
-        }
         commitOneFile("A-Single-File-Commit");
 
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
@@ -2961,15 +2896,12 @@ public class GitClientTest {
 
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax() throws Exception {
-        if (!CLI_GIT_SUPPORTS_SYMREF) {
-            throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax");
-        }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
     }
 
     @Test(expected = GitException.class)
     public void testgetRemoteSymbolicReferences_URI_Syntax_old_jgit() throws Exception {
-        if (gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
+        if (gitImplName.equals("git")) {
             throw new GitException("Skipping JGit tests in testgetRemoteSymbolicReferences_URI_Syntax_old_jgit");
         }
         gitClient.getRemoteSymbolicReferences("error: invalid repo URL", Constants.HEAD);
@@ -2977,7 +2909,7 @@ public class GitClientTest {
 
     @Test
     public void testgetRemoteSymbolicReferences_URI_Syntax_old_git() throws Exception {
-        if (!gitImplName.equals("git") || CLI_GIT_SUPPORTS_SYMREF) {
+        if (!gitImplName.equals("git")) {
             return;
         }
         assertThat(
@@ -3392,10 +3324,11 @@ public class GitClientTest {
     }
 
     @Test
-    public void test_git_branch_with_line_breaks_and_long_strings() {
+    public void test_git_branch_with_line_breaks_and_long_strings() throws Exception {
         if (!gitImplName.equals("git")) {
             return;
         }
+        // Embedded \r (carriage return) must be retained in the gitBranchOutput
         String gitBranchOutput =
                 "* (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters\n"
                         + "  remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text\n"

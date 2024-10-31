@@ -30,7 +30,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryPermission;
 import java.nio.file.attribute.AclEntryType;
@@ -184,7 +183,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
+    @Serial
     private static final long serialVersionUID = 1;
+
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     static final String TIMEOUT_LOG_PREFIX = " # timeout=";
@@ -471,7 +472,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * custom pack programs. Reject a URL if it includes invalid
      * content.
      */
-    private void addCheckedRemoteUrl(@NonNull ArgumentListBuilder args, @NonNull String url) {
+    private void addCheckedRemoteUrl(@NonNull ArgumentListBuilder args, @NonNull String url) throws GitException {
         String trimmedUrl = url.trim();
         /* Don't check for invalid args if URL starts with known good cases.
          * Known good cases include:
@@ -540,6 +541,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public FetchCommand prune() {
                 return prune(true);
@@ -644,12 +646,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(String remoteName, RefSpec... refspec) throws GitException, InterruptedException {
         listener.getLogger().println("Fetching upstream changes" + (remoteName != null ? " from " + remoteName : ""));
@@ -686,6 +690,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public void fetch(String remoteName, RefSpec refspec) throws GitException, InterruptedException {
         fetch(remoteName, new RefSpec[] {refspec});
@@ -740,6 +745,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shared() {
                 return shared(true);
@@ -751,6 +757,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shallow() {
                 return shallow(true);
@@ -762,6 +769,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand noCheckout() {
                 // this.noCheckout = true; Since the "clone" command has been replaced with init + fetch, the
@@ -1242,7 +1250,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @SuppressFBWarnings(
             value = "RV_DONT_JUST_NULL_CHECK_READLINE",
             justification = "Only needs first line, exception if multiple detected")
-    private @CheckForNull String firstLine(String result) {
+    private @CheckForNull String firstLine(String result) throws GitException {
         BufferedReader reader = new BufferedReader(new StringReader(result));
         String line;
         try {
@@ -1532,10 +1540,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if (isAtLeastVersion(1, 8, 4, 0)) {
                         args.add("--depth=" + depth);
-                    } else {
-                        listener.getLogger()
-                                .println(
-                                        "[WARNING] Git client older than 1.8.4 doesn't support shallow submodule updates. This flag is ignored.");
                     }
                 }
 
@@ -1863,7 +1867,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /**
      * Returns true if this repository is configured as a shallow clone.
-     * Shallow clone requires command line git 1.9 or later.
      * @return true if this repository is configured as a shallow clone
      */
     public boolean isShallowRepository() {
@@ -2095,7 +2098,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return createTempFileInSystemDir(prefix, suffix);
             }
         }
-        Path tmpPath = Paths.get(workspaceTmp.getAbsolutePath());
+        Path tmpPath = Path.of(workspaceTmp.getAbsolutePath());
         if (workspaceTmp.getAbsolutePath().contains("%")) {
             // Avoid ssh token expansion on all platforms
             return createTempFileInSystemDir(prefix, suffix);
@@ -2217,8 +2220,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         try {
-            if (credentials instanceof SSHUserPrivateKey) {
-                SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
+            if (credentials instanceof SSHUserPrivateKey sshUser) {
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
 
                 key = createSshKeyFile(sshUser);
@@ -2249,8 +2251,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     env.put("DISPLAY", ":");
                 }
 
-            } else if (credentials instanceof StandardUsernamePasswordCredentials) {
-                StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
+            } else if (credentials instanceof StandardUsernamePasswordCredentials userPass) {
                 listener.getLogger().println("using GIT_ASKPASS to set credentials " + userPass.getDescription());
 
                 usernameFile = createUsernameFile(userPass);
@@ -2281,7 +2282,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         String userInfo = null;
                         if (StringUtils.isNotEmpty(proxy.getUserName())) {
                             userInfo = proxy.getUserName();
-                            if (StringUtils.isNotEmpty(proxy.getPassword())) {
+                            if (!Secret.toString(proxy.getSecretPassword()).isEmpty()) {
                                 userInfo += ":" + proxy.getSecretPassword();
                             }
                         }
@@ -2326,7 +2327,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         // "untrusted" key files.
         // Check that tools exist and then if SELinux subsystem is activated
         // Otherwise calling the tools just pollutes build log with errors
-        if (Files.isExecutable(Paths.get("/usr/bin/chcon"))) {
+        if (Files.isExecutable(Path.of("/usr/bin/chcon"))) {
             // SELinux may actually forbid us to read system paths, so
             // there are a couple of ways to try checking if it is enabled
             // (whether this run needs to worry about security labels) and
@@ -2341,10 +2342,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             try {
                 // A process should always have rights to inspect itself, but
                 // on some systems even this read returns "Invalid argument"
-                if (Files.isRegularFile(Paths.get("/proc/self/attr/current"))) {
+                if (Files.isRegularFile(Path.of("/proc/self/attr/current"))) {
                     String s;
                     try (BufferedReader br =
-                            Files.newBufferedReader(Paths.get("/proc/self/attr/current"), StandardCharsets.UTF_8)) {
+                            Files.newBufferedReader(Path.of("/proc/self/attr/current"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
                     }
                     if ("unconfined".equals(s)) {
@@ -2363,16 +2364,16 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             try {
-                if (!Files.isDirectory(Paths.get("/sys/fs/selinux"))) {
+                if (!Files.isDirectory(Path.of("/sys/fs/selinux"))) {
                     // Assuming that lack of rights to read this is an
                     // exception caught below, not a false return here?
                     return true;
                 }
 
-                if (Files.isRegularFile(Paths.get("/sys/fs/selinux/enforce"))) {
+                if (Files.isRegularFile(Path.of("/sys/fs/selinux/enforce"))) {
                     String s;
                     try (BufferedReader br =
-                            Files.newBufferedReader(Paths.get("/sys/fs/selinux/enforce"), StandardCharsets.UTF_8)) {
+                            Files.newBufferedReader(Path.of("/sys/fs/selinux/enforce"), StandardCharsets.UTF_8)) {
                         s = br.readLine();
                     }
                     if ("0".equals(s)) {
@@ -2411,10 +2412,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (!clue_sysfs && !clue_proc) { // && !clue_ls
                 listener.getLogger()
-                        .println("[INFO] SELinux is present on the host "
-                                + "and we could not confirm that it does not apply actively: "
-                                + "will try to relabel temporary files now; this may complain "
-                                + "if context labeling not applicable after all");
+                        .println(
+                                """
+                                [INFO] SELinux is present on the host \
+                                and we could not confirm that it does not apply actively: \
+                                will try to relabel temporary files now; this may complain \
+                                if context labeling not applicable after all\
+                                """);
             }
 
             ArgumentListBuilder args = new ArgumentListBuilder();
@@ -2474,7 +2478,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Path createSshKeyFile(SSHUserPrivateKey sshUser) throws IOException {
+    private Path createSshKeyFile(SSHUserPrivateKey sshUser) throws GitException, IOException {
         Path key = createTempFile("ssh", ".key");
         try (BufferedWriter w = Files.newBufferedWriter(key, Charset.forName(encoding))) {
             List<String> privateKeys = sshUser.getPrivateKeys();
@@ -2840,7 +2844,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private Path createNonBusyExecutable(Path p) throws IOException {
         p.toFile().setExecutable(true, true);
-        Path p_copy = Paths.get(p.toString() + "-copy");
+        Path p_copy = Path.of(p.toString() + "-copy");
 
         // JENKINS-48258 git client plugin occasionally fails with "text file busy" error
         // The following creates a copy of the generated file and deletes the original
@@ -3011,6 +3015,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public PushCommand force() {
                 return force(true);
@@ -3054,10 +3059,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add("--tags");
                 }
 
-                if (!isAtLeastVersion(1, 9, 0, 0) && isShallowRepository()) {
-                    throw new GitException("Can't push from shallow repository using git client older than 1.9.0");
-                }
-
                 StandardCredentials cred = credentials.get(remote.toPrivateString());
                 if (cred == null) {
                     cred = defaultCredentials;
@@ -3082,7 +3083,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param fos output of "git branch -v --no-abbrev"
      * @return a {@link java.util.Set} object.
      */
-    /*package*/ Set<Branch> parseBranches(String fos) {
+    /*package*/ Set<Branch> parseBranches(String fos) throws GitException {
         // JENKINS-34309 if the commit message contains line breaks,
         // "git branch -v --no-abbrev" output will include CR (Carriage Return) characters.
         // Replace all CR characters to avoid interpreting them as line endings
@@ -3139,10 +3140,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public Set<Branch> getRemoteBranches() throws GitException, InterruptedException {
         try (Repository db = getRepository()) {
-            Map<String, Ref> refs = db.getAllRefs();
+            List<Ref> refs;
+            try {
+                refs = db.getRefDatabase().getRefs();
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
             Set<Branch> branches = new HashSet<>();
 
-            for (Ref candidate : refs.values()) {
+            for (Ref candidate : refs) {
                 if (candidate.getName().startsWith(Constants.R_REMOTES)) {
                     Branch buildBranch = new Branch(candidate);
                     if (!GitClient.quietRemoteBranches) {
@@ -3492,6 +3498,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private List<ObjectId> out;
 
+            @Deprecated
             @Override
             public RevListCommand all() {
                 return all(true);
@@ -3512,6 +3519,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public RevListCommand firstParent() {
                 return firstParent(true);
@@ -3604,7 +3612,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
-    public boolean isCommitInRepo(ObjectId commit) throws InterruptedException {
+    public boolean isCommitInRepo(ObjectId commit) throws GitException, InterruptedException {
         if (commit == null) {
             return false;
         }
@@ -3713,6 +3721,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @NonNull
+    @Deprecated
     @Override
     public Repository getRepository() throws GitException {
         try {
@@ -4041,7 +4050,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws InterruptedException {
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws GitException, InterruptedException {
         try {
             String result;
             try {
@@ -4057,7 +4066,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // Add the SHA1
                 return ObjectId.fromString(line);
             }
-        } catch (IOException | GitException e) {
+        } catch (IOException e) {
             throw new GitException("Error parsing merge base", e);
         }
 
@@ -4067,7 +4076,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public String getAllLogEntries(String branch) throws InterruptedException {
+    public String getAllLogEntries(String branch) throws GitException, InterruptedException {
         // BROKEN: --all and branch are conflicting.
         return launchCommand("log", "--all", "--pretty=format:'%H#%ct'", branch);
     }

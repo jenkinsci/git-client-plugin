@@ -21,7 +21,6 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -284,42 +283,18 @@ public class GitClientFetchTest {
                 .getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
         assertThat("bare5 != working5", bareCommit5, is(commit5));
 
-        /* Fetch into newArea repo with null RefSpec - should only
-         * pull tags, not commits in git versions prior to git 1.9.0.
-         * In git 1.9.0, fetch -t pulls tags and versions. */
+        /* Fetch into newArea repo with null RefSpec. */
         newAreaWorkspace.getGitClient().fetch("origin", null, null);
         assertThat(
                 "null refSpec fetch modified local repo",
                 newAreaWorkspace.getGitClient().revParse("HEAD"),
                 is(bareCommit4));
-        ObjectId expectedHead = bareCommit4;
-        if (gitImplName.startsWith("jgit") || workspace.cgit().isAtLeastVersion(1, 9, 0, 0)) {
-            newAreaWorkspace
-                    .getGitClient()
-                    .merge()
-                    .setRevisionToMerge(bareCommit5)
-                    .execute();
-            expectedHead = bareCommit5;
-        } else {
-            GitException gitException = assertThrows(GitException.class, () -> newAreaWorkspace
-                    .getGitClient()
-                    .merge()
-                    .setRevisionToMerge(bareCommit5)
-                    .execute());
-            assertThat(
-                    gitException.getMessage(),
-                    anyOf(
-                            containsString("Could not merge"),
-                            containsString("not something we can merge"),
-                            containsString("does not point to a commit")));
-        }
-        /* Assert that expected change is in repo after merge.  With
-         * git 1.7 and 1.8, it should be bareCommit4.  With git 1.9
-         * and later, it should be bareCommit5. */
+        ObjectId expectedHead = bareCommit5;
+        newAreaWorkspace.getGitClient().merge().setRevisionToMerge(bareCommit5).execute();
         assertThat(
                 "null refSpec fetch modified local repo",
                 newAreaWorkspace.getGitClient().revParse("HEAD"),
-                is(expectedHead));
+                is(bareCommit5));
     }
 
     @Test
@@ -647,7 +622,7 @@ public class GitClientFetchTest {
     }
 
     private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName)
-            throws InterruptedException, IOException {
+            throws Exception {
         assertThat("Wrong remote URL", gitClient.getRemoteUrl(repositoryName), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
         assertThat("remote URL has not been updated", remotes.contains(workspace.localMirror()), is(true));

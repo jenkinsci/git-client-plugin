@@ -56,7 +56,7 @@ public class GitCommandsExecutor {
     }
 
     private <T> void invokeAll(ExecutorService executorService, Collection<Callable<T>> commands)
-            throws InterruptedException {
+            throws GitException, InterruptedException {
         CompletionService<T> completionService = new ExecutorCompletionService<>(executorService);
         Iterator<Callable<T>> remainingCommands = commands.iterator();
         int nCommands = commands.size();
@@ -78,7 +78,7 @@ public class GitCommandsExecutor {
         }
     }
 
-    private <T> void checkResult(Future<T> result) throws InterruptedException {
+    private <T> void checkResult(Future<T> result) throws GitException, InterruptedException {
         try {
             result.get();
         } catch (ExecutionException e) {

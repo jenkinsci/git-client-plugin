@@ -10,13 +10,11 @@ import hudson.plugins.git.Tag;
 import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -71,7 +69,7 @@ public class LegacyCompatibleGitAPIImplTest {
     }
 
     @Before
-    public void setUp() throws IOException, InterruptedException {
+    public void setUp() throws Exception {
         repo = tempFolder.newFolder();
         assertNotGitRepo(repo);
         git = (LegacyCompatibleGitAPIImpl)
@@ -103,8 +101,7 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testCloneRemoteConfig()
-            throws URISyntaxException, InterruptedException, IOException, ConfigInvalidException {
+    public void testCloneRemoteConfig() throws Exception {
         if (gitImpl.equals("jgit")) {
             return;
         }
@@ -125,14 +122,14 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_ignored_arg() {
+    public void testHasGitModules_default_ignored_arg() throws Exception {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules("ignored treeIsh argument 1"));
     }
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_no_arg() {
+    public void testHasGitModules_default_no_arg() throws Exception {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules());
     }

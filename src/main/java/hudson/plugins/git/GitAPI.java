@@ -28,7 +28,9 @@ import org.jenkinsci.plugins.gitclient.GitClient;
  */
 @Deprecated
 public class GitAPI extends CliGitAPIImpl {
+    @Serial
     private static final long serialVersionUID = 1L;
+
     private final GitClient jgit;
 
     /**

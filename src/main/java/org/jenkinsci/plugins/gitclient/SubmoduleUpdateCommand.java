@@ -16,11 +16,11 @@ public interface SubmoduleUpdateCommand extends GitCommand {
     /**
      * If set true and if the git version supports it, update the
      * submodules to the tip of the branch rather than to a specific
-     * SHA1.  Refer to git documentation for details.  First available
-     * in command line git 1.8.2.  Default is to update to a specific
-     * SHA1 (compatible with previous versions of git)
+     * SHA1.  Refer to git documentation for details.  Default is to
+     * update to a specific SHA1 (compatible with previous versions of
+     * git)
      *
-     * @param remoteTracking if true, will update the submodule to the tip of the branch requested (requires git&gt;=1.8.2)
+     * @param remoteTracking if true, will update the submodule to the tip of the branch requested
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand remoteTracking(boolean remoteTracking);
@@ -63,7 +63,7 @@ public interface SubmoduleUpdateCommand extends GitCommand {
      * Only clone the most recent history, not preceding history.  Depth of the
      * shallow clone is controlled by the #depth method.
      *
-     * @param shallow boolean controlling whether the clone is shallow (requires git&gt;=1.8.4)
+     * @param shallow boolean controlling whether the clone is shallow
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand shallow(boolean shallow);
@@ -72,7 +72,7 @@ public interface SubmoduleUpdateCommand extends GitCommand {
      * When shallow cloning, allow for a depth to be set in cases where you need more than the immediate last commit.
      * Has no effect if shallow is set to false (default).
      *
-     * @param depth number of revisions to be included in shallow clone (requires git&gt;=1.8.4)
+     * @param depth number of revisions to be included in shallow clone
      * @return a {@link org.jenkinsci.plugins.gitclient.SubmoduleUpdateCommand} object.
      */
     SubmoduleUpdateCommand depth(Integer depth);

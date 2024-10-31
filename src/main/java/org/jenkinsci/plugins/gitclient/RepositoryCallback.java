@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import hudson.FilePath.FileCallable;
+import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import java.io.IOException;
 import java.io.Serializable;
@@ -31,5 +32,5 @@ public interface RepositoryCallback<T> extends Serializable {
      * @throws java.io.IOException if any IO failure
      * @throws java.lang.InterruptedException if interrupted.
      */
-    T invoke(Repository repo, VirtualChannel channel) throws IOException, InterruptedException;
+    T invoke(Repository repo, VirtualChannel channel) throws GitException, IOException, InterruptedException;
 }

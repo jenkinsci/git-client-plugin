@@ -1,11 +1,14 @@
 package hudson.plugins.git;
 
+import java.io.Serial;
+
 /**
  * Records exception information related to git operations. This exception is
  * used to encapsulate command line git errors, JGit errors, and other errors
  * related to git operations.
  */
 public class GitException extends RuntimeException {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

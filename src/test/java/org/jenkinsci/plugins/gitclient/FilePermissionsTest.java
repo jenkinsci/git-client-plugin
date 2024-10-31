@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -49,7 +48,7 @@ public class FilePermissionsTest {
     private static File repo;
 
     @BeforeClass
-    public static void createTestRepo() throws IOException, InterruptedException, ConfigInvalidException {
+    public static void createTestRepo() throws Exception {
         if (isWindows()) {
             return;
         }
@@ -88,7 +87,7 @@ public class FilePermissionsTest {
     }
 
     @AfterClass
-    public static void verifyTestRepo() throws IOException, InterruptedException {
+    public static void verifyTestRepo() throws Exception {
         if (isWindows()) {
             return;
         }
@@ -109,7 +108,7 @@ public class FilePermissionsTest {
         }
     }
 
-    private static File cloneTestRepo(File repo) throws IOException, InterruptedException {
+    private static File cloneTestRepo(File repo) throws Exception {
         File newRepo = Files.createTempDirectory(null).toFile();
         GitClient git = Git.with(listener, new hudson.EnvVars())
                 .in(newRepo)
@@ -122,7 +121,7 @@ public class FilePermissionsTest {
     }
 
     private static void verifyFile(File repo, int staticPerm) throws IOException {
-        String fileName = String.format("git-%03o.txt", staticPerm);
+        String fileName = "git-%03o.txt".formatted(staticPerm);
         File file = new File(repo, fileName);
         assertTrue("Missing " + file.getAbsolutePath(), file.exists());
         String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
@@ -168,7 +167,7 @@ public class FilePermissionsTest {
     }
 
     private String getFileName() {
-        return String.format("git-%03o.txt", permission);
+        return "git-%03o.txt".formatted(permission);
     }
 
     private void addFile() throws IOException, GitException, InterruptedException {
@@ -185,7 +184,7 @@ public class FilePermissionsTest {
         Path path = FileSystems.getDefault().getPath(added.getPath());
         assertEquals(path, Files.setPosixFilePermissions(path, filePerms(permission)));
         git.add(fileName);
-        git.commit(String.format("Perms %03o %s", permission, fileName));
+        git.commit("Perms %03o %s".formatted(permission, fileName));
     }
 
     private void modifyFile() throws IOException, GitException, InterruptedException {

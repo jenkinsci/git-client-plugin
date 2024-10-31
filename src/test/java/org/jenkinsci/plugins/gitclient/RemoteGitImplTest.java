@@ -87,7 +87,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testAddCredentials() {
+    public void testAddCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String url = "https://github.com/jenkinsci/git-client-plugin";
@@ -99,7 +99,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetCredentials() {
+    public void testSetCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String username = "user";
@@ -110,7 +110,7 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testAddDefaultCredentials() {
+    public void testAddDefaultCredentials() throws Exception {
         CredentialsScope scope = CredentialsScope.GLOBAL;
         String password = "password";
         String username = "user";
@@ -121,14 +121,14 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetAuthor_String_String() {
+    public void testSetAuthor_String_String() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setAuthor(name, email);
     }
 
     @Test
-    public void testSetAuthor_PersonIdent() {
+    public void testSetAuthor_PersonIdent() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         PersonIdent p = new PersonIdent(name, email);
@@ -136,14 +136,14 @@ public class RemoteGitImplTest {
     }
 
     @Test
-    public void testSetCommitter_String_String() {
+    public void testSetCommitter_String_String() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         remoteGit.setCommitter(name, email);
     }
 
     @Test
-    public void testSetCommitter_PersonIdent() {
+    public void testSetCommitter_PersonIdent() throws Exception {
         String name = "charlie";
         String email = "charlie@example.com";
         PersonIdent p = new PersonIdent(name, email);
