@@ -1252,6 +1252,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             private Integer n = null;
             private Writer out = null;
+            private boolean includeMergeCommits = false;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1288,6 +1289,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public ChangelogCommand includeMergeCommits(boolean include) {
+                this.includeMergeCommits = include;
+                return this;
+            }
+
+            @Override
             public void abort() {
                 /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
             }
@@ -1303,6 +1310,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
                 if (n != null) {
                     args.add("-n").add(n);
+                }
+                if (includeMergeCommits) {
+                    args.add("-m");
                 }
                 for (String rev : this.revs) {
                     args.add(rev);
