@@ -1243,13 +1243,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
-
-            /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
-            public static final String RAW =
-                    "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(0,4,4)%B";
-
             private final List<String> revs = new ArrayList<>();
-
             private Integer n = null;
             private Writer out = null;
             private boolean includeMergeCommits = false;
@@ -1301,6 +1295,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException, InterruptedException {
+<<<<<<< HEAD
                 ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
                 if (isAtLeastVersion(1, 8, 3, 0)) {
                     args.add("--format=" + RAW);
@@ -1309,6 +1304,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add("--format=raw");
                 }
                 if (n != null) {
+=======
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty=raw");
+                if (n!=null)
+>>>>>>> parent of de49c9bf ([FIXED JENKINS-27097] use ISO-8601 in changelog)
                     args.add("-n").add(n);
                 }
                 if (includeMergeCommits) {
