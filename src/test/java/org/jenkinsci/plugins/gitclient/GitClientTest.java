@@ -3023,6 +3023,131 @@ public class GitClientTest {
         assertThat(changelogStringWriter.toString(), containsString(padLinesWithSpaces(commitMessage, 4)));
     }
 
+    /**
+     * Tests changelog with merge commits from branches with linear histories.
+     */
+    @Test
+    public void testChangelogWithMergeCommitsAndLinearHistory() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        w.git.branch("branch-1");
+        w.git.checkout().ref("branch-1").execute();
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("commit-1");
+        String branch1Commit = w.git.revParse("HEAD").name();
+
+        w.git.branch("branch-2");
+        w.git.checkout().ref("branch-2").execute();
+        w.touch("file-2", "content-2");
+        w.git.add("file-2");
+        w.git.commit("commit-2");
+        String branch2Commit = w.git.revParse("HEAD").name();
+
+        // Merge branch-1 into branch-2
+        String mergeMessage = "Merge branch-2 into branch-1";
+        w.git.checkout().ref("branch-1").execute();
+        w.git.merge()
+                .setMessage(mergeMessage)
+                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
+                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-2"))
+                .execute();
+
+        // Get changelog with merge commits included
+        StringWriter writer = new StringWriter();
+        w.git.changelog()
+                .includeMergeCommits(true)
+                .to(writer)
+                .execute();
+        String changelog = writer.toString();
+
+        assertThat(changelog, containsString("commit " + w.git.revParse("HEAD").name()));
+        assertThat(changelog, containsString(mergeMessage));
+        assertThat(changelog, containsString("parent " + branch1Commit));
+        assertThat(changelog, containsString("commit-1"));
+        assertThat(changelog, containsString("commit-2"));
+
+        // Get changelog with merge commits excluded
+        writer = new StringWriter();
+        w.git.changelog()
+                .includeMergeCommits(false)
+                .to(writer)
+                .execute();
+        changelog = writer.toString();
+
+        assertThat(changelog, not(containsString(mergeMessage)));
+        assertThat(changelog, containsString("commit " + branch1Commit));
+        assertThat(changelog, containsString("commit-1"));
+        assertThat(changelog, containsString("commit-2"));
+    }
+
+    /**
+     * Tests changelog with merge commits from branches with divergent histories.
+     */
+    @Test
+    public void testChangelogWithMergeCommitsAndDivergentHistory() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        // Create branch-1 and add file-1
+        w.git.branch("branch-1");
+        w.git.checkout().ref("branch-1").execute();
+        w.touch("file-1", "content-1");
+        w.git.add("file-1");
+        w.git.commit("add file-1");
+        ObjectId branch1FirstCommit = w.git.revParse("HEAD");
+
+        // Create branch-2 from branch-1 and add file-2
+        w.git.branch("branch-2");
+        w.git.checkout().ref("branch-2").execute();
+        w.touch("file-2", "content-2");
+        w.git.add("file-2");
+        w.git.commit("add file-2");
+        ObjectId branch2Commit = w.git.revParse("HEAD");
+
+        // Add more commits to branch-1
+        w.git.checkout().ref("branch-1").execute();
+        w.touch("file-3", "content-3");
+        w.git.add("file-3");
+        w.git.commit("add file-3");
+        w.touch("file-4", "content-4");
+        w.git.add("file-4");
+        w.git.commit("add file-4");
+        ObjectId branch1FinalCommit = w.git.revParse("HEAD");
+
+        // Merge branch-2 into branch-1
+        String mergeMessage = "Merge branch-2 into branch-1";
+        w.git.merge()
+                .setMessage(mergeMessage)
+                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
+                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-2"))
+                .execute();
+        ObjectId mergeCommit = w.git.revParse("HEAD");
+
+        // Get changelog with merge commits included
+        StringWriter writer = new StringWriter();
+        w.git.changelog()
+                .includeMergeCommits(true)
+                .to(writer)
+                .execute();
+        String changelog = writer.toString();
+
+        assertThat(changelog, containsString("commit " + mergeCommit.name()));
+        assertThat(changelog, containsString("parent " + branch1FinalCommit.name() + " " + branch2Commit.name()));
+        assertThat(changelog, containsString(mergeMessage));
+
+        // Get changelog with merge commits excluded
+        writer = new StringWriter();
+        w.git.changelog()
+                .includeMergeCommits(false)
+                .to(writer)
+                .execute();
+        changelog = writer.toString();
+
+        assertThat(changelog, not(containsString(mergeMessage)));
+    }
+
     @Test
     @Issue("JENKINS-55284") // Pull must overwrite existing tags
     public void testFetchOverwritesExistingTags() throws Exception {

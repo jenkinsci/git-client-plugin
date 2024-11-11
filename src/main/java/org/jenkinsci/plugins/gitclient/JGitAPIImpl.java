@@ -116,6 +116,7 @@ import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
+import org.eclipse.jgit.revwalk.filter.AndRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
@@ -1261,9 +1262,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Repository repo = getRepository();
             private ObjectReader or = repo.newObjectReader();
             private RevWalk walk = new RevWalk(or);
+            private RevFilter currentFilter = RevFilter.NO_MERGES;
             private Writer out;
             private boolean hasIncludedRev = false;
             private boolean includeMergeCommits = false;
+            private Integer maxCount = null;
 
             @Override
             public ChangelogCommand excludes(String rev) throws GitException {
@@ -1314,13 +1317,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public ChangelogCommand max(int n) {
-                walk.setRevFilter(MaxCountRevFilter.create(n));
+                this.maxCount = n;
+                updateRevFilter();
                 return this;
             }
 
             @Override
             public ChangelogCommand includeMergeCommits(boolean include) {
                 this.includeMergeCommits = include;
+                updateRevFilter();
                 return this;
             }
 
@@ -1333,6 +1338,30 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void abort() {
                 closeResources();
+            }
+
+            private void updateRevFilter() {
+                List<RevFilter> filters = new ArrayList<>();
+
+                if (!includeMergeCommits) {
+                    filters.add(RevFilter.NO_MERGES);
+                } else {
+                    filters.add(RevFilter.NO_MERGES.negate());
+                }
+
+                if (maxCount != null) {
+                    filters.add(MaxCountRevFilter.create(maxCount));
+                }
+
+                if (filters.isEmpty()) {
+                    currentFilter = RevFilter.ALL;
+                } else if (filters.size() == 1) {
+                    currentFilter = filters.get(0);
+                } else {
+                    currentFilter = AndRevFilter.create(filters);
+                }
+
+                walk.setRevFilter(currentFilter);
             }
 
             /** Execute the changelog command.  Assumed that this is
@@ -1354,11 +1383,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
-                        if (!includeMergeCommits && commit.getParentCount() > 1) {
-                            continue;
-                        }
-
                         formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
