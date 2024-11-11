@@ -3134,7 +3134,8 @@ public class GitClientTest {
         String changelog = writer.toString();
 
         assertThat(changelog, containsString("commit " + mergeCommit.name()));
-        assertThat(changelog, containsString("parent " + branch1FinalCommit.name() + " " + branch2Commit.name()));
+        assertThat(changelog, containsString("parent " + branch1FinalCommit.name()));
+        assertThat(changelog, containsString("parent " + branch2Commit.name()));
         assertThat(changelog, containsString(mergeMessage));
 
         // Get changelog with merge commits excluded

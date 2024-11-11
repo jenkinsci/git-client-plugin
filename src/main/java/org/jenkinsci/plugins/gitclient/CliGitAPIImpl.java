@@ -1295,19 +1295,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException, InterruptedException {
-<<<<<<< HEAD
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
-                if (isAtLeastVersion(1, 8, 3, 0)) {
-                    args.add("--format=" + RAW);
-                } else {
-                    /* Ancient git versions don't support the required format string, use 'raw' and hope it works */
-                    args.add("--format=raw");
-                }
-                if (n != null) {
-=======
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--pretty=raw");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--format=raw");
                 if (n!=null)
->>>>>>> parent of de49c9bf ([FIXED JENKINS-27097] use ISO-8601 in changelog)
                     args.add("-n").add(n);
                 }
                 if (includeMergeCommits) {
