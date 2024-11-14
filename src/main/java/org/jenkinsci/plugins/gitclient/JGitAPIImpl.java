@@ -63,9 +63,6 @@ import jenkins.util.SystemProperties;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-
-import javax.annotation.Nullable;
-
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -117,8 +114,8 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.AndRevFilter;
+import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
@@ -1437,7 +1434,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             pw.printf("tree %s\n", commit.getTree().name());
             for (RevCommit p : commit.getParents()) {
-                pw.printf("parent %s\n",p.name());
+                pw.printf("parent %s\n", p.name());
             }
             pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
             pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());

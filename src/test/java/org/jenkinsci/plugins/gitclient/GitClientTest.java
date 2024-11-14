@@ -3055,13 +3055,11 @@ public class GitClientTest {
 
         // Get changelog with merge commits included
         StringWriter writer = new StringWriter();
-        gitClient.changelog()
-                .includeMergeCommits(true)
-                .to(writer)
-                .execute();
+        gitClient.changelog().includeMergeCommits(true).to(writer).execute();
         String changelog = writer.toString();
 
-        assertThat(changelog, containsString("commit " + gitClient.revParse("HEAD").name()));
+        assertThat(
+                changelog, containsString("commit " + gitClient.revParse("HEAD").name()));
         assertThat(changelog, containsString(mergeMessage));
         assertThat(changelog, containsString("commit " + branch2Commit.name()));
         assertThat(changelog, containsString("parent " + branch1Commit.name()));
@@ -3070,13 +3068,12 @@ public class GitClientTest {
 
         // Get changelog with merge commits excluded
         writer = new StringWriter();
-        gitClient.changelog()
-                .includeMergeCommits(false)
-                .to(writer)
-                .execute();
+        gitClient.changelog().includeMergeCommits(false).to(writer).execute();
         changelog = writer.toString();
 
-        assertThat(changelog, not(containsString("commit " + gitClient.revParse("HEAD").name())));
+        assertThat(
+                changelog,
+                not(containsString("commit " + gitClient.revParse("HEAD").name())));
         assertThat(changelog, not(containsString(mergeMessage)));
         assertThat(changelog, containsString("commit " + branch2Commit.name()));
         assertThat(changelog, containsString("parent " + branch1Commit.name()));
@@ -3120,10 +3117,7 @@ public class GitClientTest {
 
         // Get changelog with merge commits included
         StringWriter writer = new StringWriter();
-        gitClient.changelog()
-                .includeMergeCommits(true)
-                .to(writer)
-                .execute();
+        gitClient.changelog().includeMergeCommits(true).to(writer).execute();
         String changelog = writer.toString();
 
         assertThat(changelog, containsString("commit " + mergeCommit.name()));
@@ -3135,10 +3129,7 @@ public class GitClientTest {
 
         // Get changelog with merge commits excluded
         writer = new StringWriter();
-        gitClient.changelog()
-                .includeMergeCommits(false)
-                .to(writer)
-                .execute();
+        gitClient.changelog().includeMergeCommits(false).to(writer).execute();
         changelog = writer.toString();
 
         assertThat(changelog, not(containsString("commit " + mergeCommit.name())));
