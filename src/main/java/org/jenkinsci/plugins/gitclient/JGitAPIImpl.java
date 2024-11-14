@@ -1261,7 +1261,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Repository repo = getRepository();
             private ObjectReader or = repo.newObjectReader();
             private RevWalk walk = new RevWalk(or);
-            private RevFilter revFilter = RevFilter.NO_MERGES;
             private Writer out;
             private boolean hasIncludedRev = false;
             private boolean includeMergeCommits = false;
@@ -1337,24 +1336,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 closeResources();
             }
 
-            private RevFilter getRevFilter() {
-                List<RevFilter> filters = new ArrayList<>();
-
-                if (!includeMergeCommits) {
-                    filters.add(RevFilter.NO_MERGES);
-                }
-                if (maxCount != null) {
-                    filters.add(MaxCountRevFilter.create(maxCount));
-                }
-                if (filters.isEmpty()) {
-                    return RevFilter.ALL;
-                } else if (filters.size() == 1) {
-                    return filters.get(0);
-                } else {
-                    return AndRevFilter.create(filters);
-                }
-            }
-
             /** Execute the changelog command.  Assumed that this is
              * only performed once per instance of this object.
              * Resources opened by this ChangelogCommand object are
@@ -1367,14 +1348,27 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (out == null) {
                     throw new IllegalStateException(); // Match CliGitAPIImpl
                 }
+                List<RevFilter> filters = new ArrayList<>();
+
+                if (!includeMergeCommits) {
+                    filters.add(RevFilter.NO_MERGES);
+                }
+                if (maxCount != null) {
+                    filters.add(MaxCountRevFilter.create(maxCount));
+                }
+                if (filters.isEmpty()) {
+                    walk.setRevFilter(RevFilter.ALL);
+                } else if (filters.size() == 1) {
+                    walk.setRevFilter(filters.get(0));
+                } else {
+                    walk.setRevFilter(AndRevFilter.create(filters));
+                }
                 try (PrintWriter pw = new PrintWriter(out, false)) {
                     RawFormatter formatter = new RawFormatter();
                     if (!hasIncludedRev) {
                         /* If no rev has been included, assume HEAD */
                         this.includes("HEAD");
                     }
-                    walk.setRevFilter(getRevFilter());
-
                     for (RevCommit commit : walk) {
                         formatter.format(commit, null, pw, true);
                     }
