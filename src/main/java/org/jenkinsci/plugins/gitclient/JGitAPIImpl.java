@@ -1320,14 +1320,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public ChangelogCommand max(int n) {
                 this.maxCount = n;
-                updateRevFilter();
                 return this;
             }
 
             @Override
             public ChangelogCommand includeMergeCommits(boolean include) {
                 this.includeMergeCommits = include;
-                updateRevFilter();
                 return this;
             }
 
@@ -1342,23 +1340,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 closeResources();
             }
 
-            private void updateRevFilter() {
+            private RevFilter getRevFilter() {
                 List<RevFilter> filters = new ArrayList<>();
 
                 if (!includeMergeCommits) {
                     filters.add(RevFilter.NO_MERGES);
                 }
-
                 if (maxCount != null) {
                     filters.add(MaxCountRevFilter.create(maxCount));
                 }
-
                 if (filters.isEmpty()) {
-                    revFilter = RevFilter.ALL;
+                    return RevFilter.ALL;
                 } else if (filters.size() == 1) {
-                    revFilter = filters.get(0);
+                    return filters.get(0);
                 } else {
-                    revFilter = AndRevFilter.create(filters);
+                    return AndRevFilter.create(filters);
                 }
             }
 
@@ -1380,7 +1376,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         /* If no rev has been included, assume HEAD */
                         this.includes("HEAD");
                     }
-                    walk.setRevFilter(revFilter);
+                    walk.setRevFilter(getRevFilter());
 
                     for (RevCommit commit : walk) {
                         formatter.format(commit, null, pw, true);
