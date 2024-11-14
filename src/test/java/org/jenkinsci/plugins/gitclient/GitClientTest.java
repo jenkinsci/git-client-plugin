@@ -3028,58 +3028,60 @@ public class GitClientTest {
      */
     @Test
     public void testChangelogWithMergeCommitsAndLinearHistory() throws Exception {
-        w.init();
-        w.commitEmpty("init");
+        final String branch1 = "changelog-branch-1";
+        final String branch2 = "changelog-branch-2";
+        final String mergeMessage = "Merge " + branch2 + " into " + branch1;
 
-        w.git.branch("branch-1");
-        w.git.checkout().ref("branch-1").execute();
-        w.touch("file-1", "content-1");
-        w.git.add("file-1");
-        w.git.commit("commit-1");
-        String branch1Commit = w.git.revParse("HEAD").name();
+        // Create initial commit first
+        ObjectId initialCommit = commitOneFile();
 
-        w.git.branch("branch-2");
-        w.git.checkout().ref("branch-2").execute();
-        w.touch("file-2", "content-2");
-        w.git.add("file-2");
-        w.git.commit("commit-2");
-        String branch2Commit = w.git.revParse("HEAD").name();
+        // Create first branch with a commit
+        gitClient.branch(branch1);
+        gitClient.checkout().ref(branch1).execute();
+        ObjectId branch1Commit = commitFile("file-1", "content-1", branch1 + "-commit");
 
-        // Merge branch-1 into branch-2
-        String mergeMessage = "Merge branch-2 into branch-1";
-        w.git.checkout().ref("branch-1").execute();
-        w.git.merge()
-                .setMessage(mergeMessage)
-                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
-                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-2"))
-                .execute();
+        // Create second branch with a commit
+        gitClient.branch(branch2);
+        gitClient.checkout().ref(branch2).execute();
+        ObjectId branch2Commit = commitFile("file-2", "content-2", branch2 + "-commit");
+
+        // Merge branch2 into branch1 with merge commit
+        gitClient.checkout().ref(branch1).execute();
+        MergeCommand mergeCommand = gitClient.merge();
+        mergeCommand.setMessage(mergeMessage);
+        mergeCommand.setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF);
+        mergeCommand.setRevisionToMerge(gitClient.getHeadRev(repoRoot.getAbsolutePath(), branch2));
+        mergeCommand.execute();
 
         // Get changelog with merge commits included
         StringWriter writer = new StringWriter();
-        w.git.changelog()
+        gitClient.changelog()
                 .includeMergeCommits(true)
                 .to(writer)
                 .execute();
         String changelog = writer.toString();
 
-        assertThat(changelog, containsString("commit " + w.git.revParse("HEAD").name()));
+        assertThat(changelog, containsString("commit " + gitClient.revParse("HEAD").name()));
         assertThat(changelog, containsString(mergeMessage));
-        assertThat(changelog, containsString("parent " + branch1Commit));
-        assertThat(changelog, containsString("commit-1"));
-        assertThat(changelog, containsString("commit-2"));
+        assertThat(changelog, containsString("commit " + branch2Commit.name()));
+        assertThat(changelog, containsString("parent " + branch1Commit.name()));
+        assertThat(changelog, containsString(branch1 + "-commit"));
+        assertThat(changelog, containsString(branch2 + "-commit"));
 
         // Get changelog with merge commits excluded
         writer = new StringWriter();
-        w.git.changelog()
+        gitClient.changelog()
                 .includeMergeCommits(false)
                 .to(writer)
                 .execute();
         changelog = writer.toString();
 
+        assertThat(changelog, not(containsString("commit " + gitClient.revParse("HEAD").name())));
         assertThat(changelog, not(containsString(mergeMessage)));
-        assertThat(changelog, containsString("commit " + branch1Commit));
-        assertThat(changelog, containsString("commit-1"));
-        assertThat(changelog, containsString("commit-2"));
+        assertThat(changelog, containsString("commit " + branch2Commit.name()));
+        assertThat(changelog, containsString("parent " + branch1Commit.name()));
+        assertThat(changelog, containsString(branch1 + "-commit"));
+        assertThat(changelog, containsString(branch2 + "-commit"));
     }
 
     /**
@@ -3087,66 +3089,66 @@ public class GitClientTest {
      */
     @Test
     public void testChangelogWithMergeCommitsAndDivergentHistory() throws Exception {
-        w.init();
-        w.commitEmpty("init");
+        final String branch1 = "changelog-div-1";
+        final String branch2 = "changelog-div-2";
+        final String mergeMessage = "Merge " + branch2 + " into " + branch1;
 
-        // Create branch-1 and add file-1
-        w.git.branch("branch-1");
-        w.git.checkout().ref("branch-1").execute();
-        w.touch("file-1", "content-1");
-        w.git.add("file-1");
-        w.git.commit("add file-1");
-        ObjectId branch1FirstCommit = w.git.revParse("HEAD");
+        ObjectId initialCommit = commitOneFile();
 
-        // Create branch-2 from branch-1 and add file-2
-        w.git.branch("branch-2");
-        w.git.checkout().ref("branch-2").execute();
-        w.touch("file-2", "content-2");
-        w.git.add("file-2");
-        w.git.commit("add file-2");
-        ObjectId branch2Commit = w.git.revParse("HEAD");
+        // Create first branch with a commit
+        gitClient.branch(branch1);
+        gitClient.checkout().ref(branch1).execute();
+        ObjectId branch1Commit = commitFile("file-1", "content-1", branch1 + "-commit");
 
-        // Add more commits to branch-1
-        w.git.checkout().ref("branch-1").execute();
-        w.touch("file-3", "content-3");
-        w.git.add("file-3");
-        w.git.commit("add file-3");
-        w.touch("file-4", "content-4");
-        w.git.add("file-4");
-        w.git.commit("add file-4");
-        ObjectId branch1FinalCommit = w.git.revParse("HEAD");
+        // Create second branch from branch1 and add a commit
+        gitClient.branch(branch2);
+        gitClient.checkout().ref(branch2).execute();
+        ObjectId branch2Commit = commitFile("file-2", "content-2", branch2 + "-commit");
 
-        // Merge branch-2 into branch-1
-        String mergeMessage = "Merge branch-2 into branch-1";
-        w.git.merge()
-                .setMessage(mergeMessage)
-                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
-                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-2"))
-                .execute();
-        ObjectId mergeCommit = w.git.revParse("HEAD");
+        // Add more commits to branch1
+        gitClient.checkout().ref(branch1).execute();
+        commitFile("file-3", "content-3", branch1 + "-commit");
+        ObjectId branch1FinalCommit = commitFile("file-4", "content-4", branch1 + "-commit");
+
+        // Merge branch2 into branch1
+        MergeCommand mergeCommand = gitClient.merge();
+        mergeCommand.setMessage(mergeMessage);
+        mergeCommand.setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF);
+        mergeCommand.setRevisionToMerge(gitClient.getHeadRev(repoRoot.getAbsolutePath(), branch2));
+        mergeCommand.execute();
+        ObjectId mergeCommit = gitClient.revParse("HEAD");
 
         // Get changelog with merge commits included
         StringWriter writer = new StringWriter();
-        w.git.changelog()
+        gitClient.changelog()
                 .includeMergeCommits(true)
                 .to(writer)
                 .execute();
         String changelog = writer.toString();
 
         assertThat(changelog, containsString("commit " + mergeCommit.name()));
+        assertThat(changelog, containsString(mergeMessage));
         assertThat(changelog, containsString("parent " + branch1FinalCommit.name()));
         assertThat(changelog, containsString("parent " + branch2Commit.name()));
-        assertThat(changelog, containsString(mergeMessage));
+        assertThat(changelog, containsString(branch1 + "-commit"));
+        assertThat(changelog, containsString(branch2 + "-commit"));
 
         // Get changelog with merge commits excluded
         writer = new StringWriter();
-        w.git.changelog()
+        gitClient.changelog()
                 .includeMergeCommits(false)
                 .to(writer)
                 .execute();
         changelog = writer.toString();
 
+        assertThat(changelog, not(containsString("commit " + mergeCommit.name())));
         assertThat(changelog, not(containsString(mergeMessage)));
+        assertThat(changelog, not(containsString("parent " + branch1FinalCommit.name())));
+        assertThat(changelog, not(containsString("parent " + branch2Commit.name())));
+        assertThat(changelog, containsString("commit " + branch1FinalCommit.name()));
+        assertThat(changelog, containsString("parent " + branch1Commit.name()));
+        assertThat(changelog, containsString(branch1 + "-commit"));
+        assertThat(changelog, containsString(branch2 + "-commit"));
     }
 
     @Test

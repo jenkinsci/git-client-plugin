@@ -1264,7 +1264,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Repository repo = getRepository();
             private ObjectReader or = repo.newObjectReader();
             private RevWalk walk = new RevWalk(or);
-            private RevFilter currentFilter = RevFilter.NO_MERGES;
+            private RevFilter revFilter = RevFilter.NO_MERGES;
             private Writer out;
             private boolean hasIncludedRev = false;
             private boolean includeMergeCommits = false;
@@ -1347,8 +1347,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (!includeMergeCommits) {
                     filters.add(RevFilter.NO_MERGES);
-                } else {
-                    filters.add(RevFilter.NO_MERGES.negate());
                 }
 
                 if (maxCount != null) {
@@ -1356,14 +1354,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 if (filters.isEmpty()) {
-                    currentFilter = RevFilter.ALL;
+                    revFilter = RevFilter.ALL;
                 } else if (filters.size() == 1) {
-                    currentFilter = filters.get(0);
+                    revFilter = filters.get(0);
                 } else {
-                    currentFilter = AndRevFilter.create(filters);
+                    revFilter = AndRevFilter.create(filters);
                 }
-
-                walk.setRevFilter(currentFilter);
             }
 
             /** Execute the changelog command.  Assumed that this is
@@ -1384,6 +1380,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         /* If no rev has been included, assume HEAD */
                         this.includes("HEAD");
                     }
+                    walk.setRevFilter(revFilter);
+
                     for (RevCommit commit : walk) {
                         formatter.format(commit, null, pw, true);
                     }
@@ -1442,8 +1440,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             pw.printf("tree %s\n", commit.getTree().name());
-            for (RevCommit p : commit.getParents())
+            for (RevCommit p : commit.getParents()) {
                 pw.printf("parent %s\n",p.name());
+            }
             pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
             pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
 
