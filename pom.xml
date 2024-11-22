@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.2</version>
+    <version>5.3</version>
     <relativePath />
   </parent>
 
@@ -60,9 +60,7 @@
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.479</jenkins.baseline>
-    <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
-    <!-- <jenkins.version>${jenkins.baseline}.1</jenkins.version> -->
-    <jenkins.version>${jenkins.baseline}</jenkins.version>
+    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
     <jgit.version>7.0.0.202409031743-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
@@ -74,7 +72,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>3559.vb_5b_81183b_d23</version>
+        <version>3722.vcc62e7311580</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -236,7 +234,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.17.1</version>
+      <version>3.17.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -272,7 +270,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.20.3</version>
+      <version>1.20.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
