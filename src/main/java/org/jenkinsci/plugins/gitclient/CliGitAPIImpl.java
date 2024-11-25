@@ -590,12 +590,19 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
+                LOGGER.log(Level.FINEST, "Printing available keys.... " );
+                credentials.entrySet().forEach(entry -> {
+                    LOGGER.log(Level.FINEST, "credentials.key = " + entry.getKey() );
+                });
 
+                LOGGER.log(Level.FINEST, "Looking for key =  " + url.toPrivateString() );
                 StandardCredentials cred = credentials.get(url.toPrivateString());
                 if (cred == null) {
+                    LOGGER.log(Level.FINEST, "Credentials are null... Hence taking default credentials.." );
                     cred = defaultCredentials;
                 }
                 if (isAtLeastVersion(1, 8, 0, 0)) {
+                    LOGGER.log(Level.FINEST, "Git version check is >= 1.8.0. Hence adding private ascii url i.e. " + url.toPrivateASCIIString());
                     addCheckedRemoteUrl(args, url.toPrivateASCIIString());
                 } else {
                     // CLI git 1.7.1 on CentOS 6 rejects URL encoded
@@ -616,7 +623,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
                 }
-
+                LOGGER.log(Level.FINEST, " Added remote url..." );
                 /* If url looks like a remote name reference, convert to remote URL for authentication */
                 /* See JENKINS-50573 for more details */
                 /* "git remote add" rejects remote names with ':' (and it is a common character in remote URLs) */
@@ -2103,6 +2110,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
         try {
+
             if (credentials instanceof SSHUserPrivateKey) {
                 SSHUserPrivateKey sshUser = (SSHUserPrivateKey) credentials;
                 listener.getLogger().println("using GIT_SSH to set credentials " + sshUser.getDescription());
@@ -2153,6 +2161,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             if ("http".equalsIgnoreCase(url.getScheme()) || "https".equalsIgnoreCase(url.getScheme())) {
+                LOGGER.log(Level.FINEST, " URL scheme is http or https" );
                 if (proxy != null) {
                     boolean shouldProxy = true;
                     for (Pattern p : proxy.getNoProxyHostPatterns()) {
@@ -2161,6 +2170,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             break;
                         }
                     }
+                    LOGGER.log(Level.FINEST, " Is proxy : " + shouldProxy );
                     if (shouldProxy) {
                         env = new EnvVars(env);
                         listener.getLogger().println("Setting http proxy: " + proxy.name + ":" + proxy.port);
@@ -2786,20 +2796,30 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             freshEnv.put("GIT_ASKPASS", "echo");
         }
         /* Prepend extra git command line arguments if any */
+        if(extraGitCommandArguments != null)
+            LOGGER.log(Level.FINEST, "Extra git CLI args : " + extraGitCommandArguments);
+
         if (!extraGitCommandArguments.isEmpty()) {
             args = args.prepend(extraGitCommandArguments.toArray(new String[0]));
         }
+
+        LOGGER.log(Level.FINEST, "Enriched args1: " + args);
+
         String command = gitExe + " " + StringUtils.join(args.toCommandArray(), " ");
         try {
             args.prepend(gitExe);
+            LOGGER.log(Level.FINEST, "Enriched args2: " + args);
             if (CALL_SETSID && launcher.isUnix() && env.containsKey("GIT_SSH") && env.containsKey("DISPLAY")) {
                 /* Detach from controlling terminal for git calls with ssh authentication */
                 /* GIT_SSH won't call the passphrase prompt script unless detached from controlling terminal */
                 args.prepend("setsid");
             }
+            LOGGER.log(Level.FINEST, "Enriched args3: " + args);
             int usedTimeout = timeout == null ? TIMEOUT : timeout;
             listener.getLogger().println(" > " + command + TIMEOUT_LOG_PREFIX + usedTimeout);
 
+
+            LOGGER.log(Level.FINEST, "Command ==> : " + command +", env ==> "+ freshEnv + ", workDir ==> "+ workDir + ", timeout ==> "+ usedTimeout +" minutes");
             Launcher.ProcStarter p =
                     launcher.launch().cmds(args.toCommandArray()).envs(freshEnv);
 
@@ -2842,9 +2862,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 throw new GitException("Command \"" + command + "\" returned status code " + status + ":\nstdout: "
                         + stdout + "\nstderr: " + stderr);
             }
-
+            LOGGER.log(Level.FINEST, "Process Status ==> : " + status);
             return stdout;
         } catch (GitException | InterruptedException e) {
+            LOGGER.log(Level.FINEST, "Error performing git command (GitException | InterruptedException): " + command, e);
+            e.printStackTrace();
             if (e.getMessage().contains("unsupported option \"accept-new\"")) {
                 listener.getLogger()
                         .println(
@@ -2854,6 +2876,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             throw e;
         } catch (Throwable e) {
+            LOGGER.log(Level.FINEST, "Error performing git command (Throwable): " + command, e);
+            e.printStackTrace();
             reportFailureClues();
             throw new GitException("Error performing git command: " + command, e);
         }
