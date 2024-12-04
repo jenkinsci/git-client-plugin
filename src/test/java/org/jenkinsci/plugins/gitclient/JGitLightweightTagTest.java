@@ -14,6 +14,7 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitObject;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -80,17 +81,21 @@ public class JGitLightweightTagTest {
         }
     }
 
-    private void packRefs() throws Exception {
-        try (org.eclipse.jgit.api.Git jgit = new org.eclipse.jgit.api.Git(new FileRepository(repoRootGitDir))) {
-            jgit.packRefs().setAll(true).call();
+    private void packRefs() throws IOException {
+        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
+            org.eclipse.jgit.internal.storage.file.GC gc;
+            gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
+            gc.packRefs();
         }
     }
 
     // No flavor of GitClient has a tag(String) API, only tag(String,String).
     // But sometimes we want a lightweight a.k.a. non-annotated tag.
     private void lightweightTag(String tagName) throws Exception {
-        try (org.eclipse.jgit.api.Git jgit = new org.eclipse.jgit.api.Git(new FileRepository(repoRootGitDir))) {
-            jgit.tag().setName(tagName).setAnnotated(false).call();
+        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
+            // Collides with implicit org.jenkinsci.plugins.gitclient.Git.
+            org.eclipse.jgit.api.Git jgitAPI = org.eclipse.jgit.api.Git.wrap(repo);
+            jgitAPI.tag().setName(tagName).setAnnotated(false).call();
         }
     }
 
