@@ -2,7 +2,6 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -24,10 +23,6 @@ public class NoHostKeyVerifierTest {
 
     @Test
     public void verifyServerHostKey() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
-
         NoHostKeyVerifier acceptFirstConnectionVerifier = new NoHostKeyVerifier();
 
         KnownHostsTestUtil.connectToHost(
