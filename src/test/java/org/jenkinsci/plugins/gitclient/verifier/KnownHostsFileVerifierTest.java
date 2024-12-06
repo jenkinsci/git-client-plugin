@@ -2,7 +2,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -11,7 +11,9 @@ import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,12 +47,14 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws Exception {
+        // Only test 10% of the time to reduce load on ssh providers
+        Assume.assumeTrue(ThreadLocalRandom.current().nextInt(10) == 0);
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2", FILE_CONTENT);
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
         KnownHostsTestUtil.connectToHost(
-                        "bitbucket.org",
+                        nonGitHubHost(),
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
