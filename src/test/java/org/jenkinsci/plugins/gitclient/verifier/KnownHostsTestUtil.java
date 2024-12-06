@@ -149,6 +149,19 @@ public class KnownHostsTestUtil {
         return nonGitHubHosts[ThreadLocalRandom.current().nextInt(nonGitHubHosts.length)];
     }
 
+    private static final String JENKINS_URL =
+            System.getenv("JENKINS_URL") != null ? System.getenv("JENKINS_URL") : "http://localhost:8080/";
+
+    /* Return true if known hosts tests should be run in this context */
+    public static boolean runKnownHostsTests() {
+        if (!JENKINS_URL.contains("ci.jenkins.io")) {
+            /* Always run the tests if not on ci.jenkins.io */
+            return true;
+        }
+        // Only test 10% of the time on ci.jenkins.io to reduce load on ssh providers
+        return ThreadLocalRandom.current().nextInt(10) == 0;
+    }
+
     /* Always return false, retained for test compatibility */
     public static boolean isKubernetesCI() {
         return false;
