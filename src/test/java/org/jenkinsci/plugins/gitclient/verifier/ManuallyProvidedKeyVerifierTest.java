@@ -57,9 +57,6 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         ManuallyProvidedKeyVerifier verifier = new ManuallyProvidedKeyVerifier(hostKey);
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
@@ -97,9 +94,6 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedWithPortThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String key =
                 "github.com:22 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);
