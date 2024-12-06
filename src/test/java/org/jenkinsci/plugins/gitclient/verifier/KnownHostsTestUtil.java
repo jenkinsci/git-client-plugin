@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
@@ -136,14 +137,20 @@ public class KnownHostsTestUtil {
         return verified;
     }
 
-    /* Return true if running on a Kubernetes pod on ci.jenkins.io */
+    // Several different git providers with ssh access, use one randomly
+    private static String[] nonGitHubHosts = {
+        // bitbucket.org blocks requests from ci.jenkins.io agents
+        // "bitbucket.org",
+        "git.assembla.com", "gitea.com", "gitlab.com", "vs-ssh.visualstudio.com",
+    };
+
+    /* Return hostname of a non-GitHub ssh provider */
+    public static String nonGitHubHost() {
+        return nonGitHubHosts[ThreadLocalRandom.current().nextInt(nonGitHubHosts.length)];
+    }
+
+    /* Always return false, retained for test compatibility */
     public static boolean isKubernetesCI() {
         return false;
-        //        String kubernetesPort = System.getenv("KUBERNETES_PORT");
-        //        String buildURL = System.getenv("BUILD_URL");
-        //        return kubernetesPort != null
-        //                && !kubernetesPort.isEmpty()
-        //                && buildURL != null
-        //                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }
