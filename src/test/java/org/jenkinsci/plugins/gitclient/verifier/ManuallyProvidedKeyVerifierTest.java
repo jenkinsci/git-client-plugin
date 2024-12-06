@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -13,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
 import org.awaitility.Awaitility;
 import org.junit.Assume;
 import org.junit.Before;
@@ -41,8 +41,7 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedForOtherHostNameThenShouldFail() throws Exception {
-        // Only test 10% of the time to reduce load on ssh providers
-        Assume.assumeTrue(ThreadLocalRandom.current().nextInt(10) == 0);
+        Assume.assumeTrue(runKnownHostsTests());
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(hostKey);
 
         KnownHostsTestUtil.connectToHost(
