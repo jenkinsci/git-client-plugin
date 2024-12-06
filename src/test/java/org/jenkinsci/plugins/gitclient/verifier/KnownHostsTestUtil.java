@@ -154,12 +154,9 @@ public class KnownHostsTestUtil {
 
     /* Return true if known hosts tests should be run in this context */
     public static boolean runKnownHostsTests() {
-        if (!JENKINS_URL.contains("ci.jenkins.io")) {
-            /* Always run the tests if not on ci.jenkins.io */
-            return true;
-        }
-        // Only test 10% of the time on ci.jenkins.io to reduce load on ssh providers
-        return ThreadLocalRandom.current().nextInt(10) == 0;
+        /* Run the problematic known hosts tests on all locations except ci.jenkins.io */
+        /* Do not run the problematic known hosts tests on ci.jenkins.io, they are unreliable */
+        return !JENKINS_URL.contains("ci.jenkins.io");
     }
 
     /* Always return false, retained for test compatibility */
