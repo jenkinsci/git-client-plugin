@@ -2,7 +2,7 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -13,7 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,17 +34,19 @@ public class ManuallyProvidedKeyVerifierTest {
     private String hostKey;
 
     @Before
-    public void assignVerifier() {
+    public void assignVerifier() { // For github.com
         hostKey =
                 "|1|7qEjynZk0IodegnbgoPEhWtdgA8=|bGs7a1ktbGWwPuZqqTbAazUAULM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
     }
 
     @Test
     public void connectWhenHostKeyProvidedForOtherHostNameThenShouldFail() throws Exception {
+        // Only test 10% of the time to reduce load on ssh providers
+        Assume.assumeTrue(ThreadLocalRandom.current().nextInt(10) == 0);
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(hostKey);
 
         KnownHostsTestUtil.connectToHost(
-                        "bitbucket.org",
+                        nonGitHubHost(),
                         22,
                         new File(testFolder.getRoot() + "/path/to/file/random"),
                         verifier.forJGit(StreamBuildListener.fromStdout()),
