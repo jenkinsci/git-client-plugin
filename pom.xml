@@ -93,11 +93,13 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
+      <version>2.14.0-134.v08fe1eb_b_e7a_1</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
+      <version>2.14.0-134.v08fe1eb_b_e7a_1</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
