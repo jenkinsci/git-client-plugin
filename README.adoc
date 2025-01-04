@@ -102,7 +102,7 @@ By default, Git Client plugin uses the "Known hosts file" strategy to verify all
 Host key verification strategies include:
 
 Accept first connection::
-Remembers the first host key encountered for each git server and requires that the same host key must be use for later access.
+Remembers the first host key encountered for each git server and requires that the same host key must be used for later access.
 This is usually the most convenient setting for administrators while still providing ssh host key verification
 
 Known hosts file::
