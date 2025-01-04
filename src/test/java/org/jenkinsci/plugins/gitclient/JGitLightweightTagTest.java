@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
@@ -14,7 +15,6 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitObject;
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -81,10 +81,9 @@ public class JGitLightweightTagTest {
         }
     }
 
-    private void packRefs() throws IOException {
+    private void packRefs() throws Exception {
         try (FileRepository repo = new FileRepository(repoRootGitDir)) {
-            org.eclipse.jgit.internal.storage.file.GC gc;
-            gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
+            org.eclipse.jgit.internal.storage.file.GC gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
             gc.packRefs();
         }
     }
@@ -93,7 +92,6 @@ public class JGitLightweightTagTest {
     // But sometimes we want a lightweight a.k.a. non-annotated tag.
     private void lightweightTag(String tagName) throws Exception {
         try (FileRepository repo = new FileRepository(repoRootGitDir)) {
-            // Collides with implicit org.jenkinsci.plugins.gitclient.Git.
             org.eclipse.jgit.api.Git jgitAPI = org.eclipse.jgit.api.Git.wrap(repo);
             jgitAPI.tag().setName(tagName).setAnnotated(false).call();
         }
@@ -112,6 +110,7 @@ public class JGitLightweightTagTest {
         String annotatedTagName = "annotated_tag";
         gitClient.tag(annotatedTagName, "Tag annotation");
 
+        // Must pack the tags and other refs in order to show the JGitAPIImpl bug
         packRefs();
 
         Set<GitObject> tags = gitClient.getTags();
@@ -124,5 +123,6 @@ public class JGitLightweightTagTest {
                 tags,
                 hasItem(allOf(
                         hasProperty("name", equalTo(annotatedTagName)), hasProperty("SHA1", equalTo(secondCommit)))));
+        assertThat(tags, hasSize(2));
     }
 }
