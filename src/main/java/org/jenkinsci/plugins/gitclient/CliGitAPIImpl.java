@@ -305,6 +305,22 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return gitVersion >= requestedVersion;
     }
 
+    private static final String MASK_URL_CREDENTIALS_REGEX = "://[/]?[^/@]*@";
+    private static final Pattern MASK_URL_CREDENTIALS_PATTERN = Pattern.compile(MASK_URL_CREDENTIALS_REGEX);
+    private static final String MASK_URL_CREDENTIALS_REPLACE = "://xxxxx@";
+    private static final boolean MASK_URL_CREDENTIALS = Boolean.parseBoolean(
+            System.getProperty(CliGitAPIImpl.class.getName() + ".maskUrlCredentials", "false"));
+
+    /**
+     * Mask the first occurrence of credentials in the supplied URL.
+     *
+     * @param url the URL to mask
+     * @return the masked URL, or null if null was supplied
+     */
+    /* package */ String maskUrlCredentials(String url) {
+        return url != null ? MASK_URL_CREDENTIALS_PATTERN.matcher(url).replaceFirst(MASK_URL_CREDENTIALS_REPLACE) : null;
+    }
+
     /**
      * Compare the current cli git version with the required version.
      * Finds if the current cli git version is at-least the required version.
@@ -343,6 +359,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
 
         launcher = new LocalLauncher(IGitAPI.verbose ? listener : TaskListener.NULL);
+        if (MASK_URL_CREDENTIALS) {
+            this.listener.getLogger().println("Masking credentials in GIT URLs");
+        }
     }
 
     /** {@inheritDoc} */
@@ -568,7 +587,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException, InterruptedException {
-                listener.getLogger().println("Fetching upstream changes from " + url);
+                // Mask credentials in the Git URL before writing to the build log, if requested
+                String displayUrl = url.toString();
+                if (MASK_URL_CREDENTIALS) {
+                    displayUrl = maskUrlCredentials(displayUrl);
+                }
+                listener.getLogger().println("Fetching upstream changes from " + displayUrl);
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
                 args.add("fetch");
@@ -813,7 +837,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new IllegalArgumentException("Invalid repository " + url, e);
                 }
 
-                listener.getLogger().println("Cloning repository " + url);
+                // Mask credentials in the Git URL before writing to the build log, if requested
+                String displayUrl = urIish.toString();
+                if (MASK_URL_CREDENTIALS) {
+                    displayUrl = maskUrlCredentials(displayUrl);
+                }
+                listener.getLogger().println("Cloning repository " + displayUrl);
 
                 try {
                     Util.deleteContentsRecursive(workspace);
@@ -2808,7 +2837,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.prepend("setsid");
             }
             int usedTimeout = timeout == null ? TIMEOUT : timeout;
-            listener.getLogger().println(" > " + command + TIMEOUT_LOG_PREFIX + usedTimeout);
+
+            // Mask credentials in the Git URL before writing to the build log, if requested
+            String displayCommand = command;
+            if (MASK_URL_CREDENTIALS) {
+                displayCommand = maskUrlCredentials(displayCommand);
+            }
+            listener.getLogger().println(" > " + displayCommand + TIMEOUT_LOG_PREFIX + usedTimeout);
 
             Launcher.ProcStarter p =
                     launcher.launch().cmds(args.toCommandArray()).envs(freshEnv);

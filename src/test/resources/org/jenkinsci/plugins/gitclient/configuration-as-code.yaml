@@ -5,9 +5,11 @@ tool:
         home: "jgit"
       - home: "git"
         name: "Default"
+        maskUrlCredentials: true
       - name: "jgitapache"
       - home: "/opt/git/git"
         name: "optional"
+        maskUrlCredentials: false
         properties:
           - installSource:
               installers:
