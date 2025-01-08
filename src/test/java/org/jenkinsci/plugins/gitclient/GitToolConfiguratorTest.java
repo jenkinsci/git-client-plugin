@@ -100,7 +100,6 @@ public class GitToolConfiguratorTest {
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
         Mapping cNodeMapping = cNode.asMapping();
         assertThat(cNodeMapping.getScalarValue("name"), is(JGitTool.MAGIC_EXENAME));
-        assertThat(cNodeMapping.containsKey("maskUrlCredentials"), is(false));
     }
 
     @Test
@@ -111,7 +110,6 @@ public class GitToolConfiguratorTest {
         assertThat(cNode.getType(), is(CNode.Type.MAPPING));
         Mapping cNodeMapping = cNode.asMapping();
         assertThat(cNodeMapping.getScalarValue("name"), is(JGitApacheTool.MAGIC_EXENAME));
-        assertThat(cNodeMapping.containsKey("maskUrlCredentials"), is(false));
     }
 
     @Test
@@ -125,7 +123,6 @@ public class GitToolConfiguratorTest {
         Mapping cNodeMapping = cNode.asMapping();
         assertThat(cNodeMapping.getScalarValue("name"), is(gitName));
         assertThat(cNodeMapping.getScalarValue("home"), is(gitHome));
-        assertThat(Boolean.valueOf(cNodeMapping.getScalarValue("maskUrlCredentials")), is(false));
     }
 
     @Test
@@ -136,7 +133,6 @@ public class GitToolConfiguratorTest {
         assertThat(gitTool, is(instanceOf(GitTool.class)));
         assertThat(gitTool.getName(), is("Default"));
         assertThat(gitTool.getHome(), is(""));
-        assertThat(gitTool.getMaskUrlCredentials(), is(false));
     }
 
     @Test
@@ -161,17 +157,6 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstanceJGitToolWithMaskUrlCredentials() throws Exception {
-        Mapping mapping = new Mapping();
-        mapping.put("name", JGitTool.MAGIC_EXENAME);
-        mapping.put("maskUrlCredentials", new Scalar(true)); // Will log a message
-        ConfigurationContext context = new ConfigurationContext(null);
-        GitTool gitTool = gitToolConfigurator.instance(mapping, context);
-        assertThat(gitTool, is(instanceOf(JGitTool.class)));
-        assertThat(gitTool, is(not(instanceOf(JGitApacheTool.class))));
-    }
-
-    @Test
     public void testInstanceJGitApacheTool() throws Exception {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
@@ -186,17 +171,6 @@ public class GitToolConfiguratorTest {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
         mapping.put("home", "unused-value-for-home"); // Will log a message
-        ConfigurationContext context = new ConfigurationContext(null);
-        GitTool gitTool = gitToolConfigurator.instance(mapping, context);
-        assertThat(gitTool, is(instanceOf(JGitApacheTool.class)));
-        assertThat(gitTool, is(not(instanceOf(JGitTool.class))));
-    }
-
-    @Test
-    public void testInstanceJGitApacheToolWithMaskUrlCredentials() throws Exception {
-        Mapping mapping = new Mapping();
-        mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
-        mapping.put("maskUrlCredentials", new Scalar(true)); // Will log a message
         ConfigurationContext context = new ConfigurationContext(null);
         GitTool gitTool = gitToolConfigurator.instance(mapping, context);
         assertThat(gitTool, is(instanceOf(JGitApacheTool.class)));
@@ -225,7 +199,6 @@ public class GitToolConfiguratorTest {
         assertThat(gitTool, is(not(instanceOf(JGitApacheTool.class))));
         assertThat(gitTool.getHome(), is(gitHome));
         assertThat(gitTool.getName(), is(gitName));
-        assertThat(gitTool.getMaskUrlCredentials(), is(false));
     }
 
     @Test
@@ -233,10 +206,8 @@ public class GitToolConfiguratorTest {
         Mapping mapping = new Mapping();
         String gitHome = "testGitHome";
         String gitName = "testGitName";
-        Boolean maskUrlCredentials = true;
         mapping.put("home", gitHome);
         mapping.put("name", gitName);
-        mapping.put("maskUrlCredentials", new Scalar(maskUrlCredentials));
         ConfigurationContext context = new ConfigurationContext(null);
         GitTool gitTool = gitToolConfigurator.instance(mapping, context);
         assertThat(gitTool, is(instanceOf(GitTool.class)));
@@ -244,7 +215,6 @@ public class GitToolConfiguratorTest {
         assertThat(gitTool, is(not(instanceOf(JGitApacheTool.class))));
         assertThat(gitTool.getHome(), is(gitHome));
         assertThat(gitTool.getName(), is(gitName));
-        assertThat(gitTool.getMaskUrlCredentials(), is(true));
     }
 
     @Test
@@ -253,7 +223,6 @@ public class GitToolConfiguratorTest {
         Attribute<GitTool, String> name = new Attribute<>("name", String.class);
         Attribute<GitTool, String> home = new Attribute<>("home", String.class);
         Attribute<GitTool, ToolProperty> p = new Attribute<>("properties", ToolProperty.class);
-        Attribute<GitTool, Boolean> maskUrlCredentials = new Attribute<>("maskUrlCredentials", Boolean.class);
-        assertThat(gitToolAttributes, containsInAnyOrder(name, home, p, maskUrlCredentials));
+        assertThat(gitToolAttributes, containsInAnyOrder(name, home, p));
     }
 }

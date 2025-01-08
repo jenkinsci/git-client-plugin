@@ -27,7 +27,6 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.interceptor.RequirePOST;
@@ -52,38 +51,11 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
         super(name, home, properties);
     }
 
-    private static final String MASK_URL_CREDENTIALS_ENV_VAR = "GIT_MASK_URL_CREDENTIALS";
-
-    @Override
-    public void buildEnvVars(EnvVars env) {
-        LOGGER.log(Level.INFO, String.format("+++ Setting env var %s to '%s'", MASK_URL_CREDENTIALS_ENV_VAR, String.valueOf(this.getMaskUrlCredentials())));
-        env.put(MASK_URL_CREDENTIALS_ENV_VAR, String.valueOf(this.getMaskUrlCredentials()));
-        final String envValue = env.get(MASK_URL_CREDENTIALS_ENV_VAR);
-        LOGGER.log(Level.INFO, String.format("+++ Env var %s is '%s'", MASK_URL_CREDENTIALS_ENV_VAR, (envValue == null ? "NOT_SET" : envValue)));
-    }
-
     /** Constant <code>DEFAULT="Default"</code> */
     public static final transient String DEFAULT = "Default";
 
     @Serial
     private static final long serialVersionUID = 1;
-
-    /** A flag indicating whether to mask URL credentials in the build log */
-    private boolean maskUrlCredentials = false;
-
-    /**
-     * getMaskUrlCredentials.
-     *
-     * @return true if credentials in Git URLs should be masked in the build log
-     */
-    public boolean getMaskUrlCredentials() {
-        return this.maskUrlCredentials;
-    }
-
-    @DataBoundSetter
-    public void setMaskUrlCredentials(boolean maskUrlCredentials) {
-        this.maskUrlCredentials = maskUrlCredentials;
-    }
 
     /**
      * getGitExe.
@@ -129,16 +101,12 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
 
     @Override
     public GitTool forNode(@NonNull Node node, TaskListener log) throws IOException, InterruptedException {
-        final GitTool gitTool = new GitTool(getName(), translateFor(node, log), Collections.emptyList());
-        gitTool.setMaskUrlCredentials(this.getMaskUrlCredentials());
-        return gitTool;
+        return new GitTool(getName(), translateFor(node, log), Collections.emptyList());
     }
 
     @Override
     public GitTool forEnvironment(EnvVars environment) {
-        final GitTool gitTool = new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
-        gitTool.setMaskUrlCredentials(this.getMaskUrlCredentials());
-        return gitTool;
+        return new GitTool(getName(), environment.expand(getHome()), Collections.emptyList());
     }
 
     @Override

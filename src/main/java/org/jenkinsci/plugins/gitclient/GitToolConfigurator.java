@@ -65,9 +65,8 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
         Attribute<GitTool, String> name = new Attribute<>("name", String.class);
         Attribute<GitTool, String> home = new Attribute<>("home", String.class);
         Attribute<GitTool, ToolProperty> p = new Attribute<>("properties", ToolProperty.class);
-        Attribute<GitTool, Boolean> maskUrlCredentials = new Attribute<>("maskUrlCredentials", Boolean.class);
         p.multiple(true);
-        return Arrays.asList(name, home, p, maskUrlCredentials);
+        return Arrays.asList(name, home, p);
     }
 
     @Override
@@ -81,16 +80,10 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
             if (mapping.remove("home") != null) { // Ignored but could be added, so removing to not fail handleUnknown
                 logger.warning("property `home` is ignored for `" + JGitTool.MAGIC_EXENAME + "`");
             }
-            if (mapping.remove("maskUrlCredentials") != null) { // Ignored but could be added, so removing to not fail handleUnknown
-                logger.warning("property `maskUrlCredentials` is ignored for `" + JGitTool.MAGIC_EXENAME + "`");
-            }
             return new JGitTool(instantiateProperties(mproperties, context));
         } else if (JGitApacheTool.MAGIC_EXENAME.equals(name)) {
             if (mapping.remove("home") != null) { // Ignored but could be added, so removing to not fail handleUnknown
                 logger.warning("property `home` is ignored for `" + JGitApacheTool.MAGIC_EXENAME + "`");
-            }
-            if (mapping.remove("maskUrlCredentials") != null) { // Ignored but could be added, so removing to not fail handleUnknown
-                logger.warning("property `maskUrlCredentials` is ignored for `" + JGitApacheTool.MAGIC_EXENAME + "`");
             }
             return new JGitApacheTool(instantiateProperties(mproperties, context));
         } else {
@@ -98,14 +91,7 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
                 throw new ConfiguratorException(this, "Home required for cli git configuration.");
             }
             String home = mapping.getScalarValue("home");
-            Boolean maskUrlCredentials = false;
-            if (mapping.containsKey("maskUrlCredentials") && mapping.get("maskUrlCredentials") != null) {
-                maskUrlCredentials = Boolean.valueOf(mapping.getScalarValue("maskUrlCredentials"));
-            }
-            final GitTool gitTool = new GitTool(name, home, instantiateProperties(mproperties, context));
-            logger.log(Level.INFO, String.format("+++ Set maskUrlCredentials to %b", maskUrlCredentials));
-            gitTool.setMaskUrlCredentials(maskUrlCredentials);
-            return gitTool;
+            return new GitTool(name, home, instantiateProperties(mproperties, context));
         }
     }
 
@@ -138,7 +124,6 @@ public class GitToolConfigurator extends BaseConfigurator<GitTool> {
         } else if (instance != null) {
             mapping.put("name", instance.getName());
             mapping.put("home", instance.getHome());
-            mapping.put("maskUrlCredentials", new Scalar(instance.getMaskUrlCredentials()));
         }
         if (context != null
                 && instance != null
