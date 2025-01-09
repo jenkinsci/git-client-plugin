@@ -8,7 +8,4 @@
     </f:entry>
     <j:set var="toolDescriptor" value="${descriptor}" /><!-- to make this descriptor accessible from properties -->
     <f:descriptorList descriptors="${descriptor.propertyDescriptors}" field="properties"/>
-    <f:entry title="${%Mask credentials in Git URLs}" field="maskUrlCredentials">
-        <f:checkbox />
-    </f:entry>
 </j:jelly>
