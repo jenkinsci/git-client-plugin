@@ -305,8 +305,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return gitVersion >= requestedVersion;
     }
 
-    private static final String MASK_URL_CREDENTIALS_REGEX = "://[/]?[^/@]*@";
-    private static final Pattern MASK_URL_CREDENTIALS_PATTERN = Pattern.compile(MASK_URL_CREDENTIALS_REGEX);
+    private static final Pattern MASK_URL_CREDENTIALS_PATTERN = Pattern.compile("://[/]?[^/@]*@");
     private static final String MASK_URL_CREDENTIALS_REPLACE = "://xxxxx@";
     private static final boolean MASK_URL_CREDENTIALS = Boolean.parseBoolean(
             System.getProperty(CliGitAPIImpl.class.getName() + ".maskUrlCredentials", "false"));
@@ -588,10 +587,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 // Mask credentials in the Git URL before writing to the build log, if requested
-                String displayUrl = url.toString();
-                if (MASK_URL_CREDENTIALS) {
-                    displayUrl = maskUrlCredentials(displayUrl);
-                }
+                final String displayUrl =
+                        MASK_URL_CREDENTIALS ? maskUrlCredentials(url.toString()) : url.toString();
                 listener.getLogger().println("Fetching upstream changes from " + displayUrl);
 
                 ArgumentListBuilder args = new ArgumentListBuilder();
@@ -838,10 +835,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 // Mask credentials in the Git URL before writing to the build log, if requested
-                String displayUrl = urIish.toString();
-                if (MASK_URL_CREDENTIALS) {
-                    displayUrl = maskUrlCredentials(displayUrl);
-                }
+                final String displayUrl =
+                        MASK_URL_CREDENTIALS ? maskUrlCredentials(urIish.toString()) : urIish.toString();
                 listener.getLogger().println("Cloning repository " + displayUrl);
 
                 try {
@@ -2839,10 +2834,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             int usedTimeout = timeout == null ? TIMEOUT : timeout;
 
             // Mask credentials in the Git URL before writing to the build log, if requested
-            String displayCommand = command;
-            if (MASK_URL_CREDENTIALS) {
-                displayCommand = maskUrlCredentials(displayCommand);
-            }
+            final String displayCommand =
+                    MASK_URL_CREDENTIALS ? maskUrlCredentials(command) : command;
             listener.getLogger().println(" > " + displayCommand + TIMEOUT_LOG_PREFIX + usedTimeout);
 
             Launcher.ProcStarter p =
