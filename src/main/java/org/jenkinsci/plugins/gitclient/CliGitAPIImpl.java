@@ -305,10 +305,21 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return gitVersion >= requestedVersion;
     }
 
-    private static final Pattern MASK_URL_CREDENTIALS_PATTERN = Pattern.compile("://[/]?[^/@]*@");
-    private static final String MASK_URL_CREDENTIALS_REPLACE = "://xxxxx@";
+
+    /**
+     * Constant which enables masking of credentials in Git URLs
+     * before they are written to the build log.
+     *
+     * <code>MASK_URL_CREDENTIALS=Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".maskUrlCredentials", "false"))</code>.
+     *
+     * Use '-Dorg.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials=true'
+     * to mask credentials in Git URLs.
+     */
     private static final boolean MASK_URL_CREDENTIALS = Boolean.parseBoolean(
             System.getProperty(CliGitAPIImpl.class.getName() + ".maskUrlCredentials", "false"));
+
+    private static final Pattern MASK_URL_CREDENTIALS_PATTERN = Pattern.compile("://[/]?[^/@]*@");
+    private static final String MASK_URL_CREDENTIALS_REPLACE = "://xxxxx@";
 
     /**
      * Mask the first occurrence of credentials in the supplied URL.

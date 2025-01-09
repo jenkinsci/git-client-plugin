@@ -261,6 +261,13 @@ This setting can be helpful with link:https://plugins.jenkins.io/swarm/[Jenkins 
 +
 Default is `false` so that `setsid` is not used.
 
+maskUrlCredentials::
+When `org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials` is set to `true`, build log messages that contain Git URLs with credentials will have the credentials masked. URLs that appear in error messages are not masked to aid in troubleshooting.
++
+For example, a Git URL of `https://foo:bar@baz.quux/git/my-repo.git` will be masked as `https://xxxxx@baz.quux/git/my-repo.git`.
++
+Default is `false` so that credentials in Git URLs are not masked.
+
 [#changelog]
 == Changelog in https://github.com/jenkinsci/git-client-plugin/releases[GitHub Releases]
 
