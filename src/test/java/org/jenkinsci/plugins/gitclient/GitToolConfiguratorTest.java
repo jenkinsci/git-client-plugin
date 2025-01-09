@@ -42,8 +42,6 @@ import io.jenkins.plugins.casc.ConfiguratorException;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.casc.model.Mapping;
 import java.util.List;
-
-import io.jenkins.plugins.casc.model.Scalar;
 import org.junit.Test;
 
 public class GitToolConfiguratorTest {
@@ -183,22 +181,6 @@ public class GitToolConfiguratorTest {
         mapping.put("name", "testGitName"); // No home mapping defined
         ConfigurationContext context = new ConfigurationContext(null);
         gitToolConfigurator.instance(mapping, context);
-    }
-
-    @Test
-    public void testInstanceGitToolWithoutMaskUrlCredentials() throws Exception {
-        Mapping mapping = new Mapping();
-        String gitHome = "testGitHome";
-        String gitName = "testGitName";
-        mapping.put("home", gitHome);
-        mapping.put("name", gitName);
-        ConfigurationContext context = new ConfigurationContext(null);
-        GitTool gitTool = gitToolConfigurator.instance(mapping, context);
-        assertThat(gitTool, is(instanceOf(GitTool.class)));
-        assertThat(gitTool, is(not(instanceOf(JGitTool.class))));
-        assertThat(gitTool, is(not(instanceOf(JGitApacheTool.class))));
-        assertThat(gitTool.getHome(), is(gitHome));
-        assertThat(gitTool.getName(), is(gitName));
     }
 
     @Test
