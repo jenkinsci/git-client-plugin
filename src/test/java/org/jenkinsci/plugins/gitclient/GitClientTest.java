@@ -3416,8 +3416,10 @@ public class GitClientTest {
             return;
         }
         CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
-        final String command = "git fetch --no-tags --force --progress --depth=1 -- https://foo:bar@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
-        final String expected = "git fetch --no-tags --force --progress --depth=1 -- https://xxxxx@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
+        final String command =
+                "git fetch --no-tags --force --progress --depth=1 -- https://foo:bar@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
+        final String expected =
+                "git fetch --no-tags --force --progress --depth=1 -- https://xxxxx@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
         assertThat(cliGitClient.maskUrlCredentials(command), is(expected));
     }
 
@@ -3428,7 +3430,8 @@ public class GitClientTest {
         }
         CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
         final String command = "git config url.ssh://git@github.com/foobar.insteadof https://baz:qux@github.com/foobar";
-        final String expected = "git config url.ssh://xxxxx@github.com/foobar.insteadof https://baz:qux@github.com/foobar";
+        final String expected =
+                "git config url.ssh://xxxxx@github.com/foobar.insteadof https://baz:qux@github.com/foobar";
         assertThat(cliGitClient.maskUrlCredentials(command), is(expected));
     }
 }

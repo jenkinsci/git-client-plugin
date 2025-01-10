@@ -594,6 +594,31 @@ public class GitClientFetchTest {
         assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
 
+    @Test
+    public void test_fetch_maskUrlCredentials() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.setProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials", "true");
+        try {
+            WorkspaceWithRepo newWorkspace = new WorkspaceWithRepo(repo.getRoot(), gitImplName, listener);
+            GitClient newTestGitClient = newWorkspace.getGitClient();
+            newTestGitClient.setRemoteUrl("origin", newWorkspace.localMirror());
+            newTestGitClient
+                    .fetch_()
+                    .from(
+                            new URIish("origin"),
+                            Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*")))
+                    .execute();
+            check_remote_url(newWorkspace, newWorkspace.getGitClient(), "origin");
+            assertBranchesExist(newTestGitClient.getRemoteBranches(), "origin/" + DEFAULT_MIRROR_BRANCH_NAME);
+            System.out.println("handler contains: " + handler.getMessages());
+            assertThat(handler.containsMessageSubstring("Masking"), is(true));
+        } finally {
+            System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        }
+    }
+
     /* JENKINS-33258 detected many calls to git rev-parse. This checks
      * those calls are not being made. The checkoutRandomBranch call
      * creates a branch with a random name. The later assertion checks that
