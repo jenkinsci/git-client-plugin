@@ -107,6 +107,7 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
+import org.eclipse.jgit.lib.SymbolicRef;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -655,6 +656,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             List<Ref> refs = git(repo).branchList().setListMode(mode).call();
             Set<Branch> branches = new HashSet<>(refs.size());
             for (Ref ref : refs) {
+                if (ref instanceof SymbolicRef
+                        && mode.equals(ListBranchCommand.ListMode.REMOTE)
+                        && ref.getName().endsWith("/" + Constants.HEAD)) {
+                    /* Skip HEAD symbolic ref returned as a remote ref in CLI git 2.48.0 and later
+                     *
+                     * https://github.blog/open-source/git/highlights-from-git-2-48/ says:
+                     *
+                     * With Git 2.48, if the remote has a default branch but refs/remotes/origin/HEAD
+                     * is missing locally, then a fetch will update it.
+                     */
+                    continue;
+                }
                 branches.add(new Branch(ref));
             }
             return branches;
