@@ -760,7 +760,7 @@ public class GitAPITest {
         workspace.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = testGitClient.getRemoteBranches();
         assertBranchesExist(branches, "origin/" + defaultBranchName, "origin/test", "origin/another");
-        assertEquals(3, branches.size());
+        assertEquals("Wrong branch count, found " + branches.size() + " branches: " + branches, 3, branches.size());
     }
 
     @Test
