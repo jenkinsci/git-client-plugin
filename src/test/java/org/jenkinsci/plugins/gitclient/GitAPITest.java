@@ -87,7 +87,6 @@ public class GitAPITest {
 
     private GitClient testGitClient;
     private File testGitDir;
-    private CliGitCommand cliGitCommand;
 
     public GitAPITest(final String gitImplName) {
         this.gitImplName = gitImplName;
@@ -167,7 +166,6 @@ public class GitAPITest {
 
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
-        cliGitCommand = workspace.getCliGitCommand();
         workspace.initializeWorkspace();
     }
 
