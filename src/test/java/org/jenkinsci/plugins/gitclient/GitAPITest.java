@@ -87,7 +87,6 @@ public class GitAPITest {
 
     private GitClient testGitClient;
     private File testGitDir;
-    private CliGitCommand cliGitCommand;
 
     public GitAPITest(final String gitImplName) {
         this.gitImplName = gitImplName;
@@ -167,7 +166,6 @@ public class GitAPITest {
 
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
-        cliGitCommand = workspace.getCliGitCommand();
         workspace.initializeWorkspace();
     }
 
@@ -760,7 +758,26 @@ public class GitAPITest {
         workspace.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = testGitClient.getRemoteBranches();
         assertBranchesExist(branches, "origin/" + defaultBranchName, "origin/test", "origin/another");
-        assertEquals(3, branches.size());
+        int branchCount = 3;
+        if (workspace.cgit().isAtLeastVersion(2, 48, 0, 0)) {
+            /* Fetch from CLI git 2.48.0 and later return origin/HEAD
+             *
+             * https://github.blog/open-source/git/highlights-from-git-2-48/ says:
+             *
+             * With Git 2.48, if the remote has a default branch but refs/remotes/origin/HEAD
+             * is missing locally, then a fetch will update it.
+             *
+             * This test was unintentionally testing the behavior of CLI git before
+             * 2.48.0.  Other tests in GitClientFetchTest were testing that origin/HEAD
+             * was reported as a branch.
+             */
+            assertBranchesExist(branches, "origin/HEAD");
+            branchCount = 4;
+        }
+        assertEquals(
+                "Wrong branch count, found " + branches.size() + " branches: " + branches,
+                branchCount,
+                branches.size());
     }
 
     @Test
