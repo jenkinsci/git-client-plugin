@@ -2,7 +2,8 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,17 +34,18 @@ public class ManuallyProvidedKeyVerifierTest {
     private String hostKey;
 
     @Before
-    public void assignVerifier() {
+    public void assignVerifier() { // For github.com
         hostKey =
                 "|1|7qEjynZk0IodegnbgoPEhWtdgA8=|bGs7a1ktbGWwPuZqqTbAazUAULM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
     }
 
     @Test
     public void connectWhenHostKeyProvidedForOtherHostNameThenShouldFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(hostKey);
 
         KnownHostsTestUtil.connectToHost(
-                        "bitbucket.org",
+                        nonGitHubHost(),
                         22,
                         new File(testFolder.getRoot() + "/path/to/file/random"),
                         verifier.forJGit(StreamBuildListener.fromStdout()),
@@ -57,9 +60,6 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         ManuallyProvidedKeyVerifier verifier = new ManuallyProvidedKeyVerifier(hostKey);
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
@@ -97,9 +97,6 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedWithPortThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
         String key =
                 "github.com:22 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);

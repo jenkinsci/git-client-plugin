@@ -21,6 +21,7 @@ import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.slaves.WorkspaceList;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import java.io.*;
@@ -2092,7 +2093,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
-        File workspaceTmp = new File(workspace.getAbsolutePath() + "@tmp");
+
+        File workspaceTmp = new File(workspace.getAbsolutePath() + WorkspaceList.TMP_DIR_SUFFIX);
         if (!workspaceTmp.isDirectory() && !workspaceTmp.mkdirs()) {
             if (!workspaceTmp.isDirectory()) {
                 return createTempFileInSystemDir(prefix, suffix);
