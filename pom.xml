@@ -32,7 +32,7 @@
   </scm>
 
   <properties>
-    <revision>6.1.1</revision>
+    <revision>6.1.2</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -51,7 +51,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>3893.v213a_42768d35</version>
+        <version>3944.v1a_e4f8b_452db_</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -271,27 +271,12 @@
   <build>
     <plugins>
       <plugin>
-        <!-- Needed by the mockito-core properties reference in surefire -->
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>properties</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
             <org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy.jgit_known_hosts_file>${project.build.directory}/ssh/know_hosts</org.jenkinsci.plugins.gitclient.verifier.SshHostKeyVerificationStrategy.jgit_known_hosts_file>
           </systemPropertyVariables>
-          <!-- Add mockito javaagent for the MockitoJUnitRunner in Java 21 and beyond -->
-          <!-- https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html#0.3 -->
-          <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
         </configuration>
       </plugin>
       <plugin>
