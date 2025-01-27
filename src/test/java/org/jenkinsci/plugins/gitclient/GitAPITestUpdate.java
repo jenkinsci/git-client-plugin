@@ -2046,6 +2046,49 @@ public abstract class GitAPITestUpdate {
         assertThat(writer.toString(), is(not("")));
     }
 
+    @Issue("JENKINS-23606")
+    @Test
+    public void testSupressMergeCommitDiffInShowRevision() throws Exception {
+        w.init();
+        w.commitEmpty("init");
+
+        final String branchBeforeCommit = "branchBeforeCommit";
+        w.git.branch(branchBeforeCommit);
+
+        final String fileFromBranch = "fileFromBranch";
+        w.git.checkout().ref(branchBeforeCommit).execute();
+        w.touch(fileFromBranch, "content-1");
+        w.git.add(fileFromBranch);
+        w.git.commit("commit-in-branch-before-commit");
+
+        final String fileInMain = "fileInMain";
+        w.git.checkout().ref(defaultBranchName).execute();
+        w.touch(fileInMain, "content-2");
+        w.git.add(fileInMain);
+        w.git.commit("commit-in-main-after-branch-created");
+        String commitSha1 = w.git.revParse("HEAD").name();
+
+        w.git.merge()
+                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.NO_FF)
+                .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), branchBeforeCommit))
+                .execute();
+        String commitSha2 = w.git.revParse("HEAD").name();
+
+        final List<String> defaultBehaviour =
+                w.git.showRevision(ObjectId.fromString(commitSha1), ObjectId.fromString(commitSha2), true);
+        assertTrue(
+                "Default behaviour shows merge commits diffs",
+                defaultBehaviour.stream().anyMatch(e -> e.contains(fileInMain)));
+        assertTrue(
+                "Shows file from merged branch", defaultBehaviour.stream().anyMatch(e -> e.contains(fileFromBranch)));
+
+        final List<String> notShowDiffMerge =
+                w.git.showRevision(ObjectId.fromString(commitSha1), ObjectId.fromString(commitSha2), true, true);
+        assertTrue("Merge commit diffs aren't shown", !notShowDiffMerge.stream().anyMatch(e -> e.contains(fileInMain)));
+        assertTrue(
+                "Shows file from merged branch", notShowDiffMerge.stream().anyMatch(e -> e.contains(fileFromBranch)));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient
      * remote classloader issue
