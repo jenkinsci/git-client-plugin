@@ -60,6 +60,7 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         ManuallyProvidedKeyVerifier verifier = new ManuallyProvidedKeyVerifier(hostKey);
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
@@ -78,6 +79,7 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenWrongHostKeyProvidedThenShouldFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String key = "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9OOOO";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);
 
@@ -97,6 +99,7 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedWithPortThenShouldNotFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String key =
                 "github.com:22 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);
