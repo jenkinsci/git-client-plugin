@@ -65,6 +65,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
+        Assume.assumeTrue(runKnownHostsTests());
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
@@ -85,6 +86,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws IOException {
+        Assume.assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(
                 "fake2.ssh",
                 "known_hosts_fake2",

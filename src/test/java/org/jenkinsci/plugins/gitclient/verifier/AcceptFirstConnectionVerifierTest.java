@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +43,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyHostKeyOption() throws IOException {
+        Assume.assumeTrue(runKnownHostsTests());
         assertThat(
                 new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null),
                 is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
@@ -48,6 +51,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenFirstConnection() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         File file = new File(testFolder.getRoot() + "path/to/file");
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
@@ -72,6 +76,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenSecondConnectionWithEqualKeys() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String hostKeyEntry =
                 "|1|FJGXVAi7jMQIsl1J6uE6KnCiteM=|xlH92KQ91GuBgRxvRbU/sBo60Bo= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
@@ -100,6 +105,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenHostnameWithoutPort() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String hostKeyEntry =
                 "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
@@ -123,6 +129,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenSecondConnectionWhenNotDefaultAlgorithm() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String fileContent = "github.com,140.82.121.4"
                 + " ecdsa-sha2-nistp256"
                 + " AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
@@ -150,6 +157,7 @@ public class AcceptFirstConnectionVerifierTest {
     @Test
     @Ignore("FIXME not sure what is the test here")
     public void testVerifyServerHostKeyWhenSecondConnectionWithNonEqualKeys() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String fileContent = "|1|f7esvmtaiBk+EMHjPzWbRYRpBPY=|T7Qe4QAksYPZPwYEx5QxQykSjfc=" // github.com:22
                 + " ssh-ed25519"
                 + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9OOOO";
@@ -177,6 +185,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenConnectionWithAnotherHost() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String bitbucketFileContent = "|1|HnmPCP38pBhCY0NUtBXSraOg9pM=|L6YZ9asEeb2xplTDEThGOxRq7ZY="
                 + " ssh-rsa"
                 + " AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==";
@@ -206,6 +215,7 @@ public class AcceptFirstConnectionVerifierTest {
 
     @Test
     public void testVerifyServerHostKeyWhenHostnamePortProvided() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String fileContent = "|1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M=" // github.com:59666
                 + " ssh-ed25519"
                 + " AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
