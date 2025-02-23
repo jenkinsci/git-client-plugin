@@ -2438,6 +2438,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput) throws GitException {
+        return showRevision(from, to, useRawOutput, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean suppressMergeCommitDiff)
+            throws GitException {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk w = new RevWalk(or)) {
@@ -2457,9 +2464,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (c.getParentCount() <= 1 || !useRawOutput) {
                         f.format(c, null, pw, useRawOutput);
                     } else {
-                        // the effect of the -m option, which makes the diff produce for each parent of a merge commit
-                        for (RevCommit p : c.getParents()) {
-                            f.format(c, p, pw, useRawOutput);
+                        if (!suppressMergeCommitDiff) {
+                            for (RevCommit p : c.getParents()) {
+                                f.format(c, p, pw, useRawOutput);
+                            }
                         }
                     }
 
