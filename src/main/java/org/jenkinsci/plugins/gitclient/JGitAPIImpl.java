@@ -1612,9 +1612,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            @SuppressFBWarnings(
-                    value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                    justification = "JGit interaction with spotbugs")
             private RepositoryBuilder newRepositoryBuilder() {
                 RepositoryBuilder builder = new RepositoryBuilder();
                 builder.setGitDir(new File(workspace, Constants.DOT_GIT)).readEnvironment();
@@ -3141,7 +3138,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
         try (Repository repo =
                 new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {

@@ -2,7 +2,6 @@ package hudson.plugins.git;
 
 import static java.util.stream.Collectors.joining;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import java.io.Serial;
 import java.util.ArrayList;
@@ -54,7 +53,6 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @return a {@link org.eclipse.jgit.lib.ObjectId} object.
      */
-    @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
     public ObjectId getSha1() {
         /* Returns an immutable ObjectId to avoid caller modifying ObjectId using returned ObjectId */
         return (sha1 == null) ? null : sha1.toObjectId();
@@ -65,7 +63,6 @@ public class Revision implements java.io.Serializable, Cloneable {
      *
      * @return a {@link java.lang.String} object.
      */
-    @SuppressFBWarnings(value = "NM_CONFUSING", justification = "Published API in GitObject and Revision")
     @Exported(name = "SHA1")
     public String getSha1String() {
         return sha1 == null ? "" : sha1.name();
