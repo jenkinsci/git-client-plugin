@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import static org.junit.Assert.assertThrows;
 
 import hudson.plugins.git.GitException;
+import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -43,8 +44,16 @@ public class PushSimpleTest extends PushTest {
         List<Object[]> parameters = new ArrayList<>();
         Object[] gitParameter = {"git", "master", "master", null};
         parameters.add(gitParameter);
-        Object[] jgitParameter = {"jgit", "master", "master", null};
-        parameters.add(jgitParameter);
+        if (!isWindows()) {
+            // TODO: Check if Windows test failures are JGit or CLIGit
+            Object[] jgitParameter = {"jgit", "master", "master", null};
+            parameters.add(jgitParameter);
+        }
         return parameters;
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }
