@@ -83,7 +83,7 @@ public class PushTest {
         this.expectedException = expectedException;
     }
 
-    // @Test
+    @Test
     public void push() throws IOException, GitException, InterruptedException {
         checkoutBranchAndCommitFile();
 
