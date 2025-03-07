@@ -238,7 +238,16 @@ public class PushTest {
 
     @AfterClass
     public static void removeBareRepository() throws IOException {
-        FileUtils.deleteDirectory(bareRepo);
+        if (isWindows() && System.getenv("CI") != null) {
+            try {
+                FileUtils.deleteDirectory(bareRepo);
+            } catch (IOException ioe) {
+                // TODO Understand why this fails with JGit 7.2.0 and not earlier
+                System.out.println("Ignored Windows IOException removing bare repository in PushTest");
+            }
+        } else {
+            FileUtils.deleteDirectory(bareRepo);
+        }
     }
 
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
