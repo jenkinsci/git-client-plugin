@@ -1620,34 +1620,34 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException {
-                // the directory needs to be clean or else JGit complains
-                if (workspace.exists()) {
-                    try {
+                Repository repository = null;
+
+                try {
+                    // the directory needs to be clean or else JGit complains
+                    if (workspace.exists()) {
                         Util.deleteContentsRecursive(workspace);
-                    } catch (IOException ioe) {
-                        throw new GitException(ioe);
                     }
-                }
 
-                // since jgit clone/init commands do not support object references (e.g. alternates),
-                // we build the repository directly using the RepositoryBuilder
-                RepositoryBuilder builder = newRepositoryBuilder();
+                    // since jgit clone/init commands do not support object references (e.g. alternates),
+                    // we build the repository directly using the RepositoryBuilder
 
-                if (shared) {
-                    if (reference == null || reference.isEmpty()) {
-                        // we use origin as reference
-                        reference = url;
-                    } else {
-                        listener.getLogger()
-                                .println("[WARNING] Both 'shared' and 'reference' are used, shared is ignored.");
+                    RepositoryBuilder builder = newRepositoryBuilder();
+
+                    if (shared) {
+                        if (reference == null || reference.isEmpty()) {
+                            // we use origin as reference
+                            reference = url;
+                        } else {
+                            listener.getLogger()
+                                    .println("[WARNING] Both 'shared' and 'reference' are used, shared is ignored.");
+                        }
                     }
-                }
 
-                if (reference != null && !reference.isEmpty()) {
-                    builder.addAlternateObjectDirectory(new File(reference));
-                }
+                    if (reference != null && !reference.isEmpty()) {
+                        builder.addAlternateObjectDirectory(new File(reference));
+                    }
 
-                try (Repository repository = builder.build()) {
+                    repository = builder.build();
                     repository.create();
 
                     // the repository builder does not create the alternates file
@@ -1686,13 +1686,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             }
                         }
                     }
-                } catch (IOException ioe) {
-                    throw new GitException(ioe);
-                }
 
-                // Jgit repository has alternates directory set, but seems to ignore them
-                // Workaround: open the repository again
-                try (Repository repository = getRepository()) {
+                    // Jgit repository has alternates directory set, but seems to ignore them
+                    // Workaround: close this repo and create a new one
+                    repository.close();
+                    repository = getRepository();
 
                     if (refspecs == null) {
                         refspecs =
@@ -1723,8 +1721,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             "fetch",
                             refspecs.stream().map(Object::toString).collect(Collectors.toList()));
                     config.save();
+
                 } catch (GitAPIException | IOException e) {
                     throw new GitException(e);
+                } finally {
+                    if (repository != null) {
+                        repository.close();
+                    }
                 }
             }
         };
