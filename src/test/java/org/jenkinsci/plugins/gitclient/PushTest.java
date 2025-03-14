@@ -244,7 +244,8 @@ public class PushTest {
                 Thread.sleep(4021L);
                 FileUtils.deleteDirectory(bareRepo);
             } catch (IOException ioe) {
-                // TODO Understand why this fails with JGit 7.2.0 and not earlier
+                // TODO Understand why this fails with JGit 7.2.0 and not earlier on ci.jenkins.io
+                // Does not fail on my local Windows agents
                 System.out.println("PushTest ignored Windows IOException removing bare repo " + bareRepo);
             }
         } else {
