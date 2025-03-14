@@ -239,24 +239,13 @@ public class PushTest {
     @AfterClass
     public static void removeBareRepository() throws Exception {
         if (isWindows()) {
-            Random random = new Random();
             try {
                 // Allow time for Windows to release directory
-                Thread.sleep(2000L + random.nextInt(4000));
+                Thread.sleep(4021L);
                 FileUtils.deleteDirectory(bareRepo);
             } catch (IOException ioe) {
-                try {
-                    // Allow retry Windows delete
-                    Thread.sleep(2000L + random.nextInt(4000));
-                    FileUtils.deleteDirectory(bareRepo);
-                } catch (IOException retry) {
-                    // TODO Understand why this fails with JGit 7.2.0 and not earlier
-                    // if (System.getenv("CI") != null) {
-                    System.out.println("Ignored Windows IOException removing bare repository in PushTest");
-                    // } else {
-                    //     throw retry;
-                    // }
-                }
+                // TODO Understand why this fails with JGit 7.2.0 and not earlier
+                System.out.println("PushTest ignored Windows IOException removing bare repo " + bareRepo);
             }
         } else {
             FileUtils.deleteDirectory(bareRepo);
