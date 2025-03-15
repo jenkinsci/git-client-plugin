@@ -42,7 +42,7 @@
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <jgit.version>7.2.0.202503040940-r</jgit.version>
     <!-- TODO: Remove when included in plugin BOM -->
-    <!-- TODO: Replace with released version is  available -->
+    <!-- TODO: Replace when released version is available -->
     <mina-sshd-api.version>2.15.0-156.v48eb_e3c5a_805</mina-sshd-api.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
