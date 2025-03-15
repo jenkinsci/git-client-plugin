@@ -447,19 +447,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
-    /* Separate method call for benefit of spotbugs */
-    private void closeRepo(Repository repo) {
-        if (repo != null) {
-            repo.close();
-        }
-    }
-
     private void doCheckoutWithResetAndRetry(String ref) throws GitException {
         boolean retried = false;
-        Repository repo = null;
         while (true) {
-            try {
-                repo = getRepository();
+            try (Repository repo = getRepository()) {
                 try {
                     // force in Jgit is "-B" in Git CLI, meaning no forced switch,
                     // but forces recreation of the branch.
@@ -514,7 +505,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .call();
                 return;
             } catch (CheckoutConflictException e) {
-                closeRepo(repo); /* Ready to reuse repo */
                 // "git checkout -f" seems to overwrite local untracked files but git CheckoutCommand doesn't.
                 // see the test case GitAPITest.testLocalCheckoutConflict. so in this case we manually
                 // clean up the conflicts and try it again
@@ -523,11 +513,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("Could not checkout " + ref, e);
                 }
                 retried = true;
-                repo = getRepository(); /* Reusing repo declared and assigned earlier */
-                for (String path : e.getConflictingPaths()) {
-                    File conflict = new File(repo.getWorkTree(), path);
-                    if (!conflict.delete() && conflict.exists()) {
-                        listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                try (Repository repoCleaner = getRepository()) {
+                    for (String path : e.getConflictingPaths()) {
+                        File conflict = new File(repoCleaner.getWorkTree(), path);
+                        if (!conflict.delete() && conflict.exists()) {
+                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                        }
                     }
                 }
             } catch (IOException | GitAPIException e) {
@@ -537,10 +528,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitLockFailedException("Could not lock repository. Please try again", e);
                 } else {
                     throw e;
-                }
-            } finally {
-                if (repo != null) {
-                    repo.close();
                 }
             }
         }
