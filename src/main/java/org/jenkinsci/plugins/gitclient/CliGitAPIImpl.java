@@ -2313,10 +2313,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    @SuppressFBWarnings(
-            value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
-            justification =
-                    "Path operations below intentionally use absolute '/usr/bin/chcon' and '/sys/fs/selinux/enforce' and '/proc/self/attr/current' at this time (as delivered in relevant popular Linux distros)")
     private Boolean fixSELinuxLabel(Path key, String label) {
         // returning false means chcon was tried and failed,
         // maybe caller needs to retry with other logic
@@ -2886,15 +2882,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommandIn(args, workDir, environment, TIMEOUT);
     }
 
-    @SuppressFBWarnings(
-            value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
-            justification = "earlier readStderr()/readStdout() call prevents null return")
     private String readProcessIntoString(Proc process, String encoding, boolean useStderr) throws IOException {
         if (useStderr) {
-            /* process.getStderr reference is the findbugs warning to be suppressed */
             return IOUtils.toString(process.getStderr(), encoding);
         }
-        /* process.getStdout reference is the findbugs warning to be suppressed */
         return IOUtils.toString(process.getStdout(), encoding);
     }
 
