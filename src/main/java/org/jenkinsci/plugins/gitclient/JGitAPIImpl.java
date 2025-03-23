@@ -3084,7 +3084,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     @Override
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        Repository repo = null;
         boolean isBare = false;
         if (GIT_DIR == null) {
             throw new GitException("Not a git repository"); // Compatible with CliGitAPIImpl
@@ -3092,20 +3091,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             if (isBlank(GIT_DIR) || !(new File(GIT_DIR)).isAbsolute()) {
                 if ((new File(workspace, ".git")).exists()) {
-                    repo = getRepository();
+                    try (Repository repo = getRepository()) {
+                        isBare = repo.isBare();
+                    }
                 } else {
-                    repo = new RepositoryBuilder().setGitDir(workspace).build();
+                    try (Repository repo =
+                            new RepositoryBuilder().setGitDir(workspace).build()) {
+                        isBare = repo.isBare();
+                    }
                 }
             } else {
-                repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+                try (Repository repo =
+                        new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
+                    isBare = repo.isBare();
+                }
             }
-            isBare = repo.isBare();
         } catch (IOException ioe) {
             throw new GitException(ioe);
-        } finally {
-            if (repo != null) {
-                repo.close();
-            }
         }
         return isBare;
     }
