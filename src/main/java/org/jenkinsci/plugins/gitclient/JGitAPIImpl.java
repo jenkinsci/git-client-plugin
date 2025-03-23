@@ -1607,8 +1607,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException {
-                Repository repository = null;
-
                 try {
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists()) {
@@ -1634,41 +1632,43 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         builder.addAlternateObjectDirectory(new File(reference));
                     }
 
-                    repository = builder.build();
-                    repository.create();
+                    try (Repository repository = builder.build()) {
+                        repository.create();
 
-                    // the repository builder does not create the alternates file
-                    if (reference != null && !reference.isEmpty()) {
-                        File referencePath = new File(reference);
-                        if (!referencePath.exists()) {
-                            listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                        } else if (!referencePath.isDirectory()) {
-                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                        } else {
-                            // reference path can either be a normal or a base repository
-                            File objectsPath = new File(referencePath, ".git/objects");
-                            if (!objectsPath.isDirectory()) {
-                                // reference path is bare repo
-                                objectsPath = new File(referencePath, "objects");
-                            }
-                            if (!objectsPath.isDirectory()) {
+                        // the repository builder does not create the alternates file
+                        if (reference != null && !reference.isEmpty()) {
+                            File referencePath = new File(reference);
+                            if (!referencePath.exists()) {
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
+                            } else if (!referencePath.isDirectory()) {
                                 listener.getLogger()
-                                        .println(
-                                                "[WARNING] Reference path does not contain an objects directory (no git repo?): "
-                                                        + objectsPath);
+                                        .println("[WARNING] Reference path is not a directory: " + reference);
                             } else {
-                                try {
-                                    File alternates = new File(workspace, ".git/objects/info/alternates");
-                                    String absoluteReference =
-                                            objectsPath.getAbsolutePath().replace('\\', '/');
-                                    listener.getLogger().println("Using reference repository: " + reference);
-                                    // git implementations on windows also use
-                                    try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
+                                // reference path can either be a normal or a base repository
+                                File objectsPath = new File(referencePath, ".git/objects");
+                                if (!objectsPath.isDirectory()) {
+                                    // reference path is bare repo
+                                    objectsPath = new File(referencePath, "objects");
+                                }
+                                if (!objectsPath.isDirectory()) {
+                                    listener.getLogger()
+                                            .println(
+                                                    "[WARNING] Reference path does not contain an objects directory (no git repo?): "
+                                                            + objectsPath);
+                                } else {
+                                    try {
+                                        File alternates = new File(workspace, ".git/objects/info/alternates");
+                                        String absoluteReference =
+                                                objectsPath.getAbsolutePath().replace('\\', '/');
+                                        listener.getLogger().println("Using reference repository: " + reference);
                                         // git implementations on windows also use
-                                        w.print(absoluteReference);
+                                        try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
+                                            // git implementations on windows also use
+                                            w.print(absoluteReference);
+                                        }
+                                    } catch (FileNotFoundException e) {
+                                        listener.error("Failed to setup reference");
                                     }
-                                } catch (FileNotFoundException e) {
-                                    listener.error("Failed to setup reference");
                                 }
                             }
                         }
@@ -1676,45 +1676,39 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     // Jgit repository has alternates directory set, but seems to ignore them
                     // Workaround: close this repo and create a new one
-                    repository.close();
-                    repository = getRepository();
-
-                    if (refspecs == null) {
-                        refspecs =
-                                Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + remote + "/*"));
-                    }
-                    FetchCommand fetch = new Git(repository)
-                            .fetch()
-                            .setProgressMonitor(new JGitProgressMonitor(listener))
-                            .setRemote(url)
-                            .setCredentialsProvider(getProvider())
-                            .setTransportConfigCallback(getTransportConfigCallback())
-                            .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
-                            .setRefSpecs(refspecs);
-                    setTransportTimeout(fetch, "fetch", timeout);
-                    if (shallow) {
-                        if (depth == null) {
-                            depth = 1;
+                    try (Repository repository = getRepository()) {
+                        if (refspecs == null) {
+                            refspecs = Collections.singletonList(
+                                    new RefSpec("+refs/heads/*:refs/remotes/" + remote + "/*"));
                         }
-                        fetch.setDepth(depth);
+                        FetchCommand fetch = new Git(repository)
+                                .fetch()
+                                .setProgressMonitor(new JGitProgressMonitor(listener))
+                                .setRemote(url)
+                                .setCredentialsProvider(getProvider())
+                                .setTransportConfigCallback(getTransportConfigCallback())
+                                .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
+                                .setRefSpecs(refspecs);
+                        setTransportTimeout(fetch, "fetch", timeout);
+                        if (shallow) {
+                            if (depth == null) {
+                                depth = 1;
+                            }
+                            fetch.setDepth(depth);
+                        }
+                        fetch.call();
+
+                        StoredConfig config = repository.getConfig();
+                        config.setString("remote", remote, "url", url);
+                        config.setStringList(
+                                "remote",
+                                remote,
+                                "fetch",
+                                refspecs.stream().map(Object::toString).collect(Collectors.toList()));
+                        config.save();
                     }
-                    fetch.call();
-
-                    StoredConfig config = repository.getConfig();
-                    config.setString("remote", remote, "url", url);
-                    config.setStringList(
-                            "remote",
-                            remote,
-                            "fetch",
-                            refspecs.stream().map(Object::toString).collect(Collectors.toList()));
-                    config.save();
-
                 } catch (GitAPIException | IOException e) {
                     throw new GitException(e);
-                } finally {
-                    if (repository != null) {
-                        repository.close();
-                    }
                 }
             }
         };
