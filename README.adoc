@@ -71,7 +71,7 @@ JGit with Apache HTTP Client continues to delivered to assure compatibility.
 [#installing-mingit-for-windows-automatically]
 === Installing MinGit for Windows Automatically
 
-Jenkins can install link:https://github.com/git-for-windows/git/wiki/MinGit[MinGit for Windows] automatically.
+Jenkins can install link:https://gitforwindows.org/mingit[MinGit for Windows] automatically.
 MinGit for Windows is an intentionally minimal, non-interactive distribution of Git for Windows, with third-party applications as its intended audience.
 Jenkins is well suited to use MinGit on Windows agents.
 
