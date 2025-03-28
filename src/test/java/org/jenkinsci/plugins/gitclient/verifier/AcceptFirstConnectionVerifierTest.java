@@ -232,9 +232,9 @@ public class AcceptFirstConnectionVerifierTest {
         Assume.assumeTrue(runKnownHostsTests());
         String fileContent =
                 """
-                |1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M=\
-                 ssh-ed25519\
-                 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl\
+                |1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M= \
+                ssh-ed25519 \
+                AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl\
                 """;
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(fileContent);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
