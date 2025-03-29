@@ -237,8 +237,20 @@ public class PushTest {
     }
 
     @AfterClass
-    public static void removeBareRepository() throws IOException {
-        FileUtils.deleteDirectory(bareRepo);
+    public static void removeBareRepository() throws Exception {
+        if (isWindows()) {
+            try {
+                // Allow time for Windows to release directory
+                Thread.sleep(4021L);
+                FileUtils.deleteDirectory(bareRepo);
+            } catch (IOException ioe) {
+                // TODO Understand why this fails with JGit 7.2.0 and not earlier on ci.jenkins.io
+                // Does not fail on my local Windows agents
+                System.out.println("PushTest ignored Windows IOException removing bare repo " + bareRepo);
+            }
+        } else {
+            FileUtils.deleteDirectory(bareRepo);
+        }
     }
 
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
