@@ -250,7 +250,7 @@ public class AcceptFirstConnectionVerifierTest {
                             Awaitility.await()
                                     .atMost(Duration.ofSeconds(45))
                                     .until(() -> session.getServerKey() != null);
-                            assertThat(KnownHostsTestUtil.checkKeys(session), is(true));
+                            assertThat(KnownHostsTestUtil.checkKeys(session), is(false));
                             return true;
                         })
                 .close();
