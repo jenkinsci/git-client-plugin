@@ -235,9 +235,7 @@ public class AcceptFirstConnectionVerifierTest {
                 .close();
         List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
         assertThat(actual, hasItem(bitbucketFileContent));
-        assertThat(
-                actual,
-                hasItem(containsString(KEY_ssh_rsa.substring(KEY_ssh_rsa.indexOf(" ")))));
+        assertThat(actual, hasItem(containsString(KEY_ssh_rsa.substring(KEY_ssh_rsa.indexOf(" ")))));
     }
 
     @Test

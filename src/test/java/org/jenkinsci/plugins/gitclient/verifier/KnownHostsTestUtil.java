@@ -83,7 +83,8 @@ public class KnownHostsTestUtil {
 
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
-                .hostConfigEntryResolver(new ConfigFileHostEntryResolver(Path.of("src/test/resources/ssh_config-" + algorithm)))
+                .hostConfigEntryResolver(
+                        new ConfigFileHostEntryResolver(Path.of("src/test/resources/ssh_config-" + algorithm)))
                 .serverKeyVerifier(new JGitServerKeyVerifier(verifier.getServerKeyDatabase()))
                 .compressionFactories(new ArrayList<>(BuiltinCompressions.VALUES))
                 .build()) {
