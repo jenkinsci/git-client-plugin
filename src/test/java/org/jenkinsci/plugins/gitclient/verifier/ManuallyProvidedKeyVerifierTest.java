@@ -49,6 +49,7 @@ public class ManuallyProvidedKeyVerifierTest {
                         22,
                         new File(testFolder.getRoot() + "/path/to/file/random"),
                         verifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -67,7 +68,7 @@ public class ManuallyProvidedKeyVerifierTest {
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (hostKey + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
+        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
                     assertThat(s.isOpen(), is(true));
                     Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
                     // Should not fail because hostkey for 'github.com:22' was provided
@@ -88,7 +89,7 @@ public class ManuallyProvidedKeyVerifierTest {
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (key + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
+        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ssh-ed25519", s -> {
                     assertThat(s.isOpen(), is(true));
                     Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
                     assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
@@ -109,7 +110,7 @@ public class ManuallyProvidedKeyVerifierTest {
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (key + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
+        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
                     assertThat(s.isOpen(), is(true));
                     Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
                     assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
