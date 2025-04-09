@@ -226,4 +226,40 @@ public class AcceptFirstConnectionVerifierTest {
                 actual,
                 hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
     }
+
+    @Test
+    public void testVerifyServerHostKeyWhenHostnamePortProvided() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
+        String fileContent =
+                """
+                |1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M= \
+                ssh-ed25519 \
+                AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl\
+                """;
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(fileContent);
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        session -> {
+                            assertThat(session.isOpen(), is(true));
+                            Awaitility.await()
+                                    .atMost(Duration.ofSeconds(45))
+                                    .until(() -> session.getServerKey() != null);
+                            // TODO: Understand why this varies based on Mina SSHD version
+                            // Does not perform the key check with Mina SSHD 2.15.0
+                            // Perform the key check with Mina SSHD before 2.15.0
+                            // assertThat(KnownHostsTestUtil.checkKeys(session), is(true));
+                            return true;
+                        })
+                .close();
+        assertThat(mockedKnownHosts, is(anExistingFile()));
+        List<String> actual = Files.readAllLines(mockedKnownHosts.toPath());
+        assertThat(actual, hasItem(fileContent));
+        assertThat(actual, hasItem(containsString(FILE_CONTENT.substring(FILE_CONTENT.indexOf(" ")))));
+    }
 }
