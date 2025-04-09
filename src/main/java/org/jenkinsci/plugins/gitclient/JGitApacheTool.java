@@ -4,6 +4,7 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
+import java.io.Serial;
 import java.util.Collections;
 import java.util.List;
 import org.jenkinsci.Symbol;
@@ -13,6 +14,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
  * JGit, configured with the Apache HTTP Client, as {@link hudson.plugins.git.GitTool}
  */
 public class JGitApacheTool extends GitTool {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @DataBoundConstructor

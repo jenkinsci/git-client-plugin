@@ -18,6 +18,7 @@ import hudson.remoting.RemoteOutputStream;
 import hudson.remoting.RemoteWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.io.Writer;
 import java.lang.reflect.InvocationHandler;
@@ -107,6 +108,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
                     "Method not found: " + methodName + "(" + String.join(",", parameterTypes) + ")");
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
     }
 
@@ -156,6 +158,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
             }
         }
 
+        @Serial
         private static final long serialVersionUID = 1L;
 
         private class GitCommandMasterToSlaveCallable
@@ -1043,6 +1046,7 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
         proxy.setProxy(proxyConfiguration);
     }
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /** {@inheritDoc} */

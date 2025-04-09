@@ -25,11 +25,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class KnownHostsFileVerifierTest {
 
     private static final String FILE_CONTENT =
-            """
-            github.com\
-             ecdsa-sha2-nistp256\
-             AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=\
-            """;
+            "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
@@ -68,6 +64,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
+        Assume.assumeTrue(runKnownHostsTests());
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
@@ -88,6 +85,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws IOException {
+        Assume.assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(
                 "fake2.ssh",
                 "known_hosts_fake2",

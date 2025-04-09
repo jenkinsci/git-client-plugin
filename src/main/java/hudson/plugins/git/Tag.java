@@ -1,5 +1,6 @@
 package hudson.plugins.git;
 
+import java.io.Serial;
 import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
 
@@ -7,6 +8,7 @@ import org.eclipse.jgit.lib.ObjectId;
  * Git tag including SHA1 and message of the associated commit.
  */
 public class Tag extends GitObject {
+    @Serial
     private static final long serialVersionUID = 1L;
     /** SHA1 hash of the tagged commit */
     public String commitSHA1;
