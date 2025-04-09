@@ -44,6 +44,10 @@
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
+    <!--
+    TODO Remove once in BOM - https://github.com/jenkinsci/bom/pull/4840/files
+    -->
+    <mina-sshd-api.version>2.15.0-161.vb_200831a_c15b_</mina-sshd-api.version>
   </properties>
 
   <dependencyManagement>
@@ -72,11 +76,13 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
+      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
+      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
