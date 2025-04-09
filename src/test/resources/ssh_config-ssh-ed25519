@@ -1,0 +1,3 @@
+Host github.com
+  Hostname github.com
+  HostKeyAlgorithms ssh-ed25519

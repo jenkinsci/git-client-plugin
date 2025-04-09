@@ -33,6 +33,7 @@ public class NoHostKeyVerifierTest {
                         22,
                         null,
                         acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ssh-ed25519" /* Indiferent for the test */,
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
