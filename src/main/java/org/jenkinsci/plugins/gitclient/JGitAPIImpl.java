@@ -1722,6 +1722,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                     listener.getLogger()
                                             .println("[WARNING] Reference path is not a directory: " + reference);
                                 } else {
+                                    // reference path can either be a normal or a base repository
                                     File objectsPath = getObjectsFile(referencePath);
                                     if (objectsPath == null || !objectsPath.isDirectory()) {
                                         listener.getLogger()
