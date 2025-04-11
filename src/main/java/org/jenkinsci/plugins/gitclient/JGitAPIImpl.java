@@ -1716,7 +1716,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                     reference = referencePath.getPath();
                                 }
                                 if (!referencePath.exists()) {
-                                    listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
+                                    listener.getLogger()
+                                            .println("[WARNING] Reference path does not exist: " + reference);
                                 } else if (!referencePath.isDirectory()) {
                                     listener.getLogger()
                                             .println("[WARNING] Reference path is not a directory: " + reference);
@@ -1731,8 +1732,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                                         // Go behind git's back to write a meta file in new workspace
                                         try {
                                             File alternates = new File(workspace, ".git/objects/info/alternates");
-                                            String absoluteReference =
-                                                    objectsPath.getAbsolutePath().replace('\\', '/');
+                                            String absoluteReference = objectsPath
+                                                    .getAbsolutePath()
+                                                    .replace('\\', '/');
                                             listener.getLogger().println("Using reference repository: " + reference);
                                             // git implementations on windows also use
                                             try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
