@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.9</version>
+    <version>5.10</version>
     <relativePath />
   </parent>
 
@@ -32,7 +32,7 @@
   </scm>
 
   <properties>
-    <revision>6.1.3</revision>
+    <revision>6.1.4</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -44,6 +44,10 @@
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
+    <!--
+    TODO Remove once in BOM - https://github.com/jenkinsci/bom/pull/4840/files
+    -->
+    <mina-sshd-api.version>2.15.0-161.vb_200831a_c15b_</mina-sshd-api.version>
   </properties>
 
   <dependencyManagement>
@@ -51,7 +55,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>4440.v39a_9eb_b_c6b_4d</version>
+        <version>4570.v1b_c718dd3b_1e</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -72,11 +76,13 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
+      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
+      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -213,7 +219,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.19.2</version>
+      <version>3.19.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>

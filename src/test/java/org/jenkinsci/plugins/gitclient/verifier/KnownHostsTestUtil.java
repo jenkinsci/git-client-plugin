@@ -77,12 +77,14 @@ public class KnownHostsTestUtil {
             int port,
             File knownHostsFile,
             AbstractJGitHostKeyVerifier verifier,
+            String algorithm,
             Predicate<JGitClientSession> asserts)
             throws IOException {
 
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
-                .hostConfigEntryResolver(new ConfigFileHostEntryResolver(Path.of("src/test/resources/ssh_config")))
+                .hostConfigEntryResolver(
+                        new ConfigFileHostEntryResolver(Path.of("src/test/resources/ssh_config-" + algorithm)))
                 .serverKeyVerifier(new JGitServerKeyVerifier(verifier.getServerKeyDatabase()))
                 .compressionFactories(new ArrayList<>(BuiltinCompressions.VALUES))
                 .build()) {

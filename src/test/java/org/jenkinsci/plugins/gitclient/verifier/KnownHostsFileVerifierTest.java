@@ -53,6 +53,7 @@ public class KnownHostsFileVerifierTest {
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -74,6 +75,7 @@ public class KnownHostsFileVerifierTest {
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -98,6 +100,7 @@ public class KnownHostsFileVerifierTest {
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
