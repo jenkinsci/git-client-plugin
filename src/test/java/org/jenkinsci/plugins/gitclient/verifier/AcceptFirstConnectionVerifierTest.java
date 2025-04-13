@@ -262,10 +262,7 @@ public class AcceptFirstConnectionVerifierTest {
                             Awaitility.await()
                                     .atMost(Duration.ofSeconds(45))
                                     .until(() -> session.getServerKey() != null);
-                            // TODO: Understand why this varies based on Mina SSHD version
-                            // Does not perform the key check with Mina SSHD 2.15.0
-                            // Perform the key check with Mina SSHD before 2.15.0
-                            // assertThat(KnownHostsTestUtil.checkKeys(session), is(true));
+                            assertThat(KnownHostsTestUtil.checkKeys(session), is(true));
                             return true;
                         })
                 .close();
