@@ -2218,7 +2218,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             default:
                             case 0:
                                 break; // empty / HEAD for the first ref. if fine for JGit (see
-                                // https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
+                            // https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
                             case 1: // empty second ref. generally means to push "matching" branches, hard to implement
                                 // the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
                                 specs[spec] = repository.getFullBranch();
