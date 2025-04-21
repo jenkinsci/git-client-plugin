@@ -2217,9 +2217,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         switch (spec) {
                             default:
                             case 0:
-                                break; // empty / HEAD for the first ref. if fine for JGit (see
-                            // https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
-                            case 1: // empty second ref. generally means to push "matching" branches, hard to implement
+                                // empty / HEAD for the first ref. if fine for JGit.
+                                // https://javadoc.io/doc/org.eclipse.jgit/org.eclipse.jgit/7.0.0.202409031743-r/org.eclipse.jgit/org/eclipse/jgit/transport/RefSpec.html
+                                break;
+                            case 1:
+                                // empty second ref. generally means to push "matching" branches, hard to implement
                                 // the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
                                 specs[spec] = repository.getFullBranch();
                                 break;
@@ -2227,14 +2229,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } else if (!specs[spec].startsWith("refs/") && !specs[spec].startsWith("+refs/")) {
                         switch (spec) {
                             default:
-                            case 0: // for the source ref. we use the repository to determine what should be pushed
+                            case 0:
+                                // for the source ref. we use the repository to determine what should be pushed
                                 Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
                                     throw new IOException("Ref %s not found.".formatted(specs[spec]));
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
-                            case 1: // for the target ref. we can't use the repository, so we try our best to determine
+                            case 1:
+                                // for the target ref. we can't use the repository, so we try our best to determine
                                 // the ref.
                                 if (!specs[spec].startsWith("/")) {
                                     specs[spec] = "/" + specs[spec];
