@@ -40,7 +40,7 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.479</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
-    <jgit.version>7.2.0.202503040940-r</jgit.version>
+    <jgit.version>7.2.1.202505142326-r</jgit.version>
     <!-- TODO: Remove when included in plugin BOM for jenkins.baseline -->
     <mina-sshd-api.version>2.15.0-161.vb_200831a_c15b_</mina-sshd-api.version>
     <spotbugs.effort>Max</spotbugs.effort>
