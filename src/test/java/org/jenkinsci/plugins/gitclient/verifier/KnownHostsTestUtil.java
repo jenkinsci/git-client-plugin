@@ -142,7 +142,7 @@ public class KnownHostsTestUtil {
     private static String[] nonGitHubHosts = {
         // bitbucket.org blocks requests from ci.jenkins.io agents
         // "bitbucket.org",
-        "git.assembla.com", "gitea.com", "gitlab.com", "vs-ssh.visualstudio.com",
+        "git.assembla.com", "gitea.com", "gitlab.com", "vs-ssh.visualstudio.com", "ssh.dev.azure.com"
     };
 
     /* Return hostname of a non-GitHub ssh provider */
