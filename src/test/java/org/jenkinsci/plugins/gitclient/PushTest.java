@@ -59,9 +59,7 @@ public class PushTest {
     private static GitClient bareGitClient;
     private static ObjectId bareFirstCommit;
 
-    private static final String BRANCH_NAMES[] = {
-        "master", /* "feature/push-test" */
-    };
+    private static final String BRANCH_NAMES[] = {"master", "feature/push-test"};
 
     private ObjectId previousCommit;
 
@@ -98,7 +96,7 @@ public class PushTest {
         }
     }
 
-    // @Test
+    @Test
     public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException {
         checkoutOldBranchAndCommitFile();
 
@@ -117,17 +115,14 @@ public class PushTest {
     @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
     public static Collection<Object[]> pushParameters() {
         List<Object[]> parameters = new ArrayList<>();
-        final String[] implementations = {
-            /* "git", */
-            "jgit"
-        };
+        final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
-            "{0}" // , "HEAD", "HEAD:{0}", "{0}:{0}", "refs/heads/{0}", "{0}:heads/{0}", "{0}:refs/heads/{0}"
+            "{0}", "HEAD", "HEAD:{0}", "{0}:{0}", "refs/heads/{0}", "{0}:heads/{0}", "{0}:refs/heads/{0}"
         };
         final String[] badRefSpecs = {
             /* ":", // JGit fails with "ERROR: branch is currently checked out" */
             /* ":{0}", // CliGitAPIImpl will delete the remote branch with this refspec */
-            "this/ref/does/not/exist", // "src/ref/does/not/exist:dest/ref/does/not/exist"
+            "this/ref/does/not/exist", "src/ref/does/not/exist:dest/ref/does/not/exist"
         };
 
         shuffleArray(implementations);
@@ -144,7 +139,7 @@ public class PushTest {
                 for (String paramRefSpec : badRefSpecs) {
                     String spec = MessageFormat.format(paramRefSpec, branch);
                     Object[] parameter = {implementation, branch, spec, GitException.class};
-                    // parameters.add(parameter);
+                    parameters.add(parameter);
                 }
             }
         }
@@ -242,17 +237,9 @@ public class PushTest {
     }
 
     @AfterClass
-    public static void removeBareRepository() throws Exception {
-        if (isWindows()) {
-            try {
-                // Allow time for Windows to release directory
-                Thread.sleep(4021L);
-                FileUtils.deleteDirectory(bareRepo);
-            } catch (IOException ioe) {
-                // TODO File handle leak must be fixed
-                org.junit.Assert.fail("IOException removing bare repo " + bareRepo);
-            }
-        } else {
+    public static void removeBareRepository() throws IOException {
+        // TODO File handle leak must be fixed, Windows shows a leak in this test
+        if (!isWindows()) {
             FileUtils.deleteDirectory(bareRepo);
         }
     }
