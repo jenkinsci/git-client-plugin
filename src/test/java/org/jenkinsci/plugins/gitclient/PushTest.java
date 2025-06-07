@@ -89,13 +89,13 @@ public class PushTest {
     public void push() throws IOException, GitException, InterruptedException {
         checkoutBranchAndCommitFile();
 
-        // if (expectedException != null) {
-        //     assertThrows(
-        //             expectedException,
-        //             () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
-        // } else {
-        //     workingGitClient.push().to(bareURI).ref(refSpec).execute();
-        // }
+        if (expectedException != null) {
+            assertThrows(
+                    expectedException,
+                    () -> workingGitClient.push().to(bareURI).ref(refSpec).execute());
+        } else {
+            workingGitClient.push().to(bareURI).ref(refSpec).execute();
+        }
     }
 
     // @Test
