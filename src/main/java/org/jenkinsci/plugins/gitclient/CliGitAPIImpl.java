@@ -1,30 +1,16 @@
 package org.jenkinsci.plugins.gitclient;
 
-import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import edu.umd.cs.findbugs.annotations.CheckForNull;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.EnvVars;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Launcher.LocalLauncher;
-import hudson.Proc;
-import hudson.Util;
-import hudson.console.HyperlinkNote;
-import hudson.model.TaskListener;
-import hudson.plugins.git.Branch;
-import hudson.plugins.git.GitException;
-import hudson.plugins.git.GitLockFailedException;
-import hudson.plugins.git.GitObject;
-import hudson.plugins.git.IGitAPI;
-import hudson.plugins.git.IndexEntry;
-import hudson.plugins.git.Revision;
-import hudson.slaves.WorkspaceList;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.Secret;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Serial;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -59,20 +45,50 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.cgit.GitCommandsExecutor;
 import org.jenkinsci.plugins.scriptsecurity.sandbox.whitelists.Whitelisted;
 import org.kohsuke.stapler.framework.io.WriterOutputStream;
+
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+
+import edu.umd.cs.findbugs.annotations.CheckForNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import hudson.EnvVars;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Launcher.LocalLauncher;
+import hudson.Proc;
+import hudson.Util;
+import hudson.console.HyperlinkNote;
+import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitException;
+import hudson.plugins.git.GitLockFailedException;
+import hudson.plugins.git.GitObject;
+import hudson.plugins.git.IGitAPI;
+import hudson.plugins.git.IndexEntry;
+import hudson.plugins.git.Revision;
+import hudson.slaves.WorkspaceList;
+import hudson.util.ArgumentListBuilder;
+import hudson.util.Secret;
 
 /**
  * Implementation class using command line CLI ran as external command.
@@ -3036,6 +3052,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             return branches;
+        } finally {
+            // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
+            RepositoryCache.clear();
+            WindowCache.reconfigure(new WindowCacheConfig());
         }
     }
 

@@ -94,6 +94,7 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
@@ -106,6 +107,7 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.notes.Note;
@@ -119,6 +121,7 @@ import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
@@ -198,6 +201,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
         hostKeyVerifierFactory = hostKeyFactory;
+    }
+
+    /* Intentionally package protected for access by classes in the package */
+    private void workaroundJGitFileLeak() {
+        // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
+        RepositoryCache.clear();
+        WindowCache.reconfigure(new WindowCacheConfig());
     }
 
     public SshdSessionFactory buildSshdSessionFactory(@NonNull final HostKeyVerifierFactory hostKeyVerifierFactory) {
@@ -520,6 +530,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
                         }
                     }
+                } finally {
+                    workaroundJGitFileLeak();
                 }
             } catch (IOException | GitAPIException e) {
                 throw new GitException("Could not checkout " + ref, e);
@@ -529,6 +541,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 } else {
                     throw e;
                 }
+            } finally {
+                workaroundJGitFileLeak();
             }
         }
     }
@@ -544,6 +558,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     .call();
         } catch (GitAPIException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        } finally {
+            workaroundJGitFileLeak();
         }
     }
 
@@ -564,6 +580,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             doCheckoutWithResetAndRetry(branch);
         } catch (IOException e) {
             throw new GitException("Could not checkout " + branch + " with start point " + ref, e);
+        } finally {
+            workaroundJGitFileLeak();
         }
     }
 
