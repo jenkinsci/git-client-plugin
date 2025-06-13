@@ -23,10 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import org.apache.commons.io.FileUtils;
-import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.lib.RepositoryCache;
-import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -241,12 +238,7 @@ public class PushTest {
 
     @AfterClass
     public static void removeBareRepository() throws IOException {
-        // TODO File handle leak must be fixed, Windows shows a leak in this test
-        RepositoryCache.clear();
-        WindowCache.reconfigure(new WindowCacheConfig());
-        // if (!isWindows()) {
         FileUtils.deleteDirectory(bareRepo);
-        // }
     }
 
     protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
