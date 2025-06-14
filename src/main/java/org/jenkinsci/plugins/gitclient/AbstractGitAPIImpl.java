@@ -11,9 +11,12 @@ import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 
 /**
  * Common parts between {@link JGitAPIImpl} and {@link CliGitAPIImpl}.
@@ -26,6 +29,10 @@ abstract class AbstractGitAPIImpl implements GitClient, Serializable {
     public <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException {
         try (Repository repo = getRepository()) {
             return callable.invoke(repo, FilePath.localChannel);
+        } finally {
+            // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
+            RepositoryCache.clear();
+            WindowCache.reconfigure(new WindowCacheConfig());
         }
     }
 
