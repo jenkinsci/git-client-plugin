@@ -203,7 +203,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         hostKeyVerifierFactory = hostKeyFactory;
     }
 
-    /* Intentionally package protected for access by classes in the package */
     private void workaroundJGitFileLeak() {
         // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
         RepositoryCache.clear();
