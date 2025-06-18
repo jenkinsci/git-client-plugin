@@ -82,9 +82,8 @@ public class JGitLightweightTagTest {
     }
 
     private void packRefs() throws Exception {
-        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
-            org.eclipse.jgit.internal.storage.file.GC gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
-            gc.packRefs();
+        try (org.eclipse.jgit.api.Git jgit = new org.eclipse.jgit.api.Git(new FileRepository(repoRootGitDir))) {
+            jgit.packRefs().setAll(true).call();
         }
     }
 

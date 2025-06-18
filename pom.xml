@@ -32,7 +32,7 @@
   </scm>
 
   <properties>
-    <revision>6.1.4</revision>
+    <revision>6.2.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -40,7 +40,7 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.479</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
-    <jgit.version>7.0.0.202409031743-r</jgit.version>
+    <jgit.version>7.3.0.202506031305-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -145,11 +145,6 @@
       <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
       <version>${jgit.version}</version>
       <exclusions>
-        <exclusion>
-          <!-- Prevent inclusion of transitive dependency -->
-          <groupId>net.i2p.crypto</groupId>
-          <artifactId>eddsa</artifactId>
-        </exclusion>
         <exclusion>
           <!-- Prevent inclusion of transitive dependency, OSGi not needed by git client plugin -->
           <groupId>org.apache.sshd</groupId>
