@@ -125,7 +125,6 @@ import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
-import org.eclipse.jgit.transport.HttpTransport;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -993,7 +992,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (transport instanceof SshTransport sshTransport) {
                 sshTransport.setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
             }
-            if (transport instanceof HttpTransport) {
+            if (transport instanceof TransportHttp) {
                 ((TransportHttp) transport)
                         .setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
             }
@@ -1004,7 +1003,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (tn instanceof SshTransport transport) {
             transport.setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
         }
-        if (tn instanceof HttpTransport) {
+        if (tn instanceof TransportHttp) {
             ((TransportHttp) tn).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
         }
     }
