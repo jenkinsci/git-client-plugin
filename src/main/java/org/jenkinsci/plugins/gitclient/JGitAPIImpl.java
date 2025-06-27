@@ -992,9 +992,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (transport instanceof SshTransport sshTransport) {
                 sshTransport.setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
             }
-            if (transport instanceof TransportHttp) {
-                ((TransportHttp) transport)
-                        .setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            if (transport instanceof TransportHttp transportHttp) {
+                transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
             }
         };
     }
@@ -1003,8 +1002,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (tn instanceof SshTransport transport) {
             transport.setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
         }
-        if (tn instanceof TransportHttp) {
-            ((TransportHttp) tn).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+        if (tn instanceof TransportHttp transportHttp) {
+            transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
         }
     }
 
