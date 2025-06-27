@@ -63,7 +63,6 @@ import java.util.stream.Collectors;
 import jenkins.util.SystemProperties;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.SystemUtils;
-import org.apache.commons.lang.time.FastDateFormat;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
@@ -118,6 +117,7 @@ import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.revwalk.filter.AndRevFilter;
 import org.eclipse.jgit.revwalk.filter.MaxCountRevFilter;
 import org.eclipse.jgit.revwalk.filter.RevFilter;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -1310,6 +1310,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private RevWalk walk = new RevWalk(or);
             private Writer out;
             private boolean hasIncludedRev = false;
+            private boolean includeMergeCommits = false;
+            private Integer maxCount = null;
 
             @Override
             public ChangelogCommand excludes(String rev) throws GitException {
@@ -1360,7 +1362,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public ChangelogCommand max(int n) {
-                walk.setRevFilter(MaxCountRevFilter.create(n));
+                this.maxCount = n;
+                return this;
+            }
+
+            @Override
+            public ChangelogCommand includeMergeCommits(boolean include) {
+                this.includeMergeCommits = include;
                 return this;
             }
 
@@ -1387,6 +1395,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (out == null) {
                     throw new IllegalStateException(); // Match CliGitAPIImpl
                 }
+                List<RevFilter> filters = new ArrayList<>();
+
+                if (!includeMergeCommits) {
+                    filters.add(RevFilter.NO_MERGES);
+                }
+                if (maxCount != null) {
+                    filters.add(MaxCountRevFilter.create(maxCount));
+                }
+                if (filters.isEmpty()) {
+                    walk.setRevFilter(RevFilter.ALL);
+                } else if (filters.size() == 1) {
+                    walk.setRevFilter(filters.get(0));
+                } else {
+                    walk.setRevFilter(AndRevFilter.create(filters));
+                }
                 try (PrintWriter pw = new PrintWriter(out, false)) {
                     RawFormatter formatter = new RawFormatter();
                     if (!hasIncludedRev) {
@@ -1394,11 +1417,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
-                        if (commit.getParentCount() > 1) {
-                            continue;
-                        }
-
                         formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
@@ -1435,8 +1453,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        public static final String ISO_8601 = "yyyy-MM-dd'T'HH:mm:ssZ";
-
         /**
          * Formats a commit into the raw format.
          *
@@ -1461,11 +1477,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             for (RevCommit p : commit.getParents()) {
                 pw.printf("parent %s\n", p.name());
             }
-            FastDateFormat iso = FastDateFormat.getInstance(ISO_8601);
-            PersonIdent a = commit.getAuthorIdent();
-            pw.printf("author %s <%s> %s\n", a.getName(), a.getEmailAddress(), iso.format(a.getWhen()));
-            PersonIdent c = commit.getCommitterIdent();
-            pw.printf("committer %s <%s> %s\n", c.getName(), c.getEmailAddress(), iso.format(c.getWhen()));
+            pw.printf("author %s\n", commit.getAuthorIdent().toExternalString());
+            pw.printf("committer %s\n", commit.getCommitterIdent().toExternalString());
 
             // indent commit messages by 4 chars
             String msg = commit.getFullMessage();
