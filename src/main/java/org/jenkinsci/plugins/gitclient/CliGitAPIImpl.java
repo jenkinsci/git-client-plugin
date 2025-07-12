@@ -62,14 +62,11 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.lib.RepositoryCache;
-import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -3040,10 +3037,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             return branches;
-        } finally {
-            // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
-            RepositoryCache.clear();
-            WindowCache.reconfigure(new WindowCacheConfig());
         }
     }
 
