@@ -109,6 +109,14 @@ public interface ChangelogCommand extends GitCommand {
     ChangelogCommand max(int n);
 
     /**
+     * Include merge commits in the changelog.
+     *
+     * @param include a boolean.
+     * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
+     */
+    ChangelogCommand includeMergeCommits(boolean include);
+
+    /**
      * Abort this ChangelogCommand without executing it, close any
      * open resources.  The JGit implementation of changelog
      * calculation opens the git repository and will close it when the
