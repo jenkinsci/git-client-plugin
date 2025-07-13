@@ -1786,6 +1786,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new File(workspace, pathJoin(".git", "shallow")).exists();
     }
 
+    /** Returns true if the remote has a promisor configured for missing blobs. */
+    public boolean hasPromisor(String name) throws GitException, InterruptedException {
+        try {
+            return launchCommand("config", "remote." + name + ".promisor").contains("true");
+        } catch (GitException ge) {
+            return false;
+        }
+    }
+
     private String pathJoin(String a, String b) {
         return new File(a, b).toString();
     }
@@ -2115,6 +2124,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @NonNull URIish url,
             Integer timeout)
             throws GitException, InterruptedException {
+        return launchCommandWithCredentials(args, workDir, environment, credentials, url, timeout);
+    }
+
+    private String launchCommandWithCredentials(
+            ArgumentListBuilder args,
+            File workDir,
+            EnvVars env,
+            StandardCredentials credentials,
+            @NonNull URIish url,
+            Integer timeout)
+            throws GitException, InterruptedException {
 
         Path key = null;
         Path ssh = null;
@@ -2123,7 +2143,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Path passwordFile = null;
         Path passphrase = null;
         Path knownHostsTemp = null;
-        EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
             env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
@@ -3204,7 +3223,32 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    String repoUrl = null;
+                    try {
+                        String defaultRemote = getDefaultRemote();
+                        if (defaultRemote != null && !defaultRemote.isEmpty() && hasPromisor(defaultRemote)) {
+                            repoUrl = getRemoteUrl(defaultRemote);
+                        }
+                    } catch (GitException e) {
+                        /* Nothing to do, just keeping repoUrl = null */
+                    }
+
+                    if (repoUrl != null) {
+                        StandardCredentials cred = credentials.get(repoUrl);
+                        if (cred == null) {
+                            cred = defaultCredentials;
+                        }
+
+                        try {
+                            launchCommandWithCredentials(
+                                    args, workspace, checkoutEnv, cred, new URIish(repoUrl), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + repoUrl, e);
+                        }
+                    } else {
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    }
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
