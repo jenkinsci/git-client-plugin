@@ -599,10 +599,36 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     args.add("--depth=" + depth);
                 }
 
-                if (filterSpec != null && isAtLeastVersion(2, 22, 0, 0)) {
-                    // in the future, we could add --refetch if we detect a change in the filter configuration to
-                    // trigger maintenance
-                    args.add("--filter=" + filterSpec);
+                if (filterSpec != null) {
+                    // try to get the current filterspec
+                    String currentFilterSpec = null;
+                    String defaultRemote = null;
+                    try {
+                        defaultRemote = getDefaultRemote();
+                        if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                            currentFilterSpec = launchCommand(
+                                "config", "remote." + defaultRemote + ".partialclonefilter");
+                        }
+                        // We might fail if we have no modules, so catch this
+                        // exception and just return.
+                    } catch (GitException e) {
+                        // leave currentFilterSpec null
+                    }
+
+                    if (isAtLeastVersion(2, 22, 0, 0)) {
+                        args.add("--filter=" + filterSpec);
+                    }
+
+                    // if the filterspec has changed
+                    if (defaultRemote != null && !filterSpec.equals(currentFilterSpec)) {
+                        launchCommand("config", "--add", "remote." + defaultRemote + ".promisor", "true");
+                        launchCommand("config", "--add", "remote." + defaultRemote + ".partialclonefilter", filterSpec);
+
+                        if (isAtLeastVersion(2, 36, 0, 0)) {
+                            // reapply filter and trigger maintenance
+                            args.add("--refetch");
+                        }
+                    }
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
