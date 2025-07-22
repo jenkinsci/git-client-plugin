@@ -17,6 +17,8 @@ import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -427,10 +429,43 @@ class GitClientCloneTest {
         assertTimeout(testGitClient, "fetch", expectedValue);
     }
 
+    @Test
+    @Issue("JENKINS-70094")
+    public void test_clone_filter() throws Exception {
+        CloneCommand cmd = testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .repositoryName("origin")
+                .filter("blob:none");
+        cmd.execute();
+        testGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(workspace, testGitClient, "origin");
+        assertBranchesExist(testGitClient.getBranches(), "master");
+        assertAlternatesFileNotFound();
+        boolean expectedPromisorValue = gitImplName.equals("git");
+        assertThat("hasPromisor?", workspace.cgit().hasPromisor("origin"), is(expectedPromisorValue));
+        if (gitImplName.equals("git")) {
+            String filterSpec = workspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
+            assertThat("filterSpec", filterSpec, is("blob:none"));
+            //assertPromisorFilesExist();
+        }
+    }
+
     private void assertAlternatesFileExists() {
         final String alternates =
                 ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
+    }
+
+    private void assertPromisorFilesExist() {
+        File pack = new File(".git" + File.separator + "objects" + File.separator + "pack");
+        File[] promisors = pack.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".promisor");
+            }
+        });
+        assertThat(promisors, is(not(emptyArray())));
     }
 
     private void assertAlternatesFileNotFound() {
