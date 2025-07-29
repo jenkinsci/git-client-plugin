@@ -63,6 +63,10 @@
       <artifactId>configuration-as-code</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+    </dependency>
     <!-- Use gson api plugin rather than JGit LFS transitive dependency inclusion of gson -->
     <dependency>
       <groupId>io.jenkins.plugins</groupId>

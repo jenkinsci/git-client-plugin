@@ -6,7 +6,7 @@ import hudson.model.Descriptor;
 import java.io.File;
 import java.nio.file.Path;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Secure shell host key verification strategy extension point for SSH connections from the git client plugin.
