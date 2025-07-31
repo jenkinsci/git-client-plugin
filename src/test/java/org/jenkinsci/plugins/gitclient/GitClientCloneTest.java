@@ -432,22 +432,23 @@ class GitClientCloneTest {
     @Test
     @Issue("JENKINS-70094")
     public void test_clone_filter() throws Exception {
-        CloneCommand cmd = testGitClient
+        WorkspaceWithRepo anotherWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
+        GitClient anotherGitClient = anotherWorkspace.getGitClient();
+        CloneCommand cmd = anotherGitClient
                 .clone_()
-                .url(workspace.localMirror())
+                .url(anotherWorkspace.localMirror())
                 .repositoryName("origin")
                 .filter("blob:none");
         cmd.execute();
-        testGitClient.checkout().ref("origin/master").branch("master").execute();
-        check_remote_url(workspace, testGitClient, "origin");
-        assertBranchesExist(testGitClient.getBranches(), "master");
+        anotherGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(anotherWorkspace, anotherGitClient, "origin");
+        assertBranchesExist(anotherGitClient.getBranches(), "master");
         assertAlternatesFileNotFound();
-        boolean expectedPromisorValue = gitImplName.equals("git");
-        assertThat("hasPromisor?", workspace.cgit().hasPromisor("origin"), is(expectedPromisorValue));
         if (gitImplName.equals("git")) {
-            String filterSpec = workspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
+            assertThat("hasPromisor?", anotherWorkspace.cgit().hasPromisor("origin"), is(true));
+            String filterSpec = anotherWorkspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
             assertThat("filterSpec", filterSpec, is("blob:none"));
-            //assertPromisorFilesExist();
+            assertPromisorFilesExist(anotherWorkspace.getGitFileDir());
         }
     }
 
@@ -457,8 +458,8 @@ class GitClientCloneTest {
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
     }
 
-    private void assertPromisorFilesExist() {
-        File pack = new File(".git" + File.separator + "objects" + File.separator + "pack");
+    private void assertPromisorFilesExist(File anotherTestGitDir) {
+        File pack = new File(anotherTestGitDir, ".git" + File.separator + "objects" + File.separator + "pack");
         File[] promisors = pack.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
