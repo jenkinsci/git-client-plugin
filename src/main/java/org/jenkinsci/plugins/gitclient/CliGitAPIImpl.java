@@ -621,8 +621,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     // if the filterspec has changed
                     if (defaultRemote != null && !filterSpec.equals(currentFilterSpec)) {
-                        launchCommand("config", "--add", "remote." + defaultRemote + ".promisor", "true");
-                        launchCommand("config", "--add", "remote." + defaultRemote + ".partialclonefilter", filterSpec);
+                        launchCommand("config", "remote." + defaultRemote + ".promisor", "true");
+                        launchCommand("config", "remote." + defaultRemote + ".partialclonefilter", filterSpec);
 
                         if (isAtLeastVersion(2, 36, 0, 0)) {
                             // reapply filter and trigger maintenance
