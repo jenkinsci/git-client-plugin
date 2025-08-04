@@ -13,7 +13,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.util.StreamTaskListener;
 import java.io.IOException;
 import java.util.List;
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.jenkinsci.plugins.gitclient.JGitApacheTool;
 import org.jenkinsci.plugins.gitclient.JGitTool;
 import org.junit.Before;

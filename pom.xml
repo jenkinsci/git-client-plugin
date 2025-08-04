@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.17</version>
+    <version>5.18</version>
     <relativePath />
   </parent>
 
@@ -32,22 +32,18 @@
   </scm>
 
   <properties>
-    <revision>6.2.1</revision>
+    <revision>6.3.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.479</jenkins.baseline>
-    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
+    <jenkins.baseline>2.504</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
     <jgit.version>7.3.0.202506031305-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
-    <!--
-    TODO Remove once in BOM - https://github.com/jenkinsci/bom/pull/4840/files
-    -->
-    <mina-sshd-api.version>2.15.0-161.vb_200831a_c15b_</mina-sshd-api.version>
   </properties>
 
   <dependencyManagement>
@@ -55,7 +51,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>4948.vcf1d17350668</version>
+        <version>5085.v05cc65a_936d3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -67,6 +63,10 @@
       <artifactId>configuration-as-code</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
+    </dependency>
     <!-- Use gson api plugin rather than JGit LFS transitive dependency inclusion of gson -->
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
@@ -76,13 +76,11 @@
       <!-- Use mina api common plugin rather than JGit transitive dependency inclusion of Apache Mina sshd common -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-common</artifactId>
-      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <!-- Use mina api core plugin rather than JGit transitive dependency inclusion of Apache Mina sshd core -->
       <groupId>io.jenkins.plugins.mina-sshd-api</groupId>
       <artifactId>mina-sshd-api-core</artifactId>
-      <version>${mina-sshd-api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
@@ -214,7 +212,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>4.0.2</version>
+      <version>4.0.6</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -250,7 +248,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.21.2</version>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
