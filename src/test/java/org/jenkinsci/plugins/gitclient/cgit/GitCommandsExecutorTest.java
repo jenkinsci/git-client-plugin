@@ -8,9 +8,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.theInstance;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
@@ -23,52 +21,44 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class GitCommandsExecutorTest {
+@ParameterizedClass(name = "threads={0}")
+@MethodSource("threadsParameter")
+class GitCommandsExecutorTest {
 
-    private final int threads;
-    private final TaskListener listener;
-    private final ByteArrayOutputStream logStream;
+    private final ByteArrayOutputStream logStream = new ByteArrayOutputStream();
+    private final TaskListener listener = new StreamTaskListener(new PrintStream(logStream), StandardCharsets.UTF_8);
 
-    @Rule
-    public TestName testName = new TestName();
-
-    public GitCommandsExecutorTest(int threads) {
-        this.threads = threads;
-        this.logStream = new ByteArrayOutputStream();
-        this.listener = new StreamTaskListener(new PrintStream(logStream), StandardCharsets.UTF_8);
-    }
-
-    @After
-    public void verifyCorrectExecutorServiceShutdown() {
-        loggedNoOutput();
-    }
+    @Parameter(0)
+    private int threads;
 
     private String value = null;
     private String error = null;
 
-    @Before
-    public void defineValues() {
-        value = "some value " + testName.getMethodName();
-        error = "some error " + testName.getMethodName();
+    static List<Integer> threadsParameter() {
+        return List.of(1, 2, 100);
     }
 
-    @Parameters(name = "threads={0}")
-    public static Iterable<Integer> threadsParameter() {
-        return asList(1, 2, 100);
+    @BeforeEach
+    void defineValues(TestInfo testInfo) {
+        value = "some value " + testInfo.getTestMethod().orElseThrow().getName();
+        error = "some error " + testInfo.getTestMethod().orElseThrow().getName();
+    }
+
+    @AfterEach
+    void verifyCorrectExecutorServiceShutdown() {
+        loggedNoOutput();
     }
 
     @Test
-    public void allCommandsSucceed() throws Exception {
+    void allCommandsSucceed() throws Exception {
         List<Callable<String>> commands = new ArrayList<>();
         for (int i = 0; i < threads; i++) {
             commands.add(new GoodCommand(value));
@@ -82,21 +72,20 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void allCommandsFail() throws Exception {
+    void allCommandsFail() {
         List<Callable<String>> commands = new ArrayList<>();
         for (int i = 0; i < threads; i++) {
             commands.add(new BadCommand(new RuntimeException(error)));
         }
 
-        Exception e = assertThrows(GitException.class, () -> {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-        });
+        Exception e =
+                assertThrows(GitException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
         assertThat(e.getMessage(), is("java.lang.RuntimeException: " + error));
         assertThat(e.getCause(), instanceOf(RuntimeException.class));
     }
 
     @Test
-    public void firstCommandFails() throws Exception {
+    void firstCommandFails() {
         long commandExecutionTime = 60_000;
         List<Callable<String>> commands = asList(
                 new BadCommand(new RuntimeException(error)),
@@ -104,9 +93,8 @@ public class GitCommandsExecutorTest {
                 new GoodCommand(value, commandExecutionTime));
 
         long executionStartMillis = System.currentTimeMillis();
-        Exception e = assertThrows(GitException.class, () -> {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-        });
+        Exception e =
+                assertThrows(GitException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
         assertThat(e.getMessage(), is("java.lang.RuntimeException: " + error));
         assertThat(e.getCause(), instanceOf(RuntimeException.class));
         long executionStopMillis = System.currentTimeMillis();
@@ -120,13 +108,12 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void lastCommandFails() throws Exception {
+    void lastCommandFails() {
         List<Callable<String>> commands =
                 asList(new GoodCommand(value), new GoodCommand(value), new BadCommand(new RuntimeException(error)));
 
-        Exception e = assertThrows(GitException.class, () -> {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-        });
+        Exception e =
+                assertThrows(GitException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
         assertThat(e.getMessage(), is("java.lang.RuntimeException: " + error));
         assertThat(e.getCause(), instanceOf(RuntimeException.class));
 
@@ -136,7 +123,7 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void moreCommandsThanThreads() throws Exception {
+    void moreCommandsThanThreads() throws Exception {
         List<Callable<String>> commands = new ArrayList<>();
         for (int i = 0; i < threads + 1; i++) {
             commands.add(new GoodCommand(value));
@@ -150,7 +137,7 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void lessCommandsThanThreads() throws Exception {
+    void lessCommandsThanThreads() throws Exception {
         List<Callable<String>> commands = new ArrayList<>();
         for (int i = 0; i < threads - 1; i++) {
             commands.add(new GoodCommand(value));
@@ -164,7 +151,7 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void callerThreadWasInterrupted() throws Exception {
+    void callerThreadWasInterrupted() throws Exception {
         long commandExecutionTime = 60_000;
         List<Callable<String>> commands = new ArrayList<>();
         for (int i = 0; i < threads + 1; i++) {
@@ -201,7 +188,7 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void commandWasInterrupted() throws Exception {
+    void commandWasInterrupted() {
         Exception commandException = new InterruptedException("some interrupt");
         List<Callable<String>> commands = Collections.singletonList(new BadCommand(commandException));
         Exception e = assertThrows(
@@ -215,25 +202,23 @@ public class GitCommandsExecutorTest {
     }
 
     @Test
-    public void commandHadGitProblem() throws Exception {
+    void commandHadGitProblem() {
         Exception commandException = new GitException(error);
         List<Callable<String>> commands = Collections.singletonList(new BadCommand(commandException));
 
-        Exception e = assertThrows(GitException.class, () -> {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-        });
+        Exception e =
+                assertThrows(GitException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
         assertThat(e.getMessage(), is("hudson.plugins.git.GitException: " + error));
         assertThat(e.getCause(), is(theInstance(commandException)));
     }
 
     @Test
-    public void commandHadUnknownProblem() throws Exception {
+    void commandHadUnknownProblem() {
         Exception commandException = new RuntimeException(error);
         List<Callable<String>> commands = Collections.singletonList(new BadCommand(commandException));
 
-        Exception e = assertThrows(GitException.class, () -> {
-            new GitCommandsExecutor(threads, listener).invokeAll(commands);
-        });
+        Exception e =
+                assertThrows(GitException.class, () -> new GitCommandsExecutor(threads, listener).invokeAll(commands));
         assertThat(e.getMessage(), is("java.lang.RuntimeException: " + error));
         assertThat(e.getCause(), is(theInstance(commandException)));
     }
@@ -254,7 +239,7 @@ public class GitCommandsExecutorTest {
     }
 
     /* A callable that always returns a value, sometimes after a delay */
-    private class GoodCommand implements Callable {
+    private static class GoodCommand implements Callable<String> {
 
         private final String value;
         private final long commandExecutionTime;
@@ -274,7 +259,7 @@ public class GitCommandsExecutorTest {
         }
 
         @Override
-        public Object call() throws Exception {
+        public String call() throws Exception {
             called = true;
             if (commandExecutionTime > 0) {
                 Thread.sleep(commandExecutionTime);
@@ -284,7 +269,7 @@ public class GitCommandsExecutorTest {
     }
 
     /* A callable that always throws an exception */
-    private class BadCommand implements Callable {
+    private static class BadCommand implements Callable<String> {
 
         private final Exception exception;
         private boolean called = false;
@@ -298,7 +283,7 @@ public class GitCommandsExecutorTest {
         }
 
         @Override
-        public Object call() throws Exception {
+        public String call() throws Exception {
             called = true;
             throw exception;
         }

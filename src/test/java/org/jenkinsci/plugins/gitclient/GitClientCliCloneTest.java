@@ -6,7 +6,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.aReadableFile;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -18,19 +18,19 @@ import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.Issue;
 
 /*
  * Tests that are specific to command line git.
  */
-public class GitClientCliCloneTest {
+class GitClientCliCloneTest {
 
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
     private final Random random = new Random();
     private LogHandler handler = null;
@@ -40,8 +40,8 @@ public class GitClientCliCloneTest {
 
     private GitClient testGitClient;
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
         TaskListener mirrorListener = StreamTaskListener.fromStdout();
         File tempDir = Files.createTempDirectory("PrimeCliCloneTest").toFile();
@@ -50,8 +50,8 @@ public class GitClientCliCloneTest {
         Util.deleteRecursive(tempDir);
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -65,7 +65,7 @@ public class GitClientCliCloneTest {
     }
 
     @Test
-    public void test_checkout_default_timeout_logging() throws Exception {
+    void test_checkout_default_timeout_logging() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -76,7 +76,7 @@ public class GitClientCliCloneTest {
     }
 
     @Test
-    public void test_checkout_timeout_logging() throws Exception {
+    void test_checkout_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
         testGitClient
                 .clone_()
@@ -88,7 +88,7 @@ public class GitClientCliCloneTest {
     }
 
     @Test
-    public void test_submodule_update_timeout_logging() throws Exception {
+    void test_submodule_update_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
         testGitClient
                 .clone_()
@@ -103,7 +103,7 @@ public class GitClientCliCloneTest {
 
     @Issue("JENKINS-25353")
     @Test
-    public void test_checkout_interrupted() throws Exception {
+    void test_checkout_interrupted() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -115,16 +115,16 @@ public class GitClientCliCloneTest {
         /* Configure next checkout to fail with an exception */
         CliGitAPIImpl cli = workspace.cgit();
         cli.interruptNextCheckoutWithMessage(exceptionMsg);
-        Exception exception = assertThrows(InterruptedException.class, () -> {
-            cli.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").execute(); // git-client-1.6.0
-        });
+        Exception exception = assertThrows(InterruptedException.class, () -> cli.checkout()
+                .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
+                .execute());
         assertThat(exception.getMessage(), is(exceptionMsg)); // Except exact exception message returned
         assertThat("Lock file removed by checkout", lockFile, is(not(aReadableFile())));
     }
 
     @Issue("JENKINS-25353")
     @Test
-    public void test_checkout_interrupted_with_existing_lock() throws Exception {
+    void test_checkout_interrupted_with_existing_lock() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -139,9 +139,9 @@ public class GitClientCliCloneTest {
         /* Configure next checkout to fail with an exception */
         CliGitAPIImpl cli = workspace.cgit();
         cli.interruptNextCheckoutWithMessage(exceptionMsg);
-        Exception exception = assertThrows(InterruptedException.class, () -> {
-            cli.checkout().ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea").execute(); // git-client-1.6.0
-        });
+        Exception exception = assertThrows(InterruptedException.class, () -> cli.checkout()
+                .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
+                .execute());
         assertThat(exception.getMessage(), containsString(exceptionMsg));
         assertThat("Lock file removed by checkout", lockFile, is(aReadableFile()));
     }

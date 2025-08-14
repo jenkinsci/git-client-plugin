@@ -1,80 +1,81 @@
 package hudson.plugins.git;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.io.File;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class IndexEntryTest {
+class IndexEntryTest {
 
-    private final String mode = "160000";
-    private final String type = "commit";
-    private final String object = "index-entry-object";
-    private final String file = ".git" + File.separator + "index-entry-file";
+    private static final String MODE = "160000";
+    private static final String TYPE = "commit";
+    private static final String OBJECT = "index-entry-object";
+    private static final String FILE = ".git" + File.separator + "index-entry-file";
     private IndexEntry entry;
 
-    @Before
-    public void setUp() {
-        entry = new IndexEntry(mode, type, object, file);
+    @BeforeEach
+    void setUp() {
+        entry = new IndexEntry(MODE, TYPE, OBJECT, FILE);
     }
 
     @Test
-    public void testGetMode() {
-        assertEquals(mode, entry.getMode());
+    void testGetMode() {
+        assertEquals(MODE, entry.getMode());
     }
 
     @Test
-    public void testSetMode() {
+    void testSetMode() {
         String myMode = "100777";
         entry.setMode(myMode);
         assertEquals(myMode, entry.getMode());
     }
 
     @Test
-    public void testGetType() {
-        assertEquals(type, entry.getType());
+    void testGetType() {
+        assertEquals(TYPE, entry.getType());
     }
 
     @Test
-    public void testSetType() {
+    void testSetType() {
         String myType = "tag";
         entry.setType(myType);
         assertEquals(myType, entry.getType());
     }
 
     @Test
-    public void testGetObject() {
-        assertEquals(object, entry.getObject());
+    void testGetObject() {
+        assertEquals(OBJECT, entry.getObject());
     }
 
     @Test
-    public void testSetObject() {
+    void testSetObject() {
         String myObject = "my-object";
         entry.setObject(myObject);
         assertEquals(myObject, entry.getObject());
     }
 
     @Test
-    public void testGetFile() {
-        assertEquals(file, entry.getFile());
+    void testGetFile() {
+        assertEquals(FILE, entry.getFile());
     }
 
     @Test
-    public void testSetFile() {
+    void testSetFile() {
         String myFile = "my-file";
         entry.setFile(myFile);
         assertEquals(myFile, entry.getFile());
     }
 
     @Test
-    public void testToString() {
-        String expected = "IndexEntry[mode=" + mode + ",type=" + type + ",file=" + file + ",object=" + object + "]";
+    void testToString() {
+        String expected = "IndexEntry[mode=" + MODE + ",type=" + TYPE + ",file=" + FILE + ",object=" + OBJECT + "]";
         assertEquals(expected, entry.toString());
     }
 
     @Test
-    public void testHashCode() {
+    void testHashCode() {
         assertEquals(entry.hashCode(), entry.hashCode());
 
         IndexEntry entryClone = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), entry.getFile());
@@ -92,7 +93,7 @@ public class IndexEntryTest {
     }
 
     @Test
-    public void testEquals() {
+    void testEquals() {
         assertEquals(entry, entry);
 
         IndexEntry entryClone = new IndexEntry(entry.getMode(), entry.getType(), entry.getObject(), entry.getFile());
