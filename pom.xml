@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.19</version>
+    <version>5.22</version>
     <relativePath />
   </parent>
 
@@ -37,7 +37,6 @@
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
-    <hpi-plugin.version>3.67-rc1743.3564e7cd385b_</hpi-plugin.version>
     <hpi.bundledArtifacts>JavaEWAH,org.eclipse.jgit,org.eclipse.jgit.http.apache,org.eclipse.jgit.http.server,org.eclipse.jgit.lfs,org.eclipse.jgit.ssh.apache</hpi.bundledArtifacts>
     <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
