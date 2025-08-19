@@ -886,7 +886,7 @@ public interface GitClient {
     void addNote(String note, String namespace) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log --raw, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -898,14 +898,14 @@ public interface GitClient {
      * behave differently from {@link #changelog()}.
      *
      * @param r a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log --raw, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -918,14 +918,14 @@ public interface GitClient {
      *
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from <code>git log --raw</code>, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -943,7 +943,7 @@ public interface GitClient {
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param useRawOutput a {java.lang.Boolean} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
