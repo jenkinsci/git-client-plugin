@@ -1300,7 +1300,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException, InterruptedException {
-                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M");
+                ArgumentListBuilder args = new ArgumentListBuilder(gitExe, "log", "--raw", "--no-abbrev", "-M");
                 if (isAtLeastVersion(1, 8, 3, 0)) {
                     args.add("--format=" + RAW);
                 } else {
@@ -1318,7 +1318,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new IllegalStateException();
                 }
 
-                // "git whatchanged" std output gives us byte stream of data
+                // "git log" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, StandardCharsets.UTF_8)) {
