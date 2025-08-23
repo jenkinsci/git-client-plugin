@@ -8,7 +8,7 @@ import org.eclipse.jgit.lib.ObjectId;
  * Command builder for generating changelog in the format {@code GitSCM} expects.
  *
  * <p>
- * The output format is that of <code>git log --raw</code>, which looks something like this:
+ * The output format is that of <code>git log --raw --no-merges</code>, which looks something like this:
  *
  * <pre>
  * commit dadaf808d99c4c23c53476b0c48e25a181016300

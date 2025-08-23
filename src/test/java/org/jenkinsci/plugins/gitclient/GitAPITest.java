@@ -1710,6 +1710,64 @@ public class GitAPITest {
         assertTrue("No SHA1 in " + writer, writer.toString().contains(sha1));
     }
 
+    @Test
+    public void testChangelogSkipsMerges() throws Exception {
+        int counter = 0;
+        workspace.touch(testGitDir, "file-skips-merges-" + counter, "changelog skips merges " + counter);
+        testGitClient.add("file-skips-merges-" + counter);
+        testGitClient.commit("skips-merges-" + counter++);
+        String rootCommit = testGitClient.revParse("HEAD").name();
+
+        // Create branches a, b, and common that will merge a and b
+        testGitClient.branch("branch-A"); // Create branch-A without switching to it
+        testGitClient.branch("branch-B"); // Create branch-B without switching to it
+        testGitClient.branch("common"); // common branch that will merge branch-A and branch-B
+
+        testGitClient.checkoutBranch("branch-A", rootCommit); // Switch to branch-A
+        workspace.touch(testGitDir, "file-branch-A", "branch-A file " + counter++);
+        testGitClient.add("file-branch-A");
+        testGitClient.commit("file-branch-A on branch-A");
+        String branchACommit = testGitClient.revParse("HEAD").name();
+
+        testGitClient.checkoutBranch("branch-B", rootCommit); // Switch to branch-B
+        workspace.touch(testGitDir, "file-branch-B", "branch-B file " + counter++);
+        testGitClient.add("file-branch-B");
+        testGitClient.commit("file-branch-B on branch-B");
+        String branchBCommit = testGitClient.revParse("HEAD").name();
+
+        String mergeMessage = "Merged branch-B into common";
+        testGitClient.checkoutBranch("common", rootCommit); // Switch to common branch
+        testGitClient
+                .merge()
+                .setRevisionToMerge(ObjectId.fromString(branchACommit))
+                .execute();
+        testGitClient
+                .merge()
+                .setRevisionToMerge(ObjectId.fromString(branchBCommit))
+                .setMessage(mergeMessage)
+                .execute();
+        String mergedCommit = testGitClient.revParse("HEAD").name();
+
+        workspace.touch(testGitDir, "file-skips-merges-" + counter, "changelog skips merges " + counter);
+        testGitClient.add("file-skips-merges-" + counter);
+        testGitClient.commit("skips-merges-" + counter++);
+        String finalCommit = testGitClient.revParse("HEAD").name();
+
+        // Calculate the changelog
+        StringWriter writer = new StringWriter();
+        testGitClient.changelog().to(writer).execute();
+        String changelog = writer.toString();
+
+        // Confirm the changelog includes expected commits
+        assertThat(changelog, containsString("commit " + branchACommit));
+        assertThat(changelog, containsString("commit " + branchBCommit));
+        assertThat(changelog, containsString("commit " + finalCommit));
+
+        // Confirm the changelog does not include the merge commit
+        assertThat(changelog, not(containsString("commit " + mergedCommit)));
+        assertThat(changelog, not(containsString(mergeMessage)));
+    }
+
     /**
      * inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue
      */
