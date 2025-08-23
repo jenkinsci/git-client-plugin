@@ -88,4 +88,4 @@ Run the benchmarks with the command:
 
 * `mvn -P jmh-benchmark -Dbenchmark.run=true test`
 
-The results can be reviewed visiually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].
+The results can be reviewed visually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].
