@@ -122,7 +122,6 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
-import org.eclipse.jgit.transport.HttpTransport;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -724,6 +723,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Returns true if protocol in url is not supported by Jenkins.
+     * @return true if protocol in url is not supported by Jenkins.
+     */
+    private boolean unsupportedProtocol(String url) {
+        // SECURITY-3950 reported that an attacker could enumerate the
+        // controller file system with the Amazon S3 protocol in JGit.
+        // Command line git does not support amazon-s3 protocol.
+        // Command line git is the reference implementation for the plugin.
+        // Do not call JGit with amazon-s3 protocol URL.
+        // Do not report null URL as unsupported since null was allowed previously
+        return url != null && url.startsWith("amazon-s3:");
+    }
+
+    private boolean unsupportedProtocol(URIish url) {
+        return url != null && unsupportedProtocol(url.toString());
+    }
+
+    /**
      * fetch_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
@@ -808,6 +825,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     }
                     if (url == null) {
                         throw new GitException("FetchCommand requires a valid repository url in remote config");
+                    }
+                    if (unsupportedProtocol(url)) {
+                        throw new GitException("unsupported protocol in URL " + url);
                     }
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
@@ -964,10 +984,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return transport -> {
             if (transport instanceof SshTransport sshTransport) {
                 sshTransport.setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
-            }
-            if (transport instanceof HttpTransport) {
-                ((TransportHttp) transport)
-                        .setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            } else if (transport instanceof TransportHttp transportHttp) {
+                transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            } else if (transport instanceof org.eclipse.jgit.transport.TransportAmazonS3) {
+                // SECURITY-3590 safety measure - see unsupportedProtocol() for details
+                throw new GitException("Unsupported protocol in URL");
             }
         };
     }
@@ -975,9 +996,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     private void decorateTransport(Transport tn) {
         if (tn instanceof SshTransport transport) {
             transport.setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
-        }
-        if (tn instanceof HttpTransport) {
-            ((TransportHttp) tn).setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+        } else if (tn instanceof TransportHttp transportHttp) {
+            transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+        } else if (tn instanceof org.eclipse.jgit.transport.TransportAmazonS3) {
+            // SECURITY-3590 safety measure - see unsupportedProtocol() for details
+            throw new GitException("Unsupported protocol in URL");
         }
     }
 
@@ -985,6 +1008,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
             throws GitException, InterruptedException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         Map<String, ObjectId> references = new HashMap<>();
         String regexPattern = null;
         if (pattern != null) {
@@ -1024,6 +1050,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
             throws GitException, InterruptedException {
         Map<String, String> references = new HashMap<>();
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         String regexPattern = null;
         if (pattern != null) {
             regexPattern = replaceGlobCharsWithRegExChars(pattern);
@@ -1094,6 +1123,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
+        if (unsupportedProtocol(remoteRepoUrl)) {
+            throw new GitException("unsupported protocol in URL " + remoteRepoUrl);
+        }
         try (Repository repo = openDummyRepository();
                 final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
             final String branchName = extractBranchNameFromBranchSpec(branchSpec);
@@ -1162,6 +1194,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void setRemoteUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", name, "url", url);
@@ -1174,6 +1209,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void addRemoteUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
 
@@ -1627,6 +1665,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 Repository repository = null;
 
                 try {
+                    if (unsupportedProtocol(url)) {
+                        throw new GitException("unsupported protocol in URL " + url);
+                    }
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists()) {
                         Util.deleteContentsRecursive(workspace);
@@ -1953,6 +1994,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        if (unsupportedProtocol(remoteURL)) {
+            throw new GitException("unsupported protocol in URL " + remoteURL);
+        }
         try (Repository repo = getRepository()) {
             git(repo).submoduleAdd().setPath(subdir).setURI(remoteURL).call();
         } catch (GitAPIException e) {
@@ -2113,7 +2157,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
-            try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote", remote, "url")))) {
+            String remoteUrl = config.getString("remote", remote, "url");
+            if (unsupportedProtocol(remoteUrl)) {
+                throw new GitException("unsupported protocol in URL " + remoteUrl);
+            }
+            try (final Transport tn = Transport.open(repo, new URIish(remoteUrl))) {
                 decorateTransport(tn);
                 tn.setCredentialsProvider(getProvider());
                 try (final FetchConnection c = tn.openFetch()) {
@@ -2181,6 +2229,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException {
+                if (unsupportedProtocol(remote)) {
+                    throw new GitException("unsupported protocol in URL " + remote);
+                }
                 try (Repository repo = getRepository()) {
                     RefSpec ref =
                             (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
@@ -2867,6 +2918,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     @Override
     public void setSubmoduleUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             config.setString("submodule", name, "url", url);
@@ -3144,6 +3198,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo =
                 new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
