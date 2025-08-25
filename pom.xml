@@ -236,6 +236,12 @@
       <artifactId>mockito-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.objenesis</groupId>
+      <artifactId>objenesis</artifactId>
+      <version>3.4</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <repositories>
