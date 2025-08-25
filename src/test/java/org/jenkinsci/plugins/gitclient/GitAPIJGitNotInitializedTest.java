@@ -2,9 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -14,53 +12,52 @@ import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class GitAPIJGitNotInitializedTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
+class GitAPIJGitNotInitializedTest {
 
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
     private int logCount = 0;
     private static final String LOGGING_STARTED = "Logging started";
     private LogHandler handler = null;
     private TaskListener listener;
-    private final String gitImplName;
+
+    @Parameter(0)
+    private String gitImplName;
 
     WorkspaceWithRepo workspace;
 
     private GitClient testGitClient;
 
-    public GitAPIJGitNotInitializedTest(final String gitImplName) {
-        this.gitImplName = gitImplName;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
     }
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run
          * Allow 2-5 second delay before priming the cache
          * Allow other tests a better chance to prime the cache
@@ -76,8 +73,8 @@ public class GitAPIJGitNotInitializedTest {
         Util.deleteRecursive(tempDir);
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -92,18 +89,18 @@ public class GitAPIJGitNotInitializedTest {
         testGitClient = workspace.getGitClient();
     }
 
-    @After
-    public void afterTearDown() {
+    @AfterEach
+    void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            assertTrue(handler.containsMessageSubstring(LOGGING_STARTED), "Logging not started: " + messages);
         } finally {
             handler.close();
         }
     }
 
     @Test
-    public void testGetSubmoduleUrl() throws Exception {
+    void testGetSubmoduleUrl() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         workspace.launchCommand("git", "checkout", "tests/getSubmodules");
         testGitClient.submoduleInit();

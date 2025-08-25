@@ -1,8 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
-public class LegacyCompatibleGitAPIImplJGitTest extends LegacyCompatibleGitAPIImplTest {
+class LegacyCompatibleGitAPIImplJGitTest extends LegacyCompatibleGitAPIImplTest {
 
-    public LegacyCompatibleGitAPIImplJGitTest() {
-        gitImpl = "jgit";
+    @Override
+    protected String getGitImplementation() {
+        return "jgit";
     }
 }

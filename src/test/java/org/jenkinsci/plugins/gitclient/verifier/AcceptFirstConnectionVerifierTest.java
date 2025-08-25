@@ -6,25 +6,23 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.Assume;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class AcceptFirstConnectionVerifierTest {
+class AcceptFirstConnectionVerifierTest {
 
     private static final String FILE_CONTENT =
             """
@@ -33,38 +31,37 @@ public class AcceptFirstConnectionVerifierTest {
              AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl\
             """;
 
-    private static final String KEY_ecdsa_sha2_nistp256 =
+    private static final String KEY_ECDSA_SHA_2_NISTP_256 =
             """
             |1|owDOW+8aankl2aFSPKPIXsIf31E=|lGZ9BEWUfa9HoQteyYE5wIqHJdo=,|1|eGv/ezgtZ9YMw7OHcykKKOvAINk=|3lpkF7XiveRl/D7XvTOMc3ra2kU=\
              ecdsa-sha2-nistp256\
              AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=\
             """;
 
-    private static final String KEY_ssh_rsa =
+    private static final String KEY_SSH_RSA =
             """
             |1|HnmPCP38pBhCY0NUtBXSraOg9pM=|L6YZ9asEeb2xplTDEThGOxRq7ZY=\
              ssh-rsa\
              AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==\
             """;
 
-    @Rule
-    public TemporaryFolder testFolder =
-            TemporaryFolder.builder().assureDeletion().build();
+    @TempDir
+    private File testFolder;
 
     private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
 
     @Test
-    public void testVerifyHostKeyOption() throws IOException {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyHostKeyOption() throws Exception {
+        assumeTrue(runKnownHostsTests());
         assertThat(
                 new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null),
                 is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenFirstConnection() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
-        File file = new File(testFolder.getRoot() + "path/to/file");
+    void testVerifyServerHostKeyWhenFirstConnection() throws Exception {
+        assumeTrue(runKnownHostsTests());
+        File file = new File(testFolder + "path/to/file");
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
 
@@ -84,12 +81,12 @@ public class AcceptFirstConnectionVerifierTest {
         assertThat(file, is(anExistingFile()));
         assertThat(
                 Files.readAllLines(file.toPath()),
-                hasItem(containsString(KEY_ecdsa_sha2_nistp256.substring(KEY_ecdsa_sha2_nistp256.indexOf(" ")))));
+                hasItem(containsString(KEY_ECDSA_SHA_2_NISTP_256.substring(KEY_ECDSA_SHA_2_NISTP_256.indexOf(" ")))));
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenSecondConnectionWithEqualKeys() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyServerHostKeyWhenSecondConnectionWithEqualKeys() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String hostKeyEntry =
                 "|1|FJGXVAi7jMQIsl1J6uE6KnCiteM=|xlH92KQ91GuBgRxvRbU/sBo60Bo= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
@@ -118,8 +115,8 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenHostnameWithoutPort() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyServerHostKeyWhenHostnameWithoutPort() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String hostKeyEntry =
                 "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(hostKeyEntry);
@@ -143,8 +140,8 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenSecondConnectionWhenNotDefaultAlgorithm() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyServerHostKeyWhenSecondConnectionWhenNotDefaultAlgorithm() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String fileContent =
                 """
                 github.com,140.82.121.4\
@@ -174,9 +171,9 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    @Ignore("FIXME not sure what is the test here")
-    public void testVerifyServerHostKeyWhenSecondConnectionWithNonEqualKeys() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    @Disabled("FIXME not sure what is the test here")
+    void testVerifyServerHostKeyWhenSecondConnectionWithNonEqualKeys() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String fileContent =
                 """
                 |1|f7esvmtaiBk+EMHjPzWbRYRpBPY=|T7Qe4QAksYPZPwYEx5QxQykSjfc=\
@@ -207,8 +204,8 @@ public class AcceptFirstConnectionVerifierTest {
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenConnectionWithAnotherHost() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyServerHostKeyWhenConnectionWithAnotherHost() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String bitbucketFileContent =
                 """
                 |1|HnmPCP38pBhCY0NUtBXSraOg9pM=|L6YZ9asEeb2xplTDEThGOxRq7ZY=\
@@ -235,12 +232,12 @@ public class AcceptFirstConnectionVerifierTest {
                 .close();
         List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
         assertThat(actual, hasItem(bitbucketFileContent));
-        assertThat(actual, hasItem(containsString(KEY_ssh_rsa.substring(KEY_ssh_rsa.indexOf(" ")))));
+        assertThat(actual, hasItem(containsString(KEY_SSH_RSA.substring(KEY_SSH_RSA.indexOf(" ")))));
     }
 
     @Test
-    public void testVerifyServerHostKeyWhenHostnamePortProvided() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void testVerifyServerHostKeyWhenHostnamePortProvided() throws Exception {
+        assumeTrue(runKnownHostsTests());
         String fileContent =
                 """
                 |1|6uMj3M7sLgZpn54vQbGqgPNTCVM=|OkV9Lu9REJZR5QCVrITAIY34I1M= \

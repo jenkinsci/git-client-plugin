@@ -20,15 +20,17 @@ import hudson.tools.ToolProperty;
 import hudson.tools.ToolPropertyDescriptor;
 import hudson.tools.ZipExtractionInstaller;
 import hudson.util.DescribableList;
-import io.jenkins.plugins.casc.misc.RoundTripAbstractTest;
+import io.jenkins.plugins.casc.misc.junit.jupiter.AbstractRoundTripTest;
 import java.util.Arrays;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class JcascTest extends RoundTripAbstractTest {
+@WithJenkins
+class JcascTest extends AbstractRoundTripTest {
+
     @Override
-    protected void assertConfiguredAsExpected(RestartableJenkinsRule restartableJenkinsRule, String s) {
-        final ToolDescriptor descriptor =
-                (ToolDescriptor) restartableJenkinsRule.j.jenkins.getDescriptor(GitTool.class);
+    protected void assertConfiguredAsExpected(JenkinsRule j, String s) {
+        final ToolDescriptor descriptor = (ToolDescriptor) j.jenkins.getDescriptor(GitTool.class);
         final ToolInstallation[] installations = descriptor.getInstallations();
         assertThat(installations, arrayWithSize(4));
         assertThat(

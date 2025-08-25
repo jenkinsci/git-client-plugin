@@ -1,9 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -12,18 +9,18 @@ import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class CliGitAPIWindowsFilePermissionsTest {
+class CliGitAPIWindowsFilePermissionsTest {
 
     private CliGitAPIImpl cliGit;
     private Path file;
     private AclFileAttributeView fileAttributeView;
     private UserPrincipal userPrincipal;
 
-    @Before
-    public void beforeEach() throws Exception {
+    @BeforeEach
+    void beforeEach() throws Exception {
         if (!isWindows()) {
             return;
         }
@@ -36,7 +33,7 @@ public class CliGitAPIWindowsFilePermissionsTest {
     }
 
     @Test
-    public void test_windows_file_permission_is_set_correctly() throws Exception {
+    void test_windows_file_permission_is_set_correctly() throws Exception {
         if (!isWindows()) {
             return;
         }
@@ -50,7 +47,7 @@ public class CliGitAPIWindowsFilePermissionsTest {
     }
 
     @Test
-    public void test_windows_file_permission_are_incorrect() throws Exception {
+    void test_windows_file_permission_are_incorrect() throws Exception {
         if (!isWindows()) {
             return;
         }

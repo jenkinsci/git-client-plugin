@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 import static org.hamcrest.collection.IsMapWithSize.anEmptyMap;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -16,23 +17,23 @@ import com.github.sparsick.testcontainers.gitserver.plain.GitServerContainer;
 import com.github.sparsick.testcontainers.gitserver.plain.SshIdentity;
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerifier;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 
@@ -45,15 +46,14 @@ import org.testcontainers.containers.GenericContainer;
  * </ul>
  *
  */
-public class AuthzTest {
+class AuthzTest {
 
-    @Rule
-    public TemporaryFolder testFolder =
-            TemporaryFolder.builder().assureDeletion().build();
+    @TempDir
+    private File testFolder;
 
     @Test
-    public void sshKeyAuth() throws Exception {
-        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    void sshKeyAuth() throws Exception {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         try (GitServerContainer containerUnderTest = new GitServerContainer(
                         GitServerVersions.V2_45.getDockerImageName())
                 .withGitRepo("someRepo")
@@ -66,8 +66,8 @@ public class AuthzTest {
     }
 
     @Test
-    public void sshWithPassword() throws Exception {
-        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    void sshWithPassword() throws Exception {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         try (GitServerContainer containerUnderTest = new GitServerContainer(
                         GitServerVersions.V2_45.getDockerImageName())
                 .withGitRepo("someRepo")
@@ -85,8 +85,8 @@ public class AuthzTest {
     }
 
     @Test
-    public void httpWithPassword() throws Exception {
-        Assume.assumeTrue(DockerClientFactory.instance().isDockerAvailable());
+    void httpWithPassword() throws Exception {
+        assumeTrue(DockerClientFactory.instance().isDockerAvailable());
         BasicAuthenticationCredentials credentials = new BasicAuthenticationCredentials("testuser", "testPassword");
         try (GitHttpServerContainer containerUnderTest =
                 new GitHttpServerContainer(GitServerVersions.V2_45.getDockerImageName(), credentials)) {
@@ -109,13 +109,13 @@ public class AuthzTest {
             // ssh://git@localhost:33011/srv/git/someRepo.git
             // we don't want the user part of the uri or jgit will use this user
             // and we want to be sure to test our implementation with dynamic user
-            repoUrl = StringUtils.remove(repoUrl, "git@");
+            repoUrl = Strings.CS.remove(repoUrl, "git@");
         }
         if (containerUnderTest instanceof GitHttpServerContainer container) {
             repoUrl = container.getGitRepoURIAsHttp().toString();
         }
 
-        Path testRepo = testFolder.newFolder().toPath();
+        Path testRepo = newFolder(testFolder, "junit-" + System.nanoTime()).toPath();
 
         GitClient client = buildClient(testRepo, standardCredentials, repoUrl);
         Map<String, ObjectId> rev = client.getHeadRev(repoUrl);
@@ -139,7 +139,7 @@ public class AuthzTest {
         client.commit("Very useful change");
         client.push().to(new URIish(repoUrl)).execute();
 
-        testRepo = testFolder.newFolder().toPath();
+        testRepo = newFolder(testFolder, "junit-" + System.nanoTime()).toPath();
         client = buildClient(testRepo, standardCredentials, repoUrl);
         rev = client.getHeadRev(repoUrl);
         // check there is now one ref remotely after the push
@@ -172,5 +172,14 @@ public class AuthzTest {
                 privateKeySource,
                 new String(sshIdentity.getPassphrase()),
                 "description");
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }
