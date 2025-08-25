@@ -57,6 +57,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.CleanupMode;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
@@ -107,7 +108,7 @@ class GitClientTest {
     private boolean CLI_GIT_HAS_GIT_LFS_CONFIGURED;
     private boolean LFS_SUPPORTS_SPARSE_CHECKOUT;
 
-    @TempDir
+    @TempDir(cleanup = CleanupMode.NEVER)
     private File tempFolder;
 
     private File repoRoot = null;
