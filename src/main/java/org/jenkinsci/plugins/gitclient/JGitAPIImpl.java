@@ -1444,7 +1444,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
+                        // git log --raw --no-merges doesn't show merge commits
                         if (commit.getParentCount() > 1) {
                             continue;
                         }
@@ -1452,7 +1452,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
-                    throw new GitException("Error: jgit whatchanged in " + workspace + " " + e.getMessage(), e);
+                    throw new GitException(
+                            "Error: jgit log --raw --no-merges in " + workspace + " " + e.getMessage(), e);
                 } finally {
                     closeResources();
                 }
@@ -1494,7 +1495,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Commit to format.
          * @param parent
          *      Optional parent commit to produce the diff against. This only matters
-         *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
+         *      for merge commits and git-log behaves differently with respect to this.
          */
         @SuppressFBWarnings(
                 value = "VA_FORMAT_STRING_USES_NEWLINE",
