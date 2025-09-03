@@ -3032,7 +3032,7 @@ public class GitClientTest {
         final String branch2 = "changelog-branch-2";
         final String mergeMessage = "Merge " + branch2 + " into " + branch1;
 
-        // Create initial commit first
+        // Create initial commit
         ObjectId initialCommit = commitOneFile();
 
         // Create first branch with a commit
