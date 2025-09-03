@@ -34,7 +34,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Config;
@@ -87,7 +87,6 @@ public class GitAPITest {
 
     private GitClient testGitClient;
     private File testGitDir;
-    private CliGitCommand cliGitCommand;
 
     public GitAPITest(final String gitImplName) {
         this.gitImplName = gitImplName;
@@ -167,7 +166,6 @@ public class GitAPITest {
 
         testGitClient = workspace.getGitClient();
         testGitDir = workspace.getGitFileDir();
-        cliGitCommand = workspace.getCliGitCommand();
         workspace.initializeWorkspace();
     }
 
@@ -760,7 +758,26 @@ public class GitAPITest {
         workspace.launchCommand("git", "fetch", "origin");
         Set<Branch> branches = testGitClient.getRemoteBranches();
         assertBranchesExist(branches, "origin/" + defaultBranchName, "origin/test", "origin/another");
-        assertEquals(3, branches.size());
+        int branchCount = 3;
+        if (workspace.cgit().isAtLeastVersion(2, 48, 0, 0)) {
+            /* Fetch from CLI git 2.48.0 and later return origin/HEAD
+             *
+             * https://github.blog/open-source/git/highlights-from-git-2-48/ says:
+             *
+             * With Git 2.48, if the remote has a default branch but refs/remotes/origin/HEAD
+             * is missing locally, then a fetch will update it.
+             *
+             * This test was unintentionally testing the behavior of CLI git before
+             * 2.48.0.  Other tests in GitClientFetchTest were testing that origin/HEAD
+             * was reported as a branch.
+             */
+            assertBranchesExist(branches, "origin/HEAD");
+            branchCount = 4;
+        }
+        assertEquals(
+                "Wrong branch count, found " + branches.size() + " branches: " + branches,
+                branchCount,
+                branches.size());
     }
 
     @Test
@@ -1691,6 +1708,64 @@ public class GitAPITest {
         changelogCommand.execute();
         assertTrue("No log message in " + writer, writer.toString().contains(logMessage));
         assertTrue("No SHA1 in " + writer, writer.toString().contains(sha1));
+    }
+
+    @Test
+    public void testChangelogSkipsMerges() throws Exception {
+        int counter = 0;
+        workspace.touch(testGitDir, "file-skips-merges-" + counter, "changelog skips merges " + counter);
+        testGitClient.add("file-skips-merges-" + counter);
+        testGitClient.commit("skips-merges-" + counter++);
+        String rootCommit = testGitClient.revParse("HEAD").name();
+
+        // Create branches a, b, and common that will merge a and b
+        testGitClient.branch("branch-A"); // Create branch-A without switching to it
+        testGitClient.branch("branch-B"); // Create branch-B without switching to it
+        testGitClient.branch("common"); // common branch that will merge branch-A and branch-B
+
+        testGitClient.checkoutBranch("branch-A", rootCommit); // Switch to branch-A
+        workspace.touch(testGitDir, "file-branch-A", "branch-A file " + counter++);
+        testGitClient.add("file-branch-A");
+        testGitClient.commit("file-branch-A on branch-A");
+        String branchACommit = testGitClient.revParse("HEAD").name();
+
+        testGitClient.checkoutBranch("branch-B", rootCommit); // Switch to branch-B
+        workspace.touch(testGitDir, "file-branch-B", "branch-B file " + counter++);
+        testGitClient.add("file-branch-B");
+        testGitClient.commit("file-branch-B on branch-B");
+        String branchBCommit = testGitClient.revParse("HEAD").name();
+
+        String mergeMessage = "Merged branch-B into common";
+        testGitClient.checkoutBranch("common", rootCommit); // Switch to common branch
+        testGitClient
+                .merge()
+                .setRevisionToMerge(ObjectId.fromString(branchACommit))
+                .execute();
+        testGitClient
+                .merge()
+                .setRevisionToMerge(ObjectId.fromString(branchBCommit))
+                .setMessage(mergeMessage)
+                .execute();
+        String mergedCommit = testGitClient.revParse("HEAD").name();
+
+        workspace.touch(testGitDir, "file-skips-merges-" + counter, "changelog skips merges " + counter);
+        testGitClient.add("file-skips-merges-" + counter);
+        testGitClient.commit("skips-merges-" + counter++);
+        String finalCommit = testGitClient.revParse("HEAD").name();
+
+        // Calculate the changelog
+        StringWriter writer = new StringWriter();
+        testGitClient.changelog().to(writer).execute();
+        String changelog = writer.toString();
+
+        // Confirm the changelog includes expected commits
+        assertThat(changelog, containsString("commit " + branchACommit));
+        assertThat(changelog, containsString("commit " + branchBCommit));
+        assertThat(changelog, containsString("commit " + finalCommit));
+
+        // Confirm the changelog does not include the merge commit
+        assertThat(changelog, not(containsString("commit " + mergedCommit)));
+        assertThat(changelog, not(containsString(mergeMessage)));
     }
 
     /**

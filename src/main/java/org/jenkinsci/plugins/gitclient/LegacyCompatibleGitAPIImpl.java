@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static java.util.Arrays.copyOfRange;
-import static org.apache.commons.lang.StringUtils.join;
+import static org.apache.commons.lang3.StringUtils.join;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;

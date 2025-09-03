@@ -2,7 +2,8 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,11 +25,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class KnownHostsFileVerifierTest {
 
     private static final String FILE_CONTENT =
-            """
-            github.com\
-             ecdsa-sha2-nistp256\
-             AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=\
-            """;
+            "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
     // Create a temporary folder and assert folder deletion at end of tests
     @Rule
@@ -45,15 +43,17 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2", FILE_CONTENT);
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
         KnownHostsTestUtil.connectToHost(
-                        "bitbucket.org",
+                        nonGitHubHost(),
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -65,9 +65,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
+        Assume.assumeTrue(runKnownHostsTests());
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
@@ -77,6 +75,7 @@ public class KnownHostsFileVerifierTest {
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -88,9 +87,7 @@ public class KnownHostsFileVerifierTest {
 
     @Test
     public void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
+        Assume.assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(
                 "fake2.ssh",
                 "known_hosts_fake2",
@@ -103,6 +100,7 @@ public class KnownHostsFileVerifierTest {
                         22,
                         fakeKnownHosts,
                         knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);

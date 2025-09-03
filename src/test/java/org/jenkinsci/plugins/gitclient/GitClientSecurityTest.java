@@ -225,7 +225,6 @@ public class GitClientSecurityTest {
         "https://github.com/jenkinsci/archetypes.git",
         "https://git.assembla.com/git-plugin.3.git",
         "https://markewaite@bitbucket.org/markewaite/jenkins-pipeline-utils.git",
-        "https://jenkins-git-plugin.git.beanstalkapp.com/git-client-plugin.git",
         "https://gitlab.com/MarkEWaite/git-client-plugin.git",
         "origin"
     };

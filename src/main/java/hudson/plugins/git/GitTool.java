@@ -17,6 +17,7 @@ import hudson.tools.ToolProperty;
 import hudson.util.FormValidation;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +54,7 @@ public class GitTool extends ToolInstallation implements NodeSpecific<GitTool>, 
     /** Constant <code>DEFAULT="Default"</code> */
     public static final transient String DEFAULT = "Default";
 
+    @Serial
     private static final long serialVersionUID = 1;
 
     /**

@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.2</version>
+    <version>5.23</version>
     <relativePath />
   </parent>
 
@@ -24,27 +24,6 @@
     </license>
   </licenses>
 
-  <developers>
-    <developer>
-      <id>markewaite</id>
-      <name>Mark Waite</name>
-      <email>mark.earl.waite@gmail.com</email>
-    </developer>
-    <developer>
-      <id>rsandell</id>
-      <name>Robert Sandell</name>
-      <email>rsandell@cloudbees.com</email>
-      <url>http://rsandell.com</url>
-    </developer>
-    <developer>
-      <id>olamy</id>
-      <name>Olivier Lamy</name>
-      <email>olamy@apache.org</email>
-      <url>https://about.me/olamy</url>
-      <timezone>Australia/Brisbane</timezone>
-    </developer>
-  </developers>
-
   <scm>
     <connection>scm:git:https://github.com/${gitHubRepo}</connection>
     <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
@@ -53,17 +32,17 @@
   </scm>
 
   <properties>
-    <revision>6.1.1</revision>
+    <revision>6.3.4</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
     <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+    <hpi.bundledArtifacts>JavaEWAH,org.eclipse.jgit,org.eclipse.jgit.http.apache,org.eclipse.jgit.http.server,org.eclipse.jgit.lfs,org.eclipse.jgit.ssh.apache</hpi.bundledArtifacts>
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.479</jenkins.baseline>
-    <!-- TODO Replace with the standard jenkins.baseline references after LTS requires Java 17  -->
-    <!-- <jenkins.version>${jenkins.baseline}.1</jenkins.version> -->
-    <jenkins.version>${jenkins.baseline}</jenkins.version>
-    <jgit.version>7.0.0.202409031743-r</jgit.version>
+    <jenkins.baseline>2.504</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
+    <jgit.version>7.3.0.202506031305-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -74,7 +53,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>3482.vc10d4f6da_28a_</version>
+        <version>5252.va_0266944a_b_42</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -85,6 +64,10 @@
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
       <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>commons-lang3-api</artifactId>
     </dependency>
     <!-- Use gson api plugin rather than JGit LFS transitive dependency inclusion of gson -->
     <dependency>
@@ -163,11 +146,6 @@
       <version>${jgit.version}</version>
       <exclusions>
         <exclusion>
-          <!-- Prevent inclusion of transitive dependency -->
-          <groupId>net.i2p.crypto</groupId>
-          <artifactId>eddsa</artifactId>
-        </exclusion>
-        <exclusion>
           <!-- Prevent inclusion of transitive dependency, OSGi not needed by git client plugin -->
           <groupId>org.apache.sshd</groupId>
           <artifactId>sshd-osgi</artifactId>
@@ -214,7 +192,7 @@
     <dependency>
       <groupId>io.github.sparsick.testcontainers.gitserver</groupId>
       <artifactId>testcontainers-gitserver</artifactId>
-      <version>0.10.0</version>
+      <version>0.12.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -236,13 +214,13 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>3.17.1</version>
+      <version>4.0.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <version>4.2.2</version>
+      <version>4.3.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -272,7 +250,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.20.2</version>
+      <version>1.21.3</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

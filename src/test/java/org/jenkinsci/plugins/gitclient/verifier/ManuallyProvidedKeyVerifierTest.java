@@ -2,7 +2,8 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.isKubernetesCI;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
 import org.awaitility.Awaitility;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,20 +34,22 @@ public class ManuallyProvidedKeyVerifierTest {
     private String hostKey;
 
     @Before
-    public void assignVerifier() {
+    public void assignVerifier() { // For github.com
         hostKey =
                 "|1|7qEjynZk0IodegnbgoPEhWtdgA8=|bGs7a1ktbGWwPuZqqTbAazUAULM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
     }
 
     @Test
     public void connectWhenHostKeyProvidedForOtherHostNameThenShouldFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(hostKey);
 
         KnownHostsTestUtil.connectToHost(
-                        "bitbucket.org",
+                        nonGitHubHost(),
                         22,
                         new File(testFolder.getRoot() + "/path/to/file/random"),
                         verifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -57,27 +61,27 @@ public class ManuallyProvidedKeyVerifierTest {
 
     @Test
     public void connectWhenHostKeyProvidedThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
+        Assume.assumeTrue(runKnownHostsTests());
         ManuallyProvidedKeyVerifier verifier = new ManuallyProvidedKeyVerifier(hostKey);
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (hostKey + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
-                    assertThat(s.isOpen(), is(true));
-                    Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-                    // Should not fail because hostkey for 'github.com:22' was provided
-                    assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-                    return true;
-                })
+        KnownHostsTestUtil.connectToHost(
+                        "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            // Should not fail because hostkey for 'github.com:22' was provided
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            return true;
+                        })
                 .close();
     }
 
     @Test
     public void connectWhenWrongHostKeyProvidedThenShouldFail() throws Exception {
+        Assume.assumeTrue(runKnownHostsTests());
         String key = "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9OOOO";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);
 
@@ -86,20 +90,19 @@ public class ManuallyProvidedKeyVerifierTest {
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (key + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
-                    assertThat(s.isOpen(), is(true));
-                    Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-                    assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
-                    return true;
-                })
+        KnownHostsTestUtil.connectToHost(
+                        "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ssh-ed25519", s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
+                            return true;
+                        })
                 .close();
     }
 
     @Test
     public void connectWhenHostKeyProvidedWithPortThenShouldNotFail() throws Exception {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
+        Assume.assumeTrue(runKnownHostsTests());
         String key =
                 "github.com:22 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
         HostKeyVerifierFactory verifier = new ManuallyProvidedKeyVerifier(key);
@@ -109,12 +112,13 @@ public class ManuallyProvidedKeyVerifierTest {
                         verifier.forJGit(StreamBuildListener.fromStdout());
         Path tempKnownHosts = Files.createTempFile("known_hosts", "");
         Files.write(tempKnownHosts, (key + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
-        KnownHostsTestUtil.connectToHost("github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, s -> {
-                    assertThat(s.isOpen(), is(true));
-                    Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-                    assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
-                    return true;
-                })
+        KnownHostsTestUtil.connectToHost(
+                        "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            return true;
+                        })
                 .close();
     }
 

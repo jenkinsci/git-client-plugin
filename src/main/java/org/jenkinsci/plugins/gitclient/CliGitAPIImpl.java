@@ -21,6 +21,7 @@ import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IGitAPI;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.slaves.WorkspaceList;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.Secret;
 import java.io.*;
@@ -60,12 +61,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.jgit.internal.storage.file.WindowCache;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryCache;
+import org.eclipse.jgit.storage.file.WindowCacheConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
@@ -183,7 +187,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private static final Logger LOGGER = Logger.getLogger(CliGitAPIImpl.class.getName());
 
+    @Serial
     private static final long serialVersionUID = 1;
+
     static final String SPARSE_CHECKOUT_FILE_DIR = ".git/info";
     static final String SPARSE_CHECKOUT_FILE_PATH = ".git/info/sparse-checkout";
     static final String TIMEOUT_LOG_PREFIX = " # timeout=";
@@ -1311,7 +1317,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new IllegalStateException();
                 }
 
-                // "git whatchanged" std output gives us byte stream of data
+                // "git log" std output gives us byte stream of data
                 // Commit messages in that byte stream are UTF-8 encoded.
                 // We want to decode bytestream to strings using UTF-8 encoding.
                 try (WriterOutputStream w = new WriterOutputStream(out, StandardCharsets.UTF_8)) {
@@ -1975,7 +1981,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (workspace == null) {
             return createTempFileInSystemDir(prefix, suffix);
         }
-        File workspaceTmp = new File(workspace.getAbsolutePath() + "@tmp");
+
+        File workspaceTmp = new File(workspace.getAbsolutePath() + WorkspaceList.TMP_DIR_SUFFIX);
         if (!workspaceTmp.isDirectory() && !workspaceTmp.mkdirs()) {
             if (!workspaceTmp.isDirectory()) {
                 return createTempFileInSystemDir(prefix, suffix);
@@ -2194,10 +2201,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    @SuppressFBWarnings(
-            value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
-            justification =
-                    "Path operations below intentionally use absolute '/usr/bin/chcon' and '/sys/fs/selinux/enforce' and '/proc/self/attr/current' at this time (as delivered in relevant popular Linux distros)")
     private Boolean fixSELinuxLabel(Path key, String label) {
         // returning false means chcon was tried and failed,
         // maybe caller needs to retry with other logic
@@ -2767,15 +2770,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommandIn(args, workDir, environment, TIMEOUT);
     }
 
-    @SuppressFBWarnings(
-            value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE",
-            justification = "earlier readStderr()/readStdout() call prevents null return")
     private String readProcessIntoString(Proc process, String encoding, boolean useStderr) throws IOException {
         if (useStderr) {
-            /* process.getStderr reference is the findbugs warning to be suppressed */
             return IOUtils.toString(process.getStderr(), encoding);
         }
-        /* process.getStdout reference is the findbugs warning to be suppressed */
         return IOUtils.toString(process.getStdout(), encoding);
     }
 
@@ -3040,6 +3038,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             return branches;
+        } finally {
+            // TODO Avoid JGit 7.2.0 and 7.3.0 file handle leak
+            RepositoryCache.clear();
+            WindowCache.reconfigure(new WindowCacheConfig());
         }
     }
 

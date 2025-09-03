@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -169,10 +169,9 @@ public class SmartCredentialsProvider extends CredentialsProvider {
                 password.setValue(credentials.getPassword().getPlainText().toCharArray());
                 continue;
             }
-            if (i instanceof CredentialItem.StringType) {
+            if (i instanceof CredentialItem.StringType t) {
                 if (i.getPromptText().equals("Password: ") && c instanceof PasswordCredentials credentials) {
-                    ((CredentialItem.StringType) i)
-                            .setValue(credentials.getPassword().getPlainText());
+                    t.setValue(credentials.getPassword().getPlainText());
                     continue;
                 }
             }
