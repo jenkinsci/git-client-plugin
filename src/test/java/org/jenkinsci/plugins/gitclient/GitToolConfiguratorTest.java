@@ -30,9 +30,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.plugins.git.GitTool;
 import hudson.tools.ToolProperty;
@@ -42,56 +40,52 @@ import io.jenkins.plugins.casc.ConfiguratorException;
 import io.jenkins.plugins.casc.model.CNode;
 import io.jenkins.plugins.casc.model.Mapping;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GitToolConfiguratorTest {
+class GitToolConfiguratorTest {
 
-    private final GitToolConfigurator gitToolConfigurator;
+    private final GitToolConfigurator gitToolConfigurator = new GitToolConfigurator();
     private static final ConfigurationContext NULL_CONFIGURATION_CONTEXT = null;
 
-    public GitToolConfiguratorTest() {
-        gitToolConfigurator = new GitToolConfigurator();
-    }
-
     @Test
-    public void testGetName() {
+    void testGetName() {
         assertThat(gitToolConfigurator.getName(), is("git"));
     }
 
     @Test
-    public void testGetDisplayName() {
+    void testGetDisplayName() {
         assertThat(gitToolConfigurator.getDisplayName(), is("Git"));
     }
 
     @Test
-    public void testGetTarget() {
-        assertEquals("Wrong target class", gitToolConfigurator.getTarget(), GitTool.class);
+    void testGetTarget() {
+        assertEquals(GitTool.class, gitToolConfigurator.getTarget(), "Wrong target class");
     }
 
     @Test
-    public void testCanConfigure() {
-        assertTrue("Can't configure GitTool", gitToolConfigurator.canConfigure(GitTool.class));
-        assertFalse("Can configure GitToolConfigurator", gitToolConfigurator.canConfigure(GitToolConfigurator.class));
+    void testCanConfigure() {
+        assertTrue(gitToolConfigurator.canConfigure(GitTool.class), "Can't configure GitTool");
+        assertFalse(gitToolConfigurator.canConfigure(GitToolConfigurator.class), "Can configure GitToolConfigurator");
     }
 
     @Test
-    public void testGetImplementedAPI() {
-        assertEquals("Wrong implemented API", gitToolConfigurator.getImplementedAPI(), GitTool.class);
+    void testGetImplementedAPI() {
+        assertEquals(GitTool.class, gitToolConfigurator.getImplementedAPI(), "Wrong implemented API");
     }
 
     @Test
-    public void testGetConfigurators() {
+    void testGetConfigurators() {
         assertThat(gitToolConfigurator.getConfigurators(NULL_CONFIGURATION_CONTEXT), contains(gitToolConfigurator));
     }
 
     @Test
-    public void testDescribe() throws Exception {
+    void testDescribe() throws Exception {
         GitTool nullGitTool = null;
         assertThat(gitToolConfigurator.describe(nullGitTool, NULL_CONFIGURATION_CONTEXT), is(new Mapping()));
     }
 
     @Test
-    public void testDescribeJGitTool() throws Exception {
+    void testDescribeJGitTool() throws Exception {
         GitTool gitTool = new JGitTool();
         CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
@@ -101,7 +95,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testDescribeJGitApacheTool() throws Exception {
+    void testDescribeJGitApacheTool() throws Exception {
         GitTool gitTool = new JGitApacheTool();
         CNode cNode = gitToolConfigurator.describe(gitTool, NULL_CONFIGURATION_CONTEXT);
         assertThat(cNode, is(notNullValue()));
@@ -111,7 +105,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testDescribeGitToolWithoutProperties() throws Exception {
+    void testDescribeGitToolWithoutProperties() throws Exception {
         String gitName = "git-name";
         String gitHome = "/opt/git-2.23.0/bin/git";
         GitTool gitTool = new GitTool(gitName, gitHome, null);
@@ -124,7 +118,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstance() throws Exception {
+    void testInstance() {
         Mapping mapping = null;
         ConfigurationContext context = new ConfigurationContext(null);
         GitTool gitTool = gitToolConfigurator.instance(mapping, context);
@@ -134,7 +128,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstanceJGitTool() throws Exception {
+    void testInstanceJGitTool() {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitTool.MAGIC_EXENAME);
         ConfigurationContext context = new ConfigurationContext(null);
@@ -144,7 +138,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstanceJGitToolWithHome() throws Exception {
+    void testInstanceJGitToolWithHome() {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitTool.MAGIC_EXENAME);
         mapping.put("home", "unused-value-for-home"); // Will log a message
@@ -155,7 +149,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstanceJGitApacheTool() throws Exception {
+    void testInstanceJGitApacheTool() {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
         ConfigurationContext context = new ConfigurationContext(null);
@@ -165,7 +159,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testInstanceJGitApacheToolWithHome() throws Exception {
+    void testInstanceJGitApacheToolWithHome() {
         Mapping mapping = new Mapping();
         mapping.put("name", JGitApacheTool.MAGIC_EXENAME);
         mapping.put("home", "unused-value-for-home"); // Will log a message
@@ -175,16 +169,16 @@ public class GitToolConfiguratorTest {
         assertThat(gitTool, is(not(instanceOf(JGitTool.class))));
     }
 
-    @Test(expected = ConfiguratorException.class)
-    public void testInstanceGitToolWithoutHome() throws Exception {
+    @Test
+    void testInstanceGitToolWithoutHome() {
         Mapping mapping = new Mapping();
-        mapping.put("name", "testGitName"); // No home mapping defined
+        mapping.put("name", "testGitName");
         ConfigurationContext context = new ConfigurationContext(null);
-        gitToolConfigurator.instance(mapping, context);
+        assertThrows(ConfiguratorException.class, () -> gitToolConfigurator.instance(mapping, context));
     }
 
     @Test
-    public void testInstanceGitTool() throws Exception {
+    void testInstanceGitTool() {
         Mapping mapping = new Mapping();
         String gitHome = "testGitHome";
         String gitName = "testGitName";
@@ -200,7 +194,7 @@ public class GitToolConfiguratorTest {
     }
 
     @Test
-    public void testGetAttributes() {
+    void testGetAttributes() {
         List<Attribute<GitTool, ?>> gitToolAttributes = gitToolConfigurator.getAttributes();
         Attribute<GitTool, String> name = new Attribute<>("name", String.class);
         Attribute<GitTool, String> home = new Attribute<>("home", String.class);

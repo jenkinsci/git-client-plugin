@@ -1,50 +1,53 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.Util;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Git API Test which are solely for CLI git,
  * These tests are not implemented for JGit.
  */
-@RunWith(Parameterized.class)
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
 public class GitAPIForCliGitTest {
 
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
-    @Rule
-    public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
 
     private int logCount = 0;
     private static final String LOGGING_STARTED = "Logging started";
     private LogHandler handler = null;
     private TaskListener listener;
-    private final String gitImplName;
 
-    WorkspaceWithRepo workspace;
+    @Parameter(0)
+    private String gitImplName;
+
+    private WorkspaceWithRepo workspace;
 
     private GitClient testGitClient;
     private File testGitDir;
@@ -54,23 +57,18 @@ public class GitAPIForCliGitTest {
      */
     private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 
-    public GitAPIForCliGitTest(final String gitImplName) {
-        this.gitImplName = gitImplName;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"git"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
     }
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
         /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
@@ -90,8 +88,8 @@ public class GitAPIForCliGitTest {
      * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
      * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
      */
-    @BeforeClass
-    public static void computeDefaultBranchName() throws Exception {
+    @BeforeAll
+    static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
                 .in(configDir)
@@ -104,11 +102,11 @@ public class GitAPIForCliGitTest {
                 defaultBranchName = result;
             }
         }
-        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+        assertTrue(configDir.delete(), "Failed to delete temporary readGitConfig directory");
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -125,11 +123,11 @@ public class GitAPIForCliGitTest {
         workspace.initializeWorkspace();
     }
 
-    @After
-    public void afterTearDown() {
+    @AfterEach
+    void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            assertTrue(handler.containsMessageSubstring(LOGGING_STARTED), "Logging not started: " + messages);
         } finally {
             handler.close();
         }
@@ -137,7 +135,7 @@ public class GitAPIForCliGitTest {
 
     /* Test should move to a class that will also test JGit */
     @Test
-    public void testPushFromShallowClone() throws Exception {
+    void testPushFromShallowClone() throws Exception {
         WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         remote.initializeWorkspace();
         remote.commitEmpty("init");
@@ -159,12 +157,5 @@ public class GitAPIForCliGitTest {
         String remoteSha1 =
                 remote.launchCommand("git", "rev-parse", defaultBranchName).substring(0, 40);
         assertEquals(sha1.name(), remoteSha1);
-    }
-
-    private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
-        String actual = ge.getMessage().toLowerCase();
-        assertTrue(
-                "Expected '" + expectedSubstring + "' exception message, but was: " + actual,
-                actual.contains(expectedSubstring));
     }
 }

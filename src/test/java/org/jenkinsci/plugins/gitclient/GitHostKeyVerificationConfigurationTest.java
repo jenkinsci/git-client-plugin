@@ -8,17 +8,17 @@ import org.jenkinsci.plugins.gitclient.verifier.AcceptFirstConnectionStrategy;
 import org.jenkinsci.plugins.gitclient.verifier.KnownHostsFileVerificationStrategy;
 import org.jenkinsci.plugins.gitclient.verifier.ManuallyProvidedKeyVerificationStrategy;
 import org.jenkinsci.plugins.gitclient.verifier.NoHostKeyVerificationStrategy;
-import org.junit.Rule;
-import org.junit.Test;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.jvnet.hudson.test.junit.jupiter.JenkinsSessionExtension;
 
-public class GitHostKeyVerificationConfigurationTest {
+class GitHostKeyVerificationConfigurationTest {
 
-    @Rule
-    public RestartableJenkinsRule r = new RestartableJenkinsRule();
+    @RegisterExtension
+    private final JenkinsSessionExtension r = new JenkinsSessionExtension();
 
     @Test
-    public void testGitHostKeyVerificationConfigurationSavedBetweenSessions() {
+    void testGitHostKeyVerificationConfigurationSavedBetweenSessions() throws Throwable {
         String hostKey = "github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
         ManuallyProvidedKeyVerificationStrategy manuallyProvidedKeyVerificationStrategy =
                 new ManuallyProvidedKeyVerificationStrategy(hostKey);

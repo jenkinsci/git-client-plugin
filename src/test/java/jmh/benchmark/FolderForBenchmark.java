@@ -4,10 +4,9 @@ import edu.umd.cs.findbugs.annotations.CheckForNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import org.junit.Rule;
 
 /**
- * Similar to a TemporaryFolder JUnit Rule, it provides a local git repository for the lifetime of a benchmark test.
+ * Provides a local git repository for a benchmark test.
  * @author RishabhBudhouliya
  **/
 public class FolderForBenchmark {
@@ -134,8 +133,7 @@ public class FolderForBenchmark {
     }
 
     /**
-     * Delete all files and folders under the temporary folder. Usually not
-     * called directly, since it is automatically applied by the {@link Rule}
+     * Delete all files and folders under the temporary folder.
      */
     public void delete() {
         if (folder != null) {

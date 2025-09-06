@@ -1,25 +1,23 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.EnvVars;
 import hudson.util.LogTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -33,17 +31,15 @@ import org.jvnet.hudson.test.Issue;
  *
  * @author Mark Waite
  */
-@RunWith(Parameterized.class)
-public class WarnTempDirValueTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("envVarsToCheck")
+class WarnTempDirValueTest {
 
-    private final String envVarName;
+    @Parameter(0)
+    private String envVarName;
 
-    public WarnTempDirValueTest(String envVarName) {
-        this.envVarName = envVarName;
-    }
-
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
     private File repo = null;
     private int logCount = 0;
@@ -51,13 +47,13 @@ public class WarnTempDirValueTest {
     private LogTaskListener listener = null;
     private static final String LOGGING_STARTED = "** Logging started **";
 
-    @Before
-    public void createRepo() throws IOException {
-        repo = tempFolder.newFolder();
+    @BeforeEach
+    void createRepo() throws Exception {
+        repo = newFolder(tempFolder, "junit");
     }
 
-    @Before
-    public void createLogger() {
+    @BeforeEach
+    void createLogger() {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -68,23 +64,22 @@ public class WarnTempDirValueTest {
         listener.getLogger().println(LOGGING_STARTED);
     }
 
-    @After
-    public void checkLogger() {
+    @AfterEach
+    void checkLogger() {
         assertTrue(handler.containsMessageSubstring(LOGGING_STARTED));
     }
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection<Object[]> envVarsToCheck() {
-        List<Object[]> envVarNames = new ArrayList<>();
-        Object[] tmp = {"TMP"};
+    static List<Arguments> envVarsToCheck() {
+        List<Arguments> envVarNames = new ArrayList<>();
+        Arguments tmp = Arguments.of("TMP");
         envVarNames.add(tmp);
-        Object[] temp = {"TEMP"};
+        Arguments temp = Arguments.of("TEMP");
         envVarNames.add(temp);
         return envVarNames;
     }
 
     @Test
-    public void noWarningForDefaultValue() throws Exception {
+    void noWarningForDefaultValue() throws Exception {
         EnvVars env = new hudson.EnvVars();
         assertFalse(env.get(envVarName, "/tmp").contains(" "));
         GitClient git = Git.with(listener, env).in(repo).using("git").getClient();
@@ -94,7 +89,7 @@ public class WarnTempDirValueTest {
 
     @Test
     @Issue("JENKINS-22706")
-    public void warnWhenValueContainsSpaceCharacter() throws Exception {
+    void warnWhenValueContainsSpaceCharacter() throws Exception {
         EnvVars env = new hudson.EnvVars();
         assertFalse(env.get(envVarName, "/tmp").contains(" "));
         env.put(envVarName, "/tmp/has a space/");
@@ -107,5 +102,14 @@ public class WarnTempDirValueTest {
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

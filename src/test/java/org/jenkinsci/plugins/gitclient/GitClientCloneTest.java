@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -9,7 +8,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.*;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -18,7 +17,6 @@ import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -34,51 +32,51 @@ import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class GitClientCloneTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
+class GitClientCloneTest {
 
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
-    @Rule
-    public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
 
     private int logCount = 0;
     private final Random random = new Random();
     private LogHandler handler = null;
     private TaskListener listener;
-    private final String gitImplName;
 
-    WorkspaceWithRepo workspace;
-    WorkspaceWithRepo secondWorkspace;
+    @Parameter(0)
+    private String gitImplName;
+
+    private WorkspaceWithRepo workspace;
+    private WorkspaceWithRepo secondWorkspace;
 
     private GitClient testGitClient;
     private File testGitDir;
 
-    public GitClientCloneTest(final String gitImplName) {
-        this.gitImplName = gitImplName;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"git", "jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
     }
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
         /* Allow 3-8 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
@@ -92,8 +90,8 @@ public class GitClientCloneTest {
         Util.deleteRecursive(tempDir);
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -118,7 +116,7 @@ public class GitClientCloneTest {
      * command line git program, but consistent within the git API.
      */
     @Test
-    public void test_clone() throws Exception {
+    void test_clone() throws Exception {
         int cloneTimeout = CliGitAPIImpl.TIMEOUT + random.nextInt(60 * 24);
         CloneCommand cmd = testGitClient
                 .clone_()
@@ -138,7 +136,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_checkout_exception() throws Exception {
+    void test_checkout_exception() throws Exception {
         CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("origin");
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
@@ -153,7 +151,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_repositoryName() throws Exception {
+    void test_clone_repositoryName() throws Exception {
         CloneCommand cmd = testGitClient.clone_().url(workspace.localMirror()).repositoryName("upstream");
         if (random.nextBoolean()) {
             cmd.noCheckout(); // Randomly confirm this deprecated call is a no-op
@@ -166,7 +164,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_shallow() throws Exception {
+    void test_clone_shallow() throws Exception {
         CloneCommand cmd = testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -186,7 +184,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_shallow_with_depth() throws Exception {
+    void test_clone_shallow_with_depth() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -204,7 +202,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_shared() throws Exception {
+    void test_clone_shared() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -220,7 +218,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_null_branch() throws Exception {
+    void test_clone_null_branch() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -235,7 +233,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_unshared() throws Exception {
+    void test_clone_unshared() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -249,7 +247,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_reference() throws Exception {
+    void test_clone_reference() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -272,7 +270,7 @@ public class GitClientCloneTest {
     private static final String SRC_DIR = (new File(".")).getAbsolutePath();
 
     @Test
-    public void test_clone_reference_working_repo() throws Exception {
+    void test_clone_reference_working_repo() throws Exception {
         assertThat(new File(SRC_DIR + File.separator + ".git"), is(anExistingDirectory()));
         final File shallowFile = new File(SRC_DIR + File.separator + ".git" + File.separator + "shallow");
         if (shallowFile.exists()) {
@@ -299,7 +297,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_refspec() throws Exception {
+    void test_clone_refspec() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -329,7 +327,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_refspecs() throws Exception {
+    void test_clone_refspecs() throws Exception {
         List<RefSpec> refspecs = Arrays.asList(
                 new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
                 new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
@@ -354,7 +352,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_getRemoteURL_local_clone() throws Exception {
+    void test_getRemoteURL_local_clone() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         assertThat("Origin URL", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
         String remotes = workspace.launchCommand("git", "remote", "-v");
@@ -362,7 +360,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_setRemoteURL_local_clone() throws Exception {
+    void test_setRemoteURL_local_clone() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         String originURL = "https://github.com/jenkinsci/git-client-plugin.git";
         testGitClient.setRemoteUrl("origin", originURL);
@@ -372,7 +370,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_addRemoteUrl_local_clone() throws Exception {
+    void test_addRemoteUrl_local_clone() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         assertThat("Origin URL before add", testGitClient.getRemoteUrl("origin"), is(workspace.localMirror()));
         String upstreamURL = "https://github.com/jenkinsci/git-client-plugin.git";
@@ -382,7 +380,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_default_timeout_logging() throws Exception {
+    void test_clone_default_timeout_logging() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -392,7 +390,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_timeout_logging() throws Exception {
+    void test_clone_timeout_logging() throws Exception {
         int largerTimeout = CliGitAPIImpl.TIMEOUT + 1 + random.nextInt(600);
         testGitClient
                 .clone_()
@@ -404,7 +402,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_max_timeout_logging() throws Exception {
+    void test_max_timeout_logging() throws Exception {
         int maxTimeout = JGitAPIImpl.MAX_TIMEOUT;
         testGitClient
                 .clone_()
@@ -416,7 +414,7 @@ public class GitClientCloneTest {
     }
 
     @Test
-    public void test_clone_huge_timeout_logging() throws Exception {
+    void test_clone_huge_timeout_logging() throws Exception {
         int hugeTimeout = JGitAPIImpl.MAX_TIMEOUT + 1 + random.nextInt(Integer.MAX_VALUE - 1 - JGitAPIImpl.MAX_TIMEOUT);
         testGitClient
                 .clone_()
@@ -453,7 +451,7 @@ public class GitClientCloneTest {
         }
     }
 
-    private void assertAlternateFilePointsToLocalMirror() throws IOException, InterruptedException {
+    private void assertAlternateFilePointsToLocalMirror() throws Exception {
         final String alternates =
                 ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
 
@@ -466,7 +464,7 @@ public class GitClientCloneTest {
     }
 
     private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
+        return branches.stream().map(Branch::getName).toList();
     }
 
     private void assertBranchesExist(Set<Branch> branches, String... names) {

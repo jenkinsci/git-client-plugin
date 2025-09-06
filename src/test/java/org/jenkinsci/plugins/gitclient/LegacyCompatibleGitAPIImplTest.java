@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitException;
@@ -18,16 +18,15 @@ import java.util.UUID;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class LegacyCompatibleGitAPIImplTest {
+class LegacyCompatibleGitAPIImplTest {
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
     private LegacyCompatibleGitAPIImpl git;
     private File repo;
@@ -39,10 +38,10 @@ public class LegacyCompatibleGitAPIImplTest {
 
     private static String defaultBranchName = "mast" + "er"; // Intentionally split string
 
-    protected String gitImpl;
+    protected final String gitImpl = getGitImplementation();
 
-    public LegacyCompatibleGitAPIImplTest() {
-        gitImpl = "git";
+    protected String getGitImplementation() {
+        return "git";
     }
 
     /**
@@ -51,8 +50,8 @@ public class LegacyCompatibleGitAPIImplTest {
      * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
      * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
      */
-    @BeforeClass
-    public static void computeDefaultBranchName() throws Exception {
+    @BeforeAll
+    static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
                 .in(configDir)
@@ -65,12 +64,12 @@ public class LegacyCompatibleGitAPIImplTest {
                 defaultBranchName = result;
             }
         }
-        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+        assertTrue(configDir.delete(), "Failed to delete temporary readGitConfig directory");
     }
 
-    @Before
-    public void setUp() throws Exception {
-        repo = tempFolder.newFolder();
+    @BeforeEach
+    void setUp() throws Exception {
+        repo = newFolder(tempFolder, "junit");
         assertNotGitRepo(repo);
         git = (LegacyCompatibleGitAPIImpl)
                 Git.with(listener, env).in(repo).using(gitImpl).getClient();
@@ -82,18 +81,18 @@ public class LegacyCompatibleGitAPIImplTest {
     }
 
     private void assertNotGitRepo(File dir) {
-        assertTrue(dir + " is not a directory", dir.isDirectory());
+        assertTrue(dir.isDirectory(), dir + " is not a directory");
         File gitDir = new File(dir, ".git");
-        assertFalse(gitDir + " is a directory", gitDir.isDirectory());
+        assertFalse(gitDir.isDirectory(), gitDir + " is a directory");
     }
 
     private void assertIsGitRepo(File dir) {
-        assertTrue(dir + " is not a directory", dir.isDirectory());
+        assertTrue(dir.isDirectory(), dir + " is not a directory");
         File gitDir = new File(dir, ".git");
-        assertTrue(gitDir + " is not a directory", gitDir.isDirectory());
+        assertTrue(gitDir.isDirectory(), gitDir + " is not a directory");
     }
 
-    private File touch(String path, String content) throws IOException {
+    private File touch(String path, String content) throws Exception {
         File f = new File(repo, path);
         Files.writeString(f.toPath(), content, StandardCharsets.UTF_8);
         return f;
@@ -101,7 +100,7 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testCloneRemoteConfig() throws Exception {
+    void testCloneRemoteConfig() throws Exception {
         if (gitImpl.equals("jgit")) {
             return;
         }
@@ -116,25 +115,25 @@ public class LegacyCompatibleGitAPIImplTest {
         RemoteConfig remoteConfig = new RemoteConfig(config, remoteName);
         git.clone(remoteConfig);
         File[] files = git.workspace.listFiles();
-        assertEquals(files.length + "files in " + Arrays.toString(files), 1, files.length);
-        assertEquals("Wrong file name", ".git", files[0].getName());
+        assertEquals(1, files.length, files.length + "files in " + Arrays.toString(files));
+        assertEquals(".git", files[0].getName(), "Wrong file name");
     }
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_ignored_arg() throws Exception {
+    void testHasGitModules_default_ignored_arg() {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules("ignored treeIsh argument 1"));
     }
 
     @Test
     @Deprecated
-    public void testHasGitModules_default_no_arg() throws Exception {
+    void testHasGitModules_default_no_arg() {
         assertFalse((new File(repo, ".gitmodules")).exists());
         assertFalse(git.hasGitModules());
     }
 
-    private File commitTrackedFile() throws IOException, GitException, InterruptedException {
+    private File commitTrackedFile() throws Exception {
         File trackedFile = touch("tracked-file", "tracked content " + UUID.randomUUID());
         git.add("tracked-file");
         git.commit("First commit");
@@ -145,14 +144,14 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testShowRevisionThrowsGitException() throws Exception {
+    void testShowRevisionThrowsGitException() throws Exception {
         commitTrackedFile();
         assertThrows(GitException.class, () -> git.showRevision(new Revision(gitClientCommit)));
     }
 
     @Test
     @Deprecated
-    public void testShowRevisionTrackedFile() throws Exception {
+    void testShowRevisionTrackedFile() throws Exception {
         commitTrackedFile();
         ObjectId head = git.getHeadRev(repo.getPath(), defaultBranchName);
         List<String> revisions = git.showRevision(new Revision(head));
@@ -161,31 +160,31 @@ public class LegacyCompatibleGitAPIImplTest {
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit_empty() throws Exception {
+    void testGetTagsOnCommit_empty() throws Exception {
         List<Tag> result = git.getTagsOnCommit(taggedCommit.name());
-        assertTrue("Tag list not empty: " + result, result.isEmpty());
+        assertTrue(result.isEmpty(), "Tag list not empty: " + result);
     }
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit_non_empty() throws Exception {
+    void testGetTagsOnCommit_non_empty() throws Exception {
         commitTrackedFile();
         List<Tag> result = git.getTagsOnCommit(taggedCommit.name());
-        assertTrue("Tag list not empty: " + result, result.isEmpty());
+        assertTrue(result.isEmpty(), "Tag list not empty: " + result);
     }
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit_SHA1() throws Exception {
+    void testGetTagsOnCommit_SHA1() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl)
                 Git.with(listener, env).in(repo).using(gitImpl).getClient();
         List<Tag> result = myGit.getTagsOnCommit(taggedCommit.name());
-        assertTrue("Tag list not empty: " + result, result.isEmpty());
+        assertTrue(result.isEmpty(), "Tag list not empty: " + result);
     }
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit() throws Exception {
+    void testGetTagsOnCommit() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl)
                 Git.with(listener, env).in(repo).using(gitImpl).getClient();
         commitTrackedFile();
@@ -194,41 +193,42 @@ public class LegacyCompatibleGitAPIImplTest {
         myGit.tag(uniqueTagName, tagMessage);
         List<Tag> result = myGit.getTagsOnCommit(uniqueTagName);
         myGit.deleteTag(uniqueTagName);
-        assertFalse("Tag list empty for " + uniqueTagName, result.isEmpty());
+        assertFalse(result.isEmpty(), "Tag list empty for " + uniqueTagName);
         assertNull(
-                "Unexpected SHA1 for commit: " + result.get(0).getCommitMessage(),
-                result.get(0).getCommitSHA1());
+                result.get(0).getCommitSHA1(),
+                "Unexpected SHA1 for commit: " + result.get(0).getCommitMessage());
         assertNull(
-                "Unexpected message for commit: " + result.get(0).getCommitSHA1(),
-                result.get(0).getCommitMessage());
+                result.get(0).getCommitMessage(),
+                "Unexpected message for commit: " + result.get(0).getCommitSHA1());
     }
 
     @Test
     @Deprecated
-    public void testGetTagsOnCommit_sha1() throws Exception {
+    void testGetTagsOnCommit_sha1() throws Exception {
         LegacyCompatibleGitAPIImpl myGit = (LegacyCompatibleGitAPIImpl)
                 Git.with(listener, env).in(repo).using(gitImpl).getClient();
         String revName = "2db88a20bba8e98b6710f06213f3b60940a63c7c";
         List<Tag> result = myGit.getTagsOnCommit(revName);
-        assertTrue("Tag list not empty for " + revName, result.isEmpty());
+        assertTrue(result.isEmpty(), "Tag list not empty for " + revName);
     }
 
     @Test
-    public void testLsTreeThrows() {
-        Class expectedExceptionClass = git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
+    void testLsTreeThrows() {
+        Class<? extends Exception> expectedExceptionClass =
+                git instanceof CliGitAPIImpl ? GitException.class : NullPointerException.class;
         assertThrows(expectedExceptionClass, () -> git.lsTree("HEAD"));
     }
 
     @Test
-    public void testLsTreeOneCommit() throws Exception {
+    void testLsTreeOneCommit() throws Exception {
         commitTrackedFile();
         List<IndexEntry> lsTree = git.lsTree("HEAD");
-        assertEquals("lsTree wrong size - " + lsTree, 1, lsTree.size());
+        assertEquals(1, lsTree.size(), "lsTree wrong size - " + lsTree);
         assertEquals("tracked-file", lsTree.get(0).getFile());
     }
 
     @Test
-    public void testExtractBranchNameFromBranchSpec() {
+    void testExtractBranchNameFromBranchSpec() {
         assertEquals(defaultBranchName, git.extractBranchNameFromBranchSpec(defaultBranchName));
         assertEquals(defaultBranchName, git.extractBranchNameFromBranchSpec("origin/" + defaultBranchName));
         assertEquals(defaultBranchName, git.extractBranchNameFromBranchSpec("*/" + defaultBranchName));
@@ -247,5 +247,14 @@ public class LegacyCompatibleGitAPIImplTest {
                 "refs/heads/" + defaultBranchName,
                 git.extractBranchNameFromBranchSpec("refs/remotes/origin/" + defaultBranchName));
         assertEquals("refs/tags/mytag", git.extractBranchNameFromBranchSpec("refs/tags/mytag"));
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }
