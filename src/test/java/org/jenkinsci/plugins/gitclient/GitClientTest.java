@@ -1360,12 +1360,11 @@ class GitClientTest {
     // Git LFS sparse checkout support
     @Test
     void testSparseCheckoutWithCliGitLFS() throws Exception {
-        String JENKINS_URL = System.getenv("JENKINS_URL") != null ? System.getenv("JENKINS_URL") : "";
-        if (JENKINS_URL.contains("ci.jenkins.io")
+        if (System.getenv("CI") != null
                 || !gitImplName.equals("git")
                 || !CLI_GIT_HAS_GIT_LFS
                 || isWindows()) {
-            /* Test fails sporadically on ci.jenkins.io with GitHub error 'bad credentials' */
+            /* Test fails sporadically on CI servers with GitHub error 'bad credentials' */
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
         }
