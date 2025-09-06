@@ -1343,12 +1343,23 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return showRevision(from, to, true);
     }
 
-    /** {@inheritDoc} */
     @Override
     public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput)
             throws GitException, InterruptedException {
+        return showRevision(from, to, useRawOutput, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<String> showRevision(ObjectId from, ObjectId to, Boolean useRawOutput, Boolean suppressMergeCommitDiff)
+            throws GitException, InterruptedException {
         ArgumentListBuilder args =
-                new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M", "-m");
+                new ArgumentListBuilder("log", "--full-history", "--no-abbrev", "--format=raw", "-M");
+
+        if (!suppressMergeCommitDiff) {
+            args.add("-m");
+        }
+
         if (useRawOutput) {
             args.add("--raw");
         }
