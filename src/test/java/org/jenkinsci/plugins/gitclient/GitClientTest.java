@@ -1360,10 +1360,7 @@ class GitClientTest {
     // Git LFS sparse checkout support
     @Test
     void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (System.getenv("CI") != null
-                || !gitImplName.equals("git")
-                || !CLI_GIT_HAS_GIT_LFS
-                || isWindows()) {
+        if (System.getenv("CI") != null || !gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS || isWindows()) {
             /* Test fails sporadically on CI servers with GitHub error 'bad credentials' */
             /* Slow test that does not tell us much more on Windows than Linux */
             return;
