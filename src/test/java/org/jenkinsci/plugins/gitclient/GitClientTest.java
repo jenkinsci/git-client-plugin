@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -1356,15 +1358,23 @@ class GitClientTest {
         assertFileContent("uuid.txt", "5e7733d8acc94636850cb466aec524e4");
     }
 
-    @Issue("JENKINS-43427")
-    // Git LFS sparse checkout support
+    private static final File HOME_DIR = new File(System.getProperty("user.home"));
+    private static final File SSH_DIR = new File(HOME_DIR, ".ssh");
+    private static final Path LFS_TOKEN_PATH = (new File(SSH_DIR, "jenkins-pipeline-utils-lfs-access-token").toPath());
+
+    @Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (System.getenv("CI") != null || !gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS || isWindows()) {
-            /* Test fails sporadically on CI servers with GitHub error 'bad credentials' */
-            /* Slow test that does not tell us much more on Windows than Linux */
+        if (!gitImplName.equals("git") || !LFS_TOKEN_PATH.toFile().exists()) {
+            /* Git LFS not implemented in JGitAPIImpl */
+            /* Test requires an LFS credential for checkout, otherwise fails with GitHub error 'bad credentials' */
             return;
         }
+        String password = Files.readAllLines(LFS_TOKEN_PATH).get(0).trim();
+        String username = "MarkEWaite";
+        String id = "mwaite-lfs-credential-id";
+        String desc = "Mark Waite's LFS credential for a public repository";
+        var credential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, id, desc, username, password);
 
         String branch = "tests/largeFileSupport";
 
@@ -1398,6 +1408,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1423,6 +1434,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1449,6 +1461,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1474,6 +1487,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1499,6 +1513,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1524,6 +1539,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1549,6 +1565,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1574,6 +1591,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1599,6 +1617,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths1)
                     .execute();
 
@@ -1656,6 +1675,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1681,6 +1701,7 @@ class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(credential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
