@@ -2038,11 +2038,8 @@ public abstract class GitAPITestUpdate {
                 .setRevisionToMerge(w.git.getHeadRev(w.repoPath(), "branch-1"))
                 .execute();
 
-        /* JGit handles merge commits in changelog differently than CLI git.  See JENKINS-40023. */
-        int maxlimit = w.git instanceof CliGitAPIImpl ? 1 : 2;
-
         StringWriter writer = new StringWriter();
-        w.git.changelog().max(maxlimit).to(writer).execute();
+        w.git.changelog().max(1).to(writer).execute();
         assertThat(writer.toString(), is(not("")));
     }
 
