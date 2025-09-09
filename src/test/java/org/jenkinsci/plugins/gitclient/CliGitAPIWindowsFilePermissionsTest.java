@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -11,6 +12,7 @@ import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class CliGitAPIWindowsFilePermissionsTest {
 
@@ -19,12 +21,14 @@ class CliGitAPIWindowsFilePermissionsTest {
     private AclFileAttributeView fileAttributeView;
     private UserPrincipal userPrincipal;
 
+    @TempDir
+    private static File tempDir;
+
     @BeforeEach
     void beforeEach() throws Exception {
-        if (!isWindows()) {
-            return;
-        }
-        cliGit = new CliGitAPIImpl("git", new File("."), null, null);
+        assumeTrue(isWindows());
+
+        cliGit = new CliGitAPIImpl("git", tempDir, null, null);
         file = cliGit.createTempFile("permission", ".suff");
         fileAttributeView = Files.getFileAttributeView(file, AclFileAttributeView.class);
         assertNotNull(fileAttributeView);
@@ -34,9 +38,6 @@ class CliGitAPIWindowsFilePermissionsTest {
 
     @Test
     void test_windows_file_permission_is_set_correctly() throws Exception {
-        if (!isWindows()) {
-            return;
-        }
         cliGit.fixSshKeyOnWindows(file);
         assertEquals(1, fileAttributeView.getAcl().size());
         AclEntry aclEntry = fileAttributeView.getAcl().get(0);
@@ -48,9 +49,6 @@ class CliGitAPIWindowsFilePermissionsTest {
 
     @Test
     void test_windows_file_permission_are_incorrect() throws Exception {
-        if (!isWindows()) {
-            return;
-        }
         // By default files include System and builtin administrators
         assertNotSame(1, fileAttributeView.getAcl().size());
         for (AclEntry entry : fileAttributeView.getAcl()) {

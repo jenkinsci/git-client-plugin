@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -48,7 +49,12 @@ class AcceptFirstConnectionVerifierTest {
     @TempDir
     private File testFolder;
 
-    private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
+    private KnownHostsTestUtil knownHostsTestUtil;
+
+    @BeforeEach
+    void setUp() {
+        knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
+    }
 
     @Test
     void testVerifyHostKeyOption() throws Exception {

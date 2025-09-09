@@ -31,10 +31,11 @@ class KnownHostsFileVerifierTest {
 
     private File fakeKnownHosts;
 
-    private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
+    private KnownHostsTestUtil knownHostsTestUtil;
 
     @BeforeEach
     void assignVerifiers() throws Exception {
+        knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(FILE_CONTENT);
     }
 
