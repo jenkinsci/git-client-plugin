@@ -78,17 +78,21 @@ public class GitClientFetchBenchmark {
         File remoteRepoDir;
         URIish urIish;
         /**
-         * We test the performance of git fetch on four repositories, varying them on the basis of their
+         * We test the performance of git fetch on multiple repositories, varying them on the basis of their
          * commit history size, number of branches and ultimately their overall size.
-         * Java-logging-benchmarks: (0.034 MiB) https://github.com/stephenc/java-logging-benchmarks.git
-         * Coreutils: (4.58 MiB) https://github.com/uutils/coreutils.git
-         * Cairo: (93.54 MiB) https://github.com/cairoshell/cairoshell.git
-         * Samba: (324.26 MiB) https://github.com/samba-team/samba.git
+         * Java-logging-benchmarks: (0.14 MiB) https://github.com/stephenc/java-logging-benchmarks.git
+         * Implied labels plugin: (0.54 MiB) https://github.com/jenkinsci/implied-labels-plugin.git
+         * Git client plugin: (8.5 MiB) https://github.com/jenkinsci/git-client-plugin.git
+         * Git plugin: (11 MiB) https://github.com/jenkinsci/git-plugin.git
+         * Coreutils: (35 MiB) https://github.com/uutils/coreutils.git
+         * Samba: (450 MiB) https://github.com/samba-team/samba.git
          */
         @Param({
             "https://github.com/stephenc/java-logging-benchmarks.git",
+            "https://github.com/jenkinsci/implied-labels-plugin.git",
+            "https://github.com/jenkinsci/git-client-plugin.git",
+            "https://github.com/jenkinsci/git-plugin.git",
             "https://github.com/uutils/coreutils.git",
-            "https://github.com/freedesktop/cairo.git",
             "https://github.com/samba-team/samba.git"
         })
         String repoUrl;

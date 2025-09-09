@@ -15,16 +15,16 @@ import hudson.EnvVars;
 import hudson.model.TaskListener;
 import hudson.plugins.git.GitObject;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -33,22 +33,22 @@ import org.jvnet.hudson.test.Issue;
  *
  * @author Brian Ray
  */
-public class JGitLightweightTagTest {
+class JGitLightweightTagTest {
     /* These tests are only for the JGit client. */
     private static final String GIT_IMPL_NAME = "jgit";
 
     /* Instance under test. */
     private GitClient gitClient;
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
     private File repoRoot; // root directory of temporary repository
     private File repoRootGitDir; // .git directory in temporary repository
 
-    @Before
-    public void setGitClientEtc() throws Exception {
-        repoRoot = tempFolder.newFolder();
+    @BeforeEach
+    void setGitClientEtc() throws Exception {
+        repoRoot = newFolder(tempFolder, "junit");
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)
                 .using(GIT_IMPL_NAME)
@@ -96,9 +96,10 @@ public class JGitLightweightTagTest {
         }
     }
 
-    @Issue("JENKINS-57205") // NPE on PreBuildMerge with packed lightweight tag
+    @Issue("JENKINS-57205")
+    // NPE on PreBuildMerge with packed lightweight tag
     @Test
-    public void testGetTags_packedRefs() throws Exception {
+    void testGetTags_packedRefs() throws Exception {
         // JENKINS-57205 is triggered by lightweight tags
         ObjectId firstCommit = commitFile("first.txt", "Great info here", "First commit");
         String lightweightTagName = "lightweight_tag";
@@ -123,5 +124,14 @@ public class JGitLightweightTagTest {
                 hasItem(allOf(
                         hasProperty("name", equalTo(annotatedTagName)), hasProperty("SHA1", equalTo(secondCommit)))));
         assertThat(tags, hasSize(2));
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

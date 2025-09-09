@@ -23,7 +23,8 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
@@ -31,31 +32,27 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class UnsupportedCommandTest {
+class UnsupportedCommandTest {
 
-    private final UnsupportedCommand unsupportedCommand;
-
-    public UnsupportedCommandTest() {
-        unsupportedCommand = new UnsupportedCommand();
-    }
+    private final UnsupportedCommand unsupportedCommand = new UnsupportedCommand();
 
     @Test
-    public void testSparseCheckoutPathsNull() {
+    void testSparseCheckoutPathsNull() {
         unsupportedCommand.sparseCheckoutPaths(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testSparseCheckoutPathsEmptyList() {
+    void testSparseCheckoutPathsEmptyList() {
         List<String> emptyList = new ArrayList<>();
         unsupportedCommand.sparseCheckoutPaths(emptyList);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testSparseCheckoutPaths() {
+    void testSparseCheckoutPaths() {
         List<String> sparseList = new ArrayList<>();
         sparseList.add("a-file-for-sparse-checkout");
         unsupportedCommand.sparseCheckoutPaths(sparseList);
@@ -63,185 +60,185 @@ public class UnsupportedCommandTest {
     }
 
     @Test
-    public void testTimeoutNull() {
+    void testTimeoutNull() {
         unsupportedCommand.timeout(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testTimeout() {
+    void testTimeout() {
         Integer five = 5;
         unsupportedCommand.timeout(five);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testLfsRemoteNull() {
+    void testLfsRemoteNull() {
         unsupportedCommand.lfsRemote(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testLfsRemote() {
+    void testLfsRemote() {
         unsupportedCommand.lfsRemote("https://github.com/MarkEWaite/docker-lfs");
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testLfsCredentialsNull() {
+    void testLfsCredentialsNull() {
         unsupportedCommand.lfsCredentials(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testLfsCredentials() {
+    void testLfsCredentials() {
         FakeCredentials credentials = new FakeCredentials();
         unsupportedCommand.lfsCredentials(credentials);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testNotShallow() {
+    void testNotShallow() {
         unsupportedCommand.shallow(false);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testShallow() {
+    void testShallow() {
         unsupportedCommand.shallow(true);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testDepthNull() {
+    void testDepthNull() {
         unsupportedCommand.depth(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testDepthNegative() {
+    void testDepthNegative() {
         unsupportedCommand.depth(-1);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testDepth() {
+    void testDepth() {
         unsupportedCommand.depth(1);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testNotFirstParent() {
+    void testNotFirstParent() {
         unsupportedCommand.firstParent(false);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testFirstParent() {
+    void testFirstParent() {
         unsupportedCommand.firstParent(true);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testThreadsNull() {
+    void testThreadsNull() {
         unsupportedCommand.threads(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testThreadsZero() {
+    void testThreadsZero() {
         unsupportedCommand.threads(0);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testThreads() {
+    void testThreads() {
         unsupportedCommand.threads(42);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testNotRemoteTracking() {
+    void testNotRemoteTracking() {
         unsupportedCommand.remoteTracking(false);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testRemoteTracking() {
+    void testRemoteTracking() {
         unsupportedCommand.remoteTracking(true);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testRefNull() {
+    void testRefNull() {
         unsupportedCommand.ref(null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testRefEmpty() {
+    void testRefEmpty() {
         unsupportedCommand.ref("");
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testRef() {
+    void testRef() {
         unsupportedCommand.ref("beadeddeededcededadded");
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testNotParentCredentials() {
+    void testNotParentCredentials() {
         unsupportedCommand.parentCredentials(false);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testParentCredentials() {
+    void testParentCredentials() {
         unsupportedCommand.remoteTracking(true);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testUseBranchNull() {
+    void testUseBranchNull() {
         unsupportedCommand.useBranch(null, null);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testUseBranchNullBranchName() {
+    void testUseBranchNullBranchName() {
         unsupportedCommand.useBranch("some-submodule", null);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testUseBranchNullSubmodule() {
+    void testUseBranchNullSubmodule() {
         unsupportedCommand.useBranch(null, "some-branch");
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testUseBranch() {
+    void testUseBranch() {
         unsupportedCommand.useBranch("some-submodule", "some-branch");
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testGitPublisherDisabled() {
+    void testGitPublisherDisabled() {
         /* Disabled git publisher is allowed to use JGit */
         unsupportedCommand.gitPublisher(false);
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testGitPublisher() {
+    void testGitPublisher() {
         /* Enabled git publisher must not use JGit */
         unsupportedCommand.gitPublisher(true);
         assertFalse(unsupportedCommand.determineSupportForJGit());
     }
 
     @Test
-    public void testDetermineSupportForJGit() {
+    void testDetermineSupportForJGit() {
         /* Confirm default is true */
         assertTrue(unsupportedCommand.determineSupportForJGit());
     }

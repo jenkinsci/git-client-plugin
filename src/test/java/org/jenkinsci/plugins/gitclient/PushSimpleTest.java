@@ -1,25 +1,22 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.plugins.git.GitException;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Test;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-public class PushSimpleTest extends PushTest {
-
-    public PushSimpleTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
-        super(gitImpl, branchName, refSpec, expectedException);
-    }
+@ParameterizedClass(name = "{0} with {1}")
+@MethodSource("pushParameters")
+class PushSimpleTest extends PushTest {
 
     @Test
-    public void pushNonFastForwardThrows() throws IOException, GitException, InterruptedException {
+    void pushNonFastForwardThrows() throws Exception {
         checkoutOldBranchAndCommitFile(); // Old branch can't be pushed without force()
         assertThrows(GitException.class, () -> workingGitClient
                 .push()
@@ -30,7 +27,7 @@ public class PushSimpleTest extends PushTest {
     }
 
     @Test
-    public void pushBadURIThrows() throws IOException, GitException, InterruptedException, URISyntaxException {
+    void pushBadURIThrows() throws Exception {
         checkoutBranchAndCommitFile();
         URIish bad = new URIish(bareURI.toString() + "-bad");
         assertThrows(
@@ -38,12 +35,11 @@ public class PushSimpleTest extends PushTest {
                 () -> workingGitClient.push().to(bad).ref(refSpec).execute());
     }
 
-    @Parameterized.Parameters(name = "{0} with {1}")
-    public static Collection<Object[]> pushParameters() {
-        List<Object[]> parameters = new ArrayList<>();
-        Object[] gitParameter = {"git", "master", "master", null};
+    static List<Arguments> pushParameters() {
+        List<Arguments> parameters = new ArrayList<>();
+        Arguments gitParameter = Arguments.of("git", "master", "master", null);
         parameters.add(gitParameter);
-        Object[] jgitParameter = {"jgit", "master", "master", null};
+        Arguments jgitParameter = Arguments.of("jgit", "master", "master", null);
         parameters.add(jgitParameter);
         return parameters;
     }

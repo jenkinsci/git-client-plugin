@@ -1,45 +1,30 @@
 package hudson.plugins.git;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class RevisionTest {
+class RevisionTest {
 
-    private final String sha1;
-    private final ObjectId objectId;
-    private final Revision revision1;
+    private final String sha1 = "3725b67f3daa6621dd01356c96c08a1f85b90c61";
+    private final ObjectId objectId = ObjectId.fromString(sha1);
+    private final Revision revision1 = new Revision(objectId);
 
-    private final Collection<Branch> emptyCollection;
-    private final Revision revision2;
+    private final Collection<Branch> emptyCollection = new ArrayList<>();
+    private final Revision revision2 = new Revision(objectId, emptyCollection);
 
-    private final String branchName;
-    private final String sha1a;
-    private final Branch branch;
-    private final Collection<Branch> branchCollection;
-    private final Revision revisionWithBranches;
-
-    public RevisionTest() {
-        sha1 = "3725b67f3daa6621dd01356c96c08a1f85b90c61";
-        objectId = ObjectId.fromString(sha1);
-        revision1 = new Revision(objectId);
-
-        emptyCollection = new ArrayList<>();
-        revision2 = new Revision(objectId, emptyCollection);
-
-        branchName = "origin/tests/getSubmodules";
-        sha1a = "9ac446c472a6433fe503d294ebb7d5691b590269";
-        branch = new Branch(branchName, ObjectId.fromString(sha1a));
-        branchCollection = new ArrayList<>();
-        branchCollection.add(branch);
-        revisionWithBranches = new Revision(ObjectId.fromString(sha1a), branchCollection);
-    }
+    private final String branchName = "origin/tests/getSubmodules";
+    private final String sha1a = "9ac446c472a6433fe503d294ebb7d5691b590269";
+    private final Branch branch = new Branch(branchName, ObjectId.fromString(sha1a));
+    private final Collection<Branch> branchCollection = List.of(branch);
+    private final Revision revisionWithBranches = new Revision(ObjectId.fromString(sha1a), branchCollection);
 
     @Test
-    public void testEquals() {
+    void testEquals() {
         assertEquals(revision1, revision1);
         assertNotEquals(revision1, null);
         assertNotEquals(null, revision1);
@@ -53,19 +38,19 @@ public class RevisionTest {
     }
 
     @Test
-    public void testGetSha1() {
+    void testGetSha1() {
         assertEquals(objectId, revision1.getSha1());
         assertEquals(objectId, revision2.getSha1());
     }
 
     @Test
-    public void testGetSha1String() {
+    void testGetSha1String() {
         assertEquals(sha1, revision1.getSha1String());
         assertEquals(sha1, revision2.getSha1String());
     }
 
     @Test
-    public void testSetSha1() {
+    void testSetSha1() {
         String newSha1 = "b397392d6d00af263583edeaf8f7773a619d1cf8";
         ObjectId newObjectId = ObjectId.fromString(newSha1);
         Revision rev = new Revision(objectId);
@@ -81,9 +66,8 @@ public class RevisionTest {
     }
 
     @Test
-    public void testGetBranches() {
+    void testGetBranches() {
         assertEquals(0, revision1.getBranches().size());
-
         assertEquals(0, revision2.getBranches().size());
 
         Collection<Branch> branches = revisionWithBranches.getBranches();
@@ -92,7 +76,7 @@ public class RevisionTest {
     }
 
     @Test
-    public void testSetBranches() {
+    void testSetBranches() {
         Revision rev = new Revision(objectId);
 
         rev.setBranches(emptyCollection);
@@ -106,7 +90,7 @@ public class RevisionTest {
     }
 
     @Test
-    public void testContainsBranchName() {
+    void testContainsBranchName() {
         assertFalse(revision1.containsBranchName(branchName));
 
         assertFalse(revision2.containsBranchName(branchName));
@@ -132,26 +116,26 @@ public class RevisionTest {
     }
 
     @Test
-    public void testToString() {
+    void testToString() {
         assertEquals("Revision " + sha1 + " ()", revision1.toString());
         assertEquals("Revision " + sha1 + " ()", revision2.toString());
         assertEquals("Revision " + sha1a + " (" + branchName + ")", revisionWithBranches.toString());
     }
 
     @Test
-    public void testToStringNullOneArgument() {
+    void testToStringNullOneArgument() {
         Revision nullRevision = new Revision(null);
         assertEquals("Revision null ()", nullRevision.toString());
     }
 
     @Test
-    public void testToStringNullTwoArguments() {
+    void testToStringNullTwoArguments() {
         Revision nullRevision = new Revision(null, null);
         assertEquals("Revision null ()", nullRevision.toString());
     }
 
     @Test
-    public void testClone() {
+    void testClone() {
         Revision revision1Clone = revision1.clone();
         assertEquals(objectId, revision1Clone.getSha1());
 
@@ -167,7 +151,7 @@ public class RevisionTest {
     }
 
     @Test
-    public void testHashCode() {
+    void testHashCode() {
         assertEquals(revision1, revision2);
         assertEquals(revision1.hashCode(), revision2.hashCode());
 

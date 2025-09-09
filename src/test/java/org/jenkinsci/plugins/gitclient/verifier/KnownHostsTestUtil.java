@@ -9,13 +9,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
@@ -33,43 +31,36 @@ import org.eclipse.jgit.internal.transport.sshd.JGitClientSession;
 import org.eclipse.jgit.internal.transport.sshd.JGitServerKeyVerifier;
 import org.eclipse.jgit.internal.transport.sshd.JGitSshClient;
 import org.eclipse.jgit.transport.sshd.IdentityPasswordProvider;
-import org.junit.rules.TemporaryFolder;
 
 public class KnownHostsTestUtil {
 
-    private final TemporaryFolder testFolder;
+    private final File testFolder;
 
-    public KnownHostsTestUtil(TemporaryFolder testFolder) {
+    public KnownHostsTestUtil(File testFolder) {
         this.testFolder = testFolder;
     }
 
-    public File createFakeSSHDir(String dir) throws IOException {
+    public File createFakeSSHDir(String dir) throws Exception {
         // Create a fake directory for use with a known_hosts file
-        return testFolder.newFolder(dir);
+        return newFolder(testFolder, dir + "-" + System.nanoTime());
     }
 
-    public File createFakeKnownHosts(String dir, String name) throws IOException {
+    public File createFakeKnownHosts(String dir, String name) throws Exception {
         // Create fake known hosts file
         File fakeSSHDir = createFakeSSHDir(dir);
         return new File(fakeSSHDir, name);
     }
 
-    public File createFakeKnownHosts(String dir, String name, String fileContent) throws IOException {
+    public File createFakeKnownHosts(String dir, String name, String fileContent) throws Exception {
         File fakeKnownHosts = createFakeKnownHosts(dir, name);
-        byte[] fakeKnownHostsBytes = fileContent.getBytes(StandardCharsets.UTF_8);
-        Files.write(fakeKnownHosts.toPath(), fakeKnownHostsBytes);
+        Files.writeString(fakeKnownHosts.toPath(), fileContent);
         return fakeKnownHosts;
     }
 
-    public File createFakeKnownHosts(String fileContent) throws IOException {
+    public File createFakeKnownHosts(String fileContent) throws Exception {
         File fakeKnownHosts = createFakeKnownHosts("fake.ssh", "known_hosts_fake");
-        byte[] fakeKnownHostsBytes = fileContent.getBytes(StandardCharsets.UTF_8);
-        Files.write(fakeKnownHosts.toPath(), fakeKnownHostsBytes);
+        Files.writeString(fakeKnownHosts.toPath(), fileContent);
         return fakeKnownHosts;
-    }
-
-    public List<String> getKnownHostsContent(File file) throws IOException {
-        return Files.readAllLines(file.toPath());
     }
 
     protected static JGitClientSession connectToHost(
@@ -78,8 +69,7 @@ public class KnownHostsTestUtil {
             File knownHostsFile,
             AbstractJGitHostKeyVerifier verifier,
             String algorithm,
-            Predicate<JGitClientSession> asserts)
-            throws IOException {
+            Predicate<JGitClientSession> asserts) {
 
         try (SshClient client = ClientBuilder.builder()
                 .factory(JGitSshClient::new)
@@ -139,7 +129,7 @@ public class KnownHostsTestUtil {
     }
 
     // Several different git providers with ssh access, use one randomly
-    private static String[] nonGitHubHosts = {
+    private static final String[] nonGitHubHosts = {
         // bitbucket.org blocks requests from ci.jenkins.io agents
         // "bitbucket.org",
         "git.assembla.com", "gitea.com", "gitlab.com", "vs-ssh.visualstudio.com", "ssh.dev.azure.com"
@@ -160,8 +150,12 @@ public class KnownHostsTestUtil {
         return !JENKINS_URL.contains("ci.jenkins.io");
     }
 
-    /* Always return false, retained for test compatibility */
-    public static boolean isKubernetesCI() {
-        return false;
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

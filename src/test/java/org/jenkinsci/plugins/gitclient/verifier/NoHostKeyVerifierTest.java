@@ -3,29 +3,28 @@ package org.jenkinsci.plugins.gitclient.verifier;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class NoHostKeyVerifierTest {
+class NoHostKeyVerifierTest {
 
     private NoHostKeyVerifier verifier;
 
-    @Before
-    public void assignVerifier() {
+    @BeforeEach
+    void assignVerifier() {
         verifier = new NoHostKeyVerifier();
     }
 
     @Test
-    public void verifyServerHostKey() throws IOException {
-        Assume.assumeTrue(runKnownHostsTests());
+    void verifyServerHostKey() throws Exception {
+        assumeTrue(runKnownHostsTests());
         NoHostKeyVerifier acceptFirstConnectionVerifier = new NoHostKeyVerifier();
 
         KnownHostsTestUtil.connectToHost(
@@ -45,7 +44,7 @@ public class NoHostKeyVerifierTest {
     }
 
     @Test
-    public void testVerifyHostKeyOption() throws IOException {
+    void testVerifyHostKeyOption() throws Exception {
         assertThat(
                 verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Path.of("")),
                 is("-o StrictHostKeyChecking=no"));

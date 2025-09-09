@@ -1,6 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.EnvVars;
 import hudson.Launcher;
@@ -55,18 +55,11 @@ class CliGitCommand {
         args = null;
     }
 
-    CliGitCommand(GitClient client, String... arguments) throws GitException {
-        this(client);
-        args = new ArgumentListBuilder("git");
-        args.add(arguments);
-    }
-
-    void initializeRepository() throws GitException, IOException, InterruptedException {
+    void initializeRepository() throws GitException, InterruptedException {
         initializeRepository("git-client-user", "git-client-user@example.com");
     }
 
-    void initializeRepository(String userName, String userEmail)
-            throws GitException, IOException, InterruptedException {
+    void initializeRepository(String userName, String userEmail) throws GitException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", userName);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", userEmail);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
@@ -77,7 +70,7 @@ class CliGitCommand {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
     }
 
-    void removeRepositorySettings() throws GitException, IOException, InterruptedException {
+    void removeRepositorySettings() throws GitException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", null);
@@ -85,17 +78,13 @@ class CliGitCommand {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", null);
     }
 
-    String[] run(String... arguments) throws IOException, InterruptedException {
+    String[] run(String... arguments) throws Exception {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
         return run(true);
     }
 
-    String[] run() throws IOException, InterruptedException {
-        return run(true);
-    }
-
-    private String[] run(boolean assertProcessStatus) throws IOException, InterruptedException {
+    private String[] run(boolean assertProcessStatus) throws Exception {
         ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
         ByteArrayOutputStream bytesErr = new ByteArrayOutputStream();
         Launcher.ProcStarter p = launcher.launch()
@@ -111,7 +100,7 @@ class CliGitCommand {
         }
         output = result.split("[\\n\\r]");
         if (assertProcessStatus) {
-            assertEquals(args.toString() + " command failed and reported '" + Arrays.toString(output) + "'", 0, status);
+            assertEquals(0, status, args.toString() + " command failed and reported '" + Arrays.toString(output) + "'");
         }
         return output;
     }
@@ -119,7 +108,7 @@ class CliGitCommand {
     void assertOutputContains(String... expectedRegExes) {
         List<String> notFound = new ArrayList<>();
         boolean modified = notFound.addAll(Arrays.asList(expectedRegExes));
-        assertTrue("Missing regular expressions in assertion", modified);
+        assertTrue(modified, "Missing regular expressions in assertion");
         for (String line : output) {
             notFound.removeIf(line::matches);
         }
@@ -129,7 +118,7 @@ class CliGitCommand {
         }
     }
 
-    String[] runWithoutAssert(String... arguments) throws IOException, InterruptedException {
+    String[] runWithoutAssert(String... arguments) throws Exception {
         args = new ArgumentListBuilder("git");
         args.add(arguments);
         return run(false);
