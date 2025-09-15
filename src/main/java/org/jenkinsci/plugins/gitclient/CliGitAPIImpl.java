@@ -1246,15 +1246,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public ChangelogCommand changelog() {
         return new ChangelogCommand() {
-
-            /** Equivalent to the git-log raw format but using ISO 8601 date format - also prevent to depend on git CLI future changes */
-            public static final String RAW =
-                    "commit %H%ntree %T%nparent %P%nauthor %aN <%aE> %ai%ncommitter %cN <%cE> %ci%n%n%w(0,4,4)%B";
-
             private final List<String> revs = new ArrayList<>();
-
             private Integer n = null;
             private Writer out = null;
+            private boolean includeMergeCommits = false;
 
             @Override
             public ChangelogCommand excludes(String rev) {
@@ -1291,6 +1286,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public ChangelogCommand includeMergeCommits(boolean include) {
+                this.includeMergeCommits = include;
+                return this;
+            }
+
+            @Override
             public void abort() {
                 /* No cleanup needed to abort the CliGitAPIImpl ChangelogCommand */
             }
@@ -1298,15 +1299,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public void execute() throws GitException, InterruptedException {
                 ArgumentListBuilder args =
-                        new ArgumentListBuilder(gitExe, "log", "--raw", "--no-merges", "--no-abbrev", "-M");
-                if (isAtLeastVersion(1, 8, 3, 0)) {
-                    args.add("--format=" + RAW);
-                } else {
-                    /* Ancient git versions don't support the required format string, use 'raw' and hope it works */
-                    args.add("--format=raw");
-                }
+                        new ArgumentListBuilder(gitExe, "whatchanged", "--no-abbrev", "-M", "--format=raw");
                 if (n != null) {
                     args.add("-n").add(n);
+                }
+                if (includeMergeCommits) {
+                    args.add("-m");
                 }
                 for (String rev : this.revs) {
                     args.add(rev);
