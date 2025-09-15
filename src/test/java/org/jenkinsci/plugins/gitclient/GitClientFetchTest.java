@@ -594,6 +594,84 @@ public class GitClientFetchTest {
         assertThat("Tags have been found : " + tags, tags.isEmpty(), is(true));
     }
 
+    @Test
+    public void test_fetch_maskUrlCredentials_enabled() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.setProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials", "true");
+        try {
+            final CliGitAPIImpl newTestGitClient =
+                    new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+            assertThat(newTestGitClient.getMaskUrlCredentials(), is(true));
+            newTestGitClient.setRemoteUrl("origin", "https://foo:bar@localhost/git/my-repo.git");
+            newTestGitClient
+                    .fetch_()
+                    .from(
+                            new URIish("origin"),
+                            Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*")))
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) fetch exception: " + e);
+        } finally {
+            System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(true));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(true));
+    }
+
+    @Test
+    public void test_fetch_maskUrlCredentials_disabled() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.setProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials", "false");
+        try {
+            final CliGitAPIImpl newTestGitClient =
+                    new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+            assertThat(newTestGitClient.getMaskUrlCredentials(), is(false));
+            newTestGitClient.setRemoteUrl("origin", "https://foo:bar@localhost/git/my-repo.git");
+            newTestGitClient
+                    .fetch_()
+                    .from(
+                            new URIish("origin"),
+                            Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*")))
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) fetch exception: " + e);
+        } finally {
+            System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(false));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(false));
+        assertThat(handler.containsMessageSubstring("https://foo:bar@localhost/git/my-repo.git"), is(true));
+    }
+
+    @Test
+    public void test_fetch_maskUrlCredentials_unset() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        try {
+            final CliGitAPIImpl newTestGitClient =
+                    new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+            assertThat(newTestGitClient.getMaskUrlCredentials(), is(false));
+            newTestGitClient.setRemoteUrl("origin", "https://foo:bar@localhost/git/my-repo.git");
+            newTestGitClient
+                    .fetch_()
+                    .from(
+                            new URIish("origin"),
+                            Collections.singletonList(new RefSpec("refs/heads/*:refs/remotes/origin/*")))
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) fetch exception: " + e);
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(false));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(false));
+        assertThat(handler.containsMessageSubstring("https://foo:bar@localhost/git/my-repo.git"), is(true));
+    }
+
     /* JENKINS-33258 detected many calls to git rev-parse. This checks
      * those calls are not being made. The checkoutRandomBranch call
      * creates a branch with a random name. The later assertion checks that

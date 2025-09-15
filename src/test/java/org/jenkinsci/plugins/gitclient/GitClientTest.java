@@ -3380,4 +3380,95 @@ public class GitClientTest {
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
+
+    @Test
+    public void testMaskUrlCredentialsNoCredentials() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = "https://dev.baz/git/repo.git";
+        final String expected = url;
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsNoCredentialSeparator() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = "https://quux@dev.baz/git/repo.git";
+        final String expected = "https://xxxxx@dev.baz/git/repo.git";
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsUsernameAndPassword() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = "https://foo:bar@dev.baz/git/repo.git";
+        final String expected = "https://xxxxx@dev.baz/git/repo.git";
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsUsernameOnly() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = "https://foo:@dev.baz/git/repo.git";
+        final String expected = "https://xxxxx@dev.baz/git/repo.git";
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsPasswordOnly() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = "https://:bar@dev.baz/git/repo.git";
+        final String expected = "https://xxxxx@dev.baz/git/repo.git";
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsNullUrl() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String url = null;
+        final String expected = null;
+        assertThat(cliGitClient.maskUrlCredentials(url), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsCommand() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String command =
+                "git fetch --no-tags --force --progress --depth=1 -- https://foo:bar@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
+        final String expected =
+                "git fetch --no-tags --force --progress --depth=1 -- https://xxxxx@dev.baz/git/repo.git +refs/heads/main:refs/remotes/origin/main";
+        assertThat(cliGitClient.maskUrlCredentials(command), is(expected));
+    }
+
+    @Test
+    public void testMaskUrlCredentialsCommandTwoUrls() throws Exception {
+        if (!gitImplName.equals("git") || !(gitClient instanceof CliGitAPIImpl)) {
+            return;
+        }
+        CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        final String command = "git config url.ssh://git@github.com/foobar.insteadof https://baz:qux@github.com/foobar";
+        final String expected =
+                "git config url.ssh://xxxxx@github.com/foobar.insteadof https://baz:qux@github.com/foobar";
+        assertThat(cliGitClient.maskUrlCredentials(command), is(expected));
+    }
 }

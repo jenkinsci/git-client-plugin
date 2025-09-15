@@ -429,6 +429,77 @@ public class GitClientCloneTest {
         assertTimeout(testGitClient, "fetch", expectedValue);
     }
 
+    @Test
+    public void test_clone_maskUrlCredentials_enabled() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.setProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials", "true");
+        try {
+            final CliGitAPIImpl newTestGitClient =
+                    new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+            assertThat(newTestGitClient.getMaskUrlCredentials(), is(true));
+            newTestGitClient
+                    .clone_()
+                    .url("https://foo:bar@localhost/git/my-repo.git")
+                    .repositoryName("origin")
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) clone exception: " + e);
+        } finally {
+            System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(true));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(true));
+    }
+
+    @Test
+    public void test_clone_maskUrlCredentials_disabled() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.setProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials", "false");
+        try {
+            final CliGitAPIImpl newTestGitClient =
+                    new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+            assertThat(newTestGitClient.getMaskUrlCredentials(), is(false));
+            newTestGitClient
+                    .clone_()
+                    .url("https://foo:bar@localhost/git/my-repo.git")
+                    .repositoryName("origin")
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) clone exception: " + e);
+        } finally {
+            System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(false));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(false));
+        assertThat(handler.containsMessageSubstring("https://foo:bar@localhost/git/my-repo.git"), is(true));
+    }
+
+    @Test
+    public void test_clone_maskUrlCredentials_unset() throws Exception {
+        if (!gitImplName.equals("git")) {
+            return;
+        }
+        System.clearProperty("org.jenkinsci.plugins.gitclient.CliGitAPIImpl.maskUrlCredentials");
+        final CliGitAPIImpl newTestGitClient = new CliGitAPIImpl("git", repo.getRoot(), listener, new hudson.EnvVars());
+        assertThat(newTestGitClient.getMaskUrlCredentials(), is(false));
+        try {
+            newTestGitClient
+                    .clone_()
+                    .url("https://foo:bar@localhost/git/my-repo.git")
+                    .repositoryName("origin")
+                    .execute();
+        } catch (Exception e) {
+            System.out.println("(ignored) clone exception: " + e);
+        }
+        assertThat(handler.containsMessageSubstring("Masking credentials in URLs"), is(false));
+        assertThat(handler.containsMessageSubstring("https://xxxxx@localhost/git/my-repo.git"), is(false));
+        assertThat(handler.containsMessageSubstring("https://foo:bar@localhost/git/my-repo.git"), is(true));
+    }
+
     private void assertAlternatesFileExists() {
         final String alternates =
                 ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
