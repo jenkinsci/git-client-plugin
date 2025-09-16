@@ -4,46 +4,44 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.time.Duration;
 import org.awaitility.Awaitility;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
-public class KnownHostsFileVerifierTest {
+@ExtendWith(MockitoExtension.class)
+class KnownHostsFileVerifierTest {
 
     private static final String FILE_CONTENT =
             "github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=";
 
     // Create a temporary folder and assert folder deletion at end of tests
-    @Rule
-    public TemporaryFolder testFolder =
-            TemporaryFolder.builder().assureDeletion().build();
+    @TempDir
+    private File testFolder;
 
     private File fakeKnownHosts;
 
-    private final KnownHostsTestUtil knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
+    private KnownHostsTestUtil knownHostsTestUtil;
 
-    @Before
-    public void assignVerifiers() throws IOException {
+    @BeforeEach
+    void assignVerifiers() throws Exception {
+        knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(FILE_CONTENT);
     }
 
     @Test
-    public void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws Exception {
-        Assume.assumeTrue(runKnownHostsTests());
+    void connectWhenHostKeyNotInKnownHostsFileForOtherHostNameThenShouldFail() throws Exception {
+        assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts("fake2.ssh", "known_hosts_fake2", FILE_CONTENT);
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
@@ -64,8 +62,8 @@ public class KnownHostsFileVerifierTest {
     }
 
     @Test
-    public void connectWhenHostKeyProvidedThenShouldNotFail() throws IOException {
-        Assume.assumeTrue(runKnownHostsTests());
+    void connectWhenHostKeyProvidedThenShouldNotFail() throws Exception {
+        assumeTrue(runKnownHostsTests());
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
         when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(fakeKnownHosts);
 
@@ -86,8 +84,8 @@ public class KnownHostsFileVerifierTest {
     }
 
     @Test
-    public void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws IOException {
-        Assume.assumeTrue(runKnownHostsTests());
+    void connectWhenHostKeyInKnownHostsFileWithNotDefaultAlgorithmThenShouldNotFail() throws Exception {
+        assumeTrue(runKnownHostsTests());
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(
                 "fake2.ssh",
                 "known_hosts_fake2",
@@ -111,7 +109,7 @@ public class KnownHostsFileVerifierTest {
     }
 
     @Test
-    public void testVerifyHostKeyOptionWithDefaultFile() throws Exception {
+    void testVerifyHostKeyOptionWithDefaultFile() throws Exception {
         KnownHostsFileVerifier verifier = new KnownHostsFileVerifier();
         assertThat(
                 verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=yes"));

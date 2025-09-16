@@ -5,29 +5,27 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class GitExceptionTest {
+class GitExceptionTest {
 
-    @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    @TempDir
+    private File folder;
 
     @Test
-    public void throwsGitException() {
+    void throwsGitException() {
         GitException e = assertThrows(GitException.class, () -> {
             throw new GitException();
         });
@@ -35,7 +33,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void throwsGitExceptionExpectedMessage() {
+    void throwsGitExceptionExpectedMessage() {
         String message = "My custom git exception message";
         GitException e = assertThrows(GitException.class, () -> {
             throw new GitException(message);
@@ -44,7 +42,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void throwsGitExceptionExpectedMessageWithCause() {
+    void throwsGitExceptionExpectedMessageWithCause() {
         String message = "My custom git exception message";
         GitException e = assertThrows(GitException.class, () -> {
             throw new GitException(message, new IOException("Custom IOException message"));
@@ -54,7 +52,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initCliImplThrowsGitException() throws IOException, InterruptedException {
+    void initCliImplThrowsGitException() throws Exception {
         if (new File("/").canWrite()) { // running as root?
             return;
         }
@@ -72,7 +70,7 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initJGitImplThrowsGitException() throws IOException, InterruptedException {
+    void initJGitImplThrowsGitException() throws Exception {
         if (new File("/").canWrite()) { // running as root?
             return;
         }
@@ -91,10 +89,10 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initCliImplCollisionThrowsGitException() throws IOException, InterruptedException {
-        File dir = folder.getRoot();
-        File dotGit = folder.newFile(".git");
-        Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
+    void initCliImplCollisionThrowsGitException() throws Exception {
+        File dir = folder;
+        File dotGit = newFile(folder, ".git");
+        Files.writeString(dotGit.toPath(), "file named .git", APPEND);
         GitClient defaultClient =
                 Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("git").getClient();
         assertThrows(
@@ -103,10 +101,10 @@ public class GitExceptionTest {
     }
 
     @Test
-    public void initJGitImplCollisionThrowsGitException() throws IOException, InterruptedException {
-        File dir = folder.getRoot();
-        File dotGit = folder.newFile(".git");
-        Files.write(dotGit.toPath(), "file named .git".getBytes(StandardCharsets.UTF_8), APPEND);
+    void initJGitImplCollisionThrowsGitException() throws Exception {
+        File dir = folder;
+        File dotGit = newFile(folder, ".git");
+        Files.writeString(dotGit.toPath(), "file named .git", APPEND);
         GitClient defaultClient =
                 Git.with(TaskListener.NULL, new EnvVars()).in(dir).using("jgit").getClient();
         JGitInternalException e = assertThrows(
@@ -121,5 +119,13 @@ public class GitExceptionTest {
      */
     private static boolean isWindows() {
         return File.pathSeparatorChar == ';';
+    }
+
+    private static File newFile(File parent, String child) throws Exception {
+        File result = new File(parent, child);
+        if (!result.createNewFile()) {
+            throw new IOException("Couldn't create file " + result);
+        }
+        return result;
     }
 }

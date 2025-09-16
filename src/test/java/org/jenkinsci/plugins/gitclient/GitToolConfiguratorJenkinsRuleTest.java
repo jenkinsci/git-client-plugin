@@ -40,23 +40,25 @@ import io.jenkins.plugins.casc.model.Mapping;
 import io.jenkins.plugins.casc.model.Sequence;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class GitToolConfiguratorJenkinsRuleTest {
+@WithJenkins
+class GitToolConfiguratorJenkinsRuleTest {
 
-    private final GitToolConfigurator gitToolConfigurator;
+    private final GitToolConfigurator gitToolConfigurator = new GitToolConfigurator();
 
-    public GitToolConfiguratorJenkinsRuleTest() {
-        gitToolConfigurator = new GitToolConfigurator();
+    private JenkinsRule r;
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        r = rule;
     }
 
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
-
     @Test
-    public void testDescribeGitToolEmptyProperties() throws Exception {
+    void testDescribeGitToolEmptyProperties() throws Exception {
         String gitName = "git-2.19.1-name";
         String gitHome = "/opt/git-2.19.1/bin/git";
 
@@ -78,7 +80,7 @@ public class GitToolConfiguratorJenkinsRuleTest {
     }
 
     @Test
-    public void testDescribeGitTool() throws Exception {
+    void testDescribeGitTool() throws Exception {
         String gitName = "git-2.19.1-name";
         String gitHome = "/opt/git-2.19.1/bin/git";
 

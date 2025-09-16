@@ -2,9 +2,7 @@ package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.plugins.git.GitException;
 import java.io.File;
@@ -12,14 +10,14 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.Issue;
 
-public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
+abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
 
     /* Shows the submodule update is broken now that tests/getSubmodule includes a renamed submodule */
     @Test
-    public void testSubmoduleUpdate() throws Exception {
+    void testSubmoduleUpdate() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
         w.git.checkout()
@@ -30,20 +28,20 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         w.git.submoduleInit();
         w.git.submoduleUpdate().execute();
 
-        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
-        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+        assertTrue(w.exists("modules/firewall"), "modules/firewall does not exist");
+        assertTrue(w.exists("modules/ntp"), "modules/ntp does not exist");
         // JGit submodule implementation doesn't handle renamed submodules
         if (w.igit() instanceof CliGitAPIImpl) {
-            assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
+            assertTrue(w.exists("modules/sshkeys"), "modules/sshkeys does not exist");
         }
         assertFixSubmoduleUrlsThrows();
 
         String shallow = Path.of(".git", "modules", "module", "1", "shallow").toString();
-        assertFalse("shallow file existence: " + shallow, w.exists(shallow));
+        assertFalse(w.exists(shallow), "shallow file existence: " + shallow);
     }
 
     @Test
-    public void testSubmoduleUpdateWithError() throws Exception {
+    void testSubmoduleUpdateWithError() throws Exception {
         w.git.clone_().url(localMirror()).execute();
         w.git.checkout().ref("origin/tests/getSubmodules").execute();
         w.rm("modules/ntp");
@@ -67,7 +65,7 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
     }
 
     @Test
-    public void testSubmoduleUpdateWithThreads() throws Exception {
+    void testSubmoduleUpdateWithThreads() throws Exception {
         w.init();
         w.git.clone_().url(localMirror()).repositoryName("sub2_origin").execute();
         w.git.checkout()
@@ -78,17 +76,17 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         w.git.submoduleInit();
         w.git.submoduleUpdate().threads(3).execute();
 
-        assertTrue("modules/firewall does not exist", w.exists("modules/firewall"));
-        assertTrue("modules/ntp does not exist", w.exists("modules/ntp"));
+        assertTrue(w.exists("modules/firewall"), "modules/firewall does not exist");
+        assertTrue(w.exists("modules/ntp"), "modules/ntp does not exist");
         // JGit submodule implementation doesn't handle renamed submodules
         if (w.igit() instanceof CliGitAPIImpl) {
-            assertTrue("modules/sshkeys does not exist", w.exists("modules/sshkeys"));
+            assertTrue(w.exists("modules/sshkeys"), "modules/sshkeys does not exist");
         }
         assertFixSubmoduleUrlsThrows();
     }
 
     @Test
-    public void testTrackingSubmoduleBranches() throws Exception {
+    void testTrackingSubmoduleBranches() throws Exception {
         w.init(); // empty repository
 
         // create a new GIT repo.
@@ -125,9 +123,9 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         w.cgit().allowFileProtocol();
         w.git.addSubmodule(r.repoPath(), submodDir);
         w.git.submoduleInit();
-        assertTrue("file1 does not exist and should be we imported the submodule.", w.exists(subFile1));
-        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
-        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+        assertTrue(w.exists(subFile1), "file1 does not exist and should be we imported the submodule.");
+        assertFalse(w.exists(subFile2), "file2 exists and should not because not on 'branch1'");
+        assertFalse(w.exists(subFile3), "file3 exists and should not because not on 'branch2'");
 
         // Windows tests fail if repoPath is more than 200 characters
         // CLI git support for longpaths on Windows is complicated
@@ -142,8 +140,8 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
                 .useBranch(submodDir, "branch1")
                 .timeout(submoduleUpdateTimeout)
                 .execute();
-        assertTrue("file2 does not exist and should because on branch1", w.exists(subFile2));
-        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+        assertTrue(w.exists(subFile2), "file2 does not exist and should because on branch1");
+        assertFalse(w.exists(subFile3), "file3 exists and should not because not on 'branch2'");
 
         // Switch to branch2
         w.git.submoduleUpdate()
@@ -151,8 +149,8 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
                 .useBranch(submodDir, "branch2")
                 .timeout(submoduleUpdateTimeout)
                 .execute();
-        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
-        assertTrue("file3 does not exist and should because on branch2", w.exists(subFile3));
+        assertFalse(w.exists(subFile2), "file2 exists and should not because not on 'branch1'");
+        assertTrue(w.exists(subFile3), "file3 does not exist and should because on branch2");
 
         // Switch to default branch
         w.git.submoduleUpdate()
@@ -160,12 +158,12 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
                 .useBranch(submodDir, defaultBranchName)
                 .timeout(submoduleUpdateTimeout)
                 .execute();
-        assertFalse("file2 exists and should not because not on 'branch1'", w.exists(subFile2));
-        assertFalse("file3 exists and should not because not on 'branch2'", w.exists(subFile3));
+        assertFalse(w.exists(subFile2), "file2 exists and should not because not on 'branch1'");
+        assertFalse(w.exists(subFile3), "file3 exists and should not because not on 'branch2'");
     }
 
     @Test
-    public void testTrackingSubmodule() throws Exception {
+    void testTrackingSubmodule() throws Exception {
         w.init(); // empty repository
 
         // create a new GIT repo.
@@ -191,8 +189,8 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         String subFile = subModDir + File.separator + "file2";
         w.git.submoduleUpdate().recursive(true).remoteTracking(false).execute();
         assertFalse(
-                "file2 exists and should not because we didn't update to the tip of the default branch.",
-                w.exists(subFile));
+                w.exists(subFile),
+                "file2 exists and should not because we didn't update to the tip of the default branch.");
 
         // Windows tests fail if repoPath is more than 200 characters
         // CLI git support for longpaths on Windows is complicated
@@ -203,14 +201,14 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
         // Run submodule update with remote tracking
         w.git.submoduleUpdate().recursive(true).remoteTracking(true).execute();
         assertTrue(
-                "file2 does not exist and should because we updated to the tip of the default branch.",
-                w.exists(subFile));
+                w.exists(subFile),
+                "file2 does not exist and should because we updated to the tip of the default branch.");
         assertFixSubmoduleUrlsThrows();
     }
 
     @Issue("JENKINS-37185")
     @Test
-    public void testCheckoutHonorTimeout() throws Exception {
+    void testCheckoutHonorTimeout() throws Exception {
         w = clone(localMirror());
 
         checkoutTimeout = 1 + random.nextInt(60 * 24);
@@ -223,15 +221,15 @@ public abstract class GitAPITestUpdateCliGit extends GitAPITestUpdate {
     }
 
     @Test
-    public void testSparseCheckout() throws Exception {
+    void testSparseCheckout() throws Exception {
         // Create a repo for cloning purpose
         w.init();
         w.commitEmpty("init");
-        assertTrue("mkdir dir1 failed", w.file("dir1").mkdir());
+        assertTrue(w.file("dir1").mkdir(), "mkdir dir1 failed");
         w.touch("dir1/file1");
-        assertTrue("mkdir dir2 failed", w.file("dir2").mkdir());
+        assertTrue(w.file("dir2").mkdir(), "mkdir dir2 failed");
         w.touch("dir2/file2");
-        assertTrue("mkdir dir3 failed", w.file("dir3").mkdir());
+        assertTrue(w.file("dir3").mkdir(), "mkdir dir3 failed");
         w.touch("dir3/file3");
         w.git.add("dir1/file1");
         w.git.add("dir2/file2");

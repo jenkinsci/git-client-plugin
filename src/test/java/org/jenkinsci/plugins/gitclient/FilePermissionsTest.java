@@ -1,13 +1,11 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.jenkinsci.plugins.gitclient.GitAPITest.getConfigNoSystemEnvVars;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -22,33 +20,32 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.util.SystemReader;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
-public class FilePermissionsTest {
+/**
+ * Test that command line git preserves execute permission across clone. Git
+ * does not preserve all file permission bits, only the execute bit for the
+ * owner.
+ */
+@ParameterizedClass
+@MethodSource("permissionBits")
+class FilePermissionsTest {
 
-    private final int permission;
-
-    /**
-     * Test that command line git preserves execute permission across clone. Git
-     * does not preserve all file permission bits, only the execute bit for the
-     * owner.
-     */
-    public FilePermissionsTest(Integer filePermission) {
-        this.permission = filePermission;
-    }
+    @Parameter(0)
+    private int permission;
 
     private static final TaskListener listener = StreamTaskListener.fromStdout();
 
     private static File repo;
 
-    @BeforeClass
-    public static void createTestRepo() throws Exception {
+    @BeforeAll
+    static void createTestRepo() throws Exception {
         if (isWindows()) {
             return;
         }
@@ -68,8 +65,8 @@ public class FilePermissionsTest {
      * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
      * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
      */
-    @BeforeClass
-    public static void computeDefaultBranchName() throws Exception {
+    @BeforeAll
+    static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd =
                 new CliGitCommand(Git.with(TaskListener.NULL, getConfigNoSystemEnvVars())
@@ -83,11 +80,11 @@ public class FilePermissionsTest {
                 defaultBranchName = result;
             }
         }
-        assertTrue("Failed to delete temporary readGitConfig directory", configDir.delete());
+        assertTrue(configDir.delete(), "Failed to delete temporary readGitConfig directory");
     }
 
-    @AfterClass
-    public static void verifyTestRepo() throws Exception {
+    @AfterAll
+    static void verifyTestRepo() throws Exception {
         if (isWindows()) {
             return;
         }
@@ -120,31 +117,30 @@ public class FilePermissionsTest {
         return newRepo;
     }
 
-    private static void verifyFile(File repo, int staticPerm) throws IOException {
+    private static void verifyFile(File repo, int staticPerm) throws Exception {
         String fileName = "git-%03o.txt".formatted(staticPerm);
         File file = new File(repo, fileName);
-        assertTrue("Missing " + file.getAbsolutePath(), file.exists());
+        assertTrue(file.exists(), "Missing " + file.getAbsolutePath());
         String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-        assertTrue(fileName + " wrong content: '" + content + "'", content.contains(fileName));
+        assertTrue(content.contains(fileName), fileName + " wrong content: '" + content + "'");
         String rwx = permString(staticPerm);
         Set<PosixFilePermission> expected = PosixFilePermissions.fromString(rwx);
         Path path = FileSystems.getDefault().getPath(file.getPath());
         PosixFileAttributes attrs =
                 Files.getFileAttributeView(path, PosixFileAttributeView.class).readAttributes();
         assertEquals(
-                fileName + " OWNER_EXECUTE (execute) perm mismatch, expected: " + expected + ", was actually: "
-                        + attrs.permissions(),
                 expected.contains(PosixFilePermission.OWNER_EXECUTE),
-                attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE));
+                attrs.permissions().contains(PosixFilePermission.OWNER_EXECUTE),
+                fileName + " OWNER_EXECUTE (execute) perm mismatch, expected: " + expected + ", was actually: "
+                        + attrs.permissions());
     }
 
-    @After
-    public void checkListenerLoggedNoErrors() {
-        assertFalse("Error logged by listener", listener.getLogger().checkError());
+    @AfterEach
+    void checkListenerLoggedNoErrors() {
+        assertFalse(listener.getLogger().checkError(), "Error logged by listener");
     }
 
-    @Parameterized.Parameters
-    public static List<Integer[]> permissionBits() {
+    static List<Integer[]> permissionBits() {
         List<Integer[]> permissions = new ArrayList<>();
         /* 0640 and 0740 are the only permissions to be tested */
         Integer[] permissionArray0640 = {0640};
@@ -158,7 +154,7 @@ public class FilePermissionsTest {
     }
 
     @Test
-    public void posixPermissionTest() throws IOException, GitException, InterruptedException {
+    void posixPermissionTest() throws Exception {
         if (isWindows()) {
             return;
         }
@@ -170,13 +166,13 @@ public class FilePermissionsTest {
         return "git-%03o.txt".formatted(permission);
     }
 
-    private void addFile() throws IOException, GitException, InterruptedException {
+    private void addFile() throws Exception {
         String fileName = getFileName();
         String content = fileName + " and UUID " + UUID.randomUUID();
         File added = new File(repo, fileName);
-        assertFalse(fileName + " already exists", added.exists());
+        assertFalse(added.exists(), fileName + " already exists");
         Files.writeString(added.toPath(), content, StandardCharsets.UTF_8);
-        assertTrue(fileName + " doesn't exist", added.exists());
+        assertTrue(added.exists(), fileName + " doesn't exist");
 
         GitClient git = Git.with(listener, getConfigNoSystemEnvVars()).in(repo).getClient();
         git.add(fileName);
@@ -187,17 +183,17 @@ public class FilePermissionsTest {
         git.commit("Perms %03o %s".formatted(permission, fileName));
     }
 
-    private void modifyFile() throws IOException, GitException, InterruptedException {
+    private void modifyFile() throws Exception {
         String fileName = getFileName();
         String content = fileName + " chg UUID " + UUID.randomUUID();
         File modified = new File(repo, fileName);
-        assertTrue(fileName + " doesn't exist", modified.exists());
+        assertTrue(modified.exists(), fileName + " doesn't exist");
         Files.writeString(modified.toPath(), content, StandardCharsets.UTF_8);
 
         GitClient git = Git.with(listener, getConfigNoSystemEnvVars()).in(repo).getClient();
         git.add(fileName);
         git.commit("Modified " + fileName);
-        assertTrue(fileName + " doesn't exist", modified.exists());
+        assertTrue(modified.exists(), fileName + " doesn't exist");
     }
 
     private static String permString(int filePermission) {

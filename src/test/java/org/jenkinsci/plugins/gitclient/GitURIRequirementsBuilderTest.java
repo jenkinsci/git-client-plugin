@@ -11,16 +11,16 @@ import com.cloudbees.plugins.credentials.domains.HostnameRequirement;
 import com.cloudbees.plugins.credentials.domains.PathRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import java.util.List;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author stephenc
  * @since 30/08/2013 15:05
  */
-public class GitURIRequirementsBuilderTest {
+class GitURIRequirementsBuilderTest {
 
     @Test
-    public void smokes() {
+    void smokes() {
         List<DomainRequirement> list = GitURIRequirementsBuilder.fromUri("ssh://bob@foo.bar.com:8080/path/to/repo.git/")
                 .build();
 
