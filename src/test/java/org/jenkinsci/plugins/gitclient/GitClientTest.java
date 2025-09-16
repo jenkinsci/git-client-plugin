@@ -22,6 +22,9 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.TaskListener;
@@ -109,7 +112,9 @@ public class GitClientTest {
     /* Capabilities of command line git in current environment */
     private final boolean CLI_GIT_HAS_GIT_LFS;
     private final boolean CLI_GIT_HAS_GIT_LFS_CONFIGURED;
-    private final boolean LFS_SUPPORTS_SPARSE_CHECKOUT;
+
+    /* Credential ID for tests of large file support */
+    private static StandardCredentials lfsCredential = null;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -134,15 +139,12 @@ public class GitClientTest {
         }
 
         boolean gitLFSExists;
-        boolean gitSparseCheckoutWithLFS;
         try {
             // If git-lfs is installed then the version string should look like this:
             // git-lfs/1.5.6 (GitHub; linux amd64; go 1.7.4)
             String lfsVersionOutput =
                     cliGitClient.launchCommand("lfs", "version").trim();
             gitLFSExists = lfsVersionOutput.startsWith("git-lfs");
-            gitSparseCheckoutWithLFS =
-                    lfsVersionOutput.matches("git-lfs/[3-9][.].*|git-lfs/2[.]1[0-9].*|git-lfs/2[.][89].*");
             // Avoid test failures on ci.jenkins.io agents by calling `git lfs install`
             // Intentionally ignores the return value, assumes that failure will throw an exception
             // and disable the git LFS tests
@@ -150,7 +152,6 @@ public class GitClientTest {
         } catch (GitException exception) {
             // This is expected when git-lfs is not installed.
             gitLFSExists = false;
-            gitSparseCheckoutWithLFS = false;
         }
         CLI_GIT_HAS_GIT_LFS = gitLFSExists;
 
@@ -164,8 +165,6 @@ public class GitClientTest {
             gitLFSConfigured = false;
         }
         CLI_GIT_HAS_GIT_LFS_CONFIGURED = gitLFSConfigured;
-        LFS_SUPPORTS_SPARSE_CHECKOUT =
-                CLI_GIT_HAS_GIT_LFS_CONFIGURED && gitSparseCheckoutWithLFS && cliGitClient.isAtLeastVersion(2, 0, 0, 0);
     }
 
     @Parameterized.Parameters(name = "{0}")
@@ -264,6 +263,21 @@ public class GitClientTest {
                 .getClient();
         CliGitCommand gitCmd = new CliGitCommand(currentDirCliGit);
         gitCmd.initializeRepository();
+    }
+
+    @BeforeClass
+    public static void createCredentialForLFS() throws Exception {
+        File homeDir = new File(System.getProperty("user.home"));
+        File sshDir = new File(homeDir, ".ssh");
+        Path lfsTokenPath = (new File(sshDir, "jenkins-pipeline-utils-lfs-access-token").toPath());
+        if (lfsTokenPath.toFile().exists()) {
+            /* Test requires an LFS credential for checkout, otherwise sometimes fails with GitHub error 'bad credentials' */
+            String password = Files.readAllLines(lfsTokenPath).get(0).trim();
+            String username = "MarkEWaite";
+            String id = "mwaite-lfs-credential-id";
+            String desc = "Mark Waite's LFS credential for a public repository";
+            lfsCredential = new UsernamePasswordCredentialsImpl(CredentialsScope.GLOBAL, id, desc, username, password);
+        }
     }
 
     @AfterClass
@@ -1358,7 +1372,9 @@ public class GitClientTest {
     @Issue("JENKINS-35687") // Git LFS support
     @Test
     public void testCheckoutWithCliGitLFS() throws Exception {
-        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS) {
+        if (!gitImplName.equals("git") || lfsCredential == null) {
+            /* Git LFS not implemented in JGitAPIImpl */
+            /* Test requires an LFS credential for checkout, otherwise sometimes fails with GitHub error 'bad credentials' */
             return;
         }
         String branch = "tests/largeFileSupport";
@@ -1368,6 +1384,7 @@ public class GitClientTest {
                 .branch(branch)
                 .ref(remote + "/" + branch)
                 .lfsRemote(remote)
+                .lfsCredentials(lfsCredential)
                 .execute();
 
         assertFileContent("uuid.txt", "5e7733d8acc94636850cb466aec524e4");
@@ -1376,11 +1393,11 @@ public class GitClientTest {
     @Issue("JENKINS-43427") // Git LFS sparse checkout support
     @Test
     public void testSparseCheckoutWithCliGitLFS() throws Exception {
-        if (!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS || isWindows()) {
-            /* Slow test that does not tell us much more on Windows than Linux */
+        if (!gitImplName.equals("git") || lfsCredential == null) {
+            /* Git LFS not implemented in JGitAPIImpl */
+            /* Test requires an LFS credential for checkout, otherwise fails with GitHub error 'bad credentials' */
             return;
         }
-
         String branch = "tests/largeFileSupport";
 
         String file1 = "uuid.txt";
@@ -1413,6 +1430,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1438,6 +1456,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1464,6 +1483,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1489,6 +1509,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1514,6 +1535,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1539,6 +1561,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1564,6 +1587,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1589,6 +1613,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1614,6 +1639,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths1)
                     .execute();
 
@@ -1627,25 +1653,24 @@ public class GitClientTest {
             assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
             assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
 
-            if (LFS_SUPPORTS_SPARSE_CHECKOUT) {
-                List<String> sparsePaths2 = Collections.singletonList("uuid2.txt");
-                gitClient
-                        .checkout()
-                        .ref(remote + "/" + branch)
-                        .lfsRemote(remote)
-                        .sparseCheckoutPaths(sparsePaths2)
-                        .execute();
+            List<String> sparsePaths2 = Collections.singletonList("uuid2.txt");
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
+                    .sparseCheckoutPaths(sparsePaths2)
+                    .execute();
 
-                assertFileNotInWorkingDir(gitClient, file1);
-                assertFileContent(file2, expectedContent2);
-                assertFileNotInWorkingDir(gitClient, file3);
-                assertFileNotInWorkingDir(gitClient, file4);
+            assertFileNotInWorkingDir(gitClient, file1);
+            assertFileContent(file2, expectedContent2);
+            assertFileNotInWorkingDir(gitClient, file3);
+            assertFileNotInWorkingDir(gitClient, file4);
 
-                assertFileInWorkingDir(gitClient, lfsObjectFile1);
-                assertFileInWorkingDir(gitClient, lfsObjectFile2);
-                assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
-                assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
-            }
+            assertFileInWorkingDir(gitClient, lfsObjectFile1);
+            assertFileInWorkingDir(gitClient, lfsObjectFile2);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
+            assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
         }
 
         // it should support switching from non-sparse to sparse checkout
@@ -1654,7 +1679,12 @@ public class GitClientTest {
             String remote = fetchLFSTestRepo(branch);
             assertEmptyWorkingDir(gitClient);
 
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileContent(file2, expectedContent2);
@@ -1671,6 +1701,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1696,6 +1727,7 @@ public class GitClientTest {
                     .checkout()
                     .ref(remote + "/" + branch)
                     .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
                     .sparseCheckoutPaths(sparsePaths)
                     .execute();
 
@@ -1709,7 +1741,12 @@ public class GitClientTest {
             assertFileNotInWorkingDir(gitClient, lfsObjectFile3);
             assertFileNotInWorkingDir(gitClient, lfsObjectFile4);
 
-            gitClient.checkout().ref(remote + "/" + branch).lfsRemote(remote).execute();
+            gitClient
+                    .checkout()
+                    .ref(remote + "/" + branch)
+                    .lfsRemote(remote)
+                    .lfsCredentials(lfsCredential)
+                    .execute();
 
             assertFileContent(file1, expectedContent1);
             assertFileContent(file2, expectedContent2);
