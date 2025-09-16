@@ -1,24 +1,29 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
 import java.io.File;
-import java.io.IOException;
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class GitJenkinsRuleTest {
+@WithJenkins
+class GitJenkinsRuleTest {
 
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
+
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        r = rule;
+    }
 
     @Test
-    public void testMockClient() throws IOException, InterruptedException {
+    void testMockClient() throws Exception {
         System.setProperty(Git.class.getName() + ".mockClient", MyMockGitClient.class.getName());
         try {
             Git git = new Git(null, null).in(new File(".")).using("Hello World");

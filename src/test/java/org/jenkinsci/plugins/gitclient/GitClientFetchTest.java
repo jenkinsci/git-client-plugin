@@ -1,6 +1,5 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
@@ -13,7 +12,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.*;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.Util;
 import hudson.model.TaskListener;
@@ -37,52 +36,52 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.Issue;
 
-@RunWith(Parameterized.class)
-public class GitClientFetchTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
+class GitClientFetchTest {
 
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
-    @Rule
-    public GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule secondRepo = new GitClientSampleRepoRule();
 
-    @Rule
-    public GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
+    @RegisterExtension
+    private final GitClientSampleRepoRule thirdRepo = new GitClientSampleRepoRule();
 
-    WorkspaceWithRepo workspace;
-    WorkspaceWithRepo bareWorkspace;
-    WorkspaceWithRepo newAreaWorkspace;
+    private WorkspaceWithRepo workspace;
+    private WorkspaceWithRepo bareWorkspace;
+    private WorkspaceWithRepo newAreaWorkspace;
 
     private GitClient testGitClient;
     private File testGitDir;
     private CliGitCommand cliGitCommand;
-    private final String gitImplName;
+
+    @Parameter(0)
+    private String gitImplName;
 
     private final Random random = new Random();
     private LogHandler handler = null;
     private TaskListener listener;
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"git", "jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
-    }
-
-    public GitClientFetchTest(final String gitImplName) {
-        this.gitImplName = gitImplName;
     }
 
     /**
@@ -101,8 +100,8 @@ public class GitClientFetchTest {
      * Git 2.32.0 honors the configuration variable `init.defaultBranch` and uses it for the name of the initial branch.
      * This method reads the global configuration and uses it to set the value of `defaultBranchName`.
      */
-    @BeforeClass
-    public static void computeDefaultBranchName() throws Exception {
+    @BeforeAll
+    static void computeDefaultBranchName() throws Exception {
         File configDir = Files.createTempDirectory("readGitConfig").toFile();
         CliGitCommand getDefaultBranchNameCmd = new CliGitCommand(Git.with(TaskListener.NULL, new hudson.EnvVars())
                 .in(configDir)
@@ -118,8 +117,8 @@ public class GitClientFetchTest {
         assertThat("Failed to delete temporary readGitConfig directory", configDir.delete(), is(true));
     }
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
         /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
@@ -133,8 +132,8 @@ public class GitClientFetchTest {
         Util.deleteRecursive(tempDir);
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + random.nextInt());
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -153,7 +152,7 @@ public class GitClientFetchTest {
 
     /* Workspace -> original repo, bareWorkspace -> bare repo and newAreaWorkspace -> newArea repo */
     @Test
-    public void test_fetch() throws Exception {
+    void test_fetch() throws Exception {
         /* Create a working repo containing a commit */
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID());
         testGitClient.add("file1");
@@ -299,7 +298,7 @@ public class GitClientFetchTest {
 
     @Test
     @Issue("JENKINS-19591")
-    public void test_fetch_needs_preceding_prune() throws Exception {
+    void test_fetch_needs_preceding_prune() throws Exception {
         /* Create a working repo containing a commit */
         workspace.touch(testGitDir, "file1", "file1 content " + UUID.randomUUID());
         testGitClient.add("file1");
@@ -424,7 +423,7 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_prune_without_remote() {
+    void test_prune_without_remote() {
         /* Prune when a remote is not yet defined */
         String expectedMessage =
                 testGitClient instanceof CliGitAPIImpl ? "returned status code 1" : "The uri was empty or null";
@@ -442,7 +441,7 @@ public class GitClientFetchTest {
      */
     @Test
     @Issue("JENKINS-26197")
-    public void test_fetch_with_prune() throws Exception {
+    void test_fetch_with_prune() throws Exception {
         bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
         bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
         /* Create a working repo containing three branches */
@@ -517,7 +516,7 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_fetch_from_url() throws Exception {
+    void test_fetch_from_url() throws Exception {
         newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
         newAreaWorkspace.initializeWorkspace(
                 "Vojtěch fetch from URL Zweibrücken-Šafařík", "email.by.git.fetch.test@example.com");
@@ -533,7 +532,7 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_fetch_shallow() throws Exception {
+    void test_fetch_shallow() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient
                 .fetch_()
@@ -569,17 +568,17 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_fetch_shallow_depth() throws Exception {
+    void test_fetch_shallow_depth() throws Exception {
         fetch_shallow_depth(2);
     }
 
     @Test
-    public void test_fetch_shallow_null_depth() throws Exception {
+    void test_fetch_shallow_null_depth() throws Exception {
         fetch_shallow_depth(null);
     }
 
     @Test
-    public void test_fetch_noTags() throws Exception {
+    void test_fetch_noTags() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient
                 .fetch_()
@@ -599,7 +598,7 @@ public class GitClientFetchTest {
      * creates a branch with a random name. The later assertion checks that
      * the random branch name is not mentioned in a call to git rev-parse.
      */
-    private String checkoutRandomBranch() throws GitException, InterruptedException {
+    private String checkoutRandomBranch() throws Exception {
         String branchName = "rev-parse-branch-" + UUID.randomUUID();
         testGitClient.checkout().ref("origin/master").branch(branchName).execute();
         Set<String> branchNames =
@@ -609,7 +608,7 @@ public class GitClientFetchTest {
     }
 
     @Test
-    public void test_fetch_default_timeout_logging() throws Exception {
+    void test_fetch_default_timeout_logging() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -628,16 +627,8 @@ public class GitClientFetchTest {
         assertThat("remote URL has not been updated", remotes.contains(workspace.localMirror()), is(true));
     }
 
-    private void assertExceptionMessageContains(GitException ge, String expectedSubstring) {
-        String actual = ge.getMessage().toLowerCase();
-        assertThat(
-                "Expected '" + expectedSubstring + "' exception message, but was: " + actual,
-                actual.contains(expectedSubstring),
-                is(true));
-    }
-
-    private Collection<String> getBranchNames(Collection<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
+    private List<String> getBranchNames(Collection<Branch> branches) {
+        return branches.stream().map(Branch::getName).toList();
     }
 
     private void assertBranchesExist(Set<Branch> branches, String... names) {

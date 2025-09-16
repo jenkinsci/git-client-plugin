@@ -3,14 +3,14 @@ package hudson.plugins.git;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class GitLockFailedExceptionTest {
+class GitLockFailedExceptionTest {
 
     @Test
-    public void throwsGitLockFailedException() {
+    void throwsGitLockFailedException() {
         GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
             throw new GitLockFailedException();
         });
@@ -18,7 +18,7 @@ public class GitLockFailedExceptionTest {
     }
 
     @Test
-    public void throwsGitLockFailedExceptionWithMessage() {
+    void throwsGitLockFailedExceptionWithMessage() {
         String message = "My local exception message";
         GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
             throw new GitLockFailedException(message);
@@ -27,7 +27,7 @@ public class GitLockFailedExceptionTest {
     }
 
     @Test
-    public void throwsGitLockFailedExceptionWithCause() {
+    void throwsGitLockFailedExceptionWithCause() {
         String message = "My git exception message";
         GitException e = new GitException(message);
         GitLockFailedException lockFailed = assertThrows(GitLockFailedException.class, () -> {
@@ -37,7 +37,7 @@ public class GitLockFailedExceptionTest {
     }
 
     @Test
-    public void throwsGitLockFailedExceptionWithCauseAndMessage() {
+    void throwsGitLockFailedExceptionWithCauseAndMessage() {
         String message = "My git exception message";
         GitException e = new GitException(message);
         String lockMessage = "My lock message that is not part of the GitException";

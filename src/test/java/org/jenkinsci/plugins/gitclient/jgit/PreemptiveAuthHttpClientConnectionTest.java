@@ -1,18 +1,18 @@
 package org.jenkinsci.plugins.gitclient.jgit;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.apache.http.auth.NTCredentials;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * A class to test {@link PreemptiveAuthHttpClientConnectionTest}.
  */
-public class PreemptiveAuthHttpClientConnectionTest {
+class PreemptiveAuthHttpClientConnectionTest {
 
     @Test
-    public void goUp_noPath() throws Exception {
+    void goUp_noPath() throws Exception {
         final URIish input = new URIish("https://example.com");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -21,7 +21,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_slash() throws Exception {
+    void goUp_slash() throws Exception {
         final URIish input = new URIish("https://example.com/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -30,7 +30,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_slashSlash() throws Exception {
+    void goUp_slashSlash() throws Exception {
         final URIish input = new URIish("https://example.com//");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -40,7 +40,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_one() throws Exception {
+    void goUp_one() throws Exception {
         final URIish input = new URIish("https://example.com/one");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -50,7 +50,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_oneSlash() throws Exception {
+    void goUp_oneSlash() throws Exception {
         final URIish input = new URIish("https://example.com/one/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -60,7 +60,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_oneSlashTwo() throws Exception {
+    void goUp_oneSlashTwo() throws Exception {
         final URIish input = new URIish("https://example.com/one/two");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -70,7 +70,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_oneSlashSlashTwoSlash() throws Exception {
+    void goUp_oneSlashSlashTwoSlash() throws Exception {
         final URIish input = new URIish("https://example.com/one//two/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -80,7 +80,7 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void goUp_oneSlashTwoSlash() throws Exception {
+    void goUp_oneSlashTwoSlash() throws Exception {
         final URIish input = new URIish("https://example.com/one/two/");
 
         final URIish actual = PreemptiveAuthHttpClientConnection.goUp(input);
@@ -105,25 +105,25 @@ public class PreemptiveAuthHttpClientConnectionTest {
     }
 
     @Test
-    public void createNTCredentials_plainUser() {
+    void createNTCredentials_plainUser() {
         createNTCredentials("cnorris", "roundhouse", null, "cnorris", "roundhouse");
         createNTCredentials("cnorris", "round\\:/house", null, "cnorris", "round\\:/house");
     }
 
     @Test
-    public void createNTCredentials_domainBackslashUser() {
+    void createNTCredentials_domainBackslashUser() {
         createNTCredentials("WALKER\\cnorris", "roundhouse", "WALKER", "cnorris", "roundhouse");
         createNTCredentials("WALKER\\cnorris", "round\\:/house", "WALKER", "cnorris", "round\\:/house");
     }
 
     @Test
-    public void createNTCredentials_domainSlashUser() {
+    void createNTCredentials_domainSlashUser() {
         createNTCredentials("WALKER/cnorris", "roundhouse", "WALKER", "cnorris", "roundhouse");
         createNTCredentials("WALKER/cnorris", "round\\:/house", "WALKER", "cnorris", "round\\:/house");
     }
 
     @Test
-    public void createNTCredentials_userAtDomain() {
+    void createNTCredentials_userAtDomain() {
         createNTCredentials("cnorris@walker.example.com", "roundhouse", "WALKER.EXAMPLE.COM", "cnorris", "roundhouse");
         createNTCredentials(
                 "cnorris@walker.example.com", "round\\:/house", "WALKER.EXAMPLE.COM", "cnorris", "round\\:/house");
