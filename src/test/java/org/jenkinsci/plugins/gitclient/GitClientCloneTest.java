@@ -302,8 +302,7 @@ class GitClientCloneTest {
     }
 
     @Test
-    void test_clone_reference_parameterized_basename_fallback()
-            throws Exception {
+    void test_clone_reference_parameterized_basename_fallback() throws Exception {
         // TODO: Currently we do not make paths which would invalidate
         // this test, but note the test above might do just that later.
         testGitClient
@@ -404,8 +403,7 @@ class GitClientCloneTest {
     }
 
     @Test
-    void test_clone_reference_parameterized_sha256_fallback()
-            throws Exception {
+    void test_clone_reference_parameterized_sha256_fallback() throws Exception {
         String wsMirror = workspace.localMirror();
         /* Same rules of URL normalization as in LegacyCompatibleGitAPIImpl.java
          * should be okay for network URLs but are too complex for local pathnames */
@@ -667,13 +665,11 @@ class GitClientCloneTest {
         assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
     }
 
-    private void assertAlternateFilePointsToLocalWorkspaceMirror(File _testGitDir)
-            throws Exception {
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(File _testGitDir) throws Exception {
         assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir.getPath());
     }
 
-    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir)
-            throws Exception {
+    private void assertAlternateFilePointsToLocalWorkspaceMirror(String _testGitDir) throws Exception {
         assertAlternateFilePointsToLocalWorkspaceMirror(_testGitDir, workspace.localMirror());
     }
 
@@ -693,13 +689,11 @@ class GitClientCloneTest {
         assertAlternateFilePointsToLocalBareMirror(_testGitDir.getPath());
     }
 
-    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir)
-            throws Exception {
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir) throws Exception {
         assertAlternateFilePointsToLocalBareMirror(_testGitDir, workspace.localMirror());
     }
 
-    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir, String _testAltDir)
-            throws Exception {
+    private void assertAlternateFilePointsToLocalBareMirror(String _testGitDir, String _testAltDir) throws Exception {
         final String alternates = "objects" + File.separator + "info" + File.separator + "alternates";
         assertAlternateFilePointsToLocalMirror(_testGitDir, _testAltDir, alternates);
     }
