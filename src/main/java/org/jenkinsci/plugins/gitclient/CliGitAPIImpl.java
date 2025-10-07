@@ -2200,6 +2200,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    @SuppressFBWarnings(value = "DMI_HARDCODED_ABSOLUTE_FILENAME", justification = "Absolute paths are required")
     private Boolean fixSELinuxLabel(Path key, String label) {
         // returning false means chcon was tried and failed,
         // maybe caller needs to retry with other logic
