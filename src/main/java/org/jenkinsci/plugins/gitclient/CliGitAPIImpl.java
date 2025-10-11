@@ -1609,16 +1609,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * Cleans submodules
      */
     @Override
-    public void submoduleClean(boolean recursive) throws GitException, InterruptedException {
+    public void submoduleClean(boolean recursive, boolean cleanSubmodule) throws GitException, InterruptedException {
         submoduleReset(true, true);
         ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("submodule", "foreach");
         if (recursive) {
             args.add("--recursive");
         }
-        args.add("git clean -fdx");
+        String cmd = "git clean -fdx";
+        if (cleanSubmodule) cmd = "git clean -ffdx";
+        args.add(cmd);
 
         launchCommand(args);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * Cleans submodules
+     */
+    @Override
+    public void submoduleClean(boolean recursive) throws GitException, InterruptedException {
+        this.submoduleClean(recursive, false);
     }
 
     /**
