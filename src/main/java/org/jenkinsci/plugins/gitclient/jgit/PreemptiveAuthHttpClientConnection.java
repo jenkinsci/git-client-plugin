@@ -92,7 +92,6 @@ import org.eclipse.jgit.transport.http.HttpConnection;
 import org.eclipse.jgit.transport.http.apache.TemporaryBufferEntity;
 import org.eclipse.jgit.transport.http.apache.internal.HttpApacheText;
 import org.eclipse.jgit.util.TemporaryBuffer;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
 
 /**
  * A {@link HttpConnection} which uses {@link HttpClient} and attempts to
@@ -186,7 +185,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
                     new HttpHost(serviceUri.getHost(), serviceUri.getPort(), serviceUri.getScheme());
 
             CredentialsProvider clientCredentialsProvider = new SystemDefaultCredentialsProvider();
-            if (credentialsProvider.supports(u, p)) {
+            if (credentialsProvider != null && credentialsProvider.supports(u, p)) {
                 URIish uri = serviceUri;
                 while (uri != null) {
                     if (credentialsProvider.get(uri, u, p)) {
@@ -262,8 +261,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     private static void configureProxy(final HttpClientBuilder builder, final Proxy proxy) {
         if (proxy != null && !Proxy.NO_PROXY.equals(proxy)) {
             final SocketAddress socketAddress = proxy.address();
-            if (socketAddress instanceof InetSocketAddress) {
-                final InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;
+            if (socketAddress instanceof InetSocketAddress inetSocketAddress) {
                 final String proxyHost = inetSocketAddress.getHostName();
                 final int proxyPort = inetSocketAddress.getPort();
                 final HttpHost httpHost = new HttpHost(proxyHost, proxyPort);
@@ -311,8 +309,7 @@ public class PreemptiveAuthHttpClientConnection implements HttpConnection {
     private void execute() throws IOException {
         if (resp == null) {
             if (entity != null) {
-                if (req instanceof HttpEntityEnclosingRequest) {
-                    HttpEntityEnclosingRequest eReq = (HttpEntityEnclosingRequest) req;
+                if (req instanceof HttpEntityEnclosingRequest eReq) {
                     eReq.setEntity(entity);
                 }
                 resp = getClient().execute(req);

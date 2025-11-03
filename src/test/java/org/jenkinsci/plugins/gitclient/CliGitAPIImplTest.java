@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 
@@ -16,48 +16,27 @@ public class CliGitAPIImplTest extends GitAPITestUpdateCliGit {
         return Git.with(listener, env).in(ws).using("git").getClient();
     }
 
-    @Override
-    protected boolean hasWorkingGetRemoteSymbolicReferences() {
-        return ((CliGitAPIImpl) (w.git)).isAtLeastVersion(2, 8, 0, 0);
-    }
-
-    public static class VersionTest {
-
-        private boolean expectedIsAtLeastVersion;
-        private int major;
-        private int minor;
-        private int rev;
-        private int bugfix;
-
-        public VersionTest(boolean assertTrueOrFalse, int major, int minor, int rev, int bugfix) {
-            this.expectedIsAtLeastVersion = assertTrueOrFalse;
-            this.major = major;
-            this.minor = minor;
-            this.rev = rev;
-            this.bugfix = bugfix;
-        }
-    }
+    public record VersionTest(boolean expectedIsAtLeastVersion, int major, int minor, int rev, int bugfix) {}
 
     public void assertVersionOutput(String versionOutput, VersionTest[] versions) {
-        setTimeoutVisibleInCurrentTest(false); /* No timeout for git --version command */
         CliGitAPIImpl git = new CliGitAPIImpl("git", new File("."), listener, env);
         git.computeGitVersion(versionOutput);
         for (VersionTest version : versions) {
             String msg = versionOutput + " for " + version.major + version.minor + version.rev + version.bugfix;
             if (version.expectedIsAtLeastVersion) {
                 assertTrue(
-                        "Failed " + msg,
-                        git.isAtLeastVersion(version.major, version.minor, version.rev, version.bugfix));
+                        git.isAtLeastVersion(version.major, version.minor, version.rev, version.bugfix),
+                        "Failed " + msg);
                 assertTrue(
-                        "Failed " + msg,
-                        git.isCliGitVerAtLeast(version.major, version.minor, version.rev, version.bugfix));
+                        git.isCliGitVerAtLeast(version.major, version.minor, version.rev, version.bugfix),
+                        "Failed " + msg);
             } else {
                 assertFalse(
-                        "Passed " + msg,
-                        git.isAtLeastVersion(version.major, version.minor, version.rev, version.bugfix));
+                        git.isAtLeastVersion(version.major, version.minor, version.rev, version.bugfix),
+                        "Passed " + msg);
                 assertFalse(
-                        "Passed " + msg,
-                        git.isCliGitVerAtLeast(version.major, version.minor, version.rev, version.bugfix));
+                        git.isCliGitVerAtLeast(version.major, version.minor, version.rev, version.bugfix),
+                        "Passed " + msg);
             }
         }
     }

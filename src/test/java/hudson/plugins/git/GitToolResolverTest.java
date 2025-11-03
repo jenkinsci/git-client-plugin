@@ -10,28 +10,28 @@ import hudson.tools.BatchCommandInstaller;
 import hudson.tools.CommandInstaller;
 import hudson.tools.InstallSourceProperty;
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
-public class GitToolResolverTest {
+@WithJenkins
+class GitToolResolverTest {
 
-    @Rule
-    public JenkinsRule r = new JenkinsRule();
+    private JenkinsRule r;
 
     private GitTool gitTool;
 
-    @Before
-    public void setUp() throws IOException {
+    @BeforeEach
+    void setUp(JenkinsRule rule) {
+        r = rule;
         GitTool.onLoaded();
         gitTool = GitTool.getDefaultInstallation();
     }
 
     @Test
-    public void shouldResolveToolsOnMaster() throws Exception {
+    void shouldResolveToolsOnMaster() throws Exception {
         // Jenkins 2.307+ uses "built-in" for the label on the controller node
         // Before 2.307, used the deprecated term "master"
         final String label = r.jenkins.getSelfLabel().getName();

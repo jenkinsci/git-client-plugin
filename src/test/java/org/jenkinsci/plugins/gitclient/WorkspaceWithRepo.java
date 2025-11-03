@@ -17,10 +17,10 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 
-public class WorkspaceWithRepo {
+class WorkspaceWithRepo {
 
     private GitClient gitClient;
     private File gitFileDir;
@@ -84,7 +84,7 @@ public class WorkspaceWithRepo {
      * @throws IOException on I/O error
      * @throws InterruptedException when exception is interrupted
      */
-    String localMirror() throws IOException, InterruptedException {
+    String localMirror() throws Exception {
         File base = new File(".").getAbsoluteFile();
         for (File f = base; f != null; f = f.getParentFile()) {
             File targetDir = new File(f, "target");
@@ -142,11 +142,11 @@ public class WorkspaceWithRepo {
         throw new IllegalStateException();
     }
 
-    String launchCommand(String... args) throws IOException, InterruptedException {
+    String launchCommand(String... args) throws Exception {
         return launchCommand(false, args);
     }
 
-    String launchCommand(boolean ignoreError, String... args) throws IOException, InterruptedException {
+    String launchCommand(boolean ignoreError, String... args) throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         int returnCode = new Launcher.LocalLauncher(listener)
                 .launch()
@@ -166,7 +166,7 @@ public class WorkspaceWithRepo {
         return output;
     }
 
-    void initBareRepo(GitClient gitClient, boolean bare) throws InterruptedException {
+    void initBareRepo(GitClient gitClient, boolean bare) throws Exception {
         gitClient.init_().workspace(gitFileDir.getAbsolutePath()).bare(bare).execute();
     }
 
@@ -180,11 +180,11 @@ public class WorkspaceWithRepo {
         Files.writeString(f.toPath(), content, StandardCharsets.UTF_8);
     }
 
-    void tag(String tag) throws IOException, InterruptedException {
+    void tag(String tag) throws Exception {
         tag(tag, false);
     }
 
-    void tag(String tag, boolean force) throws IOException, InterruptedException {
+    void tag(String tag, boolean force) throws Exception {
         if (force) {
             launchCommand("git", "tag", "--force", tag);
         } else {
@@ -192,7 +192,7 @@ public class WorkspaceWithRepo {
         }
     }
 
-    void commitEmpty(String msg) throws IOException, InterruptedException {
+    void commitEmpty(String msg) throws Exception {
         launchCommand("git", "commit", "--allow-empty", "-m", msg);
     }
 
@@ -206,7 +206,7 @@ public class WorkspaceWithRepo {
                 Git.with(listener, new EnvVars()).in(gitFileDir).using("jgit").getClient();
     }
 
-    ObjectId head() throws IOException, InterruptedException {
+    ObjectId head() throws Exception {
         return gitClient.revParse("HEAD");
     }
 
@@ -226,11 +226,22 @@ public class WorkspaceWithRepo {
         return file(path).exists();
     }
 
-    String contentOf(String path) throws IOException {
+    String contentOf(String path) throws Exception {
         return Files.readString(file(path).toPath(), StandardCharsets.UTF_8);
     }
 
     CliGitCommand getCliGitCommand() {
         return this.cliGitCommand;
+    }
+
+    void initializeWorkspace() throws Exception {
+        initializeWorkspace("root", "root@mydomain.com");
+    }
+
+    void initializeWorkspace(String userName, String emailAddress) throws Exception {
+        this.gitClient.init();
+        this.cliGitCommand.initializeRepository(userName, emailAddress);
+        this.gitClient.setAuthor(userName, emailAddress);
+        this.gitClient.setCommitter(userName, emailAddress);
     }
 }

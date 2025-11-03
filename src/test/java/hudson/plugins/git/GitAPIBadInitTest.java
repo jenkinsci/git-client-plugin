@@ -2,8 +2,8 @@ package hudson.plugins.git;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
@@ -13,46 +13,50 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import org.jenkinsci.plugins.gitclient.GitClient;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
-public class GitAPIBadInitTest {
+class GitAPIBadInitTest {
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
-    private final EnvVars env;
-
-    public GitAPIBadInitTest() {
-        env = new EnvVars();
-    }
+    private final EnvVars env = new EnvVars();
 
     private File tempDir;
     private TaskListener listener;
 
-    @Before
-    public void setUp() throws IOException, InterruptedException {
-        tempDir = tempFolder.newFolder();
+    @BeforeEach
+    void setUp() throws Exception {
+        tempDir = newFolder(tempFolder, "junit");
         listener = StreamTaskListener.fromStderr();
     }
 
     @Test
-    public void testInitExistingDirectory() throws Exception {
+    void testInitExistingDirectory() throws Exception {
         GitClient git = new GitAPI("git", tempDir, listener, env);
         git.init();
         File gitDir = new File(tempDir, ".git");
-        assertTrue(gitDir + " not created", gitDir.exists());
-        assertTrue(gitDir + " not a directory", gitDir.isDirectory());
+        assertTrue(gitDir.exists(), gitDir + " not created");
+        assertTrue(gitDir.isDirectory(), gitDir + " not a directory");
     }
 
     @Test
-    public void testInitExistingFile() throws Exception {
+    void testInitExistingFile() throws Exception {
         File existingFile = new File(tempDir, "file-exists");
         Files.writeString(existingFile.toPath(), "git init should fail due to this file", StandardCharsets.UTF_8);
         GitClient git = new GitAPI("git", existingFile, listener, env);
         GitException e = assertThrows(GitException.class, git::init);
         assertThat(e.getMessage(), is("Could not init " + existingFile.getAbsolutePath()));
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

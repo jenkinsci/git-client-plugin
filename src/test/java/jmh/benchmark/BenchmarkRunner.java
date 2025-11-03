@@ -1,11 +1,10 @@
 package jmh.benchmark;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import jenkins.benchmark.jmh.BenchmarkFinder;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
@@ -16,20 +15,20 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
  * A runner class which finds benchmark tests annotated with @JmhBenchmark and launches them with the selected options
  * provided by JMH
  */
-public class BenchmarkRunner {
+class BenchmarkRunner {
     /**
      * Returns true if property benchmark.run is set.
      * @return true if benchmarks should be run
      */
-    private boolean shouldRunBenchmarks() throws Exception {
+    private boolean shouldRunBenchmarks() {
         return Boolean.parseBoolean(System.getProperty("benchmark.run", "false"));
     }
 
     @Test
-    public void runJmhBenchmarks() throws Exception {
+    void runJmhBenchmarks() throws Exception {
         if (!shouldRunBenchmarks()) {
             String msg = "{\"benchmark.run\": false, \"reason\": \"Benchmark not run because benchmark.run is false\"}";
-            Files.write(Paths.get("jmh-report.json"), msg.getBytes(StandardCharsets.UTF_8));
+            Files.writeString(Path.of("jmh-report.json"), msg);
             return;
         }
         ChainedOptionsBuilder options = new OptionsBuilder()

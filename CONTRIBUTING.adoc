@@ -51,10 +51,8 @@ Before submitting a pull request, confirm the formatting is correct with:
 
 Maintainers triage pull requests by reviewing them and by assigning labels.
 Release drafter uses the labels to automate link:https://github.com/jenkinsci/git-client-plugin/releases[release notes].
-link:Priorities.adoc#git-client-plugin-development-priorities[Prioritization] uses the labels to group relevant pull requests.
 
 Others are encouraged to review pull requests, test pull request builds, and report their results in the pull request.
-Refer to the link:Priorities.adoc#priorities[maintainer's priority list] for topics the plugin maintainers are considering.
 
 === Testing a Pull Request Build
 
@@ -90,4 +88,4 @@ Run the benchmarks with the command:
 
 * `mvn -P jmh-benchmark -Dbenchmark.run=true test`
 
-The results can be reviewed visiually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].
+The results can be reviewed visually by pasting the resulting `jmh-report.json` file into the link:https://jmh.morethan.io/[online JMH visualizer].

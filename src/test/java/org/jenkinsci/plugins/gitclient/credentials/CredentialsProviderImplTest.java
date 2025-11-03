@@ -1,54 +1,48 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.credentials;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.model.TaskListener;
 import hudson.util.Secret;
-import hudson.util.StreamTaskListener;
-import java.net.URISyntaxException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Before;
-import org.junit.Test;
+import org.jenkinsci.plugins.gitclient.jgit.CredentialsProviderImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class CredentialsProviderImplTest {
+class CredentialsProviderImplTest {
+
+    private static final String USER_NAME = "user-name";
+    private static final String SECRET_VALUE = "secret-credentials-provider-impl-test";
 
     private CredentialsProviderImpl provider;
-    private TaskListener listener;
-    private final String USER_NAME = "user-name";
-    private final URIish uri;
-    private final String SECRET_VALUE = "secret-credentials-provider-impl-test";
+    private URIish uri;
 
-    public CredentialsProviderImplTest() throws URISyntaxException {
+    @BeforeEach
+    void setUp() throws Exception {
         uri = new URIish("git://example.com/someone/somewhere.git");
-    }
-
-    @Before
-    public void setUp() {
         Secret secret = Secret.fromString(SECRET_VALUE);
-        listener = StreamTaskListener.fromStdout();
         StandardUsernameCredentials cred = new StandardUsernamePasswordCredentialsImpl(USER_NAME, secret);
-        provider = new CredentialsProviderImpl(listener, cred);
+        provider = new CredentialsProviderImpl(cred);
     }
 
     @Test
-    public void testIsInteractive() {
+    void testIsInteractive() {
         assertFalse(provider.isInteractive());
     }
 
     @Test
-    public void testSupportsNullItems() {
+    void testSupportsNullItems() {
         CredentialItem.Username nullItem = null;
         assertFalse(provider.supports(nullItem));
     }
 
     @Test
-    public void testSupportsUsername() {
+    void testSupportsUsername() {
         CredentialItem.Username username = new CredentialItem.Username();
         assertNull(username.getValue());
         assertTrue(provider.supports(username));
@@ -57,7 +51,7 @@ public class CredentialsProviderImplTest {
     }
 
     @Test
-    public void testSupportsPassword() {
+    void testSupportsPassword() {
         CredentialItem.Password password = new CredentialItem.Password();
         assertNull(password.getValue());
         assertTrue(provider.supports(password));
@@ -66,7 +60,7 @@ public class CredentialsProviderImplTest {
     }
 
     @Test
-    public void testSupportsSpecialStringType() {
+    void testSupportsSpecialStringType() {
         CredentialItem.StringType specialStringType = new CredentialItem.StringType("Password: ", false);
         assertNull(specialStringType.getValue());
 
@@ -81,24 +75,23 @@ public class CredentialsProviderImplTest {
     }
 
     @Test
-    public void testSpecialStringTypeThrowsException() {
+    void testSpecialStringTypeThrowsException() {
         CredentialItem.StringType specialStringType = new CredentialItem.StringType("Bad Password: ", false);
         assertFalse(provider.supports(specialStringType));
         assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, specialStringType));
     }
 
     @Test
-    public void testThrowsUnsupportedOperationException() {
+    void testThrowsUnsupportedOperationException() {
         CredentialItem.InformationalMessage message = new CredentialItem.InformationalMessage("Some info");
         assertFalse(provider.supports(message));
         assertThrows(UnsupportedCredentialItem.class, () -> provider.get(uri, message));
     }
 
     @Test
-    public void testSupportsDisallowed() {
-        listener = StreamTaskListener.fromStdout();
+    void testSupportsDisallowed() {
         StandardUsernameCredentials badCred = new MyUsernameCredentialsImpl(USER_NAME);
-        CredentialsProviderImpl badProvider = new CredentialsProviderImpl(listener, badCred);
+        CredentialsProviderImpl badProvider = new CredentialsProviderImpl(badCred);
         CredentialItem.Username username = new CredentialItem.Username();
         assertNull(username.getValue());
         assertFalse(badProvider.supports(username));
@@ -106,13 +99,7 @@ public class CredentialsProviderImplTest {
         assertNull(username.getValue());
     }
 
-    private static class MyUsernameCredentialsImpl implements StandardUsernameCredentials {
-
-        private final String username;
-
-        MyUsernameCredentialsImpl(String username) {
-            this.username = username;
-        }
+    private record MyUsernameCredentialsImpl(String username) implements StandardUsernameCredentials {
 
         @Override
         @NonNull

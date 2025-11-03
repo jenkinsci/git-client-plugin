@@ -23,27 +23,18 @@
  */
 package org.jenkinsci.plugins.gitclient;
 
-import hudson.Launcher;
-import hudson.model.TaskListener;
-import hudson.util.StreamTaskListener;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import jenkins.scm.impl.mock.AbstractSampleDVCSRepoRule;
-import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.htmlunit.WebResponse;
-import org.htmlunit.util.NameValuePair;
-import org.jvnet.hudson.test.JenkinsRule;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * Manages a sample Git repository.
  */
-public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
-
-    private static final Logger LOGGER = Logger.getLogger(GitClientSampleRepoRule.class.getName());
+public class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule
+        implements BeforeEachCallback, AfterEachCallback {
 
     public void git(String... cmds) throws Exception {
         run("git", cmds);
@@ -55,90 +46,26 @@ public final class GitClientSampleRepoRule extends AbstractSampleDVCSRepoRule {
         git("init");
         write("file", "");
         git("add", "file");
-        git("config", "user.name", "Git SampleRepoRule");
-        git("config", "user.email", "gits@mplereporule");
+        git("config", "--local", "user.name", "Git SampleRepoRule");
+        git("config", "--local", "user.email", "gits@mplereporule");
         git("commit", "--message=init");
-    }
-
-    public boolean mkdirs(String rel) {
-        return new File(this.sampleRepo, rel).mkdirs();
-    }
-
-    public void notifyCommit(JenkinsRule r) throws Exception {
-        synchronousPolling(r);
-        WebResponse webResponse = r.createWebClient()
-                .goTo("git/notifyCommit?url=" + bareUrl(), "text/plain")
-                .getWebResponse();
-        LOGGER.log(Level.FINE, webResponse.getContentAsString());
-        for (NameValuePair pair : webResponse.getResponseHeaders()) {
-            if (pair.getName().equals("Triggered")) {
-                LOGGER.log(Level.FINE, "Triggered: " + pair.getValue());
-            }
-        }
-        r.waitUntilNoActivity();
-    }
-
-    public String head() throws Exception {
-        return new RepositoryBuilder()
-                .setWorkTree(sampleRepo)
-                .build()
-                .resolve(Constants.HEAD)
-                .name();
     }
 
     public File getRoot() {
         return this.sampleRepo;
     }
 
-    public boolean gitVersionAtLeast(int neededMajor, int neededMinor) {
-        return gitVersionAtLeast(neededMajor, neededMinor, 0);
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        try {
+            this.before();
+        } catch (Throwable t) {
+            throw new ExtensionConfigurationException(t.getMessage(), t);
+        }
     }
 
-    public boolean gitVersionAtLeast(int neededMajor, int neededMinor, int neededPatch) {
-        final TaskListener procListener = StreamTaskListener.fromStderr();
-        final ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            int returnCode = new Launcher.LocalLauncher(procListener)
-                    .launch()
-                    .cmds("git", "--version")
-                    .stdout(out)
-                    .join();
-            if (returnCode != 0) {
-                LOGGER.log(Level.WARNING, "Command 'git --version' returned " + returnCode);
-            }
-        } catch (IOException | InterruptedException ex) {
-            LOGGER.log(Level.WARNING, "Exception checking git version " + ex);
-        }
-        final String versionOutput = out.toString().trim();
-        final String[] fields = versionOutput
-                .split(" ")[2]
-                .replaceAll("msysgit.", "")
-                .replaceAll("windows.", "")
-                .split("\\.");
-        final int gitMajor = Integer.parseInt(fields[0]);
-        final int gitMinor = Integer.parseInt(fields[1]);
-        final int gitPatch = Integer.parseInt(fields[2]);
-        if (gitMajor < 1 || gitMajor > 3) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Unexpected git major version " + gitMajor + " parsed from '" + versionOutput + "', field:'"
-                            + fields[0] + "'");
-        }
-        if (gitMinor < 0 || gitMinor > 50) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Unexpected git minor version " + gitMinor + " parsed from '" + versionOutput + "', field:'"
-                            + fields[1] + "'");
-        }
-        if (gitPatch < 0 || gitPatch > 20) {
-            LOGGER.log(
-                    Level.WARNING,
-                    "Unexpected git patch version " + gitPatch + " parsed from '" + versionOutput + "', field:'"
-                            + fields[2] + "'");
-        }
-
-        return gitMajor > neededMajor
-                || (gitMajor == neededMajor && gitMinor > neededMinor)
-                || (gitMajor == neededMajor && gitMinor == neededMinor && gitPatch >= neededPatch);
+    @Override
+    public void afterEach(ExtensionContext context) {
+        this.after();
     }
 }

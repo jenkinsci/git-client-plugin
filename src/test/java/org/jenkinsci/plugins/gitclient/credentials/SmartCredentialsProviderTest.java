@@ -1,25 +1,32 @@
-package org.jenkinsci.plugins.gitclient.trilead;
+package org.jenkinsci.plugins.gitclient.credentials;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.model.TaskListener;
 import hudson.util.Secret;
 import hudson.util.StreamTaskListener;
-import java.net.URISyntaxException;
 import org.eclipse.jgit.errors.UnsupportedCredentialItem;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.Before;
-import org.junit.Test;
+import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
+import org.jenkinsci.plugins.gitclient.jgit.StandardUsernameCredentialsCredentialItem;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class SmartCredentialsProviderTest {
+class SmartCredentialsProviderTest {
+
+    private static final String MASKED_USER_NAME_PROMPT = "masked user name prompt";
+    private static final String UNMASKED_USER_NAME_PROMPT = "unmasked user name prompt";
+    private static final String MASKED_STRING_TYPE_PROMPT = "masked string type prompt";
+    private static final String UNMASKED_STRING_TYPE_PROMPT = "unmasked string type prompt";
+    private static final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
     private TaskListener listener;
     private SmartCredentialsProvider provider;
-    private final URIish gitURI;
-    private final URIish gitURISlash;
-    private final URIish gitURIShort;
+    private URIish gitURI;
+    private URIish gitURISlash;
+    private URIish gitURIShort;
     private CredentialItem.Username username;
     private CredentialItem.Password password;
     private CredentialItem.StringType maskedStringType;
@@ -27,21 +34,14 @@ public class SmartCredentialsProviderTest {
     private CredentialItem.StringType specialStringType;
     private StandardUsernameCredentialsCredentialItem maskedUsername;
     private StandardUsernameCredentialsCredentialItem unmaskedUsername;
-    private final String MASKED_USER_NAME_PROMPT = "masked user name prompt";
-    private final String UNMASKED_USER_NAME_PROMPT = "unmasked user name prompt";
-    private final String MASKED_STRING_TYPE_PROMPT = "masked string type prompt";
-    private final String UNMASKED_STRING_TYPE_PROMPT = "unmasked string type prompt";
-    private final String SPECIAL_STRING_TYPE_PROMPT = "Password: ";
 
-    public SmartCredentialsProviderTest() throws URISyntaxException {
+    @BeforeEach
+    void setUp() throws Exception {
         String baseUri = "git://example.com/someone/somewhere";
         gitURI = new URIish(baseUri + ".git");
         gitURISlash = new URIish(baseUri + ".git/");
         gitURIShort = new URIish(baseUri);
-    }
 
-    @Before
-    public void setUp() {
         listener = StreamTaskListener.fromStdout();
         provider = new SmartCredentialsProvider(listener);
         username = new CredentialItem.Username();
@@ -63,7 +63,7 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testClearCredentials() {
+    void testClearCredentials() {
         provider.clearCredentials();
 
         assertFalse(provider.supports(username, password));
@@ -90,7 +90,7 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testAddCredentials() {
+    void testAddCredentials() {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
@@ -156,7 +156,7 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testAddDefaultCredentials() {
+    void testAddDefaultCredentials() {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
@@ -215,12 +215,12 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testIsInteractive() {
-        assertFalse(provider.isInteractive());
+    void testIsInteractive() {
+        assertTrue(provider.isInteractive());
     }
 
     @Test
-    public void testClearCredentialsItem() {
+    void testClearCredentialsItem() {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);
@@ -233,7 +233,7 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testGetThrowsException() {
+    void testGetThrowsException() {
         String expectedUsername = "expected-add-credentials-username";
         Secret secret = Secret.fromString("password-secret");
         StandardUsernamePasswordCredentials credentials =
@@ -245,7 +245,7 @@ public class SmartCredentialsProviderTest {
     }
 
     @Test
-    public void testSimilarUrlsAcceptedForCredentials() {
+    void testSimilarUrlsAcceptedForCredentials() {
         String expectedUsername = "expected-add-credentials-username";
         String secretValue = "secret-value";
         Secret secret = Secret.fromString(secretValue);

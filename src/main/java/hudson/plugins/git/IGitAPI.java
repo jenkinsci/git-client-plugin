@@ -32,7 +32,7 @@ public interface IGitAPI extends GitClient {
     /**
      * Returns URL of remote name in repository GIT_DIR.
      *
-     * @param name name for the remote repository, for examnple, "origin"
+     * @param name name for the remote repository, for example, "origin"
      * @param GIT_DIR directory containing git repository
      * @return URL of remote "name" in repository GIT_DIR.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -43,7 +43,7 @@ public interface IGitAPI extends GitClient {
     /**
      * Set remote repository name and URL.
      *
-     * @param name name for the remote repository, for examnple, "origin"
+     * @param name name for the remote repository, for example, "origin"
      * @param url URL for the remote repository, for example https://github.com/jenkinsci/git-client-plugin.git
      * @param GIT_DIR directory containing git repository
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -62,7 +62,7 @@ public interface IGitAPI extends GitClient {
     String getDefaultRemote(String _default_) throws GitException, InterruptedException;
 
     /**
-     * Returns true if this repositry is bare.
+     * Returns true if this repository is bare.
      *
      * @return true if this repository is bare
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
@@ -138,7 +138,7 @@ public interface IGitAPI extends GitClient {
      * @param remoteRepository remote configuration from which refs will be retrieved
      * @throws java.lang.InterruptedException if interrupted.
      */
-    void fetch(RemoteConfig remoteRepository) throws InterruptedException;
+    void fetch(RemoteConfig remoteRepository) throws GitException, InterruptedException;
 
     /**
      * Retrieve commits from default remote.
@@ -281,7 +281,7 @@ public interface IGitAPI extends GitClient {
      * @return a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @throws java.lang.InterruptedException if interrupted.
      */
-    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws InterruptedException;
+    ObjectId mergeBase(ObjectId sha1, ObjectId sha2) throws GitException, InterruptedException;
 
     /**
      * showRevision.
@@ -304,5 +304,5 @@ public interface IGitAPI extends GitClient {
      */
     @Restricted(NoExternalUse.class)
     @Deprecated
-    String getAllLogEntries(String branch) throws InterruptedException;
+    String getAllLogEntries(String branch) throws GitException, InterruptedException;
 }

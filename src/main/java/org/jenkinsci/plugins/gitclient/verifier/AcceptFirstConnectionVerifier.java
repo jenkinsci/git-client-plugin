@@ -1,16 +1,8 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.model.TaskListener;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Base64;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
 public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
 
@@ -27,95 +19,26 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        KnownHosts knownHosts;
-        try {
-            knownHosts =
-                    Files.exists(getKnownHostsFile().toPath()) ? new KnownHosts(getKnownHostsFile()) : new KnownHosts();
-        } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
-            knownHosts = new KnownHosts();
-        }
-        return new AcceptFirstConnectionJGitHostKeyVerifier(listener, knownHosts);
+        return new AcceptFirstConnectionJGitHostKeyVerifier(listener, this);
     }
 
-    public class AcceptFirstConnectionJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
+    public static class AcceptFirstConnectionJGitHostKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-        private final TaskListener listener;
-
-        public AcceptFirstConnectionJGitHostKeyVerifier(TaskListener listener, KnownHosts knownHosts) {
-            super(knownHosts);
-            this.listener = listener;
+        public AcceptFirstConnectionJGitHostKeyVerifier(
+                TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
         }
 
         @Override
-        public String[] getServerHostKeyAlgorithms(Connection connection) throws IOException {
-            return getPreferredServerHostkeyAlgorithmOrder(connection);
+        protected boolean askAboutKnowHostFile() {
+            return false;
         }
 
         @Override
-        public boolean verifyServerHostKey(
-                String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) throws Exception {
-            listener.getLogger()
-                    .printf(
-                            "Verifying host key for %s using %s %n",
-                            hostname, getKnownHostsFile().toPath());
-            File knownHostsFile = getKnownHostsFile();
-            Path path = Paths.get(knownHostsFile.getAbsolutePath());
-            String hostnamePort = hostname + ":" + port;
-            boolean isValid = false;
-            if (Files.notExists(path)) {
-                Files.createDirectories(knownHostsFile.getParentFile().toPath());
-                Files.createFile(path);
-                listener.getLogger().println("Creating new known hosts file " + path);
-                writeToFile(knownHostsFile, hostnamePort, serverHostKeyAlgorithm, serverHostKey);
-                isValid = true;
-            } else {
-                KnownHosts knownHosts = getKnownHosts();
-                int hostPortResult = knownHosts.verifyHostkey(hostnamePort, serverHostKeyAlgorithm, serverHostKey);
-                if (KnownHosts.HOSTKEY_IS_OK == hostPortResult
-                        || KnownHosts.HOSTKEY_IS_OK
-                                == knownHosts.verifyHostkey(hostname, serverHostKeyAlgorithm, serverHostKey)) {
-                    isValid = true;
-                } else if (KnownHosts.HOSTKEY_IS_NEW == hostPortResult) {
-                    writeToFile(knownHostsFile, hostnamePort, serverHostKeyAlgorithm, serverHostKey);
-                    isValid = true;
-                }
-            }
-
-            if (!isValid) {
-                LOGGER.log(
-                        Level.FINER,
-                        "Host key for {0} was not accepted on accept first verifier known hosts file {1}",
-                        new Object[] {hostnamePort, path.toString()});
-                listener.getLogger().printf("Host key for host %s was not accepted.%n", hostnamePort);
-            }
-
-            return isValid;
-        }
-
-        private void writeToFile(
-                File knownHostsFile, String hostnamePort, String serverHostKeyAlgorithm, byte[] serverHostKey)
-                throws IOException {
-            listener.getLogger().println("Adding " + hostnamePort + " to " + knownHostsFile.toPath());
-            LOGGER.log(
-                    Level.FINEST,
-                    "Adding {0} to known hosts {1} in accept first verifier with host key {2} {3}",
-                    new Object[] {
-                        hostnamePort,
-                        knownHostsFile.toPath().toString(),
-                        serverHostKeyAlgorithm,
-                        Base64.getEncoder().encodeToString(serverHostKey)
-                    });
-            KnownHosts.addHostkeyToFile(
-                    knownHostsFile,
-                    new String[] {KnownHosts.createHashedHostname(hostnamePort)},
-                    serverHostKeyAlgorithm,
-                    serverHostKey);
-            getKnownHosts()
-                    .addHostkey(
-                            new String[] {KnownHosts.createHashedHostname(hostnamePort)},
-                            serverHostKeyAlgorithm,
-                            serverHostKey);
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_NEW);
         }
     }
 }

@@ -132,7 +132,7 @@ public interface GitClient {
      * @throws java.io.IOException in case of IO error
      * @throws java.lang.InterruptedException if interrupted
      */
-    <T> T withRepository(RepositoryCallback<T> callable) throws IOException, InterruptedException;
+    <T> T withRepository(RepositoryCallback<T> callable) throws GitException, IOException, InterruptedException;
 
     /**
      * The working tree of this repository.
@@ -580,7 +580,7 @@ public interface GitClient {
      * Check if a ref exists. Equivalent to comparing the return code of <code>git show-ref</code> to zero.
      *
      * @param refName the full name of the ref (e.g. "refs/myref"). Spaces will be replaced with underscores.
-     * @return True if the ref exists, false otherwse.
+     * @return True if the ref exists, false otherwise.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -655,8 +655,7 @@ public interface GitClient {
      * @param remoteRepoUrl Remote repository URL.
      * @param pattern       Only references matching the given pattern are displayed.
      * @return a map of reference names and their underlying references. Empty if none or if the remote does not report
-     * symbolic references (i.e. Git 1.8.4 or earlier) or if the client does not support reporting symbolic references
-     * (e.g. command line Git prior to 2.8.0).
+     * symbolic references or if the command line git version does not support reporting symbolic references.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException  if interrupted.
      */
@@ -860,7 +859,7 @@ public interface GitClient {
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand changelog();
+    ChangelogCommand changelog() throws GitException;
 
     /**
      * Appends to an existing git-note on the current HEAD commit.
@@ -889,7 +888,7 @@ public interface GitClient {
     void addNote(String note, String namespace) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log --raw, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -901,14 +900,14 @@ public interface GitClient {
      * behave differently from {@link #changelog()}.
      *
      * @param r a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     List<String> showRevision(ObjectId r) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from git log --raw, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -921,14 +920,14 @@ public interface GitClient {
      *
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
     List<String> showRevision(ObjectId from, ObjectId to) throws GitException, InterruptedException;
 
     /**
-     * Given a Revision, show it as if it were an entry from git whatchanged, so that it
+     * Given a Revision, show it as if it were an entry from <code>git log --raw</code>, so that it
      * can be parsed by GitChangeLogParser.
      *
      * <p>
@@ -946,7 +945,7 @@ public interface GitClient {
      * @param from a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param to a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @param useRawOutput a {java.lang.Boolean} object.
-     * @return The git whatchanged output, in <code>raw</code> format.
+     * @return The git log output, in <code>raw</code> format.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
      * @throws java.lang.InterruptedException if interrupted.
      */
@@ -1009,22 +1008,28 @@ public interface GitClient {
     boolean maintenance(String task) throws InterruptedException;
 
     /**
-     * Execute git config at local level
-     * @param configLevel the config level to use can be null and default will ${{@link ConfigLevel#LOCAL}}
-     * @param key configuration section ${code user.name} format section[.subsection].name
-     * @param value configuration value
-     * @throws GitException
-     * @throws InterruptedException
+     * Execute git config at the specified configuration level.
+     * If value is null, the key will be removed from the configuration.
+     *
+     * @param configLevel configuration level that will be modified. If null, then {@link ConfigLevel#LOCAL} will be used.
+     * @param key configuration section expressed as {@code section[.subsection].name}
+     * @param value configuration value.  If null, the key will be removed from the configuration (unset)
+     * @throws GitException on Git exception
+     * @throws InterruptedException on thread interruption
      */
     void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException;
 
     /**
-     * config level (see git documentation)
+     * Level of git configuration that will be adjusted by configuration changes.
      *
+     * @see <a href="https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration">Git configuration documentation</a>
      */
     enum ConfigLevel {
+        /** Configure the current repository. */
         LOCAL,
+        /** Configure the current user. */
         SYSTEM,
+        /** Configure all users. */
         GLOBAL;
     }
 }

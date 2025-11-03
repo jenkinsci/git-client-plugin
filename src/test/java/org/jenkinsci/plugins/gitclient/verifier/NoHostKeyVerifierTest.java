@@ -2,47 +2,51 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
-import java.io.IOException;
-import java.nio.file.Paths;
-import org.jenkinsci.plugins.gitclient.trilead.JGitConnection;
-import org.junit.Before;
-import org.junit.Test;
+import java.nio.file.Path;
+import java.time.Duration;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class NoHostKeyVerifierTest {
+class NoHostKeyVerifierTest {
 
     private NoHostKeyVerifier verifier;
 
-    @Before
-    public void assignVerifier() {
+    @BeforeEach
+    void assignVerifier() {
         verifier = new NoHostKeyVerifier();
     }
 
     @Test
-    public void testVerifyServerHostKey() throws IOException {
-        if (isKubernetesCI()) {
-            return; // Test fails with connection timeout on ci.jenkins.io kubernetes agents
-        }
-        JGitConnection jGitConnection = new JGitConnection("github.com", 22);
-        // Should not fail because verifyServerHostKey always true
-        jGitConnection.connect(verifier.forJGit(TaskListener.NULL));
+    void verifyServerHostKey() throws Exception {
+        assumeTrue(runKnownHostsTests());
+        NoHostKeyVerifier acceptFirstConnectionVerifier = new NoHostKeyVerifier();
+
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        null,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ssh-ed25519" /* Indiferent for the test */,
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            // Should not fail because verifyServerHostKey always true
+                            return true;
+                        })
+                .close();
     }
 
     @Test
-    public void testVerifyHostKeyOption() throws IOException {
+    void testVerifyHostKeyOption() throws Exception {
         assertThat(
-                verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Paths.get("")),
+                verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(Path.of("")),
                 is("-o StrictHostKeyChecking=no"));
-    }
-
-    /* Return true if running on a Kubernetes pod on ci.jenkins.io */
-    private boolean isKubernetesCI() {
-        String kubernetesPort = System.getenv("KUBERNETES_PORT");
-        String buildURL = System.getenv("BUILD_URL");
-        return kubernetesPort != null
-                && !kubernetesPort.isEmpty()
-                && buildURL != null
-                && buildURL.startsWith("https://ci.jenkins.io/");
     }
 }

@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
@@ -21,10 +22,9 @@ import java.util.List;
 import java.util.Set;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -33,30 +33,30 @@ import org.jvnet.hudson.test.Issue;
  *
  * @author Brian Ray
  */
-public class JGitLightweightTagTest {
+class JGitLightweightTagTest {
     /* These tests are only for the JGit client. */
     private static final String GIT_IMPL_NAME = "jgit";
 
     /* Instance under test. */
     private GitClient gitClient;
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
+    @TempDir
+    private File tempFolder;
 
     private File repoRoot; // root directory of temporary repository
     private File repoRootGitDir; // .git directory in temporary repository
 
-    @Before
-    public void setGitClientEtc() throws IOException, InterruptedException {
-        repoRoot = tempFolder.newFolder();
+    @BeforeEach
+    void setGitClientEtc() throws Exception {
+        repoRoot = newFolder(tempFolder, "junit");
         gitClient = Git.with(TaskListener.NULL, new EnvVars())
                 .in(repoRoot)
                 .using(GIT_IMPL_NAME)
                 .getClient();
         repoRootGitDir = gitClient.withRepository((r, channel) -> r.getDirectory());
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.initializeRepository();
         assertThat(repoRootGitDir, is(anExistingDirectory()));
     }
 
@@ -81,11 +81,9 @@ public class JGitLightweightTagTest {
         }
     }
 
-    private void packRefs() throws IOException {
-        try (FileRepository repo = new FileRepository(repoRootGitDir)) {
-            org.eclipse.jgit.internal.storage.file.GC gc;
-            gc = new org.eclipse.jgit.internal.storage.file.GC(repo);
-            gc.packRefs();
+    private void packRefs() throws Exception {
+        try (org.eclipse.jgit.api.Git jgit = new org.eclipse.jgit.api.Git(new FileRepository(repoRootGitDir))) {
+            jgit.packRefs().setAll(true).call();
         }
     }
 
@@ -93,15 +91,15 @@ public class JGitLightweightTagTest {
     // But sometimes we want a lightweight a.k.a. non-annotated tag.
     private void lightweightTag(String tagName) throws Exception {
         try (FileRepository repo = new FileRepository(repoRootGitDir)) {
-            // Collides with implicit org.jenkinsci.plugins.gitclient.Git.
             org.eclipse.jgit.api.Git jgitAPI = org.eclipse.jgit.api.Git.wrap(repo);
             jgitAPI.tag().setName(tagName).setAnnotated(false).call();
         }
     }
 
-    @Issue("JENKINS-57205") // NPE on PreBuildMerge with packed lightweight tag
+    @Issue("JENKINS-57205")
+    // NPE on PreBuildMerge with packed lightweight tag
     @Test
-    public void testGetTags_packedRefs() throws Exception {
+    void testGetTags_packedRefs() throws Exception {
         // JENKINS-57205 is triggered by lightweight tags
         ObjectId firstCommit = commitFile("first.txt", "Great info here", "First commit");
         String lightweightTagName = "lightweight_tag";
@@ -112,6 +110,7 @@ public class JGitLightweightTagTest {
         String annotatedTagName = "annotated_tag";
         gitClient.tag(annotatedTagName, "Tag annotation");
 
+        // Must pack the tags and other refs in order to show the JGitAPIImpl bug
         packRefs();
 
         Set<GitObject> tags = gitClient.getTags();
@@ -124,5 +123,15 @@ public class JGitLightweightTagTest {
                 tags,
                 hasItem(allOf(
                         hasProperty("name", equalTo(annotatedTagName)), hasProperty("SHA1", equalTo(secondCommit)))));
+        assertThat(tags, hasSize(2));
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

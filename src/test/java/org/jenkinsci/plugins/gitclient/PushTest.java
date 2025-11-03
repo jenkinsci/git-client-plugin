@@ -1,13 +1,8 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.TaskListener;
 import hudson.plugins.git.Branch;
@@ -18,24 +13,16 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.URIish;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Test various permutations of push refspecs. JENKINS-20393 highlights that
@@ -46,20 +33,28 @@ import org.junit.runners.Parameterized;
  *
  * @author Mark Waite
  */
-@RunWith(Parameterized.class)
-public class PushTest {
+@ParameterizedClass(name = "{0} with {1} refspec {2}")
+@MethodSource("pushParameters")
+class PushTest {
 
-    private final String gitImpl;
-    protected final String refSpec;
-    private final String branchName;
-    private final Class<Throwable> expectedException;
+    @Parameter(0)
+    protected String gitImpl;
+
+    @Parameter(1)
+    protected String branchName;
+
+    @Parameter(2)
+    protected String refSpec;
+
+    @Parameter(3)
+    protected Class<Throwable> expectedException;
 
     private static File bareRepo;
     protected static URIish bareURI;
     private static GitClient bareGitClient;
     private static ObjectId bareFirstCommit;
 
-    private static final String BRANCH_NAMES[] = {"master", "feature/push-test"};
+    private static final String[] BRANCH_NAMES = {"master", "feature/push-test"};
 
     private ObjectId previousCommit;
 
@@ -67,24 +62,14 @@ public class PushTest {
     protected GitClient workingGitClient;
     private ObjectId workingCommit;
 
-    @Rule
-    public TestName name = new TestName();
+    @TempDir
+    private static File staticTemporaryFolder;
 
-    @ClassRule
-    public static TemporaryFolder staticTemporaryFolder = new TemporaryFolder();
-
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
-
-    public PushTest(String gitImpl, String branchName, String refSpec, Class<Throwable> expectedException) {
-        this.gitImpl = gitImpl;
-        this.branchName = branchName;
-        this.refSpec = refSpec;
-        this.expectedException = expectedException;
-    }
+    @TempDir
+    private File temporaryFolder;
 
     @Test
-    public void push() throws IOException, GitException, InterruptedException {
+    void push() throws Exception {
         checkoutBranchAndCommitFile();
 
         if (expectedException != null) {
@@ -97,7 +82,7 @@ public class PushTest {
     }
 
     @Test
-    public void pushNonFastForwardForce() throws IOException, GitException, InterruptedException {
+    void pushNonFastForwardForce() throws Exception {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
@@ -112,9 +97,8 @@ public class PushTest {
         }
     }
 
-    @Parameterized.Parameters(name = "{0} with {1} refspec {2}")
-    public static Collection<Object[]> pushParameters() {
-        List<Object[]> parameters = new ArrayList<>();
+    static List<Arguments> pushParameters() {
+        List<Arguments> parameters = new ArrayList<>();
         final String[] implementations = {"git", "jgit"};
         final String[] goodRefSpecs = {
             "{0}", "HEAD", "HEAD:{0}", "{0}:{0}", "refs/heads/{0}", "{0}:heads/{0}", "{0}:refs/heads/{0}"
@@ -133,12 +117,12 @@ public class PushTest {
             for (String branch : BRANCH_NAMES) {
                 for (String paramRefSpec : goodRefSpecs) {
                     String spec = MessageFormat.format(paramRefSpec, branch);
-                    Object[] parameter = {implementation, branch, spec, null};
+                    Arguments parameter = Arguments.of(implementation, branch, spec, null);
                     parameters.add(parameter);
                 }
                 for (String paramRefSpec : badRefSpecs) {
                     String spec = MessageFormat.format(paramRefSpec, branch);
-                    Object[] parameter = {implementation, branch, spec, GitException.class};
+                    Arguments parameter = Arguments.of(implementation, branch, spec, GitException.class);
                     parameters.add(parameter);
                 }
             }
@@ -146,11 +130,11 @@ public class PushTest {
         return parameters;
     }
 
-    @Before
-    public void createWorkingRepository() throws IOException, InterruptedException {
+    @BeforeEach
+    void createWorkingRepository() throws Exception {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        workingRepo = temporaryFolder.newFolder();
+        workingRepo = newFolder(temporaryFolder, "junit-" + System.nanoTime());
         workingGitClient =
                 Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient
@@ -166,38 +150,37 @@ public class PushTest {
                 .execute();
         assertNotNull(bareFirstCommit);
         assertTrue(
-                "Clone does not contain " + bareFirstCommit,
-                workingGitClient.revList("origin/" + branchName).contains(bareFirstCommit));
+                workingGitClient.revList("origin/" + branchName).contains(bareFirstCommit),
+                "Clone does not contain " + bareFirstCommit);
         ObjectId workingHead = workingGitClient.getHeadRev(workingRepo.getAbsolutePath(), branchName);
         ObjectId bareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
-        assertEquals("Initial checkout of " + branchName + " has different HEAD than bare repo", bareHead, workingHead);
+        assertEquals(bareHead, workingHead, "Initial checkout of " + branchName + " has different HEAD than bare repo");
         CliGitCommand gitCmd = new CliGitCommand(workingGitClient);
-        gitCmd.run("config", "user.name", "Vojtěch PushTest working repo Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository(
+                "Vojtěch PushTest working repo Zweibrücken-Šafařík", "email.from.git.client@example.com");
     }
 
-    @After
-    public void verifyPushResultAndDeleteDirectory() throws GitException, InterruptedException {
+    @AfterEach
+    void verifyPushResultAndDeleteDirectory(TestInfo info) throws Exception {
         /* Confirm push reached bare repo */
-        if (expectedException == null && !name.getMethodName().contains("Throws")) {
+        if (expectedException == null
+                && !info.getTestMethod().orElseThrow().getName().contains("Throws")) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
-            assertEquals(branchName + " commit not pushed to " + refSpec, workingCommit, latestBareHead);
+            assertEquals(workingCommit, latestBareHead, branchName + " commit not pushed to " + refSpec);
             assertNotEquals(previousCommit, workingCommit);
             assertNotEquals(previousCommit, latestBareHead);
         }
     }
 
-    @BeforeClass
-    public static void createBareRepository() throws Exception {
+    @BeforeAll
+    static void createBareRepository() throws Exception {
         /* Randomly choose git implementation to create bare repository */
         final String[] gitImplementations = {"git", "jgit"};
         Random random = new Random();
         String gitImpl = gitImplementations[random.nextInt(gitImplementations.length)];
 
         /* Create the bare repository */
-        bareRepo = staticTemporaryFolder.newFolder();
+        bareRepo = newFolder(staticTemporaryFolder, "junit-" + System.nanoTime());
         bareURI = new URIish(bareRepo.getAbsolutePath());
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
@@ -205,7 +188,7 @@ public class PushTest {
         bareGitClient.init_().workspace(bareRepo.getAbsolutePath()).bare(true).execute();
 
         /* Clone the bare repository into a working copy */
-        File cloneRepo = staticTemporaryFolder.newFolder();
+        File cloneRepo = newFolder(staticTemporaryFolder, "junit-" + System.nanoTime());
         GitClient cloneGitClient =
                 Git.with(listener, env).in(cloneRepo).using(gitImpl).getClient();
         cloneGitClient
@@ -214,10 +197,7 @@ public class PushTest {
                 .repositoryName("origin")
                 .execute();
         CliGitCommand gitCmd = new CliGitCommand(cloneGitClient);
-        gitCmd.run("config", "user.name", "Vojtěch PushTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client@example.com");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
+        gitCmd.initializeRepository("Vojtěch PushTest Zweibrücken-Šafařík", "email.from.git.client@example.com");
 
         for (String branchName : BRANCH_NAMES) {
             /* Add a file with random content to the current branch of working repo */
@@ -241,26 +221,26 @@ public class PushTest {
         bareFirstCommit = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), "master");
     }
 
-    @AfterClass
-    public static void removeBareRepository() throws IOException {
+    @AfterAll
+    static void removeBareRepository() throws Exception {
         FileUtils.deleteDirectory(bareRepo);
     }
 
-    protected void checkoutBranchAndCommitFile() throws GitException, InterruptedException, IOException {
+    protected void checkoutBranchAndCommitFile() throws Exception {
         previousCommit = checkoutBranch(false);
         workingCommit = commitFileToCurrentBranch();
     }
 
-    protected void checkoutOldBranchAndCommitFile() throws GitException, InterruptedException, IOException {
+    protected void checkoutOldBranchAndCommitFile() throws Exception {
         previousCommit = checkoutBranch(true);
         workingCommit = commitFileToCurrentBranch();
     }
 
     private Collection<String> getBranchNames(List<Branch> branches) {
-        return branches.stream().map(Branch::getName).collect(toList());
+        return branches.stream().map(Branch::getName).toList();
     }
 
-    private ObjectId checkoutBranch(boolean useOldCommit) throws GitException, InterruptedException {
+    private ObjectId checkoutBranch(boolean useOldCommit) throws Exception {
         /* Checkout branchName */
         workingGitClient.checkoutBranch(branchName, "origin/" + branchName + (useOldCommit ? "^" : ""));
         List<Branch> branches = workingGitClient.getBranchesContaining(branchName, false);
@@ -268,7 +248,7 @@ public class PushTest {
         return bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
     }
 
-    private ObjectId commitFileToCurrentBranch() throws InterruptedException, GitException, IOException {
+    private ObjectId commitFileToCurrentBranch() throws Exception {
         /* Add a file with random content to the current branch of working repo */
         File added = File.createTempFile("added-", ".txt", workingRepo);
         String randomContent = java.util.UUID.randomUUID().toString();
@@ -296,8 +276,12 @@ public class PushTest {
         }
     }
 
-    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
-    private static boolean isWindows() {
-        return File.pathSeparatorChar == ';';
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

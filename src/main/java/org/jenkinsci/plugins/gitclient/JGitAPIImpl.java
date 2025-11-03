@@ -1,7 +1,7 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.removeStart;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.removeStart;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.HARD;
 import static org.eclipse.jgit.api.ResetCommand.ResetType.MIXED;
 import static org.eclipse.jgit.lib.Constants.HEAD;
@@ -14,7 +14,10 @@ import static org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT_LOG_PREFIX;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
@@ -26,15 +29,20 @@ import hudson.plugins.git.GitLockFailedException;
 import hudson.plugins.git.GitObject;
 import hudson.plugins.git.IndexEntry;
 import hudson.plugins.git.Revision;
+import hudson.util.Secret;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Serial;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,12 +53,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import jenkins.util.SystemProperties;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.time.FastDateFormat;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.eclipse.jgit.api.AddNoteCommand;
 import org.eclipse.jgit.api.CommitCommand;
 import org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode;
@@ -66,6 +80,7 @@ import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.ShowNoteCommand;
 import org.eclipse.jgit.api.SubmoduleUpdateCommand;
 import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.api.errors.CanceledException;
 import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -79,6 +94,7 @@ import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
+import org.eclipse.jgit.internal.transport.ssh.OpenSshConfigFile;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -106,20 +122,22 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.FetchConnection;
-import org.eclipse.jgit.transport.HttpTransport;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
-import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshConstants;
+import org.eclipse.jgit.transport.SshTransport;
 import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.transport.Transport;
+import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.URIish;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.jenkinsci.plugins.gitclient.jgit.PreemptiveAuthHttpClientConnectionFactory;
-import org.jenkinsci.plugins.gitclient.trilead.SmartCredentialsProvider;
-import org.jenkinsci.plugins.gitclient.trilead.TrileadSessionFactory;
+import org.jenkinsci.plugins.gitclient.jgit.SmartCredentialsProvider;
 import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
 
 /**
@@ -133,17 +151,23 @@ import org.jenkinsci.plugins.gitclient.verifier.HostKeyVerifierFactory;
  * @author Kohsuke Kawaguchi
  */
 public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
+    @Serial
     private static final long serialVersionUID = 1L;
+
+    private static final Logger LOGGER = Logger.getLogger(JGitAPIImpl.class.getName());
 
     private final TaskListener listener;
     private PersonIdent author, committer;
 
+    private final HostKeyVerifierFactory hostKeyVerifierFactory;
     private transient CredentialsProvider provider;
+
+    public static final String SSH_CONFIG_PATH = JGitAPIImpl.class + ".sshConfigPath";
 
     JGitAPIImpl(File workspace, TaskListener listener) {
         /* If workspace is null, then default to current directory to match
          * CliGitAPIImpl behavior */
-        this(workspace, listener, null);
+        this(workspace, listener, (HostKeyVerifierFactory) null);
     }
 
     @Deprecated
@@ -154,6 +178,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         this(workspace, listener, httpConnectionFactory, null);
     }
 
+    @Deprecated
     JGitAPIImpl(
             File workspace,
             TaskListener listener,
@@ -163,15 +188,107 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          * CliGitAPIImpl behavior */
         super(workspace == null ? new File(".") : workspace, hostKeyFactory);
         this.listener = listener;
+        hostKeyVerifierFactory = hostKeyFactory;
+    }
 
-        // to avoid rogue plugins from clobbering what we use, always
-        // make a point of overwriting it with ours.
-        SshSessionFactory.setInstance(new TrileadSessionFactory(hostKeyFactory, listener));
+    JGitAPIImpl(File workspace, TaskListener listener, HostKeyVerifierFactory hostKeyFactory) {
+        /* If workspace is null, then default to current directory to match
+         * CliGitAPIImpl behavior */
+        super(workspace == null ? new File(".") : workspace, hostKeyFactory);
+        this.listener = listener;
+        hostKeyVerifierFactory = hostKeyFactory;
+    }
 
-        if (httpConnectionFactory != null) {
-            httpConnectionFactory.setCredentialsProvider(asSmartCredentialsProvider());
-            // allow override of HttpConnectionFactory to avoid JENKINS-37934
-            HttpTransport.setConnectionFactory(httpConnectionFactory);
+    public SshdSessionFactory buildSshdSessionFactory(@NonNull final HostKeyVerifierFactory hostKeyVerifierFactory) {
+        if (Files.notExists(hostKeyVerifierFactory.getKnownHostsFile().toPath())) {
+            try {
+                Files.createDirectories(hostKeyVerifierFactory
+                        .getKnownHostsFile()
+                        .getParentFile()
+                        .toPath());
+                Files.createFile(hostKeyVerifierFactory.getKnownHostsFile().toPath());
+            } catch (IOException e) {
+                LOGGER.log(Level.SEVERE, "could not create known hosts file", e);
+            }
+        }
+
+        SmartCredentialsProvider smartCredentialsProvider = getProvider();
+        // credentials have been added for the target repo only so we assume we have only the good one here
+        Optional<SSHUserPrivateKey> sshUserPrivateKey = smartCredentialsProvider.getCredentials().values().stream()
+                .filter(standardCredentials -> standardCredentials instanceof SSHUserPrivateKey)
+                .map(SSHUserPrivateKey.class::cast)
+                .findFirst();
+
+        // if no ssh key,  username can be from StandardUsernameCredentials but not ssh
+        String user = sshUserPrivateKey
+                .map(UsernameCredentials::getUsername)
+                .orElseGet(() -> smartCredentialsProvider.getCredentials().values().stream()
+                        .filter(standardCredentials -> standardCredentials instanceof StandardUsernameCredentials)
+                        .map(StandardUsernameCredentials.class::cast)
+                        .findFirst()
+                        .map(UsernameCredentials::getUsername)
+                        .orElse(null));
+
+        SshdSessionFactoryBuilder builder = new SshdSessionFactoryBuilder()
+                .setHomeDirectory(SystemUtils.getUserHome())
+                .setServerKeyDatabase(
+                        (file, file2) -> hostKeyVerifierFactory.forJGit(null).getServerKeyDatabase())
+                .setSshDirectory(hostKeyVerifierFactory.getKnownHostsFile().getParentFile())
+                .setConfigStoreFactory((homeDir, configFile, localUserName) -> {
+                    String configFilePath = SystemProperties.getString(SSH_CONFIG_PATH);
+                    if (configFilePath != null) {
+                        Path path = Path.of(configFilePath);
+                        homeDir = path.toFile().getParentFile();
+                        configFile = path.toFile();
+                    }
+                    return new JenkinsOpenSshConfigFile(homeDir, configFile, user);
+                })
+                .setDefaultKeysProvider(file -> {
+                    if (sshUserPrivateKey.isPresent()) {
+                        try {
+                            String keys = String.join(
+                                    System.lineSeparator(),
+                                    sshUserPrivateKey.get().getPrivateKeys());
+                            return SecurityUtils.loadKeyPairIdentities(
+                                    null,
+                                    () -> "key",
+                                    IOUtils.toInputStream(keys, StandardCharsets.UTF_8),
+                                    (session, resourceKey, retryIndex) -> Optional.ofNullable(
+                                                    sshUserPrivateKey.get().getPassphrase())
+                                            .map(Secret::getPlainText)
+                                            .orElse(null));
+                        } catch (IOException | GeneralSecurityException e) {
+                            throw new RuntimeException(e.getMessage(), e);
+                        }
+                    }
+                    return Collections.emptyList();
+                })
+                .setPreferredAuthentications("publickey,password");
+
+        return builder.build(null);
+    }
+
+    private static class JenkinsOpenSshConfigFile extends OpenSshConfigFile {
+
+        private String userName;
+
+        public JenkinsOpenSshConfigFile(File home, File config, String userName) {
+            super(home, config, userName);
+            this.userName = userName;
+        }
+
+        @Override
+        public HostEntry lookup(String hostName, int port, String userName) {
+            HostEntry hostEntry = super.lookup(hostName, port, userName);
+            // forcing username here otherwise we end up with SshSessionFactory#getLocalUserName which is
+            // current user
+            Optional.ofNullable(this.userName).ifPresent(s -> hostEntry.setValue(SshConstants.USER, s));
+            return hostEntry;
+        }
+
+        @Override
+        public String getLocalUserName() {
+            return this.userName;
         }
     }
 
@@ -199,7 +316,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (!(provider instanceof SmartCredentialsProvider)) {
             provider = new SmartCredentialsProvider(listener);
         }
-        return ((SmartCredentialsProvider) provider);
+        return (SmartCredentialsProvider) provider;
     }
 
     /**
@@ -208,11 +325,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param prov a {@link org.eclipse.jgit.transport.CredentialsProvider} object.
      */
     public synchronized void setCredentialsProvider(CredentialsProvider prov) {
-        this.provider = prov;
+        provider = prov;
     }
 
-    private synchronized CredentialsProvider getProvider() {
-        return provider;
+    public SmartCredentialsProvider getProvider() {
+        return asSmartCredentialsProvider();
     }
 
     /** {@inheritDoc} */
@@ -329,19 +446,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         };
     }
 
-    /* Separate method call for benefit of spotbugs */
-    private void closeRepo(Repository repo) {
-        if (repo != null) {
-            repo.close();
-        }
-    }
-
     private void doCheckoutWithResetAndRetry(String ref) throws GitException {
         boolean retried = false;
-        Repository repo = null;
         while (true) {
-            try {
-                repo = getRepository();
+            try (Repository repo = getRepository()) {
                 try {
                     // force in Jgit is "-B" in Git CLI, meaning no forced switch,
                     // but forces recreation of the branch.
@@ -360,14 +468,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (repo.resolve(ref) != null) {
                     // ref is either an existing reference or a shortcut to a tag or branch (without refs/heads/)
-                    git(repo).checkout().setName(ref).setForce(true).call();
+                    git(repo).checkout().setName(ref).setForceRefUpdate(true).call();
                     return;
                 }
 
                 List<String> remoteTrackingBranches = new ArrayList<>();
                 for (String remote : repo.getRemoteNames()) {
                     // look for exactly ONE remote tracking branch
-                    String matchingRemoteBranch = Constants.R_REMOTES + remote + "/" + ref;
+                    String matchingRemoteBranch = R_REMOTES + remote + "/" + ref;
                     if (repo.exactRef(matchingRemoteBranch) != null) {
                         remoteTrackingBranches.add(matchingRemoteBranch);
                     }
@@ -385,7 +493,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 listener.getLogger()
                         .format(
                                 "[WARNING] Automatically creating a local branch '%s' tracking remote branch '%s'",
-                                ref, removeStart(matchingRemoteBranch, Constants.R_REMOTES));
+                                ref, removeStart(matchingRemoteBranch, R_REMOTES));
 
                 git(repo)
                         .checkout()
@@ -396,7 +504,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         .call();
                 return;
             } catch (CheckoutConflictException e) {
-                closeRepo(repo); /* Ready to reuse repo */
                 // "git checkout -f" seems to overwrite local untracked files but git CheckoutCommand doesn't.
                 // see the test case GitAPITest.testLocalCheckoutConflict. so in this case we manually
                 // clean up the conflicts and try it again
@@ -405,11 +512,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitException("Could not checkout " + ref, e);
                 }
                 retried = true;
-                repo = getRepository(); /* Reusing repo declared and assigned earlier */
-                for (String path : e.getConflictingPaths()) {
-                    File conflict = new File(repo.getWorkTree(), path);
-                    if (!conflict.delete() && conflict.exists()) {
-                        listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                try (Repository repoCleaner = getRepository()) {
+                    for (String path : e.getConflictingPaths()) {
+                        File conflict = new File(repoCleaner.getWorkTree(), path);
+                        if (!conflict.delete() && conflict.exists()) {
+                            listener.getLogger().println("[WARNING] conflicting path " + conflict + " not deleted");
+                        }
                     }
                 }
             } catch (IOException | GitAPIException e) {
@@ -419,10 +527,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     throw new GitLockFailedException("Could not lock repository. Please try again", e);
                 } else {
                     throw e;
-                }
-            } finally {
-                if (repo != null) {
-                    repo.close();
                 }
             }
         }
@@ -434,7 +538,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     .checkout()
                     .setName(branch)
                     .setCreateBranch(true)
-                    .setForce(true)
+                    .setForceRefUpdate(true)
                     .setStartPoint(ref)
                     .call();
         } catch (GitAPIException e) {
@@ -606,6 +710,24 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Returns true if protocol in url is not supported by Jenkins.
+     * @return true if protocol in url is not supported by Jenkins.
+     */
+    private boolean unsupportedProtocol(String url) {
+        // SECURITY-3950 reported that an attacker could enumerate the
+        // controller file system with the Amazon S3 protocol in JGit.
+        // Command line git does not support amazon-s3 protocol.
+        // Command line git is the reference implementation for the plugin.
+        // Do not call JGit with amazon-s3 protocol URL.
+        // Do not report null URL as unsupported since null was allowed previously
+        return url != null && url.startsWith("amazon-s3:");
+    }
+
+    private boolean unsupportedProtocol(URIish url) {
+        return url != null && unsupportedProtocol(url.toString());
+    }
+
+    /**
      * fetch_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
@@ -628,6 +750,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand prune() {
                 return prune(true);
@@ -690,9 +813,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (url == null) {
                         throw new GitException("FetchCommand requires a valid repository url in remote config");
                     }
+                    if (unsupportedProtocol(url)) {
+                        throw new GitException("unsupported protocol in URL " + url);
+                    }
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
-
+                    fetch.setTransportConfigCallback(getTransportConfigCallback());
                     fetch.setRefSpecs(allRefSpecs);
                     fetch.setRemoveDeletedRefs(shouldPrune);
                     setTransportTimeout(fetch, "fetch", timeout);
@@ -717,14 +843,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @param refspecs a {@link java.util.List} object.
      * @throws hudson.plugins.git.GitException if any.
      * @throws java.lang.InterruptedException if any.
+     * @deprecated
      */
     @Override
+    @Deprecated
     public void fetch(URIish url, List<RefSpec> refspecs) throws GitException, InterruptedException {
         fetch_().from(url, refspecs).execute();
     }
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated
     public void fetch(String remoteName, RefSpec... refspec) throws GitException {
         try (Repository repo = getRepository()) {
             FetchCommand fetch = git(repo).fetch().setTagOpt(TagOpt.FETCH_TAGS);
@@ -732,7 +861,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 fetch.setRemote(remoteName);
             }
             fetch.setCredentialsProvider(getProvider());
-
+            fetch.setTransportConfigCallback(getTransportConfigCallback());
             List<RefSpec> refSpecs = new ArrayList<>();
             if (refspec != null && refspec.length > 0) {
                 for (RefSpec rs : refspec) {
@@ -751,6 +880,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /** {@inheritDoc} */
     @Override
+    @Deprecated
     public void fetch(String remoteName, RefSpec refspec) throws GitException {
         fetch(remoteName, new RefSpec[] {refspec});
     }
@@ -761,7 +891,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         refName = refName.replace(' ', '_');
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(refName);
-            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setNewObjectId(repo.exactRef(HEAD).getObjectId());
             switch (refUpdate.forceUpdate()) {
                 case NOT_ATTEMPTED:
                 case LOCK_FAILURE:
@@ -795,7 +925,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository()) {
             RefUpdate refUpdate = repo.updateRef(refName);
             // Required, even though this is a forced delete.
-            refUpdate.setNewObjectId(repo.exactRef(Constants.HEAD).getObjectId());
+            refUpdate.setNewObjectId(repo.exactRef(HEAD).getObjectId());
             refUpdate.setForceUpdate(true);
             switch (refUpdate.delete()) {
                 case NOT_ATTEMPTED:
@@ -837,10 +967,37 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return getRemoteReferences(url, null, true, false);
     }
 
+    private TransportConfigCallback getTransportConfigCallback() {
+        return transport -> {
+            if (transport instanceof SshTransport sshTransport) {
+                sshTransport.setSshSessionFactory(buildSshdSessionFactory(this.hostKeyVerifierFactory));
+            } else if (transport instanceof TransportHttp transportHttp) {
+                transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+            } else if (transport instanceof org.eclipse.jgit.transport.TransportAmazonS3) {
+                // SECURITY-3590 safety measure - see unsupportedProtocol() for details
+                throw new GitException("Unsupported protocol in URL");
+            }
+        };
+    }
+
+    private void decorateTransport(Transport tn) {
+        if (tn instanceof SshTransport transport) {
+            transport.setSshSessionFactory(buildSshdSessionFactory(getHostKeyFactory()));
+        } else if (tn instanceof TransportHttp transportHttp) {
+            transportHttp.setHttpConnectionFactory(new PreemptiveAuthHttpClientConnectionFactory(getProvider()));
+        } else if (tn instanceof org.eclipse.jgit.transport.TransportAmazonS3) {
+            // SECURITY-3590 safety measure - see unsupportedProtocol() for details
+            throw new GitException("Unsupported protocol in URL");
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public Map<String, ObjectId> getRemoteReferences(String url, String pattern, boolean headsOnly, boolean tagsOnly)
             throws GitException, InterruptedException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         Map<String, ObjectId> references = new HashMap<>();
         String regexPattern = null;
         if (pattern != null) {
@@ -856,6 +1013,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             lsRemote.setRemote(url);
             lsRemote.setCredentialsProvider(getProvider());
+            lsRemote.setTransportConfigCallback(getTransportConfigCallback());
             setTransportTimeout(lsRemote, "ls-remote", TIMEOUT);
             Collection<Ref> refs = lsRemote.call();
             for (final Ref r : refs) {
@@ -879,17 +1037,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public Map<String, String> getRemoteSymbolicReferences(String url, String pattern)
             throws GitException, InterruptedException {
         Map<String, String> references = new HashMap<>();
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         String regexPattern = null;
         if (pattern != null) {
             regexPattern = replaceGlobCharsWithRegExChars(pattern);
         }
-        if (regexPattern != null && !Constants.HEAD.matches(regexPattern)) {
+        if (regexPattern != null && !HEAD.matches(regexPattern)) {
             return references;
         }
         try (Repository repo = openDummyRepository()) {
             LsRemoteCommand lsRemote = new LsRemoteCommand(repo);
             lsRemote.setRemote(url);
             lsRemote.setCredentialsProvider(getProvider());
+            lsRemote.setTransportConfigCallback(getTransportConfigCallback());
             setTransportTimeout(lsRemote, "ls-remote", TIMEOUT);
             Collection<Ref> refs = lsRemote.call();
             for (final Ref r : refs) {
@@ -948,11 +1110,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public ObjectId getHeadRev(String remoteRepoUrl, String branchSpec) throws GitException {
+        if (unsupportedProtocol(remoteRepoUrl)) {
+            throw new GitException("unsupported protocol in URL " + remoteRepoUrl);
+        }
         try (Repository repo = openDummyRepository();
                 final Transport tn = Transport.open(repo, new URIish(remoteRepoUrl))) {
             final String branchName = extractBranchNameFromBranchSpec(branchSpec);
             String regexBranch = createRefRegexFromGlob(branchName);
-
+            decorateTransport(tn);
             tn.setCredentialsProvider(getProvider());
             try (FetchConnection c = tn.openFetch()) {
                 for (final Ref r : c.getRefs()) {
@@ -989,9 +1154,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      *
      * @return a {@link org.eclipse.jgit.lib.Repository} object.
      * @throws hudson.plugins.git.GitException if underlying git operation fails.
+     * @deprecated
      */
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     @NonNull
+    @Deprecated
     @Override
     public Repository getRepository() throws GitException {
         try {
@@ -1014,6 +1181,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void setRemoteUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             config.setString("remote", name, "url", url);
@@ -1026,6 +1196,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void addRemoteUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
 
@@ -1111,7 +1284,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
     @Override
-    public ChangelogCommand changelog() {
+    public ChangelogCommand changelog() throws GitException {
         return new ChangelogCommand() {
             private Repository repo = getRepository();
             private ObjectReader or = repo.newObjectReader();
@@ -1120,7 +1293,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean hasIncludedRev = false;
 
             @Override
-            public ChangelogCommand excludes(String rev) {
+            public ChangelogCommand excludes(String rev) throws GitException {
                 try {
                     return excludes(repo.resolve(rev));
                 } catch (IOException e) {
@@ -1129,7 +1302,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand excludes(ObjectId rev) {
+            public ChangelogCommand excludes(ObjectId rev) throws GitException {
                 try {
                     walk.markUninteresting(walk.lookupCommit(rev));
                     return this;
@@ -1139,7 +1312,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand includes(String rev) {
+            public ChangelogCommand includes(String rev) throws GitException {
                 try {
                     includes(repo.resolve(rev));
                     hasIncludedRev = true;
@@ -1150,7 +1323,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
-            public ChangelogCommand includes(ObjectId rev) {
+            public ChangelogCommand includes(ObjectId rev) throws GitException {
                 try {
                     walk.markStart(walk.lookupCommit(rev));
                     hasIncludedRev = true;
@@ -1202,7 +1375,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         this.includes("HEAD");
                     }
                     for (RevCommit commit : walk) {
-                        // git whatachanged doesn't show the merge commits unless -m is given
+                        // git log --raw --no-merges doesn't show merge commits
                         if (commit.getParentCount() > 1) {
                             continue;
                         }
@@ -1210,7 +1383,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         formatter.format(commit, null, pw, true);
                     }
                 } catch (IOException e) {
-                    throw new GitException("Error: jgit whatchanged in " + workspace + " " + e.getMessage(), e);
+                    throw new GitException(
+                            "Error: jgit log --raw --no-merges in " + workspace + " " + e.getMessage(), e);
                 } finally {
                     closeResources();
                 }
@@ -1252,12 +1426,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
          *      Commit to format.
          * @param parent
          *      Optional parent commit to produce the diff against. This only matters
-         *      for merge commits, and git-log/git-whatchanged/etc behaves differently with respect to this.
+         *      for merge commits and git-log behaves differently with respect to this.
          */
         @SuppressFBWarnings(
                 value = "VA_FORMAT_STRING_USES_NEWLINE",
                 justification = "Windows git implementation requires specific line termination")
-        void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput) throws IOException {
+        void format(RevCommit commit, RevCommit parent, PrintWriter pw, Boolean useRawOutput)
+                throws GitException, IOException {
             if (parent != null) {
                 pw.printf("commit %s (from %s)\n", commit.name(), parent.name());
             } else {
@@ -1402,6 +1577,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shallow() {
                 return shallow(true);
@@ -1413,6 +1589,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand shared() {
                 return shared(true);
@@ -1448,6 +1625,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public CloneCommand noCheckout() {
                 // this.noCheckout = true; ignored, we never do a checkout
@@ -1460,9 +1638,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
-            @SuppressFBWarnings(
-                    value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE",
-                    justification = "JGit interaction with spotbugs")
             private RepositoryBuilder newRepositoryBuilder() {
                 RepositoryBuilder builder = new RepositoryBuilder();
                 builder.setGitDir(new File(workspace, Constants.DOT_GIT)).readEnvironment();
@@ -1471,9 +1646,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException {
-                Repository repository = null;
-
                 try {
+                    if (unsupportedProtocol(url)) {
+                        throw new GitException("unsupported protocol in URL " + url);
+                    }
                     // the directory needs to be clean or else JGit complains
                     if (workspace.exists()) {
                         Util.deleteContentsRecursive(workspace);
@@ -1498,41 +1674,43 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         builder.addAlternateObjectDirectory(new File(reference));
                     }
 
-                    repository = builder.build();
-                    repository.create();
+                    try (Repository repository = builder.build()) {
+                        repository.create();
 
-                    // the repository builder does not create the alternates file
-                    if (reference != null && !reference.isEmpty()) {
-                        File referencePath = new File(reference);
-                        if (!referencePath.exists()) {
-                            listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                        } else if (!referencePath.isDirectory()) {
-                            listener.getLogger().println("[WARNING] Reference path is not a directory: " + reference);
-                        } else {
-                            // reference path can either be a normal or a base repository
-                            File objectsPath = new File(referencePath, ".git/objects");
-                            if (!objectsPath.isDirectory()) {
-                                // reference path is bare repo
-                                objectsPath = new File(referencePath, "objects");
-                            }
-                            if (!objectsPath.isDirectory()) {
+                        // the repository builder does not create the alternates file
+                        if (reference != null && !reference.isEmpty()) {
+                            File referencePath = new File(reference);
+                            if (!referencePath.exists()) {
+                                listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
+                            } else if (!referencePath.isDirectory()) {
                                 listener.getLogger()
-                                        .println(
-                                                "[WARNING] Reference path does not contain an objects directory (no git repo?): "
-                                                        + objectsPath);
+                                        .println("[WARNING] Reference path is not a directory: " + reference);
                             } else {
-                                try {
-                                    File alternates = new File(workspace, ".git/objects/info/alternates");
-                                    String absoluteReference =
-                                            objectsPath.getAbsolutePath().replace('\\', '/');
-                                    listener.getLogger().println("Using reference repository: " + reference);
-                                    // git implementations on windows also use
-                                    try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
+                                // reference path can either be a normal or a base repository
+                                File objectsPath = new File(referencePath, ".git/objects");
+                                if (!objectsPath.isDirectory()) {
+                                    // reference path is bare repo
+                                    objectsPath = new File(referencePath, "objects");
+                                }
+                                if (!objectsPath.isDirectory()) {
+                                    listener.getLogger()
+                                            .println(
+                                                    "[WARNING] Reference path does not contain an objects directory (no git repo?): "
+                                                            + objectsPath);
+                                } else {
+                                    try {
+                                        File alternates = new File(workspace, ".git/objects/info/alternates");
+                                        String absoluteReference =
+                                                objectsPath.getAbsolutePath().replace('\\', '/');
+                                        listener.getLogger().println("Using reference repository: " + reference);
                                         // git implementations on windows also use
-                                        w.print(absoluteReference);
+                                        try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
+                                            // git implementations on windows also use
+                                            w.print(absoluteReference);
+                                        }
+                                    } catch (FileNotFoundException e) {
+                                        listener.error("Failed to setup reference");
                                     }
-                                } catch (FileNotFoundException e) {
-                                    listener.error("Failed to setup reference");
                                 }
                             }
                         }
@@ -1540,44 +1718,39 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                     // Jgit repository has alternates directory set, but seems to ignore them
                     // Workaround: close this repo and create a new one
-                    repository.close();
-                    repository = getRepository();
-
-                    if (refspecs == null) {
-                        refspecs =
-                                Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + remote + "/*"));
-                    }
-                    FetchCommand fetch = new Git(repository)
-                            .fetch()
-                            .setProgressMonitor(new JGitProgressMonitor(listener))
-                            .setRemote(url)
-                            .setCredentialsProvider(getProvider())
-                            .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
-                            .setRefSpecs(refspecs);
-                    setTransportTimeout(fetch, "fetch", timeout);
-                    if (shallow) {
-                        if (depth == null) {
-                            depth = 1;
+                    try (Repository repository = getRepository()) {
+                        if (refspecs == null) {
+                            refspecs = Collections.singletonList(
+                                    new RefSpec("+refs/heads/*:refs/remotes/" + remote + "/*"));
                         }
-                        fetch.setDepth(depth);
+                        FetchCommand fetch = new Git(repository)
+                                .fetch()
+                                .setProgressMonitor(new JGitProgressMonitor(listener))
+                                .setRemote(url)
+                                .setCredentialsProvider(getProvider())
+                                .setTransportConfigCallback(getTransportConfigCallback())
+                                .setTagOpt(tags ? TagOpt.FETCH_TAGS : TagOpt.NO_TAGS)
+                                .setRefSpecs(refspecs);
+                        setTransportTimeout(fetch, "fetch", timeout);
+                        if (shallow) {
+                            if (depth == null) {
+                                depth = 1;
+                            }
+                            fetch.setDepth(depth);
+                        }
+                        fetch.call();
+
+                        StoredConfig config = repository.getConfig();
+                        config.setString("remote", remote, "url", url);
+                        config.setStringList(
+                                "remote",
+                                remote,
+                                "fetch",
+                                refspecs.stream().map(Object::toString).collect(Collectors.toList()));
+                        config.save();
                     }
-                    fetch.call();
-
-                    StoredConfig config = repository.getConfig();
-                    config.setString("remote", remote, "url", url);
-                    config.setStringList(
-                            "remote",
-                            remote,
-                            "fetch",
-                            refspecs.stream().map(Object::toString).collect(Collectors.toList()));
-                    config.save();
-
                 } catch (GitAPIException | IOException e) {
                     throw new GitException(e);
-                } finally {
-                    if (repository != null) {
-                        repository.close();
-                    }
                 }
             }
         };
@@ -1799,6 +1972,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public void addSubmodule(String remoteURL, String subdir) throws GitException {
+        if (unsupportedProtocol(remoteURL)) {
+            throw new GitException("unsupported protocol in URL " + remoteURL);
+        }
         try (Repository repo = getRepository()) {
             git(repo).submoduleAdd().setPath(subdir).setURI(remoteURL).call();
         } catch (GitAPIException e) {
@@ -1922,7 +2098,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
         final boolean found;
         try (Repository repo = getRepository()) {
-            found = repo.hasObject(commit);
+            try {
+                found = repo.getObjectDatabase().has(commit);
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
         }
         return found;
     }
@@ -1936,7 +2116,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             Set<String> branches = listRemoteBranches(remote);
 
-            for (Ref r : new ArrayList<>(gitRepo.getAllRefs().values())) {
+            for (Ref r : new ArrayList<>(gitRepo.getRefDatabase().getRefs())) {
                 if (r.getName().startsWith(prefix) && !branches.contains(r.getName())) {
                     // delete this ref
                     RefUpdate update = gitRepo.updateRef(r.getName());
@@ -1951,11 +2131,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     private Set<String> listRemoteBranches(String remote)
-            throws NotSupportedException, TransportException, URISyntaxException {
+            throws GitException, NotSupportedException, TransportException, URISyntaxException {
         Set<String> branches = new HashSet<>();
         try (final Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
-            try (final Transport tn = Transport.open(repo, new URIish(config.getString("remote", remote, "url")))) {
+            String remoteUrl = config.getString("remote", remote, "url");
+            if (unsupportedProtocol(remoteUrl)) {
+                throw new GitException("unsupported protocol in URL " + remoteUrl);
+            }
+            try (final Transport tn = Transport.open(repo, new URIish(remoteUrl))) {
+                decorateTransport(tn);
                 tn.setCredentialsProvider(getProvider());
                 try (final FetchConnection c = tn.openFetch()) {
                     for (final Ref r : c.getRefs()) {
@@ -1996,6 +2181,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public PushCommand force() {
                 return force(true);
@@ -2021,6 +2207,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public void execute() throws GitException {
+                if (unsupportedProtocol(remote)) {
+                    throw new GitException("unsupported protocol in URL " + remote);
+                }
                 try (Repository repo = getRepository()) {
                     RefSpec ref =
                             (refspec != null) ? new RefSpec(fixRefSpec(refspec, repo)) : Transport.REFSPEC_PUSH_ALL;
@@ -2040,6 +2229,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             .setRefSpecs(ref)
                             .setProgressMonitor(new JGitProgressMonitor(listener))
                             .setCredentialsProvider(getProvider())
+                            .setTransportConfigCallback(getTransportConfigCallback())
                             .setForce(force);
                     if (tags) {
                         pc.setPushTags();
@@ -2079,9 +2269,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         switch (spec) {
                             default:
                             case 0:
-                                break; // empty / HEAD for the first ref. if fine for JGit (see
-                                // https://github.com/eclipse/jgit/blob/master/org.eclipse.jgit/src/org/eclipse/jgit/transport/RefSpec.java#L104-L122)
-                            case 1: // empty second ref. generally means to push "matching" branches, hard to implement
+                                // empty / HEAD for the first ref. if fine for JGit.
+                                // https://javadoc.io/doc/org.eclipse.jgit/org.eclipse.jgit/7.0.0.202409031743-r/org.eclipse.jgit/org/eclipse/jgit/transport/RefSpec.html
+                                break;
+                            case 1:
+                                // empty second ref. generally means to push "matching" branches, hard to implement
                                 // the right way, same goes for special case "HEAD" / "HEAD:HEAD" simple-fix here
                                 specs[spec] = repository.getFullBranch();
                                 break;
@@ -2089,14 +2281,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } else if (!specs[spec].startsWith("refs/") && !specs[spec].startsWith("+refs/")) {
                         switch (spec) {
                             default:
-                            case 0: // for the source ref. we use the repository to determine what should be pushed
+                            case 0:
+                                // for the source ref. we use the repository to determine what should be pushed
                                 Ref ref = repository.findRef(specs[spec]);
                                 if (ref == null) {
-                                    throw new IOException(String.format("Ref %s not found.", specs[spec]));
+                                    throw new IOException("Ref %s not found.".formatted(specs[spec]));
                                 }
                                 specs[spec] = ref.getTarget().getName();
                                 break;
-                            case 1: // for the target ref. we can't use the repository, so we try our best to determine
+                            case 1:
+                                // for the target ref. we can't use the repository, so we try our best to determine
                                 // the ref.
                                 if (!specs[spec].startsWith("/")) {
                                     specs[spec] = "/" + specs[spec];
@@ -2130,6 +2324,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private String refspec;
             private List<ObjectId> out;
 
+            @Deprecated
             @Override
             public RevListCommand all() {
                 return all(true);
@@ -2147,6 +2342,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return this;
             }
 
+            @Deprecated
             @Override
             public RevListCommand firstParent() {
                 return firstParent(true);
@@ -2188,7 +2384,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         out.add(c.copy());
 
                         if (all) {
-                            for (Ref r : repo.getAllRefs().values()) {
+                            for (Ref r : repo.getRefDatabase().getRefs()) {
                                 c = walk.parseCommit(r.getObjectId());
                                 out.add(c.copy());
                             }
@@ -2311,7 +2507,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private Iterable<JGitAPIImpl> submodules() throws IOException {
+    private Iterable<JGitAPIImpl> submodules() throws GitException, IOException {
         List<JGitAPIImpl> submodules = new ArrayList<>();
         try (Repository repo = getRepository()) {
             SubmoduleWalk generator = SubmoduleWalk.forIndex(repo);
@@ -2432,6 +2628,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 try (Repository repo = getRepository()) {
                     SubmoduleUpdateCommand update = git(repo).submoduleUpdate();
                     update.setCredentialsProvider(getProvider());
+                    update.setTransportConfigCallback(getTransportConfigCallback());
                     setTransportTimeout(update, "update", timeout);
                     update.call();
                     if (recursive) {
@@ -2472,6 +2669,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override
     public List<Branch> getBranchesContaining(String revspec) throws GitException, InterruptedException {
         // For the reasons of backward compatibility - we do not query remote branches here.
@@ -2566,10 +2764,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
-    private List<Ref> getAllBranchRefs(boolean originBranches) {
+    private List<Ref> getAllBranchRefs(boolean originBranches) throws GitException {
         List<Ref> branches = new ArrayList<>();
         try (Repository repo = getRepository()) {
-            for (Ref r : repo.getAllRefs().values()) {
+            List<Ref> refs;
+            try {
+                refs = repo.getRefDatabase().getRefs();
+            } catch (IOException ioe) {
+                throw new GitException(ioe);
+            }
+            for (Ref r : refs) {
                 final String branchName = r.getName();
                 if (branchName.startsWith(R_HEADS) || (originBranches && branchName.startsWith(R_REMOTES))) {
                     branches.add(r);
@@ -2582,7 +2786,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public ObjectId mergeBase(ObjectId id1, ObjectId id2) {
+    public ObjectId mergeBase(ObjectId id1, ObjectId id2) throws GitException {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk walk = new RevWalk(or)) {
@@ -2605,7 +2809,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Deprecated
     @Override
-    public String getAllLogEntries(String branch) {
+    public String getAllLogEntries(String branch) throws GitException {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk walk = new RevWalk(or)) {
@@ -2629,16 +2833,16 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /**
      * Adds all the refs as start commits.
      */
-    private void markAllRefs(RevWalk walk) throws IOException {
+    private void markAllRefs(RevWalk walk) throws GitException, IOException {
         markRefs(walk, unused -> true);
     }
 
     /**
      * Adds all matching refs as start commits.
      */
-    private void markRefs(RevWalk walk, Predicate<Ref> filter) throws IOException {
+    private void markRefs(RevWalk walk, Predicate<Ref> filter) throws GitException, IOException {
         try (Repository repo = getRepository()) {
-            for (Ref r : repo.getAllRefs().values()) {
+            for (Ref r : repo.getRefDatabase().getRefs()) {
                 if (filter.test(r)) {
                     RevCommit c = walk.parseCommit(r.getObjectId());
                     walk.markStart(c);
@@ -2696,6 +2900,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     @Override
     public void setSubmoduleUrl(String name, String url) throws GitException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo = getRepository()) {
             StoredConfig config = repo.getConfig();
             config.setString("submodule", name, "url", url);
@@ -2758,8 +2965,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.setRetainBody(false);
 
             Map<ObjectId, Ref> tags = new HashMap<>();
-            for (Ref r : repo.getTags().values()) {
-                ObjectId key = repo.peel(r).getPeeledObjectId();
+            for (Ref r : repo.getRefDatabase().getRefsByPrefix(R_TAGS)) {
+                ObjectId key = repo.getRefDatabase().peel(r).getPeeledObjectId();
                 if (key == null) {
                     key = r.getObjectId();
                 }
@@ -2799,11 +3006,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 }
 
                 public String describe(ObjectId tip) throws IOException {
-                    return String.format(
-                            "%s-%d-g%s",
-                            tag.getName().substring(R_TAGS.length()),
-                            depth,
-                            or.abbreviate(tip).name());
+                    return "%s-%d-g%s"
+                            .formatted(
+                                    tag.getName().substring(R_TAGS.length()),
+                                    depth,
+                                    or.abbreviate(tip).name());
                 }
             }
             List<Candidate> candidates = new ArrayList<>(); // all the candidates we find
@@ -2901,7 +3108,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             while (tree.next()) {
                 RevObject rev = w.parseAny(tree.getObjectId(0));
                 r.add(new IndexEntry(
-                        String.format("%06o", tree.getRawMode(0)),
+                        "%06o".formatted(tree.getRawMode(0)),
                         typeString(rev.getType()),
                         tree.getObjectId(0).name(),
                         tree.getNameString()));
@@ -2930,7 +3137,6 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Deprecated
     @Override
     public boolean isBareRepository(String GIT_DIR) throws GitException, InterruptedException {
-        Repository repo = null;
         boolean isBare = false;
         if (GIT_DIR == null) {
             throw new GitException("Not a git repository"); // Compatible with CliGitAPIImpl
@@ -2938,20 +3144,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try {
             if (isBlank(GIT_DIR) || !(new File(GIT_DIR)).isAbsolute()) {
                 if ((new File(workspace, ".git")).exists()) {
-                    repo = getRepository();
+                    try (Repository repo = getRepository()) {
+                        isBare = repo.isBare();
+                    }
                 } else {
-                    repo = new RepositoryBuilder().setGitDir(workspace).build();
+                    try (Repository repo =
+                            new RepositoryBuilder().setGitDir(workspace).build()) {
+                        isBare = repo.isBare();
+                    }
                 }
             } else {
-                repo = new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build();
+                try (Repository repo =
+                        new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
+                    isBare = repo.isBare();
+                }
             }
-            isBare = repo.isBare();
         } catch (IOException ioe) {
             throw new GitException(ioe);
-        } finally {
-            if (repo != null) {
-                repo.close();
-            }
         }
         return isBare;
     }
@@ -2973,6 +3182,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     @SuppressFBWarnings(value = "BC_UNCONFIRMED_CAST_OF_RETURN_VALUE", justification = "JGit interaction with spotbugs")
     public void setRemoteUrl(String name, String url, String GIT_DIR) throws GitException, InterruptedException {
+        if (unsupportedProtocol(url)) {
+            throw new GitException("unsupported protocol in URL " + url);
+        }
         try (Repository repo =
                 new RepositoryBuilder().setGitDir(new File(GIT_DIR)).build()) {
             StoredConfig config = repo.getConfig();
@@ -3013,9 +3225,13 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 String tagName = entry.getKey();
                 Ref tagRef = entry.getValue();
                 if (!tagRef.isPeeled()) {
-                    Ref peeledRef = repo.peel(tagRef);
-                    if (peeledRef.getPeeledObjectId() != null) {
-                        tagRef = peeledRef; // Use peeled ref instead of annotated ref
+                    try {
+                        Ref peeledRef = repo.getRefDatabase().peel(tagRef);
+                        if (peeledRef.getPeeledObjectId() != null) {
+                            tagRef = peeledRef; // Use peeled ref instead of annotated ref
+                        }
+                    } catch (IOException ioe) {
+                        throw new GitException(ioe);
                     }
                 }
                 /* Packed lightweight (non-annotated) tags can wind up peeled with no peeled obj ID */
@@ -3036,16 +3252,17 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override
     public void config(ConfigLevel configLevel, String key, String value) throws GitException, InterruptedException {
         if (configLevel != ConfigLevel.LOCAL) {
-            throw new GitException("jgit provider do not support not local level config");
+            throw new GitException("JGit only supports local level config");
         }
         // we support key in the format section[.subsection].name
         String[] keys = key.split("\\.");
         String section, subsection = null, name;
         if (keys.length < 2 || keys.length > 3) {
-            throw new GitException("key must be in the format section[.subsection].name");
+            throw new GitException("key '" + key + "' not in expected format of 'section[.subsection].name'");
         }
         if (keys.length == 2) {
             section = keys[0];
@@ -3056,7 +3273,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             name = keys[2];
         }
         StoredConfig storedConfig = getRepository().getConfig();
-        storedConfig.setString(section, subsection, name, value);
+        if (value != null) {
+            storedConfig.setString(section, subsection, name, value);
+        } else {
+            storedConfig.unset(section, subsection, name);
+        }
         try {
             storedConfig.save();
         } catch (IOException e) {

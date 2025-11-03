@@ -1,16 +1,24 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
-import com.trilead.ssh2.Connection;
-import com.trilead.ssh2.KnownHosts;
 import hudson.model.TaskListener;
-import java.util.Base64;
-import java.util.logging.Level;
+import java.io.Serial;
 import java.util.logging.Logger;
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
 
+/**
+ * Disable all host key verification by the {@link SshHostKeyVerificationStrategy host key verification strategy extension point}.
+ *
+ * <p>Disables all verification of ssh host keys.
+ * <strong>Not recommended</strong> because it provides no protection from "man-in-the-middle" attacks
+ */
 public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     private static final Logger LOGGER = Logger.getLogger(NoHostKeyVerifier.class.getName());
 
+    /**
+     * Creates a secure shell host key verification strategy that performs no host key verification.
+     * <strong>Not recommended</strong> because it provides no protection from "man-in-the-middle" attacks.
+     */
     @Override
     public AbstractCliGitHostKeyVerifier forCliGit(TaskListener listener) {
         return tempKnownHosts -> "-o StrictHostKeyChecking=no";
@@ -18,27 +26,26 @@ public class NoHostKeyVerifier extends HostKeyVerifierFactory {
 
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
-        return new AbstractJGitHostKeyVerifier(new KnownHosts()) {
+        return new NoHostJGitKeyVerifier(listener, this);
+    }
 
-            @Override
-            public String[] getServerHostKeyAlgorithms(Connection connection) {
-                return new String[0];
-            }
+    public static class NoHostJGitKeyVerifier extends AbstractJGitHostKeyVerifier {
 
-            @Override
-            public boolean verifyServerHostKey(
-                    String hostname, int port, String serverHostKeyAlgorithm, byte[] serverHostKey) {
-                LOGGER.log(
-                        Level.FINEST,
-                        "No host key verifier, host {0}:{1} not verified with host key {2} {3}",
-                        new Object[] {
-                            hostname,
-                            port,
-                            serverHostKeyAlgorithm,
-                            Base64.getEncoder().encodeToString(serverHostKey)
-                        });
-                return true;
-            }
-        };
+        /***
+         * let's make spotbugs happy....
+         */
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        public NoHostJGitKeyVerifier(TaskListener listener, HostKeyVerifierFactory hostKeyVerifierFactory) {
+            super(listener, hostKeyVerifierFactory);
+        }
+
+        @Override
+        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+            return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
+                    this.getHostKeyVerifierFactory(),
+                    () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_ANY);
+        }
     }
 }

@@ -14,7 +14,6 @@ import static org.hamcrest.io.FileMatchers.anExistingDirectory;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
-import hudson.plugins.git.GitException;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -31,26 +29,28 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ErrorCollector;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Git client maintenance tests.
  *
  * @author Hrushikesh Rao
  */
-@RunWith(Parameterized.class)
-public class GitClientMaintenanceTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
+class GitClientMaintenanceTest {
 
     /* Git implementation name, either "git", "jgit", or "jgitapache". */
-    private final String gitImplName;
+    @Parameter(0)
+    private String gitImplName;
 
     /* Git client plugin repository directory. */
     private static File srcRepoDir = null;
@@ -60,25 +60,17 @@ public class GitClientMaintenanceTest {
 
     private final Random random = new Random();
 
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
-    @Rule
-    public ErrorCollector collector = new ErrorCollector();
+    @TempDir
+    private File tempFolder;
 
     private File repoRoot = null;
     private LogHandler handler;
 
-    public GitClientMaintenanceTest(final String gitImplName) throws IOException, InterruptedException {
-        this.gitImplName = gitImplName;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"git", "jgit", "jgitapache"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
@@ -90,8 +82,8 @@ public class GitClientMaintenanceTest {
      */
     private static File mirrorParent = null;
 
-    @BeforeClass
-    public static void mirrorUpstreamRepositoryLocally() throws Exception {
+    @BeforeAll
+    static void mirrorUpstreamRepositoryLocally() throws Exception {
         File currentDir = new File(".");
         CliGitAPIImpl currentDirCliGit = (CliGitAPIImpl) Git.with(TaskListener.NULL, new EnvVars())
                 .in(currentDir)
@@ -135,8 +127,8 @@ public class GitClientMaintenanceTest {
         srcRepoDir = new File(mirrorParent, "git-client-plugin");
     }
 
-    @AfterClass
-    public static void removeMirrorAndSrcRepos() throws Exception {
+    @AfterAll
+    static void removeMirrorAndSrcRepos() {
         try {
             FileUtils.deleteDirectory(mirrorParent);
         } catch (IOException ioe) {
@@ -150,9 +142,9 @@ public class GitClientMaintenanceTest {
     private boolean prefetchSupported = true;
     private boolean looseObjectsSupported = true;
 
-    @Before
-    public void setGitClient() throws IOException, InterruptedException {
-        repoRoot = tempFolder.newFolder();
+    @BeforeEach
+    void setGitClient() throws Exception {
+        repoRoot = newFolder(tempFolder, "junit");
         handler = new LogHandler();
         TaskListener listener = newListener(handler);
         gitClient = Git.with(listener, new EnvVars())
@@ -160,18 +152,16 @@ public class GitClientMaintenanceTest {
                 .using(gitImplName)
                 .getClient();
         File gitDir = gitClient.withRepository((repo, channel) -> repo.getDirectory());
-        collector.checkThat("Premature " + gitDir, gitDir, is(not(anExistingDirectory())));
+        assertThat("Premature " + gitDir, gitDir, is(not(anExistingDirectory())));
         gitClient.init_().workspace(repoRoot.getAbsolutePath()).execute();
-        collector.checkThat("Missing " + gitDir, gitDir, is(anExistingDirectory()));
+        assertThat("Missing " + gitDir, gitDir, is(anExistingDirectory()));
         gitClient.setRemoteUrl("origin", srcRepoDir.getAbsolutePath());
         CliGitCommand gitCmd = new CliGitCommand(gitClient);
-        gitCmd.run("config", "user.name", "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík");
-        gitCmd.run("config", "user.email", "email.from.git.client.maintenance@example.com");
-        gitCmd.run("config", "--local", "tag.gpgSign", "false");
-        gitCmd.run("config", "--local", "commit.gpgsign", "false");
+        gitCmd.initializeRepository(
+                "Vojtěch GitClientMaintenanceTest Zweibrücken-Šafařík",
+                "email.from.git.client.maintenance@example.com");
 
-        if (gitClient instanceof CliGitAPIImpl) {
-            CliGitAPIImpl cliGitClient = (CliGitAPIImpl) gitClient;
+        if (gitClient instanceof CliGitAPIImpl cliGitClient) {
             if (!cliGitClient.isAtLeastVersion(1, 8, 0, 0)) {
                 incrementalRepackSupported = false;
                 commitGraphSupported = false;
@@ -205,8 +195,7 @@ public class GitClientMaintenanceTest {
         logger.setUseParentHandlers(false);
         logger.addHandler(handler);
         logger.setLevel(Level.ALL);
-        TaskListener listener = new hudson.util.LogTaskListener(logger, Level.ALL);
-        return listener;
+        return new hudson.util.LogTaskListener(logger, Level.ALL);
     }
 
     private static final String COMMITTED_ONE_TEXT_FILE = "A maintenance file ";
@@ -220,7 +209,7 @@ public class GitClientMaintenanceTest {
     }
 
     private ObjectId commitOneFile(final String commitMessage) throws Exception {
-        final String content = String.format("A random maintenance UUID: %s\n", UUID.randomUUID());
+        final String content = "A random maintenance UUID: %s\n".formatted(UUID.randomUUID());
         return commitFile("One-Maintenance-File.txt", content, commitMessage);
     }
 
@@ -229,11 +218,11 @@ public class GitClientMaintenanceTest {
         gitClient.add(path);
         gitClient.commit(commitMessage);
         List<ObjectId> headList = gitClient.revList(Constants.HEAD);
-        collector.checkThat(headList.size(), is(greaterThan(0)));
+        assertThat(headList.size(), is(greaterThan(0)));
         return headList.get(0);
     }
 
-    private void createFile(String path, String content) {
+    private void createFile(String path, String content) throws Exception {
         File aFile = new File(repoRoot, path);
         File parentDir = aFile.getParentFile();
         if (parentDir != null) {
@@ -241,8 +230,6 @@ public class GitClientMaintenanceTest {
         }
         try (PrintWriter writer = new PrintWriter(aFile, StandardCharsets.UTF_8)) {
             writer.printf(content);
-        } catch (IOException ex) {
-            throw new GitException(ex);
         }
     }
 
@@ -256,7 +243,7 @@ public class GitClientMaintenanceTest {
     }
 
     @Test
-    public void test_loose_objects_maintenance() throws Exception {
+    void test_loose_objects_maintenance() throws Exception {
         if (!looseObjectsSupported) {
             return;
         }
@@ -265,12 +252,12 @@ public class GitClientMaintenanceTest {
 
         File objectsPath = new File(repoRoot.getAbsolutePath(), ".git/objects");
 
-        String expectedDirList[] = {"info", "pack"};
+        String[] expectedDirList = {"info", "pack"};
 
         // Assert loose objects are in the objects directory
-        String looseObjects[] = objectsPath.list();
-        collector.checkThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
-        collector.checkThat(
+        String[] looseObjects = objectsPath.list();
+        assertThat(Arrays.asList(looseObjects), hasItems(expectedDirList));
+        assertThat(
                 "Missing expected loose objects in objects dir, only found " + String.join(",", looseObjects),
                 looseObjects.length,
                 is(greaterThan(2))); // Initially loose objects are present
@@ -278,7 +265,7 @@ public class GitClientMaintenanceTest {
         // Run the loose objects maintenance task, will create loose-objects pack file
         boolean isExecuted = gitClient.maintenance("loose-objects");
         // Check if maintenance has executed successfully.
-        collector.checkThat(isExecuted, is(true));
+        assertThat(isExecuted, is(true));
 
         // Confirm loose-object pack file is present in the pack directory
         File looseObjectPackFilePath = new File(objectsPath.getAbsolutePath(), "pack");
@@ -286,78 +273,86 @@ public class GitClientMaintenanceTest {
         // CLI git 2.41 adds a new ".rev" suffixed file that is ignored in these assertions
         List<String> fileNames = Arrays.asList(looseObjectPackFile);
         List<String> requiredSuffixes = Arrays.asList(".idx", ".pack");
-        requiredSuffixes.forEach(expected -> collector.checkThat(fileNames, hasItem(endsWith(expected))));
+        requiredSuffixes.forEach(expected -> assertThat(fileNames, hasItem(endsWith(expected))));
 
         // Clean the loose objects present in the repo.
         isExecuted = gitClient.maintenance("loose-objects");
 
         // Assert that loose objects are no longer in the objects directory
-        collector.checkThat(objectsPath.list(), is(arrayContainingInAnyOrder(expectedDirList)));
+        assertThat(objectsPath.list(), is(arrayContainingInAnyOrder(expectedDirList)));
 
-        collector.checkThat(isExecuted, is(true));
+        assertThat(isExecuted, is(true));
     }
 
     @Test
-    public void test_incremental_repack_maintenance() throws Exception {
+    void test_incremental_repack_maintenance() throws Exception {
         String maintenanceTask = "incremental-repack";
 
         commitSeveralFiles();
 
         // Run incremental repack maintenance task
         // Need to create pack files to use incremental repack
-        collector.checkThat(
-                gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenace
+        assertThat(gitClient.maintenance("gc"), is(!gitImplName.startsWith("jgit"))); // No gc on JGit maintenance
 
-        collector.checkThat(gitClient.maintenance(maintenanceTask), is(incrementalRepackSupported));
+        assertThat(gitClient.maintenance(maintenanceTask), is(incrementalRepackSupported));
 
         String expectedMessage = getExpectedMessage(maintenanceTask, incrementalRepackSupported);
-        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
-    public void test_commit_graph_maintenance() throws Exception {
+    void test_commit_graph_maintenance() throws Exception {
         String maintenanceTask = "commit-graph";
 
         commitSeveralFiles();
 
-        collector.checkThat(gitClient.maintenance(maintenanceTask), is(commitGraphSupported));
+        assertThat(gitClient.maintenance(maintenanceTask), is(commitGraphSupported));
 
         String expectedMessage = getExpectedMessage(maintenanceTask, commitGraphSupported);
-        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
-    public void test_gc_maintenance() throws Exception {
+    void test_gc_maintenance() throws Exception {
         String maintenanceTask = "gc";
 
         commitSeveralFiles();
 
-        collector.checkThat(gitClient.maintenance("gc"), is(garbageCollectionSupported));
+        assertThat(gitClient.maintenance("gc"), is(garbageCollectionSupported));
 
         String expectedMessage = getExpectedMessage(maintenanceTask, garbageCollectionSupported);
-        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
-    public void test_prefetch_maintenance() throws Exception {
+    void test_prefetch_maintenance() throws Exception {
         String maintenanceTask = "prefetch";
 
-        collector.checkThat(gitClient.maintenance("prefetch"), is(prefetchSupported));
+        assertThat(gitClient.maintenance("prefetch"), is(prefetchSupported));
 
         String expectedMessage = getExpectedMessage(maintenanceTask, prefetchSupported);
-        collector.checkThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
+        assertThat(handler.getMessages(), hasItem(startsWith(expectedMessage)));
     }
 
     @Test
-    public void test_error_reported_by_invalid_maintenance_task() throws Exception {
+    void test_error_reported_by_invalid_maintenance_task() throws Exception {
         String maintenanceTask = "invalid-maintenance-task";
 
         // Should always fail to execute
-        collector.checkThat(gitClient.maintenance(maintenanceTask), is(false));
+        assertThat(gitClient.maintenance(maintenanceTask), is(false));
 
         String expectedMessage = gitImplName.startsWith("jgit")
                 ? "JGIT doesn't support git maintenance. Use CLIGIT to execute maintenance tasks."
                 : "Error executing invalid-maintenance-task maintenance task";
-        collector.checkThat(handler.getMessages(), hasItem(expectedMessage));
+        assertThat(handler.getMessages(), hasItem(expectedMessage));
+    }
+
+    private static File newFolder(File root, String... subDirs) throws Exception {
+        String subFolder = String.join("/", subDirs);
+        File result = new File(root, subFolder);
+        if (!result.mkdirs()) {
+            throw new IOException("Couldn't create folders " + result);
+        }
+        return result;
     }
 }

@@ -2,32 +2,40 @@ package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.Issue;
 
-@RunWith(Parameterized.class)
-public class SubmodulePatternStringTest {
+@ParameterizedClass(name = "{0}-{1}")
+@MethodSource("repoAndRemote")
+class SubmodulePatternStringTest {
 
-    private final String remoteName;
-    private final String submoduleConfigOutput;
-    private final Matcher matcher;
+    @Parameter(0)
+    private String repoUrl;
+
+    @Parameter(1)
+    private String remoteName;
+
+    private String submoduleConfigOutput;
+    private Matcher matcher;
 
     private static final Pattern SUBMODULE_CONFIG_PATTERN =
             Pattern.compile(CliGitAPIImpl.SUBMODULE_REMOTE_PATTERN_STRING, Pattern.MULTILINE);
 
-    public SubmodulePatternStringTest(String repoUrl, String remoteName) {
-        this.remoteName = remoteName;
-        this.submoduleConfigOutput = "submodule." + remoteName + ".url " + repoUrl;
-        this.matcher = SUBMODULE_CONFIG_PATTERN.matcher(submoduleConfigOutput);
+    @BeforeEach
+    void setUp() {
+        submoduleConfigOutput = "submodule." + remoteName + ".url " + repoUrl;
+        matcher = SUBMODULE_CONFIG_PATTERN.matcher(submoduleConfigOutput);
     }
 
     /*
@@ -36,9 +44,8 @@ public class SubmodulePatternStringTest {
      *
      * Tests file, ssh (both forms), git, and https.
      */
-    @Parameterized.Parameters(name = "{0}-{1}")
-    public static Collection<Object[]> repoAndRemote() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> repoAndRemote() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] repoUrls = {
             "file://gitroot/thirdparty.url.repo",
             "git://gitroot/repo",
@@ -61,7 +68,7 @@ public class SubmodulePatternStringTest {
             for (String repoUrlSuffix : suffixes) {
                 for (String remoteNameParam : remoteNames) {
                     for (String remoteNameSuffix : suffixes) {
-                        Object[] item = {repoUrlParam + repoUrlSuffix, remoteNameParam + remoteNameSuffix};
+                        Arguments item = Arguments.of(repoUrlParam + repoUrlSuffix, remoteNameParam + remoteNameSuffix);
                         arguments.add(item);
                     }
                 }
@@ -72,8 +79,8 @@ public class SubmodulePatternStringTest {
 
     @Issue("JENKINS-46054")
     @Test
-    public void urlFoundInSubmoduleConfigOutput() {
-        assertTrue("Match not found for '" + submoduleConfigOutput + "'", matcher.find());
+    void urlFoundInSubmoduleConfigOutput() {
+        assertTrue(matcher.find(), "Match not found for '" + submoduleConfigOutput + "'");
         assertThat(matcher.group(1), is(remoteName));
     }
 }

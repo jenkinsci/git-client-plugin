@@ -1,6 +1,7 @@
 package hudson.plugins.git;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 import org.eclipse.jgit.lib.ObjectId;
@@ -14,6 +15,7 @@ import org.kohsuke.stapler.export.ExportedBean;
 @ExportedBean(defaultVisibility = 999)
 public class GitObject implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     final ObjectId sha1;

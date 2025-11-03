@@ -1,99 +1,105 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hudson.FilePath;
 import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 import org.eclipse.jgit.lib.ObjectId;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Trivial tests of defaults asserted in the javadoc of Git class.
  *
  * @author Mark Waite
  */
-@RunWith(Parameterized.class)
-public class GitTest {
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitImplementation")
+class GitTest {
 
     /* A known commit from the git-client-plugin repository */
-    private ObjectId expectedCommit = null;
+    private ObjectId expectedCommit;
 
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitImplementation() {
-        return Arrays.asList(new Object[][] {{"git"}, {"jgit"}});
+    static List<Arguments> gitImplementation() {
+        return List.of(Arguments.of("git"), Arguments.of("jgit"));
     }
 
-    private final String implementation;
+    @Parameter(0)
+    private String implementation;
 
-    public GitTest(String implementation) throws Exception {
-        this.implementation = implementation;
-        Git git = new Git(null, null).using(implementation).in(new File("."));
-        expectedCommit = git.getClient().revParse("HEAD");
+    @BeforeEach
+    void setUp() throws Exception {
+        expectedCommit = new Git(null, null)
+                .using(implementation)
+                .in(new File("."))
+                .getClient()
+                .revParse("HEAD");
     }
 
     @Test
-    public void testWith() throws IOException, InterruptedException {
+    void testWith() throws Exception {
         Git git = Git.with(null, null);
-        assertTrue("Wrong default client type", git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+        assertInstanceOf(JGitAPIImpl.class, git.getClient(), "Wrong default client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
         git = Git.with(null, null).using(implementation);
         assertTrue(
-                "Wrong client type",
                 implementation.equals("git")
                         ? git.getClient() instanceof CliGitAPIImpl
-                        : git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+                        : git.getClient() instanceof JGitAPIImpl,
+                "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 
     @Test
-    public void testIn_File() throws IOException, InterruptedException {
+    void testIn_File() throws Exception {
         Git git = new Git(null, null).in(new File("."));
-        assertTrue("Wrong client type", git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+        assertInstanceOf(JGitAPIImpl.class, git.getClient(), "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 
     @Test
-    public void testIn_FileUsing() throws IOException, InterruptedException {
+    void testIn_FileUsing() throws Exception {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
         assertTrue(
-                "Wrong client type",
                 implementation.equals("git")
                         ? git.getClient() instanceof CliGitAPIImpl
-                        : git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+                        : git.getClient() instanceof JGitAPIImpl,
+                "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 
     @Test
-    public void testIn_FilePath() throws IOException, InterruptedException {
+    void testIn_FilePath() throws Exception {
         Git git = new Git(null, null).in(new FilePath(new File(".")));
-        assertTrue("Wrong client type", git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+        assertInstanceOf(JGitAPIImpl.class, git.getClient(), "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 
     @Test
-    public void testIn_FilePathUsing() throws IOException, InterruptedException {
+    void testIn_FilePathUsing() throws Exception {
         Git git = new Git(null, null).in(new File(".")).using(implementation);
         assertTrue(
-                "Wrong client type",
                 implementation.equals("git")
                         ? git.getClient() instanceof CliGitAPIImpl
-                        : git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+                        : git.getClient() instanceof JGitAPIImpl,
+                "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 
     @Test
-    public void testUsing() throws IOException, InterruptedException {
+    void testUsing() throws Exception {
         Git git = new Git(null, null).using(implementation);
         assertTrue(
-                "Wrong client type",
                 implementation.equals("git")
                         ? git.getClient() instanceof CliGitAPIImpl
-                        : git.getClient() instanceof JGitAPIImpl);
-        assertTrue("Missing expected commit", git.getClient().isCommitInRepo(expectedCommit));
+                        : git.getClient() instanceof JGitAPIImpl,
+                "Wrong client type");
+        assertTrue(git.getClient().isCommitInRepo(expectedCommit), "Missing expected commit");
     }
 }

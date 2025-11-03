@@ -1,8 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.EnvVars;
 import hudson.Util;
@@ -10,63 +8,62 @@ import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.lib.Repository;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.Parameter;
+import org.junit.jupiter.params.ParameterizedClass;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Git API Test which are solely for CLI git,
  * but doesn't need an initialized working repo.
  * These tests are not implemented for JGit.
  */
-@RunWith(Parameterized.class)
-public class GitAPICliGitNotIntializedTest {
-    @Rule
-    public GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
+@ParameterizedClass(name = "{0}")
+@MethodSource("gitObjects")
+class GitAPICliGitNotInitializedTest {
+
+    @RegisterExtension
+    private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
     private int logCount = 0;
     private static final String LOGGING_STARTED = "Logging started";
     private LogHandler handler = null;
     private TaskListener listener;
-    private final String gitImplName;
 
-    WorkspaceWithRepo workspace;
+    @Parameter(0)
+    private String gitImplName;
+
+    private WorkspaceWithRepo workspace;
 
     private GitClient testGitClient;
     private File testGitDir;
 
-    public GitAPICliGitNotIntializedTest(final String gitImplName) {
-        this.gitImplName = gitImplName;
-    }
-
-    @Parameterized.Parameters(name = "{0}")
-    public static Collection gitObjects() {
-        List<Object[]> arguments = new ArrayList<>();
+    static List<Arguments> gitObjects() {
+        List<Arguments> arguments = new ArrayList<>();
         String[] gitImplNames = {"git"};
         for (String gitImplName : gitImplNames) {
-            Object[] item = {gitImplName};
+            Arguments item = Arguments.of(gitImplName);
             arguments.add(item);
         }
         return arguments;
     }
 
-    @BeforeClass
-    public static void loadLocalMirror() throws Exception {
+    @BeforeAll
+    static void loadLocalMirror() throws Exception {
         /* Prime the local mirror cache before other tests run */
         /* Allow 2-6 second delay before priming the cache */
         /* Allow other tests a better chance to prime the cache */
@@ -81,8 +78,8 @@ public class GitAPICliGitNotIntializedTest {
         Util.deleteRecursive(tempDir);
     }
 
-    @Before
-    public void setUpRepositories() throws Exception {
+    @BeforeEach
+    void setUpRepositories() throws Exception {
         Logger logger = Logger.getLogger(this.getClass().getPackage().getName() + "-" + logCount++);
         handler = new LogHandler();
         handler.setLevel(Level.ALL);
@@ -98,11 +95,11 @@ public class GitAPICliGitNotIntializedTest {
         testGitDir = workspace.getGitFileDir();
     }
 
-    @After
-    public void afterTearDown() {
+    @AfterEach
+    void afterTearDown() {
         try {
             String messages = StringUtils.join(handler.getMessages(), ";");
-            assertTrue("Logging not started: " + messages, handler.containsMessageSubstring(LOGGING_STARTED));
+            assertTrue(handler.containsMessageSubstring(LOGGING_STARTED), "Logging not started: " + messages);
         } finally {
             handler.close();
         }
@@ -113,7 +110,7 @@ public class GitAPICliGitNotIntializedTest {
      * is not run with JGit.
      */
     @Test
-    public void testSubmoduleCheckoutSimple() throws Exception {
+    void testSubmoduleCheckoutSimple() throws Exception {
         workspace.cloneRepo(workspace, workspace.localMirror());
         assertSubmoduleDirs(testGitDir, false, false);
 
@@ -139,28 +136,16 @@ public class GitAPICliGitNotIntializedTest {
          * functioning repository object
          */
         submoduleClient.withRepository((final Repository repo, VirtualChannel channel) -> {
-            assertTrue(
-                    repo.getDirectory() + " is not a valid repository",
-                    repo.getObjectDatabase().exists());
+            assertTrue(repo.getObjectDatabase().exists(), repo.getDirectory() + " is not a valid repository");
             return null;
         });
     }
 
     protected GitClient setupGitAPI(File ws) throws Exception {
-        setCliGitDefaults();
         return Git.with(listener, new EnvVars()).in(ws).using(gitImplName).getClient();
     }
 
-    private static boolean cliGitDefaultsSet = false;
-
-    private void setCliGitDefaults() {
-        if (!cliGitDefaultsSet) {
-            CliGitCommand gitCmd = new CliGitCommand(null);
-        }
-        cliGitDefaultsSet = true;
-    }
-
-    private void assertSubmoduleContents(File repo) throws IOException {
+    private void assertSubmoduleContents(File repo) throws Exception {
         final File modulesDir = new File(repo, "modules");
 
         final File sshkeysDir = new File(modulesDir, "sshkeys");
@@ -179,17 +164,17 @@ public class GitAPICliGitNotIntializedTest {
         assertFileContains(ntpContributingFile, ntpContributingContent); /* Check substring in file */
     }
 
-    private void assertFileContains(File file, String expectedContent) throws IOException {
+    private void assertFileContains(File file, String expectedContent) throws Exception {
         assertFileExists(file);
         final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
         final String message = file + " does not contain '" + expectedContent + "', contains '" + fileContent + "'";
-        assertTrue(message, fileContent.contains(expectedContent));
+        assertTrue(fileContent.contains(expectedContent), message);
     }
 
-    private void assertFileContents(File file, String expectedContent) throws IOException {
+    private void assertFileContents(File file, String expectedContent) throws Exception {
         assertFileExists(file);
         final String fileContent = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-        assertEquals(file + " wrong content", expectedContent, fileContent);
+        assertEquals(expectedContent, fileContent, file + " wrong content");
     }
 
     private void assertSubmoduleDirs(File repo, boolean dirsShouldExist, boolean filesShouldExist) {
@@ -229,16 +214,16 @@ public class GitAPICliGitNotIntializedTest {
     }
 
     private void assertFileNotFound(File file) {
-        assertFalse(file + " found, peer files: " + listDir(file.getParentFile()), file.exists());
+        assertFalse(file.exists(), file + " found, peer files: " + listDir(file.getParentFile()));
     }
 
     private void assertDirExists(File dir) {
         assertFileExists(dir);
-        assertTrue(dir + " is not a directory", dir.isDirectory());
+        assertTrue(dir.isDirectory(), dir + " is not a directory");
     }
 
     private void assertFileExists(File file) {
-        assertTrue(file + " not found, peer files: " + listDir(file.getParentFile()), file.exists());
+        assertTrue(file.exists(), file + " not found, peer files: " + listDir(file.getParentFile()));
     }
 
     private String listDir(File dir) {
@@ -254,7 +239,7 @@ public class GitAPICliGitNotIntializedTest {
             fileList.append(file.getName());
             fileList.append(',');
         }
-        if (fileList.length() > 0) {
+        if (!fileList.isEmpty()) {
             fileList.deleteCharAt(fileList.length() - 1);
         }
         return fileList.toString();

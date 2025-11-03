@@ -83,7 +83,7 @@ public class GitURIRequirementsBuilder {
             "^" // //$NON-NLS-1$
                     + SCHEME_P //
                     + "(?:" // start a group containing hostname and all options only //$NON-NLS-1$
-                    // availabe when a hostname is there
+                    // available when a hostname is there
                     + OPT_USER_PWD_P //
                     + HOST_P //
                     + OPT_PORT_P //

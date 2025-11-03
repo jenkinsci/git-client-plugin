@@ -1,5 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
+import hudson.plugins.git.GitException;
 import java.io.Writer;
 import org.eclipse.jgit.lib.ObjectId;
 
@@ -7,7 +8,7 @@ import org.eclipse.jgit.lib.ObjectId;
  * Command builder for generating changelog in the format {@code GitSCM} expects.
  *
  * <p>
- * The output format is that of <code>git-whatchanged</code>, which looks something like this:
+ * The output format is that of <code>git log --raw --no-merges</code>, which looks something like this:
  *
  * <pre>
  * commit dadaf808d99c4c23c53476b0c48e25a181016300
@@ -55,7 +56,7 @@ public interface ChangelogCommand extends GitCommand {
      * @param rev a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand excludes(String rev);
+    ChangelogCommand excludes(String rev) throws GitException;
 
     /**
      * excludes.
@@ -63,7 +64,7 @@ public interface ChangelogCommand extends GitCommand {
      * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand excludes(ObjectId rev);
+    ChangelogCommand excludes(ObjectId rev) throws GitException;
 
     /**
      * Adds the revision to include in the log.
@@ -73,7 +74,7 @@ public interface ChangelogCommand extends GitCommand {
      * @param rev a {@link java.lang.String} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand includes(String rev);
+    ChangelogCommand includes(String rev) throws GitException;
 
     /**
      * includes.
@@ -81,7 +82,7 @@ public interface ChangelogCommand extends GitCommand {
      * @param rev a {@link org.eclipse.jgit.lib.ObjectId} object.
      * @return a {@link org.jenkinsci.plugins.gitclient.ChangelogCommand} object.
      */
-    ChangelogCommand includes(ObjectId rev);
+    ChangelogCommand includes(ObjectId rev) throws GitException;
 
     /**
      * Sets the {@link java.io.OutputStream} that receives the changelog.

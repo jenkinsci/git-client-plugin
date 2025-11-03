@@ -7,56 +7,45 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectIdRef;
 import org.eclipse.jgit.lib.Ref;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class BranchTest {
+class BranchTest {
 
-    private final String branchSHA1;
-    private final String branchName;
-    private final ObjectId branchHead;
-    private final Branch branch;
-    private final String refPrefix;
-    private final Ref branchRef;
-    private final Branch branchFromRef;
+    private static final String BRANCH_SHA_1 = "fa71f704f9b90fa1f857d1623f3fe33fa2277ca9";
+    private static final String BRANCH_NAME = "origin/master";
+    private static final ObjectId BRANCH_HEAD = ObjectId.fromString(BRANCH_SHA_1);
+    private static final Branch BRANCH = new Branch(BRANCH_NAME, BRANCH_HEAD);
+    private static final String REF_PREFIX = "refs/remotes/";
+    private static final Ref BRANCH_REF =
+            new ObjectIdRef.PeeledNonTag(Ref.Storage.NEW, REF_PREFIX + BRANCH_NAME, BRANCH_HEAD);
+    private static final Branch BRANCH_FROM_REF = new Branch(BRANCH_REF);
 
-    private static final String REMOTE_BRANCH_NAME = "origin/master";
-
-    public BranchTest() {
-        this.branchSHA1 = "fa71f704f9b90fa1f857d1623f3fe33fa2277ca9";
-        this.branchName = REMOTE_BRANCH_NAME;
-        this.branchHead = ObjectId.fromString(branchSHA1);
-        this.refPrefix = "refs/remotes/";
-        this.branchRef = new ObjectIdRef.PeeledNonTag(Ref.Storage.NEW, refPrefix + branchName, branchHead);
-        this.branch = new Branch(branchName, branchHead);
-        this.branchFromRef = new Branch(branchRef);
+    @Test
+    void testToString() {
+        assertThat(BRANCH.toString(), is(BRANCH_FROM_REF.toString()));
     }
 
     @Test
-    public void testToString() {
-        assertThat(branch.toString(), is(branchFromRef.toString()));
+    void testToString_Contents() {
+        String expected = "Branch " + BRANCH_NAME + "(" + BRANCH_SHA_1 + ")";
+        assertThat(BRANCH.toString(), is(expected));
     }
 
     @Test
-    public void testToString_Contents() {
-        String expected = "Branch " + branchName + "(" + branchSHA1 + ")";
-        assertThat(branch.toString(), is(expected));
+    void hashCodeContract() {
+        assertThat(BRANCH, is(BRANCH_FROM_REF));
+        assertThat(BRANCH.hashCode(), is(BRANCH_FROM_REF.hashCode()));
     }
 
     @Test
-    public void hashCodeContract() {
-        assertThat(branch, is(branchFromRef));
-        assertThat(branch.hashCode(), is(branchFromRef.hashCode()));
-    }
-
-    @Test
-    public void constructorRefArgStripped() {
-        Ref ref = new ObjectIdRef.PeeledNonTag(Ref.Storage.LOOSE, refPrefix + branchName, branchHead);
+    void constructorRefArgStripped() {
+        Ref ref = new ObjectIdRef.PeeledNonTag(Ref.Storage.LOOSE, REF_PREFIX + BRANCH_NAME, BRANCH_HEAD);
         Branch strippedBranch = new Branch(ref);
-        assertThat(strippedBranch.getName(), is(branchName));
+        assertThat(strippedBranch.getName(), is(BRANCH_NAME));
     }
 
     @Test
-    public void equalsContract() {
+    void equalsContract() {
         EqualsVerifier.forClass(Branch.class)
                 .usingGetClass()
                 .withRedefinedSuperclass()
