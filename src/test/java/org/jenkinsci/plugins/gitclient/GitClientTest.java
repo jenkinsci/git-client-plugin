@@ -375,8 +375,7 @@ class GitClientTest {
     @Issue("JENKINS-29977")
     void testChangelogVeryLong() throws Exception {
 
-        final String gitMessage =
-                """
+        final String gitMessage = """
                 Uno Dos Tres Cuatro Cinco Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut \
                 posuere tellus eu efficitur tristique. In iaculis neque in dolor vulputate\
                 sollicitudin eget a quam. Donec finibus sapien quis lectus euismod facilisis. Integer\
@@ -1787,8 +1786,7 @@ class GitClientTest {
         File uuidFile = new File(repoRoot, "uuid.txt");
         String fileContent =
                 Files.readString(uuidFile.toPath(), StandardCharsets.UTF_8).trim();
-        String expectedContent =
-                """
+        String expectedContent = """
                 version https://git-lfs.github.com/spec/v1
                 oid sha256:75d122e4160dc91480257ff72403e77ef276e24d7416ed2be56d4e726482d86e
                 size 33\
@@ -3339,8 +3337,7 @@ class GitClientTest {
             return;
         }
         // Embedded \r (carriage return) must be retained in the gitBranchOutput
-        String gitBranchOutput =
-                """
+        String gitBranchOutput = """
                         * (HEAD detached at b297853)  b297853e667d5989801937beea30fcec7d1d2595 Commit message with line breaks\r very-long-string-with-more-than-44-characters
                           remotes/origin/master       e0d3f46c4fdb8acd068b6b127356931411d16e23 Commit message with line breaks\r very-long-string-with-more-than-44-characters and some more text
                           remotes/origin/develop      fc8996efc1066d9dae529e5187800f84995ca56f Single-line commit message
