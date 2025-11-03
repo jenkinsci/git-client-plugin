@@ -2297,9 +2297,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             if (!clue_sysfs && !clue_proc) { // && !clue_ls
-                listener.getLogger()
-                        .println(
-                                """
+                listener.getLogger().println("""
                                 [INFO] SELinux is present on the host \
                                 and we could not confirm that it does not apply actively: \
                                 will try to relabel temporary files now; this may complain \
