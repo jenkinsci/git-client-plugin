@@ -58,7 +58,7 @@ class AcceptFirstConnectionVerifierTest {
         assumeTrue(runKnownHostsTests());
         assertThat(
                 new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null),
-                is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
+                is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=no"));
     }
 
     @Test
