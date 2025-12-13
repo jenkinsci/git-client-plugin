@@ -13,7 +13,9 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
         return tempKnownHosts -> {
             listener.getLogger()
                     .println("Verifying host key using known hosts file, will automatically accept unseen keys");
-            return "-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes";
+            // HashKnownHosts is disabled to avoid issues with malformed entries
+            // See JENKINS-73427 / https://github.com/jenkinsci/git-client-plugin/issues/1686
+            return "-o StrictHostKeyChecking=accept-new -o HashKnownHosts=no";
         };
     }
 
