@@ -98,6 +98,7 @@ class AcceptFirstConnectionVerifierTest {
     void testMalformedHashedEntriesCanBeRead() throws Exception {
         // JENKINS-73427: Test that malformed hashed entries (from older versions) can still be read
         // This is the malformed format that was reported in the issue with TWO comma-separated hash patterns
+        // The system should log a warning but not crash with an IllegalArgumentException
         assumeTrue(runKnownHostsTests());
         String malformedHashedEntry = KEY_ECDSA_SHA_2_NISTP_256;
         
@@ -105,26 +106,21 @@ class AcceptFirstConnectionVerifierTest {
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
 
-        // This should not throw an exception when reading the malformed entry
-        // The connection might fail to verify, but it shouldn't crash
-        try {
-            KnownHostsTestUtil.connectToHost(
-                            "github.com",
-                            22,
-                            mockedKnownHosts,
-                            acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
-                            "ecdsa-sha2-nistp256",
-                            s -> {
-                                assertThat(s.isOpen(), is(true));
-                                Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
-                                // The malformed entry may or may not match - we just want to ensure no crash
-                                return true;
-                            })
-                    .close();
-        } catch (Exception e) {
-            // Expected - the malformed entry might not verify correctly, but shouldn't cause a crash
-            // As long as we get here without an IllegalArgumentException about "Invalid hash pattern", we're good
-        }
+        // The connection should proceed without throwing IllegalArgumentException for "Invalid hash pattern"
+        // The system logs a warning about the malformed entry but continues working
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            // Successfully connected despite malformed entry in known_hosts
+                            return true;
+                        })
+                .close();
     }
 
     @Test
