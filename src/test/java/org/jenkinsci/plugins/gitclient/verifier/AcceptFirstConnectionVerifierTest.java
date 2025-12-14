@@ -84,14 +84,20 @@ class AcceptFirstConnectionVerifierTest {
                 .close();
         assertThat(file, is(anExistingFile()));
         List<String> lines = Files.readAllLines(file.toPath());
-        
+
         // JENKINS-73427: Verify entries are NOT hashed (no |1| prefix) to avoid malformed entries
-        assertThat("Host key entry should be in plain format, not hashed", 
-                lines.stream().noneMatch(line -> line.startsWith("|1|")), is(true));
-        
+        assertThat(
+                "Host key entry should be in plain format, not hashed",
+                lines.stream().noneMatch(line -> line.startsWith("|1|")),
+                is(true));
+
         // Verify the key was added with the correct algorithm and key material
         assertThat(lines, hasItem(containsString("ecdsa-sha2-nistp256")));
-        assertThat(lines, hasItem(containsString("AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=")));
+        assertThat(
+                lines,
+                hasItem(
+                        containsString(
+                                "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=")));
     }
 
     @Test
@@ -101,7 +107,7 @@ class AcceptFirstConnectionVerifierTest {
         // The system should log a warning but not crash with an IllegalArgumentException
         assumeTrue(runKnownHostsTests());
         String malformedHashedEntry = KEY_ECDSA_SHA_2_NISTP_256;
-        
+
         File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(malformedHashedEntry);
         AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
         when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
@@ -148,30 +154,28 @@ class AcceptFirstConnectionVerifierTest {
 
         assertThat(file, is(anExistingFile()));
         List<String> lines = Files.readAllLines(file.toPath());
-        
+
         // Filter out any empty lines
-        List<String> nonEmptyLines = lines.stream()
-                .filter(line -> !line.trim().isEmpty())
-                .collect(Collectors.toList());
-        
+        List<String> nonEmptyLines =
+                lines.stream().filter(line -> !line.trim().isEmpty()).collect(Collectors.toList());
+
         // The key insight: entries should be in plain format like "github.com,140.82.121.4 ssh-ed25519 ..."
         // NOT hashed like "|1|hash|hash ssh-ed25519 ..."
-        assertThat("At least one entry should be created", 
-                nonEmptyLines.size() >= 1, is(true));
-        
+        assertThat("At least one entry should be created", nonEmptyLines.size() >= 1, is(true));
+
         // Verify ALL entries are NOT hashed (no |1| prefix indicating hashed hostname)
         for (String entry : nonEmptyLines) {
-            assertThat("Entry should not start with |1| (hashed format): " + entry, 
-                    entry.startsWith("|1|"), is(false));
-            
+            assertThat("Entry should not start with |1| (hashed format): " + entry, entry.startsWith("|1|"), is(false));
+
             // Verify it contains the key type
-            assertThat("Entry should contain key type: " + entry, 
-                    entry, containsString("ssh-ed25519"));
+            assertThat("Entry should contain key type: " + entry, entry, containsString("ssh-ed25519"));
         }
-        
+
         // Verify at least one entry contains the hostname in plain text
-        assertThat("At least one entry should contain plain hostname", 
-                nonEmptyLines.stream().anyMatch(line -> line.contains("github.com")), is(true));
+        assertThat(
+                "At least one entry should contain plain hostname",
+                nonEmptyLines.stream().anyMatch(line -> line.contains("github.com")),
+                is(true));
     }
 
     @Test
