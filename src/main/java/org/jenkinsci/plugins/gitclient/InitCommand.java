@@ -20,4 +20,12 @@ public interface InitCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
      */
     InitCommand bare(boolean bare);
+
+    /**
+     * objectFormat.
+     *
+     * @param objectFormat object format (e.g., "sha1" or "sha256").
+     * @return a {@link org.jenkinsci.plugins.gitclient.InitCommand} object.
+     */
+    InitCommand objectFormat(String objectFormat);
 }

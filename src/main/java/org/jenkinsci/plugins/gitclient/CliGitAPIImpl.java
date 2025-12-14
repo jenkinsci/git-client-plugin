@@ -712,6 +712,45 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Detects the object format (hash algorithm) used by a remote repository.
+     * Queries the remote using ls-remote and examines the hash length to determine
+     * if the repository uses SHA1 (40 characters) or SHA256 (64 characters).
+     *
+     * @param url the URL of the remote repository
+     * @return "sha256" if the remote uses SHA256, null if SHA1 or detection fails
+     */
+    private String detectRemoteObjectFormat(String url) {
+        try {
+            ArgumentListBuilder args = new ArgumentListBuilder("ls-remote");
+
+            StandardCredentials cred = credentials.get(url);
+            if (cred == null) {
+                cred = defaultCredentials;
+            }
+
+            addCheckedRemoteUrl(args, url);
+            args.add("HEAD");
+
+            String result = launchCommandWithCredentials(args, workspace, cred, url);
+            if (result != null && !result.trim().isEmpty()) {
+                String[] parts = result.trim().split("\\s+");
+                if (parts.length > 0) {
+                    String hash = parts[0];
+                    // SHA256 hashes are 64 characters, SHA1 hashes are 40 characters
+                    if (hash.length() == 64) {
+                        listener.getLogger().println("Detected SHA256 object format in remote repository");
+                        return "sha256";
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // If detection fails, fall back to default (SHA1)
+            listener.getLogger().println("Could not detect remote object format, using default: " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
      * clone_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
@@ -825,7 +864,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 // we don't run a 'git clone' command but git init + git fetch
                 // this allows launchCommandWithCredentials() to pass credentials via a local gitconfig
 
-                init_().workspace(workspace.getAbsolutePath()).execute();
+                // Detect remote object format (SHA1 or SHA256) before initializing local repository
+                String objectFormat = detectRemoteObjectFormat(url);
+
+                InitCommand initCmd = init_().workspace(workspace.getAbsolutePath());
+                if (objectFormat != null) {
+                    initCmd.objectFormat(objectFormat);
+                }
+                initCmd.execute();
 
                 if (shared) {
                     if (reference == null || reference.isEmpty()) {
@@ -1042,6 +1088,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             private String workspace;
             private boolean bare;
+            private String objectFormat;
 
             @Override
             public InitCommand workspace(String workspace) {
@@ -1052,6 +1099,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public InitCommand bare(boolean bare) {
                 this.bare = bare;
+                return this;
+            }
+
+            @Override
+            public InitCommand objectFormat(String objectFormat) {
+                this.objectFormat = objectFormat;
                 return this;
             }
 
@@ -1072,6 +1125,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                 if (bare) {
                     args.add("--bare");
+                }
+
+                if (objectFormat != null && !objectFormat.isEmpty()) {
+                    args.add("--object-format=" + objectFormat);
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();

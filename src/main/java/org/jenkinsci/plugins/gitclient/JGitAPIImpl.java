@@ -361,9 +361,20 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         init_().workspace(workspace.getAbsolutePath()).execute();
     }
 
-    private void doInit(String workspace, boolean bare) throws GitException {
+    private void doInit(String workspace, boolean bare, String objectFormat) throws GitException {
         try {
-            Git.init().setBare(bare).setDirectory(new File(workspace)).call();
+            org.eclipse.jgit.api.InitCommand initCommand =
+                    Git.init().setBare(bare).setDirectory(new File(workspace));
+
+            // Note: JGit SHA256 support may be limited depending on version
+            // This parameter is accepted but may not have full effect in all JGit versions
+            if (objectFormat != null && objectFormat.equalsIgnoreCase("sha256")) {
+                listener.getLogger()
+                        .println(
+                                "[WARNING] SHA256 object format requested for JGit init. JGit support for SHA256 may be limited.");
+            }
+
+            initCommand.call();
         } catch (GitAPIException e) {
             throw new GitException(e);
         }
@@ -1877,6 +1888,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new InitCommand() {
             private String workspace;
             private boolean bare;
+            private String objectFormat;
 
             @Override
             public InitCommand workspace(String workspace) {
@@ -1891,8 +1903,14 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public InitCommand objectFormat(String objectFormat) {
+                this.objectFormat = objectFormat;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException {
-                doInit(workspace, bare);
+                doInit(workspace, bare, objectFormat);
             }
         };
     }
