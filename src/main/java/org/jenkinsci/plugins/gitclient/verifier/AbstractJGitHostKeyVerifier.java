@@ -110,8 +110,9 @@ public abstract class AbstractJGitHostKeyVerifier implements SerializableOnlyOve
 
         @Override
         public boolean getHashKnownHosts() {
-            // configurable?
-            return true;
+            // Hashing is disabled to avoid issues with malformed entries
+            // See JENKINS-73427 / https://github.com/jenkinsci/git-client-plugin/issues/1686
+            return false;
         }
 
         @Override
