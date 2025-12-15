@@ -46,6 +46,13 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     private final GitClient proxy;
     private transient Channel channel;
 
+    /**
+     * Set useControllerProxy=true to use the HTTP proxy settings set for the controller under
+     * Manage Plugins when performing Git operations on an agent
+     */
+    private static final boolean USE_CONTROLLER_PROXY =
+            Boolean.parseBoolean(System.getProperty(CliGitAPIImpl.class.getName() + ".useControllerProxy", "false"));
+
     RemoteGitImpl(GitClient proxy) {
         this.proxy = proxy;
     }
@@ -1043,7 +1050,9 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     /** {@inheritDoc} */
     @Override
     public void setProxy(ProxyConfiguration proxyConfiguration) {
-        proxy.setProxy(proxyConfiguration);
+        if (USE_CONTROLLER_PROXY) {
+            proxy.setProxy(proxyConfiguration);
+        }
     }
 
     @Serial
