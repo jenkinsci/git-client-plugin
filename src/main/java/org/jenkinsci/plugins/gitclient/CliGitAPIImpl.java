@@ -2130,7 +2130,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
-                knownHostsTemp = createTempFile("known_hosts", "");
+                /* ssh.exe 9.5 on Windows does not accept spaces in path to known_hosts.
+                 * Use temp file wrapper location because known_hosts is not sensitive info.
+                 */
+                knownHostsTemp = createTempFileForWrapper("known_hosts", "");
                 if (launcher.isUnix()) {
                     ssh = createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass = createUnixSshAskpass(sshUser, passphrase);
