@@ -91,8 +91,7 @@ public class FolderForBenchmark {
     private void validateFolderName(String folderName) throws IOException {
         File tempFile = new File(folderName);
         if (tempFile.getParent() != null) {
-            String errorMsg =
-                    """
+            String errorMsg = """
                     Folder name cannot consist of multiple path components separated by a file separator.\
                      Please use newFolder('MyParentFolder','MyFolder') to create hierarchies of folders\
                     """;
