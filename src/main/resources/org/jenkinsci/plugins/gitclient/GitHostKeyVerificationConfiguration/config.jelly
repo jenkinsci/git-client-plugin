@@ -2,5 +2,9 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:section title="Git Host Key Verification Configuration">
         <f:dropdownDescriptorSelector field="sshHostKeyVerificationStrategy" title="Host Key Verification Strategy"/>
+        <f:entry title="SSH Verbose Mode" field="sshVerbose">
+            <f:checkbox title="Enable verbose SSH output for diagnostics" 
+                       help="When enabled, SSH commands will include -vvv flag for detailed diagnostic output. This helps troubleshoot SSH connection issues without requiring the GIT_SSH_COMMAND environment variable."/>
+        </f:entry>
     </f:section>
 </j:jelly>
