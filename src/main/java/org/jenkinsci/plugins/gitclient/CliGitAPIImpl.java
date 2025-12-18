@@ -2685,7 +2685,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
-        // Check for ssh.exe on the system PATH as last resort (supports Microsoft OpenSSH and other alternate implementations)
+        // Check for ssh.exe on the system PATH as last resort (supports Microsoft OpenSSH and other alternate
+        // implementations)
         String sshPath = getPathToExe("ssh");
         if (sshPath != null) {
             sshexe = new File(sshPath);
