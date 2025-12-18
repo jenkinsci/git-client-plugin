@@ -1987,8 +1987,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return createTempFileInSystemDir(prefix, suffix);
             }
         }
-        Path tmpPath = Path.of(workspaceTmp.getAbsolutePath());
-        if (workspaceTmp.getAbsolutePath().contains("%")) {
+        String absolutePath = workspaceTmp.getAbsolutePath();
+        Path tmpPath = Path.of(absolutePath);
+        if (absolutePath.contains("%")) {
             // Avoid ssh token expansion on all platforms
             return createTempFileInSystemDir(prefix, suffix);
         }
@@ -1997,16 +1998,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
              * path contains a space or parenthesis or pipe or question mark or asterisk.
              * Use system temp dir instead of workspace temp dir.
              */
-            if (workspaceTmp.getAbsolutePath().matches(".*[ ()|?*].*")) {
+            if (absolutePath.matches(".*[ ()|?*].*")) {
                 return createTempFileInSystemDir(prefix, suffix);
             }
             return Files.createTempFile(tmpPath, prefix, suffix);
-        } else if (workspaceTmp.getAbsolutePath().contains("%")) {
-            /* Avoid Linux expansion of % in ssh arguments */
-            return createTempFileInSystemDir(prefix, suffix);
         }
         // Unix specific
-        if (workspaceTmp.getAbsolutePath().contains("`")) {
+        if (absolutePath.contains("`")) {
             // Avoid backquote shell expansion
             return createTempFileInSystemDir(prefix, suffix);
         }
