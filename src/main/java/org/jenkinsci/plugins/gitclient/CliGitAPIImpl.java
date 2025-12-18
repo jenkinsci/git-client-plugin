@@ -1982,18 +1982,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
 
         File workspaceTmp = new File(workspace.getAbsolutePath() + WorkspaceList.TMP_DIR_SUFFIX);
-        String absolutePath = workspaceTmp.getAbsolutePath();
-        if (absolutePath.contains("%")) {
-            // Do not create temporary file in a path that includes a '%' character because
-            // SSH attempts to expand '%' characters in its file arguments
-            // https://man.openbsd.org/ssh_config#TOKENS
-            return createTempFileInSystemDir(prefix, suffix);
-        }
-        if (isWindows() && (absolutePath.contains(" ") || absolutePath.contains("(") || absolutePath.contains(")"))) {
-            // Do not create temporary file in a Windows path that includes a known problem character.
-            // Breaks SSH argument passing through GIT_SSH and SSH_ASKPASS.
-            return createTempFileInSystemDir(prefix, suffix);
-        }
         if (!workspaceTmp.isDirectory() && !workspaceTmp.mkdirs()) {
             if (!workspaceTmp.isDirectory()) {
                 return createTempFileInSystemDir(prefix, suffix);
