@@ -2626,6 +2626,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return sshexe;
         }
 
+        // Check for ssh.exe on the system PATH (supports Microsoft OpenSSH and other alternate implementations)
+        String sshPath = getPathToExe("ssh");
+        if (sshPath != null) {
+            sshexe = new File(sshPath);
+            if (sshexe.exists()) {
+                return sshexe;
+            }
+        }
+
         // Check Program Files
         sshexe = getFileFromEnv("ProgramFiles", "\\Git\\bin\\ssh.exe");
         if (sshexe != null && sshexe.exists()) {
@@ -2681,16 +2690,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             sshexe = getSSHExeFromGitExeParentDir(
                     gitPath.replace("/mingw64/bin/", "/usr/bin/").replace("\\mingw64\\bin\\", "\\usr\\bin\\"));
             if (sshexe != null && sshexe.exists()) {
-                return sshexe;
-            }
-        }
-
-        // Check for ssh.exe on the system PATH as last resort (supports Microsoft OpenSSH and other alternate
-        // implementations)
-        String sshPath = getPathToExe("ssh");
-        if (sshPath != null) {
-            sshexe = new File(sshPath);
-            if (sshexe.exists()) {
                 return sshexe;
             }
         }
