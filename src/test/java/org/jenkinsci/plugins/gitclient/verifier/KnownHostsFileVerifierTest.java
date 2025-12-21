@@ -48,6 +48,7 @@ class KnownHostsFileVerifierTest {
 
     @Test
     void missingKnownHostsShouldLogWarning() throws Exception {
+        assumeTrue(runKnownHostsTests());
         File folder = new File(testFolder, "folder");
         File missingKnownHosts = new File(folder, "non_existent_known_hosts");
         KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
