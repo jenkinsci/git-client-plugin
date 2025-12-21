@@ -72,9 +72,6 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
                         'Manage Jenkins' -> 'Security' -> 'Git Host Key Verification Configuration' \
                         and configure host key verification.\
                         """));
-        LOGGER.log(
-                Level.FINEST,
-                "Known hosts file {0} not found, but verifying host keys with known hosts file",
-                new Object[] {SshHostKeyVerificationStrategy.KNOWN_HOSTS_DEFAULT});
+        LOGGER.finest("Verifying host keys with known hosts file, but known hosts file was not found");
     }
 }
