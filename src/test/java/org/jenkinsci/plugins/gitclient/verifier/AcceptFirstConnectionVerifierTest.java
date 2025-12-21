@@ -2,8 +2,11 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -161,11 +164,11 @@ class AcceptFirstConnectionVerifierTest {
 
         // The key insight: entries should be in plain format like "github.com,140.82.121.4 ssh-ed25519 ..."
         // NOT hashed like "|1|hash|hash ssh-ed25519 ..."
-        assertThat("At least one entry should be created", nonEmptyLines.size() >= 1, is(true));
+        assertThat("At least one entry should be created", nonEmptyLines.size(), is(greaterThan(0)));
 
         // Verify ALL entries are NOT hashed (no |1| prefix indicating hashed hostname)
         for (String entry : nonEmptyLines) {
-            assertThat("Entry should not start with |1| (hashed format): " + entry, entry.startsWith("|1|"), is(false));
+            assertThat("Entry should not start with |1| (hashed format): " + entry, entry, not(startsWith("|1|")));
 
             // Verify it contains the key type
             assertThat("Entry should contain key type: " + entry, entry, containsString("ssh-ed25519"));
