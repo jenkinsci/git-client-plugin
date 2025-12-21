@@ -1,6 +1,7 @@
 package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
@@ -12,6 +13,12 @@ import hudson.model.StreamBuildListener;
 import hudson.model.TaskListener;
 import java.io.File;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +44,37 @@ class KnownHostsFileVerifierTest {
     void assignVerifiers() throws Exception {
         knownHostsTestUtil = new KnownHostsTestUtil(testFolder);
         fakeKnownHosts = knownHostsTestUtil.createFakeKnownHosts(FILE_CONTENT);
+    }
+
+    @Test
+    void missingKnownHostsShouldLogWarning() throws Exception {
+        File folder = new File(testFolder, "folder");
+        File missingKnownHosts = new File(folder, "non_existent_known_hosts");
+        KnownHostsFileVerifier knownHostsFileVerifier = spy(new KnownHostsFileVerifier());
+        when(knownHostsFileVerifier.getKnownHostsFile()).thenReturn(missingKnownHosts);
+
+        Logger logger = Logger.getLogger(KnownHostsFileVerifier.class.getName());
+        LogHandler handler = new LogHandler();
+        handler.setLevel(Level.ALL);
+        logger.setUseParentHandlers(false);
+        logger.addHandler(handler);
+        logger.setLevel(Level.ALL);
+        KnownHostsTestUtil.connectToHost(
+                        nonGitHubHost(),
+                        22,
+                        missingKnownHosts,
+                        knownHostsFileVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ssh-ed25519",
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(37)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(false));
+                            return true;
+                        })
+                .close();
+        assertThat(
+                handler.getMessages(),
+                hasItem("Verifying host keys with known hosts file, but known hosts file was not found"));
     }
 
     @Test
@@ -113,5 +151,27 @@ class KnownHostsFileVerifierTest {
         KnownHostsFileVerifier verifier = new KnownHostsFileVerifier();
         assertThat(
                 verifier.forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null), is("-o StrictHostKeyChecking=yes"));
+    }
+
+    private static class LogHandler extends Handler {
+
+        private List<String> messages = new ArrayList<>();
+
+        @Override
+        public void publish(LogRecord lr) {
+            messages.add(lr.getMessage());
+        }
+
+        @Override
+        public void flush() {}
+
+        @Override
+        public void close() throws SecurityException {
+            messages = new ArrayList<>();
+        }
+
+        List<String> getMessages() {
+            return messages;
+        }
     }
 }
