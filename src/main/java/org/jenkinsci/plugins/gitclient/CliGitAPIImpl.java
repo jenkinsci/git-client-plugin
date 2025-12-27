@@ -2710,7 +2710,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
             w.write("\"" + sshexe.getAbsolutePath()
-                    + "\" -T -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
+                    + "\" -n -T -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
                     + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
             w.newLine();
@@ -2734,7 +2734,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
-            w.write("ssh -T -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
+            w.write("ssh -n -T -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
                     + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
