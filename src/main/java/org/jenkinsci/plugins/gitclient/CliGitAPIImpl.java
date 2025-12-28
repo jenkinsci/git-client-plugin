@@ -2711,7 +2711,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("\"" + sshexe.getAbsolutePath()
                     + "\" -n -T -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
-                    + "-o BatchMode=yes -o PasswordAuthentication=no -o StrictHostKeyChecking=yes "
+                    + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
             w.newLine();
         }
@@ -2735,7 +2735,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("fi");
             w.newLine();
             w.write("ssh -n -T -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
-                    + "-o BatchMode=yes -o PasswordAuthentication=no -o StrictHostKeyChecking=yes "
+                    + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
         }
