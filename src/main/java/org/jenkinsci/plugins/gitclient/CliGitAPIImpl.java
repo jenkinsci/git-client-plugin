@@ -2101,42 +2101,30 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 return createTempFileInSystemDir(prefix, suffix);
             }
         }
-        Path tmpPath = Path.of(workspaceTmp.getAbsolutePath());
+        String absolutePath = workspaceTmp.getAbsolutePath();
+        Path tmpPath = Path.of(absolutePath);
+        if (absolutePath.contains("%")) {
+            // Avoid ssh token expansion on all platforms
+            return createTempFileInSystemDir(prefix, suffix);
+        }
         if (isWindows()) {
+            /* Windows git fails its call to GIT_SSH if its absolute
+             * path contains a space or parenthesis or pipe or question mark or asterisk.
+             * Use system temp dir instead of workspace temp dir.
+             */
+            if (absolutePath.matches(".*[ ()|?*].*")) {
+                return createTempFileInSystemDir(prefix, suffix);
+            }
             return Files.createTempFile(tmpPath, prefix, suffix);
+        }
+        // Unix specific
+        if (absolutePath.contains("`")) {
+            // Avoid backquote shell expansion
+            return createTempFileInSystemDir(prefix, suffix);
         }
         Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rw-------");
         FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
         return Files.createTempFile(tmpPath, prefix, suffix, fileAttribute);
-    }
-
-    /**
-     * Create temporary file for SSH/askpass wrapper scripts.
-     *
-     * Wrapper scripts are passed to git via GIT_SSH environment variable, and git
-     * must be able to execute them. Unlike SSH keys and passwords which contain
-     * actual secrets, wrapper scripts only contain references to environment variables.
-     *
-     * System temp is used for reliability:
-     * - Workspace paths can contain special characters that break git execution
-     * - No secrets are exposed (wrappers only reference environment variables)
-     * - Consistent, predictable paths across all platforms and workspace configurations
-     * - Credentials (SSH keys, passwords) remain isolated in workspace temp
-     *
-     * @param prefix file name prefix for the generated temporary file (will be preceeded by "jenkins-gitclient-")
-     * @param suffix file name suffix for the generated temporary file
-     * @return temporary file for wrapper script in system temp directory
-     * @throws IOException on error
-     */
-    private Path createTempFileForWrapper(String prefix, String suffix) throws IOException {
-        String common_prefix = "jenkins-gitclient-";
-        if (prefix == null) {
-            prefix = common_prefix;
-        } else {
-            prefix = common_prefix + prefix;
-        }
-
-        return createTempFileInSystemDir(prefix, suffix);
     }
 
     private void deleteTempFile(Path tempFile) {
@@ -2244,10 +2232,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
-                /* ssh.exe 9.5 on Windows does not accept spaces in path to known_hosts.
-                 * Use temp file wrapper location because known_hosts is not sensitive info.
-                 */
-                knownHostsTemp = createTempFileForWrapper("known_hosts", "");
+                knownHostsTemp = createTempFile("known_hosts", "");
                 if (launcher.isUnix()) {
                     ssh = createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass = createUnixSshAskpass(sshUser, passphrase);
@@ -2755,15 +2740,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return sshexe;
         }
 
-        // Check for ssh.exe on the system PATH (supports Microsoft OpenSSH and other alternate implementations)
-        String sshPath = getPathToExe("ssh");
-        if (sshPath != null) {
-            sshexe = new File(sshPath);
-            if (sshexe.exists()) {
-                return sshexe;
-            }
-        }
-
         // Check Program Files
         sshexe = getFileFromEnv("ProgramFiles", "\\Git\\bin\\ssh.exe");
         if (sshexe != null && sshexe.exists()) {
@@ -2829,7 +2805,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /* Package protected for security testing */
     Path createWindowsGitSSH(Path key, String user, Path knownHosts) throws IOException {
-        Path ssh = createTempFileForWrapper("ssh", ".bat");
+        Path ssh = createTempFile("ssh", ".bat");
 
         File sshexe = getSSHExecutable();
 
@@ -2849,7 +2825,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     /* Package protected for security testing */
     Path createUnixGitSSH(Path key, String user, Path knownHosts) throws IOException {
-        Path ssh = createTempFileForWrapper("ssh", ".sh");
+        Path ssh = createTempFile("ssh", ".sh");
         try (BufferedWriter w = Files.newBufferedWriter(ssh, Charset.forName(encoding))) {
             w.write("#!/bin/sh");
             w.newLine();
