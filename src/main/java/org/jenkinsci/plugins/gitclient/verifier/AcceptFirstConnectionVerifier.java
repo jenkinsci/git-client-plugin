@@ -13,7 +13,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
         return tempKnownHosts -> {
             listener.getLogger()
                     .println("Verifying host key using known hosts file, will automatically accept unseen keys");
-            return "-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes";
+            return "-o StrictHostKeyChecking=accept-new";
         };
     }
 

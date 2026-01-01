@@ -2,8 +2,11 @@ package org.jenkinsci.plugins.gitclient.verifier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -17,6 +20,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -58,7 +62,7 @@ class AcceptFirstConnectionVerifierTest {
         assumeTrue(runKnownHostsTests());
         assertThat(
                 new AcceptFirstConnectionVerifier().forCliGit(TaskListener.NULL).getVerifyHostKeyOption(null),
-                is("-o StrictHostKeyChecking=accept-new -o HashKnownHosts=yes"));
+                is("-o StrictHostKeyChecking=accept-new"));
     }
 
     @Test
@@ -82,9 +86,99 @@ class AcceptFirstConnectionVerifierTest {
                         })
                 .close();
         assertThat(file, is(anExistingFile()));
+        List<String> lines = Files.readAllLines(file.toPath());
+
+        // JENKINS-73427: Verify entries are NOT hashed (no |1| prefix) to avoid malformed entries
         assertThat(
-                Files.readAllLines(file.toPath()),
-                hasItem(containsString(KEY_ECDSA_SHA_2_NISTP_256.substring(KEY_ECDSA_SHA_2_NISTP_256.indexOf(" ")))));
+                "Host key entry should be in plain format, not hashed",
+                lines.stream().noneMatch(line -> line.startsWith("|1|")),
+                is(true));
+
+        // Verify the key was added with the correct algorithm and key material
+        assertThat(lines, hasItem(containsString("ecdsa-sha2-nistp256")));
+        assertThat(
+                lines,
+                hasItem(
+                        containsString(
+                                "AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=")));
+    }
+
+    @Test
+    void testMalformedHashedEntriesCanBeRead() throws Exception {
+        // JENKINS-73427: Test that malformed hashed entries (from older versions) can still be read
+        // This is the malformed format that was reported in the issue with TWO comma-separated hash patterns
+        // The system should log a warning but not crash with an IllegalArgumentException
+        assumeTrue(runKnownHostsTests());
+        String malformedHashedEntry = KEY_ECDSA_SHA_2_NISTP_256;
+
+        File mockedKnownHosts = knownHostsTestUtil.createFakeKnownHosts(malformedHashedEntry);
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(mockedKnownHosts);
+
+        // The connection should proceed without throwing IllegalArgumentException for "Invalid hash pattern"
+        // The system logs a warning about the malformed entry but continues working
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        mockedKnownHosts,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ecdsa-sha2-nistp256",
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            // Successfully connected despite malformed entry in known_hosts
+                            return true;
+                        })
+                .close();
+    }
+
+    @Test
+    void testNewEntriesAreNotHashed() throws Exception {
+        // JENKINS-73427: Verify that new entries are created in plain format, not hashed
+        // This confirms the fix prevents the malformed hashed entries issue
+        assumeTrue(runKnownHostsTests());
+        File file = new File(testFolder + "path/to/newhosts");
+        AcceptFirstConnectionVerifier acceptFirstConnectionVerifier = spy(new AcceptFirstConnectionVerifier());
+        when(acceptFirstConnectionVerifier.getKnownHostsFile()).thenReturn(file);
+
+        KnownHostsTestUtil.connectToHost(
+                        "github.com",
+                        22,
+                        file,
+                        acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
+                        "ssh-ed25519",
+                        s -> {
+                            assertThat(s.isOpen(), is(true));
+                            Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
+                            assertThat(KnownHostsTestUtil.checkKeys(s), is(true));
+                            return true;
+                        })
+                .close();
+
+        assertThat(file, is(anExistingFile()));
+        List<String> lines = Files.readAllLines(file.toPath());
+
+        // Filter out any empty lines
+        List<String> nonEmptyLines =
+                lines.stream().filter(line -> !line.trim().isEmpty()).collect(Collectors.toList());
+
+        // The key insight: entries should be in plain format like "github.com,140.82.121.4 ssh-ed25519 ..."
+        // NOT hashed like "|1|hash|hash ssh-ed25519 ..."
+        assertThat("At least one entry should be created", nonEmptyLines.size(), is(greaterThan(0)));
+
+        // Verify ALL entries are NOT hashed (no |1| prefix indicating hashed hostname)
+        for (String entry : nonEmptyLines) {
+            assertThat("Entry should not start with |1| (hashed format): " + entry, entry, not(startsWith("|1|")));
+
+            // Verify it contains the key type
+            assertThat("Entry should contain key type: " + entry, entry, containsString("ssh-ed25519"));
+        }
+
+        // Verify at least one entry contains the hostname in plain text
+        assertThat(
+                "At least one entry should contain plain hostname",
+                nonEmptyLines.stream().anyMatch(line -> line.contains("github.com")),
+                is(true));
     }
 
     @Test
