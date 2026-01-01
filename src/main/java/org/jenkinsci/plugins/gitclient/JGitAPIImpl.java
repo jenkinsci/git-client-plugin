@@ -741,52 +741,52 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (url == null) {
             return;
         }
-        
+
         String user = url.getUser();
         String pass = url.getPass();
-        
+
         // Only add credentials if both username and password are present in the URL
         if (user != null && !user.isEmpty() && pass != null && !pass.isEmpty()) {
             StandardUsernamePasswordCredentials embeddedCredentials = new StandardUsernamePasswordCredentials() {
                 @Serial
                 private static final long serialVersionUID = 1L;
-                
+
                 @Override
                 @NonNull
                 public String getDescription() {
                     return "Credentials extracted from repository URL";
                 }
-                
+
                 @Override
                 @NonNull
                 public String getId() {
                     return "embedded-url-credentials-" + url.getHost();
                 }
-                
+
                 @Override
                 public CredentialsScope getScope() {
                     return CredentialsScope.GLOBAL;
                 }
-                
+
                 @Override
                 @NonNull
                 public CredentialsDescriptor getDescriptor() {
                     throw new UnsupportedOperationException("Descriptor not available for embedded credentials");
                 }
-                
+
                 @Override
                 @NonNull
                 public String getUsername() {
                     return user;
                 }
-                
+
                 @Override
                 @NonNull
                 public Secret getPassword() {
                     return Secret.fromString(pass);
                 }
             };
-            
+
             // Add the credentials to the provider so they can be used for authentication
             addCredentials(url.toString(), embeddedCredentials);
         }
@@ -881,7 +881,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (unsupportedProtocol(url)) {
                         throw new GitException("unsupported protocol in URL " + url);
                     }
-                    
+
                     // JENKINS-69507: Handle embedded credentials in URLs
                     // If the URL looks like a remote name (not a full URL), resolve it from git config first
                     URIish urlForCredentials = url;
@@ -895,12 +895,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             // If resolution fails, continue with original URL
                         }
                     }
-                    
+
                     // Extract and add credentials from the resolved URL if embedded
                     // This handles the case where a URL with embedded credentials is stored in git config
                     // and used in subsequent fetches
                     extractAndAddEmbeddedCredentials(urlForCredentials);
-                    
+
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
                     fetch.setTransportConfigCallback(getTransportConfigCallback());
