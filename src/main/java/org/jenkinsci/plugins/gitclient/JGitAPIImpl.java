@@ -731,6 +731,60 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Static inner class to hold embedded credentials extracted from URLs.
+     * This avoids SpotBugs warnings about serializable inner classes.
+     */
+    private static class EmbeddedCredentials implements StandardUsernamePasswordCredentials {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        private final String username;
+        private final String password;
+        private final String host;
+
+        EmbeddedCredentials(String username, String password, String host) {
+            this.username = username;
+            this.password = password;
+            this.host = host;
+        }
+
+        @Override
+        @NonNull
+        public String getDescription() {
+            return "Credentials extracted from repository URL";
+        }
+
+        @Override
+        @NonNull
+        public String getId() {
+            return "embedded-url-credentials-" + host;
+        }
+
+        @Override
+        public CredentialsScope getScope() {
+            return CredentialsScope.GLOBAL;
+        }
+
+        @Override
+        @NonNull
+        public CredentialsDescriptor getDescriptor() {
+            throw new UnsupportedOperationException("Descriptor not available for embedded credentials");
+        }
+
+        @Override
+        @NonNull
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        @NonNull
+        public Secret getPassword() {
+            return Secret.fromString(password);
+        }
+    }
+
+    /**
      * Extracts embedded credentials from a URL and adds them to the credentials provider.
      * This is necessary because JGit doesn't automatically use credentials embedded in URLs
      * stored in git config (JENKINS-69507).
@@ -747,45 +801,8 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
         // Only add credentials if both username and password are present in the URL
         if (user != null && !user.isEmpty() && pass != null && !pass.isEmpty()) {
-            StandardUsernamePasswordCredentials embeddedCredentials = new StandardUsernamePasswordCredentials() {
-                @Serial
-                private static final long serialVersionUID = 1L;
-
-                @Override
-                @NonNull
-                public String getDescription() {
-                    return "Credentials extracted from repository URL";
-                }
-
-                @Override
-                @NonNull
-                public String getId() {
-                    return "embedded-url-credentials-" + url.getHost();
-                }
-
-                @Override
-                public CredentialsScope getScope() {
-                    return CredentialsScope.GLOBAL;
-                }
-
-                @Override
-                @NonNull
-                public CredentialsDescriptor getDescriptor() {
-                    throw new UnsupportedOperationException("Descriptor not available for embedded credentials");
-                }
-
-                @Override
-                @NonNull
-                public String getUsername() {
-                    return user;
-                }
-
-                @Override
-                @NonNull
-                public Secret getPassword() {
-                    return Secret.fromString(pass);
-                }
-            };
+            StandardUsernamePasswordCredentials embeddedCredentials =
+                    new EmbeddedCredentials(user, pass, url.getHost());
 
             // Add the credentials to the provider so they can be used for authentication
             addCredentials(url.toString(), embeddedCredentials);

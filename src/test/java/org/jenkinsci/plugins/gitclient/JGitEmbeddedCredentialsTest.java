@@ -120,39 +120,52 @@ class JGitEmbeddedCredentialsTest {
     }
 
     /**
+     * Static inner class for test credentials to avoid SpotBugs warnings.
+     */
+    private static class TestCredentials implements StandardUsernamePasswordCredentials {
+        private final String username;
+        private final String password;
+
+        TestCredentials(String username, String password) {
+            this.username = username;
+            this.password = password;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Test credentials";
+        }
+
+        @Override
+        public String getId() {
+            return "test-id";
+        }
+
+        @Override
+        public com.cloudbees.plugins.credentials.CredentialsScope getScope() {
+            return com.cloudbees.plugins.credentials.CredentialsScope.GLOBAL;
+        }
+
+        @Override
+        public com.cloudbees.plugins.credentials.CredentialsDescriptor getDescriptor() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public hudson.util.Secret getPassword() {
+            return hudson.util.Secret.fromString(password);
+        }
+    }
+
+    /**
      * Helper method to create test credentials
      */
     private StandardUsernamePasswordCredentials createTestCredentials(String username, String password) {
-        return new StandardUsernamePasswordCredentials() {
-            @Override
-            public String getDescription() {
-                return "Test credentials";
-            }
-
-            @Override
-            public String getId() {
-                return "test-id";
-            }
-
-            @Override
-            public com.cloudbees.plugins.credentials.CredentialsScope getScope() {
-                return com.cloudbees.plugins.credentials.CredentialsScope.GLOBAL;
-            }
-
-            @Override
-            public com.cloudbees.plugins.credentials.CredentialsDescriptor getDescriptor() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String getUsername() {
-                return username;
-            }
-
-            @Override
-            public hudson.util.Secret getPassword() {
-                return hudson.util.Secret.fromString(password);
-            }
-        };
+        return new TestCredentials(username, password);
     }
 }
