@@ -15,7 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
  * Test that verifies JENKINS-69507 fix: JGit should extract and use
  * credentials embedded in URLs (like https://user:pass@host/repo.git)
  * for subsequent fetch operations.
- * 
+ *
  * @author Akash Manna
  */
 class JGitEmbeddedCredentialsTest {
