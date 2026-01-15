@@ -739,12 +739,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         private static final long serialVersionUID = 1L;
 
         private final String username;
-        private final String password;
+        private final Secret password;
         private final String host;
 
         EmbeddedCredentials(String username, String password, String host) {
             this.username = username;
-            this.password = password;
+            this.password = Secret.fromString(password);
             this.host = host;
         }
 
@@ -780,7 +780,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         @Override
         @NonNull
         public Secret getPassword() {
-            return Secret.fromString(password);
+            return password;
         }
     }
 
