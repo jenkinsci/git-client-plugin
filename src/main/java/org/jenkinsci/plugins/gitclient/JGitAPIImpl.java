@@ -799,12 +799,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String user = url.getUser();
         String pass = url.getPass();
 
-        // Only add credentials if both username and password are present in the URL
         if (user != null && !user.isEmpty() && pass != null && !pass.isEmpty()) {
             StandardUsernamePasswordCredentials embeddedCredentials =
                     new EmbeddedCredentials(user, pass, url.getHost());
 
-            // Add the credentials to the provider so they can be used for authentication
             addCredentials(url.toString(), embeddedCredentials);
         }
     }
@@ -899,8 +897,9 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         throw new GitException("unsupported protocol in URL " + url);
                     }
 
-                    // JENKINS-69507: Handle embedded credentials in URLs
-                    // If the URL looks like a remote name (not a full URL), resolve it from git config first
+                    /* JENKINS-69507: Handle embedded credentials in URLs
+                     * If the URL looks like a remote name (not a full URL), resolve it from git config first
+                     */
                     URIish urlForCredentials = url;
                     if (!url.isRemote() && !org.apache.commons.lang3.StringUtils.containsAny(url.toString(), ":@/\\")) {
                         try {
@@ -913,9 +912,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         }
                     }
 
-                    // Extract and add credentials from the resolved URL if embedded
-                    // This handles the case where a URL with embedded credentials is stored in git config
-                    // and used in subsequent fetches
+                    /* Extract and add credentials from the resolved URL if embedded
+                     * This handles the case where a URL with embedded credentials is stored in git config
+                     * and used in subsequent fetches
+                     */
                     extractAndAddEmbeddedCredentials(urlForCredentials);
 
                     fetch.setRemote(url.toString());
