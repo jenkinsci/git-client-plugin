@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.2102.v5f5fe09fccf1</version>
+    <version>6.2122.v70b_7b_f659d72</version>
     <relativePath />
   </parent>
 
@@ -54,7 +54,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>5804.v80587a_38d937</version>
+        <version>5983.v443959746f1f</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -210,7 +210,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>4.2.5</version>
+      <version>4.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -240,7 +240,7 @@
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
-      <version>3.4</version>
+      <version>3.5</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
