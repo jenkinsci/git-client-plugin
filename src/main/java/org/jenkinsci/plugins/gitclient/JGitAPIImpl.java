@@ -800,10 +800,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         String pass = url.getPass();
 
         if (user != null && !user.isEmpty() && pass != null && !pass.isEmpty()) {
-            StandardUsernamePasswordCredentials embeddedCredentials =
-                    new EmbeddedCredentials(user, pass, url.getHost());
+            String host = url.getHost();
+            if (host == null || host.isEmpty()) {
+                host = "unknown-host";
+            }
 
+            StandardUsernamePasswordCredentials embeddedCredentials =
+                    new EmbeddedCredentials(user, pass, host);
+
+            // Add credentials keyed by the full URL (including embedded credentials)
             addCredentials(url.toString(), embeddedCredentials);
+
+            // Also add credentials keyed by the URL without embedded credentials,
+            // since JGit's TransportHttp may query using a stripped URL.
+            String urlWithoutCredentials = url.toASCIIString().replaceFirst("://[^@]+@", "://");
+            addCredentials(urlWithoutCredentials, embeddedCredentials);
         }
     }
 
@@ -901,7 +912,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                      * If the URL looks like a remote name (not a full URL), resolve it from git config first
                      */
                     URIish urlForCredentials = url;
-                    if (!url.isRemote() && !org.apache.commons.lang3.StringUtils.containsAny(url.toString(), ":@/\\")) {
+                    if (!url.isRemote()) {
                         try {
                             String resolvedUrl = getRemoteUrl(url.toString());
                             if (resolvedUrl != null) {
