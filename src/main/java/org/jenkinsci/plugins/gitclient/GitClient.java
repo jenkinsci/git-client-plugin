@@ -23,6 +23,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.URIish;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 /**
  * Interface to Git functionality.
@@ -47,7 +48,8 @@ public interface GitClient {
      */
     CredentialsMatcher CREDENTIALS_MATCHER = CredentialsMatchers.anyOf(
             CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class),
-            CredentialsMatchers.instanceOf(SSHUserPrivateKey.class));
+            CredentialsMatchers.instanceOf(SSHUserPrivateKey.class),
+            CredentialsMatchers.instanceOf(StringCredentials.class));
 
     /**
      * Remove all credentials from the client.
