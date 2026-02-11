@@ -222,6 +222,28 @@ public interface GitClient {
     String getRemoteUrl(String name) throws GitException, InterruptedException;
 
     /**
+     * getRemoteUrls.
+     *
+     * @return a Map where String keys represent URIs (with and
+     *         without passwords, if any; ASCII or not, if
+     *         applicable) for all remotes configured in this
+     *         repository/workspace, and values represent names.
+     *         There may be several URIs corresponding to same name.
+     */
+    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException;
+
+    /**
+     * getRemotePushUrls.
+     *
+     * @return a Map where String keys represent push-only URIs
+     *         (with and without passwords, if any; ASCII or not,
+     *         if applicable) for all remotes configured in this
+     *         repository/workspace, and values represent names.
+     *         There may be several URIs corresponding to same name.
+     */
+    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException;
+
+    /**
      * For a given repository, set a remote's URL
      *
      * @param name The name of the remote (e.g. origin)
@@ -696,12 +718,23 @@ public interface GitClient {
      */
     List<ObjectId> revList(String ref) throws GitException, InterruptedException;
 
+    // --- new instance of same applied class
+
+    /**
+     * newGit.
+     *
+     * @return an {@link IGitAPI} implementation to manage another git repository
+     *   with same general settings and implementation as the current one.
+     * @param somedir a {@link java.lang.String} object.
+     */
+    GitClient newGit(String somedir);
+
     // --- submodules
 
     /**
      * subGit.
      *
-     * @return a IGitAPI implementation to manage git submodule repository
+     * @return an {@link IGitAPI} implementation to manage git submodule repository
      * @param subdir a {@link java.lang.String} object.
      */
     GitClient subGit(String subdir);

@@ -347,6 +347,18 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
 
     /** {@inheritDoc} */
     @Override
+    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
+        return proxy.getRemoteUrls();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        return proxy.getRemotePushUrls();
+    }
+
+    /** {@inheritDoc} */
+    @Override
     public void setRemoteUrl(String name, String url) throws GitException, InterruptedException {
         proxy.setRemoteUrl(name, url);
     }
@@ -707,6 +719,11 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     @Override
     public GitClient subGit(String subdir) {
         return proxy.subGit(subdir);
+    }
+
+    /** {@inheritDoc} */
+    public GitClient newGit(String somedir) {
+        return proxy.newGit(somedir);
     }
 
     /**
