@@ -2626,6 +2626,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return sshexe;
         }
 
+        // Check for ssh.exe on the system PATH (supports Microsoft OpenSSH and other alternate implementations)
+        String sshPath = getPathToExe("ssh");
+        if (sshPath != null) {
+            sshexe = new File(sshPath);
+            if (sshexe.exists()) {
+                return sshexe;
+            }
+        }
+
         // Check Program Files
         sshexe = getFileFromEnv("ProgramFiles", "\\Git\\bin\\ssh.exe");
         if (sshexe != null && sshexe.exists()) {
@@ -2701,7 +2710,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
             w.write("\"" + sshexe.getAbsolutePath()
-                    + "\" -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
+                    + "\" -n -T -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
+                    + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
             w.newLine();
         }
@@ -2724,7 +2734,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
-            w.write("ssh -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
+            w.write("ssh -n -T -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
+                    + "-o BatchMode=yes -o PasswordAuthentication=no "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
         }
