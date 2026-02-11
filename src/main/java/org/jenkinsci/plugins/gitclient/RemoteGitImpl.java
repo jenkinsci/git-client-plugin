@@ -786,7 +786,11 @@ class RemoteGitImpl implements GitClient, hudson.plugins.git.IGitAPI, Serializab
     }
 
     /** {@inheritDoc} */
-    @Override
+    public void submoduleClean(boolean recursive, boolean cleanSubmodule) throws GitException, InterruptedException {
+        proxy.submoduleClean(recursive, cleanSubmodule);
+    }
+
+    /** {@inheritDoc} */
     public void setupSubmoduleUrls(Revision rev, TaskListener listener) throws GitException, InterruptedException {
         proxy.setupSubmoduleUrls(rev, listener);
     }
