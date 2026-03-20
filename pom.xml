@@ -40,7 +40,7 @@
     <hpi.bundledArtifacts>JavaEWAH,org.eclipse.jgit,org.eclipse.jgit.http.apache,org.eclipse.jgit.http.server,org.eclipse.jgit.lfs,org.eclipse.jgit.ssh.apache</hpi.bundledArtifacts>
     <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-    <jenkins.baseline>2.504</jenkins.baseline>
+    <jenkins.baseline>2.516</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <jgit.version>7.6.0.202603022253-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
