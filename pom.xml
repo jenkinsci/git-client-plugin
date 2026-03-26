@@ -45,7 +45,7 @@
     <jgit.version>7.6.0.202603022253-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
-    <spotless.check.skip>true</spotless.check.skip>
+    <spotless.check.skip>false</spotless.check.skip>
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
   </properties>
 
