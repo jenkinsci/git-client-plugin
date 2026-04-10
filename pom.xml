@@ -47,6 +47,7 @@
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
+    <ban-deprecated-stapler.skip>true</ban-deprecated-stapler.skip>
   </properties>
 
   <dependencyManagement>
