@@ -18,12 +18,14 @@ class PushSimpleTest extends PushTest {
     @Test
     void pushNonFastForwardThrows() throws Exception {
         checkoutOldBranchAndCommitFile(); // Old branch can't be pushed without force()
-        assertThrows(GitException.class, () -> workingGitClient
-                .push()
-                .to(bareURI)
-                .ref(refSpec)
-                .timeout(1)
-                .execute());
+        assertThrows(
+                GitException.class,
+                () -> workingGitClient
+                        .push()
+                        .to(bareURI)
+                        .ref(refSpec)
+                        .timeout(1)
+                        .execute());
     }
 
     @Test
