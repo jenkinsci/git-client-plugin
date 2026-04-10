@@ -63,10 +63,12 @@ class GitExceptionTest {
                 .using("git")
                 .getClient();
         assertNotNull(defaultClient);
-        assertThrows(GitException.class, () -> defaultClient
-                .init_()
-                .workspace(badDirectory.getAbsolutePath())
-                .execute());
+        assertThrows(
+                GitException.class,
+                () -> defaultClient
+                        .init_()
+                        .workspace(badDirectory.getAbsolutePath())
+                        .execute());
     }
 
     @Test
@@ -81,10 +83,12 @@ class GitExceptionTest {
                 .using("jgit")
                 .getClient();
         assertNotNull(defaultClient);
-        JGitInternalException e = assertThrows(JGitInternalException.class, () -> defaultClient
-                .init_()
-                .workspace(badDirectory.getAbsolutePath())
-                .execute());
+        JGitInternalException e = assertThrows(
+                JGitInternalException.class,
+                () -> defaultClient
+                        .init_()
+                        .workspace(badDirectory.getAbsolutePath())
+                        .execute());
         assertThat(e.getCause(), isA(IOException.class));
     }
 
