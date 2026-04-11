@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.jvnet.hudson.test.Issue;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 /**
  * Security test that proves the environment variable approach prevents
@@ -35,6 +36,7 @@ import org.jvnet.hudson.test.Issue;
  *
  * @author Mark Waite
  */
+@WithJenkins
 class CliGitAPISecurityTest {
 
     @TempDir
@@ -284,6 +286,180 @@ class CliGitAPISecurityTest {
             // Expected - the wrapper will fail because there's no real ssh binary
             // or the ssh binary will fail because there's no real server
             // That's fine - we're just checking for injection
+        }
+    }
+
+    /**
+     * Test that SSH verbose mode is disabled by default (no -vvv flag)
+     */
+    @Test
+    @Issue("JENKINS-71461")
+    void testSshVerboseModeDisabledByDefault() throws Exception {
+        workspace = new File(tempDir, "test-default");
+        workspace.mkdirs();
+
+        Path keyFile = createMockSSHKey(workspace);
+        Path knownHosts = Files.createTempFile("known_hosts", "");
+
+        try {
+            // When Jenkins is not available, SSH verbose should default to false
+            GitClient gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(workspace)
+                    .using("git")
+                    .getClient();
+            CliGitAPIImpl git = (CliGitAPIImpl) gitClient;
+
+            Path sshWrapper;
+            if (isWindows()) {
+                sshWrapper = git.createWindowsGitSSH(keyFile, "testuser", knownHosts);
+            } else {
+                sshWrapper = git.createUnixGitSSH(keyFile, "testuser", knownHosts);
+            }
+
+            String wrapperContent = Files.readString(sshWrapper, StandardCharsets.UTF_8);
+
+            // Verify -vvv flag is NOT present
+            assertFalse(
+                    wrapperContent.contains("-vvv"),
+                    "Wrapper should NOT contain -vvv flag when verbose mode is disabled");
+
+        } finally {
+            Files.deleteIfExists(knownHosts);
+        }
+    }
+
+    /**
+     * Test that SSH verbose mode adds -vvv flag when enabled
+     */
+    @Test
+    @Issue("JENKINS-71461")
+    void testSshVerboseModeEnabled() throws Exception {
+        // Skip if Jenkins instance is not available
+        if (jenkins.model.Jenkins.getInstanceOrNull() == null) {
+            return;
+        }
+
+        workspace = new File(tempDir, "test-verbose");
+        workspace.mkdirs();
+
+        Path keyFile = createMockSSHKey(workspace);
+        Path knownHosts = Files.createTempFile("known_hosts", "");
+
+        try {
+            // Enable SSH verbose mode
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(true);
+
+            GitClient gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(workspace)
+                    .using("git")
+                    .getClient();
+            CliGitAPIImpl git = (CliGitAPIImpl) gitClient;
+
+            Path sshWrapper;
+            if (isWindows()) {
+                sshWrapper = git.createWindowsGitSSH(keyFile, "testuser", knownHosts);
+            } else {
+                sshWrapper = git.createUnixGitSSH(keyFile, "testuser", knownHosts);
+            }
+
+            String wrapperContent = Files.readString(sshWrapper, StandardCharsets.UTF_8);
+
+            // Verify -vvv flag IS present
+            assertTrue(
+                    wrapperContent.contains("-vvv"), "Wrapper should contain -vvv flag when verbose mode is enabled");
+
+        } finally {
+            // Reset to default
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(false);
+            Files.deleteIfExists(knownHosts);
+        }
+    }
+
+    /**
+     * Test that SSH verbose mode flag is placed correctly in Unix wrapper
+     */
+    @Test
+    @Issue("JENKINS-71461")
+    void testUnixSshVerboseFlagPlacement() throws Exception {
+        // Skip if Jenkins instance is not available or on Windows
+        if (jenkins.model.Jenkins.getInstanceOrNull() == null || isWindows()) {
+            return;
+        }
+
+        workspace = new File(tempDir, "test-unix-verbose");
+        workspace.mkdirs();
+
+        Path keyFile = createMockSSHKey(workspace);
+        Path knownHosts = Files.createTempFile("known_hosts", "");
+
+        try {
+            // Enable SSH verbose mode
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(true);
+
+            GitClient gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(workspace)
+                    .using("git")
+                    .getClient();
+            CliGitAPIImpl git = (CliGitAPIImpl) gitClient;
+            Path sshWrapper = git.createUnixGitSSH(keyFile, "testuser", knownHosts);
+
+            String wrapperContent = Files.readString(sshWrapper, StandardCharsets.UTF_8);
+
+            // Verify -vvv appears before "$@" (which represents additional args)
+            int vvvIndex = wrapperContent.indexOf("-vvv");
+            int argsIndex = wrapperContent.indexOf("\"$@\"");
+            assertTrue(vvvIndex > 0, "-vvv flag should be present");
+            assertTrue(argsIndex > 0, "\"$@\" should be present");
+            assertTrue(vvvIndex < argsIndex, "-vvv flag should appear before \"$@\"");
+
+        } finally {
+            // Reset to default
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(false);
+            Files.deleteIfExists(knownHosts);
+        }
+    }
+
+    /**
+     * Test that SSH verbose mode flag is placed correctly in Windows wrapper
+     */
+    @Test
+    @Issue("JENKINS-71461")
+    void testWindowsSshVerboseFlagPlacement() throws Exception {
+        // Skip if Jenkins instance is not available or on Unix
+        if (jenkins.model.Jenkins.getInstanceOrNull() == null || !isWindows()) {
+            return; // Skip on Unix
+        }
+
+        workspace = new File(tempDir, "test-windows-verbose");
+        workspace.mkdirs();
+
+        Path keyFile = createMockSSHKey(workspace);
+        Path knownHosts = Files.createTempFile("known_hosts", "");
+
+        try {
+            // Enable SSH verbose mode
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(true);
+
+            GitClient gitClient = Git.with(TaskListener.NULL, new EnvVars())
+                    .in(workspace)
+                    .using("git")
+                    .getClient();
+            CliGitAPIImpl git = (CliGitAPIImpl) gitClient;
+            Path sshWrapper = git.createWindowsGitSSH(keyFile, "testuser", knownHosts);
+
+            String wrapperContent = Files.readString(sshWrapper, StandardCharsets.UTF_8);
+
+            // Verify -vvv appears before %* (which represents additional args)
+            int vvvIndex = wrapperContent.indexOf("-vvv");
+            int argsIndex = wrapperContent.indexOf("%*");
+            assertTrue(vvvIndex > 0, "-vvv flag should be present");
+            assertTrue(argsIndex > 0, "%* should be present");
+            assertTrue(vvvIndex < argsIndex, "-vvv flag should appear before %*");
+
+        } finally {
+            // Reset to default
+            GitHostKeyVerificationConfiguration.get().setSshVerbose(false);
+            Files.deleteIfExists(knownHosts);
         }
     }
 }

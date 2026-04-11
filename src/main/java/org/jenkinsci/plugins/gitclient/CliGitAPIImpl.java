@@ -2700,9 +2700,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
+            String verboseFlag = isSshVerboseEnabled() ? " -vvv" : "";
             w.write("\"" + sshexe.getAbsolutePath()
                     + "\" -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
-                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
+                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
+                    + " %* ");
             w.newLine();
         }
         ssh.toFile().setExecutable(true, true);
@@ -2724,8 +2726,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
+            String verboseFlag = isSshVerboseEnabled() ? " -vvv" : "";
             w.write("ssh -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
-                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
+                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
+                    + " \"$@\"");
             w.newLine();
         }
         return createNonBusyExecutable(ssh);
@@ -2766,6 +2770,25 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
+    }
+
+    /**
+     * Safely check if SSH verbose mode is enabled.
+     * Returns false if Jenkins instance is not available (e.g., during tests).
+     *
+     * @return true if SSH verbose mode is enabled, false otherwise
+     */
+    private boolean isSshVerboseEnabled() {
+        try {
+            jenkins.model.Jenkins instance = jenkins.model.Jenkins.getInstanceOrNull();
+            if (instance != null) {
+                return GitHostKeyVerificationConfiguration.get().isSshVerbose();
+            }
+        } catch (Exception e) {
+            // If we can't get the configuration, default to false
+            LOGGER.log(Level.FINE, "Unable to get SSH verbose configuration", e);
+        }
+        return false;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env)
