@@ -205,6 +205,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private Map<Instant, String> failureClues = new TreeMap<>();
 
+    private boolean sshVerbose;
+
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
      *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
@@ -348,7 +350,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public GitClient subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        CliGitAPIImpl git = new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        git.setSshVerbose(sshVerbose);
+        return git;
     }
 
     /**
@@ -2700,7 +2704,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
-            String verboseFlag = isSshVerboseEnabled() ? " -vvv" : "";
+            String verboseFlag = sshVerbose ? " -vvv" : "";
             w.write("\"" + sshexe.getAbsolutePath()
                     + "\" -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
@@ -2726,7 +2730,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
-            String verboseFlag = isSshVerboseEnabled() ? " -vvv" : "";
+            String verboseFlag = sshVerbose ? " -vvv" : "";
             w.write("ssh -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
                     + " \"$@\"");
@@ -2772,23 +2776,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommandIn(args, workDir, environment);
     }
 
-    /**
-     * Safely check if SSH verbose mode is enabled.
-     * Returns false if Jenkins instance is not available (e.g., during tests).
-     *
-     * @return true if SSH verbose mode is enabled, false otherwise
-     */
-    private boolean isSshVerboseEnabled() {
-        try {
-            jenkins.model.Jenkins instance = jenkins.model.Jenkins.getInstanceOrNull();
-            if (instance != null) {
-                return GitHostKeyVerificationConfiguration.get().isSshVerbose();
-            }
-        } catch (Exception e) {
-            // If we can't get the configuration, default to false
-            LOGGER.log(Level.FINE, "Unable to get SSH verbose configuration", e);
-        }
-        return false;
+    public void setSshVerbose(boolean sshVerbose) {
+        this.sshVerbose = sshVerbose;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env)
