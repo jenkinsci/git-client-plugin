@@ -205,6 +205,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     private Map<Instant, String> failureClues = new TreeMap<>();
 
+    private boolean sshVerbose;
+
     /* git config --get-regex applies the regex to match keys, and returns all matches (including substring matches).
      * Thus, a config call:
      *   git config -f .gitmodules --get-regexp "^submodule\.(.+)\.url"
@@ -348,7 +350,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public GitClient subGit(String subdir) {
-        return new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        CliGitAPIImpl git = new CliGitAPIImpl(gitExe, new File(workspace, subdir), listener, environment);
+        git.setSshVerbose(sshVerbose);
+        return git;
     }
 
     /**
@@ -2700,9 +2704,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
+            String verboseFlag = sshVerbose ? " -vvv" : "";
             w.write("\"" + sshexe.getAbsolutePath()
                     + "\" -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
-                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
+                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
+                    + " %* ");
             w.newLine();
         }
         ssh.toFile().setExecutable(true, true);
@@ -2724,8 +2730,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
+            String verboseFlag = sshVerbose ? " -vvv" : "";
             w.write("ssh -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
-                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
+                    + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + verboseFlag
+                    + " \"$@\"");
             w.newLine();
         }
         return createNonBusyExecutable(ssh);
@@ -2766,6 +2774,10 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir) throws GitException, InterruptedException {
         return launchCommandIn(args, workDir, environment);
+    }
+
+    public void setSshVerbose(boolean sshVerbose) {
+        this.sshVerbose = sshVerbose;
     }
 
     private String launchCommandIn(ArgumentListBuilder args, File workDir, EnvVars env)
