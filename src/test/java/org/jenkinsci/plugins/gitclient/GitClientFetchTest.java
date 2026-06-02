@@ -630,11 +630,17 @@ class GitClientFetchTest {
                 .filter("blob:none")
                 .execute();
         checkoutRandomBranch();
-        testGitClient.fetch_().from(new URIish("origin"), null).filter("blob:limit=1k").execute();
+        testGitClient
+                .fetch_()
+                .from(new URIish("origin"), null)
+                .filter("blob:limit=1k")
+                .execute();
         boolean expectedPromisorValue = gitImplName.equals("git");
         assertThat("hasPromisor?", workspace.cgit().hasPromisor("origin"), is(expectedPromisorValue));
         if (gitImplName.equals("git")) {
-            String filterSpec = workspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
+            String filterSpec = workspace
+                    .launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter")
+                    .trim();
             assertThat("filterSpec", filterSpec, is("blob:limit=1k"));
         }
     }
@@ -653,15 +659,23 @@ class GitClientFetchTest {
         boolean expectedPromisorValue = gitImplName.equals("git");
         assertThat("hasPromisor?", workspace.cgit().hasPromisor("origin"), is(expectedPromisorValue));
         if (gitImplName.equals("git")) {
-            String filterSpec = workspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
+            String filterSpec = workspace
+                    .launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter")
+                    .trim();
             assertThat("filterSpec", filterSpec, is("tree:0"));
         }
-        testGitClient.fetch_().from(new URIish("origin"), null).filter("blob:limit=1k").execute();
+        testGitClient
+                .fetch_()
+                .from(new URIish("origin"), null)
+                .filter("blob:limit=1k")
+                .execute();
         if (gitImplName.equals("git")) {
-                String filterSpec = workspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
-                assertThat("filterSpec", filterSpec, is("blob:limit=1k"));
-            }
+            String filterSpec = workspace
+                    .launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter")
+                    .trim();
+            assertThat("filterSpec", filterSpec, is("blob:limit=1k"));
         }
+    }
 
     private void check_remote_url(WorkspaceWithRepo workspace, GitClient gitClient, final String repositoryName)
             throws Exception {

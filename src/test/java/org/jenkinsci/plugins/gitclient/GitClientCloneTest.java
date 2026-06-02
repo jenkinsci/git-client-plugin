@@ -18,7 +18,6 @@ import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -42,6 +41,7 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.jvnet.hudson.test.Issue;
 
 @ParameterizedClass(name = "{0}")
 @MethodSource("gitObjects")
@@ -446,7 +446,9 @@ class GitClientCloneTest {
         assertAlternatesFileNotFound();
         if (gitImplName.equals("git")) {
             assertThat("hasPromisor?", anotherWorkspace.cgit().hasPromisor("origin"), is(true));
-            String filterSpec = anotherWorkspace.launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter").trim();
+            String filterSpec = anotherWorkspace
+                    .launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter")
+                    .trim();
             assertThat("filterSpec", filterSpec, is("blob:none"));
             assertPromisorFilesExist(anotherWorkspace.getGitFileDir());
         }

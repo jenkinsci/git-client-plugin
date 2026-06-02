@@ -606,8 +606,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     try {
                         defaultRemote = getDefaultRemote();
                         if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                            currentFilterSpec = launchCommand(
-                                "config", "remote." + defaultRemote + ".partialclonefilter");
+                            currentFilterSpec =
+                                    launchCommand("config", "remote." + defaultRemote + ".partialclonefilter");
                         }
                         // We might fail if we have no modules, so catch this
                         // exception and just return.
