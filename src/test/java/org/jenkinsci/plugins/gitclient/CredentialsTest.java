@@ -516,6 +516,38 @@ class CredentialsTest {
                 "Fast-forward merge failed. master and modified_lfs should be the same.");
     }
 
+    @Test
+    @Issue("JENKINS-70094")
+    void testCheckoutPartialCloneWithCredentials() throws Exception {
+        if (testPeriodExpired() || lfsSpecificTest) {
+            return;
+        }
+        File clonedFile = new File(repo, fileToCheck);
+        git.init_().workspace(repo.getAbsolutePath()).execute();
+        assertFalse(clonedFile.exists(), "file " + fileToCheck + " in " + repo + ", has " + listDir(repo));
+        addCredential();
+        // clone with remote url
+        git.clone_()
+                .url(gitRepoURL)
+                .repositoryName("origin")
+                .filter("blob:none")
+                .execute();
+        ObjectId master = git.getHeadRev(gitRepoURL, "master");
+        git.checkout()
+                .branch("master")
+                .ref(master.getName())
+                .deleteBranchIfExist(true)
+                .execute();
+        assertTrue(git.isCommitInRepo(master), "master: " + master + " not in repo");
+        assertEquals(
+                master,
+                git.withRepository(
+                        (gitRepo, unusedChannel) -> gitRepo.findRef("master").getObjectId()),
+                "Master != HEAD");
+        assertEquals("master", git.withRepository((gitRepo, unusedChanel) -> gitRepo.getBranch()), "Wrong branch");
+        assertTrue(clonedFile.exists(), "No file " + fileToCheck + ", has " + listDir(repo));
+    }
+
     private static boolean isWindows() {
         return File.pathSeparatorChar == ';';
     }
