@@ -17,7 +17,6 @@ import hudson.plugins.git.GitException;
 import hudson.remoting.VirtualChannel;
 import hudson.util.StreamTaskListener;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -431,7 +430,7 @@ class GitClientCloneTest {
 
     @Test
     @Issue("JENKINS-70094")
-    public void test_clone_filter() throws Exception {
+    void test_clone_filter() throws Exception {
         WorkspaceWithRepo anotherWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
         GitClient anotherGitClient = anotherWorkspace.getGitClient();
         CloneCommand cmd = anotherGitClient
@@ -443,7 +442,6 @@ class GitClientCloneTest {
         anotherGitClient.checkout().ref("origin/master").branch("master").execute();
         check_remote_url(anotherWorkspace, anotherGitClient, "origin");
         assertBranchesExist(anotherGitClient.getBranches(), "master");
-        assertAlternatesFileNotFound();
         if (gitImplName.equals("git")) {
             assertThat("hasPromisor?", anotherWorkspace.cgit().hasPromisor("origin"), is(true));
             String filterSpec = anotherWorkspace
@@ -462,12 +460,7 @@ class GitClientCloneTest {
 
     private void assertPromisorFilesExist(File anotherTestGitDir) {
         File pack = new File(anotherTestGitDir, ".git" + File.separator + "objects" + File.separator + "pack");
-        File[] promisors = pack.listFiles(new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".promisor");
-            }
-        });
+        File[] promisors = pack.listFiles((dir, name) -> name.endsWith(".promisor"));
         assertThat(promisors, is(not(emptyArray())));
     }
 

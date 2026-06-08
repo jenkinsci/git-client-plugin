@@ -622,7 +622,7 @@ class GitClientFetchTest {
 
     @Test
     @Issue("JENKINS-70094")
-    public void test_fetch_filter() throws Exception {
+    void test_fetch_filter() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
@@ -647,7 +647,7 @@ class GitClientFetchTest {
 
     @Test
     @Issue("JENKINS-70094")
-    public void test_fetch_filter_changed() throws Exception {
+    void test_fetch_filter_changed() throws Exception {
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())

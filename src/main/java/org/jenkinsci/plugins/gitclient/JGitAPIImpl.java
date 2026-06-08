@@ -788,7 +788,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public org.jenkinsci.plugins.gitclient.FetchCommand filter(String filterSpec) {
-                // unsupported, revert to full clone for backward compatibility
+                if (filterSpec != null) {
+                    listener.getLogger()
+                            .println("[WARNING] JGit does not support partial clone filters; reverting to full clone");
+                }
                 return this;
             }
 
@@ -1646,7 +1649,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand filter(String filterSpec) {
-                // unsupported, revert to full clone for backward compatibility
+                if (filterSpec != null) {
+                    listener.getLogger()
+                            .println("[WARNING] JGit does not support partial clone filters; reverting to full clone");
+                }
                 return this;
             }
 

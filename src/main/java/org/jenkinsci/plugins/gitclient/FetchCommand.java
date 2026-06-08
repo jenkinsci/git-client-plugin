@@ -70,6 +70,7 @@ public interface FetchCommand extends GitCommand {
      *
      * @param filterSpec filter of objects to be sent by the server
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
+     * @since 6.7.0
      */
     FetchCommand filter(String filterSpec);
 }

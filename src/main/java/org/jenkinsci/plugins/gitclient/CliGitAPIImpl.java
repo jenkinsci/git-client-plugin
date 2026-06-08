@@ -609,8 +609,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             currentFilterSpec =
                                     launchCommand("config", "remote." + defaultRemote + ".partialclonefilter");
                         }
-                        // We might fail if we have no modules, so catch this
-                        // exception and just return.
+                        // we might fail if we have no promisor configured, catch the exception and just continue
                     } catch (GitException e) {
                         // leave currentFilterSpec null
                     }
@@ -1813,7 +1812,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /** Returns true if the remote has a promisor configured for missing blobs. */
-    public boolean hasPromisor(String name) throws GitException, InterruptedException {
+    boolean hasPromisor(String name) throws GitException, InterruptedException {
         try {
             return launchCommand("config", "remote." + name + ".promisor").contains("true");
         } catch (GitException ge) {
