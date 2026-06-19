@@ -30,26 +30,24 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
                     Level.FINEST,
                     "Verifying manually-configured host keys entry in {0} with host keys {1}",
                     new Object[] {tempKnownHosts.toAbsolutePath(), approvedHostKeys});
-            String userKnownHostsFileFlag;
-            if (File.pathSeparatorChar
-                    == ';') { // check whether on Windows or not without sending Functions over remoting
-                // no escaping for windows because created temp file can't contain spaces
-                userKnownHostsFileFlag = " -o UserKnownHostsFile=%s".formatted(escapePath(tempKnownHosts));
-            } else {
-                // escaping needed in case job name contains spaces
-                userKnownHostsFileFlag =
-                        " -o UserKnownHostsFile=\\\"\"\"%s\\\"\"\"".formatted(escapePath(tempKnownHosts));
-            }
-            return "-o StrictHostKeyChecking=yes " + userKnownHostsFileFlag;
+            String path = escapePath(tempKnownHosts);
+            LOGGER.log(Level.FINEST, "-o StrictHostKeyChecking=yes -o UserKnownHostsFile={0}", path);
+            return "-o StrictHostKeyChecking=yes -o UserKnownHostsFile=%s".formatted(path);
         };
     }
 
     private static String escapePath(Path path) {
-        if (File.pathSeparatorChar == ';') // check whether on Windows or not without sending Functions over remoting
-        {
-            return path.toAbsolutePath().toString();
+        String p = path.toAbsolutePath().toString();
+        // check whether on Windows or not without sending Functions over remoting
+        if (File.pathSeparatorChar == ';') {
+            // no escaping for windows because created temp file can't contain spaces
+            return p;
         }
-        return path.toAbsolutePath().toString().replace(" ", "\\ ");
+        if (p.contains("'")) {
+            p = p.replace("'", "\\'");
+        }
+        // OpenSSH needs arguments that contain a space to be surrounded with double quotes
+        return p.contains(" ") ? "'\"" + p + "\"'" : "'" + p + "'";
     }
 
     @NonNull
@@ -58,6 +56,7 @@ public class ManuallyProvidedKeyVerifier extends HostKeyVerifierFactory {
         try {
             Path tempKnownHosts = Files.createTempFile("known_hosts", "");
             Files.write(tempKnownHosts, (approvedHostKeys + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            LOGGER.log(Level.FINEST, "Known hosts written to {0}", tempKnownHosts);
             return tempKnownHosts.toFile();
         } catch (IOException e) {
             throw new RuntimeException(e);
