@@ -86,12 +86,14 @@ class PushTest {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
-            assertThrows(expectedException, () -> workingGitClient
-                    .push()
-                    .to(bareURI)
-                    .ref(refSpec)
-                    .force(true)
-                    .execute());
+            assertThrows(
+                    expectedException,
+                    () -> workingGitClient
+                            .push()
+                            .to(bareURI)
+                            .ref(refSpec)
+                            .force(true)
+                            .execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }

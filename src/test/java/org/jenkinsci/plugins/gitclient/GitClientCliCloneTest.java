@@ -115,9 +115,11 @@ class GitClientCliCloneTest {
         /* Configure next checkout to fail with an exception */
         CliGitAPIImpl cli = workspace.cgit();
         cli.interruptNextCheckoutWithMessage(exceptionMsg);
-        Exception exception = assertThrows(InterruptedException.class, () -> cli.checkout()
-                .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
-                .execute());
+        Exception exception = assertThrows(
+                InterruptedException.class,
+                () -> cli.checkout()
+                        .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
+                        .execute());
         assertThat(exception.getMessage(), is(exceptionMsg)); // Except exact exception message returned
         assertThat("Lock file removed by checkout", lockFile, is(not(aReadableFile())));
     }
@@ -139,9 +141,11 @@ class GitClientCliCloneTest {
         /* Configure next checkout to fail with an exception */
         CliGitAPIImpl cli = workspace.cgit();
         cli.interruptNextCheckoutWithMessage(exceptionMsg);
-        Exception exception = assertThrows(InterruptedException.class, () -> cli.checkout()
-                .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
-                .execute());
+        Exception exception = assertThrows(
+                InterruptedException.class,
+                () -> cli.checkout()
+                        .ref("6b7bbcb8f0e51668ddba349b683fb06b4bd9d0ea")
+                        .execute());
         assertThat(exception.getMessage(), containsString(exceptionMsg));
         assertThat("Lock file removed by checkout", lockFile, is(aReadableFile()));
     }

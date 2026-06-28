@@ -624,11 +624,13 @@ class GitClientTest {
                 .getClient();
         Class<? extends Exception> expectedExceptionClass =
                 gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
-        assertThrows(expectedExceptionClass, () -> badGitClient
-                .init_()
-                .bare(random.nextBoolean())
-                .workspace(badDirName)
-                .execute());
+        assertThrows(
+                expectedExceptionClass,
+                () -> badGitClient
+                        .init_()
+                        .bare(random.nextBoolean())
+                        .workspace(badDirName)
+                        .execute());
     }
 
     @Test
@@ -644,11 +646,13 @@ class GitClientTest {
                 .getClient();
         Class<? extends Exception> expectedExceptionClass =
                 gitImplName.equals("git") ? GitException.class : JGitInternalException.class;
-        assertThrows(expectedExceptionClass, () -> badGitClient
-                .init_()
-                .bare(random.nextBoolean())
-                .workspace(badDirName)
-                .execute());
+        assertThrows(
+                expectedExceptionClass,
+                () -> badGitClient
+                        .init_()
+                        .bare(random.nextBoolean())
+                        .workspace(badDirName)
+                        .execute());
     }
 
     @Test
@@ -1734,12 +1738,14 @@ class GitClientTest {
                 "Skipping testCheckoutWithJGitLFS for CLI git exception");
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
-        assertThrows(org.eclipse.jgit.api.errors.JGitInternalException.class, () -> gitClient
-                .checkout()
-                .branch(branch)
-                .ref(remote + "/" + branch)
-                .lfsRemote(remote)
-                .execute());
+        assertThrows(
+                org.eclipse.jgit.api.errors.JGitInternalException.class,
+                () -> gitClient
+                        .checkout()
+                        .branch(branch)
+                        .ref(remote + "/" + branch)
+                        .lfsRemote(remote)
+                        .execute());
     }
 
     // If LFS installed and not enabled, throw an exception
@@ -1750,11 +1756,13 @@ class GitClientTest {
         assumeFalse(!gitImplName.equals("git") || !CLI_GIT_HAS_GIT_LFS, "Test requires CLI git with LFS enabled");
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
-        assertThrows(GitException.class, () -> gitClient
-                .checkout()
-                .branch(branch)
-                .ref(remote + "/" + branch)
-                .execute());
+        assertThrows(
+                GitException.class,
+                () -> gitClient
+                        .checkout()
+                        .branch(branch)
+                        .ref(remote + "/" + branch)
+                        .execute());
     }
 
     // If LFS installed and not enabled, throw an exception if branch includes LFS reference
@@ -1765,11 +1773,13 @@ class GitClientTest {
         assumeFalse(!gitImplName.startsWith("jgit") || !CLI_GIT_HAS_GIT_LFS, "Test requires CLI git with LFS enabled");
         String branch = "tests/largeFileSupport";
         String remote = fetchLFSTestRepo(branch);
-        assertThrows(org.eclipse.jgit.api.errors.JGitInternalException.class, () -> gitClient
-                .checkout()
-                .branch(branch)
-                .ref(remote + "/" + branch)
-                .execute());
+        assertThrows(
+                org.eclipse.jgit.api.errors.JGitInternalException.class,
+                () -> gitClient
+                        .checkout()
+                        .branch(branch)
+                        .ref(remote + "/" + branch)
+                        .execute());
     }
 
     // If LFS not installed and not enabled, checkout content without download

@@ -603,12 +603,14 @@ class GitAPITest {
         assertEquals(commit2, testGitClient.revParse("tag1"), "tag1 points to wrong commit");
         if (testGitClient instanceof CliGitAPIImpl) {
             // Modern CLI git should throw exception pushing a change to existing tag
-            Exception exception = assertThrows(GitException.class, () -> testGitClient
-                    .push()
-                    .ref(defaultBranchName)
-                    .to(new URIish(bare.getGitFileDir().getAbsolutePath()))
-                    .tags(true)
-                    .execute());
+            Exception exception = assertThrows(
+                    GitException.class,
+                    () -> testGitClient
+                            .push()
+                            .ref(defaultBranchName)
+                            .to(new URIish(bare.getGitFileDir().getAbsolutePath()))
+                            .tags(true)
+                            .execute());
             assertThat(exception.getMessage(), containsString("already exists"));
         } else {
             testGitClient
@@ -621,13 +623,15 @@ class GitAPITest {
 
         if (testGitClient instanceof CliGitAPIImpl) {
             /* CliGit throws exception updating existing tag */
-            Exception exception = assertThrows(GitException.class, () -> testGitClient
-                    .push()
-                    .ref(defaultBranchName)
-                    .to(new URIish(bare.getGitFileDir().getAbsolutePath()))
-                    .tags(true)
-                    .force(false)
-                    .execute());
+            Exception exception = assertThrows(
+                    GitException.class,
+                    () -> testGitClient
+                            .push()
+                            .ref(defaultBranchName)
+                            .to(new URIish(bare.getGitFileDir().getAbsolutePath()))
+                            .tags(true)
+                            .force(false)
+                            .execute());
             assertThat(exception.getMessage(), containsString("already exists"));
         } else {
             /* JGit does not throw exception updating existing tag - ugh */
@@ -1062,11 +1066,13 @@ class GitAPITest {
         testGitClient.add("file");
         testGitClient.commit("commit2");
 
-        assertThrows(GitException.class, () -> testGitClient
-                .merge()
-                .setStrategy(MergeCommand.Strategy.RESOLVE)
-                .setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1"))
-                .execute());
+        assertThrows(
+                GitException.class,
+                () -> testGitClient
+                        .merge()
+                        .setStrategy(MergeCommand.Strategy.RESOLVE)
+                        .setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch1"))
+                        .execute());
     }
 
     @Issue("JENKINS-12402")
@@ -1153,11 +1159,13 @@ class GitAPITest {
 
         // The second merge calls for fast-forward only (FF_ONLY), but a merge commit is required, hence it is expected
         // to fail
-        assertThrows(GitException.class, () -> testGitClient
-                .merge()
-                .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY)
-                .setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2"))
-                .execute());
+        assertThrows(
+                GitException.class,
+                () -> testGitClient
+                        .merge()
+                        .setGitPluginFastForwardMode(MergeCommand.GitPluginFastForwardMode.FF_ONLY)
+                        .setRevisionToMerge(testGitClient.getHeadRev(testGitDir.getAbsolutePath(), "branch2"))
+                        .execute());
         assertEquals(
                 workspace.head(),
                 branch1,

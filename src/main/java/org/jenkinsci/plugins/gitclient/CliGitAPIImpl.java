@@ -2118,7 +2118,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return Files.createTempFile(tmpPath, prefix, suffix);
         }
         // Unix specific
-        if (absolutePath.contains("`")) {
+        if (absolutePath.contains("`") || absolutePath.contains("$(")) {
             // Avoid backquote shell expansion
             return createTempFileInSystemDir(prefix, suffix);
         }
@@ -2232,7 +2232,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     userName = sshUser.getUsername();
                 }
                 passphrase = createPassphraseFile(sshUser);
-                knownHostsTemp = createTempFile("known_hosts", "");
+                // The known hosts file lists the public keys of the git ssh servers.
+                // Public keys of servers are not sensitive information.
+                // They can be stored in the system temporary directory.
+                // Avoids issues with workspace names in the known hosts file path.
+                knownHostsTemp = Files.createTempFile("known_hosts", "");
                 if (launcher.isUnix()) {
                     ssh = createUnixGitSSH(key, userName, knownHostsTemp);
                     askpass = createUnixSshAskpass(sshUser, passphrase);
