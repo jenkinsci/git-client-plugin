@@ -1,7 +1,6 @@
 package org.jenkinsci.plugins.gitclient;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.plugins.git.GitException;
 import java.io.BufferedReader;
 import java.io.File;
@@ -80,9 +79,6 @@ class Netrc {
      * @param host a {@link java.lang.String} object.
      * @return a {@link org.apache.http.auth.Credentials} object.
      */
-    @SuppressFBWarnings(
-            value = "USO_UNSAFE_METHOD_SYNCHRONIZATION",
-            justification = "Using intrinsic lock is not an issue here")
     public synchronized Credentials getCredentials(String host) throws GitException {
         if (!this.netrc.exists()) {
             return null;
