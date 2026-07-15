@@ -1056,11 +1056,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // sensitive and different).
             String urlNormalized = normalizeGitUrl(url, true);
 
-            // Note: currently unit-tests expect this markup on stderr:
-            System.err.println("reference='" + reference + "'\n"
-                    + "url='" + url + "'\n"
-                    + "urlNormalized='" + urlNormalized + "'\n");
-
             // Let users know why there are many "git config --list" lines in their build log:
             LOGGER.log(
                     Level.INFO,
@@ -1218,9 +1213,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 referencePath = null; // GC
                 referencePath = new File(reference);
             }
-
-            // Note: currently unit-tests expect this markup on stderr:
-            System.err.println("reference after='" + reference + "'\n");
 
             LOGGER.log(
                     Level.INFO,
