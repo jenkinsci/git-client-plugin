@@ -1202,7 +1202,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
                     } else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
-                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
+                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES_FALLBACK\\}$", needleBasename);
                         if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")
                                 && getObjectsFile(referenceExpanded) == null
                                 && getObjectsFile(referenceExpanded + ".git") == null) {
