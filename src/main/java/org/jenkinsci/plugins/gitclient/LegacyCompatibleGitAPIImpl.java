@@ -259,7 +259,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             String key = parts[0].trim();
                             String value = parts[1].trim();
                             if (key.equals("gitdir")) {
-                                objects = new File(reference, value);
+                                // value is the gitdir path (e.g. "../../.git/modules/sub");
+                                // we need the "objects" subdirectory *inside* that gitdir,
+                                // not the gitdir directory itself.
+                                objects = new File(new File(reference, value), "objects");
                                 LOGGER.log(
                                         Level.FINE,
                                         "getObjectsFile(): while looking for 'gitdir:' in '"
