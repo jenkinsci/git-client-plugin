@@ -1017,6 +1017,56 @@ class GitClientTest {
     }
 
     @Test
+    void testGetRemoteUrls() throws Exception {
+        Map<String, String> remoteUrls = gitClient.getRemoteUrls();
+        assertNotNull(remoteUrls, "getRemoteUrls() returned null");
+        assertThat(remoteUrls, hasEntry(srcRepoDir.getAbsolutePath(), "origin"));
+    }
+
+    @Test
+    void testGetRemoteUrlsMultipleRemotes() throws Exception {
+        gitClient.addRemoteUrl("upstream", upstreamRepoURL);
+        Map<String, String> remoteUrls = gitClient.getRemoteUrls();
+        assertNotNull(remoteUrls, "getRemoteUrls() returned null");
+        assertThat(remoteUrls, hasEntry(srcRepoDir.getAbsolutePath(), "origin"));
+        assertThat(remoteUrls.values(), hasItem("upstream"));
+    }
+
+    @Test
+    void testGetRemotePushUrls_noPushUrl() throws Exception {
+        // No pushurl configured — implementations return null or empty map
+        Map<String, String> pushUrls = gitClient.getRemotePushUrls();
+        assertTrue(
+                pushUrls == null || pushUrls.isEmpty(),
+                "Expected null or empty map when no pushurl is configured, got: " + pushUrls);
+    }
+
+    @Test
+    void testGetRemotePushUrls_withPushUrl() throws Exception {
+        String pushUrl = "git@github.com:example/repo.git";
+        CliGitCommand gitCmd = new CliGitCommand(gitClient);
+        gitCmd.run("config", "remote.origin.pushurl", pushUrl);
+        Map<String, String> pushUrls = gitClient.getRemotePushUrls();
+        assertNotNull(pushUrls, "getRemotePushUrls() returned null after configuring pushurl");
+        assertThat("origin remote should appear in push URL map", pushUrls.values(), hasItem("origin"));
+    }
+
+    @Test
+    void testNewGit() throws Exception {
+        File otherDir = newFolder(tempFolder, "junit-newgit-" + System.nanoTime());
+        GitClient otherClient = gitClient.newGit(otherDir.getAbsolutePath());
+        assertNotNull(otherClient, "newGit() returned null");
+        assertNotSame(gitClient, otherClient, "newGit() returned the same instance");
+        assertThat(
+                "newGit() should return a client of the same implementation class",
+                otherClient.getClass(),
+                is(gitClient.getClass()));
+        // Verify the new client operates on the specified directory
+        otherClient.init();
+        assertTrue(new File(otherDir, ".git").isDirectory(), "newGit() client did not init a git repo");
+    }
+
+    @Test
     void testAutocreateFailsOnMultipleMatchingOrigins() throws Exception {
         File repoRootTemp = newFolder(tempFolder, "junit-" + System.nanoTime());
         GitClient gitClientTemp = Git.with(TaskListener.NULL, new EnvVars())
