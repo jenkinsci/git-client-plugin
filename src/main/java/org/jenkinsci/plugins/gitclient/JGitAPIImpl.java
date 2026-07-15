@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1158,34 +1159,23 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
-        Map<String, String> uriNames = new HashMap<>();
-        try (Repository repo = getRepository()) {
-            Config c = repo.getConfig();
-            for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(c)) {
-                String remoteName = rc.getName();
-                for (URIish u : rc.getURIs()) {
-                    // If uri String values end up identical, Map only stores one entry
-                    uriNames.put(u.toString(), remoteName);
-                    uriNames.put(u.toPrivateString(), remoteName);
-                    uriNames.put(u.toASCIIString(), remoteName);
-                    uriNames.put(u.toPrivateASCIIString(), remoteName);
-                }
-            }
-        } catch (URISyntaxException ue) {
-            throw new GitException(ue.toString());
-        }
-        return uriNames;
+        return collectRemoteUris(RemoteConfig::getURIs);
     }
 
     /** {@inheritDoc} */
     @Override
     public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        return collectRemoteUris(RemoteConfig::getPushURIs);
+    }
+
+    private Map<String, String> collectRemoteUris(Function<RemoteConfig, List<URIish>> uriSelector)
+            throws GitException {
         Map<String, String> uriNames = new HashMap<>();
         try (Repository repo = getRepository()) {
             Config c = repo.getConfig();
             for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(c)) {
                 String remoteName = rc.getName();
-                for (URIish u : rc.getPushURIs()) {
+                for (URIish u : uriSelector.apply(rc)) {
                     // If uri String values end up identical, Map only stores one entry
                     uriNames.put(u.toString(), remoteName);
                     uriNames.put(u.toPrivateString(), remoteName);

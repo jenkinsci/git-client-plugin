@@ -1723,45 +1723,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public @CheckForNull Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
-        String result = launchCommand("config", "--local", "--list");
-        Map<String, String> uriNames = new HashMap<>();
-        for (String line : result.split("\\R+")) {
-            line = StringUtils.trim(line);
-            if (!line.startsWith("remote.") || !line.contains(".url=")) {
-                continue;
-            }
-
-            String remoteName = StringUtils.substringBetween(line, "remote.", ".url=");
-            String remoteUri = StringUtils.substringAfter(line, ".url=");
-
-            // If uri String values end up identical, Map only stores one entry
-            uriNames.put(remoteUri, remoteName);
-
-            try {
-                URI u = new URI(remoteUri);
-                uriNames.put(u.toASCIIString(), remoteName);
-                URI uSafe = new URI(u.getScheme(), u.getHost(), u.getPath(), u.getFragment());
-                uriNames.put(uSafe.toString(), remoteName);
-                uriNames.put(uSafe.toASCIIString(), remoteName);
-            } catch (URISyntaxException ue) {
-            } // ignore, move along
-        }
-        return uriNames;
+        return getRemoteUrlMap(".url=");
     }
 
     /** {@inheritDoc} */
     @Override
     public @CheckForNull Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        return getRemoteUrlMap(".pushurl=");
+    }
+
+    private Map<String, String> getRemoteUrlMap(String configKeySuffix) throws GitException, InterruptedException {
         String result = launchCommand("config", "--local", "--list");
         Map<String, String> uriNames = new HashMap<>();
         for (String line : result.split("\\R+")) {
             line = StringUtils.trim(line);
-            if (!line.startsWith("remote.") || !line.contains(".pushurl=")) {
+            if (!line.startsWith("remote.") || !line.contains(configKeySuffix)) {
                 continue;
             }
 
-            String remoteName = StringUtils.substringBetween(line, "remote.", ".pushurl=");
-            String remoteUri = StringUtils.substringAfter(line, ".pushurl=");
+            String remoteName = StringUtils.substringBetween(line, "remote.", configKeySuffix);
+            String remoteUri = StringUtils.substringAfter(line, configKeySuffix);
+
+            // If uri String values end up identical, Map only stores one entry
             uriNames.put(remoteUri, remoteName);
 
             try {
