@@ -824,14 +824,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // results looks like it is related to the needle.
             LinkedHashSet<String[]> resultFiltered = new LinkedHashSet<>();
 
-            /*
-            if (!checkRemotesInReferenceBaseDir) {
-                // Overload the flag's meaning to only parse results once,
-                // in the parent dir?
-                return new SimpleEntry<>(false, resultFiltered);
-            }
-            */
-
             // Separate lists by suggestion priority:
             // 1) URI basename similarity
             // 2) Directory basename similarity
