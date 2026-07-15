@@ -35,7 +35,7 @@ public class AcceptFirstConnectionVerifier extends HostKeyVerifierFactory {
         }
 
         @Override
-        public ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
+        protected ServerKeyDatabase.Configuration getServerKeyDatabaseConfiguration() {
             return new AbstractJGitHostKeyVerifier.DefaultConfiguration(
                     this.getHostKeyVerifierFactory(),
                     () -> ServerKeyDatabase.Configuration.StrictHostKeyChecking.ACCEPT_NEW);
