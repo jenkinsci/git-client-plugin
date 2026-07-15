@@ -45,6 +45,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MethodSource("gitObjects")
 class GitClientCloneTest {
 
+    private static final Logger LOGGER = Logger.getLogger(GitClientCloneTest.class.getName());
+
     @RegisterExtension
     private final GitClientSampleRepoRule repo = new GitClientSampleRepoRule();
 
@@ -365,7 +367,8 @@ class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" + "wsRefrepo='" + wsRefrepo);
+        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''",
+                new Object[]{wsRefrepoBase, wsRefrepo});
 
         testGitClient
                 .clone_()
@@ -380,7 +383,7 @@ class GitClientCloneTest {
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
 
-        System.err.println("clone output:\n======\n" + messages + "\n======\n");
+        LOGGER.log(Level.FINE, "clone output:\n======\n{0}\n======", messages);
 
         assertThat(
                 "Reference repo name-parsing logged in: " + messages
@@ -433,7 +436,8 @@ class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        System.err.println("wsRefrepoBase='" + wsRefrepoBase + "'\n" + "wsRefrepo='" + wsRefrepo);
+        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''",
+                new Object[]{wsRefrepoBase, wsRefrepo});
 
         testGitClient
                 .clone_()
@@ -448,7 +452,7 @@ class GitClientCloneTest {
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
 
-        System.err.println("clone output:\n======\n" + messages + "\n======\n");
+        LOGGER.log(Level.FINE, "clone output:\n======\n{0}\n======", messages);
 
         // Note: we do not expect the closing single quote after wsRefrepoBase
         // because other tests might pollute our test area, and SHA dir is there
@@ -658,10 +662,6 @@ class GitClientCloneTest {
 
     // Most tests use this method, expecting a non-bare repo
     private void assertAlternateFilePointsToLocalMirror() throws Exception {
-        assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
-    }
-
-    private void assertAlternateFilePointsToLocalWorkspaceMirror() throws Exception {
         assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir);
     }
 
