@@ -858,10 +858,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     } else {
                         if (!referencePath.getPath().equals(reference)) {
                             // Note: both these logs are needed, they are used in selftest
-                            String msg = "Parameterized reference path ";
-                            msg += "'" + reference + "'";
-                            msg += " replaced with: ";
-                            msg += "'" + referencePath.getPath() + "'";
+                            String msg = "Parameterized reference path '" + reference
+                                    + "' replaced with: '" + referencePath.getPath() + "'";
                             if (referencePath.exists()) {
                                 listener.getLogger().println("[WARNING] " + msg);
                             } else {

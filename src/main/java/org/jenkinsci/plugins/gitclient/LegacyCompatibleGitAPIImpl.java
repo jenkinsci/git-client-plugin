@@ -358,31 +358,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             return false;
         }
 
-        if (reference.endsWith("/${GIT_URL_SHA256}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_URL_BASENAME}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_SUBMODULES}")) {
-            return true;
-        }
-
-        if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
-            return true;
-        }
-
-        return false;
+        return reference.endsWith("/${GIT_URL_SHA256}")
+                || reference.endsWith("/${GIT_URL_SHA256_FALLBACK}")
+                || reference.endsWith("/${GIT_URL_BASENAME}")
+                || reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")
+                || reference.endsWith("/${GIT_SUBMODULES}")
+                || reference.endsWith("/${GIT_SUBMODULES_FALLBACK}");
     }
 
     /** There are many ways to spell an URL to the same repository even if
@@ -542,7 +523,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             } else {
                 // Some other error
                 isBare = false; // At least try to look into submodules...
-                isBare = false;
             }
 
             LOGGER.log(
@@ -652,7 +632,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                     "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm
                                             + "') vs needle");
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                result = new LinkedHashSet<>();
                                 result.add(new String[] {dirname, uri, uriNorm, remoteName});
                                 return new SimpleEntry<>(true, result);
                             }
@@ -696,64 +675,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             checkedDirs.add(resultEntry[0]);
         }
 
-        /*
-        // TBD: Needs a way to list submodules in given workspace and convert
-        // that into (relative) subdirs, possibly buried some levels deep, for
-        // cases where the submodule is defined in parent with the needle URL.
-        // Maybe merge with current "if isBare" below, to optionally seed
-        // same arrDirnames with different values and check remotes listed
-        // in those repos.
-        // If current repo *is NOT* bare - check its submodules
-        // (the .gitmodules => submodule.MODNAME.{url,path} mapping)
-        // but this essentially does not look into any subdirectory.
-        // But we can add at higher priority submodule path(s) whose
-        // basename of the URL matches the needleBasename. And then
-        // other submodule paths to inspect before arbitrary subdirs.
-        if (!isBare) {
-            try {
-                // For each current workspace (recurse or big loop in same context?):
-                // public GitClient subGit(String subdir) => would this.subGit(...)
-                //   give us a copy of this applied class instance (CLI Git vs jGit)?
-                // get submodule name-vs-one-url from .gitmodules if present, for a
-                //   faster possible answer (only bother if needle is not null?)
-                // try { getSubmodules("HEAD") ... } => List<IndexEntry> filtered for
-                //  "commit" items
-                // * if we are recursed into a "leaf" project and inspect ITS
-                //   submodules, look at all git tips or even commits, to find
-                //   and inspect all unique (by hash) .gitmodule objects, since
-                //   over time or in different branches a "leaf" project could
-                //   reference different subs?
-                // getRemoteUrls() => Map <url, remoteName>
-                //// arrDirnames.clear();
-
-                // TODO: Check subdirs that are git workspaces, and remove "|| true" above
-                //// LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
-                //// for (String[] resultEntry : result) {
-                ////     checkedDirs.add(resultEntry[0]);
-                //// }
-
-                LOGGER.log(Level.FINE, "getSubmodulesUrls(): looking for submodule URL needle='" + needle + "' in submodules of refrepo, if any");
-                Map <String, String> uriNames = referenceGit.getRemoteUrls();
-                for (Map.Entry<String, String> pair : uriNames.entrySet()) {
-                    String uri = pair.getKey();
-                    String uriNorm = normalizeGitUrl(uri, true);
-                    LOGGER.log(Level.FINE, "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm + "')");
-                    LOGGER.log(Level.FINEST, "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map: " + uriNames.toString());
-                    if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                        result = new LinkedHashSet<>();
-                        result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
-                        return result;
-                    }
-                    // Cache the finding to avoid the dirname later, if we
-                    // get to that; but no checks are needed in this loop
-                    // which by construct looks at different dirs so far.
-                    result.add(new String[]{fAbs, uri, uriNorm, pair.getValue()});
-                }
-            } catch (Exception e) {
-                // ignore, go to next slide
-            }
-        }
-        */
+        // TODO: If current repo is NOT bare, also check git submodules registered in
+        // .gitmodules for a faster possible answer (MODNAME.{url,path} mapping).
 
         // If current repo *is* bare (can't have proper submodules), or if the
         // end-users just cloned or linked some more repos into this container,
@@ -831,7 +754,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             if (needle != null
                                     && needleNorm != null
                                     && (needleNorm.equals(uriNorm) || needle.equals(uri))) {
-                                result = new LinkedHashSet<>();
                                 result.add(new String[] {dirname, uri, uriNorm, remoteName});
                                 return new SimpleEntry<>(true, result);
                             }
@@ -1214,7 +1136,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             if (referenceExpanded != null) {
                 reference = referenceExpanded;
-                referencePath = null; // GC
                 referencePath = new File(reference);
             }
 
@@ -1228,7 +1149,6 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // Normalize the URLs with or without .git suffix to
             // be served by same dir with the refrepo contents
             reference += ".git";
-            referencePath = null; // GC
             referencePath = new File(reference);
         }
 
