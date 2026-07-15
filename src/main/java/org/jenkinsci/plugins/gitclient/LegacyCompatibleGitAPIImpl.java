@@ -393,7 +393,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
             justification = "Path operations below intentionally use absolute '/' in some cases")
     public static String normalizeGitUrl(String url, Boolean checkLocalPaths) {
-        String urlNormalized = url.replaceAll("/*$", "").replaceAll(".git$", "").toLowerCase(Locale.ENGLISH);
+        String urlNormalized = url.replaceAll("/+$", "").replaceAll("\\.git$", "").toLowerCase(Locale.ENGLISH);
         if (!url.contains("://")) {
             if (!url.startsWith("/") && !url.startsWith(".")) {
                 // Not an URL with schema, not an absolute or relative pathname
@@ -578,7 +578,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             } else {
                 needleBasename = needle.substring(sep + 1);
             }
-            needleBasename = needleBasename.replaceAll(".[Gg][Ii][Tt]$", "");
+            needleBasename = needleBasename.replaceAll("\\.[Gg][Ii][Tt]$", "");
 
             needleNorm = normalizeGitUrl(needle, true);
             sep = needleNorm.lastIndexOf("/");
@@ -587,7 +587,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             } else {
                 needleNormBasename = needleNorm.substring(sep + 1);
             }
-            needleNormBasename = needleNormBasename.replaceAll(".git$", "");
+            needleNormBasename = needleNormBasename.replaceAll("\\.git$", "");
 
             // Try with the basename without .git extension, and then with one.
             // First we try the caller-provided string casing, then normalized.
@@ -628,8 +628,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         LOGGER.log(
                                 Level.FINE,
                                 "getSubmodulesUrls(): looking for submodule URL needle='" + needle
-                                        + "' in existing refrepo subdir '" + dirname + "'");
-                        GitClient g = referenceGit.subGit(dirname);
+                                        + "' in existing abs refrepo subdir '" + dirname + "'");
+                        // Use newGit() rather than referenceGit.subGit(dirname)
+                        // since dirname is already an absolute path anyway, and
+                        // it seems that going through subGit() may lose the disk
+                        // letter on Windows agents.
+                        GitClient g = this.newGit(dirname);
                         LOGGER.log(
                                 Level.FINE,
                                 "getSubmodulesUrls(): checking git workspace in dir '"
@@ -766,7 +770,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             // does not denote a directory, or if an I/O error occurs"
             for (File dir : directories) {
                 if (getObjectsFile(dir) != null) {
-                    String dirname = dir.getPath().replaceAll("/*$", "");
+                    String dirname = dir.getPath().replaceAll("/+$", "");
                     if (!checkedDirs.contains(dirname)) {
                         arrDirnames.add(dirname);
                     }
@@ -923,7 +927,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 } else {
                     uriNormBasename = uriNorm.substring(sep + 1);
                 }
-                uriNormBasename = uriNormBasename.replaceAll(".git$", "");
+                uriNormBasename = uriNormBasename.replaceAll("\\.git$", "");
 
                 if (uriNormBasename.equals(needleNormBasename)) {
                     resultFiltered1.add(subEntry);
@@ -940,7 +944,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     } else {
                         dirBasename = dirName.substring(sep + 1);
                     }
-                    dirBasename = dirBasename.replaceAll(".git$", "");
+                    dirBasename = dirBasename.replaceAll("\\.git$", "");
 
                     if (dirBasename.equals(needleNormBasename)) {
                         resultFiltered2.add(subEntry);
@@ -1090,7 +1094,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 } else {
                     needleBasename = url.substring(sep + 1);
                 }
-                needleBasename = needleBasename.replaceAll(".git$", "");
+                needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                 if (reference.endsWith("/${GIT_URL_BASENAME}")) {
                     referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
@@ -1114,7 +1118,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     } else {
                         needleBasename = urlNormalized.substring(sep + 1);
                     }
-                    needleBasename = needleBasename.replaceAll(".git$", "");
+                    needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                     if (reference.endsWith("/${GIT_URL_BASENAME}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
@@ -1192,7 +1196,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     } else {
                         needleBasename = url.substring(sep + 1);
                     }
-                    needleBasename = needleBasename.replaceAll(".git$", "");
+                    needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
                         referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
