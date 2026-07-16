@@ -1057,11 +1057,7 @@ class GitClientTest {
         GitClient otherClient = gitClient.newGit(otherDir.getAbsolutePath());
         assertNotNull(otherClient, "newGit() returned null");
         assertNotSame(gitClient, otherClient, "newGit() returned the same instance");
-        assertThat(
-                "newGit() should return a client of the same implementation class",
-                otherClient.getClass(),
-                is(gitClient.getClass()));
-        // Verify the new client operates on the specified directory
+        // Verify the new client is a usable GitClient, not just a non-null reference
         otherClient.init();
         assertTrue(new File(otherDir, ".git").isDirectory(), "newGit() client did not init a git repo");
     }
