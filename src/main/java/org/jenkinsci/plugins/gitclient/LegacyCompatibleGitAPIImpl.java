@@ -679,8 +679,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             checkedDirs.add(resultEntry[0]);
         }
 
-        // TODO: If current repo is NOT bare, also check git submodules registered in
-        // .gitmodules for a faster possible answer (MODNAME.{url,path} mapping).
+        // TODO: If current repo is NOT bare, also check git submodules registered
+        //  in .gitmodules for a faster possible answer (MODNAME.{url,path} mapping).
+        //  See git commit 9cff320a (a couple commits before this line was added)
+        //  where a commented-away exploration of how this might be done was removed.
 
         // If current repo *is* bare (can't have proper submodules), or if the
         // end-users just cloned or linked some more repos into this container,
