@@ -632,8 +632,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                     "getSubmodulesUrls(): checking uri='" + uri + "' (uriNorm='" + uriNorm
                                             + "') vs needle");
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
-                                result.add(new String[] {dirname, uri, uriNorm, remoteName});
-                                return new SimpleEntry<>(true, result);
+                                // Best hit, caller really only needs to look at this one
+                                // (as the first entry in the returned ordered set)
+                                LinkedHashSet<String[]> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                result_best.add(new String[] {dirname, uri, uriNorm, remoteName});
+                                result_best.addAll(result);
+                                return new SimpleEntry<>(true, result_best);
                             }
                             // Cache the finding to avoid the dirname later, if we
                             // get to that; but no checks are needed in this loop
@@ -753,9 +757,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                             + "') vs needle");
                             if (needle != null
                                     && needleNorm != null
-                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))) {
-                                result.add(new String[] {dirname, uri, uriNorm, remoteName});
-                                return new SimpleEntry<>(true, result);
+                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))
+                            ) {
+                                // Best hit, caller really only needs to look at this one
+                                // (as the first entry in the returned ordered set)
+                                LinkedHashSet<String[]> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                result_best.add(new String[] {dirname, uri, uriNorm, remoteName});
+                                result_best.addAll(result);
+                                return new SimpleEntry<>(true, result_best);
                             }
                             // Cache the finding to return eventually, for each remote:
                             // * absolute dirname of a Git workspace
