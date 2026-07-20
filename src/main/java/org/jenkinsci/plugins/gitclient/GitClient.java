@@ -230,7 +230,7 @@ public interface GitClient {
      *         repository/workspace, and values represent names.
      *         There may be several URIs corresponding to same name.
      */
-    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException;
+    Map<String, String> getRemoteUrls() throws GitException, InterruptedException;
 
     /**
      * getRemotePushUrls.
@@ -241,7 +241,7 @@ public interface GitClient {
      *         repository/workspace, and values represent names.
      *         There may be several URIs corresponding to same name.
      */
-    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException;
+    Map<String, String> getRemotePushUrls() throws GitException, InterruptedException;
 
     /**
      * For a given repository, set a remote's URL

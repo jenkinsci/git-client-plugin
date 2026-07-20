@@ -705,7 +705,7 @@ class GitClientCloneTest {
                 new File(_testGitDir, alternates),
                 is(anExistingFile()));
         final String expectedContent = _testAltDir.replace("\\", "/") + "/objects";
-        final String actualContent = Files.readString(testGitDir.toPath().resolve(alternates), StandardCharsets.UTF_8);
+        final String actualContent = Files.readString(new File(_testGitDir).toPath().resolve(alternates), StandardCharsets.UTF_8);
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));
