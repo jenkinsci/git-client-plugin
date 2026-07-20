@@ -442,16 +442,16 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *
      * @return an AbstractMap.SimpleEntry, containing a Boolean to denote
      * an exact match (or lack thereof) for the needle (if searched for),
-     * and a Set of (unique) String arrays, representing:
-     * [0] directory of nested submodule (relative to current workspace root)
+     * and a Set of (unique) String lists, each with four elements:
+     * get(0) directory of nested submodule (relative to current workspace root)
      * The current workspace would be listed as directory "" and consumers
      * should check these entries last if they care for most-specific hits
      * with smaller-scope reference repositories.
-     * [1] url as returned by getRemoteUrls() - fetch URLs, maybe several
+     * get(1) url as returned by getRemoteUrls() - fetch URLs, maybe several
      *                 entries per remote
-     * [2] urlNormalized from normalizeGitUrl(url, true) (local pathnames
+     * get(2) urlNormalized from normalizeGitUrl(url, true) (local pathnames
      *                 fully qualified)
-     * [3] remoteName as defined in that nested submodule
+     * get(3) remoteName as defined in that nested submodule
      *
      * If the returned SimpleEntry has the Boolean flag as False but also
      * a Set which is not empty, and a search for "needle" was requested,
@@ -476,12 +476,12 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 when recursing, since this directory was checked already
      *                 as part of parent directory inspection.
      */
-    public SimpleEntry<Boolean, LinkedHashSet<String[]>> getSubmodulesUrls(
+    public SimpleEntry<Boolean, LinkedHashSet<List<String>>> getSubmodulesUrls(
             String referenceBaseDir, String needle, Boolean checkRemotesInReferenceBaseDir) {
         // Keep track of where we've already looked in the "result" Set, to
         // avoid looking in same places (different strategies below) twice.
         // And eventually return this Set or part of it as the answer.
-        LinkedHashSet<String[]> result = new LinkedHashSet<>(); // Retain order of insertion
+        LinkedHashSet<List<String>> result = new LinkedHashSet<>(); // Retain order of insertion
         File f = null;
         // Helper list storage in loops below
         ArrayList<String> arrDirnames = new ArrayList<String>();
@@ -634,15 +634,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 // Best hit, caller really only needs to look at this one
                                 // (as the first entry in the returned ordered set)
-                                LinkedHashSet<String[]> result_best = new LinkedHashSet<>(); // Retain order of insertion
-                                result_best.add(new String[] {dirname, uri, uriNorm, remoteName});
+                                LinkedHashSet<List<String>> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                result_best.add(List.of(dirname, uri, uriNorm, remoteName));
                                 result_best.addAll(result);
                                 return new SimpleEntry<>(true, result_best);
                             }
                             // Cache the finding to avoid the dirname later, if we
                             // get to that; but no checks are needed in this loop
                             // which by construct looks at different dirs so far.
-                            result.add(new String[] {dirname, uri, uriNorm, remoteName});
+                            result.add(List.of(dirname, uri, uriNorm, remoteName));
                         }
                     } catch (Throwable t) {
                         // ignore, go to next slide
@@ -675,8 +675,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // Track where we have looked already; note that values in result[]
         // (if any from needle-search above) are absolute pathnames
         LinkedHashSet<String> checkedDirs = new LinkedHashSet<>();
-        for (String[] resultEntry : result) {
-            checkedDirs.add(resultEntry[0]);
+        for (List<String> resultEntry : result) {
+            checkedDirs.add(resultEntry.get(0));
         }
 
         // TODO: If current repo is NOT bare, also check git submodules registered
@@ -763,8 +763,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             ) {
                                 // Best hit, caller really only needs to look at this one
                                 // (as the first entry in the returned ordered set)
-                                LinkedHashSet<String[]> result_best = new LinkedHashSet<>(); // Retain order of insertion
-                                result_best.add(new String[] {dirname, uri, uriNorm, remoteName});
+                                LinkedHashSet<List<String>> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                result_best.add(List.of(dirname, uri, uriNorm, remoteName));
                                 result_best.addAll(result);
                                 return new SimpleEntry<>(true, result_best);
                             }
@@ -773,7 +773,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             // * original remote URI from that workspace's config
                             // * normalized remote URI
                             // * name of the remote from that workspace's config ("origin" etc)
-                            result.add(new String[] {dirname, uri, uriNorm, remoteName});
+                            result.add(List.of(dirname, uri, uriNorm, remoteName));
                         }
                     } catch (Throwable t) {
                         // ignore, go to next slide
@@ -789,9 +789,9 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // subdir that is already a known git workspace, to
                 // add its data to list and/or return a found needle.
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
-                SimpleEntry<Boolean, LinkedHashSet<String[]>> subEntriesRet = getSubmodulesUrls(dirname, needle, false);
+                SimpleEntry<Boolean, LinkedHashSet<List<String>>> subEntriesRet = getSubmodulesUrls(dirname, needle, false);
                 Boolean subEntriesExactMatched = subEntriesRet.getKey();
-                LinkedHashSet<String[]> subEntries = subEntriesRet.getValue();
+                LinkedHashSet<List<String>> subEntries = subEntriesRet.getValue();
                 LOGGER.log(
                         Level.FINE,
                         "getSubmodulesUrls(): returned from recursing into dir '" + dirname + "' with "
@@ -802,7 +802,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                         LOGGER.log(
                                 Level.FINE,
                                 "getSubmodulesUrls(): got an exact needle match from recursing into dir '" + dirname
-                                        + "': " + subEntries.iterator().next()[0]);
+                                        + "': " + subEntries.iterator().next().get(0));
                         return subEntriesRet;
                     }
                     // ...else collect results to inspect and/or propagate later
@@ -822,24 +822,24 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
             // Handle suggestions (not-exact matches) if something from
             // results looks like it is related to the needle.
-            LinkedHashSet<String[]> resultFiltered = new LinkedHashSet<>();
+            LinkedHashSet<List<String>> resultFiltered = new LinkedHashSet<>();
 
             // Separate lists by suggestion priority:
             // 1) URI basename similarity
             // 2) Directory basename similarity
-            LinkedHashSet<String[]> resultFiltered1 = new LinkedHashSet<>();
-            LinkedHashSet<String[]> resultFiltered2 = new LinkedHashSet<>();
+            LinkedHashSet<List<String>> resultFiltered1 = new LinkedHashSet<>();
+            LinkedHashSet<List<String>> resultFiltered2 = new LinkedHashSet<>();
 
             LinkedHashSet<String> suggestedDirs = new LinkedHashSet<>();
-            for (String[] resultEntry : result) {
-                checkedDirs.add(resultEntry[0]);
+            for (List<String> resultEntry : result) {
+                checkedDirs.add(resultEntry.get(0));
             }
 
-            for (String[] subEntry : result) {
+            for (List<String> subEntry : result) {
                 // Iterating to filter suggestions in order of original
                 // directory-walk prioritization under current reference
-                String dirName = subEntry[0];
-                String uriNorm = subEntry[2];
+                String dirName = subEntry.get(0);
+                String uriNorm = subEntry.get(2);
                 Integer sep;
                 String uriNormBasename;
                 String dirBasename;
@@ -894,7 +894,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
     /** See above. With null needle, returns all data we can find under the
      * referenceBaseDir tree (can take a while) for the caller to parse */
-    public SimpleEntry<Boolean, LinkedHashSet<String[]>> getSubmodulesUrls(String referenceBaseDir) {
+    public SimpleEntry<Boolean, LinkedHashSet<List<String>>> getSubmodulesUrls(String referenceBaseDir) {
         return getSubmodulesUrls(referenceBaseDir, null, true);
     }
     /* Do we need a completely parameter-less variant to look under current
@@ -1077,10 +1077,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // Note: we pass the unmodified "url" value here, the routine
                 // differentiates original spelling vs. normalization while
                 // looking for its needle in the haystack.
-                SimpleEntry<Boolean, LinkedHashSet<String[]>> subEntriesRet =
+                SimpleEntry<Boolean, LinkedHashSet<List<String>>> subEntriesRet =
                         getSubmodulesUrls(referenceBaseDir, url, true);
                 Boolean subEntriesExactMatched = subEntriesRet.getKey();
-                LinkedHashSet<String[]> subEntries = subEntriesRet.getValue();
+                LinkedHashSet<List<String>> subEntries = subEntriesRet.getValue();
                 if (!subEntries.isEmpty()) {
                     // Normally we should only have one entry here, as sorted
                     // by the routine, and prefer that first option if a new
@@ -1088,15 +1088,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // If several entries are present after all, iterate until
                     // first existing hit and return the first entry otherwise.
                     if (!subEntriesExactMatched) { // else look at first entry below
-                        for (String[] subEntry : subEntries) {
-                            if (getObjectsFile(subEntry[0]) != null || getObjectsFile(subEntry[0] + ".git") != null) {
-                                referenceExpanded = subEntry[0];
+                        for (List<String> subEntry : subEntries) {
+                            if (getObjectsFile(subEntry.get(0)) != null || getObjectsFile(subEntry.get(0) + ".git") != null) {
+                                referenceExpanded = subEntry.get(0);
                                 break;
                             }
                         }
                     }
                     if (referenceExpanded == null) {
-                        referenceExpanded = subEntries.iterator().next()[0];
+                        referenceExpanded = subEntries.iterator().next().get(0);
                     }
                     LOGGER.log(
                             Level.FINE,
