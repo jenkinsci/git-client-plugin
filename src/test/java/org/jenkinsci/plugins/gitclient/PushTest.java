@@ -101,7 +101,7 @@ class PushTest {
 
     static List<Arguments> pushParameters() {
         List<Arguments> parameters = new ArrayList<>();
-        final String[] implementations = {"git", "jgit"};
+        String[] implementations = isWindows() ? new String[] {"git"} : new String[] {"git", "jgit"};
         final String[] goodRefSpecs = {
             "{0}", "HEAD", "HEAD:{0}", "{0}:{0}", "refs/heads/{0}", "{0}:heads/{0}", "{0}:refs/heads/{0}"
         };
@@ -285,5 +285,10 @@ class PushTest {
             throw new IOException("Couldn't create folders " + result);
         }
         return result;
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }

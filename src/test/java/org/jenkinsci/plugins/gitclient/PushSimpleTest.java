@@ -3,6 +3,7 @@ package org.jenkinsci.plugins.gitclient;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import hudson.plugins.git.GitException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.jgit.transport.URIish;
@@ -41,8 +42,16 @@ class PushSimpleTest extends PushTest {
         List<Arguments> parameters = new ArrayList<>();
         Arguments gitParameter = Arguments.of("git", "master", "master", null);
         parameters.add(gitParameter);
-        Arguments jgitParameter = Arguments.of("jgit", "master", "master", null);
-        parameters.add(jgitParameter);
+        if (!isWindows()) {
+            // JGIt 7.7.0 seems to leak an open file in this test
+            Arguments jgitParameter = Arguments.of("jgit", "master", "master", null);
+            parameters.add(jgitParameter);
+        }
         return parameters;
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }
