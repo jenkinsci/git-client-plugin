@@ -522,6 +522,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private Integer timeout;
             private boolean tags = true;
             private Integer depth = 1;
+            private String filterSpec = null;
 
             @Override
             public FetchCommand from(URIish remote, List<RefSpec> refspecs) {
@@ -567,6 +568,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public FetchCommand filter(String filterSpec) {
+                this.filterSpec = filterSpec;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
                 listener.getLogger().println("Fetching upstream changes from " + url);
 
@@ -590,6 +597,37 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         depth = 1;
                     }
                     args.add("--depth=" + depth);
+                }
+
+                if (filterSpec != null) {
+                    // try to get the current filterspec
+                    String currentFilterSpec = null;
+                    String defaultRemote = null;
+                    try {
+                        defaultRemote = getDefaultRemote();
+                        if (defaultRemote != null && !defaultRemote.isEmpty()) {
+                            currentFilterSpec =
+                                    launchCommand("config", "remote." + defaultRemote + ".partialclonefilter");
+                        }
+                        // we might fail if we have no promisor configured, catch the exception and just continue
+                    } catch (GitException e) {
+                        // leave currentFilterSpec null
+                    }
+
+                    if (isAtLeastVersion(2, 22, 0, 0)) {
+                        args.add("--filter=" + filterSpec);
+                    }
+
+                    // if the filterspec has changed
+                    if (defaultRemote != null && !filterSpec.equals(currentFilterSpec)) {
+                        launchCommand("config", "remote." + defaultRemote + ".promisor", "true");
+                        launchCommand("config", "remote." + defaultRemote + ".partialclonefilter", filterSpec);
+
+                        if (isAtLeastVersion(2, 36, 0, 0)) {
+                            // reapply filter and trigger maintenance
+                            args.add("--refetch");
+                        }
+                    }
                 }
 
                 warnIfWindowsTemporaryDirNameHasSpaces();
@@ -727,6 +765,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             private boolean tags = true;
             private List<RefSpec> refspecs;
             private Integer depth = 1;
+            private String filterSpec = null;
 
             @Override
             public CloneCommand url(String url) {
@@ -803,6 +842,12 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public CloneCommand filter(String filterSpec) {
+                this.filterSpec = filterSpec;
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException, InterruptedException {
 
                 URIish urIish = null;
@@ -872,9 +917,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (refspecs == null) {
                     refspecs = Collections.singletonList(new RefSpec("+refs/heads/*:refs/remotes/" + origin + "/*"));
                 }
+                if (filterSpec != null) {
+                    launchCommand("config", "--add", "remote." + origin + ".promisor", "true");
+                    launchCommand("config", "--add", "remote." + origin + ".partialclonefilter", filterSpec);
+                }
                 fetch_().from(urIish, refspecs)
                         .shallow(shallow)
                         .depth(depth)
+                        .filter(filterSpec)
                         .timeout(timeout)
                         .tags(tags)
                         .execute();
@@ -1761,6 +1811,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return new File(workspace, pathJoin(".git", "shallow")).exists();
     }
 
+    /** Returns true if the remote has a promisor configured for missing blobs. */
+    boolean hasPromisor(String name) throws GitException, InterruptedException {
+        try {
+            return launchCommand("config", "remote." + name + ".promisor").contains("true");
+        } catch (GitException ge) {
+            return false;
+        }
+    }
+
     private String pathJoin(String a, String b) {
         return new File(a, b).toString();
     }
@@ -2090,6 +2149,17 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @NonNull URIish url,
             Integer timeout)
             throws GitException, InterruptedException {
+        return launchCommandWithCredentials(args, workDir, environment, credentials, url, timeout);
+    }
+
+    private String launchCommandWithCredentials(
+            ArgumentListBuilder args,
+            File workDir,
+            EnvVars env,
+            StandardCredentials credentials,
+            @NonNull URIish url,
+            Integer timeout)
+            throws GitException, InterruptedException {
 
         Path key = null;
         Path ssh = null;
@@ -2098,7 +2168,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         Path passwordFile = null;
         Path passphrase = null;
         Path knownHostsTemp = null;
-        EnvVars env = environment;
         if (!PROMPT_FOR_AUTHENTICATION && isAtLeastVersion(2, 3, 0, 0)) {
             env = new EnvVars(env);
             env.put("GIT_TERMINAL_PROMPT", "false"); // Don't prompt for auth from command line git
@@ -3179,7 +3248,32 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         args.add("-f");
                     }
                     args.add(ref);
-                    launchCommandIn(args, workspace, checkoutEnv, timeout);
+
+                    String repoUrl = null;
+                    try {
+                        String defaultRemote = getDefaultRemote();
+                        if (defaultRemote != null && !defaultRemote.isEmpty() && hasPromisor(defaultRemote)) {
+                            repoUrl = getRemoteUrl(defaultRemote);
+                        }
+                    } catch (GitException e) {
+                        /* Nothing to do, just keeping repoUrl = null */
+                    }
+
+                    if (repoUrl != null) {
+                        StandardCredentials cred = credentials.get(repoUrl);
+                        if (cred == null) {
+                            cred = defaultCredentials;
+                        }
+
+                        try {
+                            launchCommandWithCredentials(
+                                    args, workspace, checkoutEnv, cred, new URIish(repoUrl), timeout);
+                        } catch (URISyntaxException e) {
+                            throw new GitException("Invalid URL " + repoUrl, e);
+                        }
+                    } else {
+                        launchCommandIn(args, workspace, checkoutEnv, timeout);
+                    }
 
                     if (lfsRemote != null) {
                         final String url = getRemoteUrl(lfsRemote);
