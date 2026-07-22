@@ -367,8 +367,7 @@ class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''",
-                new Object[]{wsRefrepoBase, wsRefrepo});
+        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''", new Object[] {wsRefrepoBase, wsRefrepo});
 
         testGitClient
                 .clone_()
@@ -436,8 +435,7 @@ class GitClientCloneTest {
             // the provided string, as we check in log below
         }
 
-        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''",
-                new Object[]{wsRefrepoBase, wsRefrepo});
+        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''", new Object[] {wsRefrepoBase, wsRefrepo});
 
         testGitClient
                 .clone_()
@@ -705,7 +703,8 @@ class GitClientCloneTest {
                 new File(_testGitDir, alternates),
                 is(anExistingFile()));
         final String expectedContent = _testAltDir.replace("\\", "/") + "/objects";
-        final String actualContent = Files.readString(new File(_testGitDir).toPath().resolve(alternates), StandardCharsets.UTF_8);
+        final String actualContent =
+                Files.readString(new File(_testGitDir).toPath().resolve(alternates), StandardCharsets.UTF_8);
         assertThat("Alternates file content", actualContent, is(expectedContent));
         final File alternatesDir = new File(actualContent);
         assertThat(alternatesDir, is(anExistingDirectory()));

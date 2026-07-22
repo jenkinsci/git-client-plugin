@@ -374,7 +374,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
             value = "DMI_HARDCODED_ABSOLUTE_FILENAME",
             justification = "Path operations below intentionally use absolute '/' in some cases")
     public static String normalizeGitUrl(String url, Boolean checkLocalPaths) {
-        String urlNormalized = url.replaceAll("/+$", "").replaceAll("\\.git$", "").toLowerCase(Locale.ENGLISH);
+        String urlNormalized =
+                url.replaceAll("/+$", "").replaceAll("\\.git$", "").toLowerCase(Locale.ENGLISH);
         if (!url.contains("://")) {
             if (!url.startsWith("/") && !url.startsWith(".")) {
                 // Not an URL with schema, not an absolute or relative pathname
@@ -634,7 +635,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
                                 // Best hit, caller really only needs to look at this one
                                 // (as the first entry in the returned ordered set)
-                                LinkedHashSet<List<String>> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                LinkedHashSet<List<String>> result_best =
+                                        new LinkedHashSet<>(); // Retain order of insertion
                                 result_best.add(List.of(dirname, uri, uriNorm, remoteName));
                                 result_best.addAll(result);
                                 return new SimpleEntry<>(true, result_best);
@@ -759,11 +761,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                             + "') vs needle");
                             if (needle != null
                                     && needleNorm != null
-                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))
-                            ) {
+                                    && (needleNorm.equals(uriNorm) || needle.equals(uri))) {
                                 // Best hit, caller really only needs to look at this one
                                 // (as the first entry in the returned ordered set)
-                                LinkedHashSet<List<String>> result_best = new LinkedHashSet<>(); // Retain order of insertion
+                                LinkedHashSet<List<String>> result_best =
+                                        new LinkedHashSet<>(); // Retain order of insertion
                                 result_best.add(List.of(dirname, uri, uriNorm, remoteName));
                                 result_best.addAll(result);
                                 return new SimpleEntry<>(true, result_best);
@@ -789,7 +791,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 // subdir that is already a known git workspace, to
                 // add its data to list and/or return a found needle.
                 LOGGER.log(Level.FINE, "getSubmodulesUrls(): recursing into dir '" + dirname + "'...");
-                SimpleEntry<Boolean, LinkedHashSet<List<String>>> subEntriesRet = getSubmodulesUrls(dirname, needle, false);
+                SimpleEntry<Boolean, LinkedHashSet<List<String>>> subEntriesRet =
+                        getSubmodulesUrls(dirname, needle, false);
                 Boolean subEntriesExactMatched = subEntriesRet.getKey();
                 LinkedHashSet<List<String>> subEntries = subEntriesRet.getValue();
                 LOGGER.log(
@@ -1089,7 +1092,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     // first existing hit and return the first entry otherwise.
                     if (!subEntriesExactMatched) { // else look at first entry below
                         for (List<String> subEntry : subEntries) {
-                            if (getObjectsFile(subEntry.get(0)) != null || getObjectsFile(subEntry.get(0) + ".git") != null) {
+                            if (getObjectsFile(subEntry.get(0)) != null
+                                    || getObjectsFile(subEntry.get(0) + ".git") != null) {
                                 referenceExpanded = subEntry.get(0);
                                 break;
                             }

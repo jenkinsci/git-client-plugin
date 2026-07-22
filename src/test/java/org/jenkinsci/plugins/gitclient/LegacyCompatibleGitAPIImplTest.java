@@ -316,10 +316,15 @@ class LegacyCompatibleGitAPIImplTest {
 
         assertTrue(result.getKey(), "Exact URL match: flag should be true");
         LinkedHashSet<List<String>> entries = result.getValue();
-        assertThat("Exact-match entry + previously accumulated entry = at least 2", entries.size(), greaterThanOrEqualTo(2));
+        assertThat(
+                "Exact-match entry + previously accumulated entry = at least 2",
+                entries.size(),
+                greaterThanOrEqualTo(2));
         String firstDir = entries.iterator().next().get(0);
-        assertThat("Exact-match repo is promoted to first position",
-                new File(firstDir).getAbsolutePath(), is(repoExact.getAbsolutePath()));
+        assertThat(
+                "Exact-match repo is promoted to first position",
+                new File(firstDir).getAbsolutePath(),
+                is(repoExact.getAbsolutePath()));
     }
 
     @Test
@@ -336,8 +341,8 @@ class LegacyCompatibleGitAPIImplTest {
         File result = git.findParameterizedReferenceRepository(reference, needleUrl);
 
         assertNotNull(result, "Should return a result for an exact URL match");
-        assertThat("Exact-match subdir should be returned",
-                result.getCanonicalPath(), is(repoExact.getCanonicalPath()));
+        assertThat(
+                "Exact-match subdir should be returned", result.getCanonicalPath(), is(repoExact.getCanonicalPath()));
     }
 
     @Test
@@ -349,16 +354,17 @@ class LegacyCompatibleGitAPIImplTest {
         // and returns the first entry that is an existing git repo -> "cool-project".
         String needleUrl = "https://github.com/example/cool-project.git";
         File base = newFolder(tempFolder, "refrepo-find-nonexact");
-        File repoFirst =
-                createSubdirWithRemote(base, "cool-project", "https://github.com/fork-a/cool-project.git");
+        File repoFirst = createSubdirWithRemote(base, "cool-project", "https://github.com/fork-a/cool-project.git");
         createSubdirWithRemote(base, "another-fork", "https://github.com/fork-b/cool-project.git");
         String reference = base.getAbsolutePath() + "/${GIT_SUBMODULES}";
 
         File result = git.findParameterizedReferenceRepository(reference, needleUrl);
 
         assertNotNull(result, "Should return a result when non-exact URL-basename matches exist");
-        assertThat("First entry from the ordered suggestion set should be returned",
-                result.getCanonicalPath(), is(repoFirst.getCanonicalPath()));
+        assertThat(
+                "First entry from the ordered suggestion set should be returned",
+                result.getCanonicalPath(),
+                is(repoFirst.getCanonicalPath()));
     }
 
     private static File newFolder(File root, String... subDirs) throws Exception {

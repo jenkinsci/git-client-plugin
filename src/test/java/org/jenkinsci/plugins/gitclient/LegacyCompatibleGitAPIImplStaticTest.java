@@ -113,10 +113,7 @@ class LegacyCompatibleGitAPIImplStaticTest {
         // Write a .git pointer file in repoDir
         File gitPointer = new File(repoDir, ".git");
         String relativeGitdirPath = "../real-gitdir";
-        Files.writeString(
-                gitPointer.toPath(),
-                "gitdir: " + relativeGitdirPath + "\n",
-                StandardCharsets.UTF_8);
+        Files.writeString(gitPointer.toPath(), "gitdir: " + relativeGitdirPath + "\n", StandardCharsets.UTF_8);
 
         File result = LegacyCompatibleGitAPIImpl.getObjectsFile(repoDir);
         assertNotNull(result, "getObjectsFile() returned null for submodule pointer workspace");
@@ -146,8 +143,7 @@ class LegacyCompatibleGitAPIImplStaticTest {
 
     @Test
     void isParameterizedReferenceRepository_sha256Suffix_returnsTrue() {
-        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository(
-                "/var/cache/git/${GIT_URL_SHA256}"));
+        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository("/var/cache/git/${GIT_URL_SHA256}"));
     }
 
     @Test
@@ -158,8 +154,7 @@ class LegacyCompatibleGitAPIImplStaticTest {
 
     @Test
     void isParameterizedReferenceRepository_basenameSuffix_returnsTrue() {
-        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository(
-                "/var/cache/git/${GIT_URL_BASENAME}"));
+        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository("/var/cache/git/${GIT_URL_BASENAME}"));
     }
 
     @Test
@@ -170,8 +165,7 @@ class LegacyCompatibleGitAPIImplStaticTest {
 
     @Test
     void isParameterizedReferenceRepository_submodulesSuffix_returnsTrue() {
-        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository(
-                "/var/cache/git/${GIT_SUBMODULES}"));
+        assertTrue(LegacyCompatibleGitAPIImpl.isParameterizedReferenceRepository("/var/cache/git/${GIT_SUBMODULES}"));
     }
 
     @Test
@@ -222,8 +216,7 @@ class LegacyCompatibleGitAPIImplStaticTest {
 
     @Test
     void normalizeGitUrl_httpsUrl_isLowercased() {
-        String result =
-                LegacyCompatibleGitAPIImpl.normalizeGitUrl("HTTPS://GitHub.com/Example/Repo.git", false);
+        String result = LegacyCompatibleGitAPIImpl.normalizeGitUrl("HTTPS://GitHub.com/Example/Repo.git", false);
         assertThat(result, startsWith("https://"));
         assertThat(result, containsString("github.com"));
     }
