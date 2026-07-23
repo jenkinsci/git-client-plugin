@@ -464,6 +464,31 @@ class LegacyCompatibleGitAPIImplTest {
                 new File(result.getValue().iterator().next().get(0)).getAbsolutePath(), is(repoReal.getAbsolutePath()));
     }
 
+    @Test
+    void testGetSubmodulesUrls_configWithIncludeDirective_stillFindsRemoteViaFallback() throws Exception {
+        // getRemoteUrlsFast() refuses to parse a "config" file with an
+        // include/includeIf directive directly (remotes could be defined in
+        // the included file, which it does not resolve), and falls back to
+        // a full GitClient lookup instead. Confirm that fallback still works
+        // and still finds the correct match.
+        String needleUrl = "ssh://git@example.com/org/has-include.git";
+        File base = newFolder(tempFolder, "refrepo-config-include");
+        File repoDir = createSubdirWithRemote(base, "has-include.git", needleUrl);
+        File configFile = new File(repoDir, ".git/config");
+        Files.writeString(
+                configFile.toPath(),
+                "[include]\n\tpath = /nonexistent-included-file-xyz\n",
+                StandardCharsets.UTF_8,
+                java.nio.file.StandardOpenOption.APPEND);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Fallback via GitClient should still find the exact match");
+        assertThat(
+                new File(result.getValue().iterator().next().get(0)).getAbsolutePath(), is(repoDir.getAbsolutePath()));
+    }
+
     private static File newFolder(File root, String... subDirs) throws Exception {
         String subFolder = String.join("/", subDirs);
         File result = new File(root, subFolder);

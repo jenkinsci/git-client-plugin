@@ -17,9 +17,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +30,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -341,6 +346,116 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         return objects;
     }
 
+    /** Get remote name/URL pairs for the git repository at {@code dirname}
+     * (bare or not, resolved the same way as getObjectsFile()) as fast as
+     * possible: first try parsing its "config" file directly in memory (no
+     * subprocess, no JGit Repository object), and only if that is not
+     * possible or not safe (see {@link #tryReadRemoteUrlsFromConfigFile}),
+     * fall back to a normal GitClient (CliGit forks `git config --local
+     * --list`; JGit opens a full Repository) - same as the rest of this
+     * class did before this fast path was added.
+     *
+     * <p>This is used while walking many candidate directories in
+     * getSubmodulesUrls(), where most of the cost is exactly this per-dir
+     * remote lookup.
+     *
+     * @return a Map of remote URL to remote name, same shape as
+     *                 {@link GitClient#getRemoteUrls()}
+     */
+    private Map<String, String> getRemoteUrlsFast(String dirname) throws GitException, InterruptedException {
+        Map<String, String> uriNames = tryReadRemoteUrlsFromConfigFile(dirname);
+        if (uriNames != null) {
+            return uriNames;
+        }
+        // "this" during a checkout typically represents the job workspace,
+        // but here we look at some reference/cache repository elsewhere,
+        // with the same implementation as the end-user set up (CliGit/jGit)
+        return this.newGit(dirname).getRemoteUrls();
+    }
+
+    /** Try to read remote name/URL pairs directly out of the "config" file
+     * of the git repository at {@code dirname} (bare or not; resolved to the
+     * actual GIT_DIR the same way {@link #getObjectsFile} does, so this also
+     * works for a checked-out submodule's ".git" gitlink file), without
+     * spawning a git subprocess or opening a full JGit {@link Repository}.
+     *
+     * @return a Map of remote URL to remote name (several URL variants per
+     *                 remote, mirroring what {@link GitClient#getRemoteUrls()}
+     *                 implementations already return, to keep needle matching
+     *                 elsewhere in this class equally likely to hit), or
+     *                 {@code null} if the config file is missing, unreadable,
+     *                 unparseable, or uses {@code include}/{@code includeIf}
+     *                 directives that could define remotes elsewhere and
+     *                 which we do not attempt to resolve here - callers
+     *                 should fall back to a full GitClient-based lookup.
+     */
+    private static Map<String, String> tryReadRemoteUrlsFromConfigFile(String dirname) {
+        File objects = getObjectsFile(dirname);
+        if (objects == null) {
+            return null;
+        }
+        File gitDir = objects.getParentFile();
+        if (gitDir == null) {
+            return null;
+        }
+        File configFile = new File(gitDir, "config");
+        if (!configFile.isFile() || !configFile.canRead()) {
+            return null;
+        }
+
+        String text;
+        try {
+            text = new String(Files.readAllBytes(configFile.toPath()), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getRemoteUrlsFast(): failed to read '" + configFile.getAbsolutePath() + "': " + e.toString());
+            return null;
+        }
+
+        // Bail out rather than risk silently missing remotes actually defined
+        // in a file pulled in this way - we do not resolve includes here.
+        if (text.toLowerCase(Locale.ENGLISH).contains("[include")) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getRemoteUrlsFast(): '" + configFile.getAbsolutePath()
+                            + "' has an include/includeIf directive, falling back to GitClient instead of parsing it directly");
+            return null;
+        }
+
+        Config config = new Config();
+        try {
+            config.fromText(text);
+        } catch (ConfigInvalidException e) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getRemoteUrlsFast(): failed to parse '" + configFile.getAbsolutePath() + "': " + e.toString());
+            return null;
+        }
+
+        Map<String, String> uriNames = new LinkedHashMap<>();
+        try {
+            for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(config)) {
+                String remoteName = rc.getName();
+                for (URIish u : rc.getURIs()) {
+                    // If uri String values end up identical, Map only stores one entry -
+                    // same trade-off existing GitClient.getRemoteUrls() implementations make.
+                    uriNames.put(u.toString(), remoteName);
+                    uriNames.put(u.toPrivateString(), remoteName);
+                    uriNames.put(u.toASCIIString(), remoteName);
+                    uriNames.put(u.toPrivateASCIIString(), remoteName);
+                }
+            }
+        } catch (URISyntaxException e) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getRemoteUrlsFast(): failed to interpret remotes from '" + configFile.getAbsolutePath() + "': "
+                            + e.toString());
+            return null;
+        }
+        return uriNames;
+    }
+
     /** Handle magic strings in the reference pathname to sort out patterns
      * classified as evaluated by parametrization, as handled below
      *
@@ -633,19 +748,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 Level.FINE,
                                 "getSubmodulesUrls(): looking for submodule URL needle='" + needle
                                         + "' in existing abs refrepo subdir '" + dirname + "'");
-                        // Use newGit() rather than referenceGit.subGit(dirname)
-                        // since dirname is already an absolute path anyway, and
-                        // it seems that going through subGit() may lose the disk
-                        // letter on Windows agents.
-                        GitClient g = this.newGit(dirname);
-                        LOGGER.log(
-                                Level.FINE,
-                                "getSubmodulesUrls(): checking git workspace in dir '"
-                                        + g.getWorkTree().absolutize().toString() + "'");
-                        Map<String, String> uriNames = g.getRemoteUrls();
+                        // Prefer parsing the "config" file directly (no subprocess,
+                        // no JGit Repository object) over going through newGit()
+                        // (dirname is already absolute anyway, and going through
+                        // referenceGit.subGit() may lose the disk letter on Windows
+                        // agents) - see getRemoteUrlsFast() for when it falls back.
+                        Map<String, String> uriNames = getRemoteUrlsFast(dirname);
                         LOGGER.log(
                                 Level.FINEST,
-                                "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: "
+                                "getSubmodulesUrls(): getRemoteUrlsFast() returned this Map uriNames: "
                                         + uriNames.toString());
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                             String remoteName = pair.getValue(); // whatever the git workspace config calls it
@@ -772,15 +883,10 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                                 "getSubmodulesUrls(): looking "
                                         + ((needle == null) ? "" : "for submodule URL needle='" + needle + "' ")
                                         + "in existing refrepo dir '" + dirname + "'");
-                        GitClient g = this.newGit(dirname);
-                        LOGGER.log(
-                                Level.FINE,
-                                "getSubmodulesUrls(): checking git workspace in dir '"
-                                        + g.getWorkTree().absolutize().toString() + "'");
-                        Map<String, String> uriNames = g.getRemoteUrls();
+                        Map<String, String> uriNames = getRemoteUrlsFast(dirname);
                         LOGGER.log(
                                 Level.FINEST,
-                                "getSubmodulesUrls(): sub-git getRemoteUrls() returned this Map uriNames: "
+                                "getSubmodulesUrls(): getRemoteUrlsFast() returned this Map uriNames: "
                                         + uriNames.toString());
                         for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                             String remoteName = pair.getValue(); // whatever the git workspace config calls it
@@ -1044,8 +1150,7 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      */
     private List<String> verifyGitCacheMapEntry(String dirname, String needle, String needleNorm) {
         try {
-            GitClient g = this.newGit(dirname);
-            Map<String, String> uriNames = g.getRemoteUrls();
+            Map<String, String> uriNames = getRemoteUrlsFast(dirname);
             for (Map.Entry<String, String> pair : uriNames.entrySet()) {
                 String uri = pair.getKey();
                 String uriNorm = normalizeGitUrl(uri, true);
