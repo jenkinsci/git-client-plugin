@@ -367,6 +367,103 @@ class LegacyCompatibleGitAPIImplTest {
                 is(repoFirst.getCanonicalPath()));
     }
 
+    @Test
+    void testGetSubmodulesUrls_mapFileHit_skipsDirectoryWalk() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/mapped-project.git";
+        File base = newFolder(tempFolder, "refrepo-map-hit");
+        File repoMapped = createSubdirWithRemote(base, "mapped-project.git", needleUrl);
+        // A decoy that would be found first by the ordinary directory walk if
+        // the mapping file were not consulted, so a wrong hit here would fail
+        // the assertion on the returned directory below.
+        createSubdirWithRemote(base, "aaa-decoy", needleUrl);
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-1717010012\t" + needleUrl + "\tmapped-project.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Map file exact match: flag should be true");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertEquals(1, entries.size(), "Map-file hit should short-circuit with exactly one entry");
+        List<String> hit = entries.iterator().next();
+        assertThat(
+                "Map-file hit should point at the mapped dir",
+                new File(hit.get(0)).getAbsolutePath(),
+                is(repoMapped.getAbsolutePath()));
+        assertEquals(
+                "origin",
+                hit.get(3),
+                "remoteName should come from verifying the actual dir's remotes, not the map file's first column");
+    }
+
+    @Test
+    void testGetSubmodulesUrls_mapFileStaleEntry_fallsBackToDirectoryWalk() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/still-findable.git";
+        File base = newFolder(tempFolder, "refrepo-map-stale");
+        File repoReal = createSubdirWithRemote(base, "still-findable.git", needleUrl);
+        // Map file points at a subdirectory that does not actually exist (as if
+        // the cache had been pruned/renamed after the map was last saved).
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-0000000000\t" + needleUrl + "\tgone-missing.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory-walk fallback should still find the real dir");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertThat(
+                "Fallback should find the real dir, not the stale map entry",
+                new File(entries.iterator().next().get(0)).getAbsolutePath(),
+                is(repoReal.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_mapFileEntryWithoutMatchingRemote_fallsBackToDirectoryWalk() throws Exception {
+        // The mapped directory exists and is a real git repo, but its remote
+        // was changed (or the dir was repurposed) since the map was saved, so
+        // it no longer actually has the needle URL configured - the map's
+        // dirname-existence check alone would wrongly trust this hit.
+        String needleUrl = "ssh://git@example.com/org/moved-away.git";
+        File base = newFolder(tempFolder, "refrepo-map-wrong-remote");
+        createSubdirWithRemote(base, "moved-away.git", "ssh://git@example.com/org/renamed-elsewhere.git");
+        File repoReal = createSubdirWithRemote(base, "aaa-actual-hit", needleUrl);
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-1234567890\t" + needleUrl + "\tmoved-away.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory-walk fallback should still find the real dir");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertThat(
+                "Fallback should find the dir that actually has the needle remote, not the mismatched map entry",
+                new File(entries.iterator().next().get(0)).getAbsolutePath(),
+                is(repoReal.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_noMapFile_behavesAsBefore() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/no-map-here.git";
+        File base = newFolder(tempFolder, "refrepo-no-map");
+        File repoReal = createSubdirWithRemote(base, "no-map-here.git", needleUrl);
+        assertFalse(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).exists(),
+                "Precondition: no map file present");
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory walk should still find the exact match without a map file");
+        assertThat(
+                new File(result.getValue().iterator().next().get(0)).getAbsolutePath(), is(repoReal.getAbsolutePath()));
+    }
+
     private static File newFolder(File root, String... subDirs) throws Exception {
         String subFolder = String.join("/", subDirs);
         File result = new File(root, subFolder);

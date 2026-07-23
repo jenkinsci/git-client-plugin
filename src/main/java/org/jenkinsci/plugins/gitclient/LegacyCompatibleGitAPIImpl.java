@@ -476,6 +476,15 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
      *                 for a needle match or for the big listing. Set to false
      *                 when recursing, since this directory was checked already
      *                 as part of parent directory inspection.
+     *
+     * If a {@value #GITCACHE_MAP_FILENAME} file is present directly under
+     * referenceBaseDir, it is consulted first for a needle search: a hit there
+     * (confirmed still a usable git directory which still actually has a
+     * remote configured for the needle URL, not just a stale filename
+     * association) is returned immediately, without probing candidate
+     * subdirectory names or walking the filesystem. A missing file,
+     * unreadable file, or lack of a (still valid and verified) matching
+     * entry falls through to the directory-walk search below, unaffected.
      */
     public SimpleEntry<Boolean, LinkedHashSet<List<String>>> getSubmodulesUrls(
             String referenceBaseDir, String needle, Boolean checkRemotesInReferenceBaseDir) {
@@ -501,6 +510,20 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                             + referenceBaseDir + "' => '" + referenceBaseDirAbs + "': "
                             + e.toString());
             // return new SimpleEntry<>(false, result);
+        }
+
+        // Fast path: if external tooling (e.g. register-git-cache.sh from
+        // https://github.com/jimklimov/git-refrepo-scripts) maintains a
+        // GITCACHE_MAP_FILENAME mapping of known remote URLs to their
+        // subdirectory under this referenceBaseDir, try it before spending
+        // any I/O on directory probing or `git remote -v` subprocess calls.
+        if (needle != null && !needle.isEmpty()) {
+            List<String> mapHit = tryGitCacheMapFile(referenceBaseDirAbs, needle);
+            if (mapHit != null) {
+                LinkedHashSet<List<String>> resultBest = new LinkedHashSet<>();
+                resultBest.add(mapHit);
+                return new SimpleEntry<>(true, resultBest);
+            }
         }
 
         // "this" during a checkout typically represents the job workspace,
@@ -665,8 +688,8 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         // in or under this directory; however if it is not-null, we still
         // try to have minimal overhead to complete as soon as we match it.
         // TODO: Refactor to avoid lookups of dirs that may prove not needed
-        // in the end (aim for less I/Os to find the goal)... or is one dir
-        // listing a small price to pay for maintaining one unified logic?
+        //  in the end (aim for less I/Os to find the goal)... or is one dir
+        //  listing a small price to pay for maintaining one unified logic?
 
         // If current dir does have submodules, first dig into submodules,
         // when there is no deeper to drill, report remote URLs and step
@@ -685,6 +708,14 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
         //  in .gitmodules for a faster possible answer (MODNAME.{url,path} mapping).
         //  See git commit 9cff320a (a couple commits before this line was added)
         //  where a commented-away exploration of how this might be done was removed.
+        //  Note that git does not really support submodule definitions with several
+        //  URLs mapped to same name. Its `git fsck` can complain and "fix" those
+        //  discrepancies, and other operations may look at just some one hit.
+
+        // A different faster-answer idea (external tooling-maintained mapping
+        // of URL to subdirectory, checked at the top of this method before we
+        // even get here) is implemented via tryGitCacheMapFile() and does not
+        // require this repo to have real git submodules at all.
 
         // If current repo *is* bare (can't have proper submodules), or if the
         // end-users just cloned or linked some more repos into this container,
@@ -893,6 +924,142 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
 
         // Did not look for anything in particular
         return new SimpleEntry<>(false, result);
+    }
+
+    /** Name of an optional mapping file maintained by external tooling (see
+     * https://github.com/jimklimov/git-refrepo-scripts {@code register-git-cache.sh ls}
+     * output) directly under a getSubmodulesUrls() referenceBaseDir.
+     * Each line is tab-separated: remote name, remote URL, and (possibly
+     * empty, for the top-level referenceBaseDir itself) relative pathname
+     * of the subdirectory that hosts a git clone with that remote, e.g.:
+     * <pre>
+     *   repo-1717010012&lt;TAB&gt;ssh://git@example.com/foo/bar.git&lt;TAB&gt;bar.git
+     * </pre>
+     * This lets getSubmodulesUrls() resolve a needle URL to its cached
+     * subdirectory in one file read, instead of probing candidate dirnames
+     * and running `git remote -v` (a subprocess or JGit call) in each of
+     * the fanned-out subdirectories.
+     */
+    static final String GITCACHE_MAP_FILENAME = ".gitcache.map";
+
+    /** Look up {@code needle} in a {@value #GITCACHE_MAP_FILENAME} file
+     * directly under {@code referenceBaseDirAbs}, if one is present.
+     *
+     * @param referenceBaseDirAbs absolute, canonical path to the refrepo
+     *                 container directory that might hold the mapping file
+     * @param needle   the (not-null, not-empty) URL we are looking for
+     * @return a 4-element List as used elsewhere in getSubmodulesUrls()
+     *                 (dirname, url, urlNormalized, remoteName) for a hit
+     *                 that still resolves to a usable git directory which
+     *                 still actually has a remote configured for the needle
+     *                 (not just a directory that happens to exist), or
+     *                 {@code null} if there is no file, it is unreadable,
+     *                 or none of its (still valid) entries match the needle
+     */
+    private List<String> tryGitCacheMapFile(String referenceBaseDirAbs, String needle) {
+        File mapFile = new File(referenceBaseDirAbs, GITCACHE_MAP_FILENAME);
+        if (!mapFile.isFile() || !mapFile.canRead()) {
+            return null;
+        }
+
+        String needleNorm = normalizeGitUrl(needle, true);
+
+        try (BufferedReader br = new BufferedReader(
+                new InputStreamReader(new FileInputStream(mapFile), java.nio.charset.StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+                String[] cols = line.split("\t", -1);
+                if (cols.length < 2) {
+                    LOGGER.log(
+                            Level.FINE,
+                            "getSubmodulesUrls(): ignoring malformed " + GITCACHE_MAP_FILENAME + " line: '" + line
+                                    + "'");
+                    continue;
+                }
+                String remoteName = cols[0].trim();
+                String uri = cols[1].trim();
+                String dirRel = cols.length > 2 ? cols[2].trim() : "";
+                String uriNorm = normalizeGitUrl(uri, true);
+
+                if (!needleNorm.equals(uriNorm) && !needle.equals(uri)) {
+                    continue;
+                }
+
+                String dirname = dirRel.isEmpty() ? referenceBaseDirAbs : (referenceBaseDirAbs + "/" + dirRel);
+                if (getObjectsFile(dirname) == null) {
+                    // Stale entry (dir gone, renamed, or never made) - keep
+                    // looking at remaining lines, then fall back to the walk.
+                    LOGGER.log(
+                            Level.FINE,
+                            "getSubmodulesUrls(): " + GITCACHE_MAP_FILENAME + " named '" + dirname + "' (recorded as '"
+                                    + remoteName + "') for needle='" + needle
+                                    + "' but it is not a usable git dir now; ignoring");
+                    continue;
+                }
+
+                // The dir exists and looks like a git repo, but the map file
+                // could still be stale/misleading (URL changed, remote
+                // renamed or removed, dir repurposed for another repo since
+                // the map was last saved) - confirm the needle is actually
+                // among its configured remotes before trusting this hit.
+                List<String> verified = verifyGitCacheMapEntry(dirname, needle, needleNorm);
+                if (verified == null) {
+                    LOGGER.log(
+                            Level.FINE,
+                            "getSubmodulesUrls(): " + GITCACHE_MAP_FILENAME + " named '" + dirname + "' (recorded as '"
+                                    + remoteName + "') for needle='" + needle
+                                    + "' but it has no matching remote configured now; ignoring");
+                    continue;
+                }
+
+                LOGGER.log(
+                        Level.FINE,
+                        "getSubmodulesUrls(): resolved needle='" + needle + "' via " + GITCACHE_MAP_FILENAME
+                                + " to dir '" + dirname + "', skipping directory walk");
+                return verified;
+            }
+        } catch (IOException e) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getSubmodulesUrls(): failed to read " + GITCACHE_MAP_FILENAME + " at '" + mapFile + "': "
+                            + e.toString());
+        }
+        return null;
+    }
+
+    /** Confirm that {@code dirname} (already known to be a usable git
+     * directory) actually has a remote configured whose URL matches
+     * {@code needle}/{@code needleNorm}, so a {@value #GITCACHE_MAP_FILENAME}
+     * hit is not trusted purely because the directory happens to still exist.
+     *
+     * @return a 4-element List (dirname, url, urlNormalized, remoteName)
+     *                 using the remote name actually found in {@code dirname}
+     *                 (which may differ from the map file's recorded name,
+     *                 e.g. after a manual `git remote rename`), or
+     *                 {@code null} if no configured remote there matches
+     */
+    private List<String> verifyGitCacheMapEntry(String dirname, String needle, String needleNorm) {
+        try {
+            GitClient g = this.newGit(dirname);
+            Map<String, String> uriNames = g.getRemoteUrls();
+            for (Map.Entry<String, String> pair : uriNames.entrySet()) {
+                String uri = pair.getKey();
+                String uriNorm = normalizeGitUrl(uri, true);
+                if (needleNorm.equals(uriNorm) || needle.equals(uri)) {
+                    return List.of(dirname, uri, uriNorm, pair.getValue());
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.log(
+                    Level.FINE,
+                    "getSubmodulesUrls(): failed to verify " + GITCACHE_MAP_FILENAME + " entry in dir '" + dirname
+                            + "' for needle='" + needle + "': " + t.toString());
+        }
+        return null;
     }
 
     /** See above. With null needle, returns all data we can find under the
