@@ -111,7 +111,8 @@ class PushTest {
             "this/ref/does/not/exist", "src/ref/does/not/exist:dest/ref/does/not/exist"
         };
 
-        shuffleArray(implementations);
+        // Run command line git tests first, no shuffling
+        // shuffleArray(implementations);
         shuffleArray(goodRefSpecs);
         shuffleArray(badRefSpecs);
 
