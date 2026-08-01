@@ -341,8 +341,8 @@ class CredentialsTest {
                                 password != null
                                 && !password.matches(".*[@:].*")
                                 && // Skip special cases of password
-                                implementation.equals("git")
-                                && // Embedded credentials only implemented for CLI git
+                                (implementation.equals("git") || implementation.equals("jgit"))
+                                && // Embedded credentials implemented for both CLI git and JGit (JENKINS-69507)
                                 repoURL.startsWith("http")) {
                             /* Use existing username and password to create an embedded credentials test case */
                             String repoURLwithCredentials = repoURL.replaceAll(
