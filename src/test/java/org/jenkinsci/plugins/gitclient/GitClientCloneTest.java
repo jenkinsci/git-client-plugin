@@ -271,36 +271,80 @@ class GitClientCloneTest {
 
     @Test
     void test_clone_reference_parameterized_basename() throws Exception {
+        /* This test clones from a local mirror directory rather than a real
+         * network URL. Git accepts forward slashes in local paths on every OS
+         * (including Windows), so spell the clone URL with forward slashes:
+         * this same string is also the "url" argument that
+         * findParameterizedReferenceRepository() extracts a basename from via
+         * url.lastIndexOf("/") - a backslash-only Windows path has no '/' to
+         * split on at all (its "basename" would be the whole path, which is
+         * not a legal single directory-name component). Forward slashes let
+         * the basename resolve to a portable value ("clone") on every OS,
+         * matching how a real repository URL behaves. */
+        String wsMirrorUrl = workspace.localMirror().replace(File.separatorChar, '/');
+        String wsMirrorBasename =
+                wsMirrorUrl.substring(wsMirrorUrl.lastIndexOf('/') + 1).replaceAll("\\.git$", "");
+
+        /* Make a new repo replica to use as refrepo, in specified location */
+        // Start of the path to pass into `git clone` call; note that per
+        // WorkspaceWithRepo.java the test workspaces are under target/
+        // where the executed test binaries live
+        File fRefrepoBase = new File("target/refrepoBasename.git").getAbsoluteFile();
+        String wsRefrepoBase = fRefrepoBase.getPath(); // String with full pathname
+        String wsRefrepo = null;
+        try {
+            if (fRefrepoBase.exists() || fRefrepoBase.mkdirs()) {
+                /* Note: per parser of magic suffix, use slash - not OS separator char
+                 * And be sure to use relative paths here (see
+                 * WorkspaceWithRepo.java::localMirror()):
+                 */
+                wsRefrepo = workspace.localMirror("refrepoBasename.git/" + wsMirrorBasename);
+            }
+        } catch (RuntimeException e) {
+            wsRefrepo = null;
+            Util.deleteRecursive(fRefrepoBase);
+            // At worst, the test would log that it mangled and parsed
+            // the provided string, as we check in log below
+        }
+
+        LOGGER.log(Level.FINE, "wsRefrepoBase=''{0}''\nwsRefrepo=''{1}''", new Object[] {wsRefrepoBase, wsRefrepo});
+
         testGitClient
                 .clone_()
-                .url(workspace.localMirror())
+                .url(wsMirrorUrl)
                 .repositoryName("origin")
-                .reference(workspace.localMirror() + "/${GIT_URL_BASENAME}")
+                .reference(wsRefrepoBase + "/${GIT_URL_BASENAME}")
                 .execute();
         testGitClient.checkout().ref("origin/master").branch("master").execute();
-        check_remote_url(workspace, testGitClient, "origin");
+        // Not using check_remote_url(): that helper compares against
+        // workspace.localMirror()'s OS-separator spelling, but this test
+        // deliberately clones using the forward-slash spelling above.
+        assertThat("Remote URL", testGitClient.getRemoteUrl("origin"), is(wsMirrorUrl));
+        assertThat("Updated URL", workspace.launchCommand("git", "remote", "-v"), containsString(wsMirrorUrl));
+
         // Verify JENKINS-46737 expected log message is written
         String messages = StringUtils.join(handler.getMessages(), ";");
+
+        LOGGER.log(Level.FINE, "clone output:\n======\n{0}\n======", messages);
+
         assertThat(
-                "Reference repo name-parsing logged in: " + messages,
+                "Reference repo name-parsing logged in: " + messages
+                        + (wsRefrepo == null ? "" : ("\n...and replaced with: '" + wsRefrepo + "'")),
                 handler.containsMessageSubstring("Parameterized reference path ")
-                        && handler.containsMessageSubstring(" replaced with: "),
+                        && handler.containsMessageSubstring(" replaced with: ")
+                        && (wsRefrepo == null || handler.containsMessageSubstring(wsRefrepo)),
                 is(true));
-        // TODO: Actually construct the local filesystem path to match
-        // the last pathname component from the URL (plus/minus ".git"
-        // extension). Be sure to clean away this path at end of test,
-        // so that the test_clone_reference_parameterized_basename_fallback()
-        // below is not confused - it expects this location to not exist.
-        // Skip: Missing if clone failed - currently would, with bogus
-        // path above and not yet pre-created path structure.
-        /*
-        assertThat("Reference repo logged in: " + messages,
-                handler.containsMessageSubstring(
-                        "Using reference repository: "), is(true));
-        assertAlternateFilePointsToLocalMirror();
-        assertBranchesExist(testGitClient.getBranches(), "master");
-        assertNoObjectsInRepository();
-        */
+
+        if (wsRefrepo != null) {
+            assertThat(
+                    "Reference repo logged in: " + messages,
+                    handler.containsMessageSubstring("Using reference repository: "),
+                    is(true));
+            assertAlternateFilePointsToLocalWorkspaceMirror(testGitDir.getPath(), wsRefrepo);
+            assertBranchesExist(testGitClient.getBranches(), "master");
+            assertNoObjectsInRepository();
+        } // else Skip: Missing if clone failed - currently would,
+        // with bogus path above and not pre-created path structure
     }
 
     @Test

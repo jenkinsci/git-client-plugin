@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
@@ -1297,9 +1298,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                 needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                 if (reference.endsWith("/${GIT_URL_BASENAME}")) {
-                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
+                    referenceExpanded = reference.replaceAll(
+                            "\\$\\{GIT_URL_BASENAME\\}$", Matcher.quoteReplacement(needleBasename));
                 } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
-                    referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", needleBasename);
+                    referenceExpanded = reference.replaceAll(
+                            "\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", Matcher.quoteReplacement(needleBasename));
                     if (url.equals(urlNormalized)
                             && getObjectsFile(referenceExpanded) == null
                             && getObjectsFile(referenceExpanded + ".git") == null) {
@@ -1321,9 +1324,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                     if (reference.endsWith("/${GIT_URL_BASENAME}")) {
-                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME\\}$", needleBasename);
+                        referenceExpanded = reference.replaceAll(
+                                "\\$\\{GIT_URL_BASENAME\\}$", Matcher.quoteReplacement(needleBasename));
                     } else { // if (reference.endsWith("/${GIT_URL_BASENAME_FALLBACK}")) {
-                        referenceExpanded = reference.replaceAll("\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", needleBasename);
+                        referenceExpanded = reference.replaceAll(
+                                "\\$\\{GIT_URL_BASENAME_FALLBACK\\}$", Matcher.quoteReplacement(needleBasename));
                         if (getObjectsFile(referenceExpanded) == null
                                 && getObjectsFile(referenceExpanded + ".git") == null) {
                             // chop it off, use main directory
@@ -1400,9 +1405,11 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
                     needleBasename = needleBasename.replaceAll("\\.git$", "");
 
                     if (reference.endsWith("/${GIT_SUBMODULES}")) {
-                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES\\}$", needleBasename);
+                        referenceExpanded = reference.replaceAll(
+                                "\\$\\{GIT_SUBMODULES\\}$", Matcher.quoteReplacement(needleBasename));
                     } else { // if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")) {
-                        referenceExpanded = reference.replaceAll("\\$\\{GIT_SUBMODULES_FALLBACK\\}$", needleBasename);
+                        referenceExpanded = reference.replaceAll(
+                                "\\$\\{GIT_SUBMODULES_FALLBACK\\}$", Matcher.quoteReplacement(needleBasename));
                         if (reference.endsWith("/${GIT_SUBMODULES_FALLBACK}")
                                 && getObjectsFile(referenceExpanded) == null
                                 && getObjectsFile(referenceExpanded + ".git") == null) {
