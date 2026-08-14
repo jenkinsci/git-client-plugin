@@ -334,7 +334,7 @@ class CredentialsTest {
                                 false,
                                 lfsSpecificTest);
                         repos.add(repo);
-                        /* Add embedded credentials test case if valid username, valid password, CLI git, and http protocol */
+                        /* Add embedded credentials test case if valid username, valid password, CLI git or JGit, and http protocol */
                         if (username != null
                                 && !username.matches(".*[@:].*")
                                 && // Skip special cases of username

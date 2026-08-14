@@ -56,6 +56,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -731,12 +732,31 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Self contained descriptor so that {@code getDescriptor()} is safe to call on agents, where no
+     * Jenkins instance is available.
+     */
+    private static class EmbeddedCredentialsDescriptor extends CredentialsDescriptor {
+
+        EmbeddedCredentialsDescriptor() {
+            super(EmbeddedCredentials.class);
+        }
+
+        @Override
+        @NonNull
+        public String getDisplayName() {
+            return "Embedded URL credentials";
+        }
+    }
+
+    /**
      * Static inner class to hold embedded credentials extracted from URLs.
      * This avoids SpotBugs warnings about serializable inner classes.
      */
     private static class EmbeddedCredentials implements StandardUsernamePasswordCredentials {
         @Serial
         private static final long serialVersionUID = 1L;
+
+        private static final CredentialsDescriptor DESCRIPTOR = new EmbeddedCredentialsDescriptor();
 
         private final String username;
         private final Secret password;
@@ -757,7 +777,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         @Override
         @NonNull
         public String getId() {
-            return "embedded-url-credentials-" + host;
+            return "embedded-url-credentials-" + username + "@" + host;
         }
 
         @Override
@@ -768,7 +788,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         @Override
         @NonNull
         public CredentialsDescriptor getDescriptor() {
-            throw new UnsupportedOperationException("Descriptor not available for embedded credentials");
+            return DESCRIPTOR;
         }
 
         @Override
@@ -782,12 +802,42 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         public Secret getPassword() {
             return password;
         }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof EmbeddedCredentials other)) {
+                return false;
+            }
+            return Objects.equals(username, other.username)
+                    && Objects.equals(password, other.password)
+                    && Objects.equals(host, other.host);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(username, password, host);
+        }
     }
 
     /**
-     * Extracts embedded credentials from a URL and adds them to the credentials provider.
-     * This is necessary because JGit doesn't automatically use credentials embedded in URLs
-     * stored in git config (JENKINS-69507).
+     * Returns true if the value is a bare remote name such as {@code origin} rather than a
+     * repository location.
+     */
+    private static boolean isRemoteName(URIish url) {
+        if (url.getScheme() != null || url.getHost() != null) {
+            return false;
+        }
+        String value = url.toString();
+        return !value.isEmpty() && !value.contains("/") && !value.contains("\\");
+    }
+
+    /**
+     * Adds credentials embedded in an http or https URL to the credentials provider, since JGit does
+     * not use credentials embedded in a URL resolved from git config (JENKINS-69507). Other
+     * protocols are ignored.
      *
      * @param url the URL which may contain embedded credentials
      */
@@ -796,26 +846,26 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             return;
         }
 
+        String scheme = url.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            return;
+        }
+
         String user = url.getUser();
         String pass = url.getPass();
-
-        if (user != null && !user.isEmpty() && pass != null && !pass.isEmpty()) {
-            String host = url.getHost();
-            if (host == null || host.isEmpty()) {
-                host = "unknown-host";
-            }
-
-            StandardUsernamePasswordCredentials embeddedCredentials =
-                    new EmbeddedCredentials(user, pass, host);
-
-            // Add credentials keyed by the full URL (including embedded credentials)
-            addCredentials(url.toString(), embeddedCredentials);
-
-            // Also add credentials keyed by the URL without embedded credentials,
-            // since JGit's TransportHttp may query using a stripped URL.
-            String urlWithoutCredentials = url.toASCIIString().replaceFirst("://[^@]+@", "://");
-            addCredentials(urlWithoutCredentials, embeddedCredentials);
+        if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
+            return;
         }
+
+        String host = url.getHost();
+        if (host == null || host.isEmpty()) {
+            host = "unknown-host";
+        }
+
+        StandardUsernamePasswordCredentials embeddedCredentials = new EmbeddedCredentials(user, pass, host);
+
+        addCredentials(url.toString(), embeddedCredentials);
+        addCredentials(url.setUser(null).setPass(null).toString(), embeddedCredentials);
     }
 
     /**
@@ -908,25 +958,18 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                         throw new GitException("unsupported protocol in URL " + url);
                     }
 
-                    /* JENKINS-69507: Handle embedded credentials in URLs
-                     * If the URL looks like a remote name (not a full URL), resolve it from git config first
-                     */
+                    /* JENKINS-69507 */
                     URIish urlForCredentials = url;
-                    if (!url.isRemote()) {
-                        try {
-                            String resolvedUrl = getRemoteUrl(url.toString());
-                            if (resolvedUrl != null) {
+                    if (isRemoteName(url)) {
+                        String resolvedUrl = repo.getConfig().getString("remote", url.toString(), "url");
+                        if (resolvedUrl != null) {
+                            try {
                                 urlForCredentials = new URIish(resolvedUrl);
+                            } catch (URISyntaxException e) {
+                                LOGGER.log(Level.FINE, e, () -> "Could not parse the URL configured for remote " + url);
                             }
-                        } catch (URISyntaxException e) {
-                            // If resolution fails, continue with original URL
                         }
                     }
-
-                    /* Extract and add credentials from the resolved URL if embedded
-                     * This handles the case where a URL with embedded credentials is stored in git config
-                     * and used in subsequent fetches
-                     */
                     extractAndAddEmbeddedCredentials(urlForCredentials);
 
                     fetch.setRemote(url.toString());
