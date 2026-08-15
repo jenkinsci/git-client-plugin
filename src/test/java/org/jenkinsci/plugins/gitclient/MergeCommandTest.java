@@ -408,8 +408,9 @@ class MergeCommandTest {
                 git.revList(defaultBranchName).contains(commit2Branch),
                 "branch commit 2 not on default branch after merge");
         assertTrue(readmeOne.exists(), "README 1 missing in working directory");
-        GitException e = assertThrows(GitException.class, () -> mergeCmd.setRevisionToMerge(commitConflict)
-                .execute());
+        GitException e = assertThrows(
+                GitException.class,
+                () -> mergeCmd.setRevisionToMerge(commitConflict).execute());
         assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 
@@ -424,8 +425,9 @@ class MergeCommandTest {
                 git.revList(defaultBranchName).contains(commit2Branch),
                 "branch commit 2 on default branch after merge without commit");
         assertTrue(readmeOne.exists(), "README 1 missing in working directory");
-        GitException e = assertThrows(GitException.class, () -> mergeCmd.setRevisionToMerge(commitConflict)
-                .execute());
+        GitException e = assertThrows(
+                GitException.class,
+                () -> mergeCmd.setRevisionToMerge(commitConflict).execute());
         assertThat(e.getMessage(), containsString(commitConflict.getName()));
     }
 

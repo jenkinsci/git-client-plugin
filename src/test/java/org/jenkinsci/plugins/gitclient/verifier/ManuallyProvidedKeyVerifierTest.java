@@ -4,6 +4,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.nonGitHubHost;
 import static org.jenkinsci.plugins.gitclient.verifier.KnownHostsTestUtil.runKnownHostsTests;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import hudson.model.StreamBuildListener;
@@ -62,7 +63,7 @@ class ManuallyProvidedKeyVerifierTest {
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
                         verifier.forJGit(StreamBuildListener.fromStdout());
-        Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+        Path tempKnownHosts = Files.createTempFile(testFolder.toPath(), "known_hosts", "");
         Files.writeString(tempKnownHosts, hostKey + System.lineSeparator());
         KnownHostsTestUtil.connectToHost(
                         "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
@@ -84,7 +85,7 @@ class ManuallyProvidedKeyVerifierTest {
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
                         verifier.forJGit(StreamBuildListener.fromStdout());
-        Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+        Path tempKnownHosts = Files.createTempFile(testFolder.toPath(), "known_hosts", "");
         Files.writeString(tempKnownHosts, key + System.lineSeparator());
         KnownHostsTestUtil.connectToHost(
                         "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ssh-ed25519", s -> {
@@ -106,7 +107,7 @@ class ManuallyProvidedKeyVerifierTest {
         ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier jGitHostKeyVerifier =
                 (ManuallyProvidedKeyVerifier.ManuallyProvidedKeyJGitHostKeyVerifier)
                         verifier.forJGit(StreamBuildListener.fromStdout());
-        Path tempKnownHosts = Files.createTempFile("known_hosts", "");
+        Path tempKnownHosts = Files.createTempFile(testFolder.toPath(), "known_hosts", "");
         Files.writeString(tempKnownHosts, key + System.lineSeparator());
         KnownHostsTestUtil.connectToHost(
                         "github.com", 22, tempKnownHosts.toFile(), jGitHostKeyVerifier, "ecdsa-sha2-nistp256", s -> {
@@ -120,30 +121,112 @@ class ManuallyProvidedKeyVerifierTest {
 
     @Test
     void testGetVerifyHostKeyOption() throws Exception {
-        if (isWindows()) {
-            return; // Skip test without generating a Maven surefire warning
-        }
-        Path tempFile = File.createTempFile("junit", null, testFolder).toPath();
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "manual-host-key", "");
         String actual = new ManuallyProvidedKeyVerifier(hostKey)
                 .forCliGit(TaskListener.NULL)
                 .getVerifyHostKeyOption(tempFile);
-        assertThat(
-                actual,
-                is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=\\\"\"\"" + tempFile.toAbsolutePath()
-                        + "\\\"\"\""));
+        String fileArg = tempFile.toAbsolutePath().toString();
+        if (!isWindows()) {
+            fileArg = "'" + fileArg + "'";
+        }
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
         assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }
 
     @Test
-    void testGetVerifyHostKeyOptionOnWindows() throws Exception {
-        if (!isWindows()) {
-            return; // Skip test without generating a Maven surefire warning
-        }
-        Path tempFile = File.createTempFile("junit", null, testFolder).toPath();
+    void testGetVerifyHostKeyOptionSpace() throws Exception {
+        assumeFalse(isWindows(), "Embedded space not allowed on Windows for git plugin temporary files");
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "x y", "");
         String actual = new ManuallyProvidedKeyVerifier(hostKey)
                 .forCliGit(TaskListener.NULL)
                 .getVerifyHostKeyOption(tempFile);
-        assertThat(actual, is("-o StrictHostKeyChecking=yes  -o UserKnownHostsFile=" + tempFile.toAbsolutePath()));
+        String fileArg = tempFile.toAbsolutePath().toString();
+        fileArg = "'\"" + fileArg + "\"'";
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionParentheses() throws Exception {
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "paren(1)", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        if (!isWindows()) {
+            fileArg = "'" + fileArg + "'";
+        }
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionParenthesesAndSpace() throws Exception {
+        assumeFalse(isWindows(), "Embedded space not allowed on Windows for git plugin temporary files");
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "paren (2)", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        fileArg = "'\"" + fileArg + "\"'";
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionShellEscape() throws Exception {
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "shell-$(date)", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        if (!isWindows()) {
+            fileArg = "'" + fileArg + "'";
+        }
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionShellEscape1() throws Exception {
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "shell-`date`", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        if (!isWindows()) {
+            fileArg = "'" + fileArg + "'";
+        }
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionSingleQuoteAndSpace() throws Exception {
+        assumeFalse(isWindows(), "Embedded space not allowed on Windows for git plugin temporary files");
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "Bob's Job", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        fileArg = fileArg.replace("'", "\\'"); // Expect escaped single quotes inside the string
+        fileArg = "'\"" + fileArg + "\"'";
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
+        assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
+    }
+
+    @Test
+    void testGetVerifyHostKeyOptionSingleQuote() throws Exception {
+        Path tempFile = Files.createTempFile(testFolder.toPath(), "Bob's-Job", "");
+        String actual = new ManuallyProvidedKeyVerifier(hostKey)
+                .forCliGit(TaskListener.NULL)
+                .getVerifyHostKeyOption(tempFile);
+        String fileArg = tempFile.toAbsolutePath().toString();
+        if (!isWindows()) {
+            fileArg = fileArg.replace("'", "\\'"); // Expect escaped single quotes inside the string
+            fileArg = "'" + fileArg + "'";
+        }
+        assertThat(actual, is("-o StrictHostKeyChecking=yes -o UserKnownHostsFile=" + fileArg));
         assertThat(Files.readAllLines(tempFile), is(Collections.singletonList(hostKey)));
     }
 

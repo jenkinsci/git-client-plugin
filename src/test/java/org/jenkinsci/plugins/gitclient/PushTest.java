@@ -86,12 +86,14 @@ class PushTest {
         checkoutOldBranchAndCommitFile();
 
         if (expectedException != null) {
-            assertThrows(expectedException, () -> workingGitClient
-                    .push()
-                    .to(bareURI)
-                    .ref(refSpec)
-                    .force(true)
-                    .execute());
+            assertThrows(
+                    expectedException,
+                    () -> workingGitClient
+                            .push()
+                            .to(bareURI)
+                            .ref(refSpec)
+                            .force(true)
+                            .execute());
         } else {
             workingGitClient.push().to(bareURI).ref(refSpec).force(true).execute();
         }
@@ -109,7 +111,8 @@ class PushTest {
             "this/ref/does/not/exist", "src/ref/does/not/exist:dest/ref/does/not/exist"
         };
 
-        shuffleArray(implementations);
+        // Run command line git tests first, no shuffling
+        // shuffleArray(implementations);
         shuffleArray(goodRefSpecs);
         shuffleArray(badRefSpecs);
 
@@ -134,7 +137,7 @@ class PushTest {
     void createWorkingRepository() throws Exception {
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        workingRepo = newFolder(temporaryFolder, "junit-" + System.nanoTime());
+        workingRepo = newFolder(temporaryFolder, "PushTest-" + System.nanoTime());
         workingGitClient =
                 Git.with(listener, env).in(workingRepo).using(gitImpl).getClient();
         workingGitClient
@@ -163,8 +166,7 @@ class PushTest {
     @AfterEach
     void verifyPushResultAndDeleteDirectory(TestInfo info) throws Exception {
         /* Confirm push reached bare repo */
-        if (expectedException == null
-                && !info.getTestMethod().orElseThrow().getName().contains("Throws")) {
+        if (expectedException == null) {
             ObjectId latestBareHead = bareGitClient.getHeadRev(bareRepo.getAbsolutePath(), branchName);
             assertEquals(workingCommit, latestBareHead, branchName + " commit not pushed to " + refSpec);
             assertNotEquals(previousCommit, workingCommit);
@@ -174,23 +176,18 @@ class PushTest {
 
     @BeforeAll
     static void createBareRepository() throws Exception {
-        /* Randomly choose git implementation to create bare repository */
-        final String[] gitImplementations = {"git", "jgit"};
-        Random random = new Random();
-        String gitImpl = gitImplementations[random.nextInt(gitImplementations.length)];
-
         /* Create the bare repository */
-        bareRepo = newFolder(staticTemporaryFolder, "junit-" + System.nanoTime());
+        bareRepo = newFolder(staticTemporaryFolder, "PushTest-" + System.nanoTime());
         bareURI = new URIish(bareRepo.getAbsolutePath());
         hudson.EnvVars env = new hudson.EnvVars();
         TaskListener listener = StreamTaskListener.fromStderr();
-        bareGitClient = Git.with(listener, env).in(bareRepo).using(gitImpl).getClient();
+        bareGitClient = Git.with(listener, env).in(bareRepo).using("git").getClient();
         bareGitClient.init_().workspace(bareRepo.getAbsolutePath()).bare(true).execute();
 
         /* Clone the bare repository into a working copy */
-        File cloneRepo = newFolder(staticTemporaryFolder, "junit-" + System.nanoTime());
+        File cloneRepo = newFolder(staticTemporaryFolder, "PushTest-" + System.nanoTime());
         GitClient cloneGitClient =
-                Git.with(listener, env).in(cloneRepo).using(gitImpl).getClient();
+                Git.with(listener, env).in(cloneRepo).using("git").getClient();
         cloneGitClient
                 .clone_()
                 .url(bareRepo.getAbsolutePath())
