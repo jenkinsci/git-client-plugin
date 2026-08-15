@@ -787,6 +787,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
 
             @Override
+            public org.jenkinsci.plugins.gitclient.FetchCommand filter(String filterSpec) {
+                if (filterSpec != null) {
+                    listener.getLogger()
+                            .println("[WARNING] JGit does not support partial clone filters; reverting to full clone");
+                }
+                return this;
+            }
+
+            @Override
             public void execute() throws GitException {
                 try (Repository repo = getRepository()) {
                     Git git = git(repo);
@@ -1635,6 +1644,15 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             @Override
             public CloneCommand depth(Integer depth) {
                 this.depth = depth;
+                return this;
+            }
+
+            @Override
+            public CloneCommand filter(String filterSpec) {
+                if (filterSpec != null) {
+                    listener.getLogger()
+                            .println("[WARNING] JGit does not support partial clone filters; reverting to full clone");
+                }
                 return this;
             }
 
