@@ -6,6 +6,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.eclipse.jgit.transport.sshd.ServerKeyDatabase;
@@ -29,19 +33,28 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
         };
     }
 
+    private void createKnownHostsFile(Path knowHostPath) throws IOException {
+        Path parent = knowHostPath.getParent();
+        if (parent == null) {
+            throw new IllegalArgumentException("knowHostPath parent cannot be null");
+        }
+        if (isWindows()) {
+            Files.createDirectories(parent);
+        } else {
+            Set<PosixFilePermission> ownerOnly = PosixFilePermissions.fromString("rwx------");
+            FileAttribute<Set<PosixFilePermission>> fileAttribute = PosixFilePermissions.asFileAttribute(ownerOnly);
+            Files.createDirectories(parent, fileAttribute);
+        }
+        Files.createFile(knowHostPath);
+    }
+
     @Override
     public AbstractJGitHostKeyVerifier forJGit(TaskListener listener) {
         Path knowHostPath = getKnownHostsFile().toPath();
         if (Files.notExists(knowHostPath)) {
             try {
                 logHint(listener);
-                Path parent = knowHostPath.getParent();
-                if (parent != null) {
-                    Files.createDirectories(parent);
-                    Files.createFile(knowHostPath);
-                } else {
-                    throw new IllegalArgumentException("knowHostPath parent cannot be null");
-                }
+                createKnownHostsFile(knowHostPath);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, e, () -> "Could not load known hosts.");
             }
@@ -73,5 +86,10 @@ public class KnownHostsFileVerifier extends HostKeyVerifierFactory {
                         and configure host key verification.\
                         """));
         LOGGER.finest("Verifying host keys with known hosts file, but known hosts file was not found");
+    }
+
+    /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
+    private static boolean isWindows() {
+        return File.pathSeparatorChar == ';';
     }
 }
