@@ -276,9 +276,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
-          <force>true</force>
         </configuration>
       </plugin>
     </plugins>
