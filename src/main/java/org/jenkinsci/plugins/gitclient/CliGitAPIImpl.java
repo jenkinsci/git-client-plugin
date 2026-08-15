@@ -615,7 +615,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 if (refspecs != null) {
                     for (RefSpec rs : refspecs) {
                         if (rs != null) {
-                            args.add(rs.toString());
+                            args.add(trimRefSpec(rs).toString());
                         }
                     }
                 }
@@ -672,7 +672,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         if (refspec != null && refspec.length > 0) {
             for (RefSpec rs : refspec) {
                 if (rs != null) {
-                    args.add(rs.toString());
+                    args.add(trimRefSpec(rs).toString());
                 }
             }
         }
@@ -798,7 +798,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<>(refspecs);
+                this.refspecs = trimRefSpecs(refspecs);
                 return this;
             }
 
@@ -2928,7 +2928,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                 args.add("push", remote.toPrivateASCIIString());
 
                 if (refspec != null) {
-                    args.add(refspec);
+                    args.add(trimRefSpec(refspec));
                 }
 
                 if (force) {
@@ -3897,7 +3897,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         addCheckedRemoteUrl(args, url);
 
         if (refspec != null) {
-            args.add(refspec);
+            args.add(trimRefSpec(refspec));
         }
 
         launchCommandWithCredentials(args, workspace, cred, uri);
