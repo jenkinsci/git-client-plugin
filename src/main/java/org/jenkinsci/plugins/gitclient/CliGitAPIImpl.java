@@ -2582,7 +2582,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             exe = userGitExe + ".exe";
         }
 
-        String[] pathDirs = System.getenv("PATH").split(File.pathSeparator);
+        String path = getEnvVar("PATH");
+        if (path == null) {
+            path = "";
+        }
+        String[] pathDirs = path.split(File.pathSeparator);
 
         for (String pathDir : pathDirs) {
             File exeFile = new File(pathDir, exe);
@@ -2603,8 +2607,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return null;
     }
 
+    /* Package protected for testing */
+    String getEnvVar(String envVar) {
+        return System.getenv(envVar);
+    }
+
     private File getFileFromEnv(String envVar, String suffix) {
-        String envValue = System.getenv(envVar);
+        String envValue = getEnvVar(envVar);
         if (envValue == null) {
             return null;
         }
@@ -2628,15 +2637,6 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         File sshexe = getFileFromEnv("GIT_SSH", "");
         if (sshexe != null && sshexe.exists()) {
             return sshexe;
-        }
-
-        // Check for ssh.exe on the system PATH (supports Microsoft OpenSSH and other alternate implementations)
-        String sshPath = getPathToExe("ssh");
-        if (sshPath != null) {
-            sshexe = new File(sshPath);
-            if (sshexe.exists()) {
-                return sshexe;
-            }
         }
 
         // Check Program Files
@@ -2698,6 +2698,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
         }
 
+        // Check the system PATH last, the ssh of the git installation is preferred
+        String sshPath = getPathToExe("ssh");
+        if (sshPath != null) {
+            sshexe = new File(sshPath);
+            if (sshexe.exists()) {
+                return sshexe;
+            }
+        }
+
         throw new RuntimeException(
                 "ssh executable not found. The git plugin only supports official git client https://git-scm.com/download/win");
     }
@@ -2714,8 +2723,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.write("setlocal enabledelayedexpansion");
             w.newLine();
             w.write("\"" + sshexe.getAbsolutePath()
-                    + "\" -n -T -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
-                    + "-o BatchMode=yes -o PasswordAuthentication=no "
+                    + "\" -i \"!JENKINS_GIT_SSH_KEYFILE!\" -l \"!JENKINS_GIT_SSH_USERNAME!\" "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " %* ");
             w.newLine();
         }
@@ -2738,8 +2746,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             w.newLine();
             w.write("fi");
             w.newLine();
-            w.write("ssh -n -T -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
-                    + "-o BatchMode=yes -o PasswordAuthentication=no "
+            w.write("ssh -i \"$JENKINS_GIT_SSH_KEYFILE\" -l \"$JENKINS_GIT_SSH_USERNAME\" "
                     + getHostKeyFactory().forCliGit(listener).getVerifyHostKeyOption(knownHosts) + " \"$@\"");
             w.newLine();
         }
