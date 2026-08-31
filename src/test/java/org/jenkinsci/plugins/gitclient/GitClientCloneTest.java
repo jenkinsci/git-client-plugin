@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -460,7 +461,9 @@ class GitClientCloneTest {
 
     private void assertPromisorFilesExist(File anotherTestGitDir) {
         File pack = new File(anotherTestGitDir, ".git" + File.separator + "objects" + File.separator + "pack");
+        assertThat(pack, is(anExistingDirectory()));
         File[] promisors = pack.listFiles((dir, name) -> name.endsWith(".promisor"));
+        assertThat(promisors, is(notNullValue()));
         assertThat(promisors, is(not(emptyArray())));
     }
 

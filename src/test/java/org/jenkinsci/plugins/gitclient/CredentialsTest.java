@@ -544,7 +544,7 @@ class CredentialsTest {
                 git.withRepository(
                         (gitRepo, unusedChannel) -> gitRepo.findRef("master").getObjectId()),
                 "Master != HEAD");
-        assertEquals("master", git.withRepository((gitRepo, unusedChanel) -> gitRepo.getBranch()), "Wrong branch");
+        assertEquals("master", git.withRepository((gitRepo, unusedChannel) -> gitRepo.getBranch()), "Wrong branch");
         assertTrue(clonedFile.exists(), "No file " + fileToCheck + ", has " + listDir(repo));
     }
 
