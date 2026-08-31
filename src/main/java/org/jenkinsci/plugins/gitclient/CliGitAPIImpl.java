@@ -606,8 +606,8 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     try {
                         defaultRemote = getDefaultRemote();
                         if (defaultRemote != null && !defaultRemote.isEmpty()) {
-                            currentFilterSpec =
-                                    launchCommand("config", "remote." + defaultRemote + ".partialclonefilter");
+                            currentFilterSpec = StringUtils.trim(firstLine(
+                                    launchCommand("config", "remote." + defaultRemote + ".partialclonefilter")));
                         }
                         // we might fail if we have no promisor configured, catch the exception and just continue
                     } catch (GitException e) {
@@ -1814,7 +1814,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** Returns true if the remote has a promisor configured for missing blobs. */
     boolean hasPromisor(String name) throws GitException, InterruptedException {
         try {
-            return launchCommand("config", "remote." + name + ".promisor").contains("true");
+            return "true"
+                    .equalsIgnoreCase(StringUtils.trimToNull(
+                            launchCommand("config", "--type=bool", "remote." + name + ".promisor")));
         } catch (GitException ge) {
             return false;
         }
