@@ -2714,9 +2714,10 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             }
             RevCommit target = walk.parseCommit(id);
 
-            // we can track up to 23 flags at a time in JGit, so that's how many branches we will traverse in every
-            // iteration.  Changed from 24 to 23 in JGit 7.5.0 with the additional of the global UNSHALLOW
-            final int MAX_FLAGS = 23;
+            // we can track up to 19 flags at a time in JGit, so that's how many branches we will traverse in every
+            // iteration.  Changed from 24 to 23 in JGit 7.5.0 with the addition of the global UNSHALLOW.
+            // Changed from 23 to 19 in JGit 7.8.0.
+            final int MAX_FLAGS = 19;
             List<RevFlag> flags = new ArrayList<>(MAX_FLAGS);
             for (int i = 0; i < MAX_FLAGS; i++) {
                 flags.add(walk.newFlag("branch" + i));
