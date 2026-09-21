@@ -7,6 +7,7 @@ import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.io.FileMatchers.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -40,6 +41,7 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.jvnet.hudson.test.Issue;
 
 @ParameterizedClass(name = "{0}")
 @MethodSource("gitObjects")
@@ -427,10 +429,42 @@ class GitClientCloneTest {
         assertTimeout(testGitClient, "fetch", expectedValue);
     }
 
+    @Test
+    @Issue("JENKINS-70094")
+    void test_clone_filter() throws Exception {
+        WorkspaceWithRepo anotherWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), "git", listener);
+        GitClient anotherGitClient = anotherWorkspace.getGitClient();
+        CloneCommand cmd = anotherGitClient
+                .clone_()
+                .url(anotherWorkspace.localMirror())
+                .repositoryName("origin")
+                .filter("blob:none");
+        cmd.execute();
+        anotherGitClient.checkout().ref("origin/master").branch("master").execute();
+        check_remote_url(anotherWorkspace, anotherGitClient, "origin");
+        assertBranchesExist(anotherGitClient.getBranches(), "master");
+        if (gitImplName.equals("git")) {
+            assertThat("hasPromisor?", anotherWorkspace.cgit().hasPromisor("origin"), is(true));
+            String filterSpec = anotherWorkspace
+                    .launchCommand("git", "config", "remote." + "origin" + ".partialclonefilter")
+                    .trim();
+            assertThat("filterSpec", filterSpec, is("blob:none"));
+            assertPromisorFilesExist(anotherWorkspace.getGitFileDir());
+        }
+    }
+
     private void assertAlternatesFileExists() {
         final String alternates =
                 ".git" + File.separator + "objects" + File.separator + "info" + File.separator + "alternates";
         assertThat(new File(testGitDir, alternates), is(anExistingFile()));
+    }
+
+    private void assertPromisorFilesExist(File anotherTestGitDir) {
+        File pack = new File(anotherTestGitDir, ".git" + File.separator + "objects" + File.separator + "pack");
+        assertThat(pack, is(anExistingDirectory()));
+        File[] promisors = pack.listFiles((dir, name) -> name.endsWith(".promisor"));
+        assertThat(promisors, is(notNullValue()));
+        assertThat(promisors, is(not(emptyArray())));
     }
 
     private void assertAlternatesFileNotFound() {

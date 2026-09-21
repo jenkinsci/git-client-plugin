@@ -64,4 +64,13 @@ public interface FetchCommand extends GitCommand {
      * @return a {@link org.jenkinsci.plugins.gitclient.CloneCommand} object.
      */
     FetchCommand depth(Integer depth);
+
+    /**
+     * Update the filter specification during a fetch operation. If unset, the current filter specification is kept.
+     *
+     * @param filterSpec filter of objects to be sent by the server
+     * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
+     * @since 6.7.0
+     */
+    FetchCommand filter(String filterSpec);
 }
