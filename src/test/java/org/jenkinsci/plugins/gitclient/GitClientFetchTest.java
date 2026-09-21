@@ -532,6 +532,41 @@ class GitClientFetchTest {
     }
 
     @Test
+    @Issue("JENKINS-70303")
+    void test_fetch_refspec_with_surrounding_whitespace() throws Exception {
+        /* Push a commit from the working repo to a bare repo */
+        bareWorkspace = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        bareWorkspace.initBareRepo(bareWorkspace.getGitClient(), true);
+        testGitClient.setRemoteUrl("origin", bareWorkspace.getGitFileDir().getAbsolutePath());
+        workspace.touch(testGitDir, "file-whitespace", "file whitespace content " + UUID.randomUUID());
+        testGitClient.add("file-whitespace");
+        testGitClient.commit("whitespace-refspec-commit");
+        testGitClient.push("origin", defaultBranchName);
+        ObjectId bareCommit = bareWorkspace
+                .getGitClient()
+                .getHeadRev(bareWorkspace.getGitFileDir().getAbsolutePath(), defaultBranchName);
+
+        /* Fetch from the bare repo with a refspec which is surrounded by whitespace */
+        newAreaWorkspace = new WorkspaceWithRepo(thirdRepo.getRoot(), gitImplName, TaskListener.NULL);
+        newAreaWorkspace.initializeWorkspace(
+                "Vojtěch whitespace refspec Zweibrücken-Šafařík", "email.by.git.fetch.test@example.com");
+        List<RefSpec> refSpecs = Collections.singletonList(new RefSpec("  +refs/heads/*:refs/remotes/origin/*  "));
+        newAreaWorkspace
+                .getGitClient()
+                .fetch_()
+                .from(new URIish(bareWorkspace.getGitFileDir().toString()), refSpecs)
+                .execute();
+
+        assertThat(
+                getBranchNames(newAreaWorkspace.getGitClient().getRemoteBranches()),
+                hasItem("origin/" + defaultBranchName));
+        assertThat(
+                "fetched commit does not match the bare repository commit",
+                newAreaWorkspace.getGitClient().revParse("refs/remotes/origin/" + defaultBranchName),
+                is(bareCommit));
+    }
+
+    @Test
     void test_fetch_shallow() throws Exception {
         testGitClient.setRemoteUrl("origin", workspace.localMirror());
         testGitClient
