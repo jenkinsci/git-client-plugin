@@ -16,11 +16,16 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.lib.ObjectId;
 
 class WorkspaceWithRepo {
+
+    private static final Logger LOGGER = Logger.getLogger(WorkspaceWithRepo.class.getName());
 
     private GitClient gitClient;
     private File gitFileDir;
@@ -85,12 +90,22 @@ class WorkspaceWithRepo {
      * @throws InterruptedException when exception is interrupted
      */
     String localMirror() throws Exception {
+        return localMirror("clone.git");
+    }
+
+    String localMirror(String cloneDirName) throws Exception {
         File base = new File(".").getAbsoluteFile();
+        LOGGER.log(Level.FINE, "Beginning to search for cloneDirName=''{0}'' from {1}", new Object[] {
+            cloneDirName, base.getPath()
+        });
         for (File f = base; f != null; f = f.getParentFile()) {
+            LOGGER.log(Level.FINE, "Looking for ''target'' in {0}", f.getPath());
             File targetDir = new File(f, "target");
             if (targetDir.exists()) {
-                String cloneDirName = "clone.git";
                 File clone = new File(targetDir, cloneDirName);
+                LOGGER.log(Level.FINE, "Looking for cloneDirName {0} in {1}", new Object[] {
+                    cloneDirName, targetDir.getPath()
+                });
                 if (!clone.exists()) {
                     /* Clone to a temporary directory then move the
                      * temporary directory to the final destination
@@ -102,6 +117,7 @@ class WorkspaceWithRepo {
                      */
                     Path tempClonePath = Files.createTempDirectory(targetDir.toPath(), "clone-");
                     String destination = tempClonePath.toFile().getAbsolutePath();
+                    LOGGER.log(Level.FINE, "tempClonePath={0} => (FQPN){1}", new Object[] {tempClonePath, destination});
                     if (isShallow()) {
                         cliGitCommand.run("clone", "--mirror", repoURL, destination);
                     } else {
@@ -109,6 +125,7 @@ class WorkspaceWithRepo {
                                 "clone", "--reference", f.getCanonicalPath(), "--mirror", repoURL, destination);
                     }
                     if (!clone.exists()) { // Still a race condition, but a narrow race handled by Files.move()
+                        LOGGER.log(Level.FINE, "moving tempClonePath to cloneDirName={0}", cloneDirName);
                         renameAndDeleteDir(tempClonePath, cloneDirName);
                     } else {
                         /*
@@ -133,10 +150,19 @@ class WorkspaceWithRepo {
                          * deleteRecursive() will discard a clone that
                          * 'lost the race'.
                          */
+                        LOGGER.log(
+                                Level.FINE,
+                                "removing extra tempClonePath, we already (race?) have cloneDirName={0}",
+                                cloneDirName);
                         Util.deleteRecursive(tempClonePath.toFile());
                     }
+                } else {
+                    LOGGER.log(
+                            Level.FINE, "FOUND cloneDirName {0} in {1}", new Object[] {cloneDirName, targetDir.getPath()
+                            });
                 }
-                return clone.getPath();
+                // Strip away the "/./" in "...git-client-plugin/./target/..."
+                return Paths.get(clone.getPath()).normalize().toString();
             }
         }
         throw new IllegalStateException();
