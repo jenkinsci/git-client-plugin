@@ -40,6 +40,7 @@ import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.jvnet.hudson.test.Issue;
 
 @ParameterizedClass(name = "{0}")
 @MethodSource("gitObjects")
@@ -331,6 +332,32 @@ class GitClientCloneTest {
         List<RefSpec> refspecs = Arrays.asList(
                 new RefSpec("+refs/heads/master:refs/remotes/origin/master"),
                 new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
+        testGitClient
+                .clone_()
+                .url(workspace.localMirror())
+                .refspecs(refspecs)
+                .repositoryName("origin")
+                .execute();
+        testGitClient.withRepository((Repository workRepo, VirtualChannel channel) -> {
+            String[] fetchRefSpecs = workRepo.getConfig()
+                    .getStringList(ConfigConstants.CONFIG_REMOTE_SECTION, Constants.DEFAULT_REMOTE_NAME, "fetch");
+            assertThat(fetchRefSpecs.length, is(2));
+            assertThat(fetchRefSpecs[0], is("+refs/heads/master:refs/remotes/origin/master"));
+            assertThat(fetchRefSpecs[1], is("+refs/heads/1.4.x:refs/remotes/origin/1.4.x"));
+            return null;
+        });
+        Set<Branch> remoteBranches = testGitClient.getRemoteBranches();
+        assertBranchesExist(remoteBranches, "origin/master");
+        assertBranchesExist(remoteBranches, "origin/1.4.x");
+        assertThat(remoteBranches.size(), is(2));
+    }
+
+    @Test
+    @Issue("JENKINS-70303")
+    void test_clone_refspecs_with_surrounding_whitespace() throws Exception {
+        List<RefSpec> refspecs = Arrays.asList(
+                new RefSpec(" +refs/heads/master:refs/remotes/origin/master"),
+                new RefSpec("+refs/heads/1.4.x:refs/remotes/origin/1.4.x "));
         testGitClient
                 .clone_()
                 .url(workspace.localMirror())
