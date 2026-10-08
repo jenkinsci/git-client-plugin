@@ -1,5 +1,9 @@
 package org.jenkinsci.plugins.gitclient;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.*;
 
 import hudson.model.TaskListener;
@@ -12,9 +16,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.AbstractMap;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.RemoteConfig;
@@ -247,6 +255,238 @@ class LegacyCompatibleGitAPIImplTest {
                 "refs/heads/" + defaultBranchName,
                 git.extractBranchNameFromBranchSpec("refs/remotes/origin/" + defaultBranchName));
         assertEquals("refs/tags/mytag", git.extractBranchNameFromBranchSpec("refs/tags/mytag"));
+    }
+
+    // -----------------------------------------------------------------------
+    // getSubmodulesUrls() and findParameterizedReferenceRepository() tests [JENKINS-64383]
+    // NOTE: The name "getSubmodulesUrls" is a bit misleading here, so far.
+    // It's named for the use case (a fanout reference repo that *might* contain
+    // submodule-like repos), but the implementation currently looks for
+    // "any subdir with a git objects dir", not for registered git submodules.
+    // Code has a "TODO" that is not implemented yet:
+    //   If current repo is NOT bare, also check git submodules
+    //   registered in .gitmodules for a faster possible answer
+    // -----------------------------------------------------------------------
+
+    /**
+     * Creates a subdirectory inside {@code parent}, initializes a git repo
+     * there, and registers a remote "origin" pointing to {@code remoteUrl}.
+     */
+    private File createSubdirWithRemote(File parent, String dirName, String remoteUrl) throws Exception {
+        File subDir = newFolder(parent, dirName);
+        GitClient subGit = Git.with(listener, env).in(subDir).using(gitImpl).getClient();
+        subGit.init();
+        new CliGitCommand(subGit).run("remote", "add", "origin", remoteUrl);
+        return subDir;
+    }
+
+    @Test
+    void testGetSubmodulesUrls_noNeedle_returnsAllSubdirs() throws Exception {
+        File base = newFolder(tempFolder, "refrepo-noneedle");
+        File repoAlpha = createSubdirWithRemote(base, "alpha-repo", "https://github.com/example/alpha-project.git");
+        File repoBeta = createSubdirWithRemote(base, "beta-repo", "https://github.com/example/beta-project.git");
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath());
+
+        assertFalse(result.getKey(), "No needle: flag should be false");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertFalse(entries.isEmpty(), "Should find at least one subdir");
+        Set<String> foundDirs =
+                entries.stream().map(e -> new File(e.get(0)).getAbsolutePath()).collect(Collectors.toSet());
+        assertThat("alpha-repo should appear in results", foundDirs, hasItem(repoAlpha.getAbsolutePath()));
+        assertThat("beta-repo should appear in results", foundDirs, hasItem(repoBeta.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_exactNeedleMatch_promotedToFirst() throws Exception {
+        // "target-basename" dir is named to match the needle's URL basename, so it is
+        // probed in the prefix-search phase (before any listFiles() walk).  It holds a
+        // *different* URL -> no exact match -> accumulated into result first.
+        // "aaa-exact" holds the exact needle URL and is found in the general walk that
+        // follows.  The exact-match return promotes it to result_best[0] with all
+        // previously accumulated entries after it, giving at least 2 entries total.
+        String needleUrl = "https://github.com/example/target-basename.git";
+        File base = newFolder(tempFolder, "refrepo-exactmatch");
+        createSubdirWithRemote(base, "target-basename", "https://github.com/other-org/not-the-target.git");
+        File repoExact = createSubdirWithRemote(base, "aaa-exact", needleUrl);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Exact URL match: flag should be true");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertThat(
+                "Exact-match entry + previously accumulated entry = at least 2",
+                entries.size(),
+                greaterThanOrEqualTo(2));
+        String firstDir = entries.iterator().next().get(0);
+        assertThat(
+                "Exact-match repo is promoted to first position",
+                new File(firstDir).getAbsolutePath(),
+                is(repoExact.getAbsolutePath()));
+    }
+
+    @Test
+    void testFindParameterizedReferenceRepository_submodules_exactMatchPickedAsResult() throws Exception {
+        // Same two-repo setup: prefix-search accumulates "target-basename" (non-exact),
+        // then the general walk finds "aaa-exact" (exact).  The consuming code uses the
+        // first entry in the result set, which is the exact match.
+        String needleUrl = "https://github.com/example/target-basename.git";
+        File base = newFolder(tempFolder, "refrepo-find-exact");
+        createSubdirWithRemote(base, "target-basename", "https://github.com/other-org/not-the-target.git");
+        File repoExact = createSubdirWithRemote(base, "aaa-exact", needleUrl);
+        String reference = base.getAbsolutePath() + "/${GIT_SUBMODULES}";
+
+        File result = git.findParameterizedReferenceRepository(reference, needleUrl);
+
+        assertNotNull(result, "Should return a result for an exact URL match");
+        assertThat(
+                "Exact-match subdir should be returned", result.getCanonicalPath(), is(repoExact.getCanonicalPath()));
+    }
+
+    @Test
+    void testFindParameterizedReferenceRepository_submodules_firstEntryUsedForNonExact() throws Exception {
+        // "cool-project" dir matches the needle's URL basename and is probed first in
+        // the prefix-search phase -> ends up first in the ordered suggestion set.
+        // "another-fork" is found in the general walk with the same URL basename.
+        // With no exact match, findParameterizedReferenceRepository iterates the set
+        // and returns the first entry that is an existing git repo -> "cool-project".
+        String needleUrl = "https://github.com/example/cool-project.git";
+        File base = newFolder(tempFolder, "refrepo-find-nonexact");
+        File repoFirst = createSubdirWithRemote(base, "cool-project", "https://github.com/fork-a/cool-project.git");
+        createSubdirWithRemote(base, "another-fork", "https://github.com/fork-b/cool-project.git");
+        String reference = base.getAbsolutePath() + "/${GIT_SUBMODULES}";
+
+        File result = git.findParameterizedReferenceRepository(reference, needleUrl);
+
+        assertNotNull(result, "Should return a result when non-exact URL-basename matches exist");
+        assertThat(
+                "First entry from the ordered suggestion set should be returned",
+                result.getCanonicalPath(),
+                is(repoFirst.getCanonicalPath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_mapFileHit_skipsDirectoryWalk() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/mapped-project.git";
+        File base = newFolder(tempFolder, "refrepo-map-hit");
+        File repoMapped = createSubdirWithRemote(base, "mapped-project.git", needleUrl);
+        // A decoy that would be found first by the ordinary directory walk if
+        // the mapping file were not consulted, so a wrong hit here would fail
+        // the assertion on the returned directory below.
+        createSubdirWithRemote(base, "aaa-decoy", needleUrl);
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-1717010012\t" + needleUrl + "\tmapped-project.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Map file exact match: flag should be true");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertEquals(1, entries.size(), "Map-file hit should short-circuit with exactly one entry");
+        List<String> hit = entries.iterator().next();
+        assertThat(
+                "Map-file hit should point at the mapped dir",
+                new File(hit.get(0)).getAbsolutePath(),
+                is(repoMapped.getAbsolutePath()));
+        assertEquals(
+                "origin",
+                hit.get(3),
+                "remoteName should come from verifying the actual dir's remotes, not the map file's first column");
+    }
+
+    @Test
+    void testGetSubmodulesUrls_mapFileStaleEntry_fallsBackToDirectoryWalk() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/still-findable.git";
+        File base = newFolder(tempFolder, "refrepo-map-stale");
+        File repoReal = createSubdirWithRemote(base, "still-findable.git", needleUrl);
+        // Map file points at a subdirectory that does not actually exist (as if
+        // the cache had been pruned/renamed after the map was last saved).
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-0000000000\t" + needleUrl + "\tgone-missing.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory-walk fallback should still find the real dir");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertThat(
+                "Fallback should find the real dir, not the stale map entry",
+                new File(entries.iterator().next().get(0)).getAbsolutePath(),
+                is(repoReal.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_mapFileEntryWithoutMatchingRemote_fallsBackToDirectoryWalk() throws Exception {
+        // The mapped directory exists and is a real git repo, but its remote
+        // was changed (or the dir was repurposed) since the map was saved, so
+        // it no longer actually has the needle URL configured - the map's
+        // dirname-existence check alone would wrongly trust this hit.
+        String needleUrl = "ssh://git@example.com/org/moved-away.git";
+        File base = newFolder(tempFolder, "refrepo-map-wrong-remote");
+        createSubdirWithRemote(base, "moved-away.git", "ssh://git@example.com/org/renamed-elsewhere.git");
+        File repoReal = createSubdirWithRemote(base, "aaa-actual-hit", needleUrl);
+        Files.writeString(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).toPath(),
+                "repo-1234567890\t" + needleUrl + "\tmoved-away.git\n",
+                StandardCharsets.UTF_8);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory-walk fallback should still find the real dir");
+        LinkedHashSet<List<String>> entries = result.getValue();
+        assertThat(
+                "Fallback should find the dir that actually has the needle remote, not the mismatched map entry",
+                new File(entries.iterator().next().get(0)).getAbsolutePath(),
+                is(repoReal.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_noMapFile_behavesAsBefore() throws Exception {
+        String needleUrl = "ssh://git@example.com/org/no-map-here.git";
+        File base = newFolder(tempFolder, "refrepo-no-map");
+        File repoReal = createSubdirWithRemote(base, "no-map-here.git", needleUrl);
+        assertFalse(
+                new File(base, LegacyCompatibleGitAPIImpl.GITCACHE_MAP_FILENAME).exists(),
+                "Precondition: no map file present");
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Directory walk should still find the exact match without a map file");
+        assertThat(
+                new File(result.getValue().iterator().next().get(0)).getAbsolutePath(), is(repoReal.getAbsolutePath()));
+    }
+
+    @Test
+    void testGetSubmodulesUrls_configWithIncludeDirective_stillFindsRemoteViaFallback() throws Exception {
+        // getRemoteUrlsFast() refuses to parse a "config" file with an
+        // include/includeIf directive directly (remotes could be defined in
+        // the included file, which it does not resolve), and falls back to
+        // a full GitClient lookup instead. Confirm that fallback still works
+        // and still finds the correct match.
+        String needleUrl = "ssh://git@example.com/org/has-include.git";
+        File base = newFolder(tempFolder, "refrepo-config-include");
+        File repoDir = createSubdirWithRemote(base, "has-include.git", needleUrl);
+        File configFile = new File(repoDir, ".git/config");
+        Files.writeString(
+                configFile.toPath(),
+                "[include]\n\tpath = /nonexistent-included-file-xyz\n",
+                StandardCharsets.UTF_8,
+                java.nio.file.StandardOpenOption.APPEND);
+
+        AbstractMap.SimpleEntry<Boolean, LinkedHashSet<List<String>>> result =
+                git.getSubmodulesUrls(base.getAbsolutePath(), needleUrl, true);
+
+        assertTrue(result.getKey(), "Fallback via GitClient should still find the exact match");
+        assertThat(
+                new File(result.getValue().iterator().next().get(0)).getAbsolutePath(), is(repoDir.getAbsolutePath()));
     }
 
     private static File newFolder(File root, String... subDirs) throws Exception {
