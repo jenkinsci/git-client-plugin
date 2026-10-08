@@ -15,8 +15,11 @@ import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT;
 import static org.jenkinsci.plugins.gitclient.CliGitAPIImpl.TIMEOUT_LOG_PREFIX;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
+import com.cloudbees.plugins.credentials.CredentialsDescriptor;
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.common.UsernameCredentials;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -53,6 +56,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -728,6 +732,143 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     }
 
     /**
+     * Self contained descriptor so that {@code getDescriptor()} is safe to call on agents, where no
+     * Jenkins instance is available.
+     */
+    private static class EmbeddedCredentialsDescriptor extends CredentialsDescriptor {
+
+        EmbeddedCredentialsDescriptor() {
+            super(EmbeddedCredentials.class);
+        }
+
+        @Override
+        @NonNull
+        public String getDisplayName() {
+            return "Embedded URL credentials";
+        }
+    }
+
+    /**
+     * Static inner class to hold embedded credentials extracted from URLs.
+     * This avoids SpotBugs warnings about serializable inner classes.
+     */
+    private static class EmbeddedCredentials implements StandardUsernamePasswordCredentials {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
+        private static final CredentialsDescriptor DESCRIPTOR = new EmbeddedCredentialsDescriptor();
+
+        private final String username;
+        private final Secret password;
+        private final String host;
+
+        EmbeddedCredentials(String username, String password, String host) {
+            this.username = username;
+            this.password = Secret.fromString(password);
+            this.host = host;
+        }
+
+        @Override
+        @NonNull
+        public String getDescription() {
+            return "Credentials extracted from repository URL";
+        }
+
+        @Override
+        @NonNull
+        public String getId() {
+            return "embedded-url-credentials-" + username + "@" + host;
+        }
+
+        @Override
+        public CredentialsScope getScope() {
+            return CredentialsScope.GLOBAL;
+        }
+
+        @Override
+        @NonNull
+        public CredentialsDescriptor getDescriptor() {
+            return DESCRIPTOR;
+        }
+
+        @Override
+        @NonNull
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        @NonNull
+        public Secret getPassword() {
+            return password;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof EmbeddedCredentials other)) {
+                return false;
+            }
+            return Objects.equals(username, other.username)
+                    && Objects.equals(password, other.password)
+                    && Objects.equals(host, other.host);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(username, password, host);
+        }
+    }
+
+    /**
+     * Returns true if the value is a bare remote name such as {@code origin} rather than a
+     * repository location.
+     */
+    private static boolean isRemoteName(URIish url) {
+        if (url.getScheme() != null || url.getHost() != null) {
+            return false;
+        }
+        String value = url.toString();
+        return !value.isEmpty() && !value.contains("/") && !value.contains("\\");
+    }
+
+    /**
+     * Adds credentials embedded in an http or https URL to the credentials provider, since JGit does
+     * not use credentials embedded in a URL resolved from git config (JENKINS-69507). Other
+     * protocols are ignored.
+     *
+     * @param url the URL which may contain embedded credentials
+     */
+    private void extractAndAddEmbeddedCredentials(URIish url) {
+        if (url == null) {
+            return;
+        }
+
+        String scheme = url.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
+            return;
+        }
+
+        String user = url.getUser();
+        String pass = url.getPass();
+        if (user == null || user.isEmpty() || pass == null || pass.isEmpty()) {
+            return;
+        }
+
+        String host = url.getHost();
+        if (host == null || host.isEmpty()) {
+            host = "unknown-host";
+        }
+
+        StandardUsernamePasswordCredentials embeddedCredentials = new EmbeddedCredentials(user, pass, host);
+
+        addCredentials(url.toString(), embeddedCredentials);
+        addCredentials(url.setUser(null).setPass(null).toString(), embeddedCredentials);
+    }
+
+    /**
      * fetch_.
      *
      * @return a {@link org.jenkinsci.plugins.gitclient.FetchCommand} object.
@@ -816,6 +957,21 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (unsupportedProtocol(url)) {
                         throw new GitException("unsupported protocol in URL " + url);
                     }
+
+                    /* JENKINS-69507 */
+                    URIish urlForCredentials = url;
+                    if (isRemoteName(url)) {
+                        String resolvedUrl = repo.getConfig().getString("remote", url.toString(), "url");
+                        if (resolvedUrl != null) {
+                            try {
+                                urlForCredentials = new URIish(resolvedUrl);
+                            } catch (URISyntaxException e) {
+                                LOGGER.log(Level.FINE, e, () -> "Could not parse the URL configured for remote " + url);
+                            }
+                        }
+                    }
+                    extractAndAddEmbeddedCredentials(urlForCredentials);
+
                     fetch.setRemote(url.toString());
                     fetch.setCredentialsProvider(getProvider());
                     fetch.setTransportConfigCallback(getTransportConfigCallback());
