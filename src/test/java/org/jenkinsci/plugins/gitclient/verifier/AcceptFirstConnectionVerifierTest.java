@@ -41,12 +41,6 @@ class AcceptFirstConnectionVerifierTest {
              AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=\
             """;
 
-    private static final String KEY_SSH_RSA = """
-            |1|HnmPCP38pBhCY0NUtBXSraOg9pM=|L6YZ9asEeb2xplTDEThGOxRq7ZY=\
-             ssh-rsa\
-             AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==\
-            """;
-
     @TempDir
     private File testFolder;
 
@@ -316,7 +310,7 @@ class AcceptFirstConnectionVerifierTest {
                         22,
                         fakeKnownHosts,
                         acceptFirstConnectionVerifier.forJGit(StreamBuildListener.fromStdout()),
-                        "ssh-rsa",
+                        "ecdsa-sha2-nistp256",
                         s -> {
                             assertThat(s.isOpen(), is(true));
                             Awaitility.await().atMost(Duration.ofSeconds(45)).until(() -> s.getServerKey() != null);
@@ -326,7 +320,9 @@ class AcceptFirstConnectionVerifierTest {
                 .close();
         List<String> actual = Files.readAllLines(fakeKnownHosts.toPath());
         assertThat(actual, hasItem(bitbucketFileContent));
-        assertThat(actual, hasItem(containsString(KEY_SSH_RSA.substring(KEY_SSH_RSA.indexOf(" ")))));
+        assertThat(
+                actual,
+                hasItem(containsString(KEY_ECDSA_SHA_2_NISTP_256.substring(KEY_ECDSA_SHA_2_NISTP_256.indexOf(" ")))));
     }
 
     @Test
