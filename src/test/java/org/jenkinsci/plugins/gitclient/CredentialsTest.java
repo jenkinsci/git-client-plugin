@@ -461,13 +461,12 @@ class CredentialsTest {
             return;
         }
         addCredential();
-        Map<String, ObjectId> remoteReferences =
-                switch (random.nextInt(4)) {
-                    case 1 -> git.getRemoteReferences(gitRepoURL, null, true, true);
-                    case 2 -> git.getRemoteReferences(gitRepoURL, "master", true, false);
-                    case 3 -> git.getRemoteReferences(gitRepoURL, "master", true, true);
-                    default -> git.getRemoteReferences(gitRepoURL, null, true, false);
-                };
+        Map<String, ObjectId> remoteReferences = switch (random.nextInt(4)) {
+            case 1 -> git.getRemoteReferences(gitRepoURL, null, true, true);
+            case 2 -> git.getRemoteReferences(gitRepoURL, "master", true, false);
+            case 3 -> git.getRemoteReferences(gitRepoURL, "master", true, true);
+            default -> git.getRemoteReferences(gitRepoURL, null, true, false);
+        };
         assertThat(remoteReferences.keySet(), hasItems("refs/heads/master"));
     }
 
