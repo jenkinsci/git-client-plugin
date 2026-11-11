@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>6.2211.v27f680c93c53</version>
+    <version>6.2250.va_d01d559a_209</version>
     <relativePath />
   </parent>
 
@@ -32,7 +32,7 @@
   </scm>
 
   <properties>
-    <revision>6.7.0</revision>
+    <revision>6.7.1</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Character set tests fail unless file.encoding is set -->
     <argLine>-Dfile.encoding=${project.build.sourceEncoding}</argLine>
@@ -42,7 +42,7 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.516</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
-    <jgit.version>7.7.1.202607240634-r</jgit.version>
+    <jgit.version>7.8.1.202611041320-r</jgit.version>
     <spotbugs.effort>Max</spotbugs.effort>
     <spotbugs.threshold>Low</spotbugs.threshold>
     <spotless.check.skip>false</spotless.check.skip>
@@ -212,7 +212,7 @@
     <dependency>
       <groupId>nl.jqno.equalsverifier</groupId>
       <artifactId>equalsverifier</artifactId>
-      <version>4.5</version>
+      <version>4.5.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -242,7 +242,7 @@
     <dependency>
       <groupId>org.objenesis</groupId>
       <artifactId>objenesis</artifactId>
-      <version>3.5</version>
+      <version>3.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -276,9 +276,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <fixTags>param,return,throws,link</fixTags>
           <author>false</author>
-          <force>true</force>
         </configuration>
       </plugin>
     </plugins>
