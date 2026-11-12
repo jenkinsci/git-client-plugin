@@ -55,6 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -336,6 +337,12 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public GitClient subGit(String subdir) {
         return new JGitAPIImpl(new File(workspace, subdir), listener);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public GitClient newGit(String somedir) {
+        return new JGitAPIImpl(new File(somedir), listener);
     }
 
     /** {@inheritDoc} */
@@ -1149,6 +1156,39 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, String> getRemoteUrls() throws GitException, InterruptedException {
+        return collectRemoteUris(RemoteConfig::getURIs);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public Map<String, String> getRemotePushUrls() throws GitException, InterruptedException {
+        return collectRemoteUris(RemoteConfig::getPushURIs);
+    }
+
+    private Map<String, String> collectRemoteUris(Function<RemoteConfig, List<URIish>> uriSelector)
+            throws GitException {
+        Map<String, String> uriNames = new HashMap<>();
+        try (Repository repo = getRepository()) {
+            Config c = repo.getConfig();
+            for (RemoteConfig rc : RemoteConfig.getAllRemoteConfigs(c)) {
+                String remoteName = rc.getName();
+                for (URIish u : uriSelector.apply(rc)) {
+                    // If uri String values end up identical, Map only stores one entry
+                    uriNames.put(u.toString(), remoteName);
+                    uriNames.put(u.toPrivateString(), remoteName);
+                    uriNames.put(u.toASCIIString(), remoteName);
+                    uriNames.put(u.toPrivateASCIIString(), remoteName);
+                }
+            }
+        } catch (URISyntaxException ue) {
+            throw new GitException(ue.toString());
+        }
+        return uriNames;
+    }
+
     /**
      * getRepository.
      *
@@ -1679,37 +1719,61 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
                         // the repository builder does not create the alternates file
                         if (reference != null && !reference.isEmpty()) {
-                            File referencePath = new File(reference);
-                            if (!referencePath.exists()) {
-                                listener.getLogger().println("[WARNING] Reference path does not exist: " + reference);
-                            } else if (!referencePath.isDirectory()) {
+                            // Note: keep in sync with similar logic in CliGitAPIImpl.java
+                            if (isParameterizedReferenceRepository(reference)) {
+                                // LegacyCompatibleGitAPIImpl.java has a logging trace,
+                                // but not into build console via listener
                                 listener.getLogger()
-                                        .println("[WARNING] Reference path is not a directory: " + reference);
+                                        .println("[INFO] The git reference repository path '" + reference + "' "
+                                                + "is parameterized, it may take a few git queries logged "
+                                                + "below to resolve it into a particular directory name");
+                            }
+                            File referencePath = findParameterizedReferenceRepository(reference, url);
+                            if (referencePath == null) {
+                                listener.getLogger()
+                                        .println("[ERROR] Could not make File object from reference path, "
+                                                + "skipping its use: " + reference);
                             } else {
-                                // reference path can either be a normal or a base repository
-                                File objectsPath = new File(referencePath, ".git/objects");
-                                if (!objectsPath.isDirectory()) {
-                                    // reference path is bare repo
-                                    objectsPath = new File(referencePath, "objects");
+                                if (!referencePath.getPath().equals(reference)) {
+                                    // Note: both these logs are needed, they are used in selftest
+                                    String msg = "Parameterized reference path '" + reference + "' replaced with: '"
+                                            + referencePath.getPath() + "'";
+                                    if (referencePath.exists()) {
+                                        listener.getLogger().println("[WARNING] " + msg);
+                                    } else {
+                                        listener.getLogger().println("[WARNING] " + msg + " does not exist");
+                                    }
+                                    reference = referencePath.getPath();
                                 }
-                                if (!objectsPath.isDirectory()) {
+                                if (!referencePath.exists()) {
                                     listener.getLogger()
-                                            .println(
-                                                    "[WARNING] Reference path does not contain an objects directory (no git repo?): "
-                                                            + objectsPath);
+                                            .println("[WARNING] Reference path does not exist: " + reference);
+                                } else if (!referencePath.isDirectory()) {
+                                    listener.getLogger()
+                                            .println("[WARNING] Reference path is not a directory: " + reference);
                                 } else {
-                                    try {
-                                        File alternates = new File(workspace, ".git/objects/info/alternates");
-                                        String absoluteReference =
-                                                objectsPath.getAbsolutePath().replace('\\', '/');
-                                        listener.getLogger().println("Using reference repository: " + reference);
-                                        // git implementations on windows also use
-                                        try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
-                                            // git implementations on windows also use
-                                            w.print(absoluteReference);
+                                    // reference path can either be a normal or a base repository
+                                    File objectsPath = getObjectsFile(referencePath);
+                                    if (objectsPath == null || !objectsPath.isDirectory()) {
+                                        listener.getLogger()
+                                                .println(
+                                                        "[WARNING] Reference path does not contain an objects directory (no git repo?): "
+                                                                + objectsPath);
+                                    } else {
+                                        // Go behind git's back to write a meta file in new workspace
+                                        try {
+                                            File alternates = new File(workspace, ".git/objects/info/alternates");
+                                            String absoluteReference = objectsPath
+                                                    .getAbsolutePath()
+                                                    .replace('\\', '/');
+                                            listener.getLogger().println("Using reference repository: " + reference);
+                                            try (PrintWriter w = new PrintWriter(alternates, StandardCharsets.UTF_8)) {
+                                                // git implementations on windows also use
+                                                w.print(absoluteReference);
+                                            }
+                                        } catch (FileNotFoundException e) {
+                                            listener.error("Failed to setup reference");
                                         }
-                                    } catch (FileNotFoundException e) {
-                                        listener.error("Failed to setup reference");
                                     }
                                 }
                             }
