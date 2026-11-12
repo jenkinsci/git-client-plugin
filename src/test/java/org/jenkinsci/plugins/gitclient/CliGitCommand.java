@@ -62,6 +62,8 @@ class CliGitCommand {
     void initializeRepository(String userName, String userEmail) throws GitException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", userName);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", userEmail);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         // if the system running the tests has gpg.format=ssh then
         // this will fail as GpgConf does not support the enum so just
         // set it to something valid - even if it is not usable
@@ -71,6 +73,8 @@ class CliGitCommand {
     void removeRepositorySettings() throws GitException, InterruptedException {
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.name", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "user.email", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", null);
+        gitClient.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", null);
         gitClient.config(GitClient.ConfigLevel.LOCAL, "gpg.format", null);
     }
 
