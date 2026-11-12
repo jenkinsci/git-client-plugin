@@ -123,8 +123,6 @@ class AuthzTest {
         client.clone(repoUrl, "master", false, null);
         client.config(GitClient.ConfigLevel.LOCAL, "user.name", "Someone");
         client.config(GitClient.ConfigLevel.LOCAL, "user.email", "someone@beer.com");
-        client.config(GitClient.ConfigLevel.LOCAL, "commit.gpgsign", "false");
-        client.config(GitClient.ConfigLevel.LOCAL, "tag.gpgSign", "false");
         client.config(GitClient.ConfigLevel.LOCAL, "gpg.format", "openpgp");
         Path testFile = testRepo.resolve("test.txt");
         Files.deleteIfExists(testFile);
