@@ -1,13 +1,17 @@
 package org.jenkinsci.plugins.gitclient;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import hudson.EnvVars;
 import hudson.model.TaskListener;
+import hudson.plugins.git.GitException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.jvnet.hudson.test.Issue;
 
 /**
@@ -233,6 +238,81 @@ class CliGitAPISecurityTest {
         } finally {
             Files.deleteIfExists(knownHosts);
         }
+    }
+
+    /*
+     * Names that start with "-" must be passed after "--" so that git reads them
+     * as names, not options. See https://github.com/jenkinsci/git-client-plugin/issues/1780
+     */
+    private CliGitAPIImpl initRepoWithCommit() throws Exception {
+        WorkspaceWithRepo repo = new WorkspaceWithRepo(new File(tempDir, "repo"), "git", TaskListener.NULL);
+        repo.initializeWorkspace();
+        repo.commitEmpty("init");
+        return repo.cgit();
+    }
+
+    /* Messages of the exception and all its causes, including git's stderr */
+    private static String messages(Throwable t) {
+        StringBuilder sb = new StringBuilder();
+        for (; t != null; t = t.getCause()) {
+            sb.append(t.getMessage()).append('\n');
+        }
+        return sb.toString();
+    }
+
+    /* Fails if git rejected the name as an unknown option instead of reading it as a name */
+    private static void assertNotParsedAsOption(Throwable t) {
+        String msg = messages(t);
+        assertThat(msg, not(containsString("unknown switch")));
+        assertThat(msg, not(containsString("unknown option")));
+        assertThat(msg, not(containsString("usage: git")));
+        assertThat(msg, not(containsString("only allowed in list mode")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-D", "--all", "-n1"})
+    void testTagNameStartingWithDashIsNotAnOption(String name) throws Exception {
+        CliGitAPIImpl git = initRepoWithCommit();
+
+        GitException e = assertThrows(GitException.class, () -> git.tag(name, "message"));
+        assertNotParsedAsOption(e);
+        assertThat(messages(e), containsString("'" + name + "' is not a valid tag name"));
+
+        assertFalse(git.tagExists(name));
+
+        e = assertThrows(GitException.class, () -> git.deleteTag(name));
+        assertNotParsedAsOption(e);
+        assertThat(messages(e), containsString("tag '" + name + "' not found"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-D", "--all", "-n1"})
+    void testBranchNameStartingWithDashIsNotAnOption(String name) throws Exception {
+        CliGitAPIImpl git = initRepoWithCommit();
+
+        GitException e = assertThrows(GitException.class, () -> git.branch(name));
+        assertNotParsedAsOption(e);
+        assertThat(messages(e), containsString("'" + name + "' is not a valid branch name"));
+
+        e = assertThrows(GitException.class, () -> git.deleteBranch(name));
+        assertNotParsedAsOption(e);
+        assertThat(messages(e), containsString("branch '" + name + "' not found"));
+    }
+
+    @Test
+    void testNormalNamesStillWork() throws Exception {
+        CliGitAPIImpl git = initRepoWithCommit();
+
+        git.tag("my-tag", "my tag message");
+        assertTrue(git.tagExists("my-tag"));
+        assertThat(git.getTagMessage("my-tag"), is("my tag message"));
+        git.deleteTag("my-tag");
+        assertFalse(git.tagExists("my-tag"));
+
+        git.branch("my-branch");
+        assertTrue(git.getBranches().stream().anyMatch(b -> b.getName().equals("my-branch")));
+        git.deleteBranch("my-branch");
+        assertFalse(git.getBranches().stream().anyMatch(b -> b.getName().equals("my-branch")));
     }
 
     private Path createMockSSHKey(File workspace) throws IOException {

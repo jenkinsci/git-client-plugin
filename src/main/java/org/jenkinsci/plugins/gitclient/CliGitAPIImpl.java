@@ -1921,7 +1921,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void tag(String tagName, String comment) throws GitException, InterruptedException {
         tagName = tagName.replace(' ', '_');
         try {
-            launchCommand("tag", "-a", "-f", "-m", comment, tagName);
+            launchCommand("tag", "-a", "-f", "-m", comment, "--", tagName);
         } catch (GitException e) {
             throw new GitException("Could not apply tag " + tagName, e);
         }
@@ -3320,14 +3320,14 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** {@inheritDoc} */
     @Override
     public boolean tagExists(String tagName) throws GitException, InterruptedException {
-        return launchCommand("tag", "-l", tagName).trim().equals(tagName);
+        return launchCommand("tag", "-l", "--", tagName).trim().equals(tagName);
     }
 
     /** {@inheritDoc} */
     @Override
     public void deleteBranch(String name) throws GitException, InterruptedException {
         try {
-            launchCommand("branch", "-D", name);
+            launchCommand("branch", "-D", "--", name);
         } catch (GitException e) {
             throw new GitException("Could not delete branch " + name, e);
         }
@@ -3338,7 +3338,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public void deleteTag(String tagName) throws GitException, InterruptedException {
         tagName = tagName.replace(' ', '_');
         try {
-            launchCommand("tag", "-d", tagName);
+            launchCommand("tag", "-d", "--", tagName);
         } catch (GitException e) {
             throw new GitException("Could not delete tag " + tagName, e);
         }
@@ -3527,7 +3527,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public void branch(String name) throws GitException, InterruptedException {
         try {
-            launchCommand("branch", name);
+            launchCommand("branch", "--", name);
         } catch (GitException e) {
             throw new GitException("Cannot create branch " + name, e);
         }
@@ -3674,7 +3674,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     @Override
     public String getTagMessage(String tagName) throws GitException, InterruptedException {
         // 10000 lines of tag message "ought to be enough for anybody"
-        String out = launchCommand("tag", "-l", tagName, "-n10000");
+        String out = launchCommand("tag", "-l", "-n10000", "--", tagName);
         // Strip the leading four spaces which git prefixes multi-line messages with
         return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
