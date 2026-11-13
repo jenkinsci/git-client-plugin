@@ -378,6 +378,13 @@ class GitAPITest {
     }
 
     @Test
+    void testGetTagMessageMissingTag() throws Exception {
+        workspace.commitEmpty("init");
+        GitException e = assertThrows(GitException.class, () -> testGitClient.getTagMessage("no-such-tag"));
+        assertThat(e.getMessage(), containsString("not found"));
+    }
+
+    @Test
     void testCreateRef() throws Exception {
         workspace.commitEmpty("init");
         testGitClient.ref("refs/testing/testref");
