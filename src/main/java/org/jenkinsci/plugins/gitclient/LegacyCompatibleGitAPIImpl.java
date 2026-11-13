@@ -263,6 +263,67 @@ abstract class LegacyCompatibleGitAPIImpl extends AbstractGitAPIImpl implements 
     }
 
     /**
+     * Removes the whitespace which surrounds the source and the destination of a refspec.
+     * Command line git discards that whitespace when it reads a refspec from a configuration
+     * file, JGit keeps it and then reads <code>" +refs/heads/*"</code> as the source ref.
+     * See JENKINS-70303.
+     *
+     * @param refSpec refspec which may include surrounding whitespace, may be null
+     * @return trimmed refspec, null if refSpec is null
+     */
+    static String trimRefSpec(String refSpec) {
+        if (refSpec == null) {
+            return null;
+        }
+        /* JGit splits the refspec on its last colon, do the same */
+        int colon = refSpec.lastIndexOf(':');
+        if (colon < 0) {
+            return refSpec.trim();
+        }
+        return refSpec.substring(0, colon).trim() + ":"
+                + refSpec.substring(colon + 1).trim();
+    }
+
+    /**
+     * @param refSpec refspec which may include surrounding whitespace, may be null
+     * @return trimmed refspec, null if refSpec is null
+     * @see #trimRefSpec(String)
+     */
+    static RefSpec trimRefSpec(RefSpec refSpec) {
+        if (refSpec == null) {
+            return null;
+        }
+        String original = refSpec.toString();
+        String trimmed = trimRefSpec(original);
+        if (original.equals(trimmed)) {
+            return refSpec;
+        }
+        try {
+            return new RefSpec(trimmed);
+        } catch (IllegalArgumentException mismatchedWildcards) {
+            try {
+                /* JGit rejects a wildcard on only one side unless mismatches are allowed */
+                return new RefSpec(trimmed, RefSpec.WildcardMode.ALLOW_MISMATCH);
+            } catch (IllegalArgumentException invalidRefSpec) {
+                return refSpec;
+            }
+        }
+    }
+
+    /**
+     * @param refSpecs refspecs which may include surrounding whitespace, must not be null
+     * @return trimmed refspecs
+     * @see #trimRefSpec(RefSpec)
+     */
+    static List<RefSpec> trimRefSpecs(List<RefSpec> refSpecs) {
+        List<RefSpec> trimmed = new ArrayList<>(refSpecs.size());
+        for (RefSpec refSpec : refSpecs) {
+            trimmed.add(trimRefSpec(refSpec));
+        }
+        return trimmed;
+    }
+
+    /**
      * This method takes a branch specification and normalizes it get unambiguous results.
      * This is the case when using "refs/heads/"<br>
      * <br>
