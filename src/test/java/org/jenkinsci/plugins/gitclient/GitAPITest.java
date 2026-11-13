@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -731,6 +732,20 @@ class GitAPITest {
                     output.contains(anotherBranchCommitMessage + "\r"),
                     "git branch -v --no-abbrev contains another commit msg Ctrl-M: '" + output + "'");
         }
+    }
+
+    @Test
+    void testGetHeadRevFromEmptyRepository() throws Exception {
+        WorkspaceWithRepo remote = new WorkspaceWithRepo(secondRepo.getRoot(), gitImplName, TaskListener.NULL);
+        remote.initializeWorkspace();
+
+        Map<String, ObjectId> heads =
+                testGitClient.getHeadRev(remote.getGitFileDir().getAbsolutePath());
+
+        assertTrue(heads.isEmpty(), "Unexpected heads " + heads);
+        assertFalse(
+                handler.containsMessageSubstring("Unexpected ls-remote output line"),
+                "Unexpected message in " + handler.getMessages());
     }
 
     @Test
