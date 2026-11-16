@@ -2582,7 +2582,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             exe = userGitExe + ".exe";
         }
 
-        String[] pathDirs = System.getenv("PATH").split(File.pathSeparator);
+        String path = getEnvVar("PATH");
+        if (path == null) {
+            path = "";
+        }
+        String[] pathDirs = path.split(File.pathSeparator);
 
         for (String pathDir : pathDirs) {
             File exeFile = new File(pathDir, exe);
@@ -2603,8 +2607,13 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return null;
     }
 
+    /* Package protected for testing */
+    String getEnvVar(String envVar) {
+        return System.getenv(envVar);
+    }
+
     private File getFileFromEnv(String envVar, String suffix) {
-        String envValue = System.getenv(envVar);
+        String envValue = getEnvVar(envVar);
         if (envValue == null) {
             return null;
         }
@@ -2685,6 +2694,15 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             sshexe = getSSHExeFromGitExeParentDir(
                     gitPath.replace("/mingw64/bin/", "/usr/bin/").replace("\\mingw64\\bin\\", "\\usr\\bin\\"));
             if (sshexe != null && sshexe.exists()) {
+                return sshexe;
+            }
+        }
+
+        // Check the system PATH last, the ssh of the git installation is preferred
+        String sshPath = getPathToExe("ssh");
+        if (sshPath != null) {
+            sshexe = new File(sshPath);
+            if (sshexe.exists()) {
                 return sshexe;
             }
         }
