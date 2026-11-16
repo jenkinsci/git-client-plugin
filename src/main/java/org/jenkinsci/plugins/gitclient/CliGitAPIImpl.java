@@ -2083,6 +2083,28 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         return launchCommandWithCredentials(args, workDir, credentials, url, TIMEOUT);
     }
 
+    /**
+     * Provides all the no proxy hosts from the configured proxy object,
+     * formatted as comma-separated values for environment variables.
+     * Package protected for testing.
+     *
+     * @return hosts not intended to be proxied, separated by commas
+     */
+    @NonNull
+    String getNoProxyHosts() {
+        if (proxy == null) {
+            return "";
+        }
+        String noProxyHost = proxy.getNoProxyHost();
+        if (noProxyHost == null || noProxyHost.isBlank()) {
+            return "";
+        }
+        return Arrays.stream(noProxyHost.split("[ \t\n,|]+"))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(","));
+    }
+
     private String launchCommandWithCredentials(
             ArgumentListBuilder args,
             File workDir,
@@ -2183,6 +2205,11 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                             URI http_proxy = new URI("http", userInfo, proxy.name, proxy.port, null, null, null);
                             env.put("http_proxy", http_proxy.toString());
                             env.put("https_proxy", http_proxy.toString());
+                            String noProxyHosts = getNoProxyHosts();
+                            if (!noProxyHosts.isEmpty()) {
+                                env.put("no_proxy", noProxyHosts);
+                                env.put("NO_PROXY", noProxyHosts);
+                            }
                         } catch (URISyntaxException ex) {
                             throw new GitException("Failed to create http proxy uri", ex);
                         }
