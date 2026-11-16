@@ -141,7 +141,10 @@ public class Git implements Serializable {
                         .getVerifier();
             }
         }
-        jenkins.MasterToSlaveFileCallable<GitClient> callable = new GitAPIMasterToSlaveFileCallable(hostKeyFactory);
+        boolean sshVerbose = Jenkins.getInstanceOrNull() != null
+                && GitHostKeyVerificationConfiguration.get().isSshVerbose();
+        jenkins.MasterToSlaveFileCallable<GitClient> callable =
+                new GitAPIMasterToSlaveFileCallable(hostKeyFactory, sshVerbose);
         GitClient git = (repository != null ? repository.act(callable) : callable.invoke(null, null));
         Jenkins jenkinsInstance = Jenkins.getInstanceOrNull();
         if (jenkinsInstance != null && git != null) {
@@ -185,8 +188,11 @@ public class Git implements Serializable {
 
         private final HostKeyVerifierFactory hostKeyFactory;
 
-        public GitAPIMasterToSlaveFileCallable(HostKeyVerifierFactory hostKeyFactory) {
+        private final boolean sshVerbose;
+
+        public GitAPIMasterToSlaveFileCallable(HostKeyVerifierFactory hostKeyFactory, boolean sshVerbose) {
             this.hostKeyFactory = hostKeyFactory;
+            this.sshVerbose = sshVerbose;
         }
 
         @Override
@@ -199,7 +205,12 @@ public class Git implements Serializable {
             }
 
             if (Main.isUnitTest && System.getProperty(Git.class.getName() + ".mockClient") != null) {
-                return initMockClient(System.getProperty(Git.class.getName() + ".mockClient"), exe, env, f, listener);
+                GitClient mockClient =
+                        initMockClient(System.getProperty(Git.class.getName() + ".mockClient"), exe, env, f, listener);
+                if (mockClient instanceof CliGitAPIImpl cliGitAPIImpl) {
+                    cliGitAPIImpl.setSshVerbose(sshVerbose);
+                }
+                return mockClient;
             }
 
             if (exe == null || JGitTool.MAGIC_EXENAME.equalsIgnoreCase(exe)) {
@@ -212,6 +223,7 @@ public class Git implements Serializable {
             // Ensure we return a backward compatible GitAPI, even API only claim to provide a GitClient
             GitAPI gitAPI = new GitAPI(exe, f, listener, env);
             gitAPI.setHostKeyFactory(hostKeyFactory);
+            gitAPI.setSshVerbose(sshVerbose);
             return gitAPI;
         }
     }
