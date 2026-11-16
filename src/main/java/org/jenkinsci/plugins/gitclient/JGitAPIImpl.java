@@ -1941,7 +1941,11 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
         try (Repository repo = getRepository();
                 ObjectReader or = repo.newObjectReader();
                 RevWalk walk = new RevWalk(or)) {
-            return walk.parseTag(repo.resolve(tagName)).getFullMessage().trim();
+            ObjectId tagId = repo.resolve(tagName);
+            if (tagId == null) {
+                throw new GitException("Tag " + tagName + " not found");
+            }
+            return walk.parseTag(tagId).getFullMessage().trim();
         } catch (IOException e) {
             throw new GitException(e);
         }
