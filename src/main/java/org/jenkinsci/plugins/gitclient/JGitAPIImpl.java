@@ -795,7 +795,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
                     if (refspecs != null) {
                         for (RefSpec rs : refspecs) {
                             if (rs != null) {
-                                allRefSpecs.add(rs);
+                                allRefSpecs.add(trimRefSpec(rs));
                             }
                         }
                     }
@@ -866,7 +866,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
             if (refspec != null && refspec.length > 0) {
                 for (RefSpec rs : refspec) {
                     if (rs != null) {
-                        refSpecs.add(rs);
+                        refSpecs.add(trimRefSpec(rs));
                     }
                 }
             }
@@ -1609,7 +1609,7 @@ public class JGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             @Override
             public CloneCommand refspecs(List<RefSpec> refspecs) {
-                this.refspecs = new ArrayList<>(refspecs);
+                this.refspecs = trimRefSpecs(refspecs);
                 return this;
             }
 
