@@ -80,10 +80,11 @@ image::images/mingit-for-windows-as-a-tool.png[Configure MinGit for Windows to i
 * Configure a global git tool from "Manage Jenkins" >> "Tools" with `git` as the `Path to Git executable`
 * Set the label `windows` to limit the tool installer to agents with the `windows` label
 * Set the `Download URL for binary archive` as the URL of your **locally downloaded copy** of the link:https://github.com/git-for-windows/git/releases/[MinGit zip file]
-* Specify `mingw64\bin\git.exe` as the `Subdirectory of extracted archive`.
+* Specify `cmd\git.exe` as the `Subdirectory of extracted archive` (MinGit 2.56.0 and later).
+  `ucrt64\bin\git.exe` can be used instead.
 
-MinGit will be installed on each agent in `tools\git\mingw64`.
-The path to the git executable will be `tools\git\mingw64\bin\git.exe`.
+MinGit will be installed on each agent in `tools\git\cmd`.
+The path to the git executable will be `tools\git\cmd\git.exe`.
 
 [#windows-credentials-manager]
 == Windows Credentials Manager
