@@ -1628,7 +1628,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Override
     public @CheckForNull String getSubmoduleUrl(String name) throws GitException, InterruptedException {
-        String result = launchCommand("config", "--get", "submodule." + name + ".url");
+        String result = launchCommand("config", "-f", ".gitmodules", "--get", "submodule." + name + ".url");
         return StringUtils.trim(firstLine(result));
     }
 
@@ -1639,7 +1639,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
      */
     @Override
     public void setSubmoduleUrl(String name, String url) throws GitException, InterruptedException {
-        launchCommand("config", "submodule." + name + ".url", url);
+        launchCommand("config", "-f", ".gitmodules", "submodule." + name + ".url", url);
     }
 
     /**
