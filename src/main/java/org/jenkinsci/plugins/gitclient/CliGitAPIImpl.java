@@ -2850,7 +2850,7 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
 
             if (status != 0) {
                 throw new GitException("Command \"" + command + "\" returned status code " + status + ":\nstdout: "
-                        + stdout + "\nstderr: " + stderr);
+                        + stdout + "\nstderr: " + stderr + windowsStatusHint(status, isWindows()));
             }
 
             return stdout;
@@ -3973,6 +3973,33 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     /** inline ${@link hudson.Functions#isWindows()} to prevent a transient remote classloader issue */
     private boolean isWindows() {
         return File.pathSeparatorChar == ';';
+    }
+
+    /** Documentation of Windows error codes, referenced from {@link #windowsStatusHint(int, boolean)}. */
+    private static final String WINDOWS_ERROR_CODES_URL =
+            "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55";
+
+    /**
+     * Returns additional text for the message of a failed git command, to help
+     * diagnose Windows failures.
+     *
+     * <p>When a process fails to start or crashes on Windows, its exit status is
+     * usually an unsigned 32-bit error code (an NTSTATUS or HRESULT value such as
+     * 0xC0000142). Java reports it as a signed int, for example -1073741502, which
+     * can't be searched for. This method returns the unsigned hexadecimal form and a
+     * link to the Windows error code documentation.
+     *
+     * @param status exit status of the git command
+     * @param windows true if the command ran on a Windows computer
+     * @return text to append to the failure message, or an empty string if the
+     *     status is not likely to be a Windows error code (not on Windows, or a
+     *     normal exit status between 0 and 255)
+     */
+    static String windowsStatusHint(int status, boolean windows) {
+        if (!windows || (status >= 0 && status <= 255)) {
+            return "";
+        }
+        return "\nexit code in hex: 0x" + String.format("%08X", status) + " (see " + WINDOWS_ERROR_CODES_URL + ")";
     }
 
     private boolean isZos() {
