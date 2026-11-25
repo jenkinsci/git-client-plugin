@@ -3675,6 +3675,9 @@ public class CliGitAPIImpl extends LegacyCompatibleGitAPIImpl {
     public String getTagMessage(String tagName) throws GitException, InterruptedException {
         // 10000 lines of tag message "ought to be enough for anybody"
         String out = launchCommand("tag", "-l", tagName, "-n10000");
+        if (out.isEmpty()) {
+            throw new GitException("Tag " + tagName + " not found");
+        }
         // Strip the leading four spaces which git prefixes multi-line messages with
         return out.substring(tagName.length()).replaceAll("(?m)(^    )", "").trim();
     }
